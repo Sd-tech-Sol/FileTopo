@@ -1,7 +1,7 @@
 /**
  * The names this runtime is allowed to write under `docs/performance/runs/`.
  *
- * **Reserve `X5` of `ACTION-0028`, `CLOSED` and extended four times.**
+ * **Reserve `X5` of `ACTION-0028`, `CLOSED` and extended six times.**
  * `map_write_run_artifact` writes by replacement, so a scenario that keeps an
  * older task's file name silently overwrites that task's published evidence
  * the next time somebody presses the button.
@@ -35,10 +35,15 @@
  * H9, J12, K11, K12, L12, M12 and N15 replays, and every `-abandon` variant,
  * stay outside the protected set.
  *
+ * **`ACTION-0041` made `TASK-0024` `VERIFIED`**, and exactly its three
+ * canonical proofs join in turn: DR15 pass1, DR15 pass2 and the J12
+ * intra-brain regression. The corrective X11 proof and every other
+ * `TASK-0024` output remain noncanonical and unprotected.
+ *
  * The protected/runtime intersection is therefore **no longer empty**: this
- * checkout still spells the two `EC15` names as its destination, so replaying
- * the content scenario now yields a refusal. That is the seal working, and it
- * is the expected end state of a verified slice — see
+ * checkout still spells the three canonical `TASK-0024` names as
+ * destinations, so replaying those scenarios now yields a refusal. That is
+ * the seal working, and it is the expected end state of a verified slice — see
  * {@link SEALED_RUNTIME_DESTINATIONS}. The next slice migrates the destination
  * under its own task name before it replays anything.
  *
@@ -56,11 +61,12 @@
  * made it `VERIFIED`, five are `TASK-0020`'s, added when `ACTION-0032` made it
  * `VERIFIED`, eight are `TASK-0022`'s, added when `ACTION-0036` made it
  * `VERIFIED`, and the last two are `TASK-0023`'s `EC15` passes, added when
- * `ACTION-0039` made it `VERIFIED`.
+ * `ACTION-0039` made it `VERIFIED`, and the last three are `TASK-0024`'s
+ * canonical proofs, added when `ACTION-0041` made it `VERIFIED`.
  *
- * Twenty-nine names. The order is append-only: the twenty-seven that were
- * there before this extension are still there, in the same order, and the two
- * new ones follow them.
+ * Thirty-two names. The order is append-only: the twenty-nine that were there
+ * before this extension are still there, in the same order, and the three new
+ * ones follow them.
  */
 export const PROTECTED_RUN_ARTIFACTS = [
   "TASK-0016-H1-H7-verification.json",
@@ -92,6 +98,9 @@ export const PROTECTED_RUN_ARTIFACTS = [
   "TASK-0022-N15-topographic-node-graph-webview2-pass2.json",
   "TASK-0023-EC15-exact-content-observations-webview2-pass1.json",
   "TASK-0023-EC15-exact-content-observations-webview2-pass2.json",
+  "TASK-0024-DR15-deterministic-relation-engine-webview2-pass1.json",
+  "TASK-0024-DR15-deterministic-relation-engine-webview2-pass2.json",
+  "TASK-0024-J12-intrabrain-relations-regression-webview2.json",
 ] as const;
 
 /**
@@ -217,11 +226,15 @@ export const RUNTIME_RUN_ARTIFACTS = [
  * Exact protected/runtime intersection — the destinations this runtime still
  * spells that the write gate now refuses.
  *
- * Empty for the active slice: every runtime destination was migrated to
- * `TASK-0024` before the first replay, while the 29 protected historical
- * artefacts remain unchanged.
+ * After `ACTION-0041`, exactly the two DR15 passes and the J12 regression are
+ * sealed while the runtime still spells them. The corrective X11 proof and
+ * all other `TASK-0024` destinations remain unprotected.
  */
-export const SEALED_RUNTIME_DESTINATIONS = [] as const;
+export const SEALED_RUNTIME_DESTINATIONS = [
+  "TASK-0024-DR15-deterministic-relation-engine-webview2-pass1.json",
+  "TASK-0024-DR15-deterministic-relation-engine-webview2-pass2.json",
+  "TASK-0024-J12-intrabrain-relations-regression-webview2.json",
+] as const;
 
 /**
  * The task an artefact name declares as its owner, or `null` when the name
@@ -254,8 +267,8 @@ export interface RuntimeWriteOwnership {
   /**
    * Runtime destinations that are protected evidence.
    *
-   * Empty while the owning task awaits control. Since `ACTION-0039` sealed
-   * a verified task, it lists the exact colliding destinations — see
+   * Empty while the owning task awaits control. Since `ACTION-0041` sealed
+   * the current task, it lists the exact colliding destinations — see
    * {@link SEALED_RUNTIME_DESTINATIONS}.
    */
   protectedDestinations: readonly string[];
@@ -263,8 +276,8 @@ export interface RuntimeWriteOwnership {
    * True only while every destination belongs to one unprotected task and none
    * is sealed.
    *
-   * **`false` since `ACTION-0039`**, and truthfully so: this runtime still
-   * spells two names its own verification has sealed. The field reports the
+   * **`false` since `ACTION-0041`**, and truthfully so: this runtime still
+   * spells three names its own verification has sealed. The field reports the
    * state of the checkout, so it is allowed to say the checkout is past its
    * slice — it is not a health check to be kept green.
    */
@@ -299,8 +312,8 @@ export function runtimeWriteOwnership(): RuntimeWriteOwnership {
   const protectedTaskIds = [
     ...new Set(protectedNames.map(artifactTaskId).filter(isTaskId)),
   ].sort();
-  const protectedDestinations = destinations.filter((name) =>
-    protectedNames.includes(name),
+  const protectedDestinations = protectedNames.filter((name) =>
+    destinations.includes(name),
   );
 
   return {

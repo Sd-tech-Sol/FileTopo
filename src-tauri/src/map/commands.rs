@@ -602,12 +602,18 @@ pub fn self_check(paths: &SandboxPaths, brain: &BrainRecord) -> Result<MapSelfCh
 /// evidence of `TASK-0023`** and none is protected; only `EC15` carried the
 /// criterion the task was controlled on.
 ///
+/// **`TASK-0024` is `VERIFIED` since `ACTION-0041`**, so exactly its **three**
+/// canonical proofs join the list: the two `DR15` passes and the `J12`
+/// intra-brain regression. The list grows from twenty-nine to thirty-two.
+/// The corrective `X11` proof remains noncanonical, as do the `H9`, `K11`,
+/// `K12`, `L12`, `M12`, `N15`, `EC15` and `-abandon` outputs of this slice.
+///
 /// The consequence is again deliberate, and again worth stating plainly: the
-/// content scenario compiled into this checkout still spells those two `EC15`
-/// names as its destination, so replaying it now yields a **refusal**. That is
-/// the gate working. The next slice migrates the destination under its own
-/// task name before it replays anything, exactly as every previous slice did.
-pub const PROTECTED_RUN_ARTIFACTS: [&str; 29] = [
+/// runtime compiled into this checkout still spells the three `TASK-0024`
+/// canonical names as destinations, so replaying those scenarios now yields a
+/// **refusal**. That is the gate working. The next slice migrates destinations
+/// under its own task name before it replays anything.
+pub const PROTECTED_RUN_ARTIFACTS: [&str; 32] = [
     "TASK-0016-H1-H7-verification.json",
     "TASK-0016-H9-webview2.json",
     "TASK-0017-J11-isolation.json",
@@ -637,6 +643,9 @@ pub const PROTECTED_RUN_ARTIFACTS: [&str; 29] = [
     "TASK-0022-N15-topographic-node-graph-webview2-pass2.json",
     "TASK-0023-EC15-exact-content-observations-webview2-pass1.json",
     "TASK-0023-EC15-exact-content-observations-webview2-pass2.json",
+    "TASK-0024-DR15-deterministic-relation-engine-webview2-pass1.json",
+    "TASK-0024-DR15-deterministic-relation-engine-webview2-pass2.json",
+    "TASK-0024-J12-intrabrain-relations-regression-webview2.json",
 ];
 
 /// Writes a measurement artefact into `docs/performance/runs/` of this
@@ -873,14 +882,58 @@ mod tests {
         }
     }
 
-    /// The seal grew by exactly two names, and grew only at the end.
+    /// `ACTION-0041` seals exactly the three canonical proofs of `TASK-0024`.
+    #[test]
+    fn task_0024s_three_canonical_proofs_are_protected_after_verification() {
+        for name in [
+            "TASK-0024-DR15-deterministic-relation-engine-webview2-pass1.json",
+            "TASK-0024-DR15-deterministic-relation-engine-webview2-pass2.json",
+            "TASK-0024-J12-intrabrain-relations-regression-webview2.json",
+        ] {
+            assert!(
+                PROTECTED_RUN_ARTIFACTS.contains(&name),
+                "{name} is TASK-0024 canonical evidence and is not protected"
+            );
+            assert!(
+                matches!(
+                    write_run_artifact(name, "{}"),
+                    Err(MapError::ArtifactRejected(_))
+                ),
+                "{name} was accepted as a destination"
+            );
+        }
+    }
+
+    /// The corrective proof and every other `TASK-0024` replay remain outside
+    /// the seal; one representative noncanonical destination stays allowed.
+    #[test]
+    fn task_0024_noncanonical_destinations_stay_unprotected() {
+        for name in [
+            "TASK-0024-X11-generic-brain-webview2.json",
+            "TASK-0024-H9-composed-runtime-regression-webview2.json",
+            "TASK-0024-K11-readonly-isolation-regression-webview2.json",
+            "TASK-0024-K12-foundation-regression-webview2-pass1.json",
+            "TASK-0024-L12-composed-view-regression-webview2-pass1.json",
+            "TASK-0024-M12-interbrain-relations-regression-webview2-pass1.json",
+            "TASK-0024-N15-topographic-node-graph-webview2-pass1.json",
+            "TASK-0024-EC15-exact-content-observations-webview2-pass1.json",
+            "TASK-0024-DR15-deterministic-relation-engine-webview2-pass1-abandon.json",
+        ] {
+            assert!(
+                !PROTECTED_RUN_ARTIFACTS.contains(&name),
+                "{name} is noncanonical TASK-0024 output and was protected"
+            );
+        }
+    }
+
+    /// The seal grew by exactly three names, and grew only at the end.
     ///
     /// Stated as one test because the danger of an extension is not that the
     /// new names are missing — the tests above catch that — but that an edit
-    /// reorders, drops or duplicates one of the twenty-seven already there.
+    /// reorders, drops or duplicates one of the twenty-nine already there.
     #[test]
-    fn the_seal_is_the_unchanged_twenty_seven_followed_by_task_0023s_two() {
-        assert_eq!(PROTECTED_RUN_ARTIFACTS.len(), 29);
+    fn the_seal_is_the_unchanged_twenty_nine_followed_by_task_0024s_three() {
+        assert_eq!(PROTECTED_RUN_ARTIFACTS.len(), 32);
         assert_eq!(
             &PROTECTED_RUN_ARTIFACTS[..27],
             &[
@@ -914,16 +967,24 @@ mod tests {
             ]
         );
         assert_eq!(
-            &PROTECTED_RUN_ARTIFACTS[27..],
+            &PROTECTED_RUN_ARTIFACTS[27..29],
             &[
                 "TASK-0023-EC15-exact-content-observations-webview2-pass1.json",
                 "TASK-0023-EC15-exact-content-observations-webview2-pass2.json",
             ]
         );
+        assert_eq!(
+            &PROTECTED_RUN_ARTIFACTS[29..],
+            &[
+                "TASK-0024-DR15-deterministic-relation-engine-webview2-pass1.json",
+                "TASK-0024-DR15-deterministic-relation-engine-webview2-pass2.json",
+                "TASK-0024-J12-intrabrain-relations-regression-webview2.json",
+            ]
+        );
         let mut sorted = PROTECTED_RUN_ARTIFACTS.to_vec();
         sorted.sort_unstable();
         sorted.dedup();
-        assert_eq!(sorted.len(), 29, "the seal holds a duplicate name");
+        assert_eq!(sorted.len(), 32, "the seal holds a duplicate name");
     }
 
     /// `TASK-0022` published no `H9` or `K12` proof, and an abandoned run is

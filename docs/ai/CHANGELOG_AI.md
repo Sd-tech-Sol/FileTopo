@@ -3426,3 +3426,48 @@ aucun reformatage global. `F-044`, `F-045`, `F-046` restent `PROPOSED` et
 
 **Action unique suivante :** re-contrôle indépendant ciblé `X11` /
 `TASK-0024`. Aucune `TASK-0025` créée.
+
+---
+
+## 2026-09-05 — ACTION-0041 — Verdict indépendant X11, TASK-0024 VERIFIED, scellement X5 29 → 32
+
+**Agent :** exécuteur Codex
+**Statut à l'issue :** `TASK-0024 = VERIFIED`; `X11`, `ACTION-0040` et
+`ACTION-0041 = CLOSED`
+
+### Fait
+
+- Création de `docs/reviews/ACTION-0041-independent-recontrol.md`, qui
+  **enregistre** le verdict externe de l'orchestrateur technique indépendant.
+  Codex ne rend pas ce verdict et ne s'attribue pas `VERIFIED`.
+- Scellement X5 de 29 à 32 : les deux DR15 et le J12 canoniques de `TASK-0024`
+  sont ajoutés après les 29 noms inchangés, dans les gardes Rust, TypeScript et
+  PowerShell.
+- La preuve corrective X11, les replays H9/K11/K12/L12/M12/N15/EC15 et les
+  variantes `-abandon` restent non canoniques et non protégés.
+- `SEALED_RUNTIME_DESTINATIONS` publie l'intersection exacte : les trois
+  preuves canoniques. Le runtime garde l'identité `TASK-0024`, donc
+  `writesUnderItsOwnTaskOnly = false`, état normal après vérification.
+- Mise à jour des états durables et de `F-043`, dont le statut produit reste
+  `IMPLEMENTED` mais dont l'implémentation est maintenant vérifiée par
+  `TASK-0024` / `ACTION-0041`.
+
+### Validé
+
+Rust ciblé X5 **22/22**; TypeScript ciblé `runArtifacts` **33/33**; PowerShell
+**32/32 refus**, 32 noms uniques et X11 autorisée; parité exacte des trois
+gardes; `git diff --check`; preuves JSON inchangées.
+
+Le premier lancement TypeScript a rendu **30/33** à cause de l'ordre de
+l'intersection dérivée (`J12` avant DR15). La dérivation a été alignée sur
+l'ordre canonique X5 et le rejeu a passé **33/33**.
+
+### Non testé / limites
+
+Aucune suite produit complète, aucun build Tauri et aucun scénario WebView2
+rejoué : cette fermeture ne touche pas le code produit. X10 non-Windows reste
+non prouvée race-safe. `DEC-0013/F` demeure bloquante; `F-044`, `F-045` et
+`F-046` restent `PROPOSED`.
+
+**Action unique suivante :** retour à l'orchestrateur pour définir la prochaine
+tranche après `TASK-0024 VERIFIED`. Aucune `TASK-0025` créée.

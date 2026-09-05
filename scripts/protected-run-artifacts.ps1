@@ -36,8 +36,11 @@
         seven scenarios and wrote artefacts for several of them, but it was
         controlled on EC15 alone, so its H9, J12, K11, K12, L12, M12 and N15
         replays and every -abandon variant stay unprotected.
+      * TASK-0024 — verified by ACTION-0041, THREE proofs: DR15 pass1, DR15
+        pass2 and the J12 intra-brain regression. The corrective X11 proof and
+        every other TASK-0024 output remain noncanonical and unprotected.
 
-    Twenty-nine names. Nothing here deletes, renames or moves anything: this file
+    Thirty-two names. Nothing here deletes, renames or moves anything: this file
     only refuses.
 #>
 
@@ -70,11 +73,14 @@ $script:ProtectedRunArtifacts = @(
     'TASK-0022-N15-topographic-node-graph-webview2-pass1.json',
     'TASK-0022-N15-topographic-node-graph-webview2-pass2.json',
     'TASK-0023-EC15-exact-content-observations-webview2-pass1.json',
-    'TASK-0023-EC15-exact-content-observations-webview2-pass2.json'
+    'TASK-0023-EC15-exact-content-observations-webview2-pass2.json',
+    'TASK-0024-DR15-deterministic-relation-engine-webview2-pass1.json',
+    'TASK-0024-DR15-deterministic-relation-engine-webview2-pass2.json',
+    'TASK-0024-J12-intrabrain-relations-regression-webview2.json'
 )
 
 function Get-ProtectedRunArtifact {
-    <# The twenty-nine names, for a caller that wants to report them. #>
+    <# The thirty-two names, for a caller that wants to report them. #>
     return $script:ProtectedRunArtifacts
 }
 

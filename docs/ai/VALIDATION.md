@@ -3463,3 +3463,44 @@ historique global; aucun reformatage global. `DEC-0013/F` demeure bloquante;
 
 **Claude ne ferme pas `X11` et ne s'attribue pas `VERIFIED`.** Action unique
 suivante : re-contrôle indépendant ciblé `X11` / `TASK-0024`.
+
+---
+
+## AO. ACTION-0041 — re-contrôle X11 enregistré, TASK-0024 VERIFIED et X5 étendue à 32
+
+**Verdict indépendant enregistré, non rendu par Codex :** `X11 = CLOSED`,
+`ACTION-0040 = CLOSED`, `ACTION-0041 = CLOSED`, `TASK-0024 = VERIFIED`. HEAD
+re-contrôlé `f78d1bf`; commit substantif X11 `bcc10a8`. Détail dans
+[`ACTION-0041`](../reviews/ACTION-0041-independent-recontrol.md).
+
+Cette action est **gouvernance et scellement seulement**. Aucun code produit,
+aucune preuve JSON et aucun critère DR1–DR15 ne sont modifiés. Aucun rejeu
+WebView2, DR15, J12, X11, K11, K12, L12, M12, N15, H9 ou EC15.
+
+| Contrôle | Résultat | Preuve |
+|---|---|---|
+| X5 — cardinal | **PASS** | 32 noms, 32 uniques, dans les trois gardes |
+| X5 — append-only | **PASS** | les 29 anciens noms gardent exactement leur ordre; les trois preuves `TASK-0024` suivent |
+| X5 — ajout exact | **PASS** | DR15 pass1, DR15 pass2 et J12 seulement |
+| X5 — non-élargissement | **PASS** | X11, H9/K11/K12/L12/M12/N15/EC15 et variantes `-abandon` restent non protégés |
+| Parité Rust / TypeScript / PowerShell | **PASS** | comparaison liste contre liste par `runArtifacts.test.ts` |
+| Refus Rust | **PASS** | `cargo test map::commands::tests:: --lib` avec `CARGO_INCREMENTAL=0` — **22/22** |
+| Tests TypeScript ciblés | **PASS final** | `pnpm exec vitest run src/map/runArtifacts.test.ts` — **33/33** |
+| Contrôle PowerShell | **PASS** | 32/32 refus, 32 uniques, X11 autorisée |
+| État runtime dérivé | **PASS** | `protectedArtifactCount = 32`; `protectedDestinations = exact3`; propriétaire `TASK-0024`; `writesUnderItsOwnTaskOnly = false` |
+| `git diff --check` | **PASS** | aucune sortie |
+| Preuves immuables | **PASS** | empreintes SHA-256 des deux DR15, de J12 et de X11 inchangées; aucun chemin sous `docs/performance/runs/` modifié |
+| `main` | **INCHANGÉE** | `91bbe90f0f99026c28cd345784d4f579a0016db2` |
+
+**Échec intermédiaire rapporté :** le premier test TypeScript ciblé a rendu
+**30/33**, avec trois écarts d'ordre : l'intersection contenait les trois bons
+noms mais suivait l'ordre runtime (`J12`, DR15 pass1, DR15 pass2). La dérivation
+a été corrigée pour suivre l'ordre canonique X5 (DR15 pass1, pass2, J12), puis
+le même test a passé **33/33**.
+
+**Non testé / limites :** suites produit complètes, Tauri debug et WebView2 non
+rejoués, conformément au périmètre de fermeture. Les résultats Rust 200/200,
+TypeScript 215/215, check/build/Tauri, DR15 et J12 sont ceux de la correction
+X11, enregistrés par `ACTION-0040`; ils ne sont pas revendiqués comme rejoués
+ici. La garantie X10 non-Windows reste non prouvée race-safe. `DEC-0013/F`
+demeure bloquante; `F-044`, `F-045`, `F-046` restent `PROPOSED`.

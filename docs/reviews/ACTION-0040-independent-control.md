@@ -114,3 +114,11 @@ invariants legacy d'Alpha sont **strictement identiques**.
 - Aucune règle core n'est garantie de produire une sortie sur une source
   donnée : sur `deep`, `core.identical-content` est sautée faute de signal de
   contenu, et **zéro sortie est un résultat valide**.
+
+## 7. Clôture indépendante ultérieure
+
+Le re-contrôle indépendant ciblé enregistré dans
+[`ACTION-0041`](ACTION-0041-independent-recontrol.md) ferme `X11` et cette
+action : `X11 = CLOSED`, `ACTION-0040 = CLOSED`, `ACTION-0041 = CLOSED`,
+`TASK-0024 = VERIFIED`. Ce verdict est externe et n'est pas auto-attribué par
+Codex.

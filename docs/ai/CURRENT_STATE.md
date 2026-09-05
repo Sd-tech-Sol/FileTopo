@@ -1,5 +1,38 @@
 # État courant
 
+## ACTION-0041 — TASK-0024 VERIFIED et scellement X5 — 2026-09-05
+
+- **Verdict indépendant enregistré, non rendu par Codex :** `X11 = CLOSED`,
+  `ACTION-0040 = CLOSED`, `ACTION-0041 = CLOSED`, `TASK-0024 = VERIFIED`.
+  HEAD re-contrôlé `f78d1bf`; commit substantif X11 `bcc10a8`. Détail dans
+  [`ACTION-0041`](../reviews/ACTION-0041-independent-recontrol.md).
+- **Motif :** la source générique et le périmètre legacy sont séparés;
+  `open_relations`, `node_relations`, `approve_suggestion` et le panneau
+  fonctionnent hors `quasi-empty`, tandis que dérivation, seeds et self-check
+  legacy y restent strictement confinés. La suggestion core périmée reste
+  refusée.
+- **Preuve X11 :** vrai WebView2 sur `brain-beta` / `deep`, activation clavier
+  fiable, zéro clic programmatique, report `brain-beta / dre-v1 / CURRENT`,
+  aucun producteur legacy, `seeded = 0`, source inchangée. Cette preuve reste
+  non canonique et hors X5.
+- **Scellement X5 : 29 → 32.** Exactement DR15 pass1, DR15 pass2 et J12 de
+  `TASK-0024` sont ajoutés aux trois gardes, en fin de liste. Les 29 anciens
+  noms conservent leur ordre.
+- **État runtime assumé :** `protectedArtifactCount = 32`, intersection
+  protégée/runtime = exact3, `owningTaskId = TASK-0024`,
+  `writesUnderItsOwnTaskOnly = false`. Aucune migration anticipée vers
+  `TASK-0025`.
+- **Portée :** gouvernance et gardes X5 seulement; aucun code produit, aucune
+  preuve JSON et aucun critère DR1–DR15 modifié; aucun rejeu WebView2.
+- **Validation ciblée :** Rust X5 **22/22**, TypeScript `runArtifacts`
+  **33/33**, PowerShell **32/32 refus** + X11 autorisée, parité exacte des trois
+  gardes et `git diff --check`. Un premier run TypeScript 30/33 a exposé puis
+  fait corriger l'ordre de l'intersection dérivée; le run final est vert.
+- **Produit :** `F-043 = IMPLEMENTED`, maintenant vérifiée par `TASK-0024`.
+  `F-044`, `F-045`, `F-046` restent `PROPOSED`; `DEC-0013/F` reste bloquante.
+- **Action unique suivante :** retour à l'orchestrateur pour définir la
+  prochaine tranche après `TASK-0024 VERIFIED`.
+
 ## Correction X11 de TASK-0024 — moteur générique sur tous les cerveaux — 2026-09-05
 
 - **Contrôle indépendant enregistré, non rendu par Claude :**

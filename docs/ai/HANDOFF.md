@@ -1,5 +1,35 @@
 # HANDOFF — passage de relais
 
+## Relais actuel — ACTION-0041, TASK-0024 VERIFIED, 2026-09-05
+
+Le verdict indépendant est enregistré dans
+[`ACTION-0041`](../reviews/ACTION-0041-independent-recontrol.md), sans être
+rendu par Codex : `X11 = CLOSED`, `ACTION-0040 = CLOSED`, `ACTION-0041 =
+CLOSED`, `TASK-0024 = VERIFIED`. Le HEAD re-contrôlé est `f78d1bf` et le
+commit substantif X11 est `bcc10a8`.
+
+X5 passe de **29** à **32** preuves. Les trois ajouts, à la suite des 29 noms
+inchangés, sont DR15 pass1, DR15 pass2 et J12 de `TASK-0024`. Les gardes Rust,
+TypeScript et PowerShell portent la même liste. La preuve corrective X11, H9,
+K11, K12, L12, M12, N15, EC15 et toutes les variantes `-abandon` restent non
+canoniques et non protégées.
+
+Le runtime écrit encore sous `TASK-0024`; exactement les trois preuves
+canoniques sont maintenant des destinations refusées. État dérivé :
+`protectedArtifactCount = 32`, `protectedDestinations = exact3`,
+`owningTaskId = TASK-0024`, `writesUnderItsOwnTaskOnly = false`. C'est l'état
+normal après `VERIFIED`; la prochaine tranche migrera ses destinations avant
+tout éventuel rejeu.
+
+Cette fermeture touche seulement la gouvernance et les gardes X5. Aucun JSON
+de preuve ni code produit n'est modifié, et aucun scénario WebView2 n'est
+rejoué. `F-043` reste `IMPLEMENTED` dans la matrice, désormais vérifiée par
+`TASK-0024`. `F-044`, `F-045`, `F-046` restent `PROPOSED`; `DEC-0013/F` et la
+limite non-Windows de X10 demeurent.
+
+**Relais unique :** retour à l'orchestrateur pour définir la prochaine tranche
+après `TASK-0024 VERIFIED`. Aucune `TASK-0025` créée.
+
 ## Relais actuel — TASK-0024 corrigée sur X11, toujours IMPLEMENTED, 2026-09-05
 
 `TASK-0024` reste livrée **`IMPLEMENTED`**, jamais auto-attribuée `VERIFIED`,

@@ -3,8 +3,9 @@
 - **Date :** 2026-09-05
 - **Branche :** `build/v0.2-a8-deterministic-relation-engine`
 - **Base contrôlée :** `0608cbc1396c5bfc28e0cd666bc25eddf80345bb`
-- **Statut courant :** `IMPLEMENTED` — contrôle indépendant requis
-- **Transitions :** `PROPOSED → APPROVED → IN_PROGRESS`, par le GO technique explicite de `.orchestrator/NEXT_PROMPT.md`
+- **Statut courant :** `VERIFIED` — contrôle indépendant `ACTION-0041`
+- **Transitions :** `PROPOSED → APPROVED → IN_PROGRESS → IMPLEMENTED → VERIFIED`;
+  démarrage par GO technique explicite, vérification par `ACTION-0041`
 - **Agent d'exécution :** Codex
 - **Décision :** [`DEC-0026`](../decisions/DEC-0026-deterministic-rule-runtime.md)
 - **Implémente :** `F-043`, sans implémenter `F-044`, `F-045` ni `F-046`
@@ -276,3 +277,27 @@ debug `--no-bundle`, X11 WebView2 sur Bêta, DR15 pass1/pass2 frais, J12 réel.
 État après correction : `TASK-0024 = IMPLEMENTED`, `F-043 = IMPLEMENTED`,
 `ACTION-0040 = CHANGES_REQUIRED`, `X11 = OPEN`. Action suivante unique :
 re-contrôle indépendant ciblé `X11` / `TASK-0024`.
+
+## 12. Clôture indépendante et scellement X5 — 2026-09-05
+
+Le verdict externe enregistré dans
+[`ACTION-0041`](../reviews/ACTION-0041-independent-recontrol.md) ferme la
+dernière réserve : `X11 = CLOSED`, `ACTION-0040 = CLOSED`, `ACTION-0041 =
+CLOSED`, `TASK-0024 = VERIFIED`. Codex enregistre ce verdict; il ne se
+l'attribue pas.
+
+Les trois preuves canoniques — DR15 pass1, DR15 pass2 et la régression J12 —
+rejoignent X5, qui passe de 29 à 32. Les 29 noms antérieurs gardent leur ordre
+et les gardes Rust, TypeScript et PowerShell restent en parité exacte. La
+preuve corrective X11 reste non canonique et non protégée.
+
+Le runtime courant écrit toujours sous `TASK-0024`; son intersection avec X5
+est exactement les trois preuves canoniques. Ainsi
+`protectedArtifactCount = 32`, `protectedDestinations = exact3`,
+`owningTaskId = TASK-0024` et `writesUnderItsOwnTaskOnly = false`, état normal
+après vérification. Aucune `TASK-0025` n'est créée.
+
+Cette fermeture ne rejoue aucune preuve et ne modifie aucun code produit ni
+JSON de preuve. `F-043` conserve le statut produit `IMPLEMENTED`, désormais
+vérifié par `TASK-0024`; `F-044`, `F-045` et `F-046` restent `PROPOSED`, et
+`DEC-0013/F` demeure bloquante.
