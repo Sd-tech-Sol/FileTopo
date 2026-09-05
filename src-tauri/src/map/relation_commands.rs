@@ -6,7 +6,7 @@
 //! `J10` needs the difference to be visible.
 
 use super::relations::{
-    EXPECTED_COUNTS, FORBIDDEN_INVERSES, RELATIONS_FIXTURE,
+    EXPECTED_COUNTS, FORBIDDEN_INVERSES, MAX_REVIEW_QUEUE_LIMIT, RELATIONS_FIXTURE,
     RELATIONS_SCHEMA_VERSION, RelationError, RelationStore, RejectionOutcome, SEEDED_SUGGESTIONS,
     StoredRelation, StoredSuggestion, endpoint_key,
 };
@@ -69,6 +69,10 @@ pub struct SuggestionEdge {
     pub explanation_fr: Option<String>,
     pub explanation_en: Option<String>,
     pub signals: Option<serde_json::Value>,
+    /// When a human decided, in Unix milliseconds. `None` while `pending`.
+    pub decided_unix_ms: Option<i64>,
+    /// Always `None` in v1 — see `DEC-0027` §C.
+    pub decision_reconsider_cause: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -270,6 +274,8 @@ fn suggestion_of(
             .signals_json
             .as_deref()
             .and_then(|value| serde_json::from_str(value).ok()),
+        decided_unix_ms: suggestion.decided_unix_ms,
+        decision_reconsider_cause: suggestion.decision_reconsider_cause.clone(),
     }
 }
 
@@ -614,6 +620,159 @@ pub fn approve_suggestion(
         }
     }
     store.approve(suggestion_key)?;
+    let engine_current = super::rule_engine::is_current(paths, brain)?;
+    overview(
+        &store,
+        brain,
+        spec.id,
+        legacy_scope,
+        paths.relative_name(&database),
+        &snapshot.nodes,
+        0,
+        engine_current,
+    )
+}
+
+/// One page of the suggestions a brain is waiting on — `F-044`.
+///
+/// A read, and nothing else: opening the queue decides nothing, seeds nothing
+/// and derives nothing. Every field is measured off this brain's own store.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SuggestionReviewQueue {
+    pub brain_id: String,
+    pub fixture_id: String,
+    /// **Pending only, and exact.** Approved and rejected suggestions are not
+    /// counted here — a queue that mixed decided items into its total would
+    /// tell the user there is work left when there is none.
+    pub total_pending: usize,
+    /// Where this page starts, after clamping.
+    pub offset: usize,
+    /// How many items this page was allowed to hold, after clamping.
+    pub limit: usize,
+    /// The ceiling the caller cannot exceed, published so the interface never
+    /// has to guess it — [`MAX_REVIEW_QUEUE_LIMIT`].
+    pub max_limit: usize,
+    /// How many items this page actually holds.
+    pub returned: usize,
+    /// Whether `offset + returned` is short of `total_pending`.
+    pub has_more: bool,
+    /// The order, in words, so a caller can rely on it: ascending
+    /// `suggestion_key`. Deterministic, stable across runs, and scoped to this
+    /// brain because the key space is the brain.
+    pub order: String,
+    pub items: Vec<SuggestionEdge>,
+    /// Endpoint keys the current index cannot resolve. Reported, never hidden.
+    pub unresolved_endpoints: Vec<String>,
+    /// Whether `dre-v1` is current for this brain. Core suggestions of a stale
+    /// run are **not** queued: they cannot be decided until the engine is run
+    /// again, and offering an action that will be refused is worse than
+    /// offering none.
+    pub engine_current: bool,
+}
+
+/// The review queue of one brain — **generic**, like the engine behind it.
+///
+/// Takes any valid `BrainRecord`: the legacy `TASK-0017` perimeter decides
+/// whether the historical demonstration suggestions exist, never whether a
+/// brain may have a queue. A brain that has never run `dre-v1` gets an empty,
+/// valid queue rather than a refusal.
+///
+/// Bounded on purpose. `limit` is clamped into `1..=MAX_REVIEW_QUEUE_LIMIT`,
+/// and the response says which values were applied, so a caller can page
+/// without discovering the ceiling by being silently truncated.
+pub fn review_queue(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+    offset: usize,
+    limit: usize,
+) -> Result<SuggestionReviewQueue, MapError> {
+    let spec = source_spec(brain)?;
+    let snapshot = commands::snapshot(paths, brain)?;
+    let store = RelationStore::open(&paths.brain_relations_database(&brain.brain_id))?;
+    let engine_current = super::rule_engine::is_current(paths, brain)?;
+    let effective_nodes = super::rule_engine::effective_nodes(&snapshot.nodes);
+    let by_key = index_by_key(&brain.brain_id, &effective_nodes);
+    let mut unresolved = Vec::new();
+
+    // `pending_suggestions` already returns rows ordered by `suggestion_key`,
+    // and the filter preserves that order — the queue's stability is the
+    // store's, not a sort applied here and forgotten there.
+    let pending = store
+        .pending_suggestions()?
+        .into_iter()
+        .filter(|suggestion| {
+            suggestion.producer != super::relations::CORE_RULE_ENGINE_PRODUCER || engine_current
+        })
+        .collect::<Vec<_>>();
+
+    let total_pending = pending.len();
+    let limit = limit.clamp(1, MAX_REVIEW_QUEUE_LIMIT);
+    let offset = offset.min(total_pending);
+    let items = pending
+        .iter()
+        .skip(offset)
+        .take(limit)
+        .map(|suggestion| suggestion_of(suggestion, &by_key, &mut unresolved))
+        .collect::<Vec<_>>();
+    let returned = items.len();
+
+    Ok(SuggestionReviewQueue {
+        brain_id: brain.brain_id.clone(),
+        fixture_id: spec.id.to_string(),
+        total_pending,
+        offset,
+        limit,
+        max_limit: MAX_REVIEW_QUEUE_LIMIT,
+        returned,
+        has_more: offset + returned < total_pending,
+        order: "suggestion_key ascending".to_string(),
+        items,
+        unresolved_endpoints: unresolved,
+        engine_current,
+    })
+}
+
+/// The one explicit act that records a refusal — `F-045`.
+///
+/// The exact counterpart of [`approve_suggestion`] in shape and in refusals,
+/// and its exact opposite in effect: no row enters `relations_approved`, no
+/// deterministic relation is written, no other suggestion moves, and no other
+/// brain's store is opened. The suggestion's own row keeps the decision, which
+/// is what stops the engine from proposing it again.
+///
+/// Returns the whole overview, so the interface shows a pending count that
+/// came back from the store rather than one it decremented itself.
+pub fn reject_suggestion(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+    suggestion_key: &str,
+) -> Result<RelationsOverview, MapError> {
+    // Rejecting a **core** suggestion is a generic act, exactly like approving
+    // one. The refusal that matters here is staleness, below, not the legacy
+    // fixture.
+    let spec = source_spec(brain)?;
+    let legacy_scope = legacy_fixture_spec(brain)?.is_some();
+    let snapshot = commands::snapshot(paths, brain)?;
+    // Opened on **this** brain's store, so a refusal cannot reach another
+    // brain's copy of the same suggestion key — `K6`, `SR12`.
+    let database = paths.brain_relations_database(&brain.brain_id);
+    let mut store = RelationStore::open(&database)?;
+    if let Some(suggestion) = store.suggestion(suggestion_key)? {
+        if suggestion.producer == super::relations::CORE_RULE_ENGINE_PRODUCER
+            && !super::rule_engine::is_current(paths, brain)?
+        {
+            // The same policy approval applies, for the same reason: a stale
+            // core suggestion describes a run whose inputs have moved, and a
+            // decision recorded against it would be a decision about something
+            // the user is no longer looking at.
+            return Err(MapError::RuleEngine(
+                "stale core suggestion cannot be rejected; run the relation engine again"
+                    .to_string(),
+            ));
+        }
+    }
+    store.reject(suggestion_key)?;
     let engine_current = super::rule_engine::is_current(paths, brain)?;
     overview(
         &store,
@@ -1398,6 +1557,287 @@ mod tests {
                 .all(|pending| pending.suggestion_key != suggestion.suggestion_key),
             "an approved suggestion is no longer pending"
         );
+
+        let _ = std::fs::remove_dir_all(PathBuf::from(&paths.fixtures).parent().unwrap());
+    }
+
+    // -----------------------------------------------------------------------
+    // `TASK-0025` — the review queue and the recorded refusal
+    // -----------------------------------------------------------------------
+
+    /// `SR4` and `SR5` — the queue counts only what is waiting, and every item
+    /// it returns is explainable on its own.
+    #[test]
+    fn the_queue_publishes_an_exact_pending_count_and_complete_items() {
+        let paths = built("queue-shape");
+        let overview = open_relations(&paths, &alpha()).expect("overview");
+        let queue = review_queue(&paths, &alpha(), 0, MAX_REVIEW_QUEUE_LIMIT).expect("queue");
+
+        assert_eq!(queue.brain_id, "brain-alpha");
+        assert_eq!(queue.total_pending, overview.pending_suggestion_count);
+        assert_eq!(queue.max_limit, MAX_REVIEW_QUEUE_LIMIT);
+        assert_eq!(queue.order, "suggestion_key ascending");
+        assert_eq!(queue.returned, queue.items.len());
+        assert!(!queue.has_more, "the whole frozen fixture fits in one page");
+        assert!(queue.total_pending > 0, "the frozen fixture leaves work to do");
+
+        for item in &queue.items {
+            assert_eq!(item.state, "pending");
+            assert!(!item.suggestion_key.is_empty());
+            assert!(!item.source.key.is_empty() && !item.target.key.is_empty());
+            assert!(!item.relation_type.is_empty());
+            assert!(!item.producer.is_empty());
+            assert_eq!(item.decided_unix_ms, None, "a pending item has no decision");
+            assert_eq!(item.decision_reconsider_cause, None);
+        }
+
+        // The count is `pending`, not `all`: the fixture approves four
+        // suggestions at seed, and none of them may be queued.
+        assert!(
+            queue.total_pending < SEEDED_SUGGESTIONS.len(),
+            "approved suggestions leaked into the queue"
+        );
+        for item in &queue.items {
+            assert!(
+                !SEEDED_SUGGESTIONS
+                    .iter()
+                    .any(|seeded| seeded.key == item.suggestion_key && seeded.approved_at_seed),
+                "`{}` was approved at seed and is queued",
+                item.suggestion_key
+            );
+        }
+
+        let _ = std::fs::remove_dir_all(PathBuf::from(&paths.fixtures).parent().unwrap());
+    }
+
+    /// `SR4` — bounded, in a stable and documented order, and honest about it.
+    #[test]
+    fn the_queue_is_paginated_ordered_and_clamped() {
+        let paths = built("queue-pagination");
+        // Seeding happens on open, so the queue has to be opened before it can
+        // be paged — the read itself invents nothing.
+        open_relations(&paths, &alpha()).expect("overview");
+        let whole = review_queue(&paths, &alpha(), 0, MAX_REVIEW_QUEUE_LIMIT).expect("queue");
+        assert!(whole.total_pending >= 2, "this test needs two pending items");
+
+        let keys = whole
+            .items
+            .iter()
+            .map(|item| item.suggestion_key.clone())
+            .collect::<Vec<_>>();
+        let mut sorted = keys.clone();
+        sorted.sort();
+        assert_eq!(keys, sorted, "the published order is not the order returned");
+
+        // Paging covers the same items exactly once, in the same order.
+        let mut paged = Vec::new();
+        let mut offset = 0;
+        loop {
+            let page = review_queue(&paths, &alpha(), offset, 1).expect("page");
+            assert_eq!(page.limit, 1);
+            assert_eq!(page.total_pending, whole.total_pending);
+            paged.extend(page.items.iter().map(|item| item.suggestion_key.clone()));
+            offset += page.returned;
+            if !page.has_more {
+                break;
+            }
+        }
+        assert_eq!(paged, keys);
+
+        // The ceiling is applied rather than obeyed, and a zero page is not a
+        // silent unlimited read.
+        let clamped = review_queue(&paths, &alpha(), 0, 10_000).expect("clamped");
+        assert_eq!(clamped.limit, MAX_REVIEW_QUEUE_LIMIT);
+        let zero = review_queue(&paths, &alpha(), 0, 0).expect("zero");
+        assert_eq!(zero.limit, 1);
+        assert_eq!(zero.returned, 1);
+
+        // An offset past the end is an empty page, not an error and not a wrap.
+        let past = review_queue(&paths, &alpha(), whole.total_pending + 50, 10).expect("past");
+        assert_eq!(past.offset, whole.total_pending);
+        assert_eq!(past.returned, 0);
+        assert!(!past.has_more);
+
+        let _ = std::fs::remove_dir_all(PathBuf::from(&paths.fixtures).parent().unwrap());
+    }
+
+    /// `SR7` — through the command layer: a refusal removes the item from the
+    /// queue and adds no relation anywhere.
+    #[test]
+    fn rejecting_removes_the_item_from_the_queue_and_creates_no_relation() {
+        let paths = built("queue-rejection");
+        open_relations(&paths, &alpha()).expect("overview");
+        let before = review_queue(&paths, &alpha(), 0, MAX_REVIEW_QUEUE_LIMIT).expect("queue");
+        let target = before.items[0].suggestion_key.clone();
+        let overview_before = open_relations(&paths, &alpha()).expect("overview");
+
+        let after = reject_suggestion(&paths, &alpha(), &target).expect("rejection");
+
+        assert_eq!(after.approved_count, overview_before.approved_count);
+        assert_eq!(
+            after.deterministic_count,
+            overview_before.deterministic_count
+        );
+        assert_eq!(
+            after.established.len(),
+            overview_before.established.len(),
+            "a refusal established nothing"
+        );
+        assert_eq!(
+            after.pending_suggestion_count,
+            overview_before.pending_suggestion_count - 1
+        );
+        assert!(
+            after
+                .pending_suggestions
+                .iter()
+                .all(|pending| pending.suggestion_key != target)
+        );
+
+        let queue = review_queue(&paths, &alpha(), 0, MAX_REVIEW_QUEUE_LIMIT).expect("queue");
+        assert_eq!(queue.total_pending, before.total_pending - 1);
+        assert!(queue.items.iter().all(|item| item.suggestion_key != target));
+
+        // And it is decided once. A second refusal is named, not silent.
+        let error = reject_suggestion(&paths, &alpha(), &target).expect_err("already decided");
+        assert!(
+            error
+                .to_string()
+                .contains("relation_rejected_suggestion_already_decided"),
+            "unexpected motif: {error}"
+        );
+
+        let _ = std::fs::remove_dir_all(PathBuf::from(&paths.fixtures).parent().unwrap());
+    }
+
+    /// The refusals `reject_suggestion` inherits, named as such.
+    #[test]
+    fn rejecting_refuses_an_unknown_key_without_blaming_the_fixture() {
+        let paths = built("queue-unknown");
+        let error =
+            reject_suggestion(&paths, &alpha(), "S-inexistante").expect_err("unknown suggestion");
+        assert!(
+            error
+                .to_string()
+                .contains("relation_rejected_unknown_suggestion"),
+            "unexpected motif: {error}"
+        );
+        assert!(
+            !error.to_string().contains("relations_out_of_scope_for_fixture"),
+            "the legacy fixture must not gate a refusal"
+        );
+        let _ = std::fs::remove_dir_all(PathBuf::from(&paths.fixtures).parent().unwrap());
+    }
+
+    /// `SR12` — a refusal in Alpha is invisible to Gamma, which reads the very
+    /// same tree through its own store.
+    #[test]
+    fn a_refusal_in_alpha_leaves_gammas_queue_and_store_untouched() {
+        let paths = temporary_sandbox("queue-isolation");
+        commands::build_map(&paths, &alpha(), false).expect("alpha map");
+        commands::build_map(&paths, &gamma(), false).expect("gamma map");
+        open_relations(&paths, &alpha()).expect("alpha overview");
+        open_relations(&paths, &gamma()).expect("gamma overview");
+
+        // The logical state of Gamma's store, not its bytes: opening a store
+        // legitimately rewrites its metadata and its WAL, so byte equality
+        // would fail for reasons that have nothing to do with isolation.
+        let gamma_state = |paths: &SandboxPaths| {
+            RelationStore::open(&paths.brain_relations_database("brain-gamma"))
+                .expect("gamma store")
+                .suggestions()
+                .expect("gamma suggestions")
+                .into_iter()
+                .map(|suggestion| (suggestion.suggestion_key, suggestion.state))
+                .collect::<std::collections::BTreeMap<_, _>>()
+        };
+        let gamma_before = review_queue(&paths, &gamma(), 0, MAX_REVIEW_QUEUE_LIMIT).expect("queue");
+        let gamma_state_before = gamma_state(&paths);
+        let gamma_established_before = RelationStore::open(
+            &paths.brain_relations_database("brain-gamma"),
+        )
+        .expect("gamma store")
+        .established()
+        .expect("gamma relations")
+        .len();
+
+        let alpha_before = review_queue(&paths, &alpha(), 0, MAX_REVIEW_QUEUE_LIMIT).expect("queue");
+        let target = alpha_before.items[0].suggestion_key.clone();
+        reject_suggestion(&paths, &alpha(), &target).expect("rejection");
+
+        let gamma_after = review_queue(&paths, &gamma(), 0, MAX_REVIEW_QUEUE_LIMIT).expect("queue");
+        assert_eq!(gamma_after.total_pending, gamma_before.total_pending);
+        assert_eq!(
+            gamma_after
+                .items
+                .iter()
+                .map(|item| item.suggestion_key.clone())
+                .collect::<Vec<_>>(),
+            gamma_before
+                .items
+                .iter()
+                .map(|item| item.suggestion_key.clone())
+                .collect::<Vec<_>>()
+        );
+        // Gamma seeds the same frozen keys, so the identity really is shared —
+        // which is what makes the isolation worth measuring.
+        assert!(
+            gamma_after.items.iter().any(|item| item.suggestion_key == target),
+            "Gamma should still be waiting on the very key Alpha refused"
+        );
+        assert_eq!(
+            gamma_state(&paths),
+            gamma_state_before,
+            "Alpha's refusal moved a state in Gamma's store"
+        );
+        assert!(
+            gamma_state_before.values().all(|state| state != "rejected"),
+            "Gamma must hold no refusal of its own for this to prove anything"
+        );
+        assert_eq!(
+            RelationStore::open(&paths.brain_relations_database("brain-gamma"))
+                .expect("gamma store")
+                .established()
+                .expect("gamma relations")
+                .len(),
+            gamma_established_before,
+            "Alpha's refusal established something in Gamma"
+        );
+        // No endpoint key of another brain entered the decision.
+        for item in &gamma_after.items {
+            assert!(item.source.key.contains("|brain-gamma|"));
+            assert!(item.target.key.contains("|brain-gamma|"));
+        }
+
+        let _ = std::fs::remove_dir_all(PathBuf::from(&paths.fixtures).parent().unwrap());
+    }
+
+    /// The queue is **generic**: a brain outside the legacy fixture gets a
+    /// valid, empty-or-not queue rather than a refusal.
+    #[test]
+    fn a_non_legacy_brain_has_a_valid_queue_and_a_usable_refusal() {
+        let paths = temporary_sandbox("queue-generic");
+        commands::build_map(&paths, &beta(), false).expect("beta map");
+
+        // Before any engine run: a valid queue, and nothing invented.
+        let cold = review_queue(&paths, &beta(), 0, MAX_REVIEW_QUEUE_LIMIT).expect("cold queue");
+        assert_eq!(cold.brain_id, "brain-beta");
+        assert_eq!(cold.total_pending, 0);
+        assert!(cold.items.is_empty());
+        assert!(!cold.engine_current);
+
+        super::super::rule_engine::run(&paths, &beta()).expect("beta run");
+        let warm = review_queue(&paths, &beta(), 0, MAX_REVIEW_QUEUE_LIMIT).expect("warm queue");
+        assert!(warm.engine_current);
+        assert_eq!(warm.returned, warm.items.len());
+
+        if let Some(item) = warm.items.first().cloned() {
+            let after =
+                reject_suggestion(&paths, &beta(), &item.suggestion_key).expect("core refusal");
+            assert_eq!(after.approved_count, 0, "a refusal establishes nothing");
+            let queue = review_queue(&paths, &beta(), 0, MAX_REVIEW_QUEUE_LIMIT).expect("queue");
+            assert_eq!(queue.total_pending, warm.total_pending - 1);
+        }
 
         let _ = std::fs::remove_dir_all(PathBuf::from(&paths.fixtures).parent().unwrap());
     }

@@ -109,6 +109,10 @@ pub struct RelationEngineReport {
     pub empty_content_groups_skipped: usize,
     pub established_collision_suppressions: usize,
     pub approved_suggestion_preservations: usize,
+    /// `TASK-0025` — identities this run reproposed and the store kept
+    /// `rejected`. Appended beside the counters `TASK-0024` was verified on;
+    /// none of those is renamed or removed.
+    pub rejected_suggestion_preservations: usize,
     pub source_read_only_confirmed: bool,
     pub input_state: String,
 }
@@ -541,6 +545,7 @@ pub fn run(
         empty_content_groups_skipped: evaluation.empty_content_groups_skipped,
         established_collision_suppressions: reconciliation.established_collision_suppressions,
         approved_suggestion_preservations: reconciliation.approved_suggestion_preservations,
+        rejected_suggestion_preservations: reconciliation.rejected_suggestion_preservations,
         source_read_only_confirmed: true,
         input_state: "CURRENT".to_string(),
     })
@@ -772,5 +777,209 @@ mod tests {
         assert!(store.pending_suggestions().unwrap().is_empty());
         assert_eq!(store.deterministic().unwrap().len(), 1);
         assert_eq!(store.deterministic().unwrap()[0].producer, super::super::relations::LEGACY_PRODUCER);
+    }
+
+    // -----------------------------------------------------------------------
+    // `TASK-0025` / `F-045` — the memory of a refusal, in the reconciliation
+    // -----------------------------------------------------------------------
+
+    /// `SR9` — an unchanged rerun does not repropose what a human refused.
+    ///
+    /// The whole point of the slice, stated as one property: same engine, same
+    /// inputs, same identity, and the suggestion stays `rejected` rather than
+    /// coming back `pending` for the user to refuse again.
+    #[test]
+    fn a_rejected_core_suggestion_is_never_recreated_pending_by_a_rerun() {
+        let mut store = RelationStore::in_memory().unwrap();
+        let suggestion = suggestion_write();
+        store
+            .reconcile_engine_outputs(&[], std::slice::from_ref(&suggestion), &engine_snapshot())
+            .unwrap();
+        store.reject(&suggestion.suggestion_key).unwrap();
+
+        let result = store
+            .reconcile_engine_outputs(&[], std::slice::from_ref(&suggestion), &engine_snapshot())
+            .unwrap();
+
+        assert_eq!(result.rejected_suggestion_preservations, 1);
+        assert_eq!(result.suggestions_produced, 0);
+        assert_eq!(result.approved_suggestion_preservations, 0);
+        assert!(store.pending_suggestions().unwrap().is_empty());
+        assert_eq!(
+            store
+                .suggestion(&suggestion.suggestion_key)
+                .unwrap()
+                .unwrap()
+                .state,
+            "rejected"
+        );
+        // A refusal is not a relation, in either table, however often the
+        // engine reproposes the identity.
+        assert!(store.established().unwrap().is_empty());
+
+        // And it holds for every further rerun, not only the first.
+        let again = store
+            .reconcile_engine_outputs(&[], &[suggestion], &engine_snapshot())
+            .unwrap();
+        assert_eq!(again.rejected_suggestion_preservations, 1);
+        assert!(store.established().unwrap().is_empty());
+    }
+
+    /// The memory survives a run that stops proposing the identity.
+    ///
+    /// Without this the refusal would be swept away as soon as the signal went
+    /// quiet, and would come back looking brand new the next time it returned —
+    /// which is precisely the loop `F-045` exists to break.
+    #[test]
+    fn a_refusal_outlives_a_run_that_does_not_repropose_it() {
+        let mut store = RelationStore::in_memory().unwrap();
+        let suggestion = suggestion_write();
+        store
+            .reconcile_engine_outputs(&[], std::slice::from_ref(&suggestion), &engine_snapshot())
+            .unwrap();
+        store.reject(&suggestion.suggestion_key).unwrap();
+
+        // A run that proposes nothing at all: the pending sweep must not take
+        // the rejected row with it.
+        let silent = store.reconcile_engine_outputs(&[], &[], &engine_snapshot()).unwrap();
+        assert_eq!(silent.rejected_suggestion_preservations, 0);
+        assert_eq!(
+            store
+                .suggestion(&suggestion.suggestion_key)
+                .unwrap()
+                .unwrap()
+                .state,
+            "rejected",
+            "the memory was swept away with the pending rows"
+        );
+
+        // When the identity comes back, the memory is still there to refuse it.
+        let returned = store
+            .reconcile_engine_outputs(&[], &[suggestion], &engine_snapshot())
+            .unwrap();
+        assert_eq!(returned.rejected_suggestion_preservations, 1);
+        assert_eq!(returned.suggestions_produced, 0);
+        assert!(store.pending_suggestions().unwrap().is_empty());
+    }
+
+    /// `SR10` — the counters of `TASK-0024` keep their meaning beside the new
+    /// one, and the three outcomes are told apart rather than pooled.
+    #[test]
+    fn approved_rejected_and_pending_identities_are_counted_separately() {
+        let mut store = RelationStore::in_memory().unwrap();
+        let approved = suggestion_write();
+        let mut rejected = suggestion_write();
+        let source_key = endpoint_key("brain-alpha", "d/s-1.txt");
+        let target_key = endpoint_key("brain-alpha", "d/s-2.txt");
+        rejected.suggestion_key =
+            suggestion_key("brain-alpha", &source_key, &target_key, "revision");
+        rejected.source_key = source_key;
+        rejected.target_key = target_key;
+        let mut pending = suggestion_write();
+        let source_key = endpoint_key("brain-alpha", "d/t-1.txt");
+        let target_key = endpoint_key("brain-alpha", "d/t-2.txt");
+        pending.suggestion_key =
+            suggestion_key("brain-alpha", &source_key, &target_key, "revision");
+        pending.source_key = source_key;
+        pending.target_key = target_key;
+
+        let all = [approved.clone(), rejected.clone(), pending.clone()];
+        store
+            .reconcile_engine_outputs(&[], &all, &engine_snapshot())
+            .unwrap();
+        store.approve(&approved.suggestion_key).unwrap();
+        store.reject(&rejected.suggestion_key).unwrap();
+
+        let result = store
+            .reconcile_engine_outputs(&[], &all, &engine_snapshot())
+            .unwrap();
+        assert_eq!(result.approved_suggestion_preservations, 1);
+        assert_eq!(result.rejected_suggestion_preservations, 1);
+        assert_eq!(result.suggestions_produced, 1);
+
+        let still_pending = store.pending_suggestions().unwrap();
+        assert_eq!(still_pending.len(), 1);
+        assert_eq!(still_pending[0].suggestion_key, pending.suggestion_key);
+        // Exactly one relation, and it belongs to the approval alone.
+        let established = store.established().unwrap();
+        assert_eq!(established.len(), 1);
+        assert_eq!(
+            established[0].suggestion_key.as_deref(),
+            Some(approved.suggestion_key.as_str())
+        );
+    }
+
+    /// `SR12` — a refusal in one brain says nothing about another.
+    ///
+    /// Two brains, two stores, and the same rule on the same relative paths:
+    /// the keys differ because the brain is inside them, so neither store can
+    /// even name the other's decision.
+    #[test]
+    fn a_refusal_in_one_brain_leaves_another_brains_identical_suggestion_pending() {
+        let for_brain = |brain_id: &str| {
+            let source_key = endpoint_key(brain_id, "d/r-1.txt");
+            let target_key = endpoint_key(brain_id, "d/r-2.txt");
+            EngineSuggestionWrite {
+                suggestion_key: suggestion_key(brain_id, &source_key, &target_key, "revision"),
+                source_key,
+                target_key,
+                relation_type: "revision".to_string(),
+                rule_name: NUMBERED_SIBLING_RULE_ID.to_string(),
+                rule_version: RULE_VERSION.to_string(),
+                explanation_fr: RULE_CATALOG[1].explanation_fr.to_string(),
+                explanation_en: RULE_CATALOG[1].explanation_en.to_string(),
+                signals_json: "{\"sameParent\":true}".to_string(),
+            }
+        };
+        let alpha_suggestion = for_brain("brain-alpha");
+        let gamma_suggestion = for_brain("brain-gamma");
+        assert_ne!(
+            alpha_suggestion.suggestion_key, gamma_suggestion.suggestion_key,
+            "the key space must be the brain"
+        );
+
+        let mut alpha = RelationStore::in_memory().unwrap();
+        let mut gamma = RelationStore::in_memory().unwrap();
+        alpha
+            .reconcile_engine_outputs(
+                &[],
+                std::slice::from_ref(&alpha_suggestion),
+                &engine_snapshot(),
+            )
+            .unwrap();
+        gamma
+            .reconcile_engine_outputs(
+                &[],
+                std::slice::from_ref(&gamma_suggestion),
+                &engine_snapshot(),
+            )
+            .unwrap();
+
+        alpha.reject(&alpha_suggestion.suggestion_key).unwrap();
+
+        assert!(alpha.pending_suggestions().unwrap().is_empty());
+        assert_eq!(gamma.pending_suggestions().unwrap().len(), 1);
+        assert_eq!(
+            gamma
+                .suggestion(&gamma_suggestion.suggestion_key)
+                .unwrap()
+                .unwrap()
+                .state,
+            "pending"
+        );
+        // Gamma cannot even see the decision Alpha recorded.
+        assert!(
+            gamma
+                .suggestion(&alpha_suggestion.suggestion_key)
+                .unwrap()
+                .is_none()
+        );
+
+        // And Gamma's own rerun still offers it, because nobody refused it here.
+        let rerun = gamma
+            .reconcile_engine_outputs(&[], &[gamma_suggestion], &engine_snapshot())
+            .unwrap();
+        assert_eq!(rerun.rejected_suggestion_preservations, 0);
+        assert_eq!(gamma.pending_suggestions().unwrap().len(), 1);
     }
 }

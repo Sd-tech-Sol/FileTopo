@@ -872,6 +872,44 @@ fn map_relations_approve(
         .map_err(String::from)
 }
 
+/// `F-045` — the one explicit act that records a refusal.
+///
+/// Returns the whole overview for the same reason approval does: the pending
+/// count on screen must be the store's, never a decrement the interface made
+/// up. It creates no relation of any provenance.
+#[tauri::command]
+fn map_relations_reject(
+    app: tauri::AppHandle,
+    brain_id: String,
+    suggestion_key: String,
+) -> Result<map::relation_commands::RelationsOverview, String> {
+    let (paths, brain) = resolve_brain(&app, &brain_id)?;
+    map::relation_commands::reject_suggestion(&paths, &brain, &suggestion_key)
+        .map_err(String::from)
+}
+
+/// `F-044` — one bounded page of the suggestions a brain is waiting on.
+///
+/// Generic over brains and paginated: `offset` and `limit` are clamped by the
+/// command layer, and the response republishes what was applied together with
+/// the ceiling, so the interface never has to guess either.
+#[tauri::command]
+fn map_relations_review_queue(
+    app: tauri::AppHandle,
+    brain_id: String,
+    offset: Option<usize>,
+    limit: Option<usize>,
+) -> Result<map::relation_commands::SuggestionReviewQueue, String> {
+    let (paths, brain) = resolve_brain(&app, &brain_id)?;
+    map::relation_commands::review_queue(
+        &paths,
+        &brain,
+        offset.unwrap_or(0),
+        limit.unwrap_or(map::relations::MAX_REVIEW_QUEUE_LIMIT),
+    )
+    .map_err(String::from)
+}
+
 /// Replays `J1` to `J5` and `J10` against the live store and reports what it
 /// found — reported, never asserted away.
 #[tauri::command]
@@ -1053,6 +1091,8 @@ pub fn run() {
             map_relations_open,
             map_relations_for_node,
             map_relations_approve,
+            map_relations_reject,
+            map_relations_review_queue,
             map_relations_self_check,
             map_cross_relations_open,
             map_cross_relations_for_node,

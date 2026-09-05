@@ -38,7 +38,27 @@ use thiserror::Error;
 ///   is now **structurally** bound to the suggestion it represents. See
 ///   [`RelationStore::migrate_to_v2`].
 /// * `3` — `TASK-0024`: producer ownership and explainability for `dre-v1`.
-pub const RELATIONS_SCHEMA_VERSION: i64 = 3;
+/// * `4` — `TASK-0025`: the human decision is persisted. `state` admits a
+///   third value, `rejected`, and a nullable column records why a decision
+///   might one day be reconsidered. See [`RelationStore::migrate_to_v4`].
+pub const RELATIONS_SCHEMA_VERSION: i64 = 4;
+
+/// The **only** three states a suggestion can be in, at the storage layer.
+///
+/// `TASK-0025` adds `rejected` and stops there. There is deliberately **no**
+/// `deferred`: `DEC-0021` asks for a demonstrated need before a durable
+/// postponement exists, and « Plus tard » has no meaning a `pending` row does
+/// not already carry. A state outside these three is refused by a `CHECK`, not
+/// merely avoided by the Rust that writes.
+pub const SUGGESTION_STATES: [&str; 3] = ["pending", "approved", "rejected"];
+
+/// Largest page the suggestion review queue will ever return.
+///
+/// A queue that loaded everything would be an unbounded read of a table whose
+/// size is a property of the analysed tree, not of the interface. The caller
+/// asks for a page; a request above this ceiling is clamped, and the response
+/// says what was applied.
+pub const MAX_REVIEW_QUEUE_LIMIT: usize = 100;
 
 /// Version of the endpoint key scheme, carried **inside every key** and
 /// recorded in the store's metadata, so a later scheme is a migration rather
@@ -204,7 +224,11 @@ pub struct StoredSuggestion {
     /// frozen synthetic fixture: **no real heuristic exists**, and none is
     /// implied.
     pub basis: String,
-    /// `pending` or `approved`.
+    /// One of [`SUGGESTION_STATES`] — `pending`, `approved` or `rejected`.
+    ///
+    /// **Never `deferred`.** `TASK-0025` §5 freezes three states and « Plus
+    /// tard » persists nothing, so a postponed suggestion is simply a row that
+    /// is still `pending`.
     pub state: String,
     pub created_unix_ms: i64,
     pub decided_unix_ms: Option<i64>,
@@ -214,6 +238,13 @@ pub struct StoredSuggestion {
     pub explanation_fr: Option<String>,
     pub explanation_en: Option<String>,
     pub signals_json: Option<String>,
+    /// Why this decision might one day deserve to be reconsidered.
+    ///
+    /// Always `None` in v1, and written by nothing. `DEC-0021` postpones the
+    /// reevaluation policy and `DEC-0027` §C keeps it postponed: the column
+    /// exists so the question stays *recordable* later, not so it can be
+    /// answered now.
+    pub decision_reconsider_cause: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -249,6 +280,12 @@ pub struct EngineReconciliation {
     pub suggestions_produced: usize,
     pub established_collision_suppressions: usize,
     pub approved_suggestion_preservations: usize,
+    /// `TASK-0025` — identities the engine reproposed and the store kept
+    /// `rejected`, because a human already said no.
+    ///
+    /// Added beside the existing counters, never in place of one: the numbers
+    /// `TASK-0024` was verified on keep their names and their meaning.
+    pub rejected_suggestion_preservations: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -602,7 +639,8 @@ impl RelationStore {
                  target_key TEXT NOT NULL CHECK(length(target_key) > 0),
                  relation_type TEXT NOT NULL CHECK(length(relation_type) > 0),
                  basis TEXT NOT NULL,
-                 state TEXT NOT NULL CHECK(state IN ('pending', 'approved')),
+                 state TEXT NOT NULL
+                     CHECK(state IN ('pending', 'approved', 'rejected')),
                  created_unix_ms INTEGER NOT NULL,
                  decided_unix_ms INTEGER,
                  producer TEXT NOT NULL DEFAULT 'legacy-fixture',
@@ -610,7 +648,8 @@ impl RelationStore {
                  rule_version TEXT,
                  explanation_fr TEXT,
                  explanation_en TEXT,
-                 signals_json TEXT
+                 signals_json TEXT,
+                 decision_reconsider_cause TEXT
              );
              CREATE INDEX IF NOT EXISTS idx_deterministic_source
                  ON relations_deterministic(source_key);
@@ -628,6 +667,9 @@ impl RelationStore {
         self.connection.execute_batch(APPROVED_SCHEMA_V2)?;
         if self.user_version()? > 0 && self.user_version()? < 3 {
             self.migrate_to_v3()?;
+        }
+        if self.user_version()? > 0 && self.user_version()? < 4 {
+            self.migrate_to_v4()?;
         }
         self.connection
             .execute_batch(&format!("PRAGMA user_version={RELATIONS_SCHEMA_VERSION};"))?;
@@ -666,6 +708,128 @@ impl RelationStore {
                 ))?;
             }
         }
+        Ok(())
+    }
+
+    /// `v3 → v4` — the human decision becomes storable.
+    ///
+    /// Two things change, and SQLite lets neither be done with `ALTER TABLE`:
+    /// the `state` `CHECK` must admit `rejected`, and a nullable
+    /// `decision_reconsider_cause` joins the row. So the table is rebuilt by
+    /// the sequence SQLite documents for a schema change under foreign keys —
+    /// create, copy, drop, rename — with `foreign_keys` off for the duration
+    /// and a `foreign_key_check` before the transaction is allowed to commit.
+    ///
+    /// **Nothing is reinterpreted.** Every column is copied across by name,
+    /// including `state`, so a `pending` row stays `pending` and an `approved`
+    /// row stays `approved`, with its `decided_unix_ms` and its producer. The
+    /// new column starts `NULL` everywhere: this migration records no cause,
+    /// because `DEC-0027` decides no reconsideration policy today.
+    ///
+    /// The triggers of [`APPROVED_SCHEMA_V2`] that sit on
+    /// `relation_suggestions` disappear with the old table and are recreated
+    /// by the caller, which runs that batch again straight afterwards.
+    fn migrate_to_v4(&self) -> Result<(), MapError> {
+        let before: i64 = self.connection.query_row(
+            "SELECT COUNT(*) FROM relation_suggestions",
+            [],
+            |row| row.get(0),
+        )?;
+        let approved_before: i64 = self
+            .connection
+            .query_row("SELECT COUNT(*) FROM relations_approved", [], |row| row.get(0))
+            .optional()?
+            .unwrap_or(0);
+
+        // Off for the rebuild only: with foreign keys on, dropping the table
+        // `relations_approved` references would either fail or silently
+        // orphan rows. `foreign_key_check` below is what replaces the
+        // guarantee while it is off.
+        self.connection.execute_batch("PRAGMA foreign_keys=OFF;")?;
+        let result = self.rebuild_suggestions_for_v4(before, approved_before);
+        // Restored whatever happened, so a failed migration cannot leave the
+        // connection with its integrity checks disabled.
+        self.connection.execute_batch("PRAGMA foreign_keys=ON;")?;
+        result
+    }
+
+    fn rebuild_suggestions_for_v4(
+        &self,
+        before: i64,
+        approved_before: i64,
+    ) -> Result<(), MapError> {
+        self.connection.execute_batch(
+            "BEGIN;
+             -- Dropped by name first, and deliberately.
+             --
+             -- `ALTER TABLE ... RENAME` reparses every trigger in the schema.
+             -- A trigger left pointing at the table this rebuild is about to
+             -- drop would make the rename fail with `no such table`, so the
+             -- three `X3` triggers come down here and go back up, unchanged,
+             -- when the caller replays `APPROVED_SCHEMA_V2` after the commit.
+             DROP TRIGGER IF EXISTS approved_must_match_its_suggestion_on_insert;
+             DROP TRIGGER IF EXISTS approved_must_match_its_suggestion_on_update;
+             DROP TRIGGER IF EXISTS suggestion_cannot_drift_from_its_relation;
+             CREATE TABLE relation_suggestions_v4 (
+                 suggestion_key TEXT PRIMARY KEY,
+                 source_key TEXT NOT NULL CHECK(length(source_key) > 0),
+                 target_key TEXT NOT NULL CHECK(length(target_key) > 0),
+                 relation_type TEXT NOT NULL CHECK(length(relation_type) > 0),
+                 basis TEXT NOT NULL,
+                 state TEXT NOT NULL
+                     CHECK(state IN ('pending', 'approved', 'rejected')),
+                 created_unix_ms INTEGER NOT NULL,
+                 decided_unix_ms INTEGER,
+                 producer TEXT NOT NULL DEFAULT 'legacy-fixture',
+                 rule_name TEXT,
+                 rule_version TEXT,
+                 explanation_fr TEXT,
+                 explanation_en TEXT,
+                 signals_json TEXT,
+                 decision_reconsider_cause TEXT
+             );
+             INSERT INTO relation_suggestions_v4
+                 (suggestion_key, source_key, target_key, relation_type, basis,
+                  state, created_unix_ms, decided_unix_ms, producer, rule_name,
+                  rule_version, explanation_fr, explanation_en, signals_json,
+                  decision_reconsider_cause)
+             SELECT suggestion_key, source_key, target_key, relation_type, basis,
+                    state, created_unix_ms, decided_unix_ms, producer, rule_name,
+                    rule_version, explanation_fr, explanation_en, signals_json,
+                    NULL
+               FROM relation_suggestions;
+             DROP TABLE relation_suggestions;
+             ALTER TABLE relation_suggestions_v4 RENAME TO relation_suggestions;",
+        )?;
+
+        // The counts the migration must not move, checked before the commit
+        // rather than reported after it.
+        let after: i64 = self.connection.query_row(
+            "SELECT COUNT(*) FROM relation_suggestions",
+            [],
+            |row| row.get(0),
+        )?;
+        let approved_after: i64 = self.connection.query_row(
+            "SELECT COUNT(*) FROM relations_approved",
+            [],
+            |row| row.get(0),
+        )?;
+        let violations: i64 = self
+            .connection
+            .query_row("SELECT COUNT(*) FROM pragma_foreign_key_check", [], |row| {
+                row.get(0)
+            })?;
+        if after != before || approved_after != approved_before || violations != 0 {
+            self.connection.execute_batch("ROLLBACK;")?;
+            return Err(RelationError::SuggestionIsNotARelation(format!(
+                "migration v3→v4 refused: {before} suggestions became {after}, \
+                 {approved_before} approved relations became {approved_after}, \
+                 {violations} foreign key violation(s)"
+            ))
+            .into());
+        }
+        self.connection.execute_batch("COMMIT;")?;
+        self.connection.execute_batch(APPROVED_SCHEMA_V2)?;
         Ok(())
     }
 
@@ -995,6 +1159,52 @@ impl RelationStore {
             })
     }
 
+    /// The **one** path from suggestion to a recorded refusal — `F-045`.
+    ///
+    /// Deliberately not the mirror image of [`RelationStore::approve`]: it
+    /// touches one table and writes one row's `state` and `decided_unix_ms`.
+    /// There is nothing to insert, because a refusal is not a relation of any
+    /// provenance, and nothing to delete, because **the row is the memory** —
+    /// deleting it would make the suggestion reappear `pending` at the next
+    /// run, which is exactly the defect `F-045` exists to fix.
+    ///
+    /// Refused, with a named motif, on a suggestion that does not exist and on
+    /// one already decided. Staleness of a core suggestion is judged one layer
+    /// up, where the engine's input state is known — the same place approval
+    /// judges it.
+    pub fn reject(&mut self, suggestion_key: &str) -> Result<StoredSuggestion, MapError> {
+        let suggestion = self
+            .suggestion(suggestion_key)?
+            .ok_or_else(|| RelationError::UnknownSuggestion(suggestion_key.to_string()))?;
+        if suggestion.state != "pending" {
+            return Err(RelationError::SuggestionAlreadyDecided(format!(
+                "`{suggestion_key}` is already `{}`",
+                suggestion.state
+            ))
+            .into());
+        }
+
+        let decided = now_ms();
+        // Guarded by `state = 'pending'` in the statement as well as by the
+        // read above: two concurrent refusals must not both count as the one
+        // that decided.
+        let changed = self.connection.execute(
+            "UPDATE relation_suggestions
+                SET state = 'rejected', decided_unix_ms = ?2
+              WHERE suggestion_key = ?1 AND state = 'pending'",
+            params![suggestion_key, decided],
+        )?;
+        if changed != 1 {
+            return Err(RelationError::SuggestionAlreadyDecided(format!(
+                "`{suggestion_key}` was decided concurrently"
+            ))
+            .into());
+        }
+        self.suggestion(suggestion_key)?.ok_or_else(|| {
+            MapError::from(RelationError::UnknownSuggestion(suggestion_key.to_string()))
+        })
+    }
+
     // -- reads ---------------------------------------------------------------
 
     pub fn deterministic(&self) -> Result<Vec<StoredRelation>, MapError> {
@@ -1100,7 +1310,8 @@ impl RelationStore {
         let mut statement = self.connection.prepare(
             "SELECT suggestion_key, source_key, target_key, relation_type, basis,
                     state, created_unix_ms, decided_unix_ms, producer, rule_name,
-                    rule_version, explanation_fr, explanation_en, signals_json
+                    rule_version, explanation_fr, explanation_en, signals_json,
+                    decision_reconsider_cause
                FROM relation_suggestions WHERE suggestion_key = ?1",
         )?;
         Ok(statement
@@ -1113,7 +1324,8 @@ impl RelationStore {
         let mut statement = self.connection.prepare(
             "SELECT suggestion_key, source_key, target_key, relation_type, basis,
                     state, created_unix_ms, decided_unix_ms, producer, rule_name,
-                    rule_version, explanation_fr, explanation_en, signals_json
+                    rule_version, explanation_fr, explanation_en, signals_json,
+                    decision_reconsider_cause
                FROM relation_suggestions ORDER BY suggestion_key",
         )?;
         Ok(statement
@@ -1188,6 +1400,17 @@ impl RelationStore {
             })
             .map(|suggestion| suggestion.suggestion_key)
             .collect::<std::collections::BTreeSet<_>>();
+        // `F-045`. Read exactly like the approved set, and used exactly once,
+        // below: an identity a human refused is not offered again.
+        let rejected_core = self
+            .suggestions()?
+            .into_iter()
+            .filter(|suggestion| {
+                suggestion.producer == CORE_RULE_ENGINE_PRODUCER
+                    && suggestion.state == "rejected"
+            })
+            .map(|suggestion| suggestion.suggestion_key)
+            .collect::<std::collections::BTreeSet<_>>();
         let old_pending = self
             .suggestions()?
             .into_iter()
@@ -1225,6 +1448,13 @@ impl RelationStore {
         for suggestion in suggestions {
             if approved_core.contains(&suggestion.suggestion_key) {
                 reconciliation.approved_suggestion_preservations += 1;
+                continue;
+            }
+            // The memory of the refusal. The row is left exactly as the
+            // rejection wrote it — not reinserted, not reset to `pending`, not
+            // counted among the suggestions this run produced.
+            if rejected_core.contains(&suggestion.suggestion_key) {
+                reconciliation.rejected_suggestion_preservations += 1;
                 continue;
             }
             let triple = (
@@ -1273,6 +1503,10 @@ impl RelationStore {
                 ])?;
             }
         }
+        // Only `pending` rows are swept, which is what makes the memory
+        // survive a run that stops proposing the identity: an `approved` or
+        // `rejected` row is never a candidate for deletion here, so a refusal
+        // is still on record when the same identity comes back.
         for stale in old_pending {
             if !incoming_keys.contains(stale.as_str()) {
                 transaction.execute(
@@ -1384,6 +1618,7 @@ fn suggestion_from_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<StoredSugges
         explanation_fr: row.get(11)?,
         explanation_en: row.get(12)?,
         signals_json: row.get(13)?,
+        decision_reconsider_cause: row.get(14)?,
     })
 }
 
@@ -2545,5 +2780,372 @@ mod tests {
         assert_eq!(numbered_name("racine-2.txt"), Some(("racine-", 2, ".txt")));
         assert_eq!(numbered_name("lisezmoi.txt"), None);
         assert_eq!(numbered_name("12"), Some(("", 12, "")));
+    }
+
+    // -----------------------------------------------------------------------
+    // `TASK-0025` — three states, a recorded refusal, and its memory
+    // -----------------------------------------------------------------------
+
+    /// `SR2` — the states are three, and the storage layer is what says so.
+    ///
+    /// Written against the connection rather than through `reject`, because a
+    /// rule only Rust enforces is a rule a future caller can walk around.
+    #[test]
+    fn the_store_admits_exactly_pending_approved_and_rejected() {
+        let store = seeded_store();
+        assert_eq!(SUGGESTION_STATES, ["pending", "approved", "rejected"]);
+        for state in SUGGESTION_STATES {
+            store
+                .connection
+                .execute(
+                    "UPDATE relation_suggestions SET state = ?2 WHERE suggestion_key = ?1",
+                    params!["S-005", state],
+                )
+                .unwrap_or_else(|error| panic!("`{state}` must be storable: {error}"));
+        }
+    }
+
+    /// `SR3` — `deferred` is not a state, and « Plus tard » cannot invent one.
+    #[test]
+    fn no_fourth_state_is_storable_and_deferred_is_refused_by_name() {
+        let store = seeded_store();
+        for refused in ["deferred", "DEFERRED", "later", "suggested", "rejected_relation", ""] {
+            let error = store
+                .connection
+                .execute(
+                    "UPDATE relation_suggestions SET state = ?2 WHERE suggestion_key = ?1",
+                    params!["S-005", refused],
+                )
+                .expect_err("a fourth state must not be storable");
+            assert!(
+                error.to_string().to_uppercase().contains("CHECK"),
+                "unexpected motif for `{refused}`: {error}"
+            );
+        }
+        assert_eq!(
+            store.suggestion("S-005").expect("read").expect("row").state,
+            "pending",
+            "a refused write must leave the state alone"
+        );
+    }
+
+    /// `SR7` — a refusal decides, and creates nothing.
+    #[test]
+    fn rejecting_records_the_decision_and_writes_no_relation() {
+        let mut store = seeded_store();
+        let established_before = store.established().expect("read").len();
+        let approved_before = store.approved().expect("read").len();
+
+        let rejected = store.reject("S-005").expect("rejection");
+        assert_eq!(rejected.state, "rejected");
+        assert!(rejected.decided_unix_ms.is_some(), "an undated decision is not one");
+        assert_eq!(
+            rejected.decision_reconsider_cause, None,
+            "v1 records no reconsideration cause — DEC-0027 §C"
+        );
+        // The audit trail TASK-0025 §5 asks for is the row itself.
+        assert_eq!(rejected.suggestion_key, "S-005");
+        assert!(!rejected.source_key.is_empty() && !rejected.target_key.is_empty());
+        assert!(!rejected.relation_type.is_empty());
+        assert!(!rejected.producer.is_empty());
+
+        assert_eq!(store.established().expect("read").len(), established_before);
+        assert_eq!(store.approved().expect("read").len(), approved_before);
+        assert!(
+            !store
+                .pending_suggestions()
+                .expect("read")
+                .iter()
+                .any(|suggestion| suggestion.suggestion_key == "S-005"),
+            "a rejected suggestion is not pending"
+        );
+    }
+
+    /// A refusal moves one row and no other.
+    #[test]
+    fn rejecting_touches_exactly_one_suggestion() {
+        let mut store = seeded_store();
+        let before = store
+            .suggestions()
+            .expect("read")
+            .into_iter()
+            .map(|suggestion| (suggestion.suggestion_key.clone(), suggestion.state))
+            .collect::<BTreeMap<_, _>>();
+        store.reject("S-005").expect("rejection");
+        let after = store
+            .suggestions()
+            .expect("read")
+            .into_iter()
+            .map(|suggestion| (suggestion.suggestion_key.clone(), suggestion.state))
+            .collect::<BTreeMap<_, _>>();
+        assert_eq!(before.len(), after.len(), "a refusal deletes nothing");
+        for (key, state) in &before {
+            if key == "S-005" {
+                assert_eq!(after[key], "rejected");
+            } else {
+                assert_eq!(&after[key], state, "`{key}` moved and should not have");
+            }
+        }
+    }
+
+    /// The same named refusals approval already gives, on the same shapes.
+    #[test]
+    fn rejecting_refuses_an_absent_and_an_already_decided_suggestion() {
+        let mut store = seeded_store();
+        assert!(matches!(
+            store.reject("S-inexistante"),
+            Err(MapError::Relation(RelationError::UnknownSuggestion(_)))
+        ));
+        // `S-001` is approved at seed.
+        assert!(matches!(
+            store.reject("S-001"),
+            Err(MapError::Relation(RelationError::SuggestionAlreadyDecided(_)))
+        ));
+        store.reject("S-005").expect("first rejection");
+        assert!(
+            matches!(
+                store.reject("S-005"),
+                Err(MapError::Relation(RelationError::SuggestionAlreadyDecided(_)))
+            ),
+            "a refusal is decided once"
+        );
+    }
+
+    /// A rejected suggestion can never become a relation afterwards.
+    #[test]
+    fn a_rejected_suggestion_cannot_be_approved_or_forced_into_a_relation() {
+        let mut store = seeded_store();
+        let rejected = store.reject("S-005").expect("rejection");
+        assert!(matches!(
+            store.approve("S-005"),
+            Err(MapError::Relation(RelationError::SuggestionAlreadyDecided(_)))
+        ));
+        // And the storage layer refuses it too, under the `X3` trigger.
+        let error = store
+            .raw_insert_approved(
+                &rejected.source_key,
+                &rejected.target_key,
+                &rejected.relation_type,
+                "S-005",
+            )
+            .unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("relation_rejected_suggestion_is_not_a_relation"),
+            "unexpected motif: {error}"
+        );
+        assert!(
+            store
+                .approved()
+                .expect("read")
+                .iter()
+                .all(|relation| relation.suggestion_key.as_deref() != Some("S-005"))
+        );
+    }
+
+    /// `SR1` — the `v3 → v4` rebuild moves no row and reinterprets no state.
+    #[test]
+    fn migrating_a_version_3_store_preserves_every_row_and_gains_the_third_state() {
+        let connection = Connection::open_in_memory().expect("connection");
+        connection.execute_batch("PRAGMA foreign_keys=ON;").expect("pragma");
+        // The version 3 shape, verbatim — two states only, no reconsider
+        // column, and the `X3` constraints already in place.
+        connection
+            .execute_batch(
+                "CREATE TABLE relation_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+                 CREATE TABLE relations_deterministic (
+                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                     source_key TEXT NOT NULL,
+                     target_key TEXT NOT NULL,
+                     relation_type TEXT NOT NULL,
+                     rule_name TEXT NOT NULL,
+                     rule_version TEXT NOT NULL,
+                     rule_symmetric INTEGER NOT NULL DEFAULT 0,
+                     producer TEXT NOT NULL DEFAULT 'legacy-fixture',
+                     explanation_fr TEXT,
+                     explanation_en TEXT,
+                     content_generation_id TEXT,
+                     observed_hash TEXT,
+                     UNIQUE(source_key, target_key, relation_type));
+                 CREATE TABLE relation_suggestions (
+                     suggestion_key TEXT PRIMARY KEY,
+                     source_key TEXT NOT NULL,
+                     target_key TEXT NOT NULL,
+                     relation_type TEXT NOT NULL,
+                     basis TEXT NOT NULL,
+                     state TEXT NOT NULL CHECK(state IN ('pending', 'approved')),
+                     created_unix_ms INTEGER NOT NULL,
+                     decided_unix_ms INTEGER,
+                     producer TEXT NOT NULL DEFAULT 'legacy-fixture',
+                     rule_name TEXT,
+                     rule_version TEXT,
+                     explanation_fr TEXT,
+                     explanation_en TEXT,
+                     signals_json TEXT);
+                 PRAGMA user_version=3;",
+            )
+            .expect("v3 schema");
+        connection.execute_batch(APPROVED_SCHEMA_V2).expect("v3 approved");
+        connection
+            .execute_batch(&format!(
+                "INSERT INTO relation_suggestions
+                     (suggestion_key, source_key, target_key, relation_type, basis,
+                      state, created_unix_ms, decided_unix_ms, producer, rule_name,
+                      rule_version, explanation_fr, explanation_en, signals_json)
+                 VALUES
+                     ('S-001', '{a1}', '{b1}', 'reference', 'synthetique', 'approved',
+                      1, 2, 'legacy-fixture', NULL, NULL, NULL, NULL, NULL),
+                     ('S-005', '{a2}', '{r1}', 'reference', 'synthetique', 'pending',
+                      3, NULL, 'core-rule-engine', 'core.r', 'v1', 'pourquoi', 'why',
+                      '{{\"same-parent\":true}}');
+                 INSERT INTO relations_deterministic
+                     (source_key, target_key, relation_type, rule_name, rule_version)
+                 VALUES ('{a1}', '{a2}', 'revision', 'suites-numerotees', 'v1');
+                 INSERT INTO relations_approved
+                     (source_key, target_key, relation_type, suggestion_key, approved_unix_ms)
+                 VALUES ('{a1}', '{b1}', 'reference', 'S-001', 2);",
+                a1 = key("dossier-a/note-1.txt"),
+                a2 = key("dossier-a/note-2.txt"),
+                b1 = key("dossier-b/note-1.txt"),
+                r1 = key("racine-1.txt"),
+            ))
+            .expect("v3 rows");
+
+        let mut store = RelationStore { connection };
+        store.initialize().expect("migration");
+
+        assert_eq!(store.user_version().expect("version"), 4);
+        assert_eq!(RELATIONS_SCHEMA_VERSION, 4);
+
+        // Column by column: the migration copies, it does not reinterpret.
+        let suggestions = store.suggestions().expect("read");
+        assert_eq!(suggestions.len(), 2);
+        let approved = &suggestions[0];
+        assert_eq!(approved.suggestion_key, "S-001");
+        assert_eq!(approved.state, "approved");
+        assert_eq!(approved.created_unix_ms, 1);
+        assert_eq!(approved.decided_unix_ms, Some(2));
+        assert_eq!(approved.producer, LEGACY_PRODUCER);
+        assert_eq!(approved.decision_reconsider_cause, None);
+        let pending = &suggestions[1];
+        assert_eq!(pending.suggestion_key, "S-005");
+        assert_eq!(pending.state, "pending");
+        assert_eq!(pending.producer, CORE_RULE_ENGINE_PRODUCER);
+        assert_eq!(pending.rule_name.as_deref(), Some("core.r"));
+        assert_eq!(pending.rule_version.as_deref(), Some("v1"));
+        assert_eq!(pending.explanation_fr.as_deref(), Some("pourquoi"));
+        assert_eq!(pending.explanation_en.as_deref(), Some("why"));
+        assert_eq!(
+            pending.signals_json.as_deref(),
+            Some("{\"same-parent\":true}")
+        );
+        assert_eq!(pending.decision_reconsider_cause, None);
+
+        // The approved relation and the legacy derived row survived.
+        assert_eq!(store.established().expect("read").len(), 2);
+        assert_eq!(store.approved().expect("read").len(), 1);
+        assert_eq!(store.deterministic().expect("read").len(), 1);
+
+        // The `X3` triggers were recreated by the rebuild, not lost with the
+        // table they sat on.
+        let drift = store
+            .connection
+            .execute(
+                "UPDATE relation_suggestions SET target_key = ?2 WHERE suggestion_key = ?1",
+                params!["S-001", key("racine-2.txt")],
+            )
+            .unwrap_err();
+        assert!(
+            drift
+                .to_string()
+                .contains("relation_rejected_suggestion_is_not_a_relation"),
+            "the X3 trigger did not survive the rebuild: {drift}"
+        );
+
+        // And the third state is now storable, which is the point of v4.
+        store.reject("S-005").expect("rejection after migration");
+        assert_eq!(
+            store.suggestion("S-005").expect("read").expect("row").state,
+            "rejected"
+        );
+    }
+
+    /// `SR1` — a version 1 store reaches v4 through every migration, in order.
+    #[test]
+    fn a_version_1_store_reaches_v4_and_keeps_its_matching_approval() {
+        let connection = Connection::open_in_memory().expect("connection");
+        connection.execute_batch("PRAGMA foreign_keys=ON;").expect("pragma");
+        connection
+            .execute_batch(
+                "CREATE TABLE relation_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+                 CREATE TABLE relation_suggestions (
+                     suggestion_key TEXT PRIMARY KEY,
+                     source_key TEXT NOT NULL,
+                     target_key TEXT NOT NULL,
+                     relation_type TEXT NOT NULL,
+                     basis TEXT NOT NULL,
+                     state TEXT NOT NULL,
+                     created_unix_ms INTEGER NOT NULL,
+                     decided_unix_ms INTEGER);
+                 CREATE TABLE relations_approved (
+                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                     source_key TEXT NOT NULL,
+                     target_key TEXT NOT NULL,
+                     relation_type TEXT NOT NULL,
+                     suggestion_key TEXT NOT NULL,
+                     approved_unix_ms INTEGER NOT NULL,
+                     UNIQUE(source_key, target_key, relation_type));
+                 PRAGMA user_version=1;",
+            )
+            .expect("v1 schema");
+        connection
+            .execute_batch(&format!(
+                "INSERT INTO relation_suggestions VALUES
+                     ('S-001', '{a1}', '{b1}', 'reference', 'synthetique', 'approved', 1, 2),
+                     ('S-005', '{a2}', '{r1}', 'reference', 'synthetique', 'pending', 3, NULL);
+                 INSERT INTO relations_approved
+                     (source_key, target_key, relation_type, suggestion_key, approved_unix_ms)
+                 VALUES ('{a1}', '{b1}', 'reference', 'S-001', 2);",
+                a1 = key("dossier-a/note-1.txt"),
+                a2 = key("dossier-a/note-2.txt"),
+                b1 = key("dossier-b/note-1.txt"),
+                r1 = key("racine-1.txt"),
+            ))
+            .expect("v1 rows");
+
+        let mut store = RelationStore { connection };
+        store.initialize().expect("migration");
+
+        assert_eq!(store.user_version().expect("version"), 4);
+        assert_eq!(store.suggestions().expect("read").len(), 2);
+        assert_eq!(store.approved().expect("read").len(), 1);
+        assert_eq!(
+            store.suggestion("S-001").expect("read").expect("row").state,
+            "approved"
+        );
+        store.reject("S-005").expect("rejection after migration");
+        assert_eq!(store.approved().expect("read").len(), 1);
+    }
+
+    /// A fresh store is born at v4 and needs no migration at all.
+    #[test]
+    fn a_fresh_store_is_created_at_v4_with_the_third_state_available() {
+        let mut store = RelationStore::in_memory().expect("store");
+        assert_eq!(store.user_version().expect("version"), 4);
+        store
+            .seed_suggestion(
+                "S-900",
+                &key("racine-1.txt"),
+                &key("racine-2.txt"),
+                "reference",
+                "t",
+            )
+            .expect("seed");
+        store.reject("S-900").expect("rejection");
+        assert_eq!(
+            store.suggestion("S-900").expect("read").expect("row").state,
+            "rejected"
+        );
     }
 }
