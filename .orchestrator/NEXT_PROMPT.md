@@ -1,466 +1,310 @@
-# NEXT_PROMPT — TASK-0025 / file de révision + mémoire des décisions
+# NEXT_PROMPT — TASK-0025 / VERIFIED + scellement X5
 
-**TARGET_AGENT:** CLAUDE  
+**TARGET_AGENT:** CODEX  
 **STATUS:** READY  
-**OWNER:** orchestrateur technique  
-**TASK:** `TASK-0025 — Suggestion Review Queue + Human Decision Memory`  
+**OWNER:** orchestrateur technique indépendant  
+**TASK:** `TASK-0025 — enregistrement du verdict indépendant + scellement X5`  
 **MODE:** exécution autonome depuis le dépôt
 
-> Cette tranche reste entièrement fonctionnelle. **Aucune refonte visuelle**, aucun changement de thème/fond du graphe, aucune IA/RAG/vector DB/extraction de contenu. Le polish graphique viendra plus tard, après stabilisation fonctionnelle.
+> Ce fichier **enregistre** un verdict indépendant déjà rendu par l’orchestrateur après inspection du code, de l’historique Git et des preuves réelles. Codex ne refait pas le jugement, ne s’attribue pas `VERIFIED` et ne modifie aucun comportement produit de `TASK-0025`.
 
 ## /goal
 
-Implémenter la tranche suivante proposée par `TASK-0021 §6` après le moteur `F-043` :
+Enregistrer la vérification indépendante de `TASK-0025 — Suggestion Review Queue + Human Decision Memory`, fermer le contrôle `ACTION-0042`, puis sceller **exactement les deux preuves SR15 canoniques** dans X5.
 
-- **F-044 — file de révision des suggestions**;
-- **F-045 — mémoire des décisions humaines sur les suggestions**.
+Verdict externe à enregistrer :
 
-L'utilisateur doit pouvoir traiter rapidement les suggestions d'un cerveau par une file simple :
-
-`[ Confirmer ]  [ Rejeter ]  [ Plus tard ]`
-
-avec une explication vérifiable de chaque suggestion.
-
-**Confirmer** crée exactement une relation `APPROVED` via le flux déjà vérifié.  
-**Rejeter** mémorise la décision et ne crée aucune relation.  
-**Plus tard** passe simplement à la suggestion suivante en laissant l'élément `PENDING`; **aucun état persistant `DEFERRED` n'est ajouté en v1**, puisque `DEC-0021` dit de ne l'introduire que si le besoin est démontré.
-
-Un rejet doit survivre au redémarrage et empêcher qu'une suggestion identique soit reproposée indéfiniment lors d'un nouveau run inchangé du moteur.
+- `SR1` à `SR15` : **PASS**;
+- `TASK-0025 = VERIFIED`;
+- `ACTION-0042 = CLOSED`;
+- `F-044` : implémentation vérifiée par `TASK-0025 / ACTION-0042`;
+- `F-045` : implémentation vérifiée par `TASK-0025 / ACTION-0042`;
+- aucune nouvelle réserve bloquante;
+- `F-046` reste `PROPOSED`;
+- `DEC-0013/F` reste bloquante pour l’identité physique persistante;
+- la garantie X10 race-safe hors Windows reste non prouvée;
+- l’absence d’état persistant `DEFERRED` est **volontaire et conforme** à `DEC-0021 / DEC-0027` : « Plus tard » laisse `PENDING`;
+- aucune politique automatique de réévaluation des rejets n’est créée par cette fermeture.
 
 ---
 
-## 0 — synchronisation et préconditions obligatoires
+## 0 — synchronisation obligatoire
 
 Appliquer les protocoles projet de début de session.
 
-Avant toute modification :
+Avant toute écriture :
 
-1. checkout local attendu : `build/v0.2-a8-deterministic-relation-engine`;
+1. branche locale attendue : `build/v0.2-a9-suggestion-review-memory`;
 2. arbre local propre;
 3. `git fetch origin`;
-4. fast-forward uniquement vers `origin/build/v0.2-a8-deterministic-relation-engine`;
-5. le HEAD obtenu doit être le commit d'orchestration qui contient **ce** fichier;
+4. fast-forward **uniquement** vers `origin/build/v0.2-a9-suggestion-review-memory`;
+5. le HEAD obtenu doit être le commit d’orchestration qui contient **ce** fichier;
 6. son parent direct doit être exactement :
-   `b084de786890af9cca4bf1a54fe9796f809af62d`;
-7. `TASK-0024 = VERIFIED`;
-8. `ACTION-0041 = CLOSED`;
-9. `X5 = 32`;
-10. `main = 91bbe90f0f99026c28cd345784d4f579a0016db2`;
-11. `TASK-0025` doit être libre;
-12. `DEC-0027` doit être libre;
-13. aucune tâche ne doit être `IN_PROGRESS`.
+   `ca1666b91ab2990a41a246074536b07efc13df0c`;
+7. le commit substantif/documentaire final de l’exécuteur reste :
+   `f1affa85b04a2fa6f8876f3a9250a1ac795aabbd`;
+8. le gel documentaire de `TASK-0025` doit rester antérieur au code :
+   `135fdb2ace28e58eb9f969a7775965b6cf7f9d9b`;
+9. `TASK-0025 = IMPLEMENTED`, contrôle indépendant requis;
+10. `F-044` et `F-045 = IMPLEMENTED — contrôle indépendant requis`;
+11. `X5 = 32`;
+12. `SEALED_RUNTIME_DESTINATIONS = []`;
+13. toutes les destinations runtime actuelles appartiennent à `TASK-0025`;
+14. `main = 91bbe90f0f99026c28cd345784d4f579a0016db2`;
+15. `ACTION-0042` doit être libre.
 
-Si divergence, autre modification locale, fast-forward impossible, ou identifiant déjà occupé : **STOP / BLOCKED**.
-
----
-
-## 1 — nouvelle branche
-
-Créer depuis le commit d'orchestration courant :
-
-`build/v0.2-a9-suggestion-review-memory`
-
-Publier la branche normalement, sans toucher `main`.
+Si divergence, autre modification locale, fast-forward impossible, preuve manquante ou `ACTION-0042` déjà occupée : **STOP / BLOCKED**.
 
 ---
 
-## 2 — gel AVANT code
+## 1 — contrôle indépendant à enregistrer
 
-Avant toute implémentation produit, créer et committer un gel documentaire :
+Créer :
 
-- `docs/tasks/TASK-0025-suggestion-review-memory.md`;
-- `docs/decisions/DEC-0027-suggestion-review-memory.md`.
+`docs/reviews/ACTION-0042-independent-control.md`
 
-Statut de départ : `APPROVED → IN_PROGRESS` seulement après le gel.
+Le document doit dire explicitement que :
 
-Le gel doit reprendre exactement les règles de cette instruction et référencer :
+- le **verdict appartient à l’orchestrateur technique indépendant**;
+- Codex est seulement le rédacteur de l’enregistrement et du scellement;
+- Claude Code était l’exécuteur de `TASK-0025`;
+- `VERIFIED` n’est pas auto-attribué par Claude ni par Codex.
 
-- `DEC-0021`;
-- `TASK-0021 §6`, tranche proposée #3;
-- `TASK-0024 VERIFIED / ACTION-0041`;
-- `F-044` et `F-045`.
+### HEAD recontrôlé avant verdict
 
-Ne pas réécrire les décisions historiques.
+`ca1666b91ab2990a41a246074536b07efc13df0c`
 
----
+### Points factuels du verdict
 
-## 3 — frontière sémantique obligatoire
+Enregistrer notamment :
 
-Conserver strictement :
+- le gel `TASK-0025 / DEC-0027` a été commité avant tout code produit;
+- toutes les destinations runtime ont été migrées sous `TASK-0025-*` avant le premier replay, sans réduire les 32 protections X5;
+- schéma intra-relations `v4`, avec exactement `pending / approved / rejected`;
+- aucun état persistant `deferred`;
+- `decision_reconsider_cause` nullable existe mais reste `NULL` en v1;
+- migration versionnée depuis v1/v2/v3, avec préservation des lignes et contraintes X3;
+- `RelationStore::reject` décide une seule fois, date le rejet, ne crée aucune relation et refuse les cas invalides;
+- une suggestion core périmée ne peut ni être confirmée ni rejetée tant que `dre-v1` n’est pas à jour;
+- la reconciliation préserve les identités `approved` **et** `rejected`; une rejetée n’est pas recréée `pending` sur rerun inchangé et n’est pas effacée simplement parce qu’un run ne la repropose temporairement plus;
+- la formule de `suggestion_key` de `TASK-0024` n’a pas été changée;
+- la file backend est générique par cerveau, stable, paginée/bornée, `MAX_REVIEW_QUEUE_LIMIT = 100`, et son `totalPending` exclut les décisions déjà prises;
+- l’UI affiche un item explicable et exactement les trois actes `Confirmer / Rejeter / Plus tard`;
+- `Confirmer` réutilise le flux `APPROVED` déjà vérifié;
+- `Rejeter` appelle le rejet backend puis relit le compte du store;
+- `Plus tard` n’appelle aucune mutation et ne fait qu’avancer le curseur local;
+- isolation stricte entre cerveaux maintenue;
+- aucune donnée réelle, aucune IA/RAG/vector DB/extraction de contenu, aucune refonte graphique.
 
-1. une **suggestion n'est jamais une relation établie**;
-2. une relation établie reste exclusivement `DETERMINISTIC` ou `APPROVED`;
-3. aucun état ou provenance `AI`, `SUGGESTED`, `REJECTED_RELATION`, etc.;
-4. un rejet ne crée aucune relation et ne modifie aucune source;
-5. le bouton `Plus tard` ne décide rien : l'élément reste `PENDING`;
-6. aucune règle déterministe existante n'est modifiée dans son sens;
-7. aucune suggestion n'est auto-approuvée;
-8. aucune relation inter-cerveaux n'est inventée;
-9. aucune donnée réelle.
+### Preuves SR15 contrôlées
 
----
+Pass1 :
 
-## 4 — migration X5 / runtime AVANT tout rejeu
+`TASK-0025-SR15-suggestion-review-memory-webview2-pass1.json`
 
-`TASK-0024` est maintenant `VERIFIED`; ses trois preuves canoniques sont protégées.
+Constats à enregistrer :
 
-Avant de lancer **le moindre scénario qui écrit sous `docs/performance/runs/`**, migrer toutes les destinations runtime encore nommées `TASK-0024-*` vers des noms `TASK-0025-*`.
-
-Cela inclut toutes les destinations réellement présentes dans `RUNTIME_RUN_ARTIFACTS`, y compris les replays et la destination corrective X11 si le scénario reste compilé/rejouable.
-
-Règles :
-
-- ne jamais modifier les 32 noms de `PROTECTED_RUN_ARTIFACTS`;
-- `X5` reste exactement **32** pendant toute `TASK-0025`;
-- après migration, `SEALED_RUNTIME_DESTINATIONS = []`;
-- toutes les destinations runtime doivent appartenir à `TASK-0025`;
-- `owningTaskId = TASK-0025`;
+- vrai Windows/WebView2;
+- fresh variant synthétique;
+- `protectedArtifactCount = 32` avant scellement;
 - `protectedDestinations = []`;
-- `writesUnderItsOwnTaskOnly = true`.
-
-Adapter les tests de garde avant tout replay.
-
-Ne modifier aucun JSON protégé historique.
-
----
-
-## 5 — schéma SQLite v4 : états humains
-
-Le store intra-relations actuel est schema v3 et `relation_suggestions.state` n'accepte que `pending` / `approved`.
-
-Faire une migration **versionnée v3 → v4**, sans perte de données.
-
-### États persistants v1
-
-Exactement :
-
-- `pending`;
-- `approved`;
-- `rejected`.
-
-**Ne pas ajouter `deferred` en base.**
-
-### Données de décision
-
-Une suggestion décidée doit conserver au minimum, directement dans la ligne ou via une structure versionnée équivalente et auditable :
-
-- `suggestion_key`;
-- `rule_name` et `rule_version` quand disponibles;
-- `source_key`;
-- `target_key`;
-- `relation_type`;
-- décision (`approved` ou `rejected`);
-- `decided_unix_ms`;
-- producteur;
-- explication/signaux déjà présents;
-- un champ nullable permettant de documenter une éventuelle cause future de réévaluation, **sans inventer aujourd'hui une politique automatique de réévaluation**.
-
-La migration doit préserver bit-for-bit la sémantique des rows legacy et des relations déjà `APPROVED`.
-
----
-
-## 6 — rejet explicite
-
-Ajouter une opération backend explicite de rejet, dans la couche de commandes de relations.
-
-Comportement :
-
-- prend `brain_id` + `suggestion_key`;
-- refuse une suggestion absente;
-- refuse une suggestion déjà décidée;
-- si suggestion core `STALE`, conserver une politique cohérente avec l'approbation actuelle : ne pas permettre une décision sur une suggestion core périmée sans que le moteur soit actualisé;
-- met l'état à `rejected` et `decided_unix_ms`;
-- ne crée aucune ligne dans `relations_approved`;
-- ne crée aucune relation déterministe;
-- ne modifie aucune autre suggestion;
-- n'affecte aucun autre cerveau;
-- retourne un état/overview permettant à l'UI de se rafraîchir depuis la vérité du store.
-
-La commande doit être testée sur une suggestion core et sur le périmètre legacy sans généraliser les règles legacy.
-
----
-
-## 7 — mémoire de rejet dans la reconciliation `dre-v1`
-
-Modifier la reconciliation du moteur de manière minimale et explicite :
-
-- une suggestion core `approved` de même identité reste préservée comme aujourd'hui;
-- une suggestion core `rejected` de même identité reste **rejected**;
-- elle n'est jamais recréée `pending` lors d'un rerun inchangé;
-- un rejet doit rester stocké même si le run courant ne repropose plus temporairement cette suggestion, afin que la mémoire existe lorsqu'elle réapparaît avec la même identité;
-- une suggestion encore `pending` peut continuer à être reconciliée normalement;
-- aucune décision d'un autre cerveau ne compte;
-- aucun rejet legacy/core ne devient une relation.
-
-Pour le moteur `dre-v1` actuel, l'identité déterministe déjà produite par `suggestion_key` (règle/version + brain + endpoints + type) est la base de la mémoire.
-
-**Ne change pas la formule actuelle des `suggestion_key` de TASK-0024 uniquement pour cette tranche**, sauf si une contradiction technique prouvée l'exige. Un changement gratuit casserait les décisions déjà persistées.
-
-La politique générale « quand une ancienne décision doit être reconsidérée parce que des signaux ont changé » reste **hors scope v1** conformément à `DEC-0021`; le schéma doit seulement pouvoir l'enregistrer plus tard.
-
-Le report du moteur peut ajouter des compteurs explicites du genre `rejectedSuggestionPreservations`, mais ne renomme ni ne retire les compteurs déjà vérifiés sans nécessité.
-
----
-
-## 8 — API file de révision
-
-Créer une API backend générique par cerveau pour obtenir la file `PENDING`.
-
-Elle doit :
-
-- fonctionner pour n'importe quel `BrainRecord` valide;
-- lire le store du cerveau seulement;
-- retourner un `totalPending` exact;
-- retourner des éléments dans un ordre stable et documenté;
-- être bornée/paginée; limite maximale raisonnable et explicite, pas de chargement illimité silencieux;
-- chaque item doit contenir :
-  - source;
-  - cible;
-  - type proposé;
-  - `suggestion_key`;
-  - producteur;
-  - règle/version quand disponibles;
-  - explication FR/EN;
-  - signaux structurés disponibles;
-  - état `PENDING`.
-
-Aucun contenu privé de fichier n'est nécessaire ni ajouté à cette API.
-
-Le compteur ne doit pas mélanger suggestions approuvées/rejetées.
-
----
-
-## 9 — UI fonctionnelle : « Relations à confirmer »
-
-Ajouter une file de révision simple dans l'interface actuelle, sans refonte graphique.
-
-Objectif UX fonctionnel :
-
-- une entrée visible du type **« N relations à confirmer »** pour le cerveau focalisé/sélectionné;
-- ouverture d'une file ou panneau simple;
-- un item actif à la fois est acceptable;
-- afficher clairement : source, cible, type proposé, pourquoi, règle/version, signaux;
-- trois actions principales exactement :
-  - `Confirmer`;
-  - `Rejeter`;
-  - `Plus tard`.
-
-### Confirmer
-
-Réutiliser le chemin `APPROVED` déjà vérifié. Après action :
-
-- suggestion disparaît de la file pending;
-- relation `APPROVED` apparaît exactement une fois;
-- compte pending diminue depuis la réponse backend, jamais par simple incrément optimiste.
-
-### Rejeter
-
-Après action :
-
-- suggestion disparaît de la file pending;
-- aucune relation n'apparaît;
-- décision persistée;
-- compte pending diminue depuis le backend.
-
-### Plus tard
-
-- aucun appel de mutation requis;
-- aucune décision persistée;
-- suggestion reste `PENDING`;
-- passer à la prochaine suggestion localement;
-- lorsque la file est rechargée, elle peut réapparaître parce qu'elle est toujours en attente.
-
-### Accessibilité minimale obligatoire
-
-- contrôles natifs `button`;
-- ordre clavier cohérent;
-- aucun comportement dépendant uniquement de la couleur;
-- état/action lisible en texte.
-
-Pas de design-system nouveau dans cette tranche.
-
----
-
-## 10 — isolation multi-cerveaux
-
-Prouver explicitement :
-
-- Alpha et Gamma/Bêta ont des décisions indépendantes;
-- rejeter une suggestion dans un cerveau ne modifie ni le store, ni le compteur, ni l'état de la suggestion équivalente d'un autre cerveau;
-- aucune clé d'endpoint d'un autre cerveau n'entre dans une décision;
-- redémarrage/rebuild du map index ne perd pas la décision humaine, puisque le store relation reste hors index reconstructible.
-
----
-
-## 11 — critères fonctionnels gelés TASK-0025
-
-Numéroter dans la fiche de tâche des critères `SR1` à `SR15` (ou autre préfixe unique cohérent) couvrant au minimum :
-
-1. migration schema v3 → v4 sans perte;
-2. trois états persistants exacts `pending/approved/rejected`;
-3. aucun `deferred` persistant;
-4. queue paginée avec compteur exact;
-5. détails explicables complets;
-6. Confirmer → exactement une relation `APPROVED`;
-7. Rejeter → aucune relation;
-8. Plus tard → reste `PENDING`;
-9. rerun moteur inchangé → rejet non reproposé pending;
-10. rerun moteur inchangé → approbation toujours préservée;
-11. redémarrage réel → décisions conservées;
-12. isolation stricte entre cerveaux;
-13. source read-only;
-14. X5 = 32, runtime TASK-0025, aucune collision protégée;
-15. vrai WebView2 avec actions utilisateur fiables et aucune mutation programmatique simulant les décisions.
-
-Le gel doit exister dans un commit **avant** le premier commit de code produit.
-
----
-
-## 12 — preuve réelle WebView2 TASK-0025
-
-Créer un scénario synthétique dédié, hors données réelles et sans modifier les quatre fixtures gelées.
-
-Publier deux preuves TASK-0025, pass1/pass2, sous des noms nouveaux appartenant à TASK-0025, par exemple :
-
-- `TASK-0025-SR15-suggestion-review-memory-webview2-pass1.json`;
-- `TASK-0025-SR15-suggestion-review-memory-webview2-pass2.json`.
-
-Ces noms **ne rejoignent pas X5 maintenant** : TASK-0025 restera `IMPLEMENTED` jusqu'au contrôle indépendant.
-
-### Pass1 — processus réel
-
-Sur un fresh variant :
-
-- produire plusieurs suggestions core synthétiques contrôlées;
-- ouvrir la file;
-- confirmer une suggestion par vraie interaction clavier;
-- rejeter une autre par vraie interaction clavier;
-- utiliser `Plus tard` sur une troisième par vraie interaction clavier;
-- `keydownIsTrusted = true` / activation réelle pour les boutons mesurés;
-- `programmaticClickCalls = 0` et `programmaticClickDispatches = 0`;
-- confirmer que :
-  - la confirmée est relation `APPROVED` exactement une fois;
-  - la rejetée n'est aucune relation;
-  - la « plus tard » reste `PENDING`;
-  - un rerun `dre-v1` inchangé ne ressuscite pas la rejetée;
-  - la confirmée reste approuvée;
-  - la pending reste pending;
-  - source inchangée;
-  - aucun store d'un autre cerveau n'est modifié.
-
-### Pass2 — vrai restart
-
-Relancer un **nouveau processus WebView2** sur le même variant :
-
-- prouver la persistance de `APPROVED` et `REJECTED`;
-- prouver que la queue pending contient encore la suggestion laissée « Plus tard » et pas la rejetée/approuvée;
-- rerun moteur inchangé;
-- même résultat après rerun;
+- `owningTaskId = TASK-0025`;
+- `writesUnderItsOwnTaskOnly = true`;
+- file backend : `totalPending = 7`, `limit = maxLimit = 100`, ordre `suggestion_key ascending`, trois suggestions core;
+- une suggestion confirmée, une rejetée, une laissée « Plus tard »;
+- activation par vraies frappes : `keydownIsTrusted = true`, `activationIsTrusted = true`;
+- `programmaticClickCalls = 0`, `programmaticClickDispatches = 0`;
+- confirmée → exactement une relation `APPROVED`;
+- rejetée → aucune relation et absente des `pending`;
+- « Plus tard » → compteur pending inchangé et suggestion toujours `pending`;
+- rerun : `approvedSuggestionPreservations >= 1` et `rejectedSuggestionPreservations >= 1`;
+- autre cerveau inchangé et digest inter-cerveaux inchangé;
+- source synthétique read-only.
+
+Pass2 :
+
+`TASK-0025-SR15-suggestion-review-memory-webview2-pass2.json`
+
+Constats à enregistrer :
+
+- nouveau processus réel sur le même variant;
+- `dre-v1 = CURRENT` **avant toute nouvelle action**;
+- relation approuvée déjà persistée;
+- rejet toujours mémorisé et absent de la file;
+- suggestion « Plus tard » toujours `pending`;
+- rerun idempotent;
+- compte de file inchangé;
+- préservations `approved` et `rejected` toujours observées;
+- digest inter-cerveaux inchangé;
 - processus fermé réellement.
 
----
+### Régressions contrôlées mais non canoniques pour le scellement
 
-## 13 — régressions
+Les replays suivants sont verts et utiles au contrôle, mais **ne rejoignent pas X5** pour `TASK-0025` :
 
-Cette tranche touche le store de relations, l'approbation, le moteur et l'UI relations. Rejouer sous des **noms TASK-0025** au minimum :
+- `TASK-0025-DR15-deterministic-relation-engine-webview2-pass1.json`;
+- `TASK-0025-DR15-deterministic-relation-engine-webview2-pass2.json`;
+- `TASK-0025-J12-intrabrain-relations-regression-webview2.json`;
+- `TASK-0025-X11-generic-brain-webview2.json`.
 
-- DR15 pass1/pass2;
-- J12 intra-brain;
-- X11 generic brain si le chemin générique est directement impacté par les changements;
+Ils restent non canoniques / non protégés par cette action.
 
-et ajouter les tests unitaires/intégration nécessaires pour :
+Verdict final du document :
 
-- migrations v1/v2/v3 → v4;
-- legacy seed;
-- core reconciliation;
-- approval;
-- rejection;
-- queue pagination;
-- isolation.
-
-Ne rejouer K11/K12/L12/M12/N15/H9/EC15 que si une dépendance directe réellement modifiée le justifie; documenter la décision.
-
-Aucune preuve historique protégée n'est modifiée.
+- `ACTION-0042 = CLOSED`;
+- `TASK-0025 = VERIFIED`;
+- `SR1–SR15 = PASS`;
+- aucune réserve corrective ouverte.
 
 ---
 
-## 14 — validations minimales
+## 2 — preuves canoniques TASK-0025
 
-Exécuter :
+Sceller **exactement deux** preuves et aucune autre :
 
-- tests Rust ciblés relations/rule_engine/review queue;
-- suite Rust complète;
-- suite TypeScript complète;
-- `pnpm check`;
-- `pnpm build`;
-- Tauri debug `--no-bundle`;
-- vrai WebView2 SR15 pass1/pass2;
-- replays TASK-0025 requis ci-dessus;
-- tests X5/parité des gardes;
+1. `TASK-0025-SR15-suggestion-review-memory-webview2-pass1.json`
+2. `TASK-0025-SR15-suggestion-review-memory-webview2-pass2.json`
+
+Raison : la fiche `TASK-0025 §7` les définit comme les deux preuves propres à la tranche et précise qu’elles restent hors X5 **jusqu’au contrôle indépendant**. Les DR15/J12/X11 sont des replays/régressions, pas les preuves canoniques de la nouvelle capacité.
+
+Ne modifier, renommer, supprimer ni régénérer **aucun** JSON de preuve.
+
+---
+
+## 3 — X5 : 32 → 34
+
+Faire passer X5 de **32 à exactement 34** noms protégés.
+
+Mettre à jour en parité exacte les trois gardes :
+
+- Rust : `PROTECTED_RUN_ARTIFACTS` au lieu où la porte `write_run_artifact` la consomme;
+- TypeScript : `src/map/runArtifacts.ts`;
+- PowerShell : `scripts/protected-run-artifacts.ps1`.
+
+Règles append-only :
+
+- conserver les **32 anciens noms exactement dans le même ordre**;
+- ajouter ensuite exactement les deux SR15, dans l’ordre pass1 puis pass2;
+- aucun autre nom TASK-0025 n’est protégé.
+
+Après scellement :
+
+- `protectedArtifactCount = 34`;
+- `SEALED_RUNTIME_DESTINATIONS` = exactement les deux SR15;
+- `protectedDestinations` = exactement les deux SR15;
+- `owningTaskId = TASK-0025`;
+- `writesUnderItsOwnTaskOnly = false`.
+
+**Cet état est normal après `VERIFIED`** : le runtime courant porte encore ses deux destinations SR15, désormais scellées. Ne migre pas encore le runtime vers `TASK-0026`.
+
+---
+
+## 4 — tests de garde à adapter
+
+Adapter `src/map/runArtifacts.test.ts` et les tests Rust/PowerShell nécessaires pour prouver au minimum :
+
+- X5 = ancien32 + exact2 SR15;
+- longueur = 34 et unicité = 34;
+- les 32 noms historiques gardent exactement leur ordre;
+- parité Rust / TypeScript / PowerShell exacte;
+- intersection runtime/protected = exactement SR15 pass1/pass2;
+- les deux SR15 sont refusées à l’écriture après scellement;
+- `TASK-0025-DR15-*`, `TASK-0025-J12-*`, `TASK-0025-X11-*` restent hors X5;
+- au moins une destination TASK-0025 non canonique représentative reste autorisée;
+- aucun nom historique n’est retiré.
+
+Exécuter uniquement ce qui est utile à cette fermeture :
+
+- test TypeScript ciblé `runArtifacts.test.ts`;
+- tests Rust ciblés du garde X5;
+- contrôle PowerShell des 34 refus + au moins une destination TASK-0025 non canonique autorisée;
 - `git diff --check`.
 
-`CARGO_INCREMENTAL=0` autorisé si nécessaire; aucun `cargo clean`, aucune suppression `target`.
+**Aucun replay WebView2.**  
+**Aucun test produit ne doit nécessiter de réécrire une preuve.**
 
 ---
 
-## 15 — invariants qui restent hors scope
+## 5 — immutabilité absolue des preuves
 
-Ne pas implémenter :
+Ne modifier aucun fichier sous `docs/performance/runs/`.
 
-- `F-046` identité physique persistante;
-- `VolumeSerialNumber + FileId` tant que `DEC-0013/F` bloque;
-- extraction de contenu;
-- recherche sémantique;
-- embeddings/vector DB;
-- RAG/GraphRAG;
-- LLM/AI/BYOK;
-- permissions/mode équipe;
-- watcher/incrémental;
-- refonte graphique, React Flow, ELK, thème clair/sombre;
-- données réelles.
+Vérifier dans le diff final qu’aucun JSON de preuve n’a changé pendant cette fermeture.
 
-Le fond noir du graphe et le système visuel sont explicitement reportés à la passe graphique future.
+En particulier, ne rejouer ni SR15, ni DR15, ni J12, ni X11, ni les autres campagnes historiques.
 
 ---
 
-## 16 — documentation / état final
+## 6 — aucun changement de comportement produit
 
-Mettre à jour :
+Cette action est **contrôle enregistré + gouvernance + gardes X5**.
 
-- `TASK-0025`;
-- `DEC-0027`;
-- `docs/product/FEATURE_MATRIX.md`;
+Ne pas modifier la logique fonctionnelle de :
+
+- `relations.rs` hors éventuelle constante X5 si elle y vivait réellement;
+- `relation_commands.rs`;
+- `rule_engine.rs`;
+- `MapApp.tsx`;
+- `ReviewQueuePanel.tsx`;
+- `reviewScenario.ts`;
+- migrations SQLite;
+- formule de `suggestion_key`;
+- règles `dre-v1`;
+- fixtures;
+- dépendances;
+- Cargo.toml / Cargo.lock.
+
+Ne pas « améliorer » la pagination UI, le design, `DEFERRED` ou la politique de reconsidération dans cette fermeture.
+
+---
+
+## 7 — documentation / états
+
+Mettre à jour de façon cohérente :
+
+- `docs/reviews/ACTION-0042-independent-control.md`;
+- `docs/tasks/TASK-0025-suggestion-review-memory.md` → `VERIFIED`, en citant `ACTION-0042`;
+- `docs/decisions/DEC-0027-suggestion-review-memory.md` : retirer seulement la mention « contrôle indépendant requis » et enregistrer que l’implémentation est validée par `TASK-0025 / ACTION-0042`; ne pas inventer un statut de décision incompatible avec les conventions du dépôt;
+- `docs/product/FEATURE_MATRIX.md` : F-044 et F-045 restent `IMPLEMENTED` mais sont désormais référencées comme implémentations vérifiées par `TASK-0025 / ACTION-0042`;
 - `docs/ai/CURRENT_STATE.md`;
 - `docs/ai/NEXT_ACTION.md`;
 - `docs/ai/HANDOFF.md`;
 - `docs/ai/VALIDATION.md`;
 - `docs/ai/CHANGELOG_AI.md`;
-- `.orchestrator/RESULT.md`;
-- `ROADMAP.md` uniquement si une mise à jour factuelle de l'état devient nécessaire, sans réécrire l'ordre A→D.
+- `.orchestrator/RESULT.md`.
 
-État final attendu :
+Conserver explicitement :
 
-- `TASK-0025 = IMPLEMENTED`, jamais auto-attribuée `VERIFIED`;
-- `F-044 = IMPLEMENTED — contrôle indépendant requis`;
-- `F-045 = IMPLEMENTED — contrôle indépendant requis`;
-- `F-043` reste vérifiée par TASK-0024;
-- `F-046` reste `PROPOSED` avec sa fondation contenu déjà vérifiée;
-- X5 reste 32;
-- aucune nouvelle réserve auto-fermée;
-- aucune `TASK-0026` créée.
-
-`NEXT_ACTION` = contrôle indépendant de TASK-0025.
+- `F-043` vérifiée par TASK-0024;
+- `F-046 = PROPOSED`;
+- `DEC-0013/F` bloquante;
+- pas d’état `DEFERRED` persistant dans F-044/F-045 v1;
+- pas de politique automatique de réévaluation;
+- pas de changement graphique;
+- pas d’IA/RAG/vector DB.
 
 ---
 
-## 17 — RESULT.md
+## 8 — NEXT_ACTION
+
+`docs/ai/NEXT_ACTION.md` doit rendre la main à l’orchestrateur :
+
+> définir la prochaine tranche fonctionnelle après `TASK-0025 VERIFIED`.
+
+Ne pas créer `TASK-0026`, `DEC-0028`, ni commencer la tranche suivante.
+
+---
+
+## 9 — RESULT.md
+
+Écrire un rapport final dans ce format :
 
 ```text
-TASK_ID: TASK-0025 — suggestion review + decision memory
-AGENT: CLAUDE
+TASK_ID: TASK-0025 — VERIFIED / scellement X5
+AGENT: CODEX
 RESULT: DONE | BLOCKED | FAILED
 BRANCH: build/v0.2-a9-suggestion-review-memory
-FINAL_HEAD: <commit substantif final>
+FINAL_HEAD: <commit substantif de fermeture>
 
 SUMMARY:
 -
@@ -476,31 +320,35 @@ PUSHED: yes/no
 
 LIMITS_OR_BLOCKERS:
 - DEC-0013/F physical identity persistence remains blocked
-- non-Windows X10 guarantee remains unproven
-- no persistent DEFERRED state in v1; Plus tard leaves PENDING
+- non-Windows X10 race-safe guarantee remains unproven
+- no persistent DEFERRED state by design
+- no automatic reconsideration policy in v1
 
 NEXT_ORCHESTRATOR_DECISION:
-- contrôle indépendant TASK-0025
+- définir la prochaine tranche après TASK-0025 VERIFIED
 ```
+
+Le `FINAL_HEAD` du RESULT doit être le commit substantif de fermeture créé par Codex, même si un commit terminal distinct met ensuite à jour uniquement le rapport.
 
 ---
 
-## 18 — Git / sécurité / arrêt
+## 10 — Git / arrêt
 
-Aucun :
+Commit et push en fast-forward sur **la branche actuelle seulement**.
 
-- merge `main`;
+Interdits :
+
+- merge vers `main`;
 - PR;
 - release;
 - tag;
 - label;
 - force push;
-- rebase/reset destructif;
-- données réelles;
-- suppression de preuve protégée;
-- modification d'un JSON X5;
-- modification de la source analysée.
+- rebase destructif;
+- reset destructif;
+- `git clean`;
+- suppression du sandbox historique;
+- suppression de `target`;
+- modification/régénération d’une preuve JSON.
 
-Commit/push sur la nouvelle branche uniquement.
-
-Appliquer le protocole de fermeture de session, rapport terminal court, puis arrêt.
+Appliquer ensuite le protocole projet de fermeture de session, rapport terminal court, puis arrêt.
