@@ -1,5 +1,41 @@
 # HANDOFF — passage de relais
 
+## Relais actuel — TASK-0025 IMPLEMENTED, 2026-09-05
+
+`TASK-0025` livre `F-044` et `F-045` sur la branche
+`build/v0.2-a9-suggestion-review-memory`, créée depuis le commit
+d'orchestration `7bb9857` et publiée. `main` n'a pas bougé : `91bbe90f`.
+
+**Statut : `IMPLEMENTED`, contrôle indépendant requis.** L'exécuteur ne s'est
+pas attribué `VERIFIED`, et les deux preuves `TASK-0025-SR15-*` ne rejoignent
+donc pas `X5`, qui reste à **32** noms.
+
+Ce qui est fait, en une phrase chacun :
+
+- le store intra-relations est en **schema v4**, avec exactement trois états de
+  suggestion — `pending`, `approved`, `rejected` — et une colonne nullable
+  `decision_reconsider_cause` laissée `NULL`;
+- **aucun état `deferred`** n'existe : « Plus tard » n'appelle aucune commande;
+- une **file de révision** générique et paginée existe par cerveau, avec un
+  `totalPending` exact et une limite maximale publiée;
+- un **rejet explicite** est enregistré, ne crée aucune relation, et la
+  reconciliation `dre-v1` ne le défait pas;
+- toutes les **destinations runtime** sont passées sous `TASK-0025` avant le
+  premier rejeu, sans toucher aux 32 noms protégés.
+
+Ce qu'il reste à décider, et par qui :
+
+- **le contrôle indépendant de `TASK-0025`**, par une instance distincte de
+  l'exécuteur, sur les critères `SR1` à `SR15` et les preuves publiées. Lui seul
+  peut faire passer `F-044` et `F-045` au-delà de `IMPLEMENTED`, et lui seul
+  peut décider d'étendre `X5` aux deux preuves `SR15`;
+- la suite produit après cette tranche. Aucune `TASK-0026` n'a été créée.
+
+Ce qui reste explicitement ouvert : la **politique de réévaluation** d'une
+décision humaine est hors scope v1 — le schéma peut l'enregistrer, rien ne la
+décide. `DEC-0013/F` demeure bloquante et `F-046` reste `PROPOSED`. La garantie
+`X10` hors Windows reste non prouvée.
+
 ## Relais actuel — ACTION-0041, TASK-0024 VERIFIED, 2026-09-05
 
 Le verdict indépendant est enregistré dans

@@ -3,9 +3,10 @@
 - **Date :** 2026-09-05
 - **Branche :** `build/v0.2-a9-suggestion-review-memory`
 - **Base contrôlée :** `7bb98573d115f3423617efa55628f39eb41d31ab`
-- **Statut courant :** `IN_PROGRESS`
-- **Transitions :** `PROPOSED → APPROVED → IN_PROGRESS`; démarrage par GO
-  technique explicite de `.orchestrator/NEXT_PROMPT.md`
+- **Statut courant :** `IMPLEMENTED` — contrôle indépendant requis
+- **Transitions :** `PROPOSED → APPROVED → IN_PROGRESS → IMPLEMENTED`; démarrage
+  par GO technique explicite de `.orchestrator/NEXT_PROMPT.md`. **`VERIFIED`
+  n'est pas auto-attribué.**
 - **Agent d'exécution :** Claude Code
 - **Décision :** [`DEC-0027`](../decisions/DEC-0027-suggestion-review-memory.md)
 - **Implémente :** `F-044` et `F-045`, sans implémenter `F-046`
@@ -154,3 +155,102 @@ destination runtime ne reste sous un nom scellé.
 
 `TASK-0025` et `DEC-0027` créés et commités **avant** tout code produit,
 conformément au §2 et au §11 de la consigne d'orchestration.
+
+### 8.2 Migration runtime X5 — avant tout rejeu
+
+Toutes les destinations runtime sont passées de `TASK-0024-*` à `TASK-0025-*`
+avant le premier rejeu : les trois noms scellés, les replays `H9`, `K11`,
+`K12`, `L12`, `M12`, `N15`, `EC15`, chaque variante `-abandon`, et la
+destination corrective `X11`, qui reste compilée et rejouable. Les **32** noms
+protégés n'ont pas été touchés : l'intersection est vidée en déplaçant les
+destinations, jamais en réduisant le sceau.
+
+`SEALED_RUNTIME_DESTINATIONS` est de nouveau vide, `protectedDestinations = []`,
+`owningTaskId = TASK-0025`, `writesUnderItsOwnTaskOnly = true`, `X5 = 32`.
+
+La garde a par ailleurs été élargie à deux sources d'écriture qu'elle ne tenait
+pas : `genericRelationScenario.ts`, qui écrit la preuve `X11`, et le nouveau
+`reviewScenario.ts`.
+
+### 8.3 Schéma v4
+
+Migration `v3 → v4` par reconstruction versionnée de `relation_suggestions` :
+`CHECK(state IN ('pending','approved','rejected'))` et colonne nullable
+`decision_reconsider_cause`, laissée `NULL`. La reconstruction recopie chaque
+colonne par son nom, contrôle le nombre de lignes et `pragma_foreign_key_check`
+**avant** de committer, et recrée les trois déclencheurs `X3` qu'elle a dû
+déposer pour que le `RENAME` puisse reparser le schéma.
+
+Migrations depuis `v1`, `v2` et `v3` toutes exercées; un store neuf naît en
+`v4`.
+
+### 8.4 Preuves réelles
+
+| Preuve | Résultat |
+|---|---|
+| `TASK-0025-SR15-…-pass1.json` | écrite — 3 suggestions core, file ouverte et parcourue au clavier réel, une confirmée, une rejetée, une reportée |
+| `TASK-0025-SR15-…-pass2.json` | écrite — nouveau processus, décisions persistées, rerun idempotent |
+| `TASK-0025-DR15-…-pass1/pass2.json` | rejeu vert |
+| `TASK-0025-J12-intrabrain-relations-regression-webview2.json` | rejeu vert |
+| `TASK-0025-X11-generic-brain-webview2.json` | rejeu vert, `outcome = written` |
+
+Chiffres mesurés en `SR15` pass1 : `totalPending = 7` dont 3 core, une seule
+page, `limit = 100 = maxLimit`, `hasMore = false`, ordre
+`suggestion_key ascending`. `keydownIsTrusted` et `activationIsTrusted` **vrais**
+sur les cinq activations mesurées et sur les quatre déplacements « Plus tard »;
+`programmaticClickCalls = 0` et `programmaticClickDispatches = 0` partout.
+Exactement **une** relation `APPROVED` pour la clé confirmée, **aucune** pour la
+rejetée, compte en attente **inchangé** (5 → 5) par « Plus tard ».
+`rejectedSuggestionPreservations = 1` et `approvedSuggestionPreservations = 1`
+au rerun. `brain-gamma` : store et compte en attente inchangés, digest
+inter-cerveaux identique. Empreinte de la source `SR15` identique avant et
+après.
+
+En pass2, avant toute action : `dre-v1 = CURRENT`, la relation
+`revue/note-1.txt → revue/note-2.txt` de type `revision` est toujours
+`APPROVED`, la reportée `dre1:ebaf403cddeba4c7` est la seule suggestion core
+encore en attente, la rejetée n'est ni en attente ni établie, et le rerun rend
+un état identique.
+
+### 8.5 Incidents de mesure, corrigés dans le scénario
+
+Deux tentatives `SR15` ont été interrompues sans rien publier, et la cause a
+été corrigée dans le scénario plutôt que contournée dans le harnais :
+
+1. le scénario émettait son propre `map_open(rebuild)` pendant que la
+   composition ouvrait déjà l'index, ce qui sous Windows donne un
+   `os error 32` sur le fichier SQLite. Il attend désormais que l'instantané
+   réponde au lieu d'ouvrir la carte une seconde fois;
+2. la seconde campagne de contenu, placée **après** le dernier run du moteur,
+   ouvrait une nouvelle génération et laissait `dre-v1` `STALE`, si bien que la
+   passe 2 aurait mesuré un store périmé au lieu d'un store redémarré. Elle est
+   maintenant émise avant le rerun.
+
+Le rejeu `DR15` a exigé une troisième correction de mesure, de même nature : il
+échantillonnait le DOM du panneau dans le même tick que la commande dont le
+panneau n'avait pas encore rendu le résultat. Les assertions attendent
+désormais, avec budget, ce qui doit finir par être vrai. Le critère n'est pas
+affaibli : une règle qui n'apparaît jamais échoue toujours.
+
+### 8.6 Validations
+
+Rust ciblé relations **44/44**, `rule_engine` **14/14**, `relation_commands`
+**18/18**, gardes X5 **9/9**; suite Rust complète **221/221**; suite TypeScript
+complète **233/233** dont `runArtifacts` 34/34 et `reviewQueue` 14/14;
+`tsc --noEmit`; `vite build`; Tauri debug `--no-bundle`; PowerShell **32/32
+refus**, 32 noms uniques, les cinq destinations `TASK-0025` autorisées;
+`git diff --check` propre.
+
+### 8.7 Non testé et limites
+
+- `TASK-0025` reste `IMPLEMENTED` : aucun contrôle indépendant n'a été rendu, et
+  l'exécuteur ne s'attribue pas `VERIFIED`.
+- Les deux preuves `SR15` **ne rejoignent pas `X5`** et ne sont pas protégées.
+- `K11`, `K12`, `L12`, `M12`, `N15`, `H9` et `EC15` n'ont pas été rejoués —
+  décision documentée au §7.
+- Aucune politique automatique de réévaluation d'une décision n'existe;
+  `decision_reconsider_cause` reste `NULL` partout.
+- Aucun état `DEFERRED` persistant : « Plus tard » laisse `PENDING`.
+- `DEC-0013/F` demeure bloquante pour l'identité physique persistante; `F-046`
+  reste `PROPOSED`.
+- La garantie `X10` hors Windows reste non prouvée.

@@ -3471,3 +3471,72 @@ non prouvée race-safe. `DEC-0013/F` demeure bloquante; `F-044`, `F-045` et
 
 **Action unique suivante :** retour à l'orchestrateur pour définir la prochaine
 tranche après `TASK-0024 VERIFIED`. Aucune `TASK-0025` créée.
+
+---
+
+## 2026-09-05 — TASK-0025 — File de révision et mémoire des décisions humaines
+
+**Agent :** exécuteur Claude Code
+**Statut à l'issue :** `TASK-0025 = IMPLEMENTED`, contrôle indépendant requis;
+`DEC-0027 = IMPLEMENTED`; `F-044` et `F-045` passent à
+`IMPLEMENTED — contrôle indépendant requis`
+
+### Fait
+
+- Gel documentaire **avant tout code produit** : `TASK-0025` avec les critères
+  `SR1` à `SR15`, et `DEC-0027` qui fixe la frontière sémantique, les trois
+  états persistants et le contrat de la mémoire du rejet.
+- Migration de **toutes** les destinations runtime de `TASK-0024-*` vers
+  `TASK-0025-*` avant le premier rejeu, replays et destination corrective `X11`
+  compris. Les 32 noms protégés sont intacts : l'intersection est vidée en
+  déplaçant les destinations, jamais en réduisant le sceau. La garde couvre
+  désormais aussi `genericRelationScenario.ts` et `reviewScenario.ts`.
+- Schéma `v3 → v4` : reconstruction versionnée de `relation_suggestions`,
+  `CHECK(state IN ('pending','approved','rejected'))` et colonne nullable
+  `decision_reconsider_cause` laissée `NULL`. Nombre de lignes et
+  `pragma_foreign_key_check` contrôlés avant le commit; les trois déclencheurs
+  `X3` déposés pour le `RENAME` puis recréés.
+- `RelationStore::reject`, la commande `map_relations_reject` et la lecture
+  générique paginée `map_relations_review_queue`, avec une limite maximale
+  explicite et un ordre publié.
+- Mémoire du rejet dans la **reconciliation**, jamais dans le moteur : une
+  identité core `rejected` le reste, n'est jamais recréée `pending`, et survit à
+  un run qui cesse de la proposer. Nouveau compteur
+  `rejectedSuggestionPreservations`, ajouté à côté des compteurs déjà vérifiés.
+  La formule des `suggestion_key` de `TASK-0024` est inchangée.
+- Panneau « Relations à confirmer » : une entrée qui annonce le compte du
+  backend, un item à la fois, et exactement trois boutons natifs — `Confirmer`,
+  `Rejeter`, `Plus tard`. Les deux comptes affichés viennent du backend après
+  chaque décision; `Plus tard` n'appelle aucune commande.
+- Scénario `SR15` et son harnais, sur une source synthétique dédiée hors des
+  quatre fixtures gelées.
+
+### Validé
+
+Rust **221/221**, TypeScript **233/233**, `tsc --noEmit`, `vite build`, Tauri
+debug `--no-bundle`, PowerShell **32/32 refus** avec les cinq destinations
+`TASK-0025` autorisées, `git diff --check` propre.
+
+Preuves réelles `SR15` pass1 et pass2 écrites : clavier réel, activations
+fiables, zéro clic programmatique, une seule relation `APPROVED` pour la
+confirmée, aucune pour la rejetée, compte en attente inchangé par « Plus tard »,
+et — après un **vrai** redémarrage de processus — approbation et rejet
+conservés, reportée encore en attente, rerun idempotent. Rejeux verts sous noms
+`TASK-0025` : `DR15` pass1/pass2, `J12`, `X11`.
+
+Trois corrections de mesure ont été nécessaires et sont documentées dans
+`VALIDATION.md` AP.4 : une course sur le fichier d'index, une campagne de
+contenu mal placée qui laissait `dre-v1` `STALE`, et un échantillonnage
+synchrone du DOM dans le rejeu `DR15`. Aucune n'affaiblit un critère.
+
+### Non testé / limites
+
+`K11`, `K12`, `L12`, `M12`, `N15`, `H9` et `EC15` ne sont pas rejoués — décision
+documentée. Aucune politique automatique de réévaluation d'une décision;
+`decision_reconsider_cause` reste `NULL`. Aucun état `DEFERRED` persistant.
+Les deux preuves `SR15` **ne rejoignent pas `X5`**, qui reste à 32 noms.
+`DEC-0013/F` demeure bloquante, `F-046` reste `PROPOSED`, et `X10` hors Windows
+reste non prouvée.
+
+**Action unique suivante :** contrôle indépendant de `TASK-0025`. Aucune
+`TASK-0026` créée.

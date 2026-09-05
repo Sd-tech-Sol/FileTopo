@@ -3504,3 +3504,83 @@ TypeScript 215/215, check/build/Tauri, DR15 et J12 sont ceux de la correction
 X11, enregistrés par `ACTION-0040`; ils ne sont pas revendiqués comme rejoués
 ici. La garantie X10 non-Windows reste non prouvée race-safe. `DEC-0013/F`
 demeure bloquante; `F-044`, `F-045`, `F-046` restent `PROPOSED`.
+
+---
+
+## AP. TASK-0025 — file de révision et mémoire des décisions humaines
+
+**Statut : `IMPLEMENTED`** le 2026-09-05, **en attente de contrôle
+indépendant**. L'exécuteur ne s'attribue pas `VERIFIED`. Branche
+`build/v0.2-a9-suggestion-review-memory`; `main` inchangé à `91bbe90f`.
+
+### AP.1 Ce qui est vérifié, et par quelle preuve
+
+| Critère | Preuve | Verdict |
+|---|---|---|
+| `SR1` migration `v3 → v4` sans perte | Rust `migrating_a_version_3_store_preserves_every_row_and_gains_the_third_state`, `a_version_1_store_reaches_v4_and_keeps_its_matching_approval`, `a_fresh_store_is_created_at_v4_…`, `migrating_a_version_1_store_drops_the_mismatched_row_and_names_it` | vérifié |
+| `SR2` trois états, au niveau du stockage | Rust `the_store_admits_exactly_pending_approved_and_rejected` | vérifié |
+| `SR3` aucun `deferred` persistable | Rust `no_fourth_state_is_storable_and_deferred_is_refused_by_name`; TS `SR3 — no fourth state` | vérifié |
+| `SR4` file paginée, compte exact | Rust `the_queue_publishes_an_exact_pending_count_and_complete_items`, `the_queue_is_paginated_ordered_and_clamped`; preuve `SR15` pass1 (`totalPending = 7`, `limit = maxLimit = 100`, ordre publié) | vérifié |
+| `SR5` items explicables | Rust idem; TS `SR5 — every item is explainable where it is decided` | vérifié |
+| `SR6` `Confirmer` → une relation `APPROVED` | preuve `SR15` pass1 : `approvedRelationsForConfirmed = 1` | vérifié |
+| `SR7` `Rejeter` → aucune relation | Rust `rejecting_records_the_decision_and_writes_no_relation`, `rejecting_removes_the_item_from_the_queue_and_creates_no_relation`; preuve `SR15` pass1 | vérifié |
+| `SR8` `Plus tard` ne décide rien | TS `Plus tard mutates nothing and moves to the next item`; preuve `SR15` pass1 : compte en attente 5 → 5 | vérifié |
+| `SR9` rejet non reproposé au rerun | Rust `a_rejected_core_suggestion_is_never_recreated_pending_by_a_rerun`, `a_refusal_outlives_a_run_that_does_not_repropose_it`; preuve `SR15` pass1 et pass2 | vérifié |
+| `SR10` approbation préservée au rerun | Rust `approved_rejected_and_pending_identities_are_counted_separately`; preuve `SR15` pass1/pass2 | vérifié |
+| `SR11` décisions après redémarrage réel | preuve `SR15` pass2, **nouveau processus** : `dre-v1 = CURRENT` avant toute action, relation `APPROVED` présente, rejetée absente, reportée encore en attente | vérifié |
+| `SR12` isolation entre cerveaux | Rust `a_refusal_in_one_brain_leaves_another_brains_identical_suggestion_pending`, `a_refusal_in_alpha_leaves_gammas_queue_and_store_untouched`; preuve `SR15` pass1 sur `brain-gamma` | vérifié |
+| `SR13` source en lecture seule | preuve `SR15` pass1 : empreintes identiques sur deux campagnes | vérifié |
+| `SR14` `X5 = 32`, runtime `TASK-0025` | gardes Rust 9/9, TS `runArtifacts` 34/34, PowerShell 32/32; les cinq artefacts publiés déclarent `protectedDestinations = []` et `owningTaskId = TASK-0025` | vérifié |
+| `SR15` WebView2 réel, activations fiables | preuves `SR15` pass1/pass2 : `keydownIsTrusted` et `activationIsTrusted` vrais, `programmaticClickCalls = 0`, `programmaticClickDispatches = 0` | vérifié |
+
+### AP.2 Suites exécutées
+
+Rust ciblé : `map::relations` **44/44**, `map::rule_engine` **14/14**,
+`map::relation_commands` **18/18**, gardes X5 **9/9**. Suite Rust complète
+**221/221**. Suite TypeScript complète **233/233**, dont `runArtifacts` 34/34 et
+le nouveau `reviewQueue` 14/14. `tsc --noEmit` propre, `vite build` vert, Tauri
+debug `--no-bundle` construit. PowerShell : **32 refus sur 32**, 32 noms
+uniques, et les cinq destinations `TASK-0025` explicitement autorisées.
+`git diff --check` propre.
+
+### AP.3 Rejeux
+
+Rejoués sous noms `TASK-0025`, tous verts : `DR15` pass1 et pass2, `J12`
+intra-brain, `X11` generic brain. Les harnais ont re-haché les 32 preuves
+protégées avant et après chaque campagne : **inchangées**.
+
+**Non rejoués, et pourquoi :** `K11`, `K12`, `L12`, `M12`, `N15`, `H9` et
+`EC15`. Cette tranche ne touche ni la composition, ni la vue composée, ni les
+relations inter-cerveaux, ni le graphe topographique, ni les observations de
+contenu, ni la boucle de mesure. Leurs destinations ont tout de même été
+migrées, parce que la garde exige qu'aucune destination runtime ne reste sous
+un nom scellé.
+
+### AP.4 Incidents de mesure, corrigés à la source
+
+Trois corrections de **mesure**, aucune de complaisance :
+
+1. le scénario `SR15` émettait son propre `map_open(rebuild)` pendant que la
+   composition ouvrait déjà l'index — `os error 32` sous Windows. Il attend
+   désormais que l'instantané réponde;
+2. la seconde campagne de contenu de `SR15`, placée après le dernier run du
+   moteur, laissait `dre-v1` `STALE` et aurait fait mesurer à la passe 2 un
+   store périmé plutôt qu'un store redémarré. Elle est émise avant le rerun;
+3. le rejeu `DR15` échantillonnait le DOM du panneau dans le même tick que la
+   commande dont le panneau n'avait pas rendu le résultat. Les assertions
+   attendent maintenant, avec budget, ce qui doit finir par être vrai.
+
+Aucune n'affaiblit un critère : une règle qui n'apparaît jamais échoue toujours.
+
+### AP.5 Non testé, inconnu, limites
+
+- **Non testé :** aucun contrôle indépendant n'a été rendu; `TASK-0025` reste
+  `IMPLEMENTED` et les deux preuves `SR15` restent hors `X5`.
+- **Non testé :** `K11`, `K12`, `L12`, `M12`, `N15`, `H9`, `EC15`.
+- **Inconnu :** le comportement de la migration `v3 → v4` sur un store de très
+  grande taille; les stores exercés sont synthétiques et petits.
+- **Limite assumée :** aucune politique automatique de réévaluation d'une
+  décision. `decision_reconsider_cause` existe et reste `NULL` partout.
+- **Limite assumée :** aucun état `DEFERRED` persistant en v1.
+- **Inchangé :** `DEC-0013/F` demeure bloquante, `F-046` reste `PROPOSED`, et la
+  garantie `X10` hors Windows reste non prouvée.

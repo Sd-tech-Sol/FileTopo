@@ -1,5 +1,58 @@
 # État courant
 
+## TASK-0025 — file de révision et mémoire des décisions — 2026-09-05
+
+- **Statut :** `TASK-0025 = IMPLEMENTED`, contrôle indépendant requis.
+  `DEC-0027 = IMPLEMENTED`. **`VERIFIED` n'est pas auto-attribué.** Branche
+  `build/v0.2-a9-suggestion-review-memory`, créée depuis `7bb9857` et publiée;
+  `main` intact à `91bbe90f`.
+- **Livré :** `F-044` — une file « Relations à confirmer » par cerveau,
+  générique, paginée, à limite maximale explicite, avec un `totalPending` exact
+  qui ne compte que ce qui attend; et `F-045` — la décision humaine persistée,
+  qu'un rerun inchangé de `dre-v1` ne défait plus.
+- **Trois états, exactement :** `pending`, `approved`, `rejected`. **Aucun
+  `deferred`** : « Plus tard » n'appelle aucune commande, ne persiste rien et
+  laisse la suggestion `PENDING`, conformément à `DEC-0021` et `DEC-0027` §B.
+- **Schéma `v3 → v4` :** reconstruction versionnée de `relation_suggestions`,
+  `CHECK` à trois valeurs et colonne nullable `decision_reconsider_cause`
+  laissée `NULL`. Chaque colonne recopiée par son nom, nombre de lignes et
+  `pragma_foreign_key_check` contrôlés avant le commit, les trois déclencheurs
+  `X3` recréés. Migrations depuis `v1`, `v2` et `v3` exercées.
+- **Mémoire du rejet :** dans la reconciliation, jamais dans le moteur. Une
+  identité core `rejected` le reste, n'est jamais recréée `pending`, et survit
+  à un run qui cesse de la proposer. La formule des `suggestion_key` de
+  `TASK-0024` est **inchangée**. Nouveau compteur
+  `rejectedSuggestionPreservations`, ajouté sans renommer ni retirer aucun
+  compteur déjà vérifié.
+- **Frontière sémantique intacte :** aucune troisième provenance, aucun état
+  `AI`/`SUGGESTED`/`REJECTED_RELATION`, aucune suggestion auto-approuvée,
+  aucune relation inter-cerveaux inventée, aucune donnée réelle.
+- **Migration runtime, avant tout rejeu :** toutes les destinations passent de
+  `TASK-0024-*` à `TASK-0025-*`, y compris les replays et la destination
+  corrective `X11`. Les **32** noms protégés sont inchangés :
+  `SEALED_RUNTIME_DESTINATIONS = []`, `protectedDestinations = []`,
+  `owningTaskId = TASK-0025`, `writesUnderItsOwnTaskOnly = true`, `X5 = 32`.
+  La garde couvre désormais aussi `genericRelationScenario.ts` et
+  `reviewScenario.ts`.
+- **Preuves réelles :** `SR15` pass1 et pass2 écrites — clavier réel sur les
+  cinq activations mesurées et les quatre déplacements « Plus tard »,
+  `keydownIsTrusted` et `activationIsTrusted` vrais, zéro clic programmatique;
+  exactement une relation `APPROVED` pour la confirmée, aucune pour la rejetée,
+  compte en attente inchangé par « Plus tard »; après un vrai redémarrage,
+  `dre-v1 = CURRENT`, l'approbation et le rejet ont tenu, la reportée est encore
+  la seule suggestion core en attente. **Ces deux preuves ne rejoignent pas
+  `X5`.** Rejeux verts sous noms `TASK-0025` : `DR15` pass1/pass2, `J12`, `X11`.
+- **Validations :** Rust **221/221**, TypeScript **233/233**, `tsc --noEmit`,
+  `vite build`, Tauri debug `--no-bundle`, PowerShell **32/32 refus** avec les
+  cinq destinations `TASK-0025` autorisées, `git diff --check` propre.
+- **Produit :** `F-044` et `F-045` passent à `IMPLEMENTED — contrôle
+  indépendant requis`. `F-043` reste vérifiée par `TASK-0024`. `F-046` reste
+  `PROPOSED` et `DEC-0013/F` demeure bloquante.
+- **Limites :** aucune politique automatique de réévaluation d'une décision;
+  `decision_reconsider_cause` reste `NULL`. `K11`, `K12`, `L12`, `M12`, `N15`,
+  `H9` et `EC15` non rejoués, décision documentée dans `TASK-0025` §7. `X10`
+  hors Windows toujours non prouvée.
+
 ## ACTION-0041 — TASK-0024 VERIFIED et scellement X5 — 2026-09-05
 
 - **Verdict indépendant enregistré, non rendu par Codex :** `X11 = CLOSED`,
