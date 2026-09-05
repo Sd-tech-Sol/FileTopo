@@ -42,6 +42,7 @@ import { runRelationScenario as runScenario } from "./relationScenario";
 import { runTopographicScenario as runTopographic } from "./topographicScenario";
 import { runContentScenario as runContent } from "./contentScenario";
 import { runDreScenario as runDre } from "./dreScenario";
+import { runReviewScenario as runReview } from "./reviewScenario";
 import { runGenericRelationScenario as runGeneric } from "./genericRelationScenario";
 import {
   H9_REGRESSION_ABANDON_ARTIFACT,
@@ -306,6 +307,7 @@ export default function MapApp() {
   const runTopographicScenarioRef = useRef<(() => Promise<void>) | null>(null);
   const runContentScenarioRef = useRef<(() => Promise<void>) | null>(null);
   const runDreScenarioRef = useRef<(() => Promise<void>) | null>(null);
+  const runReviewScenarioRef = useRef<(() => Promise<void>) | null>(null);
   const runGenericRelationScenarioRef = useRef<(() => Promise<void>) | null>(null);
 
   const order = useMemo(() => catalogueOrder(catalog?.brains ?? []), [catalog]);
@@ -432,6 +434,12 @@ export default function MapApp() {
   const autoStarted = useRef(false);
   useEffect(() => {
     if (autoStarted.current || fixtures.length === 0 || !host) return;
+    if (host.autoSr15Pass === 1 || host.autoSr15Pass === 2) {
+      autoStarted.current = true;
+      hostLog("info", `démarrage automatique du scénario SR15, passe ${host.autoSr15Pass}`);
+      void runReviewScenarioRef.current?.();
+      return;
+    }
     if (host.autoDrePass === 1 || host.autoDrePass === 2) {
       autoStarted.current = true;
       hostLog("info", `démarrage automatique du scénario DR15, passe ${host.autoDrePass}`);
@@ -1133,8 +1141,11 @@ export default function MapApp() {
           updated.set(brainId, { ...brain, relations: next });
           return updated;
         });
+        // The cursor is **not** reset: the decided item left the page, so the
+        // index the reader was on now holds the next one. Sending them back to
+        // the top after every decision would make a queue of any length
+        // unusable.
         await loadReviewQueue(brainId);
-        setReviewCursor(0);
         setStatus(
           `Suggestion ${suggestionKey} confirmée dans ${brainId} : une relation APPROVED existe désormais.`,
         );
@@ -1172,7 +1183,6 @@ export default function MapApp() {
           return updated;
         });
         await loadReviewQueue(brainId);
-        setReviewCursor(0);
         setStatus(
           `Suggestion ${suggestionKey} rejetée dans ${brainId} : aucune relation créée, la décision est conservée.`,
         );
@@ -1708,6 +1718,23 @@ export default function MapApp() {
   }, [host, selectNode, showOnly]);
 
   runDreScenarioRef.current = runDreScenario;
+
+  // `SR15`. The same wiring as DR15, on the review queue: two passes on one
+  // variant, every decision taken by a real keystroke.
+  const runReviewScenario = useCallback(() => {
+    const pass = host?.autoSr15Pass === 2 ? 2 : 1;
+    return runReview({
+      invoke: (command, args) => invoke(command, args),
+      host,
+      showOnly,
+      select: selectNode,
+      setStatus,
+      log: hostLog,
+      pass,
+    });
+  }, [host, selectNode, showOnly]);
+
+  runReviewScenarioRef.current = runReviewScenario;
 
   // Reserve `X11`. The same wiring as DR15, on the brain the legacy fixture
   // never covered — same commands, same panel, same real-keystroke mechanism.

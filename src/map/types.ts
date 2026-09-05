@@ -172,6 +172,13 @@ export interface HostInfo {
    * engine and the panel work outside the frozen legacy fixture.
    */
   autoGenericRelations: boolean;
+  /**
+   * `SR15` — the review queue and the memory of a decision.
+   *
+   * `0` none, `1` the deciding pass, `2` the restart that proves the decisions
+   * survived it.
+   */
+  autoSr15Pass: number;
 }
 
 /* --- TASK-0023 — observations cryptographiques exactes ------------------ */

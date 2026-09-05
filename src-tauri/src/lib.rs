@@ -772,6 +772,29 @@ async fn map_task0024_dr15_prepare(
     }
 }
 
+/// Materializes and observes the repository-local synthetic source used only
+/// by the real TASK-0025/SR15 review-queue proof. Release builds expose no
+/// such source and normal runs never call this command.
+#[tauri::command]
+async fn map_task0025_sr15_prepare(
+    app: tauri::AppHandle,
+) -> Result<map::content_signals::ContentObservationReport, String> {
+    #[cfg(not(debug_assertions))]
+    {
+        let _ = app;
+        return Err("TASK-0025 SR15 synthetic proof exists only in development builds".to_string());
+    }
+    #[cfg(debug_assertions)]
+    {
+        let (paths, brain) = resolve_brain(&app, map::rule_engine::TASK0025_SR15_BRAIN_ID)?;
+        tauri::async_runtime::spawn_blocking(move || {
+            map::rule_engine::prepare_task0025_sr15(&paths, &brain).map_err(String::from)
+        })
+        .await
+        .map_err(|_| "task0025_sr15_worker_failed".to_string())?
+    }
+}
+
 /// `H8` — the engine actually rendering, read from the host.
 ///
 /// `tauri::webview_version()` reports the WebView2 runtime on Windows. It is
@@ -832,6 +855,13 @@ fn map_host_info(app: tauri::AppHandle) -> map::commands::HostInfo {
         // persistence across a restart.
         auto_generic_relations: std::env::var("FILETOPO_AUTO_X11")
             .is_ok_and(|value| value == "1"),
+        // `SR15`: the review queue and the memory of a decision, in two real
+        // processes on one variant — pass 1 decides, pass 2 restarts.
+        auto_sr15_pass: std::env::var("FILETOPO_AUTO_SR15")
+            .ok()
+            .and_then(|value| value.parse::<u8>().ok())
+            .filter(|pass| *pass == 1 || *pass == 2)
+            .unwrap_or(0),
     }
 }
 
@@ -1088,6 +1118,7 @@ pub fn run() {
             map_relation_engine_status,
             map_relation_engine_run,
             map_task0024_dr15_prepare,
+            map_task0025_sr15_prepare,
             map_relations_open,
             map_relations_for_node,
             map_relations_approve,

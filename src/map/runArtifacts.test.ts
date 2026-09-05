@@ -53,8 +53,10 @@ import composedScenarioSource from "./composedScenario.ts?raw";
 import contentScenarioSource from "./contentScenario.ts?raw";
 import crossScenarioSource from "./crossScenario.ts?raw";
 import dreScenarioSource from "./dreScenario.ts?raw";
+import genericRelationScenarioSource from "./genericRelationScenario.ts?raw";
 import mapAppSource from "./MapApp.tsx?raw";
 import relationScenarioSource from "./relationScenario.ts?raw";
+import reviewScenarioSource from "./reviewScenario.ts?raw";
 import topographicScenarioSource from "./topographicScenario.ts?raw";
 import {
   H9_REGRESSION_ABANDON_ARTIFACT,
@@ -92,6 +94,10 @@ const WRITING_SOURCES: ReadonlyArray<readonly [string, string]> = [
   ["src/map/topographicScenario.ts", topographicScenarioSource],
   ["src/map/contentScenario.ts", contentScenarioSource],
   ["src/map/dreScenario.ts", dreScenarioSource],
+  // Added by `TASK-0025`: the corrective `X11` scenario writes an artefact
+  // too, and was the one writing source the guard did not hold.
+  ["src/map/genericRelationScenario.ts", genericRelationScenarioSource],
+  ["src/map/reviewScenario.ts", reviewScenarioSource],
 ];
 
 const ORIGINAL_19_PROTECTED = [

@@ -26,6 +26,32 @@ pub const NUMBERED_SIBLING_RULE_ID: &str = "core.numbered-sibling-revision-candi
 pub const RULE_VERSION: &str = "v1";
 pub const TASK0024_DR15_BRAIN_ID: &str = "brain-alpha";
 pub const TASK0024_DR15_SOURCE_ID: &str = "task0024-dr15";
+/// `TASK-0025` / `SR15` — the brain and the synthetic source of the review
+/// queue proof.
+///
+/// A **separate** source from `TASK-0024`'s, for a reason the slice needs: the
+/// queue proof has to confirm one suggestion, refuse another and postpone a
+/// third, so it needs at least three *core* suggestions to work on, and the
+/// `DR15` input produces one. None of the four frozen fixtures is touched, and
+/// the source is materialized once and then read only.
+pub const TASK0025_SR15_BRAIN_ID: &str = "brain-alpha";
+pub const TASK0025_SR15_SOURCE_ID: &str = "task0025-sr15";
+
+/// Three numbered series in two folders, and nothing else.
+///
+/// Every file has distinct content, so `core.identical-content` produces no
+/// deterministic relation here: what the `SR15` proof is about is suggestions
+/// and the decisions taken on them, and a fixture that also produced true
+/// relations would blur the two.
+#[cfg(debug_assertions)]
+const TASK0025_SR15_FILES: [(&str, &[u8]); 6] = [
+    ("revue/note-1.txt", b"revue-note-un-synthetique\n"),
+    ("revue/note-2.txt", b"revue-note-deux-synthetique\n"),
+    ("revue/plan-7.md", b"revue-plan-sept-synthetique\n"),
+    ("revue/plan-8.md", b"revue-plan-huit-synthetique\n"),
+    ("archive/bilan-2.csv", b"archive-bilan-deux-synthetique\n"),
+    ("archive/bilan-3.csv", b"archive-bilan-trois-synthetique\n"),
+];
 
 #[cfg(debug_assertions)]
 const TASK0024_DR15_FILES: [(&str, &[u8]); 9] = [
@@ -352,6 +378,46 @@ pub fn task0024_dr15_enabled() -> bool {
         && std::env::var("FILETOPO_AUTO_DRE").is_ok_and(|value| value == "1" || value == "2")
 }
 
+/// `SR15`. Same shape as the `DR15` flag, and just as narrow: development
+/// builds only, and only while the scenario's own environment variable asks
+/// for it. A normal run sees none of these nodes.
+pub fn task0025_sr15_enabled() -> bool {
+    cfg!(debug_assertions)
+        && std::env::var("FILETOPO_AUTO_SR15").is_ok_and(|value| value == "1" || value == "2")
+}
+
+/// The `SR15` proof nodes, never added to a frozen fixture plan or to a brain
+/// map store — exactly like [`task0024_dr15_nodes`].
+pub fn task0025_sr15_nodes() -> Vec<MapNode> {
+    #[cfg(debug_assertions)]
+    {
+        return TASK0025_SR15_FILES
+            .iter()
+            .enumerate()
+            .map(|(index, (path, bytes))| MapNode {
+                id: 95_000 + index as i64,
+                parent_id: None,
+                name: path.rsplit('/').next().unwrap_or(path).to_string(),
+                relative_path: (*path).to_string(),
+                kind: NodeKind::File,
+                depth: 2,
+                size_bytes: bytes.len() as u64,
+                modified_unix_ms: None,
+                child_count: 0,
+                access_diagnostic: None,
+                rect: Rect {
+                    x: 320.0,
+                    y: index as f64 * 80.0,
+                    w: 240.0,
+                    h: 64.0,
+                },
+            })
+            .collect();
+    }
+    #[cfg(not(debug_assertions))]
+    Vec::new()
+}
+
 /// Extra nodes exist only for the explicitly TASK-0024 DR15 development
 /// scenario. They are never added to the frozen four fixture plans or to the
 /// brain map store; they merely give the real rule runtime a synthetic proof
@@ -390,6 +456,9 @@ pub fn effective_nodes(nodes: &[MapNode]) -> Vec<MapNode> {
     let mut effective = nodes.to_vec();
     if task0024_dr15_enabled() {
         effective.extend(task0024_dr15_nodes());
+    }
+    if task0025_sr15_enabled() {
+        effective.extend(task0025_sr15_nodes());
     }
     effective
 }
@@ -444,6 +513,65 @@ pub fn prepare_task0024_dr15(
         &brain.brain_id,
         &root,
         &task0024_dr15_nodes(),
+    )
+}
+
+/// Materializes and observes the `SR15` synthetic source, once.
+///
+/// Line for line the `DR15` procedure, on its own files: if the folder already
+/// exists it is **verified**, never rewritten and never deleted, and a single
+/// differing byte is a refusal rather than a silent repair. The source is read
+/// only from the moment it exists, which is what `SR13` measures.
+#[cfg(debug_assertions)]
+pub fn prepare_task0025_sr15(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+) -> Result<content_signals::ContentObservationReport, MapError> {
+    if brain.brain_id != TASK0025_SR15_BRAIN_ID {
+        return Err(MapError::RuleEngine(
+            "TASK-0025 SR15 proof input is scoped to brain-alpha".to_string(),
+        ));
+    }
+    let root = paths.fixtures.join(TASK0025_SR15_SOURCE_ID);
+    let expected_paths = TASK0025_SR15_FILES
+        .iter()
+        .map(|(path, _)| (*path).to_string())
+        .collect::<BTreeSet<_>>();
+    if root.exists() {
+        let observed = super::fixtures::observed_paths(&root)?
+            .into_iter()
+            .filter(|path| {
+                root.join(path.replace('/', std::path::MAIN_SEPARATOR_STR))
+                    .is_file()
+            })
+            .collect::<BTreeSet<_>>();
+        if observed != expected_paths {
+            return Err(MapError::FixtureMismatch(
+                "TASK-0025 SR15 synthetic source differs from its frozen proof plan; nothing was deleted"
+                    .to_string(),
+            ));
+        }
+        for (path, bytes) in TASK0025_SR15_FILES {
+            if fs::read(root.join(path.replace('/', std::path::MAIN_SEPARATOR_STR)))? != bytes {
+                return Err(MapError::FixtureMismatch(format!(
+                    "TASK-0025 SR15 synthetic file `{path}` differs; nothing was overwritten"
+                )));
+            }
+        }
+    } else {
+        for (path, bytes) in TASK0025_SR15_FILES {
+            let target = root.join(path.replace('/', std::path::MAIN_SEPARATOR_STR));
+            if let Some(parent) = target.parent() {
+                fs::create_dir_all(parent)?;
+            }
+            fs::write(target, bytes)?;
+        }
+    }
+    content_signals::observe_task0024_fixture(
+        paths,
+        &brain.brain_id,
+        &root,
+        &task0025_sr15_nodes(),
     )
 }
 
