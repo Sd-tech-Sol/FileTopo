@@ -1,0 +1,215 @@
+{
+  "task": "TASK-0025",
+  "criterion": "DR15",
+  "pass": 1,
+  "capturedAtIso": "2026-09-05T23:31:55.475Z",
+  "host": {
+    "sandboxRoot": "<dépôt>/.filetopo-sandbox/variants/task0024-dr15-20260905193147-cba84b",
+    "appVersion": "0.1.0-alpha.1",
+    "sqliteVersion": "3.53.2",
+    "webviewVersion": "152.0.4191.62",
+    "tauriVersion": "2.11.5",
+    "platform": "windows",
+    "nodeCeiling": 5000,
+    "depthCeiling": 40,
+    "cardWidth": 240,
+    "cardHeight": 64,
+    "layoutAlgorithm": "layered-tree-cards-v1",
+    "autoVerify": false,
+    "autoMeasure": false,
+    "autoRelations": false,
+    "autoBrainsPass": 0,
+    "autoComposedPass": 0,
+    "autoCrossPass": 0,
+    "autoTopographicPass": 0,
+    "autoContentPass": 0,
+    "autoDrePass": 1,
+    "autoGenericRelations": false,
+    "autoSr15Pass": 0
+  },
+  "input": {
+    "brainId": "brain-alpha",
+    "source": "synthetic TASK-0024 proof fixture outside the four frozen fixtures",
+    "noRealData": true
+  },
+  "governance": {
+    "protectedArtifactCount": 32,
+    "protectedDestinations": [],
+    "writesUnderItsOwnTaskOnly": true,
+    "owningTaskId": "TASK-0025"
+  },
+  "evidence": {
+    "freshVariant": true,
+    "catalogActiveBrainId": "brain-alpha",
+    "mapNodeCount": 12,
+    "contentCampaign": {
+      "brainId": "brain-alpha",
+      "storePath": "brains/brain-alpha/signals/content.sqlite",
+      "schemaVersion": 1,
+      "signalEngineVersion": "sha256-v1",
+      "generationId": "5d9aa63c-b950-4250-899c-98f5b91aeaea",
+      "observedAt": 1788651112491,
+      "sourceFingerprintBefore": "sha256-tree-v1:d9bbf1a610c581fcc7260c63043d765253a44269e8c32f81036dc1856c0fa63f",
+      "sourceFingerprintAfter": "sha256-tree-v1:d9bbf1a610c581fcc7260c63043d765253a44269e8c32f81036dc1856c0fa63f",
+      "sourceStable": true,
+      "indexedFileCount": 8,
+      "hashedCount": 8,
+      "unreadableCount": 0,
+      "unstableCount": 0,
+      "unsupportedCount": 0,
+      "filesOpenedForHash": 8,
+      "bytesRead": 1424,
+      "digestsComputed": 8,
+      "hashAlgorithm": "sha256-v1",
+      "readOnlyConfirmed": true,
+      "durationMs": 8.8898
+    },
+    "proofCampaign": {
+      "brainId": "brain-alpha",
+      "storePath": "brains/brain-alpha/signals/content.sqlite",
+      "schemaVersion": 1,
+      "signalEngineVersion": "sha256-v1",
+      "generationId": "f2b779d9-2595-4ad1-814d-847f88db1cf6",
+      "observedAt": 1788651112537,
+      "sourceFingerprintBefore": "sha256-tree-v1:117b2461a96ecd8d1e6b3d9e4cfa3119c7703bd5da5e36393ea4cc0377b51b25",
+      "sourceFingerprintAfter": "sha256-tree-v1:117b2461a96ecd8d1e6b3d9e4cfa3119c7703bd5da5e36393ea4cc0377b51b25",
+      "sourceStable": true,
+      "indexedFileCount": 9,
+      "hashedCount": 9,
+      "unreadableCount": 0,
+      "unstableCount": 0,
+      "unsupportedCount": 0,
+      "filesOpenedForHash": 9,
+      "bytesRead": 150,
+      "digestsComputed": 9,
+      "hashAlgorithm": "sha256-v1",
+      "readOnlyConfirmed": true,
+      "durationMs": 12.5174
+    },
+    "initialStatus": {
+      "brainId": "brain-alpha",
+      "engineVersion": "dre-v1",
+      "inputState": "NOT_RUN",
+      "mapDigest": "fnv1a64:400fab2df3081fc0",
+      "currentContentGenerationId": "5d9aa63c-b950-4250-899c-98f5b91aeaea",
+      "lastRunId": null,
+      "lastRunUnixMs": null,
+      "lastMapDigest": null,
+      "lastContentGenerationId": null
+    },
+    "userActivation": {
+      "inputMethod": "WScript.Shell SendKeys via scripts/j12-send-real-key.ps1, after AppActivate on the FileTopo process — the ordinary Windows input path",
+      "keyRequested": "{ENTER}",
+      "focusedBeforeTag": "BUTTON",
+      "focusedBeforeClass": "relations__analyze",
+      "focusedBeforeText": "Analyser les relations",
+      "focusReached": true,
+      "keydownIsTrusted": true,
+      "keydownKey": "Enter",
+      "activationIsTrusted": true,
+      "programmaticClickCalls": 0,
+      "programmaticClickDispatches": 0,
+      "observedChange": true,
+      "waitedMs": 1419
+    },
+    "approvalActivation": {
+      "inputMethod": "WScript.Shell SendKeys via scripts/j12-send-real-key.ps1, after AppActivate on the FileTopo process — the ordinary Windows input path",
+      "keyRequested": "{ENTER}",
+      "focusedBeforeTag": "BUTTON",
+      "focusedBeforeClass": "suggestion__approve",
+      "focusedBeforeText": "Approuver dre1:3dbd496b26f90583",
+      "focusReached": true,
+      "keydownIsTrusted": true,
+      "keydownKey": "Enter",
+      "activationIsTrusted": true,
+      "programmaticClickCalls": 0,
+      "programmaticClickDispatches": 0,
+      "observedChange": true,
+      "waitedMs": 1054
+    },
+    "report": {
+      "brainId": "brain-alpha",
+      "engineVersion": "dre-v1",
+      "runId": "dre1-c2a201b24fef689a",
+      "mapDigest": "fnv1a64:400fab2df3081fc0",
+      "contentGenerationId": "f2b779d9-2595-4ad1-814d-847f88db1cf6",
+      "rulesEvaluated": [
+        "core.identical-content/v1",
+        "core.numbered-sibling-revision-candidate/v1"
+      ],
+      "rulesSkipped": [],
+      "deterministicRelationsProduced": 2,
+      "suggestionsProduced": 1,
+      "emptyContentGroupsSkipped": 1,
+      "establishedCollisionSuppressions": 4,
+      "approvedSuggestionPreservations": 0,
+      "rejectedSuggestionPreservations": 0,
+      "sourceReadOnlyConfirmed": true,
+      "inputState": "CURRENT"
+    },
+    "rerun": {
+      "brainId": "brain-alpha",
+      "engineVersion": "dre-v1",
+      "runId": "dre1-1ce1eb7a10238a20",
+      "mapDigest": "fnv1a64:400fab2df3081fc0",
+      "contentGenerationId": "f2b779d9-2595-4ad1-814d-847f88db1cf6",
+      "rulesEvaluated": [
+        "core.identical-content/v1",
+        "core.numbered-sibling-revision-candidate/v1"
+      ],
+      "rulesSkipped": [],
+      "deterministicRelationsProduced": 2,
+      "suggestionsProduced": 0,
+      "emptyContentGroupsSkipped": 1,
+      "establishedCollisionSuppressions": 4,
+      "approvedSuggestionPreservations": 1,
+      "rejectedSuggestionPreservations": 0,
+      "sourceReadOnlyConfirmed": true,
+      "inputState": "CURRENT"
+    },
+    "coreIdenticalCount": 2,
+    "approvedSuggestionKey": "dre1:3dbd496b26f90583",
+    "afterApproval": {
+      "deterministic": [
+        "ek1|brain-alpha|identiques/a.bin|ek1|brain-alpha|identiques/b.bin|content-identical|core.identical-content",
+        "ek1|brain-alpha|identiques/a.bin|ek1|brain-alpha|identiques/c.bin|content-identical|core.identical-content"
+      ],
+      "approved": [
+        "ek1|brain-alpha|dossier-a/note-3.txt|ek1|brain-alpha|racine-1.txt|reference",
+        "ek1|brain-alpha|dossier-b/note-1.txt|ek1|brain-alpha|dossier-a/note-3.txt|reference",
+        "ek1|brain-alpha|dossier-b/sous-dossier/note-2.txt|ek1|brain-alpha|dossier-a/note-1.txt|reference",
+        "ek1|brain-alpha|racine-2.txt|ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|revision",
+        "ek1|brain-alpha|revisions/rapport-4.pdf|ek1|brain-alpha|revisions/rapport-5.pdf|revision"
+      ],
+      "pending": [
+        "S-005",
+        "S-006",
+        "S-007",
+        "S-008"
+      ]
+    },
+    "afterRerun": {
+      "deterministic": [
+        "ek1|brain-alpha|identiques/a.bin|ek1|brain-alpha|identiques/b.bin|content-identical|core.identical-content",
+        "ek1|brain-alpha|identiques/a.bin|ek1|brain-alpha|identiques/c.bin|content-identical|core.identical-content"
+      ],
+      "approved": [
+        "ek1|brain-alpha|dossier-a/note-3.txt|ek1|brain-alpha|racine-1.txt|reference",
+        "ek1|brain-alpha|dossier-b/note-1.txt|ek1|brain-alpha|dossier-a/note-3.txt|reference",
+        "ek1|brain-alpha|dossier-b/sous-dossier/note-2.txt|ek1|brain-alpha|dossier-a/note-1.txt|reference",
+        "ek1|brain-alpha|racine-2.txt|ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|revision",
+        "ek1|brain-alpha|revisions/rapport-4.pdf|ek1|brain-alpha|revisions/rapport-5.pdf|revision"
+      ],
+      "pending": [
+        "S-005",
+        "S-006",
+        "S-007",
+        "S-008"
+      ]
+    },
+    "crossDigestBefore": "fnv1a64:3020af7489aab581",
+    "crossDigestAfter": "fnv1a64:3020af7489aab581",
+    "sourceReadOnly": true,
+    "processClosedByHarness": true
+  }
+}

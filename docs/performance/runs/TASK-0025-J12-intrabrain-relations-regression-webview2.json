@@ -1,0 +1,344 @@
+{
+  "task": "TASK-0025",
+  "sourceCriterion": "TASK-0017/J12",
+  "nature": "regression replay after composed-view migration",
+  "doesNotReplace": "docs/performance/runs/TASK-0017-J12-webview2.json, docs/performance/runs/TASK-0018-J12-relations-regression-webview2.json",
+  "replacesCanonicalEvidence": false,
+  "note": "J12 replayed on brain-alpha after the TASK-0019 composed-view migration: same frozen `quasi-empty` tree, same real-keystroke mechanism, brain-keyed commands, DOM ids now namespaced by brain_id. It proves the composed view did not break J12; it does NOT re-issue J12's own proof, which remains TASK-0017-J12-webview2.json, unchanged.",
+  "capturedAtIso": "2026-09-05T23:19:32.828Z",
+  "host": {
+    "sandboxRoot": "<dépôt>/.filetopo-sandbox/variants/task0022-j12-20260905191928-14d8b8",
+    "appVersion": "0.1.0-alpha.1",
+    "sqliteVersion": "3.53.2",
+    "webviewVersion": "152.0.4191.62",
+    "tauriVersion": "2.11.5",
+    "platform": "windows",
+    "nodeCeiling": 5000,
+    "depthCeiling": 40,
+    "cardWidth": 240,
+    "cardHeight": 64,
+    "layoutAlgorithm": "layered-tree-cards-v1",
+    "autoVerify": false,
+    "autoMeasure": false,
+    "autoRelations": true,
+    "autoBrainsPass": 0,
+    "autoComposedPass": 0,
+    "autoCrossPass": 0,
+    "autoTopographicPass": 0,
+    "autoContentPass": 0,
+    "autoDrePass": 0,
+    "autoGenericRelations": false,
+    "autoSr15Pass": 0
+  },
+  "evidence": {
+    "brainId": "brain-alpha",
+    "opened": {
+      "barReady": true,
+      "barReadyWaitedMs": 155,
+      "settled": true,
+      "waitedMs": 31
+    },
+    "fixtureId": "quasi-empty",
+    "relationsPath": "brains/brain-alpha/relations/relations.sqlite",
+    "overview": {
+      "established": 12,
+      "deterministic": 8,
+      "approved": 4,
+      "pendingSuggestions": 4,
+      "unresolvedEndpoints": [],
+      "endpointKeyScheme": "ek1",
+      "deterministicDigest": "fnv1a64:f2dc56476a45221f",
+      "rules": [
+        {
+          "name": "homonymes",
+          "version": "v1",
+          "relationType": "reference",
+          "symmetric": false,
+          "produced": 4
+        },
+        {
+          "name": "suites-numerotees",
+          "version": "v1",
+          "relationType": "revision",
+          "symmetric": false,
+          "produced": 4
+        }
+      ]
+    },
+    "pivot": {
+      "relativePath": "dossier-a/note-1.txt",
+      "outgoingCount": 3,
+      "incomingCount": 1,
+      "pendingSuggestions": [
+        "S-005"
+      ],
+      "hasBothDirections": true
+    },
+    "panel": {
+      "settled": true,
+      "waitedMs": 22,
+      "directionSections": [
+        "Sortantes (3)",
+        "Entrantes (1)"
+      ],
+      "entryCount": 4,
+      "provenanceLabels": [
+        "◆ déterministe",
+        "◆ déterministe",
+        "◆ déterministe",
+        "● approuvée"
+      ],
+      "ruleLines": [
+        "Règle : homonymes version v1",
+        "Règle : homonymes version v1",
+        "Règle : suites-numerotees version v1",
+        "Approuvée par une action explicite. Aucune règle déterministe."
+      ],
+      "totals": "3 sortante(s) · 1 entrante(s) · 1 suggestion(s) non comptée(s)"
+    },
+    "mapKeyboard": {
+      "focusReached": true,
+      "activeBefore": "brain-alpha-map-node-6",
+      "activeAfterArrowUp": "brain-alpha-map-node-6",
+      "activeAfterArrowDown": "brain-alpha-map-node-7",
+      "selectionMoved": false
+    },
+    "traversal": {
+      "entryLabel": "→note-1.txt◆ déterministe",
+      "entryTag": "BUTTON",
+      "entryDisabled": false,
+      "inputMethod": "WScript.Shell SendKeys via scripts/j12-send-real-key.ps1, after AppActivate on the FileTopo process — the ordinary Windows input path",
+      "keyRequested": "{ENTER}",
+      "focusedBeforeTag": "BUTTON",
+      "focusedBeforeClass": "relation__link",
+      "focusedBeforeText": "→note-1.txt◆ déterministe",
+      "focusReached": true,
+      "keydownIsTrusted": true,
+      "keydownKey": "Enter",
+      "activationIsTrusted": true,
+      "programmaticClickCalls": 0,
+      "programmaticClickDispatches": 0,
+      "observedChange": true,
+      "waitedMs": 1033,
+      "activeDescendantBefore": "brain-alpha-map-node-6",
+      "activeDescendantAfterKeystroke": "brain-alpha-map-node-9",
+      "expectedEndpointKey": "ek1|brain-alpha|dossier-b/note-1.txt",
+      "expectedEndpointNodeId": 9,
+      "expectedActiveDescendant": "brain-alpha-map-node-9",
+      "storeAgreesTheEntryIsARelation": true,
+      "selectionFollowedTheRelation": true,
+      "noProgrammaticActivationUsed": true,
+      "changeCameFromTheKeystroke": true
+    },
+    "accentuation": {
+      "selected": 1,
+      "relatedHierarchy": 1,
+      "linkedByRelation": 3,
+      "attenuated": 7,
+      "attenuatedFillOpacity": "0.66",
+      "attenuatedStrokeOpacity": "0.7",
+      "selectedFillOpacity": "0.95",
+      "selectedStrokeWidth": "3px",
+      "relatedStrokeWidth": "1.5px",
+      "linkedStrokeWidth": "2.5px",
+      "linkedStrokeDashArray": "6px, 2px",
+      "attenuatedStrokeDashArray": "none",
+      "attenuatedKeepsAccessibleName": true,
+      "attenuatedStaysInTheTree": true
+    },
+    "suggestionRendering": {
+      "establishedEdges": 12,
+      "suggestionEdges": 4,
+      "establishedArrowHeads": 12,
+      "suggestionArrowHeads": 0,
+      "suggestionRings": 8,
+      "establishedDashArray": "none",
+      "suggestionDashArray": "5px, 5px",
+      "suggestionCardsOnScreen": 0,
+      "suggestionTagText": ""
+    },
+    "approval": {
+      "suggestionKey": "S-005",
+      "inputMethod": "WScript.Shell SendKeys via scripts/j12-send-real-key.ps1, after AppActivate on the FileTopo process — the ordinary Windows input path",
+      "keyRequested": "{ENTER}",
+      "focusedBeforeTag": "BUTTON",
+      "focusedBeforeClass": "suggestion__approve",
+      "focusedBeforeText": "Approuver S-005",
+      "focusReached": true,
+      "keydownIsTrusted": true,
+      "keydownKey": "Enter",
+      "activationIsTrusted": true,
+      "programmaticClickCalls": 0,
+      "programmaticClickDispatches": 0,
+      "observedChange": true,
+      "waitedMs": 1075,
+      "noProgrammaticActivationUsed": true,
+      "beforeOutgoing": 3,
+      "beforeIncoming": 1,
+      "beforePendingSuggestions": [
+        "S-005"
+      ],
+      "beforeCountedAmongEstablished": false,
+      "afterOutgoing": 4,
+      "afterIncoming": 1,
+      "afterPendingSuggestions": [],
+      "createdProvenance": "APPROVED",
+      "createdRuleName": null,
+      "enteredCountsOnlyAfterApproval": true
+    },
+    "selfCheck": {
+      "brainId": "brain-alpha",
+      "fixtureId": "quasi-empty",
+      "establishedTotal": 13,
+      "deterministicTotal": 8,
+      "approvedTotal": 5,
+      "pendingSuggestionTotal": 3,
+      "rejections": [
+        {
+          "case": "X-a",
+          "attempt": "A1 → B1, reference, provenance `suggested`",
+          "expectedMotif": "relation_rejected_unknown_provenance",
+          "observedMotif": "relation_rejected_unknown_provenance",
+          "rejected": true
+        },
+        {
+          "case": "X-b",
+          "attempt": "A2 → A3, reference, provenance vide",
+          "expectedMotif": "relation_rejected_unknown_provenance",
+          "observedMotif": "relation_rejected_unknown_provenance",
+          "rejected": true
+        },
+        {
+          "case": "X-c",
+          "attempt": "A1 → A3, reference, DETERMINISTIC, rule_name vide",
+          "expectedMotif": "relation_rejected_missing_rule",
+          "observedMotif": "relation_rejected_missing_rule",
+          "rejected": true
+        },
+        {
+          "case": "X-d",
+          "attempt": "A1 → A3, reference, DETERMINISTIC, rule_version vide",
+          "expectedMotif": "relation_rejected_missing_rule",
+          "observedMotif": "relation_rejected_missing_rule",
+          "rejected": true
+        },
+        {
+          "case": "X-e",
+          "attempt": "insérer la suggestion S-005 telle quelle comme relation établie",
+          "expectedMotif": "relation_rejected_suggestion_is_not_a_relation",
+          "observedMotif": "relation_rejected_suggestion_is_not_a_relation",
+          "rejected": true
+        }
+      ],
+      "allRejected": true,
+      "replayDigestFirst": "fnv1a64:f2dc56476a45221f",
+      "replayDigestSecond": "fnv1a64:f2dc56476a45221f",
+      "replayStable": true,
+      "counts": [
+        {
+          "relativePath": "",
+          "expectedOutgoing": 0,
+          "observedOutgoing": 0,
+          "expectedIncoming": 0,
+          "observedIncoming": 0,
+          "matches": true
+        },
+        {
+          "relativePath": "dossier-a",
+          "expectedOutgoing": 0,
+          "observedOutgoing": 0,
+          "expectedIncoming": 0,
+          "observedIncoming": 0,
+          "matches": true
+        },
+        {
+          "relativePath": "dossier-a/note-1.txt",
+          "expectedOutgoing": 4,
+          "observedOutgoing": 4,
+          "expectedIncoming": 1,
+          "observedIncoming": 1,
+          "matches": true
+        },
+        {
+          "relativePath": "dossier-a/note-2.txt",
+          "expectedOutgoing": 2,
+          "observedOutgoing": 2,
+          "expectedIncoming": 1,
+          "observedIncoming": 1,
+          "matches": true
+        },
+        {
+          "relativePath": "dossier-a/note-3.txt",
+          "expectedOutgoing": 1,
+          "observedOutgoing": 1,
+          "expectedIncoming": 2,
+          "observedIncoming": 2,
+          "matches": true
+        },
+        {
+          "relativePath": "dossier-b",
+          "expectedOutgoing": 0,
+          "observedOutgoing": 0,
+          "expectedIncoming": 0,
+          "observedIncoming": 0,
+          "matches": true
+        },
+        {
+          "relativePath": "dossier-b/note-1.txt",
+          "expectedOutgoing": 2,
+          "observedOutgoing": 2,
+          "expectedIncoming": 1,
+          "observedIncoming": 1,
+          "matches": true
+        },
+        {
+          "relativePath": "dossier-b/sous-dossier",
+          "expectedOutgoing": 0,
+          "observedOutgoing": 0,
+          "expectedIncoming": 0,
+          "observedIncoming": 0,
+          "matches": true
+        },
+        {
+          "relativePath": "dossier-b/sous-dossier/note-1.txt",
+          "expectedOutgoing": 1,
+          "observedOutgoing": 1,
+          "expectedIncoming": 3,
+          "observedIncoming": 3,
+          "matches": true
+        },
+        {
+          "relativePath": "dossier-b/sous-dossier/note-2.txt",
+          "expectedOutgoing": 1,
+          "observedOutgoing": 1,
+          "expectedIncoming": 2,
+          "observedIncoming": 2,
+          "matches": true
+        },
+        {
+          "relativePath": "racine-1.txt",
+          "expectedOutgoing": 1,
+          "observedOutgoing": 1,
+          "expectedIncoming": 1,
+          "observedIncoming": 1,
+          "matches": true
+        },
+        {
+          "relativePath": "racine-2.txt",
+          "expectedOutgoing": 1,
+          "observedOutgoing": 1,
+          "expectedIncoming": 2,
+          "observedIncoming": 2,
+          "matches": true
+        }
+      ],
+      "countsAgree": true,
+      "approvedSinceSeed": [
+        "S-005"
+      ],
+      "inventedInverses": [],
+      "suggestionsInEstablished": [],
+      "unresolvedEndpoints": []
+    }
+  }
+}

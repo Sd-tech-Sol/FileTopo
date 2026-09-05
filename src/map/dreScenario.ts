@@ -1,7 +1,7 @@
 /** TASK-0024/DR15 — real Tauri/WebView2 deterministic-rule proof. */
 
 import { settle, waitForCompositionReady } from "./compositionDriver";
-import { pressRealKey, type ScenarioLog } from "./realInput";
+import { pressRealKey, waitUntil, type ScenarioLog } from "./realInput";
 import { PROTECTED_RUN_ARTIFACTS, dr15Artifact, runtimeWriteOwnership } from "./runArtifacts";
 import type {
   BrainCatalogView,
@@ -138,16 +138,34 @@ async function passOne(deps: DreScenarioDeps) {
   requireFact(coreIdentical.length === 2, "N-1 content-identical inattendu");
   requireFact(coreSuggestion, "suggestion DR15 absente du store");
   requireFact(!("score" in coreSuggestion), "score présent dans le DTO suggestion");
-  requireFact(document.querySelector('[data-testid="core-deterministic-relation"]'),
-    "règle déterministe non visible");
-  requireFact(document.querySelector('[data-testid="core-suggestion-explanation"]'),
-    "explication/signaux suggestion non visibles");
+  // Waited for rather than sampled.
+  //
+  // The panel reads its own relations through a command, so it is one or more
+  // round trips behind the overview this scenario just fetched. Sampling the
+  // DOM at that instant was a measurement race — the same one `realInput`
+  // documents for `J12` — and it fails as soon as anything else asks the host
+  // a question in the same tick. Waiting does not weaken the criterion: the
+  // assertion still fails if the rule never becomes visible.
+  const ruleVisible = await waitUntil(
+    () => document.querySelector('[data-testid="core-deterministic-relation"]') !== null,
+    20_000,
+  );
+  requireFact(ruleVisible.settled, "règle déterministe non visible");
+  const explanationVisible = await waitUntil(
+    () => document.querySelector('[data-testid="core-suggestion-explanation"]') !== null,
+    20_000,
+  );
+  requireFact(explanationVisible.settled, "explication/signaux suggestion non visibles");
   requireFact(!document.body.textContent?.toLowerCase().includes("score"), "score visible");
 
-  const approve = document.querySelector<HTMLButtonElement>(
-    `[data-testid="approve-core-suggestion"][data-suggestion-key="${coreSuggestion.suggestionKey}"]`,
+  const approveSelector =
+    `[data-testid="approve-core-suggestion"][data-suggestion-key="${coreSuggestion.suggestionKey}"]`;
+  const approveReady = await waitUntil(
+    () => document.querySelector<HTMLButtonElement>(approveSelector)?.disabled === false,
+    20_000,
   );
-  requireFact(approve, "contrôle historique d'approbation absent");
+  const approve = document.querySelector<HTMLButtonElement>(approveSelector);
+  requireFact(approveReady.settled && approve, "contrôle historique d'approbation absent");
   const approvalKey = await pressRealKey(
     approve,
     "{ENTER}",
