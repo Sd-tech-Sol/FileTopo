@@ -57,9 +57,23 @@ function onScreenKey(): string | null {
   );
 }
 
-function control(testId: string): HTMLButtonElement {
-  const element = document.querySelector<HTMLButtonElement>(`[data-testid="${testId}"]`);
-  requireFact(element && !element.disabled, `contrôle ${testId} indisponible`);
+/**
+ * Waits for a control to be on screen and enabled, then returns it.
+ *
+ * Every decision re-reads the queue from the backend, and the panel shows
+ * « Lecture de la file… » while it does — so the control the next step needs
+ * is legitimately absent for a moment. Waiting for it is not papering over a
+ * race: the alternative would be to keep a stale page on screen and act on it,
+ * which is exactly what `SR6` and `SR7` forbid.
+ */
+async function control(testId: string): Promise<HTMLButtonElement> {
+  const selector = `[data-testid="${testId}"]`;
+  const ready = await waitUntil(() => {
+    const candidate = document.querySelector<HTMLButtonElement>(selector);
+    return candidate !== null && !candidate.disabled;
+  }, 60_000);
+  const element = document.querySelector<HTMLButtonElement>(selector);
+  requireFact(ready.settled && element && !element.disabled, `contrôle ${testId} indisponible`);
   return element;
 }
 
@@ -80,6 +94,34 @@ function stableSets(overview: RelationsOverview) {
 
 function coreItems(queue: SuggestionReviewQueue): SuggestionEdge[] {
   return queue.items.filter((item) => item.producer === CORE);
+}
+
+/**
+ * Waits until a brain's map answers, instead of opening it a second time.
+ *
+ * On a fresh variant the composition materializes the fixture and opens the
+ * index itself. A scenario that issued its own `map_open(rebuild)` alongside
+ * that raced the index file, and on Windows a race on an open SQLite file is
+ * an `os error 32` rather than a queued write — which is what interrupted the
+ * first two attempts at this proof. Reading until the snapshot answers waits
+ * for the same thing without competing for the file.
+ */
+async function waitForSnapshot(
+  deps: ReviewScenarioDeps,
+  brainId: string,
+  budgetMs = 120_000,
+): Promise<MapSnapshot> {
+  const deadline = Date.now() + budgetMs;
+  let last = "aucune tentative";
+  while (Date.now() < deadline) {
+    try {
+      return await deps.invoke<MapSnapshot>("map_snapshot", { brainId });
+    } catch (error) {
+      last = String(error);
+      await settle();
+    }
+  }
+  throw new Error(`instantané de ${brainId} indisponible: ${last}`);
 }
 
 async function writeEvidence(deps: ReviewScenarioDeps, evidence: Record<string, unknown>) {
@@ -134,11 +176,15 @@ async function walkTo(
   let presses = 0;
   let trusted = true;
   let programmaticClicks = 0;
+  // The page may still be reloading after a decision; the item the walk is
+  // looking for cannot be judged absent until the panel is showing one.
+  const shown = await waitUntil(() => onScreenKey() !== null, 60_000);
+  requireFact(shown.settled, "la file n'affiche aucune suggestion");
   while (onScreenKey() !== key) {
     requireFact(presses < budget, `suggestion ${key} introuvable dans la file après ${presses} passages`);
     const before = onScreenKey();
     const evidence = await pressRealKey(
-      control("review-later"),
+      await control("review-later"),
       "{ENTER}",
       () => onScreenKey() !== before,
       deps.log,
@@ -155,14 +201,14 @@ async function walkTo(
 async function passOne(deps: ReviewScenarioDeps) {
   deps.showOnly(ALPHA);
   await waitForCompositionReady();
-  await deps.invoke("map_open", { brainId: ALPHA, rebuild: true });
-  const snapshot = await deps.invoke<MapSnapshot>("map_snapshot", { brainId: ALPHA });
+  const snapshot = await waitForSnapshot(deps, ALPHA);
   deps.select({ brainId: ALPHA, nodeId: snapshot.nodes.find((node) => node.kind === "file")!.id });
   await settle();
 
   // The other brain, read before anything is decided, so `SR12` compares a
-  // measurement rather than an assumption.
-  await deps.invoke("map_open", { brainId: OTHER, rebuild: true });
+  // measurement rather than an assumption. Nothing else is displaying it, so
+  // opening it here competes with no one.
+  await deps.invoke("map_open", { brainId: OTHER, rebuild: false });
   const otherBefore = stableSets(
     await deps.invoke<RelationsOverview>("map_relations_open", { brainId: OTHER }),
   );
@@ -185,7 +231,7 @@ async function passOne(deps: ReviewScenarioDeps) {
 
   // 1 — the engine, by a real keystroke.
   const analyzeKey = await pressRealKey(
-    control("analyze-relations"),
+    await control("analyze-relations"),
     "{ENTER}",
     () => document.querySelector('[data-testid="relation-engine-summary"]') !== null,
     deps.log,
@@ -215,7 +261,7 @@ async function passOne(deps: ReviewScenarioDeps) {
 
   // 2 — open the queue, by a real keystroke.
   const openKey = await pressRealKey(
-    control("open-review-queue"),
+    await control("open-review-queue"),
     "{ENTER}",
     () => document.querySelector('[data-testid="review-confirm"]') !== null,
     deps.log,
@@ -235,7 +281,7 @@ async function passOne(deps: ReviewScenarioDeps) {
   // 3 — confirm one, by a real keystroke.
   const walkToConfirm = await walkTo(toConfirm.suggestionKey, deps, budget);
   const confirmKey = await pressRealKey(
-    control("review-confirm"),
+    await control("review-confirm"),
     "{ENTER}",
     () => onScreenKey() !== toConfirm.suggestionKey,
     deps.log,
@@ -254,7 +300,7 @@ async function passOne(deps: ReviewScenarioDeps) {
   // 4 — reject another, by a real keystroke.
   const walkToReject = await walkTo(toReject.suggestionKey, deps, budget);
   const rejectKey = await pressRealKey(
-    control("review-reject"),
+    await control("review-reject"),
     "{ENTER}",
     () => onScreenKey() !== toReject.suggestionKey,
     deps.log,
@@ -274,7 +320,7 @@ async function passOne(deps: ReviewScenarioDeps) {
     { brainId: ALPHA },
   );
   const postponeKey = await pressRealKey(
-    control("review-later"),
+    await control("review-later"),
     "{ENTER}",
     () => onScreenKey() !== toPostpone.suggestionKey,
     deps.log,
@@ -331,10 +377,35 @@ async function passOne(deps: ReviewScenarioDeps) {
   requireFact(!decided.pending.includes(toReject.suggestionKey), "la rejetée est encore pending");
   requireFact(decided.pending.includes(toPostpone.suggestionKey), "la reportée n'est plus pending");
 
-  // 7 — an unchanged rerun of the engine.
+  // 7 — the source, re-observed after the decisions.
+  //
+  // Before the rerun, and deliberately: a campaign opens a new content
+  // generation, so observing after the last engine run would leave `dre-v1`
+  // `STALE` and pass 2 would be measuring a stale store instead of a restarted
+  // one. Re-observing first and rerunning second checks the source **and**
+  // leaves the engine current.
+  const readOnlyCheck = await deps.invoke<ContentObservationReport>("map_task0025_sr15_prepare");
+  requireFact(
+    readOnlyCheck.sourceFingerprintBefore === readOnlyCheck.sourceFingerprintAfter,
+    "empreinte de la source SR15 modifiée",
+  );
+  requireFact(
+    readOnlyCheck.sourceFingerprintBefore === proofCampaign.sourceFingerprintBefore,
+    "la source SR15 a changé entre les deux campagnes",
+  );
+
+  // 7 bis — an unchanged rerun of the engine.
   const rerun = await deps.invoke<RelationEngineReport>("map_relation_engine_run", {
     brainId: ALPHA,
   });
+  const statusAfterRerun = await deps.invoke<RelationEngineStatus>(
+    "map_relation_engine_status",
+    { brainId: ALPHA },
+  );
+  requireFact(
+    statusAfterRerun.inputState === "CURRENT",
+    "dre-v1 laissé hors CURRENT à la fin de la passe 1",
+  );
   const afterRerun = stableSets(
     await deps.invoke<RelationsOverview>("map_relations_open", { brainId: ALPHA }),
   );
@@ -359,16 +430,7 @@ async function passOne(deps: ReviewScenarioDeps) {
     "le report du moteur ne compte aucune préservation d'approbation",
   );
 
-  // 8 — the source, and every other store.
-  const readOnlyCheck = await deps.invoke<ContentObservationReport>("map_task0025_sr15_prepare");
-  requireFact(
-    readOnlyCheck.sourceFingerprintBefore === readOnlyCheck.sourceFingerprintAfter,
-    "empreinte de la source SR15 modifiée",
-  );
-  requireFact(
-    readOnlyCheck.sourceFingerprintBefore === proofCampaign.sourceFingerprintBefore,
-    "la source SR15 a changé entre les deux campagnes",
-  );
+  // 8 — every other store.
   const otherAfter = stableSets(
     await deps.invoke<RelationsOverview>("map_relations_open", { brainId: OTHER }),
   );
@@ -422,6 +484,7 @@ async function passOne(deps: ReviewScenarioDeps) {
     afterDecisions: decided,
     afterRerun,
     rerun,
+    statusAfterRerun,
     postponeLeftPending: {
       before: beforePostpone.totalPending,
       after: afterPostpone.totalPending,
@@ -442,7 +505,7 @@ async function passOne(deps: ReviewScenarioDeps) {
 async function passTwo(deps: ReviewScenarioDeps) {
   deps.showOnly(ALPHA);
   await waitForCompositionReady();
-  const snapshot = await deps.invoke<MapSnapshot>("map_snapshot", { brainId: ALPHA });
+  const snapshot = await waitForSnapshot(deps, ALPHA);
   deps.select({ brainId: ALPHA, nodeId: snapshot.nodes.find((node) => node.kind === "file")!.id });
   await settle();
 

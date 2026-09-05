@@ -1,0 +1,151 @@
+{
+  "task": "TASK-0025",
+  "criterion": "SR15",
+  "pass": 2,
+  "canonical": false,
+  "joinsX5": false,
+  "capturedAtIso": "2026-09-05T23:18:51.154Z",
+  "host": {
+    "sandboxRoot": "<dépôt>/.filetopo-sandbox/variants/task0025-sr15-20260905191830-aea744",
+    "appVersion": "0.1.0-alpha.1",
+    "sqliteVersion": "3.53.2",
+    "webviewVersion": "152.0.4191.62",
+    "tauriVersion": "2.11.5",
+    "platform": "windows",
+    "nodeCeiling": 5000,
+    "depthCeiling": 40,
+    "cardWidth": 240,
+    "cardHeight": 64,
+    "layoutAlgorithm": "layered-tree-cards-v1",
+    "autoVerify": false,
+    "autoMeasure": false,
+    "autoRelations": false,
+    "autoBrainsPass": 0,
+    "autoComposedPass": 0,
+    "autoCrossPass": 0,
+    "autoTopographicPass": 0,
+    "autoContentPass": 0,
+    "autoDrePass": 0,
+    "autoGenericRelations": false,
+    "autoSr15Pass": 2
+  },
+  "input": {
+    "brainId": "brain-alpha",
+    "source": "synthetic TASK-0025 SR15 proof fixture, outside the four frozen fixtures",
+    "noRealData": true
+  },
+  "governance": {
+    "protectedArtifactCount": 32,
+    "protectedDestinations": [],
+    "writesUnderItsOwnTaskOnly": true,
+    "owningTaskId": "TASK-0025"
+  },
+  "evidence": {
+    "realProcessRestart": true,
+    "statusBefore": {
+      "brainId": "brain-alpha",
+      "engineVersion": "dre-v1",
+      "inputState": "CURRENT",
+      "mapDigest": "fnv1a64:400fab2df3081fc0",
+      "currentContentGenerationId": "1d476efb-ffee-44cf-8a95-94b35b802967",
+      "lastRunId": "dre1-8af5579a87d1da48",
+      "lastRunUnixMs": 1788650326787,
+      "lastMapDigest": "fnv1a64:400fab2df3081fc0",
+      "lastContentGenerationId": "1d476efb-ffee-44cf-8a95-94b35b802967"
+    },
+    "before": {
+      "approved": [
+        "ek1|brain-alpha|dossier-a/note-3.txt|ek1|brain-alpha|racine-1.txt|reference",
+        "ek1|brain-alpha|dossier-b/note-1.txt|ek1|brain-alpha|dossier-a/note-3.txt|reference",
+        "ek1|brain-alpha|dossier-b/sous-dossier/note-2.txt|ek1|brain-alpha|dossier-a/note-1.txt|reference",
+        "ek1|brain-alpha|racine-2.txt|ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|revision",
+        "ek1|brain-alpha|revue/note-1.txt|ek1|brain-alpha|revue/note-2.txt|revision"
+      ],
+      "deterministic": [
+        "ek1|brain-alpha|dossier-a/note-1.txt|ek1|brain-alpha|dossier-a/note-2.txt|revision|suites-numerotees",
+        "ek1|brain-alpha|dossier-a/note-1.txt|ek1|brain-alpha|dossier-b/note-1.txt|reference|homonymes",
+        "ek1|brain-alpha|dossier-a/note-1.txt|ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|reference|homonymes",
+        "ek1|brain-alpha|dossier-a/note-2.txt|ek1|brain-alpha|dossier-a/note-3.txt|revision|suites-numerotees",
+        "ek1|brain-alpha|dossier-a/note-2.txt|ek1|brain-alpha|dossier-b/sous-dossier/note-2.txt|reference|homonymes",
+        "ek1|brain-alpha|dossier-b/note-1.txt|ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|reference|homonymes",
+        "ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|ek1|brain-alpha|dossier-b/sous-dossier/note-2.txt|revision|suites-numerotees",
+        "ek1|brain-alpha|racine-1.txt|ek1|brain-alpha|racine-2.txt|revision|suites-numerotees"
+      ],
+      "pending": [
+        "S-005",
+        "S-006",
+        "S-007",
+        "S-008",
+        "dre1:ebaf403cddeba4c7"
+      ]
+    },
+    "queueBefore": {
+      "totalPending": 5,
+      "corePending": [
+        "dre1:ebaf403cddeba4c7"
+      ],
+      "states": [
+        "pending"
+      ]
+    },
+    "pendingKeys": [
+      "S-005",
+      "S-006",
+      "S-007",
+      "S-008",
+      "dre1:ebaf403cddeba4c7"
+    ],
+    "rerun": {
+      "brainId": "brain-alpha",
+      "engineVersion": "dre-v1",
+      "runId": "dre1-805b6369f4cff40c",
+      "mapDigest": "fnv1a64:400fab2df3081fc0",
+      "contentGenerationId": "1d476efb-ffee-44cf-8a95-94b35b802967",
+      "rulesEvaluated": [
+        "core.identical-content/v1",
+        "core.numbered-sibling-revision-candidate/v1"
+      ],
+      "rulesSkipped": [],
+      "deterministicRelationsProduced": 0,
+      "suggestionsProduced": 1,
+      "emptyContentGroupsSkipped": 0,
+      "establishedCollisionSuppressions": 4,
+      "approvedSuggestionPreservations": 1,
+      "rejectedSuggestionPreservations": 1,
+      "sourceReadOnlyConfirmed": true,
+      "inputState": "CURRENT"
+    },
+    "after": {
+      "approved": [
+        "ek1|brain-alpha|dossier-a/note-3.txt|ek1|brain-alpha|racine-1.txt|reference",
+        "ek1|brain-alpha|dossier-b/note-1.txt|ek1|brain-alpha|dossier-a/note-3.txt|reference",
+        "ek1|brain-alpha|dossier-b/sous-dossier/note-2.txt|ek1|brain-alpha|dossier-a/note-1.txt|reference",
+        "ek1|brain-alpha|racine-2.txt|ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|revision",
+        "ek1|brain-alpha|revue/note-1.txt|ek1|brain-alpha|revue/note-2.txt|revision"
+      ],
+      "deterministic": [
+        "ek1|brain-alpha|dossier-a/note-1.txt|ek1|brain-alpha|dossier-a/note-2.txt|revision|suites-numerotees",
+        "ek1|brain-alpha|dossier-a/note-1.txt|ek1|brain-alpha|dossier-b/note-1.txt|reference|homonymes",
+        "ek1|brain-alpha|dossier-a/note-1.txt|ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|reference|homonymes",
+        "ek1|brain-alpha|dossier-a/note-2.txt|ek1|brain-alpha|dossier-a/note-3.txt|revision|suites-numerotees",
+        "ek1|brain-alpha|dossier-a/note-2.txt|ek1|brain-alpha|dossier-b/sous-dossier/note-2.txt|reference|homonymes",
+        "ek1|brain-alpha|dossier-b/note-1.txt|ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|reference|homonymes",
+        "ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|ek1|brain-alpha|dossier-b/sous-dossier/note-2.txt|revision|suites-numerotees",
+        "ek1|brain-alpha|racine-1.txt|ek1|brain-alpha|racine-2.txt|revision|suites-numerotees"
+      ],
+      "pending": [
+        "S-005",
+        "S-006",
+        "S-007",
+        "S-008",
+        "dre1:ebaf403cddeba4c7"
+      ]
+    },
+    "queueAfterRerunTotalPending": 5,
+    "entryAgreesWithStore": true,
+    "crossDigestBefore": "fnv1a64:3020af7489aab581",
+    "crossDigestAfter": "fnv1a64:3020af7489aab581",
+    "sourceReadOnly": true,
+    "processClosedByHarness": true
+  }
+}
