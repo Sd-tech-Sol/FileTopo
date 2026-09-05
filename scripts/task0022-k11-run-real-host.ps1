@@ -18,7 +18,7 @@ if (-not $LogDirectory) {
 $null = New-Item -ItemType Directory -Path $LogDirectory -Force
 
 $runs = Join-Path $repository 'docs/performance/runs'
-$artifact = Join-Path $runs 'TASK-0024-K11-readonly-isolation-regression-webview2.json'
+$artifact = Join-Path $runs 'TASK-0025-K11-readonly-isolation-regression-webview2.json'
 $variant = 'task0022-k11-{0}-{1}' -f (Get-Date -Format 'yyyyMMddHHmmss'),
                                       ([guid]::NewGuid().ToString('N').Substring(0, 6))
 $log = Join-Path $LogDirectory "filetopo-$variant-k11.log"

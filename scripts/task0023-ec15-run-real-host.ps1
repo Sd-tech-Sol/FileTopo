@@ -45,7 +45,7 @@ function Wait-ForArtifact {
 function Invoke-EC15Pass {
     param([int]$Pass)
 
-    $artifact = Join-Path $runs "TASK-0024-EC15-exact-content-observations-webview2-pass$Pass.json"
+    $artifact = Join-Path $runs "TASK-0025-EC15-exact-content-observations-webview2-pass$Pass.json"
     Assert-NotProtectedRunArtifact -Path $artifact
     if (Test-Path -LiteralPath $artifact) {
         throw "preuve TASK-0024 deja presente; aucune suppression automatique: $artifact"

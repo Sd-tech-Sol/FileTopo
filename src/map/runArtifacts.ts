@@ -40,12 +40,13 @@
  * intra-brain regression. The corrective X11 proof and every other
  * `TASK-0024` output remain noncanonical and unprotected.
  *
- * The protected/runtime intersection is therefore **no longer empty**: this
- * checkout still spells the three canonical `TASK-0024` names as
- * destinations, so replaying those scenarios now yields a refusal. That is
- * the seal working, and it is the expected end state of a verified slice — see
- * {@link SEALED_RUNTIME_DESTINATIONS}. The next slice migrates the destination
- * under its own task name before it replays anything.
+ * **`TASK-0025` is that next slice, and §4 of its instruction is this rule
+ * applied.** Before replaying anything, every destination below moved from
+ * `TASK-0024-*` to `TASK-0025-*` — not only the three sealed names, but every
+ * name this runtime actually spells, including the replays and the corrective
+ * `X11` destination, which stays compiled and replayable. The thirty-two
+ * protected names were left exactly as they are: the intersection is emptied
+ * by moving the destinations, never by shrinking the seal.
  *
  * Every name lives here so there is one spelling of each and a guard test can
  * hold the whole surface at once — see `runArtifacts.test.ts`.
@@ -111,9 +112,9 @@ export const PROTECTED_RUN_ARTIFACTS = [
  * exists so that pressing the button can never write over anything.
  */
 export const H9_REGRESSION_ARTIFACT =
-  "TASK-0024-H9-composed-runtime-regression-webview2.json";
+  "TASK-0025-H9-composed-runtime-regression-webview2.json";
 export const H9_REGRESSION_ABANDON_ARTIFACT =
-  "TASK-0024-H9-composed-runtime-regression-webview2-abandon.json";
+  "TASK-0025-H9-composed-runtime-regression-webview2-abandon.json";
 
 /**
  * The **intra-brain** relations scenario of `TASK-0017`/`J12`, on `brain-alpha`.
@@ -124,12 +125,12 @@ export const H9_REGRESSION_ABANDON_ARTIFACT =
  * first.
  */
 export const J12_REGRESSION_ARTIFACT =
-  "TASK-0024-J12-intrabrain-relations-regression-webview2.json";
+  "TASK-0025-J12-intrabrain-relations-regression-webview2.json";
 export const J12_REGRESSION_ABANDON_ARTIFACT =
-  "TASK-0024-J12-intrabrain-relations-regression-webview2-abandon.json";
+  "TASK-0025-J12-intrabrain-relations-regression-webview2-abandon.json";
 
 /** `L11` — read-only and isolation, replayed on the composed runtime. */
-export const K11_ARTIFACT = "TASK-0024-K11-readonly-isolation-regression-webview2.json";
+export const K11_ARTIFACT = "TASK-0025-K11-readonly-isolation-regression-webview2.json";
 
 /**
  * `K12` of `TASK-0018`, replayed against the composition bar.
@@ -139,7 +140,7 @@ export const K11_ARTIFACT = "TASK-0024-K11-readonly-isolation-regression-webview
  */
 export function k12Artifact(pass: number, outcome: "written" | "abandoned"): string {
   const suffix = outcome === "abandoned" ? "-abandon" : "";
-  return `TASK-0024-K12-foundation-regression-webview2-pass${pass}${suffix}.json`;
+  return `TASK-0025-K12-foundation-regression-webview2-pass${pass}${suffix}.json`;
 }
 
 /**
@@ -150,29 +151,29 @@ export function k12Artifact(pass: number, outcome: "written" | "abandoned"): str
  */
 export function l12Artifact(pass: number, outcome: "written" | "abandoned"): string {
   const suffix = outcome === "abandoned" ? "-abandon" : "";
-  return `TASK-0024-L12-composed-view-regression-webview2-pass${pass}${suffix}.json`;
+  return `TASK-0025-L12-composed-view-regression-webview2-pass${pass}${suffix}.json`;
 }
 
 /** `M12` — the twenty-eight steps of inter-brain relations, in the real host. */
 export function m12Artifact(pass: number, outcome: "written" | "abandoned"): string {
   const suffix = outcome === "abandoned" ? "-abandon" : "";
-  return `TASK-0024-M12-interbrain-relations-regression-webview2-pass${pass}${suffix}.json`;
+  return `TASK-0025-M12-interbrain-relations-regression-webview2-pass${pass}${suffix}.json`;
 }
 
 /** `N15` — the topographic node graph in the real Tauri/WebView2 host. */
 export function n15Artifact(pass: number, outcome: "written" | "abandoned"): string {
   const suffix = outcome === "abandoned" ? "-abandon" : "";
-  return `TASK-0024-N15-topographic-node-graph-webview2-pass${pass}${suffix}.json`;
+  return `TASK-0025-N15-topographic-node-graph-webview2-pass${pass}${suffix}.json`;
 }
 
 /** `EC15` — exact content observations in the real Tauri/WebView2 host. */
 export function ec15Artifact(pass: number): string {
-  return `TASK-0024-EC15-exact-content-observations-webview2-pass${pass}.json`;
+  return `TASK-0025-EC15-exact-content-observations-webview2-pass${pass}.json`;
 }
 
 /** `DR15` — deterministic relation engine, two real WebView2 processes. */
 export function dr15Artifact(pass: number): string {
-  return `TASK-0024-DR15-deterministic-relation-engine-webview2-pass${pass}.json`;
+  return `TASK-0025-DR15-deterministic-relation-engine-webview2-pass${pass}.json`;
 }
 
 /**
@@ -183,14 +184,30 @@ export function dr15Artifact(pass: number): string {
  * control, joins neither `X5` nor the three frozen `TASK-0024` proofs, and
  * replaces none of them. One file, rewritten on each replay, because it
  * measures a single scenario in a single process.
+ *
+ * Migrated to `TASK-0025` with every other destination: the scenario is still
+ * compiled and replayable, and §4 of the `TASK-0025` instruction requires that
+ * *every* destination actually present here move under the current task.
  */
-export const X11_GENERIC_ARTIFACT = "TASK-0024-X11-generic-brain-webview2.json";
+export const X11_GENERIC_ARTIFACT = "TASK-0025-X11-generic-brain-webview2.json";
+
+/**
+ * `SR15` — the suggestion review queue and the memory of human decisions, in
+ * two real WebView2 processes.
+ *
+ * The proof `TASK-0025` publishes for itself. It is **not** protected: this
+ * task stays `IMPLEMENTED` until an independent control says otherwise, and
+ * only a verification adds a name to {@link PROTECTED_RUN_ARTIFACTS}.
+ */
+export function sr15Artifact(pass: number): string {
+  return `TASK-0025-SR15-suggestion-review-memory-webview2-pass${pass}.json`;
+}
 
 /**
  * Every name this runtime **spells as a destination**. The guard test
  * enumerates it.
  *
- * Every current entry belongs to `TASK-0024`; ownership and the protected
+ * Every current entry belongs to `TASK-0025`; ownership and the protected
  * intersection are derived from the lists below.
  */
 export const RUNTIME_RUN_ARTIFACTS = [
@@ -220,21 +237,22 @@ export const RUNTIME_RUN_ARTIFACTS = [
   dr15Artifact(1),
   dr15Artifact(2),
   X11_GENERIC_ARTIFACT,
+  sr15Artifact(1),
+  sr15Artifact(2),
 ] as const;
 
 /**
  * Exact protected/runtime intersection — the destinations this runtime still
- * spells that the write gate now refuses.
+ * spells that the write gate would refuse.
  *
- * After `ACTION-0041`, exactly the two DR15 passes and the J12 regression are
- * sealed while the runtime still spells them. The corrective X11 proof and
- * all other `TASK-0024` destinations remain unprotected.
+ * **Empty again since `TASK-0025` §4.** `ACTION-0041` sealed the two `DR15`
+ * passes and the `J12` regression while the runtime still spelled them, which
+ * is what a verified slice looks like from inside its own checkout. This slice
+ * migrated every destination under `TASK-0025` *before* replaying anything, so
+ * the intersection is empty by construction rather than by luck — and the
+ * thirty-two protected names were not touched to make it so.
  */
-export const SEALED_RUNTIME_DESTINATIONS = [
-  "TASK-0024-DR15-deterministic-relation-engine-webview2-pass1.json",
-  "TASK-0024-DR15-deterministic-relation-engine-webview2-pass2.json",
-  "TASK-0024-J12-intrabrain-relations-regression-webview2.json",
-] as const;
+export const SEALED_RUNTIME_DESTINATIONS = [] as const;
 
 /**
  * The task an artefact name declares as its owner, or `null` when the name
@@ -267,19 +285,20 @@ export interface RuntimeWriteOwnership {
   /**
    * Runtime destinations that are protected evidence.
    *
-   * Empty while the owning task awaits control. Since `ACTION-0041` sealed
-   * the current task, it lists the exact colliding destinations — see
-   * {@link SEALED_RUNTIME_DESTINATIONS}.
+   * Empty while the owning task awaits control; it lists the exact colliding
+   * destinations once that task's own proofs are sealed under it — see
+   * {@link SEALED_RUNTIME_DESTINATIONS}. **Empty again since `TASK-0025` §4**
+   * migrated every destination.
    */
   protectedDestinations: readonly string[];
   /**
    * True only while every destination belongs to one unprotected task and none
    * is sealed.
    *
-   * **`false` since `ACTION-0041`**, and truthfully so: this runtime still
-   * spells three names its own verification has sealed. The field reports the
-   * state of the checkout, so it is allowed to say the checkout is past its
-   * slice — it is not a health check to be kept green.
+   * The field reports the state of the checkout, so it is allowed to say the
+   * checkout is past its slice — it is not a health check to be kept green. It
+   * was `false` between `ACTION-0041` and the `TASK-0025` migration, and is
+   * `true` again now that `TASK-0025` owns every destination.
    */
   writesUnderItsOwnTaskOnly: boolean;
 }

@@ -425,7 +425,7 @@ export async function runBrainScenario(
       name: k12Artifact(pass, "written"),
       contents: JSON.stringify(
         {
-          task: "TASK-0024",
+          task: "TASK-0025",
           sourceCriterion: "TASK-0018/K12",
           nature: "regression replay",
           doesNotReplace:
@@ -453,7 +453,7 @@ export async function runBrainScenario(
         name: k12Artifact(pass, "abandoned"),
         contents: JSON.stringify(
           {
-            task: "TASK-0024",
+            task: "TASK-0025",
             sourceCriterion: "TASK-0018/K12",
             nature: "regression replay",
             replacesCanonicalEvidence: false,

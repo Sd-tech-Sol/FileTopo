@@ -47,8 +47,8 @@ function Wait-ForArtifact {
 function Invoke-N15Pass {
     param([int]$Pass, [switch]$WithKeyWatcher)
 
-    $artifact = Join-Path $runs "TASK-0024-N15-topographic-node-graph-webview2-pass$Pass.json"
-    $abandoned = Join-Path $runs "TASK-0024-N15-topographic-node-graph-webview2-pass$Pass-abandon.json"
+    $artifact = Join-Path $runs "TASK-0025-N15-topographic-node-graph-webview2-pass$Pass.json"
+    $abandoned = Join-Path $runs "TASK-0025-N15-topographic-node-graph-webview2-pass$Pass-abandon.json"
     foreach ($stale in @($artifact, $abandoned)) {
         Assert-NotProtectedRunArtifact -Path $stale
         if (Test-Path -LiteralPath $stale) { Remove-Item -LiteralPath $stale -Force }
