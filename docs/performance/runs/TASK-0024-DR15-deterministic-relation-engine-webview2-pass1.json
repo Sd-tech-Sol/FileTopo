@@ -2,9 +2,9 @@
   "task": "TASK-0024",
   "criterion": "DR15",
   "pass": 1,
-  "capturedAtIso": "2026-09-05T04:49:44.057Z",
+  "capturedAtIso": "2026-09-05T21:35:27.191Z",
   "host": {
-    "sandboxRoot": "<dépôt>/.filetopo-sandbox/variants/task0024-dr15-20260905004937-8eed73",
+    "sandboxRoot": "<dépôt>/.filetopo-sandbox/variants/task0024-dr15-20260905173522-60ed69",
     "appVersion": "0.1.0-alpha.1",
     "sqliteVersion": "3.53.2",
     "webviewVersion": "152.0.4191.62",
@@ -23,7 +23,8 @@
     "autoCrossPass": 0,
     "autoTopographicPass": 0,
     "autoContentPass": 0,
-    "autoDrePass": 1
+    "autoDrePass": 1,
+    "autoGenericRelations": false
   },
   "input": {
     "brainId": "brain-alpha",
@@ -45,10 +46,10 @@
       "storePath": "brains/brain-alpha/signals/content.sqlite",
       "schemaVersion": 1,
       "signalEngineVersion": "sha256-v1",
-      "generationId": "b6768289-af38-47ed-a168-c33eb170b0af",
-      "observedAt": 1788583781132,
-      "sourceFingerprintBefore": "sha256-tree-v1:72a46f75d1522167b2392bc4cde9922902c71f24af978d070965ef40953ae382",
-      "sourceFingerprintAfter": "sha256-tree-v1:72a46f75d1522167b2392bc4cde9922902c71f24af978d070965ef40953ae382",
+      "generationId": "f2493040-5440-45e4-b6a5-cfa17aa769f3",
+      "observedAt": 1788644124457,
+      "sourceFingerprintBefore": "sha256-tree-v1:f74bbbb153eaa6d8c4512de63a5cb2092dc0f0114e60cf9be27a4a9c00133d75",
+      "sourceFingerprintAfter": "sha256-tree-v1:f74bbbb153eaa6d8c4512de63a5cb2092dc0f0114e60cf9be27a4a9c00133d75",
       "sourceStable": true,
       "indexedFileCount": 8,
       "hashedCount": 8,
@@ -60,17 +61,17 @@
       "digestsComputed": 8,
       "hashAlgorithm": "sha256-v1",
       "readOnlyConfirmed": true,
-      "durationMs": 7.5217
+      "durationMs": 8.137500000000001
     },
     "proofCampaign": {
       "brainId": "brain-alpha",
       "storePath": "brains/brain-alpha/signals/content.sqlite",
       "schemaVersion": 1,
       "signalEngineVersion": "sha256-v1",
-      "generationId": "f6b6d9df-fffb-4b08-b3c9-6cf0d5a077a5",
-      "observedAt": 1788583781194,
-      "sourceFingerprintBefore": "sha256-tree-v1:b4920611040e69b7ad5d88eca9a78411064e428592114da95ac48543ed420bb5",
-      "sourceFingerprintAfter": "sha256-tree-v1:b4920611040e69b7ad5d88eca9a78411064e428592114da95ac48543ed420bb5",
+      "generationId": "9ccda93b-d49c-4df7-9528-48eb982c743a",
+      "observedAt": 1788644124508,
+      "sourceFingerprintBefore": "sha256-tree-v1:d4bdd9b74218ca2eb073a0074b166a5b057c8f62005e13e27e6f604422d27bf9",
+      "sourceFingerprintAfter": "sha256-tree-v1:d4bdd9b74218ca2eb073a0074b166a5b057c8f62005e13e27e6f604422d27bf9",
       "sourceStable": true,
       "indexedFileCount": 9,
       "hashedCount": 9,
@@ -82,14 +83,14 @@
       "digestsComputed": 9,
       "hashAlgorithm": "sha256-v1",
       "readOnlyConfirmed": true,
-      "durationMs": 10.832899999999999
+      "durationMs": 16.3342
     },
     "initialStatus": {
       "brainId": "brain-alpha",
       "engineVersion": "dre-v1",
       "inputState": "NOT_RUN",
       "mapDigest": "fnv1a64:400fab2df3081fc0",
-      "currentContentGenerationId": "b6768289-af38-47ed-a168-c33eb170b0af",
+      "currentContentGenerationId": "f2493040-5440-45e4-b6a5-cfa17aa769f3",
       "lastRunId": null,
       "lastRunUnixMs": null,
       "lastMapDigest": null,
@@ -108,7 +109,7 @@
       "programmaticClickCalls": 0,
       "programmaticClickDispatches": 0,
       "observedChange": true,
-      "waitedMs": 1374
+      "waitedMs": 1216
     },
     "approvalActivation": {
       "inputMethod": "WScript.Shell SendKeys via scripts/j12-send-real-key.ps1, after AppActivate on the FileTopo process — the ordinary Windows input path",
@@ -123,14 +124,14 @@
       "programmaticClickCalls": 0,
       "programmaticClickDispatches": 0,
       "observedChange": true,
-      "waitedMs": 1123
+      "waitedMs": 1114
     },
     "report": {
       "brainId": "brain-alpha",
       "engineVersion": "dre-v1",
-      "runId": "dre1-eef0b3a2122a6337",
+      "runId": "dre1-23a87674b9d15467",
       "mapDigest": "fnv1a64:400fab2df3081fc0",
-      "contentGenerationId": "f6b6d9df-fffb-4b08-b3c9-6cf0d5a077a5",
+      "contentGenerationId": "9ccda93b-d49c-4df7-9528-48eb982c743a",
       "rulesEvaluated": [
         "core.identical-content/v1",
         "core.numbered-sibling-revision-candidate/v1"
@@ -147,9 +148,9 @@
     "rerun": {
       "brainId": "brain-alpha",
       "engineVersion": "dre-v1",
-      "runId": "dre1-ceb33c2d66035f8d",
+      "runId": "dre1-20f230689c0f308d",
       "mapDigest": "fnv1a64:400fab2df3081fc0",
-      "contentGenerationId": "f6b6d9df-fffb-4b08-b3c9-6cf0d5a077a5",
+      "contentGenerationId": "9ccda93b-d49c-4df7-9528-48eb982c743a",
       "rulesEvaluated": [
         "core.identical-content/v1",
         "core.numbered-sibling-revision-candidate/v1"

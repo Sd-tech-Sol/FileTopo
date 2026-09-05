@@ -1,0 +1,164 @@
+{
+  "task": "TASK-0024",
+  "reserve": "X11",
+  "nature": "corrective proof of the generic relation engine on a non-legacy brain",
+  "canonical": false,
+  "joinsX5": false,
+  "replacesCanonicalEvidence": false,
+  "doesNotReplace": "docs/performance/runs/TASK-0024-DR15-deterministic-relation-engine-webview2-pass1.json, docs/performance/runs/TASK-0024-DR15-deterministic-relation-engine-webview2-pass2.json, docs/performance/runs/TASK-0024-J12-intrabrain-relations-regression-webview2.json",
+  "outcome": "written",
+  "reason": null,
+  "capturedAtIso": "2026-09-05T21:34:56.272Z",
+  "host": {
+    "sandboxRoot": "<dépôt>/.filetopo-sandbox/variants/task0024-x11-20260905173449-4235e7",
+    "appVersion": "0.1.0-alpha.1",
+    "sqliteVersion": "3.53.2",
+    "webviewVersion": "152.0.4191.62",
+    "tauriVersion": "2.11.5",
+    "platform": "windows",
+    "nodeCeiling": 5000,
+    "depthCeiling": 40,
+    "cardWidth": 240,
+    "cardHeight": 64,
+    "layoutAlgorithm": "layered-tree-cards-v1",
+    "autoVerify": false,
+    "autoMeasure": false,
+    "autoRelations": false,
+    "autoBrainsPass": 0,
+    "autoComposedPass": 0,
+    "autoCrossPass": 0,
+    "autoTopographicPass": 0,
+    "autoContentPass": 0,
+    "autoDrePass": 0,
+    "autoGenericRelations": true
+  },
+  "input": {
+    "brainId": "brain-beta",
+    "source": "frozen synthetic fixture `deep`, read-only",
+    "noRealData": true
+  },
+  "governance": {
+    "protectedArtifactCount": 29,
+    "protectedDestinations": [],
+    "writesUnderItsOwnTaskOnly": true,
+    "owningTaskId": "TASK-0024"
+  },
+  "evidence": {
+    "brainId": "brain-beta",
+    "displayed": {
+      "focusedBrainId": "brain-beta",
+      "fixtureId": "deep",
+      "nodeCount": 157,
+      "waitedMs": 343
+    },
+    "beforeRun": {
+      "overviewOpened": true,
+      "legacyInScope": false,
+      "established": 0,
+      "pendingSuggestions": 0,
+      "seeded": 0,
+      "producers": [],
+      "engineStatus": {
+        "brainId": "brain-beta",
+        "engineVersion": "dre-v1",
+        "inputState": "NOT_RUN",
+        "mapDigest": "fnv1a64:8765c034d3bf1500",
+        "currentContentGenerationId": null,
+        "lastRunId": null,
+        "lastRunUnixMs": null,
+        "lastMapDigest": null,
+        "lastContentGenerationId": null
+      },
+      "sourceFingerprint": "fnv1a64:260a1228d273ad92"
+    },
+    "panel": {
+      "settled": true,
+      "waitedMs": 0,
+      "panelPresent": true,
+      "panelSaysOutOfScope": false,
+      "analyzePresent": true,
+      "analyzeEnabled": true,
+      "engineStatePresent": true,
+      "legacyNotePresent": true,
+      "legacyNoteText": "Les relations de démonstration de TASK-0017 ne s'appliquent pas à ce cerveau : elles restent gelées sur quasi-empty. L'analyse déterministe dre-v1 ci-dessous, elle, s'applique à tous les cerveaux.",
+      "directionSections": [
+        "Sortantes (0)",
+        "Entrantes (0)"
+      ]
+    },
+    "userActivation": {
+      "inputMethod": "WScript.Shell SendKeys via scripts/j12-send-real-key.ps1, after AppActivate on the FileTopo process — the ordinary Windows input path",
+      "keyRequested": "{ENTER}",
+      "focusedBeforeTag": "BUTTON",
+      "focusedBeforeClass": "relations__analyze",
+      "focusedBeforeText": "Analyser les relations",
+      "focusReached": true,
+      "keydownIsTrusted": true,
+      "keydownKey": "Enter",
+      "activationIsTrusted": true,
+      "programmaticClickCalls": 0,
+      "programmaticClickDispatches": 0,
+      "observedChange": true,
+      "waitedMs": 1256
+    },
+    "report": {
+      "brainId": "brain-beta",
+      "engineVersion": "dre-v1",
+      "runId": "dre1-39c7076203470f8d",
+      "mapDigest": "fnv1a64:8765c034d3bf1500",
+      "contentGenerationId": null,
+      "rulesEvaluated": [
+        "core.numbered-sibling-revision-candidate/v1"
+      ],
+      "rulesSkipped": [
+        {
+          "ruleId": "core.identical-content",
+          "version": "v1",
+          "reason": "SKIPPED_MISSING_SIGNAL"
+        }
+      ],
+      "deterministicRelationsProduced": 0,
+      "suggestionsProduced": 39,
+      "emptyContentGroupsSkipped": 0,
+      "establishedCollisionSuppressions": 0,
+      "approvedSuggestionPreservations": 0,
+      "sourceReadOnlyConfirmed": true,
+      "inputState": "CURRENT"
+    },
+    "afterRun": {
+      "overviewReopened": true,
+      "legacyInScope": false,
+      "engineCurrent": true,
+      "engineStatus": {
+        "brainId": "brain-beta",
+        "engineVersion": "dre-v1",
+        "inputState": "CURRENT",
+        "mapDigest": "fnv1a64:8765c034d3bf1500",
+        "currentContentGenerationId": null,
+        "lastRunId": "dre1-39c7076203470f8d",
+        "lastRunUnixMs": 1788644095881,
+        "lastMapDigest": "fnv1a64:8765c034d3bf1500",
+        "lastContentGenerationId": null
+      },
+      "established": 0,
+      "pendingSuggestions": 39,
+      "seeded": 0,
+      "producers": [
+        "core-rule-engine"
+      ],
+      "nodeOutgoing": 0,
+      "nodeIncoming": 0,
+      "nodeSuggestions": [
+        "dre1:faa73619a09be049"
+      ]
+    },
+    "sourceReadOnly": {
+      "fingerprintBefore": "fnv1a64:260a1228d273ad92",
+      "fingerprintAfter": "fnv1a64:260a1228d273ad92",
+      "unchanged": true,
+      "engineConfirmed": true,
+      "filetopoArtifactsInSource": []
+    },
+    "processClosedByHarness": true
+  }
+}

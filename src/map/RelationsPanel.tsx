@@ -32,13 +32,31 @@ import { PROVENANCE_LABELS, entryKey, groupByType, relationTypeLabel } from "./r
  *
  * Every entry is a `<button>`: reachable by keyboard because it is a button,
  * not because a key handler was bolted on.
+ *
+ * **`TASK-0024` split the panel's availability from the legacy perimeter.**
+ * The frozen `TASK-0017` fixture decides whether the historical demonstration
+ * relations apply — nothing else. A brain on `deep` gets the whole panel: the
+ * analyse control, the `dre-v1` state, its core relations and their approval.
  */
 
 interface RelationsPanelProps {
   relations: NodeRelations | null;
   loading: boolean;
-  /** `false` when the open fixture carries no relations in this slice. */
-  inScope: boolean;
+  /**
+   * `false` while this brain has no readable relations overview at all — the
+   * store could not be opened. It is **not** a statement about the fixture.
+   */
+  available: boolean;
+  /**
+   * `false` when the source is outside the frozen `TASK-0017` fixture.
+   *
+   * `TASK-0024` separates two ideas the old `inScope` conflated. The legacy
+   * perimeter says only that the historical demonstration relations do not
+   * apply to this brain; the core perimeter is every brain. So this flag adds
+   * one sentence and hides nothing: not the analyse control, not the `dre-v1`
+   * state, not the core relations, not their approval.
+   */
+  legacyInScope: boolean;
   onSelect: (nodeId: number) => void;
   onApprove: (suggestionKey: string) => void;
   approving: string | null;
@@ -221,7 +239,8 @@ function DirectionSection({
 export default function RelationsPanel({
   relations,
   loading,
-  inScope,
+  available,
+  legacyInScope,
   onSelect,
   onApprove,
   approving,
@@ -230,14 +249,11 @@ export default function RelationsPanel({
   engineRunning = false,
   onAnalyze,
 }: RelationsPanelProps) {
-  if (!inScope) {
+  if (!available) {
     return (
       <section className="relations" aria-label="Relations internes au cerveau">
         <h2 className="relations__title">Relations internes au cerveau</h2>
-        <p className="details__empty">
-          Cette fixture ne porte aucune relation : <code>TASK-0017</code> §4.6 gèle{" "}
-          <code>quasi-empty</code> comme unique cerveau de relations de cette tranche.
-        </p>
+        <p className="details__empty">Relations indisponibles pour ce cerveau.</p>
       </section>
     );
   }
@@ -261,6 +277,13 @@ export default function RelationsPanel({
   return (
     <section className="relations" aria-label="Relations internes au cerveau">
       <h2 className="relations__title">Relations internes au cerveau</h2>
+      {legacyInScope ? null : (
+        <p className="relations__legacy-note" data-testid="legacy-scope-note">
+          Les relations de démonstration de <code>TASK-0017</code> ne s'appliquent pas à ce
+          cerveau : elles restent gelées sur <code>quasi-empty</code>. L'analyse déterministe{" "}
+          <code>dre-v1</code> ci-dessous, elle, s'applique à <strong>tous</strong> les cerveaux.
+        </p>
+      )}
       <section className="relations__engine" aria-label="Moteur déterministe de relations">
         <h3 className="relations__subtitle">Analyse déterministe</h3>
         <button

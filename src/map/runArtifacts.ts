@@ -167,6 +167,17 @@ export function dr15Artifact(pass: number): string {
 }
 
 /**
+ * Reserve `X11` — the deterministic relation engine, proved generic on a brain
+ * outside the frozen legacy fixture.
+ *
+ * A **corrective** proof: it answers a reserve raised after independent
+ * control, joins neither `X5` nor the three frozen `TASK-0024` proofs, and
+ * replaces none of them. One file, rewritten on each replay, because it
+ * measures a single scenario in a single process.
+ */
+export const X11_GENERIC_ARTIFACT = "TASK-0024-X11-generic-brain-webview2.json";
+
+/**
  * Every name this runtime **spells as a destination**. The guard test
  * enumerates it.
  *
@@ -199,6 +210,7 @@ export const RUNTIME_RUN_ARTIFACTS = [
   ec15Artifact(2),
   dr15Artifact(1),
   dr15Artifact(2),
+  X11_GENERIC_ARTIFACT,
 ] as const;
 
 /**

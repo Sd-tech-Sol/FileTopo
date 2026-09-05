@@ -1,5 +1,54 @@
 # État courant
 
+## Correction X11 de TASK-0024 — moteur générique sur tous les cerveaux — 2026-09-05
+
+- **Contrôle indépendant enregistré, non rendu par Claude :**
+  `ACTION-0040 = CHANGES_REQUIRED`, réserve `X11 = OPEN`, `TASK-0024` reste
+  **`IMPLEMENTED`**. HEAD contrôlé avant correction `2e4c9842`, commit
+  substantif initial `6a4a5432`. Détail dans
+  [`ACTION-0040`](../reviews/ACTION-0040-independent-control.md).
+- **Défaut fermé :** `dre-v1` était générique côté backend, mais la couche
+  héritée de `TASK-0017` filtrait encore `open_relations`, `node_relations` et
+  `approve_suggestion` sur `RELATIONS_FIXTURE = quasi-empty`. `brain-beta` lit
+  `deep` : le panneau revenait mort avant le bouton **Analyser les relations**.
+- **Correction :** `legacy_fixture_spec()` isole la fixture historique,
+  `source_spec()` valide n'importe quelle source, `ensure_in_scope()` ne sert
+  plus qu'à `self_check`. `open_relations` ne dérive et ne sème que dans le
+  périmètre legacy; hors de lui, le store est lu tel qu'il est. DTO `inScope`
+  → `legacyInScope`; `RelationsPanel` reçoit `available` et `legacyInScope`.
+- **Frontière legacy préservée :** `homonymes/v1`, `suites-numerotees/v1`, les
+  seeds `TASK-0017` et le self-check `J1`–`J5`/`J10` restent strictement
+  limités à `quasi-empty`. `derive()` legacy n'est jamais lancé sur `wide`,
+  `deep` ou `mixed`. `J12` n'est pas affaibli.
+- **Preuve corrective, non canonique :**
+  `TASK-0024-X11-generic-brain-webview2.json`. Sur `brain-beta` (`deep`, 157
+  nœuds), WebView2 `152.0.4191.62` : panneau disponible, bouton présent et
+  activable, `keydownIsTrusted` et `activationIsTrusted` vrais, zéro clic
+  programmatique, report `brain-beta` / `dre-v1` / `CURRENT`,
+  `map_relations_open` réussi après run, producteurs `core-rule-engine`
+  seulement, `seeded = 0`, source inchangée, processus fermé. Elle **ne rejoint
+  pas `X5`** et ne remplace aucune des trois preuves canoniques gelées.
+- **Zéro sortie reste un résultat valide :** sur `deep`,
+  `core.identical-content` est sautée, motif `SKIPPED_MISSING_SIGNAL`; la règle
+  des frères numérotés produit 39 suggestions. Ce qui est prouvé est que le
+  moteur et l'interface fonctionnent génériquement, pas qu'une règle doive
+  produire.
+- **Rejeux réécrits :** les deux `TASK-0024-DR15-*` sur une variante fraîche et
+  `TASK-0024-J12-intrabrain-relations-regression-webview2.json`. `K11`, `K12`,
+  `L12`, `M12`, `N15` et `H9` ne sont pas rejoués, faute de dépendance directe.
+- **Validation :** Rust **200/200**, TypeScript **215/215**, `pnpm check`,
+  `pnpm build`, Tauri debug `--no-bundle`, X11 WebView2 Bêta, DR15 pass1/pass2
+  frais, J12 réel.
+- **Gouvernance :** `X5` reste exactement **29** preuves inchangées,
+  `protectedDestinations = []`, `writesUnderItsOwnTaskOnly = true`,
+  propriétaire `TASK-0024`. `main` reste `91bbe90f`.
+- **États :** `TASK-0024 = IMPLEMENTED`, `F-043 = IMPLEMENTED`,
+  `ACTION-0040 = CHANGES_REQUIRED`, `X11 = OPEN`. Aucune réserve auto-fermée,
+  aucune `TASK-0025` créée. `F-044`, `F-045`, `F-046` restent `PROPOSED`;
+  `DEC-0013/F` demeure bloquante pour l'identité physique persistante.
+- **Action unique suivante :** re-contrôle indépendant ciblé `X11` /
+  `TASK-0024`.
+
 ## Mise à jour TASK-0024 — moteur déterministe `dre-v1` — 2026-09-05
 
 - **Tâche livrée, NON vérifiée :** `TASK-0024` = **`IMPLEMENTED`** sur

@@ -126,6 +126,11 @@ pub struct HostInfo {
     /// `DR15` — deterministic relation engine proof, two real processes on
     /// one fresh TASK-0024 variant.
     pub auto_dre_pass: u8,
+    /// Reserve `X11` — the same engine, proved generic on `brain-beta`, which
+    /// reads `deep` and no legacy `TASK-0017` producer ever covered.
+    ///
+    /// A single pass: genericity is what it measures, not persistence.
+    pub auto_generic_relations: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

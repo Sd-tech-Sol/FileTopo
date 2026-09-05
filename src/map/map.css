@@ -741,6 +741,21 @@ button:disabled {
   color: var(--ink-soft);
 }
 
+/*
+ * The legacy `TASK-0017` perimeter, stated — never a wall.
+ *
+ * It is a note beside the panel, not a replacement for it: everything generic
+ * stays on screen underneath. Set apart by a rule on its leading edge rather
+ * than by colour alone, so it reads as an aside without needing a hue.
+ */
+.relations__legacy-note {
+  margin: 0;
+  padding: 6px 0 6px 9px;
+  border-left: 2px solid var(--line);
+  font-size: 11.5px;
+  color: var(--ink-soft);
+}
+
 .relations__list {
   list-style: none;
   margin: 0;

@@ -165,6 +165,13 @@ export interface HostInfo {
   autoContentPass: number;
   /** `DR15` — `0` none, `1` interaction pass, `2` persistence pass. */
   autoDrePass: number;
+  /**
+   * Reserve `X11` — the generic-brain proof, on `brain-beta`.
+   *
+   * A flag rather than a pass count: one process is enough to show that the
+   * engine and the panel work outside the frozen legacy fixture.
+   */
+  autoGenericRelations: boolean;
 }
 
 /* --- TASK-0023 — observations cryptographiques exactes ------------------ */
@@ -321,7 +328,13 @@ export interface RelationsOverview {
   relationsPath: string;
   schemaVersion: number;
   endpointKeyScheme: string;
-  inScope: boolean;
+  /**
+   * `false` when the source is outside the frozen **legacy** scope of
+   * `TASK-0017`. It says the historical demonstration relations do not
+   * apply to this brain, and nothing more: the panel, the `dre-v1`
+   * engine, the core relations and their approval stay available.
+   */
+  legacyInScope: boolean;
   established: RelationEdge[];
   /** Pending only — an approved suggestion is already a relation. */
   pendingSuggestions: SuggestionEdge[];

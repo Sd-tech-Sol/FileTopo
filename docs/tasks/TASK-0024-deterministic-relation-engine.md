@@ -220,3 +220,59 @@ les destinations runtime protégées sont vides, et `main` reste `91bbe90f`.
 
 État final de l'exécuteur : **`IMPLEMENTED`**, jamais `VERIFIED`. Le prochain
 acte est un contrôle indépendant de `TASK-0024`.
+
+## 11. Correction ciblée X11 — 2026-09-05
+
+Contrôle indépendant enregistré :
+[`ACTION-0040`](../reviews/ACTION-0040-independent-control.md).
+`ACTION-0040 = CHANGES_REQUIRED`, réserve `X11 = OPEN`, `TASK-0024` reste
+`IMPLEMENTED`. **Claude ne ferme pas `X11` et ne s'attribue pas `VERIFIED`.**
+
+### Défaut corrigé
+
+Le moteur `dre-v1` était générique côté backend, mais la couche héritée de
+`TASK-0017` gardait un verrou `RELATIONS_FIXTURE = quasi-empty` sur
+`open_relations`, `node_relations` et `approve_suggestion`. `brain-beta` lit
+`deep` : `map_relations_open` était refusé, `LoadedBrain.relations` restait
+`null`, `RelationsPanel` retournait avant le bouton **Analyser les relations**,
+et `analyzeRelations()` ne pouvait pas terminer son rafraîchissement.
+
+### Correction
+
+Périmètre legacy et périmètre core sont **découplés**, sans élargir le legacy :
+
+- `legacy_fixture_spec()` isole la fixture historique; `source_spec()` valide
+  la source de n'importe quel cerveau; `ensure_in_scope()` subsiste pour le
+  seul `self_check`;
+- `open_relations` ne dérive et ne sème **que** dans le périmètre legacy;
+- `node_relations` et `approve_suggestion` ne sont plus filtrés par la fixture;
+  le refus d'approbation d'une suggestion core **périmée** est inchangé;
+- `self_check` reste limité à `quasi-empty` — `J12` n'est pas affaibli;
+- DTO `inScope` → `legacyInScope`; `RelationsPanel` reçoit `available` et
+  `legacyInScope` et n'est plus mort hors `quasi-empty`.
+
+`homonymes/v1`, `suites-numerotees/v1`, les seeds `TASK-0017` et le self-check
+`J1`–`J5`/`J10` restent strictement limités à `quasi-empty`. `derive()` legacy
+n'est **jamais** lancé sur `wide`, `deep` ou `mixed`.
+
+### Preuves
+
+- **Corrective, non canonique :**
+  `docs/performance/runs/TASK-0024-X11-generic-brain-webview2.json`. Elle ne
+  rejoint pas `X5` et ne remplace aucune des trois preuves canoniques gelées.
+- **Rejeux réécrits :** les deux `TASK-0024-DR15-*` sur une variante fraîche, et
+  `TASK-0024-J12-intrabrain-relations-regression-webview2.json`.
+- **Non rejoués :** `K11`, `K12`, `L12`, `M12`, `N15`, `H9` — aucune dépendance
+  directe constatée.
+
+### Validation
+
+Rust **200/200**, TypeScript **215/215**, `pnpm check`, `pnpm build`, Tauri
+debug `--no-bundle`, X11 WebView2 sur Bêta, DR15 pass1/pass2 frais, J12 réel.
+`X5` reste exactement **29** preuves inchangées, `protectedDestinations = []`,
+`writesUnderItsOwnTaskOnly = true`, propriétaire `TASK-0024`. `main` reste
+`91bbe90f`.
+
+État après correction : `TASK-0024 = IMPLEMENTED`, `F-043 = IMPLEMENTED`,
+`ACTION-0040 = CHANGES_REQUIRED`, `X11 = OPEN`. Action suivante unique :
+re-contrôle indépendant ciblé `X11` / `TASK-0024`.

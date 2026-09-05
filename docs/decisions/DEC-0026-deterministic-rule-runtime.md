@@ -148,3 +148,29 @@ Rust **197/197** et TypeScript **213/213**, check/build, Tauri debug, DR15
 WebView2 en deux processus et J12 réel passent. Les preuves canoniques sont
 les deux JSON `TASK-0024-DR15-*` et le JSON `TASK-0024-J12-*`. Cette décision
 est `IMPLEMENTED`; seul un contrôle indépendant peut la rendre `VERIFIED`.
+
+## Résultat — correction X11, 2026-09-05
+
+**La décision gelée ci-dessus n'est pas réécrite.** Cette section enregistre
+seulement ce que la correction `X11` a changé dans son implémentation.
+
+Le contrôle indépendant [`ACTION-0040`](../reviews/ACTION-0040-independent-control.md)
+a relevé que le runtime générique restait inatteignable hors de la fixture
+historique : la couche `TASK-0017` filtrait `open_relations`, `node_relations`
+et `approve_suggestion` sur `RELATIONS_FIXTURE = quasi-empty`, si bien que
+`brain-beta` ne pouvait ni ouvrir le panneau, ni lancer l'analyse depuis
+l'interface, ni approuver une suggestion core.
+
+La correction sépare le **périmètre legacy** du **périmètre core** : la
+dérivation et les seeds `TASK-0017` restent confinés à `quasi-empty`, tandis
+que le catalogue `core.*`, sa fraîcheur, ses lectures et son approbation
+s'appliquent à tout cerveau valide. Rien du catalogue gelé, du schéma de store,
+de la reconciliation ni du contrat de campagne n'est modifié.
+
+Preuve corrective, non canonique :
+`docs/performance/runs/TASK-0024-X11-generic-brain-webview2.json`. Elle
+n'entre pas dans `X5`. Suites Rust **200/200** et TypeScript **215/215**,
+check/build, Tauri debug, DR15 pass1/pass2 réécrites et J12 réel passent.
+
+La décision reste `IMPLEMENTED`; `X11` reste **`OPEN`**; seul un re-contrôle
+indépendant peut la rendre `VERIFIED`.

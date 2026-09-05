@@ -1,5 +1,54 @@
 # HANDOFF — passage de relais
 
+## Relais actuel — TASK-0024 corrigée sur X11, toujours IMPLEMENTED, 2026-09-05
+
+`TASK-0024` reste livrée **`IMPLEMENTED`**, jamais auto-attribuée `VERIFIED`,
+sur `build/v0.2-a8-deterministic-relation-engine`. `DEC-0026` et `F-043` restent
+`IMPLEMENTED — contrôle indépendant requis`.
+
+Le contrôle indépendant [`ACTION-0040`](../reviews/ACTION-0040-independent-control.md)
+a rendu `CHANGES_REQUIRED` et ouvert la réserve `X11` : le moteur était
+générique, mais la couche héritée de `TASK-0017` filtrait encore les lectures
+intra-relations sur `quasi-empty`, si bien que `brain-beta` (`deep`) ne pouvait
+ni ouvrir le panneau, ni lancer l'analyse depuis l'interface, ni approuver une
+suggestion core. **Claude enregistre ce verdict; il ne le rend pas et ne ferme
+pas `X11`.**
+
+La correction découple les deux périmètres. `legacy_fixture_spec()` répond
+`Some` pour la seule fixture historique, `source_spec()` valide la source de
+n'importe quel cerveau, et `ensure_in_scope()` ne sert plus qu'à `self_check`,
+qui reste gelé sur `quasi-empty`. `open_relations` ne rejoue `derive()` et ne
+sème les suggestions gelées que dans le périmètre legacy; ailleurs il lit le
+store tel qu'il est. `node_relations` et `approve_suggestion` ne sont plus
+filtrés par la fixture, le refus d'approbation d'une suggestion core périmée
+étant inchangé. Le DTO dit `legacyInScope`, et `RelationsPanel` reçoit
+`available` et `legacyInScope` : la note legacy explique la limite sans jamais
+masquer le bouton **Analyser les relations**, l'état `dre-v1`, les relations
+core, les suggestions core ni leur approbation.
+
+Validations exécutées : Rust **200/200**, TypeScript **215/215**, `pnpm check`,
+`pnpm build`, Tauri debug `--no-bundle`. La preuve corrective
+`TASK-0024-X11-generic-brain-webview2.json` a été écrite dans un vrai processus
+WebView2 `152.0.4191.62` sur `brain-beta` : activation clavier fiable, zéro clic
+programmatique, report `brain-beta` / `dre-v1` / `CURRENT`, aucun producteur
+legacy, source inchangée, processus fermé. Elle est **non canonique**, ne
+rejoint pas `X5` et ne remplace aucune preuve gelée. Les deux `DR15` ont été
+rejouées sur une variante fraîche et le `J12` réel repasse : les invariants
+legacy d'Alpha sont strictement identiques.
+
+Sur `deep`, `core.identical-content` est sautée faute de signal de contenu et la
+règle des frères numérotés produit 39 suggestions. **Zéro sortie serait un
+résultat valide** : ce qui est prouvé est la généricité du moteur et de
+l'interface, pas qu'une règle doive produire.
+
+X5 reste exactement à **29** noms, inchangés dans les trois gardes. Toutes les
+destinations actives appartiennent à `TASK-0024`, aucune n'est protégée.
+`main` reste `91bbe90f`. Les quatre fixtures gelées sont inchangées.
+
+**Relais unique :** re-contrôle indépendant ciblé `X11` / `TASK-0024`. Ne créer
+aucune `TASK-0025`. `F-044`, `F-045`, `F-046` restent `PROPOSED`; `DEC-0013/F`
+demeure bloquante.
+
 ## Relais actuel — TASK-0024 IMPLEMENTED, 2026-09-05
 
 `TASK-0024` est livrée **`IMPLEMENTED`**, jamais auto-attribuée `VERIFIED`, sur

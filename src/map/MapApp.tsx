@@ -41,6 +41,7 @@ import { runRelationScenario as runScenario } from "./relationScenario";
 import { runTopographicScenario as runTopographic } from "./topographicScenario";
 import { runContentScenario as runContent } from "./contentScenario";
 import { runDreScenario as runDre } from "./dreScenario";
+import { runGenericRelationScenario as runGeneric } from "./genericRelationScenario";
 import {
   H9_REGRESSION_ABANDON_ARTIFACT,
   H9_REGRESSION_ARTIFACT,
@@ -292,6 +293,7 @@ export default function MapApp() {
   const runTopographicScenarioRef = useRef<(() => Promise<void>) | null>(null);
   const runContentScenarioRef = useRef<(() => Promise<void>) | null>(null);
   const runDreScenarioRef = useRef<(() => Promise<void>) | null>(null);
+  const runGenericRelationScenarioRef = useRef<(() => Promise<void>) | null>(null);
 
   const order = useMemo(() => catalogueOrder(catalog?.brains ?? []), [catalog]);
 
@@ -423,6 +425,12 @@ export default function MapApp() {
       void runDreScenarioRef.current?.();
       return;
     }
+    if (host.autoGenericRelations) {
+      autoStarted.current = true;
+      hostLog("info", "démarrage automatique du scénario X11 sur brain-beta");
+      void runGenericRelationScenarioRef.current?.();
+      return;
+    }
     if (host.autoVerify) {
       autoStarted.current = true;
       hostLog("info", "démarrage automatique de la vérification L11");
@@ -498,8 +506,10 @@ export default function MapApp() {
         throw new Error(`incohérence de cerveau: demandé ${brainId}, reçu ${snapshot.brainId}`);
       }
 
-      // Relations are opened separately, and a brain whose source is outside
-      // the frozen relations scope is a *stated* outcome, not an error banner.
+      // Relations are opened separately. Since `TASK-0024` this succeeds for
+      // **any** valid source: a brain outside the frozen legacy fixture simply
+      // carries no legacy relations, which the panel states in one sentence.
+      // A failure here stays a stated outcome, not an error banner.
       let relations: RelationsOverview | null = null;
       try {
         relations = await invoke<RelationsOverview>("map_relations_open", { brainId });
@@ -1538,6 +1548,21 @@ export default function MapApp() {
 
   runDreScenarioRef.current = runDreScenario;
 
+  // Reserve `X11`. The same wiring as DR15, on the brain the legacy fixture
+  // never covered — same commands, same panel, same real-keystroke mechanism.
+  const runGenericRelationScenario = useCallback(() => {
+    return runGeneric({
+      invoke: (command, args) => invoke(command, args),
+      host,
+      showOnly,
+      select: selectNode,
+      setStatus,
+      log: hostLog,
+    });
+  }, [host, selectNode, showOnly]);
+
+  runGenericRelationScenarioRef.current = runGenericRelationScenario;
+
   const selectedNode: MapNode | null =
     selected && selectedBrain ? selectedBrain.hierarchy.byId.get(selected.nodeId) ?? null : null;
   const selectedTerritory = selected
@@ -1935,7 +1960,11 @@ export default function MapApp() {
           <RelationsPanel
             relations={nodeRelations}
             loading={relationsLoading}
-            inScope={selectedOverview !== null}
+            available={selectedOverview !== null}
+            // The legacy TASK-0017 perimeter, and only that. It adds a
+            // sentence to the panel; it never takes the engine, the core
+            // relations or their approval away — TASK-0024.
+            legacyInScope={selectedOverview?.legacyInScope ?? false}
             onSelect={selectInSelectedBrain}
             onApprove={approveSuggestion}
             approving={approving}

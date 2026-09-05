@@ -5,9 +5,9 @@
   "doesNotReplace": "docs/performance/runs/TASK-0017-J12-webview2.json, docs/performance/runs/TASK-0018-J12-relations-regression-webview2.json",
   "replacesCanonicalEvidence": false,
   "note": "J12 replayed on brain-alpha after the TASK-0019 composed-view migration: same frozen `quasi-empty` tree, same real-keystroke mechanism, brain-keyed commands, DOM ids now namespaced by brain_id. It proves the composed view did not break J12; it does NOT re-issue J12's own proof, which remains TASK-0017-J12-webview2.json, unchanged.",
-  "capturedAtIso": "2026-09-05T04:50:02.956Z",
+  "capturedAtIso": "2026-09-05T21:35:45.844Z",
   "host": {
-    "sandboxRoot": "<dépôt>/.filetopo-sandbox/variants/task0022-j12-20260905004958-85f03e",
+    "sandboxRoot": "<dépôt>/.filetopo-sandbox/variants/task0022-j12-20260905173541-fb9fd2",
     "appVersion": "0.1.0-alpha.1",
     "sqliteVersion": "3.53.2",
     "webviewVersion": "152.0.4191.62",
@@ -26,13 +26,14 @@
     "autoCrossPass": 0,
     "autoTopographicPass": 0,
     "autoContentPass": 0,
-    "autoDrePass": 0
+    "autoDrePass": 0,
+    "autoGenericRelations": false
   },
   "evidence": {
     "brainId": "brain-alpha",
     "opened": {
       "barReady": true,
-      "barReadyWaitedMs": 150,
+      "barReadyWaitedMs": 139,
       "settled": true,
       "waitedMs": 0
     },
@@ -74,7 +75,7 @@
     },
     "panel": {
       "settled": true,
-      "waitedMs": 0,
+      "waitedMs": 23,
       "directionSections": [
         "Sortantes (3)",
         "Entrantes (1)"
@@ -117,7 +118,7 @@
       "programmaticClickCalls": 0,
       "programmaticClickDispatches": 0,
       "observedChange": true,
-      "waitedMs": 1151,
+      "waitedMs": 1149,
       "activeDescendantBefore": "brain-alpha-map-node-6",
       "activeDescendantAfterKeystroke": "brain-alpha-map-node-9",
       "expectedEndpointKey": "ek1|brain-alpha|dossier-b/note-1.txt",
@@ -169,7 +170,7 @@
       "programmaticClickCalls": 0,
       "programmaticClickDispatches": 0,
       "observedChange": true,
-      "waitedMs": 1095,
+      "waitedMs": 1094,
       "noProgrammaticActivationUsed": true,
       "beforeOutgoing": 3,
       "beforeIncoming": 1,

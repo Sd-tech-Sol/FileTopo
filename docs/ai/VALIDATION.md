@@ -3406,3 +3406,60 @@ des quatre fixtures gelées. Le repli non-Windows de X10 reste non revendiqué
 race-safe. `cargo fmt --check` reste rouge sur le formatage historique global;
 aucun reformatage global. `DEC-0013/F` demeure bloquante; `F-044` et `F-045`
 ne sont pas implémentées.
+
+---
+
+## AN. ACTION-0040 — contrôle indépendant de TASK-0024 et correction ciblée X11
+
+**Statut : `TASK-0024` reste `IMPLEMENTED`.** Verdict externe enregistré, non
+rendu par Claude : `ACTION-0040 = CHANGES_REQUIRED`, réserve `X11 = OPEN`.
+HEAD contrôlé avant correction `2e4c9842`, commit substantif initial
+`6a4a5432`. Détail dans
+[`ACTION-0040`](../reviews/ACTION-0040-independent-control.md).
+
+**Réserve X11 :** `dre-v1` était générique côté backend, mais l'interface et
+les lectures intra-relations restaient bloquées par `ensure_in_scope()` /
+`RELATIONS_FIXTURE = quasi-empty`; `brain-beta` (`deep`) ne pouvait pas ouvrir
+le panneau, lancer l'analyse, consulter ses sorties core ni approuver une
+suggestion core.
+
+| Contrôle | Résultat | Preuve |
+|---|---|---|
+| Découplage legacy / core | **PASS** | `legacy_fixture_spec()` + `source_spec()`; `ensure_in_scope()` réservé à `self_check`; tests Rust `relation_commands` |
+| Aucun élargissement du legacy | **PASS** | `derive()` et seeds `TASK-0017` jamais exécutés hors `quasi-empty`; `seeded = 0` et `producers = ["core-rule-engine"]` sur Bêta |
+| `self_check` toujours gelé | **PASS** | refusé hors `quasi-empty`, motif `relations_out_of_scope_for_fixture`; `J12` intact |
+| Ouverture générique | **PASS** | `open_relations(Bêta)` réussit; `NOT_RUN` avant run; overview valide et vide |
+| Run générique sans LLM/réseau | **PASS** | `map_relation_engine_run(Bêta)` : `dre-v1`, `CURRENT`, `sourceReadOnlyConfirmed` |
+| Lecture nœud générique | **PASS** | `map_relations_for_node(Bêta)` réussit; clés d'endpoint toutes `brain-beta` |
+| Approbation générique | **PASS** | plus filtrée par la fixture; refus de suggestion core périmée inchangé; test Rust dédié |
+| Panneau UI vivant hors legacy | **PASS** | `panelSaysOutOfScope = false`, bouton présent et activable, note legacy affichée sans rien masquer |
+| Frappe clavier réelle | **PASS** | `keydownIsTrusted = true`, `activationIsTrusted = true`, `programmaticClickCalls = 0`, `programmaticClickDispatches = 0` |
+| Isolation Alpha/Gamma | **PASS** | invariants legacy d'Alpha identiques avant/après; store d'Alpha non agrandi; aucun store Gamma créé |
+| DR15 pass1/pass2 rejouées | **PASS** | variante fraîche; activation et approbation fiables; ensembles stables; cross-store inchangé |
+| J12 réel rejoué | **PASS** | 12 établies / 8 déterministes / 4 approuvées / 4 en attente; `countsAgree`, `replayStable`, `allRejected` |
+| X5 / gouvernance | **PASS** | 29 preuves inchangées; `protectedDestinations = []`; `writesUnderItsOwnTaskOnly = true`; propriétaire `TASK-0024`; `main = 91bbe90f` |
+| Suite Rust complète | **PASS** | `cargo test` — **200/200** |
+| Suite TypeScript complète | **PASS** | `pnpm test` — **215/215** |
+| Typecheck/build | **PASS** | `pnpm check`; `pnpm build`; `pnpm tauri build --debug --no-bundle` |
+
+**Preuve corrective, NON canonique :**
+`TASK-0024-X11-generic-brain-webview2.json`. Elle ne rejoint **pas** `X5` et ne
+remplace aucune des trois preuves canoniques gelées de `TASK-0024`, ce qu'elle
+déclare elle-même (`canonical: false`, `joinsX5: false`, `doesNotReplace`).
+
+**Preuves réécrites :** les deux `TASK-0024-DR15-*` et
+`TASK-0024-J12-intrabrain-relations-regression-webview2.json`, qui ne sont pas
+protégées tant que `TASK-0024` n'est pas `VERIFIED`.
+
+**Non testé / limites :** `K11`, `K12`, `L12`, `M12`, `N15`, `H9` non rejoués —
+aucune dépendance directe constatée. Sur `deep`, `core.identical-content` est
+sautée faute de signal de contenu : **zéro sortie est un résultat valide**, et
+rien ici n'affirme qu'une règle doive produire sur une source donnée. La
+généricité est prouvée sur `brain-beta` / `deep`; `wide` et `mixed` ne sont pas
+couverts par une preuve en hôte réel. Le repli non-Windows de `X10` reste non
+revendiqué race-safe. `cargo fmt --check` reste rouge sur le formatage
+historique global; aucun reformatage global. `DEC-0013/F` demeure bloquante;
+`F-044`, `F-045` et `F-046` restent `PROPOSED`.
+
+**Claude ne ferme pas `X11` et ne s'attribue pas `VERIFIED`.** Action unique
+suivante : re-contrôle indépendant ciblé `X11` / `TASK-0024`.

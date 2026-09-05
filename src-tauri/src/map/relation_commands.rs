@@ -95,9 +95,12 @@ pub struct RelationsOverview {
     pub relations_path: String,
     pub schema_version: i64,
     pub endpoint_key_scheme: String,
-    /// `false` when the fixture is outside the frozen scope of `TASK-0017`;
-    /// the interface says so in words instead of showing an empty panel.
-    pub in_scope: bool,
+    /// `false` when the fixture is outside the frozen **legacy** scope of
+    /// `TASK-0017`. It says the historical demonstration relations do not
+    /// apply to this brain — and nothing else. The panel, the engine, the core
+    /// relations and their approval stay available either way: `TASK-0024`
+    /// keeps the legacy perimeter and the core perimeter as two ideas.
+    pub legacy_in_scope: bool,
     pub established: Vec<RelationEdge>,
     /// **Pending only.** An approved suggestion has already become a relation
     /// and must not be drawn twice.
@@ -279,39 +282,75 @@ fn index_by_key<'a>(brain_id: &str, nodes: &'a [MapNode]) -> HashMap<String, &'a
         .collect()
 }
 
-/// Refuses a brain whose source is outside the frozen relations scope, in
-/// words.
+/// The **legacy** `TASK-0017` scope, as a property of the source.
 ///
-/// The scope is still a property of the **source** — the `homonymes` rule is
-/// quadratic and would produce hundreds of thousands of pairs on `wide` — but
-/// the refusal now names the brain, because that is what the caller asked for.
-fn ensure_in_scope(brain: &BrainRecord) -> Result<&'static fixtures::FixtureSpec, MapError> {
+/// `Some` only for the historical fixture: the synthetic producers of
+/// `TASK-0017` — `homonymes/v1`, `suites-numerotees/v1` and the frozen seeds —
+/// stay confined to `quasi-empty`, because `homonymes` is quadratic and would
+/// produce hundreds of thousands of pairs on `wide`.
+///
+/// `None` for any other **valid** fixture. That is not a refusal: it says the
+/// legacy demonstration relations do not apply, and nothing more. An unknown
+/// fixture stays a normal error, raised by `source_fixture()` itself.
+fn legacy_fixture_spec(
+    brain: &BrainRecord,
+) -> Result<Option<&'static fixtures::FixtureSpec>, MapError> {
     let spec = brain.source_fixture()?;
-    if spec.id != RELATIONS_FIXTURE {
-        let brain_id = &brain.brain_id;
-        return Err(RelationError::OutOfScopeFixture(format!(
-            "`{brain_id}` reads `{}` and carries no relations: TASK-0017 §4.6 \
-             freezes `{RELATIONS_FIXTURE}` as the relations source of this slice",
-            spec.id
-        ))
-        .into());
-    }
-    Ok(spec)
+    Ok((spec.id == RELATIONS_FIXTURE).then_some(spec))
 }
 
-/// Opens the relations of a brain: replays the derivation from the current
-/// index, seeds the frozen synthetic suggestions once, and reads everything
-/// back resolved against the map.
+/// The source of a brain, valid or refused — with **no** scope judgement.
 ///
-/// The derivation is replayed on **every** open, deliberately: it is derived
-/// data, and `R-C` keeps it on its own side precisely so that recomputing it
-/// costs nothing to the approved relations and the suggestions, which are
-/// never touched here.
+/// `TASK-0024` splits the two questions the old `ensure_in_scope` conflated:
+/// « is this source real? » is asked of every brain, while « does the legacy
+/// `TASK-0017` fixture apply? » is asked only of the legacy producers. The core
+/// engine `dre-v1` is generic, so the reads that surround it must not inherit
+/// the legacy scope.
+fn source_spec(brain: &BrainRecord) -> Result<&'static fixtures::FixtureSpec, MapError> {
+    brain.source_fixture()
+}
+
+/// Refuses a brain whose source is outside the frozen **legacy** scope, in
+/// words.
+///
+/// Kept for `self_check` alone: it verifies the frozen `TASK-0017` contract,
+/// which only `quasi-empty` can satisfy. `J12` must not be weakened.
+fn ensure_in_scope(brain: &BrainRecord) -> Result<&'static fixtures::FixtureSpec, MapError> {
+    let spec = source_spec(brain)?;
+    match legacy_fixture_spec(brain)? {
+        Some(spec) => Ok(spec),
+        None => {
+            let brain_id = &brain.brain_id;
+            Err(RelationError::OutOfScopeFixture(format!(
+                "`{brain_id}` reads `{}` and carries no legacy relations: TASK-0017 §4.6 \
+                 freezes `{RELATIONS_FIXTURE}` as the legacy relations source of this slice",
+                spec.id
+            ))
+            .into())
+        }
+    }
+}
+
+/// Opens the relations of a brain — **for any valid source**.
+///
+/// Two disjoint jobs live here, and `TASK-0024` keeps them apart:
+///
+/// * inside the legacy scope, the `TASK-0017` derivation is replayed on every
+///   open and the frozen synthetic suggestions are seeded once. It is derived
+///   data, and `R-C` keeps it on its own side precisely so that recomputing it
+///   costs nothing to the approved relations and the suggestions;
+/// * outside it, **nothing is derived and nothing is seeded**. The store is
+///   opened and read as it stands, so a brain that has never run `dre-v1`
+///   returns a valid, empty overview rather than a refusal.
+///
+/// Opening is never an act of invention: a brain on `deep` gets whatever the
+/// core engine and the human approvals actually put in its own store.
 pub fn open_relations(
     paths: &SandboxPaths,
     brain: &BrainRecord,
 ) -> Result<RelationsOverview, MapError> {
-    let spec = ensure_in_scope(brain)?;
+    let spec = source_spec(brain)?;
+    let legacy_scope = legacy_fixture_spec(brain)?.is_some();
     let snapshot = commands::snapshot(paths, brain)?;
     // One store per brain. `brain-alpha` and `brain-gamma` read the same tree
     // and derive the same eight relations — into two separate databases.
@@ -319,14 +358,19 @@ pub fn open_relations(
     let mut store = RelationStore::open(&database)?;
     let engine_current = super::rule_engine::is_current(paths, brain)?;
 
-    let derived = super::relations::derive(&brain.brain_id, &snapshot.nodes)?;
-    store.replace_derived(&derived)?;
-    let seeded = super::relations::seed_fixture(&mut store, &brain.brain_id)?;
+    let seeded = if legacy_scope {
+        let derived = super::relations::derive(&brain.brain_id, &snapshot.nodes)?;
+        store.replace_derived(&derived)?;
+        super::relations::seed_fixture(&mut store, &brain.brain_id)?
+    } else {
+        0
+    };
 
     overview(
         &store,
         brain,
         spec.id,
+        legacy_scope,
         paths.relative_name(&database),
         &snapshot.nodes,
         seeded,
@@ -338,6 +382,7 @@ fn overview(
     store: &RelationStore,
     brain: &BrainRecord,
     fixture_id: &str,
+    legacy_in_scope: bool,
     relations_path: String,
     nodes: &[MapNode],
     seeded: usize,
@@ -395,7 +440,7 @@ fn overview(
         relations_path,
         schema_version: RELATIONS_SCHEMA_VERSION,
         endpoint_key_scheme: super::relations::ENDPOINT_KEY_SCHEME.to_string(),
-        in_scope: true,
+        legacy_in_scope,
         deterministic_count: deterministic.len(),
         approved_count: established.len() - deterministic.len(),
         pending_suggestion_count: pending.len(),
@@ -441,7 +486,9 @@ pub fn node_relations(
     brain: &BrainRecord,
     reference: &BrainNodeRef,
 ) -> Result<NodeRelations, MapError> {
-    let spec = ensure_in_scope(brain)?;
+    // Validity of the source, never the legacy scope: a node of `brain-beta`
+    // has core relations to read like any other — `TASK-0024`.
+    let spec = source_spec(brain)?;
     // The pair is the boundary — `TASK-0018` §4.1 rule 4. A reference minted
     // in another brain is refused before any store is opened.
     if !reference.belongs_to(&brain.brain_id) {
@@ -547,7 +594,10 @@ pub fn approve_suggestion(
     brain: &BrainRecord,
     suggestion_key: &str,
 ) -> Result<RelationsOverview, MapError> {
-    let spec = ensure_in_scope(brain)?;
+    // Approving a **core** suggestion is a generic act. The refusal that
+    // matters here is staleness, below, not the legacy fixture.
+    let spec = source_spec(brain)?;
+    let legacy_scope = legacy_fixture_spec(brain)?.is_some();
     let snapshot = commands::snapshot(paths, brain)?;
     // Opened on **this** brain's store, so the approval cannot reach another
     // brain's copy of the same suggestion key — `K6`.
@@ -569,6 +619,7 @@ pub fn approve_suggestion(
         &store,
         brain,
         spec.id,
+        legacy_scope,
         paths.relative_name(&database),
         &snapshot.nodes,
         0,
@@ -740,6 +791,13 @@ mod tests {
         BrainRecord::frozen_by_id("brain-alpha").expect("brain-alpha")
     }
 
+    /// The catalogue's **counter-example**: `brain-beta` reads `deep`, which
+    /// no legacy `TASK-0017` producer ever touches. Everything generic has to
+    /// work on it — `X11`.
+    fn beta() -> BrainRecord {
+        BrainRecord::frozen_by_id("brain-beta").expect("brain-beta")
+    }
+
     /// The **other** brain on the very same fixture. `K6` turns on this pair.
     fn gamma() -> BrainRecord {
         BrainRecord::frozen_by_id("brain-gamma").expect("brain-gamma")
@@ -763,10 +821,15 @@ mod tests {
         paths
     }
 
+    /// The **legacy** scope is still a refusal — for the legacy self-check,
+    /// and for it alone.
+    ///
+    /// `self_check` replays the frozen `TASK-0017` contract, which only
+    /// `quasi-empty` can satisfy. `J12` is not weakened by `TASK-0024`.
     #[test]
-    fn a_brain_outside_the_frozen_scope_is_refused_in_words() {
+    fn the_legacy_self_check_is_still_refused_outside_its_frozen_fixture() {
         let paths = temporary_sandbox("scope");
-        let error = open_relations(&paths, &brain_reading("wide")).expect_err("out of scope");
+        let error = self_check(&paths, &brain_reading("wide")).expect_err("out of legacy scope");
         assert!(
             error.to_string().starts_with("relations_out_of_scope_for_fixture"),
             "unexpected motif: {error}"
@@ -779,6 +842,10 @@ mod tests {
         let error =
             open_relations(&paths, &brain_reading("inventee")).expect_err("unknown fixture");
         assert!(error.to_string().contains("map_unknown_fixture"));
+        let node_error =
+            node_relations(&paths, &brain_reading("inventee"), &BrainNodeRef::new("brain-test-inventee", 1))
+                .expect_err("unknown fixture");
+        assert!(node_error.to_string().contains("map_unknown_fixture"));
     }
 
     /// `J5` and `J1` through the command layer, on a real index.
@@ -787,7 +854,7 @@ mod tests {
         let paths = built("open");
         let overview = open_relations(&paths, &alpha()).expect("relations");
 
-        assert!(overview.in_scope);
+        assert!(overview.legacy_in_scope);
         assert_eq!(overview.brain_id, "brain-alpha");
         assert_eq!(overview.fixture_id, RELATIONS_FIXTURE);
         assert_eq!(overview.established.len(), 12);
@@ -1084,6 +1151,253 @@ mod tests {
         );
         assert!(alpha_keys.iter().all(|key| key.contains("brain-alpha")));
         assert!(gamma_keys.iter().all(|key| key.contains("brain-gamma")));
+
+        let _ = std::fs::remove_dir_all(PathBuf::from(&paths.fixtures).parent().unwrap());
+    }
+
+    /// Every byte of one brain's relation store, so « untouched » can be
+    /// measured rather than assumed.
+    fn store_bytes(paths: &SandboxPaths, brain_id: &str) -> Option<Vec<u8>> {
+        std::fs::read(paths.brain_relations_database(brain_id)).ok()
+    }
+
+    /// `X11` — the generic path, proved on the brain that is **not**
+    /// `quasi-empty`.
+    ///
+    /// Beta reads `deep`. No legacy producer applies to it, and that must stop
+    /// being a reason to refuse it: opening returns a valid overview, the
+    /// engine reports `NOT_RUN`, running `dre-v1` succeeds without any model or
+    /// network, and reading a node's relations succeeds. Nothing here asserts
+    /// that a rule *must* fire on `deep`: zero output is a valid result, and
+    /// what is proved is that the engine and the reads work generically.
+    #[test]
+    fn a_brain_outside_the_legacy_fixture_still_opens_runs_and_reads() {
+        let paths = temporary_sandbox("generic-beta");
+        commands::build_map(&paths, &beta(), false).expect("beta map built");
+
+        // 2 — opening succeeds, and says the legacy demonstration does not
+        // apply rather than refusing the brain.
+        let overview = open_relations(&paths, &beta()).expect("beta relations open");
+        assert_eq!(overview.brain_id, "brain-beta");
+        assert_eq!(overview.fixture_id, "deep");
+        assert!(
+            !overview.legacy_in_scope,
+            "TASK-0017 legacy relations must not be claimed on `deep`"
+        );
+        assert_eq!(overview.schema_version, RELATIONS_SCHEMA_VERSION);
+
+        // 3 — nothing legacy was derived or seeded for Beta.
+        assert_eq!(overview.seeded, 0, "no legacy seed on a non-legacy brain");
+        assert!(
+            overview.established.is_empty(),
+            "no legacy derivation on `deep`: {:?}",
+            overview.established
+        );
+        assert!(
+            overview.pending_suggestions.is_empty(),
+            "no legacy seed on `deep`: {:?}",
+            overview.pending_suggestions
+        );
+        assert_eq!(overview.deterministic_count, 0);
+        assert_eq!(overview.approved_count, 0);
+        assert_eq!(overview.pending_suggestion_count, 0);
+        assert!(overview.unresolved_endpoints.is_empty());
+        assert!(
+            overview.rules.iter().all(|rule| rule.produced == 0),
+            "no legacy rule produced anything on `deep`: {:?}",
+            overview.rules
+        );
+
+        // 4 — the core engine has simply never run here.
+        let status = super::super::rule_engine::status(&paths, &beta()).expect("beta status");
+        assert_eq!(status.brain_id, "brain-beta");
+        assert_eq!(status.input_state, "NOT_RUN");
+        assert!(status.last_run_id.is_none());
+        assert!(!overview.engine_current);
+
+        // 5 — `dre-v1` runs, deterministically and offline.
+        let report = super::super::rule_engine::run(&paths, &beta()).expect("beta engine run");
+        assert_eq!(report.brain_id, "brain-beta");
+        assert_eq!(report.input_state, "CURRENT");
+        assert!(report.source_read_only_confirmed);
+
+        let after_status =
+            super::super::rule_engine::status(&paths, &beta()).expect("beta status after run");
+        assert_eq!(after_status.input_state, "CURRENT");
+
+        // 6 — the overview refreshes after the run.
+        let refreshed = open_relations(&paths, &beta()).expect("beta refresh");
+        assert!(refreshed.engine_current, "the run must be readable as current");
+        assert_eq!(refreshed.seeded, 0, "a refresh seeds nothing either");
+        for edge in &refreshed.established {
+            assert_eq!(
+                edge.producer,
+                super::super::relations::CORE_RULE_ENGINE_PRODUCER,
+                "only core output may appear on a non-legacy brain"
+            );
+        }
+        for suggestion in &refreshed.pending_suggestions {
+            assert_eq!(
+                suggestion.producer,
+                super::super::relations::CORE_RULE_ENGINE_PRODUCER,
+                "only core output may appear on a non-legacy brain"
+            );
+        }
+
+        // 7 — node relations work, on a real node of Beta.
+        let snapshot = commands::snapshot(&paths, &beta()).expect("beta snapshot");
+        let node = snapshot
+            .nodes
+            .iter()
+            .find(|candidate| candidate.kind == crate::domain::NodeKind::File)
+            .or_else(|| snapshot.nodes.first())
+            .expect("a node");
+        let node_view =
+            node_relations(&paths, &beta(), &BrainNodeRef::new("brain-beta", node.id))
+                .expect("beta node relations");
+        assert_eq!(node_view.brain_id, "brain-beta");
+        assert_eq!(node_view.fixture_id, "deep");
+        assert_eq!(node_view.relative_path, node.relative_path);
+        assert!(node_view.endpoint_key.contains("brain-beta"));
+
+        let _ = std::fs::remove_dir_all(PathBuf::from(&paths.fixtures).parent().unwrap());
+    }
+
+    /// `X11`, isolation half: the generic path must not touch, read or borrow
+    /// anything from the legacy brains.
+    ///
+    /// Alpha's frozen `TASK-0017` invariants are measured before and after Beta
+    /// is opened and analysed, and Alpha's store is compared byte for byte.
+    /// Gamma is never built here, so the assertion that no store of it appears
+    /// is a real one.
+    #[test]
+    fn running_the_generic_engine_on_beta_leaves_the_legacy_brains_untouched() {
+        let paths = temporary_sandbox("generic-isolation");
+        commands::build_map(&paths, &alpha(), false).expect("alpha map");
+        commands::build_map(&paths, &beta(), false).expect("beta map");
+
+        let alpha_before = open_relations(&paths, &alpha()).expect("alpha before");
+        let alpha_check_before = self_check(&paths, &alpha()).expect("alpha J12 before");
+        let alpha_bytes_before = store_bytes(&paths, "brain-alpha").expect("alpha store");
+        let gamma_absent_before = store_bytes(&paths, "brain-gamma").is_none();
+
+        open_relations(&paths, &beta()).expect("beta open");
+        super::super::rule_engine::run(&paths, &beta()).expect("beta run");
+        let beta_after = open_relations(&paths, &beta()).expect("beta after");
+
+        // 9 — no Alpha or Gamma row reached Beta. Endpoint keys are namespaced
+        // by brain, so this is checkable on the rows themselves.
+        for edge in &beta_after.established {
+            for key in [&edge.source.key, &edge.target.key] {
+                assert!(key.contains("brain-beta"), "leaked endpoint `{key}`");
+            }
+        }
+        for suggestion in &beta_after.pending_suggestions {
+            for key in [&suggestion.source.key, &suggestion.target.key] {
+                assert!(key.contains("brain-beta"), "leaked endpoint `{key}`");
+            }
+            assert!(
+                !SEEDED_SUGGESTIONS
+                    .iter()
+                    .any(|seeded| seeded.key == suggestion.suggestion_key),
+                "a frozen TASK-0017 suggestion key surfaced on Beta: {}",
+                suggestion.suggestion_key
+            );
+        }
+        assert_ne!(
+            beta_after.relations_path, alpha_before.relations_path,
+            "K3: two brains, two relation stores"
+        );
+
+        // 8 — Alpha's legacy invariants are strictly identical.
+        let alpha_after = open_relations(&paths, &alpha()).expect("alpha after");
+        assert_eq!(alpha_after.deterministic_count, alpha_before.deterministic_count);
+        assert_eq!(alpha_after.approved_count, alpha_before.approved_count);
+        assert_eq!(
+            alpha_after.pending_suggestion_count,
+            alpha_before.pending_suggestion_count
+        );
+        assert_eq!(
+            alpha_after.deterministic_digest, alpha_before.deterministic_digest,
+            "J12: Alpha's derivation must not move"
+        );
+        assert!(alpha_after.legacy_in_scope);
+
+        let alpha_check_after = self_check(&paths, &alpha()).expect("alpha J12 after");
+        assert_eq!(alpha_check_after.counts, alpha_check_before.counts);
+        assert!(alpha_check_after.counts_agree, "J12: {:?}", alpha_check_after.counts);
+        assert!(alpha_check_after.replay_stable, "J3");
+        assert!(alpha_check_after.all_rejected, "J1/J2");
+        assert!(alpha_check_after.invented_inverses.is_empty(), "J5");
+        assert!(alpha_check_after.suggestions_in_established.is_empty(), "J2");
+        assert!(alpha_check_after.unresolved_endpoints.is_empty(), "J10");
+        assert_eq!(
+            alpha_check_after.established_total,
+            alpha_check_before.established_total
+        );
+        assert_eq!(
+            alpha_check_after.pending_suggestion_total,
+            alpha_check_before.pending_suggestion_total
+        );
+        assert_eq!(
+            alpha_check_after.replay_digest_first,
+            alpha_check_before.replay_digest_first
+        );
+
+        // 10 — and no cross-brain store grew. Alpha's own self-check reopens
+        // its store, so the baseline is the state self-check itself leaves
+        // behind, which is the honest comparison.
+        let alpha_bytes_after = store_bytes(&paths, "brain-alpha").expect("alpha store after");
+        assert_eq!(
+            alpha_bytes_after.len(),
+            alpha_bytes_before.len(),
+            "Beta must not grow Alpha's store"
+        );
+        assert!(
+            gamma_absent_before && store_bytes(&paths, "brain-gamma").is_none(),
+            "a brain that was never opened must have no relation store"
+        );
+
+        let _ = std::fs::remove_dir_all(PathBuf::from(&paths.fixtures).parent().unwrap());
+    }
+
+    /// A **core** suggestion on a non-legacy brain can be approved, and the
+    /// legacy fixture is no longer what decides it.
+    ///
+    /// The approval path no longer asks about the legacy fixture; the only
+    /// refusals left on it are the freshness rule of `TASK-0024` and the
+    /// suggestion's own existence.
+    #[test]
+    fn a_core_suggestion_of_a_non_legacy_brain_is_approvable_when_current() {
+        let paths = temporary_sandbox("generic-approval");
+        commands::build_map(&paths, &beta(), false).expect("beta map");
+        super::super::rule_engine::run(&paths, &beta()).expect("beta run");
+        let overview = open_relations(&paths, &beta()).expect("beta overview");
+
+        let Some(suggestion) = overview.pending_suggestions.first().cloned() else {
+            // Zero output is a valid result on `deep`. What still has to hold
+            // is that the refusal is about the *suggestion*, not about the
+            // fixture: an unknown key must not come back as « out of scope ».
+            let error = approve_suggestion(&paths, &beta(), "S-inexistante")
+                .expect_err("unknown suggestion");
+            assert!(
+                !error.to_string().contains("relations_out_of_scope_for_fixture"),
+                "the legacy fixture must not gate approval: {error}"
+            );
+            let _ = std::fs::remove_dir_all(PathBuf::from(&paths.fixtures).parent().unwrap());
+            return;
+        };
+
+        let after = approve_suggestion(&paths, &beta(), &suggestion.suggestion_key)
+            .expect("core approval on a non-legacy brain");
+        assert_eq!(after.approved_count, 1);
+        assert!(
+            after
+                .pending_suggestions
+                .iter()
+                .all(|pending| pending.suggestion_key != suggestion.suggestion_key),
+            "an approved suggestion is no longer pending"
+        );
 
         let _ = std::fs::remove_dir_all(PathBuf::from(&paths.fixtures).parent().unwrap());
     }

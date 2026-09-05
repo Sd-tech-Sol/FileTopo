@@ -3363,3 +3363,66 @@ aucun reformatage global. `F-044`, `F-045`, `F-046` restent `PROPOSED` et
 
 **Action unique suivante :** contrôle indépendant de `TASK-0024`. Aucune
 `TASK-0025` créée.
+
+---
+
+## 2026-09-05 — TASK-0024 — Correction ciblée X11, moteur générique sur tous les cerveaux
+
+**Agent :** exécuteur Claude Code
+**Statut à l'issue :** `TASK-0024` reste **`IMPLEMENTED`**;
+`ACTION-0040 = CHANGES_REQUIRED`; réserve `X11` **`OPEN`**. Claude ne ferme pas
+`X11` et ne s'attribue pas `VERIFIED`.
+
+### Fait
+
+- Enregistrement du verdict externe dans
+  `docs/reviews/ACTION-0040-independent-control.md` — rendu par l'orchestrateur
+  technique, pas par Claude.
+- Découplage du périmètre legacy `TASK-0017` et du périmètre du moteur core
+  dans `relation_commands.rs` : `legacy_fixture_spec()` pour la seule fixture
+  historique, `source_spec()` pour la validité de n'importe quelle source,
+  `ensure_in_scope()` réservé à `self_check`.
+- `open_relations` ne rejoue `derive()` et ne sème les suggestions gelées que
+  dans le périmètre legacy; ailleurs le store est lu tel qu'il est.
+- `node_relations` et `approve_suggestion` ne sont plus filtrés par la fixture;
+  le refus d'approbation d'une suggestion core périmée est inchangé.
+- DTO `inScope` → `legacyInScope`; `RelationsPanel` reçoit `available` et
+  `legacyInScope`, et n'est plus mort hors `quasi-empty`. La note legacy
+  explique la limite sans masquer le bouton **Analyser les relations**, l'état
+  `dre-v1`, les relations core, les suggestions core ni leur approbation.
+- Ajout du scénario `X11` (`src/map/genericRelationScenario.ts`), de son drapeau
+  d'hôte `FILETOPO_AUTO_X11` et de son harnais
+  `scripts/task0024-x11-run-real-host.ps1`.
+- Ajout de trois tests Rust sur `brain-beta` : ouverture/run/lecture
+  génériques, isolation stricte d'Alpha et de Gamma, approbation core hors
+  fixture legacy. Réécriture des tests UI correspondants.
+- Rejeu et réécriture des deux preuves `TASK-0024-DR15-*` sur une variante
+  fraîche, et du replay réel `TASK-0024-J12-*`.
+
+### Validé
+
+Rust **200/200**; TypeScript **215/215**; `pnpm check`; `pnpm build`; Tauri
+debug `--no-bundle`. Preuve corrective `TASK-0024-X11-generic-brain-webview2.json`
+écrite dans un vrai processus WebView2 `152.0.4191.62` sur `brain-beta`
+(`deep`, 157 nœuds) : panneau disponible, bouton présent et activable,
+`keydownIsTrusted` et `activationIsTrusted` vrais, zéro clic programmatique,
+report `brain-beta` / `dre-v1` / `CURRENT`, `map_relations_open` réussi après
+run, producteurs `core-rule-engine` seulement, `seeded = 0`, empreinte de
+source inchangée, processus fermé. Elle est **non canonique** et ne rejoint pas
+`X5`. DR15 pass1/pass2 et J12 réel repassent; les invariants legacy d'Alpha
+sont strictement identiques. X5 reste 29, `protectedDestinations = []`, runtime
+propriétaire `TASK-0024`; `main` reste `91bbe90f`.
+
+### Non testé / limites
+
+`K11`, `K12`, `L12`, `M12`, `N15`, `H9` non rejoués — aucune dépendance directe
+constatée. Sur `deep`, `core.identical-content` est sautée faute de signal :
+zéro sortie est un résultat valide, et rien n'affirme qu'une règle doive
+produire. La généricité est prouvée en hôte réel sur `brain-beta` / `deep`;
+`wide` et `mixed` ne le sont pas. Repli non-Windows `X10` non revendiqué
+race-safe. `cargo fmt --check` reste rouge sur le formatage historique global;
+aucun reformatage global. `F-044`, `F-045`, `F-046` restent `PROPOSED` et
+`DEC-0013/F` demeure bloquante.
+
+**Action unique suivante :** re-contrôle indépendant ciblé `X11` /
+`TASK-0024`. Aucune `TASK-0025` créée.

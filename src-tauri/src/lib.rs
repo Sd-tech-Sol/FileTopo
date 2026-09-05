@@ -827,6 +827,11 @@ fn map_host_info(app: tauri::AppHandle) -> map::commands::HostInfo {
             .and_then(|value| value.parse::<u8>().ok())
             .filter(|pass| *pass == 1 || *pass == 2)
             .unwrap_or(0),
+        // Reserve `X11`: the same engine, on a brain the legacy slice never
+        // covered. One pass, because what it proves is genericity rather than
+        // persistence across a restart.
+        auto_generic_relations: std::env::var("FILETOPO_AUTO_X11")
+            .is_ok_and(|value| value == "1"),
     }
 }
 

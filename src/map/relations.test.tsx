@@ -118,7 +118,7 @@ const overview: RelationsOverview = {
   relationsPath: "brains/brain-alpha/relations/relations.sqlite",
   schemaVersion: 1,
   endpointKeyScheme: "ek1",
-  inScope: true,
+  legacyInScope: true,
   established: [
     edge(2, 3, "DETERMINISTIC", "revision"),
     edge(2, 4, "DETERMINISTIC"),
@@ -173,7 +173,8 @@ describe("J6 — le panneau des relations", () => {
       <RelationsPanel
         relations={nodeRelations}
         loading={false}
-        inScope
+        available
+        legacyInScope
         onSelect={onSelect}
         onApprove={onApprove}
         approving={null}
@@ -265,9 +266,40 @@ describe("J6 — le panneau des relations", () => {
     expect(onApprove).toHaveBeenCalledExactlyOnceWith("S-005");
   });
 
-  it("dit en toutes lettres qu'une fixture hors périmètre ne porte aucune relation", () => {
-    renderPanel({ inScope: false });
-    expect(screen.getByText(/ne porte aucune relation/)).toBeInTheDocument();
+  // `TASK-0024` / `X11`. The legacy perimeter and the availability of the core
+  // panel are two ideas. A brain outside the frozen `TASK-0017` fixture gets a
+  // sentence saying the historical demonstration relations do not apply — and
+  // keeps every generic control.
+  it("hors périmètre legacy, explique la limite sans retirer le panneau générique", () => {
+    const onAnalyze = vi.fn();
+    renderPanel({ legacyInScope: false, onAnalyze });
+
+    const note = screen.getByTestId("legacy-scope-note");
+    expect(note).toHaveTextContent(/TASK-0017/);
+    expect(note).toHaveTextContent(/quasi-empty/);
+
+    // Nothing generic is hidden by it.
+    const action = screen.getByRole("button", { name: "Analyser les relations" });
+    expect(action).toBeEnabled();
+    fireEvent.click(action);
+    expect(onAnalyze).toHaveBeenCalledOnce();
+    expect(screen.getByTestId("relation-engine-state")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /Sortantes/ })).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: /Entrantes/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Approuver S-005/ })).toBeInTheDocument();
+  });
+
+  it("ne porte aucune mention legacy quand la fixture gelée s'applique", () => {
+    renderPanel();
+    expect(screen.queryByTestId("legacy-scope-note")).not.toBeInTheDocument();
+  });
+
+  it("dit que les relations sont indisponibles quand aucun aperçu n'a pu être lu", () => {
+    renderPanel({ available: false });
+    expect(screen.getByText(/Relations indisponibles/)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Analyser les relations" }),
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -280,7 +312,8 @@ describe("J7 — activer une relation sélectionne son autre extrémité", () =>
       <RelationsPanel
         relations={nodeRelations}
         loading={false}
-        inScope
+        available
+        legacyInScope
         onSelect={onSelect}
         onApprove={vi.fn()}
         approving={null}
@@ -303,7 +336,8 @@ describe("J7 — activer une relation sélectionne son autre extrémité", () =>
       <RelationsPanel
         relations={nodeRelations}
         loading={false}
-        inScope
+        available
+        legacyInScope
         onSelect={onSelect}
         onApprove={vi.fn()}
         approving={null}
@@ -356,7 +390,8 @@ describe("J7 — activer une relation sélectionne son autre extrémité", () =>
       <RelationsPanel
         relations={orphan}
         loading={false}
-        inScope
+        available
+        legacyInScope
         onSelect={onSelect}
         onApprove={vi.fn()}
         approving={null}
@@ -562,7 +597,8 @@ describe("TASK-0024 — deterministic relation engine UI", () => {
       <RelationsPanel
         relations={{ ...nodeRelations, suggestions: [coreSuggestion] }}
         loading={false}
-        inScope
+        available
+        legacyInScope
         onSelect={vi.fn()}
         onApprove={vi.fn()}
         approving={null}

@@ -2,9 +2,9 @@
   "task": "TASK-0024",
   "criterion": "DR15",
   "pass": 2,
-  "capturedAtIso": "2026-09-05T04:49:47.809Z",
+  "capturedAtIso": "2026-09-05T21:35:30.821Z",
   "host": {
-    "sandboxRoot": "<dépôt>/.filetopo-sandbox/variants/task0024-dr15-20260905004937-8eed73",
+    "sandboxRoot": "<dépôt>/.filetopo-sandbox/variants/task0024-dr15-20260905173522-60ed69",
     "appVersion": "0.1.0-alpha.1",
     "sqliteVersion": "3.53.2",
     "webviewVersion": "152.0.4191.62",
@@ -23,7 +23,8 @@
     "autoCrossPass": 0,
     "autoTopographicPass": 0,
     "autoContentPass": 0,
-    "autoDrePass": 2
+    "autoDrePass": 2,
+    "autoGenericRelations": false
   },
   "input": {
     "brainId": "brain-alpha",
@@ -43,11 +44,11 @@
       "engineVersion": "dre-v1",
       "inputState": "CURRENT",
       "mapDigest": "fnv1a64:400fab2df3081fc0",
-      "currentContentGenerationId": "f6b6d9df-fffb-4b08-b3c9-6cf0d5a077a5",
-      "lastRunId": "dre1-ceb33c2d66035f8d",
-      "lastRunUnixMs": 1788583783961,
+      "currentContentGenerationId": "9ccda93b-d49c-4df7-9528-48eb982c743a",
+      "lastRunId": "dre1-20f230689c0f308d",
+      "lastRunUnixMs": 1788644127106,
       "lastMapDigest": "fnv1a64:400fab2df3081fc0",
-      "lastContentGenerationId": "f6b6d9df-fffb-4b08-b3c9-6cf0d5a077a5"
+      "lastContentGenerationId": "9ccda93b-d49c-4df7-9528-48eb982c743a"
     },
     "before": {
       "deterministic": [
@@ -71,9 +72,9 @@
     "rerun": {
       "brainId": "brain-alpha",
       "engineVersion": "dre-v1",
-      "runId": "dre1-4ff7a001891a980e",
+      "runId": "dre1-65bd2a4a007ef7b9",
       "mapDigest": "fnv1a64:400fab2df3081fc0",
-      "contentGenerationId": "f6b6d9df-fffb-4b08-b3c9-6cf0d5a077a5",
+      "contentGenerationId": "9ccda93b-d49c-4df7-9528-48eb982c743a",
       "rulesEvaluated": [
         "core.identical-content/v1",
         "core.numbered-sibling-revision-candidate/v1"
