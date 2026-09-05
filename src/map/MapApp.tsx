@@ -5,6 +5,7 @@ import DetailsPanel, { type PanelStrings } from "./DetailsPanel";
 import MapView, { type RenderedBrain } from "./MapView";
 import CrossRelationsPanel from "./CrossRelationsPanel";
 import RelationsPanel from "./RelationsPanel";
+import ReviewQueuePanel from "./ReviewQueuePanel";
 import {
   ComposedViewError,
   addBrain,
@@ -85,6 +86,7 @@ import type {
   RelationsSelfCheck,
   RelationEngineReport,
   RelationEngineStatus,
+  SuggestionReviewQueue,
 } from "./types";
 import { fitToBox, fitView, panBy, zoomAbout, type View, type Viewport } from "./viewState";
 
@@ -247,6 +249,17 @@ export default function MapApp() {
   const [relationEngineReport, setRelationEngineReport] =
     useState<RelationEngineReport | null>(null);
   const [relationEngineRunning, setRelationEngineRunning] = useState(false);
+  // `TASK-0025` / `F-044`. The queue of the focused brain, read from the
+  // backend and never assembled from the overview: `totalPending` is a
+  // measurement of the store, and the interface has no business deriving it.
+  const [reviewQueue, setReviewQueue] = useState<SuggestionReviewQueue | null>(null);
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  // Where « Plus tard » left the reader. Local, and deliberately so: it is the
+  // one action of the queue that decides nothing, so nothing about it belongs
+  // in the store — `DEC-0027` §B.
+  const [reviewCursor, setReviewCursor] = useState(0);
+  const [deciding, setDeciding] = useState<string | null>(null);
   // `TASK-0020`. The COMMON store, read once for the whole catalogue — never
   // per brain, and never per composition: a relation exists whether or not
   // either of its brains is on screen.
@@ -1036,6 +1049,154 @@ export default function MapApp() {
     },
     [],
   );
+
+  /**
+   * The brain the review queue is about — `TASK-0025` §9.
+   *
+   * The selected node's brain when there is one, the focused brain of the
+   * composition otherwise. The same rule `analyzeRelations` already uses, so
+   * the queue and the engine control never disagree about whose relations are
+   * on screen.
+   */
+  const reviewBrainId = selected?.brainId ?? composed?.focusedBrainId ?? null;
+
+  /**
+   * Reads one page of the queue from the backend — `F-044`.
+   *
+   * Called after every decision, and never replaced by an in-place edit of the
+   * page already held: `SR6` and `SR7` require the pending count to fall
+   * because the store says so.
+   */
+  const loadReviewQueue = useCallback(async (brainId: string) => {
+    setReviewLoading(true);
+    try {
+      const queue = await invoke<SuggestionReviewQueue>("map_relations_review_queue", {
+        brainId,
+      });
+      setReviewQueue(queue);
+      return queue;
+    } catch {
+      setReviewQueue(null);
+      return null;
+    } finally {
+      setReviewLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!reviewBrainId) {
+      setReviewQueue(null);
+      return;
+    }
+    let live = true;
+    setReviewLoading(true);
+    invoke<SuggestionReviewQueue>("map_relations_review_queue", { brainId: reviewBrainId })
+      .then((queue) => live && setReviewQueue(queue))
+      .catch(() => live && setReviewQueue(null))
+      .finally(() => live && setReviewLoading(false));
+    return () => {
+      live = false;
+    };
+    // `selectedOverview` and the engine report are in the dependency list
+    // because approving, rejecting and running the engine all move what is
+    // pending. The queue is re-read rather than adjusted.
+  }, [reviewBrainId, selectedOverview, relationEngineReport]);
+
+  useEffect(() => {
+    // A different brain is a different queue; the cursor of the previous one
+    // means nothing here.
+    setReviewCursor(0);
+  }, [reviewBrainId]);
+
+  /**
+   * **Confirmer** — the approval path `TASK-0024` was verified on, reached
+   * from the queue.
+   *
+   * Nothing new happens to the store: the same command, the same single
+   * `APPROVED` relation. What is new is only that the queue is re-read
+   * afterwards, so its count comes back from the backend.
+   */
+  const confirmFromQueue = useCallback(
+    async (suggestionKey: string) => {
+      const brainId = reviewBrainId;
+      if (!brainId) return;
+      setDeciding(suggestionKey);
+      try {
+        const next = await invoke<RelationsOverview>("map_relations_approve", {
+          brainId,
+          suggestionKey,
+        });
+        setLoaded((current) => {
+          const brain = current.get(brainId);
+          if (!brain) return current;
+          const updated = new Map(current);
+          updated.set(brainId, { ...brain, relations: next });
+          return updated;
+        });
+        await loadReviewQueue(brainId);
+        setReviewCursor(0);
+        setStatus(
+          `Suggestion ${suggestionKey} confirmée dans ${brainId} : une relation APPROVED existe désormais.`,
+        );
+      } catch (error) {
+        setStatus(`Confirmation refusée : ${String(error)}`);
+      } finally {
+        setDeciding(null);
+      }
+    },
+    [loadReviewQueue, reviewBrainId],
+  );
+
+  /**
+   * **Rejeter** — the recorded refusal of `F-045`.
+   *
+   * Creates no relation, of any provenance. The decision lives in the
+   * suggestion's own row, which is what stops an unchanged rerun of `dre-v1`
+   * from proposing it again.
+   */
+  const rejectFromQueue = useCallback(
+    async (suggestionKey: string) => {
+      const brainId = reviewBrainId;
+      if (!brainId) return;
+      setDeciding(suggestionKey);
+      try {
+        const next = await invoke<RelationsOverview>("map_relations_reject", {
+          brainId,
+          suggestionKey,
+        });
+        setLoaded((current) => {
+          const brain = current.get(brainId);
+          if (!brain) return current;
+          const updated = new Map(current);
+          updated.set(brainId, { ...brain, relations: next });
+          return updated;
+        });
+        await loadReviewQueue(brainId);
+        setReviewCursor(0);
+        setStatus(
+          `Suggestion ${suggestionKey} rejetée dans ${brainId} : aucune relation créée, la décision est conservée.`,
+        );
+      } catch (error) {
+        setStatus(`Rejet refusé : ${String(error)}`);
+      } finally {
+        setDeciding(null);
+      }
+    },
+    [loadReviewQueue, reviewBrainId],
+  );
+
+  /**
+   * **Plus tard** — the one control of the queue that decides nothing.
+   *
+   * No command, no write, no state. The cursor moves and the suggestion stays
+   * `PENDING`, exactly as `DEC-0027` §B requires: there is no `DEFERRED` to
+   * put it in, and inventing one would be a durable decision the user did not
+   * make.
+   */
+  const laterFromQueue = useCallback(() => {
+    setReviewCursor((cursor) => cursor + 1);
+    setStatus("Suggestion laissée en attente : aucune décision enregistrée.");
+  }, []);
 
   /**
    * The one explicit act that turns an **inter-brain** suggestion into a
@@ -1972,6 +2133,18 @@ export default function MapApp() {
             engineReport={relationEngineReport}
             engineRunning={relationEngineRunning}
             onAnalyze={analyzeRelations}
+          />
+
+          <ReviewQueuePanel
+            queue={reviewQueue}
+            loading={reviewLoading}
+            cursor={reviewCursor}
+            open={reviewOpen}
+            onToggle={() => setReviewOpen((current) => !current)}
+            onConfirm={confirmFromQueue}
+            onReject={rejectFromQueue}
+            onLater={laterFromQueue}
+            deciding={deciding}
           />
 
           <CrossRelationsPanel

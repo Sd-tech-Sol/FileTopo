@@ -916,6 +916,132 @@ button:disabled {
 }
 
 /*
+ * TASK-0025 — « Relations à confirmer », the review queue of `F-044`.
+ *
+ * Functional only. No new design system, no theme, no graph work: the panel
+ * borrows the tokens the relations panel already uses, and every state it
+ * shows is written in words next to the control, never carried by a colour.
+ */
+.review {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.review__title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.review__toggle {
+  font: inherit;
+  font-size: 12.5px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: inherit;
+  padding: 6px 10px;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.review__toggle:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.review__queue {
+  border: 2px dashed var(--line);
+  border-radius: 8px;
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.review__position,
+.review__hint,
+.review__boundary {
+  margin: 0;
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.review__endpoints {
+  margin: 0;
+  font-size: 12.5px;
+}
+
+.review__facts,
+.review__signals {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 2px 8px;
+  font-size: 11px;
+}
+
+.review__facts > div,
+.review__signals > div {
+  display: contents;
+}
+
+.review__facts dt,
+.review__signals dt {
+  color: var(--ink-soft);
+}
+
+.review__facts dd,
+.review__signals dd {
+  margin: 0;
+}
+
+.review__detail p {
+  margin: 0;
+  font-size: 11.5px;
+}
+
+.review__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/*
+ * Three buttons, one visual weight.
+ *
+ * Confirming and rejecting are equally real decisions, and « Plus tard » is
+ * not a lesser one — it is not a decision at all. Styling any of them as the
+ * obvious answer would push a choice the interface has no business pushing.
+ */
+.review__confirm,
+.review__reject,
+.review__later {
+  font: inherit;
+  font-size: 12px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: inherit;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+
+.review__confirm:focus-visible,
+.review__reject:focus-visible,
+.review__later:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.review__confirm:disabled,
+.review__reject:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+
+/*
  * TASK-0020 — relations inter-cerveaux.
  *
  * `M6` asks for four things to be readable WITHOUT COLOUR: that an edge is

@@ -303,7 +303,13 @@ export interface SuggestionEdge {
   relationType: string;
   source: RelationEndpoint;
   target: RelationEndpoint;
-  state: "pending" | "approved";
+  /**
+   * Exactly three, since `TASK-0025` — and never `deferred`.
+   *
+   * « Plus tard » persists nothing: a postponed suggestion is one that is
+   * still `pending`, which is why there is no fourth value to render.
+   */
+  state: SuggestionState;
   basis: string;
   producer?: string;
   ruleName?: string | null;
@@ -311,6 +317,38 @@ export interface SuggestionEdge {
   explanationFr?: string | null;
   explanationEn?: string | null;
   signals?: Record<string, unknown> | null;
+  /** When a human decided, in Unix milliseconds. `null` while pending. */
+  decidedUnixMs?: number | null;
+  /** Always `null` in v1 — `DEC-0027` §C. */
+  decisionReconsiderCause?: string | null;
+}
+
+/** The three persistent states of a suggestion. There is no fourth. */
+export type SuggestionState = "pending" | "approved" | "rejected";
+
+/**
+ * One bounded page of the suggestions a brain is waiting on — `F-044`.
+ *
+ * Every number comes back from the store. The interface never decrements
+ * `totalPending` itself: `SR6` and `SR7` require the count on screen to be a
+ * measurement, not an optimistic guess.
+ */
+export interface SuggestionReviewQueue {
+  brainId: string;
+  fixtureId: string;
+  /** Pending only. Approved and rejected suggestions are not counted. */
+  totalPending: number;
+  offset: number;
+  limit: number;
+  /** The ceiling the backend applies, published rather than guessed. */
+  maxLimit: number;
+  returned: number;
+  hasMore: boolean;
+  /** The order, in words: `suggestion_key ascending`. */
+  order: string;
+  items: SuggestionEdge[];
+  unresolvedEndpoints: string[];
+  engineCurrent: boolean;
 }
 
 export interface RelationRuleInfo {
@@ -381,6 +419,8 @@ export interface RelationEngineReport {
   emptyContentGroupsSkipped: number;
   establishedCollisionSuppressions: number;
   approvedSuggestionPreservations: number;
+  /** `TASK-0025` — identities this run reproposed and the store kept rejected. */
+  rejectedSuggestionPreservations: number;
   sourceReadOnlyConfirmed: boolean;
   inputState: "CURRENT";
 }
