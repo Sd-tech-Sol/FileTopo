@@ -112,8 +112,13 @@ export async function pressRealKey(
       keydownKey = key;
     }
   };
-  target.addEventListener("click", onClick, true);
-  target.addEventListener("keydown", onKeyDown, true);
+  // Capture on the stable window rather than on `target`: a successful
+  // command may make React replace the focused DOM node before the browser's
+  // activation click bubbles. The ordinary Windows key and click still cross
+  // the window capture phase, while a stale element listener would lose the
+  // very evidence this helper exists to record.
+  window.addEventListener("click", onClick, true);
+  window.addEventListener("keydown", onKeyDown, true);
 
   const nativeClick = HTMLElement.prototype.click;
   const nativeDispatch = EventTarget.prototype.dispatchEvent;
@@ -154,8 +159,8 @@ export async function pressRealKey(
 
   const outcome = await waitUntil(changed, budgetMs);
 
-  target.removeEventListener("click", onClick, true);
-  target.removeEventListener("keydown", onKeyDown, true);
+  window.removeEventListener("click", onClick, true);
+  window.removeEventListener("keydown", onKeyDown, true);
   HTMLElement.prototype.click = nativeClick;
   EventTarget.prototype.dispatchEvent = nativeDispatch;
 
