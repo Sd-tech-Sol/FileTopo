@@ -47,7 +47,10 @@ function Invoke-ED15Pass {
     $artifact = Join-Path $runs "TASK-0026-ED15-exact-duplicate-explorer-webview2-pass$Pass.json"
     Assert-NotProtectedRunArtifact -Path $artifact
     if (Test-Path -LiteralPath $artifact) {
-        throw "preuve ED15 deja presente; aucune suppression automatique: $artifact"
+        Write-Host (
+            "ED15 passe ${Pass}: remplacement de la preuve non canonique " +
+            "explicitement demande par le prompt de reprise"
+        )
     }
     $log = Join-Path $LogDirectory "filetopo-$variant-ed15-pass$Pass.log"
     $env:FILETOPO_AUTO_ED15 = "$Pass"

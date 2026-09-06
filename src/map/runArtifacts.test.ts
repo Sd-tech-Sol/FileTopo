@@ -55,6 +55,7 @@ import dreScenarioSource from "./dreScenario.ts?raw";
 import exactDuplicateScenarioSource from "./exactDuplicateScenario.ts?raw";
 import genericRelationScenarioSource from "./genericRelationScenario.ts?raw";
 import mapAppSource from "./MapApp.tsx?raw";
+import realInputSource from "./realInput.ts?raw";
 import relationScenarioSource from "./relationScenario.ts?raw";
 import reviewScenarioSource from "./reviewScenario.ts?raw";
 import topographicScenarioSource from "./topographicScenario.ts?raw";
@@ -84,6 +85,7 @@ import {
 // scenario sources — no `node:fs`, no new dependency.
 import rustGateSource from "../../src-tauri/src/map/commands.rs?raw";
 import powershellGateSource from "../../scripts/protected-run-artifacts.ps1?raw";
+import keyWatcherSource from "../../scripts/j12-send-real-key.ps1?raw";
 
 /** Every source file of this runtime that may write a run artefact. */
 const WRITING_SOURCES: ReadonlyArray<readonly [string, string]> = [
@@ -563,6 +565,27 @@ describe("X5 — the runtime never writes over canonical evidence", () => {
         ).toBe(true);
       }
     }
+  });
+});
+
+describe("real-key proof harness", () => {
+  it("injects only while the exact FileTopo window owns the foreground", () => {
+    expect(keyWatcherSource).toContain(
+      "[FileTopoWindowActivation]::GetForegroundWindow() -eq",
+    );
+    expect(keyWatcherSource).toMatch(
+      /if \(\$foregroundReady\) \{\s+\$shell\.SendKeys\(\$key\)/,
+    );
+    expect(keyWatcherSource).toContain("differee sans premier plan FileTopo");
+  });
+
+  it("accepts success only from the requested UI change and measured events", () => {
+    expect(realInputSource).toContain("const outcome = await waitUntil(changed, budgetMs)");
+    expect(realInputSource).toContain("evidence.observedChange = outcome.settled");
+    expect(realInputSource).toContain("evidence.keydownIsTrusted = keydownIsTrusted");
+    expect(realInputSource).toContain("evidence.activationIsTrusted = activationIsTrusted");
+    expect(realInputSource).toContain("programmaticClickCalls");
+    expect(realInputSource).toContain("programmaticClickDispatches");
   });
 });
 
