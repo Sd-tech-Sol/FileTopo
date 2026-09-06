@@ -42,6 +42,14 @@ param(
 $ErrorActionPreference = 'Stop'
 $marker = $Marker
 $shell = New-Object -ComObject WScript.Shell
+Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public static class FileTopoWindowActivation {
+    [DllImport("user32.dll")]
+    public static extern void SwitchToThisWindow(IntPtr window, bool altTab);
+}
+'@
 $handled = 0
 $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
 
@@ -62,6 +70,8 @@ while ((Get-Date) -lt $deadline) {
                 Sort-Object -Property StartTime -Descending |
                 Select-Object -First 1
             if ($null -ne $process) {
+                [FileTopoWindowActivation]::SwitchToThisWindow($process.MainWindowHandle, $true)
+                Start-Sleep -Milliseconds 300
                 $activated = $shell.AppActivate($process.Id)
                 Write-Output "watcher: AppActivate=$activated pid=$($process.Id)"
                 # WebView2 can finish a React commit immediately after the

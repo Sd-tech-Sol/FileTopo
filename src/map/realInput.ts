@@ -14,6 +14,7 @@
  */
 
 import { afterPaint } from "./measure";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 
 /** Where a scenario's lines go — the host's standard output, in practice. */
 export type ScenarioLog = (level: "info" | "error", message: string) => void;
@@ -134,11 +135,17 @@ export async function pressRealKey(
     return nativeDispatch.call(this, event);
   };
 
+  // The automation terminal can run without any foreground HWND. Let the
+  // Tauri window focus itself first; this does not activate the control and
+  // therefore cannot satisfy any of the evidence below. Only the subsequent
+  // OS keystroke can do that.
+  await getCurrentWindow().setFocus();
+  await afterPaint();
   target.focus();
   const evidence: RealKeyEvidence = {
     inputMethod:
-      "WScript.Shell SendKeys via scripts/j12-send-real-key.ps1, after AppActivate " +
-      "on the FileTopo process — the ordinary Windows input path",
+      "Tauri window focus followed by Windows key injection via " +
+      "scripts/j12-send-real-key.ps1 — the ordinary Windows input path",
     keyRequested: key,
     focusedBeforeTag: target.tagName,
     focusedBeforeClass: target.getAttribute("class") ?? "",
