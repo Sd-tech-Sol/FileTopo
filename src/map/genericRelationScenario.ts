@@ -267,15 +267,15 @@ export async function runGenericRelationScenario(
   }
 
   try {
-    requireFact(PROTECTED_RUN_ARTIFACTS.length === 32, "X5 n'est plus exactement 32");
+    requireFact(PROTECTED_RUN_ARTIFACTS.length === 34, "X5 n'est plus exactement 34");
     requireFact(ownership.protectedDestinations.length === 0, "destination runtime protégée");
-    requireFact(ownership.writesUnderItsOwnTaskOnly, "runtime hors TASK-0025");
-    requireFact(ownership.owningTaskId === "TASK-0025", "propriétaire runtime inattendu");
+    requireFact(ownership.writesUnderItsOwnTaskOnly, "runtime hors TASK-0026");
+    requireFact(ownership.owningTaskId === "TASK-0026", "propriétaire runtime inattendu");
     const written = await deps.invoke<string>("map_write_run_artifact", {
       name: X11_GENERIC_ARTIFACT,
       contents: JSON.stringify(
         {
-          task: "TASK-0025",
+          task: "TASK-0026",
           reserve: "X11",
           nature: "corrective proof of the generic relation engine on a non-legacy brain",
           canonical: false,

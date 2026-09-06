@@ -926,7 +926,7 @@ export async function runCrossScenario(
       name: m12Artifact(pass, "written"),
       contents: JSON.stringify(
         {
-          task: "TASK-0025",
+          task: "TASK-0026",
           criterion: "M12",
           nature: "criterion evidence",
           replacesCanonicalEvidence: false,
@@ -950,7 +950,7 @@ export async function runCrossScenario(
         name: m12Artifact(pass, "abandoned"),
         contents: JSON.stringify(
           {
-            task: "TASK-0025",
+            task: "TASK-0026",
             criterion: "M12",
             pass,
             outcome: "abandoned",

@@ -108,8 +108,8 @@ function Invoke-Pass {
     $log = Join-Path $LogDirectory "filetopo-k12-pass$Pass.log"
     if (Test-Path -LiteralPath $log) { Remove-Item -LiteralPath $log -Force }
 
-    $artifact = Join-Path $runs "TASK-0025-K12-foundation-regression-webview2-pass$Pass.json"
-    $abandoned = Join-Path $runs "TASK-0025-K12-foundation-regression-webview2-pass$Pass-abandon.json"
+    $artifact = Join-Path $runs "TASK-0026-K12-foundation-regression-webview2-pass$Pass.json"
+    $abandoned = Join-Path $runs "TASK-0026-K12-foundation-regression-webview2-pass$Pass-abandon.json"
     foreach ($stale in @($artifact, $abandoned)) {
         # Only this script's own previous output for THIS pass, and only so a
         # stale file cannot be mistaken for a fresh result.

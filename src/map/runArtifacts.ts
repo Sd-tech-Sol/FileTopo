@@ -40,13 +40,10 @@
  * intra-brain regression. The corrective X11 proof and every other
  * `TASK-0024` output remain noncanonical and unprotected.
  *
- * **`TASK-0025` is that next slice, and §4 of its instruction is this rule
- * applied.** Before replaying anything, every destination below moved from
- * `TASK-0024-*` to `TASK-0025-*` — not only the three sealed names, but every
- * name this runtime actually spells, including the replays and the corrective
- * `X11` destination, which stays compiled and replayable. The thirty-two
- * protected names were left exactly as they are: the intersection is emptied
- * by moving the destinations, never by shrinking the seal.
+ * **`TASK-0026` applies the same rule again.** Before replaying anything,
+ * every destination below moved from `TASK-0025-*` to `TASK-0026-*`, including
+ * all compiled regressions and both formerly sealed `SR15` destinations. The
+ * thirty-four protected names remain bit-for-bit unchanged.
  *
  * **`ACTION-0042` makes `TASK-0025` `VERIFIED`**, so exactly its two `SR15`
  * WebView2 passes now join the protected set. Its `DR15`, `J12` and `X11`
@@ -120,9 +117,9 @@ export const PROTECTED_RUN_ARTIFACTS = [
  * exists so that pressing the button can never write over anything.
  */
 export const H9_REGRESSION_ARTIFACT =
-  "TASK-0025-H9-composed-runtime-regression-webview2.json";
+  "TASK-0026-H9-composed-runtime-regression-webview2.json";
 export const H9_REGRESSION_ABANDON_ARTIFACT =
-  "TASK-0025-H9-composed-runtime-regression-webview2-abandon.json";
+  "TASK-0026-H9-composed-runtime-regression-webview2-abandon.json";
 
 /**
  * The **intra-brain** relations scenario of `TASK-0017`/`J12`, on `brain-alpha`.
@@ -133,12 +130,12 @@ export const H9_REGRESSION_ABANDON_ARTIFACT =
  * first.
  */
 export const J12_REGRESSION_ARTIFACT =
-  "TASK-0025-J12-intrabrain-relations-regression-webview2.json";
+  "TASK-0026-J12-intrabrain-relations-regression-webview2.json";
 export const J12_REGRESSION_ABANDON_ARTIFACT =
-  "TASK-0025-J12-intrabrain-relations-regression-webview2-abandon.json";
+  "TASK-0026-J12-intrabrain-relations-regression-webview2-abandon.json";
 
 /** `L11` — read-only and isolation, replayed on the composed runtime. */
-export const K11_ARTIFACT = "TASK-0025-K11-readonly-isolation-regression-webview2.json";
+export const K11_ARTIFACT = "TASK-0026-K11-readonly-isolation-regression-webview2.json";
 
 /**
  * `K12` of `TASK-0018`, replayed against the composition bar.
@@ -148,7 +145,7 @@ export const K11_ARTIFACT = "TASK-0025-K11-readonly-isolation-regression-webview
  */
 export function k12Artifact(pass: number, outcome: "written" | "abandoned"): string {
   const suffix = outcome === "abandoned" ? "-abandon" : "";
-  return `TASK-0025-K12-foundation-regression-webview2-pass${pass}${suffix}.json`;
+  return `TASK-0026-K12-foundation-regression-webview2-pass${pass}${suffix}.json`;
 }
 
 /**
@@ -159,29 +156,29 @@ export function k12Artifact(pass: number, outcome: "written" | "abandoned"): str
  */
 export function l12Artifact(pass: number, outcome: "written" | "abandoned"): string {
   const suffix = outcome === "abandoned" ? "-abandon" : "";
-  return `TASK-0025-L12-composed-view-regression-webview2-pass${pass}${suffix}.json`;
+  return `TASK-0026-L12-composed-view-regression-webview2-pass${pass}${suffix}.json`;
 }
 
 /** `M12` — the twenty-eight steps of inter-brain relations, in the real host. */
 export function m12Artifact(pass: number, outcome: "written" | "abandoned"): string {
   const suffix = outcome === "abandoned" ? "-abandon" : "";
-  return `TASK-0025-M12-interbrain-relations-regression-webview2-pass${pass}${suffix}.json`;
+  return `TASK-0026-M12-interbrain-relations-regression-webview2-pass${pass}${suffix}.json`;
 }
 
 /** `N15` — the topographic node graph in the real Tauri/WebView2 host. */
 export function n15Artifact(pass: number, outcome: "written" | "abandoned"): string {
   const suffix = outcome === "abandoned" ? "-abandon" : "";
-  return `TASK-0025-N15-topographic-node-graph-webview2-pass${pass}${suffix}.json`;
+  return `TASK-0026-N15-topographic-node-graph-webview2-pass${pass}${suffix}.json`;
 }
 
 /** `EC15` — exact content observations in the real Tauri/WebView2 host. */
 export function ec15Artifact(pass: number): string {
-  return `TASK-0025-EC15-exact-content-observations-webview2-pass${pass}.json`;
+  return `TASK-0026-EC15-exact-content-observations-webview2-pass${pass}.json`;
 }
 
 /** `DR15` — deterministic relation engine, two real WebView2 processes. */
 export function dr15Artifact(pass: number): string {
-  return `TASK-0025-DR15-deterministic-relation-engine-webview2-pass${pass}.json`;
+  return `TASK-0026-DR15-deterministic-relation-engine-webview2-pass${pass}.json`;
 }
 
 /**
@@ -197,24 +194,24 @@ export function dr15Artifact(pass: number): string {
  * compiled and replayable, and §4 of the `TASK-0025` instruction requires that
  * *every* destination actually present here move under the current task.
  */
-export const X11_GENERIC_ARTIFACT = "TASK-0025-X11-generic-brain-webview2.json";
+export const X11_GENERIC_ARTIFACT = "TASK-0026-X11-generic-brain-webview2.json";
 
 /**
  * `SR15` — the suggestion review queue and the memory of human decisions, in
  * two real WebView2 processes.
  *
- * The proof `TASK-0025` publishes for itself. Both passes are protected since
- * `ACTION-0042` verified the task, so replaying them now stops at X5.
+ * The verified `TASK-0025` proof replayed as noncanonical `TASK-0026`
+ * regression evidence.
  */
 export function sr15Artifact(pass: number): string {
-  return `TASK-0025-SR15-suggestion-review-memory-webview2-pass${pass}.json`;
+  return `TASK-0026-SR15-suggestion-review-memory-webview2-pass${pass}.json`;
 }
 
 /**
  * Every name this runtime **spells as a destination**. The guard test
  * enumerates it.
  *
- * Every current entry belongs to `TASK-0025`; ownership and the protected
+ * Every current entry belongs to `TASK-0026`; ownership and the protected
  * intersection are derived from the lists below.
  */
 export const RUNTIME_RUN_ARTIFACTS = [
@@ -252,14 +249,10 @@ export const RUNTIME_RUN_ARTIFACTS = [
  * Exact protected/runtime intersection — the destinations this runtime still
  * spells that the write gate would refuse.
  *
- * After `ACTION-0042`, exactly the two `SR15` passes are sealed while the
- * runtime still spells them. The `DR15`, `J12` and `X11` replays remain
- * noncanonical and unprotected.
+ * `TASK-0026` migrated every destination away from all verified namespaces,
+ * so the protected/runtime intersection is empty before any replay.
  */
-export const SEALED_RUNTIME_DESTINATIONS = [
-  "TASK-0025-SR15-suggestion-review-memory-webview2-pass1.json",
-  "TASK-0025-SR15-suggestion-review-memory-webview2-pass2.json",
-] as const;
+export const SEALED_RUNTIME_DESTINATIONS = [] as const;
 
 /**
  * The task an artefact name declares as its owner, or `null` when the name

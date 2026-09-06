@@ -1424,7 +1424,7 @@ export default function MapApp() {
         name: K11_ARTIFACT,
         contents: JSON.stringify(
           {
-          task: "TASK-0025",
+          task: "TASK-0026",
             criteria: ["L11", "L2", "K11", "K3", "H1", "H2", "H3", "H5", "H6", "H7", "H8", "H10", "H11"],
             sourceCriterion: "TASK-0018/K11",
             nature: "regression / compatibility replay",
@@ -1524,7 +1524,7 @@ export default function MapApp() {
       }
 
       const artifact = {
-        task: "TASK-0025",
+        task: "TASK-0026",
         sourceCriterion: "TASK-0016/H9",
         nature: "regression / compatibility replay",
         doesNotReplace:
@@ -1559,7 +1559,7 @@ export default function MapApp() {
           name: H9_REGRESSION_ABANDON_ARTIFACT,
           contents: JSON.stringify(
             {
-              task: "TASK-0025",
+              task: "TASK-0026",
               sourceCriterion: "TASK-0016/H9",
               nature: "regression / compatibility replay",
               doesNotReplace:

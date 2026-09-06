@@ -433,7 +433,7 @@ export async function runContentScenario(
   pass: 1 | 2,
 ): Promise<void> {
   const evidence: Record<string, unknown> = {
-    task: "TASK-0025",
+    task: "TASK-0026",
     criterion: "EC15",
     pass,
     startedAt: new Date().toISOString(),

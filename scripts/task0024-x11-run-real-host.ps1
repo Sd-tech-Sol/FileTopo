@@ -58,7 +58,7 @@ function Wait-ForArtifact {
     return $false
 }
 
-$artifact = Join-Path $runs 'TASK-0025-X11-generic-brain-webview2.json'
+$artifact = Join-Path $runs 'TASK-0026-X11-generic-brain-webview2.json'
 Assert-NotProtectedRunArtifact -Path $artifact
 # The corrective proof is a single scenario in a single process, so a replay
 # rewrites it. It is removed here rather than by the application, which never

@@ -12,7 +12,7 @@
     The criterion is TASK-0017's; the artefact belongs to TASK-0024, and its
     name says so:
 
-        TASK-0025-J12-intrabrain-relations-regression-webview2.json
+        TASK-0026-J12-intrabrain-relations-regression-webview2.json
 
     TASK-0017's own J12 evidence, and TASK-0019's replay of it, are BOTH
     protected: this script deletes only its own previous output, and the guard
@@ -66,8 +66,8 @@ $variant = 'task0022-j12-{0}-{1}' -f (Get-Date -Format 'yyyyMMddHHmmss'),
 
 $log = Join-Path $LogDirectory "filetopo-task0022-j12-$variant.log"
 
-$artifact = Join-Path $runs 'TASK-0025-J12-intrabrain-relations-regression-webview2.json'
-$abandoned = Join-Path $runs 'TASK-0025-J12-intrabrain-relations-regression-webview2-abandon.json'
+$artifact = Join-Path $runs 'TASK-0026-J12-intrabrain-relations-regression-webview2.json'
+$abandoned = Join-Path $runs 'TASK-0026-J12-intrabrain-relations-regression-webview2-abandon.json'
 foreach ($stale in @($artifact, $abandoned)) {
     Assert-NotProtectedRunArtifact -Path $stale
     if (Test-Path -LiteralPath $stale) { Remove-Item -LiteralPath $stale -Force }

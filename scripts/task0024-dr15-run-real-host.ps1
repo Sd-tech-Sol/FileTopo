@@ -42,7 +42,7 @@ function Wait-ForArtifact {
 
 function Invoke-DR15Pass {
     param([int]$Pass)
-    $artifact = Join-Path $runs "TASK-0025-DR15-deterministic-relation-engine-webview2-pass$Pass.json"
+    $artifact = Join-Path $runs "TASK-0026-DR15-deterministic-relation-engine-webview2-pass$Pass.json"
     Assert-NotProtectedRunArtifact -Path $artifact
     if (Test-Path -LiteralPath $artifact) {
         throw "preuve TASK-0024 deja presente; aucune suppression automatique: $artifact"

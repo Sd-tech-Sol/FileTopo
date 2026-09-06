@@ -116,8 +116,8 @@ function Invoke-Pass {
 
     $log = Join-Path $LogDirectory "filetopo-task0022-m12-$variant-pass$Pass.log"
 
-    $artifact = Join-Path $runs "TASK-0025-M12-interbrain-relations-regression-webview2-pass$Pass.json"
-    $abandoned = Join-Path $runs "TASK-0025-M12-interbrain-relations-regression-webview2-pass$Pass-abandon.json"
+    $artifact = Join-Path $runs "TASK-0026-M12-interbrain-relations-regression-webview2-pass$Pass.json"
+    $abandoned = Join-Path $runs "TASK-0026-M12-interbrain-relations-regression-webview2-pass$Pass-abandon.json"
     foreach ($stale in @($artifact, $abandoned)) {
         Assert-NotProtectedRunArtifact -Path $stale
         if (Test-Path -LiteralPath $stale) { Remove-Item -LiteralPath $stale -Force }

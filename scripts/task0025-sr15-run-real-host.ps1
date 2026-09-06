@@ -48,7 +48,7 @@ function Wait-ForArtifact {
 
 function Invoke-SR15Pass {
     param([int]$Pass)
-    $artifact = Join-Path $runs "TASK-0025-SR15-suggestion-review-memory-webview2-pass$Pass.json"
+    $artifact = Join-Path $runs "TASK-0026-SR15-suggestion-review-memory-webview2-pass$Pass.json"
     Assert-NotProtectedRunArtifact -Path $artifact
     if (Test-Path -LiteralPath $artifact) {
         throw "preuve SR15 deja presente; aucune suppression automatique: $artifact"
