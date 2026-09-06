@@ -21,7 +21,7 @@ const MARKER = "DR15-KEY-READY";
 export interface DreScenarioDeps {
   invoke: <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
   host: HostInfo | null;
-  showOnly: (brainId: string) => void;
+  showOnly: (brainId: string) => Promise<void>;
   select: (reference: BrainNodeRef) => void;
   setStatus: (message: string) => void;
   log: ScenarioLog;
@@ -89,7 +89,7 @@ async function writeEvidence(deps: DreScenarioDeps, evidence: Record<string, unk
 }
 
 async function passOne(deps: DreScenarioDeps) {
-  deps.showOnly(ALPHA);
+  await deps.showOnly(ALPHA);
   await waitForCompositionReady();
   await deps.invoke("map_open", { brainId: ALPHA, rebuild: true });
   const snapshot = await deps.invoke<MapSnapshot>("map_snapshot", { brainId: ALPHA });
@@ -224,7 +224,7 @@ async function passOne(deps: DreScenarioDeps) {
 }
 
 async function passTwo(deps: DreScenarioDeps) {
-  deps.showOnly(ALPHA);
+  await deps.showOnly(ALPHA);
   await waitForCompositionReady();
   const statusBefore = await deps.invoke<RelationEngineStatus>("map_relation_engine_status", {
     brainId: ALPHA,

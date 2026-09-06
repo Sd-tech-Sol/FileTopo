@@ -38,7 +38,7 @@ const MARKER = "SR15-KEY-READY";
 export interface ReviewScenarioDeps {
   invoke: <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
   host: HostInfo | null;
-  showOnly: (brainId: string) => void;
+  showOnly: (brainId: string) => Promise<void>;
   select: (reference: BrainNodeRef) => void;
   setStatus: (message: string) => void;
   log: ScenarioLog;
@@ -199,7 +199,7 @@ async function walkTo(
 }
 
 async function passOne(deps: ReviewScenarioDeps) {
-  deps.showOnly(ALPHA);
+  await deps.showOnly(ALPHA);
   await waitForCompositionReady();
   const snapshot = await waitForSnapshot(deps, ALPHA);
   deps.select({ brainId: ALPHA, nodeId: snapshot.nodes.find((node) => node.kind === "file")!.id });
@@ -503,7 +503,7 @@ async function passOne(deps: ReviewScenarioDeps) {
 }
 
 async function passTwo(deps: ReviewScenarioDeps) {
-  deps.showOnly(ALPHA);
+  await deps.showOnly(ALPHA);
   await waitForCompositionReady();
   const snapshot = await waitForSnapshot(deps, ALPHA);
   deps.select({ brainId: ALPHA, nodeId: snapshot.nodes.find((node) => node.kind === "file")!.id });

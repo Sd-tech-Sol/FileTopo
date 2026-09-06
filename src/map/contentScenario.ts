@@ -34,7 +34,7 @@ import type {
 export interface ContentScenarioDeps {
   invoke: <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
   host: HostInfo | null;
-  showOnly: (brainId: string) => void;
+  showOnly: (brainId: string) => Promise<void>;
   select: (reference: BrainNodeRef) => void;
   readComposition: () => ComposedView | null;
   setStatus: (message: string) => void;
@@ -179,7 +179,7 @@ async function summary(
 }
 
 async function showOnlyAndWait(deps: ContentScenarioDeps, brainId: string): Promise<void> {
-  deps.showOnly(brainId);
+  await deps.showOnly(brainId);
   const shown = await waitUntil(
     () => displayedBrainIds().length === 1 && displayedBrainIds()[0] === brainId,
     90_000,
