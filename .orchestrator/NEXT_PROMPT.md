@@ -1,495 +1,159 @@
-# NEXT_PROMPT — TASK-0026 / exact duplicate explorer à l’échelle
+# NEXT_PROMPT — TASK-0026 / reprise et clôture d’implémentation
 
 **TARGET_AGENT:** CODEX  
 **STATUS:** READY  
 **OWNER:** orchestrateur technique  
 **TASK:** `TASK-0026 — Exact Duplicate Explorer + Bounded Scale`  
-**MODE:** exécution autonome depuis le dépôt
-
-> Cette tranche reste fonctionnelle. **Aucune refonte graphique**, aucun changement de thème/fond du graphe, aucune IA/RAG/vector DB/extraction de contenu. Elle prend la partie sûre et non bloquée de la tranche #4 proposée par `TASK-0021 §6` : rendre les observations de contenu identique réellement exploitables à grande échelle, sans contourner `DEC-0013/F`.
+**MODE:** reprise ciblée depuis l’état courant
 
 ## /goal
 
-Construire un explorateur de **contenus binaires identiques observés** par cerveau, borné, paginé, persistant et utilisable dans l’interface, à partir de la génération courante déjà produite par `sha256-v1`.
+Reprendre **la même TASK-0026**, sans recommencer ce qui est déjà implémenté, et terminer proprement l’exécution jusqu’à `IMPLEMENTED` uniquement.
 
-Le produit doit pouvoir répondre clairement à des questions comme :
+Le contrôle indépendant a constaté que le dépôt est encore `IN_PROGRESS` malgré la fin annoncée par la session précédente :
 
-- combien de groupes de contenus identiques sont observés dans ce cerveau;
-- quels fichiers appartiennent à un groupe exact;
-- combien d’occurrences ce groupe contient;
-- quand cette observation a été faite;
-- quels groupes sont des fichiers vides.
+- branche : `build/v0.2-a10-exact-duplicate-explorer`;
+- HEAD distant attendu avant reprise : `e6ba32800e868222e2f06d3479fd6422abba46de`;
+- gel documentaire valide : `7202e8005d61b25f3171eef65dad64c9c0603080`, antérieur au code produit;
+- runtime déjà migré sous `TASK-0026-*`;
+- X5 reste exactement à 34;
+- les deux preuves `TASK-0026-ED15-*` existent, mais elles ont été capturées **avant** plusieurs corrections du harnais de saisie clavier partagée (`realInput` / scripts). Elles doivent donc être **rejouées sur le HEAD final** avant clôture;
+- `.orchestrator/RESULT.md` est encore celui de TASK-0025;
+- `docs/tasks/TASK-0026-exact-duplicate-explorer.md` est encore `IN_PROGRESS`;
+- les replays obligatoires EC15 / DR15 / SR15 sous noms `TASK-0026-*` ne sont pas encore publiés.
 
-Mais il doit **continuer à refuser les conclusions qu’il ne peut pas prouver** :
+## 0 — synchronisation et sécurité
 
-- hash égal ≠ même objet physique;
-- hash égal ≠ copie;
-- hash égal ≠ filiation/version;
-- hash égal ≠ espace disque récupérable garanti.
+1. Applique les protocoles de début de session du dépôt.
+2. `git fetch origin`.
+3. Fast-forward uniquement sur `origin/build/v0.2-a10-exact-duplicate-explorer`.
+4. HEAD doit être le commit d’orchestration contenant ce prompt; son parent direct doit être `e6ba32800e868222e2f06d3479fd6422abba46de`.
+5. Arbre local propre avant toute nouvelle écriture.
+6. Ne touche ni `main`, ni les 34 preuves X5 historiques, ni des données réelles.
+7. Si divergence, autre modification locale inconnue ou fast-forward impossible : STOP / BLOCKED.
 
-`F-046` **ne passe pas à IMPLEMENTED** dans cette tranche. Sa fondation exacte est vérifiée, et cette tâche ajoute l’exploration/échelle, mais l’identité physique persistante reste bloquée par `DEC-0013/F`.
+## 1 — ne pas réinventer TASK-0026
 
----
-
-## 0 — synchronisation et préconditions obligatoires
-
-Appliquer les protocoles projet de début de session.
-
-Avant toute modification :
-
-1. checkout local attendu : `build/v0.2-a9-suggestion-review-memory`;
-2. arbre local propre;
-3. `git fetch origin`;
-4. fast-forward uniquement vers `origin/build/v0.2-a9-suggestion-review-memory`;
-5. le HEAD obtenu doit être le commit d’orchestration qui contient **ce** fichier;
-6. son parent direct doit être exactement :
-   `e7959845839938fcb839d95e57e5363a5af326c1`;
-7. `TASK-0025 = VERIFIED`;
-8. `ACTION-0042 = CLOSED`;
-9. `X5 = 34`;
-10. `main = 91bbe90f0f99026c28cd345784d4f579a0016db2`;
-11. `TASK-0026` doit être libre;
-12. `DEC-0028` doit être libre;
-13. aucune tâche ne doit être `IN_PROGRESS`;
-14. `F-046 = PROPOSED`;
-15. `DEC-0013/F` doit encore être explicitement bloquante pour l’identité physique persistante.
-
-Si divergence, modification locale étrangère, fast-forward impossible, identifiant occupé ou état de gouvernance incohérent : **STOP / BLOCKED**.
-
----
-
-## 1 — nouvelle branche
-
-Créer depuis le commit d’orchestration courant :
-
-`build/v0.2-a10-exact-duplicate-explorer`
-
-Publier la branche normalement. Ne pas toucher `main`.
-
----
-
-## 2 — gel documentaire AVANT code produit
-
-Avant toute implémentation, créer et committer :
+Conserver le périmètre et les critères `ED1` à `ED15` déjà gelés dans :
 
 - `docs/tasks/TASK-0026-exact-duplicate-explorer.md`;
 - `docs/decisions/DEC-0028-exact-duplicate-query-boundary.md`.
 
-Le gel doit référencer explicitement :
+Ne change aucun critère pour faire passer l’implémentation.
 
-- `TASK-0021 §6`, tranche proposée #4;
-- `DEC-0021`;
-- `DEC-0025`;
-- `TASK-0023 VERIFIED / ACTION-0039`;
-- `TASK-0024 VERIFIED / ACTION-0041`;
-- `TASK-0025 VERIFIED / ACTION-0042`;
-- `DEC-0013` points D et F.
+Ne pas introduire : identité physique persistante, FileId, cache digest taille+mtime, watcher, IA/RAG/vector DB/extraction, changement graphique, données réelles, TASK-0027 ou DEC-0029.
 
-La décision `DEC-0028` doit dire explicitement que cette tranche **n’autorise ni identité physique persistante ni cache de digest validé par taille+mtime**.
+`F-046` doit rester `PROPOSED`; `DEC-0013/F` reste bloquante.
 
-Après le gel seulement : `APPROVED → IN_PROGRESS`.
+## 2 — stabiliser d’abord le harnais réel
 
----
+Les derniers commits ont modifié la mise au premier plan / injection de vraies touches. Avant toute preuve finale :
 
-## 3 — frontière sémantique obligatoire
+- vérifie que le harnais ne peut pas injecter une touche hors de FileTopo;
+- aucune temporisation arbitraire ne doit être utilisée comme preuve de succès;
+- les preuves finales doivent mesurer `keydownIsTrusted = true`, `activationIsTrusted = true`, `programmaticClickCalls = 0`, `programmaticClickDispatches = 0`;
+- le changement observé doit correspondre à l’action UI réellement attendue.
 
-Conserver strictement les cinq concepts de `DEC-0021` :
+Si un correctif supplémentaire du harnais est nécessaire, fais-le avant les replays finaux et commit/push-le.
 
-1. même objet physique;
-2. contenu identique;
-3. copie probable;
-4. nom similaire;
-5. relation logique.
+## 3 — rejouer ED15 sur le HEAD final
 
-Cette tâche ne traite réellement que **#2 — contenu identique**.
+Rejouer **les deux passes ED15** sur le code final :
 
-### Formulation utilisateur canonique
+- `TASK-0026-ED15-exact-duplicate-explorer-webview2-pass1.json`
+- `TASK-0026-ED15-exact-duplicate-explorer-webview2-pass2.json`
 
-Utiliser une formulation du type :
+La même variante synthétique doit être utilisée pour pass1/pass2.
 
-**« Contenu binaire identique observé »**
+Vérifier au minimum :
 
-et afficher à proximité une limite explicite :
-
-**« Cela ne prouve pas qu’il s’agit du même fichier physique ni d’une copie. »**
-
-Interdictions :
-
-- ne pas appeler un groupe `same file`, `same physical file`, `physical duplicate`, `copy`, `backup copy`, `version` ou équivalent;
-- ne pas présenter `(count - 1) × size` comme « espace récupérable »;
-- ne pas inventer de direction de copie;
-- ne pas créer de relation ou suggestion simplement parce qu’un groupe est affiché;
-- ne pas fusionner deux occurrences dans le store.
-
----
-
-## 4 — source de vérité : génération courante `content.sqlite`
-
-L’explorateur lit **uniquement la génération courante** du store de signaux du cerveau :
-
-`brains/<brain_id>/signals/content.sqlite`
-
-Seules les lignes :
-
-- `observation_status = HASHED`;
-- avec `hash_algorithm = sha256-v1`;
-- avec digest valide;
-
-peuvent participer aux groupes exacts.
-
-Un groupe exact existe si et seulement si au moins **deux occurrences** de la génération courante portent le même `(hash_algorithm, hash_hex)`.
-
-La taille peut être vérifiée comme invariant de cohérence, mais **elle ne remplace jamais le hash**.
-
-### Fichiers vides
-
-Les fichiers vides peuvent former un groupe exact de contenu binaire identique. Ils doivent être visibles comme **fait observé**, avec `emptyContent = true` ou équivalent.
-
-Ils ne doivent créer :
-
-- aucune relation logique automatique;
-- aucune suggestion de copie;
-- aucune estimation de gain disque.
-
-Le comportement `core.identical-content/v1` déjà vérifié sur les fichiers vides ne doit pas être affaibli.
-
----
-
-## 5 — API bornée et paginée
-
-Créer une API backend générique par cerveau, avec des noms cohérents avec le projet, couvrant au minimum trois lectures.
-
-### A. Résumé
-
-Retourner au minimum :
-
-- `brainId`;
-- génération courante;
-- date d’observation;
-- algorithme;
-- nombre exact de groupes;
-- nombre exact d’occurrences appartenant à des groupes;
-- nombre de groupes de fichiers vides;
-- état de disponibilité (`NOT_OBSERVED`, `AVAILABLE`, ou équivalent explicite);
-- éventuellement nombre d’endpoints non résolus contre la map courante, si cette vérification est effectuée.
-
-### B. Liste des groupes
-
-API paginée, limite maximale explicite et raisonnable, par exemple **100**.
-
-Chaque groupe doit fournir au minimum :
-
-- identifiant de groupe **dérivé du contenu**, jamais une identité de fichier;
-- `hashAlgorithm`;
-- `hashHex` ou une représentation complète disponible à l’inspection;
-- `sizeBytes`;
-- `memberCount`;
-- `emptyContent`;
-- génération et date observée.
-
-Ordre stable documenté. Préférence :
-
-1. `size_bytes DESC`;
-2. `hash_hex ASC`.
-
-### C. Membres d’un groupe
-
-API séparée et paginée, limite maximale explicite.
-
-Chaque membre doit contenir uniquement les données nécessaires :
-
-- `relativePath`;
-- nom;
-- taille;
-- date d’observation;
-- statut/hash déjà prouvé;
-- référence de nœud si elle est résolue dans la map courante.
-
-Ordre stable : `relative_path ASC`.
-
-### Exigence d’échelle
-
-Ne pas charger silencieusement tous les groupes et tous leurs membres dans une seule réponse. Utiliser l’agrégation/pagination SQLite ou une structure équivalente réellement bornée.
-
----
-
-## 6 — aucune optimisation de fraîcheur non prouvée
-
-`DEC-0025 §E` reste pleinement normative.
-
-Dans cette tranche :
-
-- **ne pas** réutiliser un ancien digest parce que taille+mtime sont identiques;
-- **ne pas** ajouter de cache de hash supposé frais;
-- **ne pas** ajouter de watcher implicite;
-- **ne pas** ajouter de change token inventé;
-- **ne pas** persister `VolumeSerialNumber`, `FileId`, handle id, inode ou identité système équivalente.
-
-Une campagne explicite `sha256-v1` continue donc de **relire/rehasher les fichiers comme aujourd’hui**.
-
-La preuve TASK-0026 doit même vérifier qu’un second run explicite inchangé ouvre et rehache réellement les fichiers attendus, plutôt que de prétendre avoir introduit un cache.
-
-Cette tâche améliore l’**exploration et le coût des requêtes/rendus de résultats**, pas la vérité/fraîcheur du hash par une optimisation non prouvée.
-
----
-
-## 7 — UI fonctionnelle « Contenus identiques »
-
-Ajouter une section simple dans l’interface actuelle, sans refonte graphique.
-
-Pour le cerveau focalisé/sélectionné :
-
-- entrée visible du type `N groupes de contenu identique`;
-- si aucune campagne : message explicite demandant d’observer le contenu d’abord, pas `0 doublon`;
-- ouvrir la liste de groupes;
-- afficher un groupe actif à la fois ou une liste paginée simple;
-- afficher taille, nombre d’occurrences, digest/algorithme inspectable, date d’observation;
-- ouvrir les membres du groupe;
-- permettre de sélectionner/naviguer vers un membre résolu dans la carte sans créer de relation;
-- afficher en texte la frontière : **contenu identique ≠ même fichier physique ≠ copie**;
-- signaler clairement les groupes de fichiers vides.
-
-Accessibilité minimale :
-
-- boutons natifs;
-- ordre clavier cohérent;
-- état lisible sans couleur seule;
-- aucune information essentielle uniquement dans un tooltip.
-
-Ne pas changer le thème ou le fond noir dans cette tâche.
-
----
-
-## 8 — isolation multi-cerveaux
-
-Prouver explicitement :
-
-- le résumé d’Alpha vient uniquement de `brains/brain-alpha/signals/content.sqlite`;
-- Gamma/Bêta ont leurs propres groupes;
-- un hash identique présent dans deux cerveaux ne fusionne jamais leurs groupes ni leurs membres;
-- l’identifiant de groupe ne devient jamais une clé inter-cerveaux globale;
-- aucun store inter-cerveaux n’est modifié par l’explorateur;
-- aucun store de relations/suggestions n’est modifié par une simple lecture de groupes.
-
----
-
-## 9 — map rebuild et résolution honnête
-
-Le store `signals/content.sqlite` reste hors de l’index reconstructible.
-
-Après rebuild de `map/` :
-
-- les observations persistées restent présentes;
-- les groupes persistent puisqu’ils sont dérivés de la génération courante du store de contenu;
-- si un membre ne peut plus être résolu contre la map courante, **ne pas le supprimer silencieusement** : le signaler comme non résolu ou comme observation historique/stale selon l’architecture existante;
-- ne jamais transformer une observation persistée en affirmation implicite que la source est encore identique aujourd’hui.
-
----
-
-## 10 — X5 / runtime AVANT tout replay
-
-`TASK-0025` est maintenant `VERIFIED`; ses deux `SR15` sont protégées.
-
-Avant **tout** scénario qui écrit sous `docs/performance/runs/` :
-
-1. migrer toutes les destinations runtime `TASK-0025-*` vers `TASK-0026-*`;
-2. inclure toutes les destinations réellement compilées/rejouables, canoniques ou non canoniques;
-3. laisser les **34 noms X5 exactement inchangés**;
-4. `SEALED_RUNTIME_DESTINATIONS = []` après migration;
-5. `protectedDestinations = []`;
-6. `owningTaskId = TASK-0026`;
-7. `writesUnderItsOwnTaskOnly = true`.
-
-Adapter les tests de garde **avant** tout replay.
-
-Les deux nouvelles preuves propres à TASK-0026 restent hors X5 jusqu’au contrôle indépendant.
-
----
-
-## 11 — critères gelés TASK-0026
-
-Créer des critères `ED1` à `ED15` couvrant au minimum :
-
-1. génération courante seulement;
-2. groupe = exact `sha256-v1` égal avec au moins deux occurrences;
-3. fichiers vides visibles comme fait, sans relation/suggestion automatique;
-4. aucune confusion avec identité physique/copie/version;
-5. résumé exact calculé par le backend;
-6. groupes paginés et bornés;
-7. membres paginés et bornés;
-8. ordre stable et déterministe;
-9. UI fonctionnelle et accessible par clavier;
-10. isolation stricte entre cerveaux et aucun store relationnel modifié;
-11. persistance après vrai redémarrage/rebuild, avec fraîcheur honnête;
-12. second run explicite inchangé **rehash réellement** les fichiers — aucun cache taille+mtime;
-13. source strictement read-only et garanties Windows X9/X10 non affaiblies;
-14. X5 reste 34, runtime TASK-0026, aucune collision protégée;
-15. vraie preuve Windows/WebView2 sur un jeu synthétique volumineux avec pagination réellement exercée et zéro clic programmatique.
-
----
-
-## 12 — preuve d’échelle synthétique
-
-Créer une source de preuve dédiée **générée à l’exécution**, hors des quatre fixtures gelées, sans donnée réelle.
-
-Objectif : assez d’éléments pour prouver que l’API et l’UI ne reposent pas sur « tout tient en une page ».
-
-Cible raisonnable : **1 000 à 3 000 fichiers minuscules**, sous le plafond actuel de map, avec :
-
-- plusieurs dizaines/centaines de groupes exacts;
-- certains groupes > limite d’une page de membres;
+- 1 000 à 3 000 fichiers synthétiques;
 - plusieurs pages de groupes;
-- fichiers uniques;
-- au moins un groupe de fichiers vides;
-- chemins et contenus purement synthétiques.
+- au moins un groupe >100 membres;
+- groupe vide visible et explicitement marqué;
+- limite 100 réellement appliquée côté SQLite;
+- ordre stable groupes/membres;
+- rehash explicite complet sur campagne inchangée;
+- source inchangée;
+- stores relationnels/intra/inter inchangés;
+- vrai redémarrage pass2;
+- persistance après rebuild map;
+- membre non résolu signalé honnêtement;
+- X5 = 34, `protectedDestinations = []`, `owningTaskId = TASK-0026`, `writesUnderItsOwnTaskOnly = true`;
+- aucune formulation « même fichier physique », « copie » ou gain disque garanti.
 
-Ne pas committer des milliers de fichiers fixtures. Les matérialiser uniquement dans le sandbox de preuve.
+Les JSON ED15 restent **non canoniques** tant que TASK-0026 n’a pas subi de contrôle indépendant ultérieur.
 
-### Pas de seuil universel de performance
+## 4 — replays obligatoires TASK-0026
 
-Mesurer et publier :
+Après stabilité du HEAD et sans jamais écrire sous un ancien nom protégé, exécuter les régressions demandées par la fiche TASK-0026 sous leurs noms TASK-0026 :
 
-- durée de campagne;
-- fichiers ouverts;
-- octets lus;
-- digests calculés;
-- temps de requête résumé/groupes/membres si mesurable;
-- tailles de pages et compte total.
+- `TASK-0026-EC15-exact-content-observations-webview2-pass1.json`
+- `TASK-0026-EC15-exact-content-observations-webview2-pass2.json`
+- `TASK-0026-DR15-deterministic-relation-engine-webview2-pass1.json`
+- `TASK-0026-DR15-deterministic-relation-engine-webview2-pass2.json`
+- `TASK-0026-SR15-suggestion-review-memory-webview2-pass1.json`
+- `TASK-0026-SR15-suggestion-review-memory-webview2-pass2.json`
 
-**Ne pas transformer ces mesures en promesse universelle de performance.**
+Ces six replays restent non canoniques et hors X5.
 
----
+Ne rejoue pas H9/J12/K11/K12/L12/M12/N15/X11 sauf si une dépendance fonctionnelle réellement modifiée depuis leur dernière preuve l’exige et documente alors précisément pourquoi.
 
-## 13 — preuves WebView2 TASK-0026
+## 5 — validations finales obligatoires
 
-Publier deux nouvelles preuves non canoniques, par exemple :
+Exécuter et enregistrer au minimum :
 
-- `TASK-0026-ED15-exact-duplicate-explorer-webview2-pass1.json`;
-- `TASK-0026-ED15-exact-duplicate-explorer-webview2-pass2.json`.
-
-### Pass1 — fresh variant
-
-Démontrer au minimum :
-
-- vrai Windows + WebView2;
-- source synthétique volumineuse;
-- campagne `sha256-v1` complète et read-only;
-- groupes exacts conformes aux attentes de la fixture;
-- pagination de groupes réellement exercée;
-- pagination de membres réellement exercée sur un groupe > limite;
-- ouverture de l’explorateur par vraie frappe clavier;
-- navigation vers au moins un membre par vraie frappe si l’UI le permet;
-- `keydownIsTrusted = true` / activation fiable;
-- `programmaticClickCalls = 0`;
-- `programmaticClickDispatches = 0`;
-- groupe vide signalé mais aucune relation créée;
-- autre cerveau inchangé;
-- store relations/suggestions inchangé;
-- X5 = 34, runtime entièrement TASK-0026.
-
-Puis relancer **une seconde campagne explicite inchangée dans le même pass** et prouver qu’elle relit/rehache réellement les fichiers selon le contrat actuel : aucun cache taille+mtime ne doit apparaître.
-
-### Pass2 — vrai redémarrage
-
-Nouveau processus réel sur la même variante :
-
-- avant nouvelle campagne, le résumé et les groupes persistés sont encore disponibles;
-- génération/date observée inchangées au chargement;
-- mêmes groupes/membres dans le même ordre;
-- aucune relation/suggestion ajoutée par la simple consultation;
-- source toujours inchangée;
-- fermeture réelle du processus.
-
----
-
-## 14 — régressions minimales
-
-Rejouer au minimum après migration runtime, sous noms TASK-0026 :
-
-- `EC15` exact-content observations si le scénario demeure compatible;
-- `DR15` deterministic relation engine, car `core.identical-content/v1` consomme le store de contenu;
-- `SR15` suggestion review memory, car la migration runtime touche ses destinations et TASK-0025 vient d’être scellée.
-
-Ne sceller aucune de ces régressions dans cette tâche. Elles sont de nouvelles preuves de non-régression TASK-0026 seulement.
-
-Si un replay est réellement inutile ou techniquement incompatible avec le périmètre, documenter la raison au lieu de prétendre l’avoir exécuté.
-
----
-
-## 15 — F-046 et limites à la fin
-
-À la fin, mettre à jour `FEATURE_MATRIX.md` honnêtement :
-
-- `F-046` reste **PROPOSED**;
-- mentionner que :
-  - fondation `sha256-v1` = vérifiée TASK-0023;
-  - exploitation/groupement exact à l’échelle = implémentée par TASK-0026 si les critères passent;
-  - identité physique persistante = **absente et bloquée** par `DEC-0013/F`;
-  - aucun cache de digest par taille+mtime n’est introduit;
-  - « même objet physique » n’est toujours pas implémenté.
-
-Ne déclarer ni tranche #4 complète ni F-046 complète.
-
----
-
-## 16 — validations
-
-Exécuter les suites utiles au code réellement touché, au minimum :
-
-- tests Rust du store/signaux/groupes;
-- tests Rust du moteur de règles affecté indirectement;
-- tests TypeScript de l’UI/explorateur;
-- `runArtifacts.test.ts` après migration;
+- tests Rust ciblés `content_signals` / exact duplicate queries;
+- tests Rust utiles du moteur de règles touché par les replays, si nécessaire;
+- `CARGO_INCREMENTAL=0` si B0 se reproduit, sans supprimer/renommer le cache historique;
+- tests `ExactDuplicateExplorer`;
+- `runArtifacts.test.ts`;
 - `pnpm check`;
 - `pnpm build`;
-- tests/replays WebView2 exigés ci-dessus;
+- contrôles X5 / ownership runtime;
 - `git diff --check`.
 
-Si `cargo` reproduit la panne incrémentale historique B0, utiliser `CARGO_INCREMENTAL=0`; ne supprimer aucun cache historique réservé.
+Le résultat final doit démontrer :
 
-Ne pas utiliser de donnée réelle.
+- X5 toujours exactement 34 et append-only intact;
+- toutes les destinations runtime appartiennent à TASK-0026;
+- intersection runtime/protected vide;
+- aucune preuve historique X5 modifiée;
+- `main` toujours `91bbe90f0f99026c28cd345784d4f579a0016db2`.
 
----
+## 6 — clôture de TASK-0026
 
-## 17 — états et gouvernance finale
+Seulement si `ED1` à `ED15` passent et si les replays/validations obligatoires sont verts :
 
-Si tous les critères de l’exécuteur passent :
+- `TASK-0026` : `IMPLEMENTED`, **jamais VERIFIED**;
+- `DEC-0028` : `IMPLEMENTED — contrôle indépendant requis` ou formulation conforme aux conventions existantes;
+- `F-046` : reste `PROPOSED`, mais sa capacité d’exploration exacte à l’échelle est documentée comme fondation implémentée par TASK-0026;
+- `DEC-0013/F` : reste bloquante;
+- aucun TASK-0027 / DEC-0029;
+- `docs/ai/NEXT_ACTION.md` : demande uniquement un contrôle indépendant de TASK-0026.
 
-- `TASK-0026 = IMPLEMENTED`, **jamais VERIFIED par l’exécuteur**;
-- `DEC-0028` = état cohérent avec les conventions du dépôt, sans auto-vérification;
-- mettre à jour `CURRENT_STATE`, `NEXT_ACTION`, `HANDOFF`, `VALIDATION`, `CHANGELOG_AI`, `FEATURE_MATRIX`;
-- `NEXT_ACTION` doit demander un contrôle indépendant de TASK-0026;
-- ne pas créer TASK-0027;
-- ne pas créer DEC-0029;
-- X5 reste exactement 34;
-- nouvelles preuves ED15 restent hors X5 jusqu’au verdict indépendant.
+Mettre à jour les documents durables prévus dans la fiche :
 
----
+- `docs/ai/CURRENT_STATE.md`
+- `docs/ai/NEXT_ACTION.md`
+- `docs/ai/HANDOFF.md`
+- `docs/ai/VALIDATION.md`
+- `docs/ai/CHANGELOG_AI.md`
+- `docs/product/FEATURE_MATRIX.md`
+- `docs/tasks/TASK-0026-exact-duplicate-explorer.md`
+- `docs/decisions/DEC-0028-exact-duplicate-query-boundary.md`
+- `.orchestrator/RESULT.md`
 
-## 18 — commits / push
+## 7 — RESULT.md
 
-Faire des commits logiques, notamment :
-
-1. gel documentaire avant code;
-2. migration runtime/X5 destinations avant replay;
-3. backend exact-duplicate explorer;
-4. UI/tests;
-5. preuves réelles et documentation finale.
-
-Push normal uniquement. Aucun force push, aucun rebase destructif, aucune réécriture d’historique.
-
----
-
-## 19 — RESULT.md
-
-Remplacer `.orchestrator/RESULT.md` par :
+Écrire :
 
 ```text
-TASK_ID: TASK-0026 — Exact Duplicate Explorer + Bounded Scale
+TASK_ID: TASK-0026
 AGENT: CODEX
-RESULT: DONE | PAUSED | BLOCKED | FAILED
+RESULT: DONE | BLOCKED | FAILED
 BRANCH: build/v0.2-a10-exact-duplicate-explorer
-FINAL_HEAD: <sha>
+FINAL_HEAD: <commit final substantif/documentaire>
 
 SUMMARY:
 -
@@ -505,25 +169,15 @@ PUSHED: yes/no
 
 LIMITS_OR_BLOCKERS:
 - DEC-0013/F physical identity persistence remains blocked
-- F-046 remains PROPOSED
-- no size+mtime digest cache
 - non-Windows X10 race-safe guarantee remains unproven
+- F-046 remains PROPOSED
 
 NEXT_ORCHESTRATOR_DECISION:
-- independent control of TASK-0026 if IMPLEMENTED
+- independent control of TASK-0026
 ```
 
----
+## 8 — Git final
 
-## Interdictions finales
+Commit/push sur `build/v0.2-a10-exact-duplicate-explorer` uniquement.
 
-- aucune donnée réelle;
-- aucune identité physique persistante;
-- aucun `FileId` seul;
-- aucun cache digest taille+mtime;
-- aucune IA/RAG/vector DB/OCR/extraction;
-- aucune modification de source analysée;
-- aucune refonte graphique;
-- aucun scellement X5 avant contrôle indépendant;
-- aucun `VERIFIED` auto-attribué;
-- aucun `TASK-0027` anticipé.
+À la fin : arbre propre, origin aligné, aucune fusion/PR/release/tag/main.
