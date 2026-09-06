@@ -4,7 +4,7 @@
 //! observed fact about bytes read during one campaign. It is not a physical
 //! identity, a copy claim, a version, a suggestion or a `RelationEdge`.
 
-use super::brains::BrainRecord;
+use super::brains::{BrainNodeRef, BrainRecord};
 use super::fixtures;
 use super::sandbox::SandboxPaths;
 use super::store::MapNode;
@@ -19,13 +19,14 @@ use std::fs::{self, File, Metadata};
 use std::fs::OpenOptions;
 use std::io::{self, Read};
 use std::path::{Component, Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
 pub const CONTENT_SIGNALS_SCHEMA_VERSION: i64 = 1;
 pub const SIGNAL_ENGINE_VERSION: &str = "sha256-v1";
 pub const HASH_ALGORITHM: &str = SIGNAL_ENGINE_VERSION;
 pub const HASH_BUFFER_BYTES: usize = 64 * 1024;
+pub const MAX_EXACT_DUPLICATE_PAGE_LIMIT: usize = 100;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
@@ -111,6 +112,94 @@ pub struct ContentObservationReport {
     pub hash_algorithm: String,
     pub read_only_confirmed: bool,
     pub duration_ms: f64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum ExactDuplicateAvailability {
+    NotObserved,
+    Available,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExactDuplicateSummary {
+    pub brain_id: String,
+    pub availability: ExactDuplicateAvailability,
+    pub generation_id: Option<String>,
+    pub observed_at_unix_ms: Option<i64>,
+    pub hash_algorithm: String,
+    pub exact_group_count: usize,
+    pub grouped_occurrence_count: usize,
+    pub empty_group_count: usize,
+    pub query_duration_ms: f64,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExactDuplicateGroup {
+    pub group_id: String,
+    pub hash_algorithm: String,
+    pub hash_hex: String,
+    pub size_bytes: u64,
+    pub member_count: usize,
+    pub empty_content: bool,
+    pub generation_id: String,
+    pub observed_at_unix_ms: i64,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExactDuplicateGroupPage {
+    pub brain_id: String,
+    pub availability: ExactDuplicateAvailability,
+    pub generation_id: Option<String>,
+    pub observed_at_unix_ms: Option<i64>,
+    pub hash_algorithm: String,
+    pub total_groups: usize,
+    pub offset: usize,
+    pub limit: usize,
+    pub max_limit: usize,
+    pub returned: usize,
+    pub has_more: bool,
+    pub order: String,
+    pub query_duration_ms: f64,
+    pub groups: Vec<ExactDuplicateGroup>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExactDuplicateMember {
+    pub relative_path: String,
+    pub name: String,
+    pub size_bytes: u64,
+    pub observation_status: ObservationStatus,
+    pub hash_algorithm: String,
+    pub hash_hex: String,
+    pub observed_at_unix_ms: i64,
+    pub generation_id: String,
+    pub node_ref: Option<BrainNodeRef>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ExactDuplicateMemberPage {
+    pub brain_id: String,
+    pub group_id: String,
+    pub generation_id: String,
+    pub observed_at_unix_ms: i64,
+    pub hash_algorithm: String,
+    pub hash_hex: String,
+    pub total_members: usize,
+    pub unresolved_returned: usize,
+    pub offset: usize,
+    pub limit: usize,
+    pub max_limit: usize,
+    pub returned: usize,
+    pub has_more: bool,
+    pub order: String,
+    pub query_duration_ms: f64,
+    pub members: Vec<ExactDuplicateMember>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -971,6 +1060,353 @@ pub fn content_observation_summary(
     ContentSignalStore::open(&database)?.summary(&brain.brain_id, paths.relative_name(&database))
 }
 
+/// A read-only handle to the current complete observation generation.
+///
+/// Unlike [`ContentSignalStore::open`], this never creates a directory,
+/// initializes a schema or changes a journal mode. Merely opening the explorer
+/// therefore cannot turn “not observed” into an empty store.
+fn current_generation_read_only(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+) -> Result<Option<(Connection, String, i64)>, MapError> {
+    let database = paths.brain_content_signals_database(&brain.brain_id);
+    if !database.is_file() {
+        return Ok(None);
+    }
+    let connection = Connection::open_with_flags(
+        database,
+        rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
+    )?;
+    let version: i64 = connection.query_row("PRAGMA user_version", [], |row| row.get(0))?;
+    if version != CONTENT_SIGNALS_SCHEMA_VERSION {
+        return Err(MapError::ContentObservation(format!(
+            "unsupported_content_signals_schema:{version}"
+        )));
+    }
+    let generation = connection
+        .query_row(
+            "SELECT value FROM metadata WHERE key='current_generation_id'",
+            [],
+            |row| row.get::<_, String>(0),
+        )
+        .optional()?;
+    let observed_at = connection
+        .query_row(
+            "SELECT value FROM metadata WHERE key='current_generation_observed_at'",
+            [],
+            |row| row.get::<_, String>(0),
+        )
+        .optional()?
+        .and_then(|value| value.parse::<i64>().ok());
+    match (generation, observed_at) {
+        (Some(generation), Some(observed_at)) => Ok(Some((connection, generation, observed_at))),
+        _ => Ok(None),
+    }
+}
+
+fn validate_duplicate_size_invariant(
+    connection: &Connection,
+    generation_id: &str,
+) -> Result<(), MapError> {
+    let mismatch = connection
+        .query_row(
+            "SELECT hash_hex
+             FROM content_observations
+             WHERE generation_id=?1 AND observation_status='HASHED'
+               AND hash_algorithm=?2 AND length(hash_hex)=64
+               AND hash_hex=lower(hash_hex) AND hash_hex NOT GLOB '*[^0-9a-f]*'
+             GROUP BY hash_hex
+             HAVING COUNT(*) >= 2 AND COUNT(DISTINCT size_bytes) <> 1
+             LIMIT 1",
+            params![generation_id, HASH_ALGORITHM],
+            |row| row.get::<_, String>(0),
+        )
+        .optional()?;
+    if let Some(hash) = mismatch {
+        return Err(MapError::ContentObservation(format!(
+            "duplicate_digest_size_mismatch:{hash}"
+        )));
+    }
+    Ok(())
+}
+
+fn exact_group_counts(
+    connection: &Connection,
+    generation_id: &str,
+) -> Result<(usize, usize, usize), MapError> {
+    validate_duplicate_size_invariant(connection, generation_id)?;
+    let counts = connection.query_row(
+        "SELECT COUNT(*), COALESCE(SUM(member_count),0),
+                COALESCE(SUM(size_bytes=0),0)
+         FROM (
+           SELECT hash_hex, MIN(size_bytes) AS size_bytes, COUNT(*) AS member_count
+           FROM content_observations
+           WHERE generation_id=?1 AND observation_status='HASHED'
+             AND hash_algorithm=?2 AND length(hash_hex)=64
+             AND hash_hex=lower(hash_hex) AND hash_hex NOT GLOB '*[^0-9a-f]*'
+           GROUP BY hash_hex
+           HAVING COUNT(*) >= 2
+         )",
+        params![generation_id, HASH_ALGORITHM],
+        |row| {
+            Ok((
+                row.get::<_, i64>(0)?,
+                row.get::<_, i64>(1)?,
+                row.get::<_, i64>(2)?,
+            ))
+        },
+    )?;
+    Ok((
+        usize_of(counts.0),
+        usize_of(counts.1),
+        usize_of(counts.2),
+    ))
+}
+
+pub fn exact_duplicate_summary(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+) -> Result<ExactDuplicateSummary, MapError> {
+    let started = Instant::now();
+    let Some((connection, generation_id, observed_at)) =
+        current_generation_read_only(paths, brain)?
+    else {
+        return Ok(ExactDuplicateSummary {
+            brain_id: brain.brain_id.clone(),
+            availability: ExactDuplicateAvailability::NotObserved,
+            generation_id: None,
+            observed_at_unix_ms: None,
+            hash_algorithm: HASH_ALGORITHM.to_string(),
+            exact_group_count: 0,
+            grouped_occurrence_count: 0,
+            empty_group_count: 0,
+            query_duration_ms: started.elapsed().as_secs_f64() * 1_000.0,
+        });
+    };
+    let (exact_group_count, grouped_occurrence_count, empty_group_count) =
+        exact_group_counts(&connection, &generation_id)?;
+    Ok(ExactDuplicateSummary {
+        brain_id: brain.brain_id.clone(),
+        availability: ExactDuplicateAvailability::Available,
+        generation_id: Some(generation_id),
+        observed_at_unix_ms: Some(observed_at),
+        hash_algorithm: HASH_ALGORITHM.to_string(),
+        exact_group_count,
+        grouped_occurrence_count,
+        empty_group_count,
+        query_duration_ms: started.elapsed().as_secs_f64() * 1_000.0,
+    })
+}
+
+pub fn exact_duplicate_groups(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+    offset: usize,
+    limit: usize,
+) -> Result<ExactDuplicateGroupPage, MapError> {
+    let started = Instant::now();
+    let limit = limit.clamp(1, MAX_EXACT_DUPLICATE_PAGE_LIMIT);
+    let Some((connection, generation_id, observed_at)) =
+        current_generation_read_only(paths, brain)?
+    else {
+        return Ok(ExactDuplicateGroupPage {
+            brain_id: brain.brain_id.clone(),
+            availability: ExactDuplicateAvailability::NotObserved,
+            generation_id: None,
+            observed_at_unix_ms: None,
+            hash_algorithm: HASH_ALGORITHM.to_string(),
+            total_groups: 0,
+            offset: 0,
+            limit,
+            max_limit: MAX_EXACT_DUPLICATE_PAGE_LIMIT,
+            returned: 0,
+            has_more: false,
+            order: "size_bytes descending, hash_hex ascending".to_string(),
+            query_duration_ms: started.elapsed().as_secs_f64() * 1_000.0,
+            groups: Vec::new(),
+        });
+    };
+    let (total_groups, _, _) = exact_group_counts(&connection, &generation_id)?;
+    let offset = offset.min(total_groups);
+    let mut statement = connection.prepare(
+        "SELECT hash_hex, MIN(size_bytes), COUNT(*), MAX(observed_at_unix_ms)
+         FROM content_observations
+         WHERE generation_id=?1 AND observation_status='HASHED'
+           AND hash_algorithm=?2 AND length(hash_hex)=64
+           AND hash_hex=lower(hash_hex) AND hash_hex NOT GLOB '*[^0-9a-f]*'
+         GROUP BY hash_hex
+         HAVING COUNT(*) >= 2
+         ORDER BY MIN(size_bytes) DESC, hash_hex ASC
+         LIMIT ?3 OFFSET ?4",
+    )?;
+    let groups = statement
+        .query_map(
+            params![generation_id, HASH_ALGORITHM, limit as i64, offset as i64],
+            |row| {
+                let hash_hex = row.get::<_, String>(0)?;
+                let size_bytes = row.get::<_, i64>(1)?.max(0) as u64;
+                Ok(ExactDuplicateGroup {
+                    group_id: format!("{HASH_ALGORITHM}:{hash_hex}"),
+                    hash_algorithm: HASH_ALGORITHM.to_string(),
+                    hash_hex,
+                    size_bytes,
+                    member_count: usize_of(row.get::<_, i64>(2)?),
+                    empty_content: size_bytes == 0,
+                    generation_id: generation_id.clone(),
+                    observed_at_unix_ms: row.get(3)?,
+                })
+            },
+        )?
+        .collect::<Result<Vec<_>, _>>()?;
+    let returned = groups.len();
+    Ok(ExactDuplicateGroupPage {
+        brain_id: brain.brain_id.clone(),
+        availability: ExactDuplicateAvailability::Available,
+        generation_id: Some(generation_id),
+        observed_at_unix_ms: Some(observed_at),
+        hash_algorithm: HASH_ALGORITHM.to_string(),
+        total_groups,
+        offset,
+        limit,
+        max_limit: MAX_EXACT_DUPLICATE_PAGE_LIMIT,
+        returned,
+        has_more: offset + returned < total_groups,
+        order: "size_bytes descending, hash_hex ascending".to_string(),
+        query_duration_ms: started.elapsed().as_secs_f64() * 1_000.0,
+        groups,
+    })
+}
+
+fn map_node_ref_for_path(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+    relative_path: &str,
+) -> Result<Option<BrainNodeRef>, MapError> {
+    let database = paths.brain_map_database(&brain.brain_id);
+    if !database.is_file() {
+        return Ok(None);
+    }
+    let connection = Connection::open_with_flags(
+        database,
+        rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
+    )?;
+    let built_for = connection
+        .query_row(
+            "SELECT value FROM map_meta WHERE key='brain_id'",
+            [],
+            |row| row.get::<_, String>(0),
+        )
+        .optional()?;
+    if built_for.as_deref() != Some(brain.brain_id.as_str()) {
+        return Ok(None);
+    }
+    Ok(connection
+        .query_row(
+            "SELECT id FROM map_nodes WHERE relative_path=?1",
+            [relative_path],
+            |row| row.get::<_, i64>(0),
+        )
+        .optional()?
+        .map(|node_id| BrainNodeRef::new(&brain.brain_id, node_id)))
+}
+
+pub fn exact_duplicate_members(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+    group_id: &str,
+    offset: usize,
+    limit: usize,
+) -> Result<ExactDuplicateMemberPage, MapError> {
+    let started = Instant::now();
+    let hash_hex = group_id
+        .strip_prefix(&format!("{HASH_ALGORITHM}:"))
+        .ok_or_else(|| MapError::ContentObservation("duplicate_group_id_refused".into()))?;
+    validate_digest(hash_hex)?;
+    let Some((connection, generation_id, observed_at)) =
+        current_generation_read_only(paths, brain)?
+    else {
+        return Err(MapError::ContentObservation(
+            "duplicate_group_not_observed".into(),
+        ));
+    };
+    let total_members = usize_of(connection.query_row(
+        "SELECT COUNT(*) FROM content_observations
+         WHERE generation_id=?1 AND observation_status='HASHED'
+           AND hash_algorithm=?2 AND hash_hex=?3",
+        params![generation_id, HASH_ALGORITHM, hash_hex],
+        |row| row.get::<_, i64>(0),
+    )?);
+    if total_members < 2 {
+        return Err(MapError::ContentObservation(
+            "duplicate_group_not_found".into(),
+        ));
+    }
+    let limit = limit.clamp(1, MAX_EXACT_DUPLICATE_PAGE_LIMIT);
+    let offset = offset.min(total_members);
+    let mut statement = connection.prepare(
+        "SELECT relative_path,size_bytes,modified_unix_ms,observation_status,
+                hash_algorithm,hash_hex,observed_at_unix_ms,generation_id,diagnostic
+         FROM content_observations
+         WHERE generation_id=?1 AND observation_status='HASHED'
+           AND hash_algorithm=?2 AND hash_hex=?3
+         ORDER BY relative_path ASC LIMIT ?4 OFFSET ?5",
+    )?;
+    let observations = statement
+        .query_map(
+            params![
+                generation_id,
+                HASH_ALGORITHM,
+                hash_hex,
+                limit as i64,
+                offset as i64
+            ],
+            observation_from_row,
+        )?
+        .collect::<Result<Vec<_>, _>>()?;
+    let mut members = Vec::with_capacity(observations.len());
+    let mut unresolved_returned = 0;
+    for observation in observations {
+        let node_ref = map_node_ref_for_path(paths, brain, &observation.relative_path)?;
+        if node_ref.is_none() {
+            unresolved_returned += 1;
+        }
+        let name = Path::new(&observation.relative_path)
+            .file_name()
+            .map(|value| value.to_string_lossy().into_owned())
+            .unwrap_or_else(|| observation.relative_path.clone());
+        members.push(ExactDuplicateMember {
+            relative_path: observation.relative_path,
+            name,
+            size_bytes: observation.size_bytes,
+            observation_status: observation.observation_status,
+            hash_algorithm: HASH_ALGORITHM.to_string(),
+            hash_hex: hash_hex.to_string(),
+            observed_at_unix_ms: observation.observed_at_unix_ms,
+            generation_id: observation.generation_id,
+            node_ref,
+        });
+    }
+    let returned = members.len();
+    Ok(ExactDuplicateMemberPage {
+        brain_id: brain.brain_id.clone(),
+        group_id: group_id.to_string(),
+        generation_id,
+        observed_at_unix_ms: observed_at,
+        hash_algorithm: HASH_ALGORITHM.to_string(),
+        hash_hex: hash_hex.to_string(),
+        total_members,
+        unresolved_returned,
+        offset,
+        limit,
+        max_limit: MAX_EXACT_DUPLICATE_PAGE_LIMIT,
+        returned,
+        has_more: offset + returned < total_members,
+        order: "relative_path ascending".to_string(),
+        query_duration_ms: started.elapsed().as_secs_f64() * 1_000.0,
+        members,
+    })
+}
+
 /// Reads only the freshness token needed by the relation-engine status. An
 /// absent content store means “no generation”; unlike `ContentSignalStore::open`
 /// this helper never creates or migrates anything.
@@ -1199,6 +1635,161 @@ mod tests {
         nodes: &[MapNode],
     ) -> Result<ContentObservationReport, MapError> {
         observe_root_with_hook(paths, brain_id, root, nodes, &mut |_| Ok(()))
+    }
+
+    fn hashed_observation(
+        relative_path: String,
+        size_bytes: u64,
+        hash_hex: String,
+        generation_id: &str,
+        observed_at: i64,
+    ) -> ContentObservation {
+        ContentObservation {
+            relative_path,
+            size_bytes,
+            modified_unix_ms: Some(observed_at),
+            observation_status: ObservationStatus::Hashed,
+            hash_algorithm: Some(HASH_ALGORITHM.to_string()),
+            hash_hex: Some(hash_hex),
+            observed_at_unix_ms: observed_at,
+            generation_id: generation_id.to_string(),
+            diagnostic: None,
+        }
+    }
+
+    #[test]
+    fn exact_duplicate_summary_does_not_create_an_absent_store() {
+        let temp = tempfile::tempdir().expect("temp");
+        let paths = SandboxPaths::under(temp.path().join("sandbox"));
+        let brain = BrainRecord::frozen_by_id("brain-alpha").expect("brain");
+        let database = paths.brain_content_signals_database(&brain.brain_id);
+        let summary = exact_duplicate_summary(&paths, &brain).expect("summary");
+        assert_eq!(summary.availability, ExactDuplicateAvailability::NotObserved);
+        assert_eq!(summary.exact_group_count, 0);
+        assert!(!database.exists(), "a read created content.sqlite");
+    }
+
+    #[test]
+    fn exact_duplicate_queries_are_current_bounded_stable_and_isolated() {
+        let temp = tempfile::tempdir().expect("temp");
+        let paths = SandboxPaths::under(temp.path().join("sandbox"));
+        let alpha = BrainRecord::frozen_by_id("brain-alpha").expect("alpha");
+        let gamma = BrainRecord::frozen_by_id("brain-gamma").expect("gamma");
+        let observed_at = 1_788_555_000_000;
+        let generation = "current-generation";
+        let mut observations = Vec::new();
+        for group in 0..125_u64 {
+            let hash = format!("{group:064x}");
+            let member_count = if group == 0 { 105 } else { 2 };
+            let size = if group == 0 { 0 } else { 10_000 - group };
+            for member in 0..member_count {
+                observations.push(hashed_observation(
+                    format!("groups/g{group:03}/member-{member:03}.bin"),
+                    size,
+                    hash.clone(),
+                    generation,
+                    observed_at,
+                ));
+            }
+        }
+        observations.push(hashed_observation(
+            "unique.bin".into(),
+            42,
+            "f".repeat(64),
+            generation,
+            observed_at,
+        ));
+        let mut alpha_store =
+            ContentSignalStore::open(&paths.brain_content_signals_database(&alpha.brain_id))
+                .expect("alpha store");
+        alpha_store
+            .replace_generation(generation, observed_at, "synthetic-fingerprint", &observations)
+            .expect("generation");
+        drop(alpha_store);
+
+        let summary = exact_duplicate_summary(&paths, &alpha).expect("summary");
+        assert_eq!(summary.availability, ExactDuplicateAvailability::Available);
+        assert_eq!(summary.generation_id.as_deref(), Some(generation));
+        assert_eq!(summary.exact_group_count, 125);
+        assert_eq!(summary.grouped_occurrence_count, 105 + 124 * 2);
+        assert_eq!(summary.empty_group_count, 1);
+
+        let first = exact_duplicate_groups(&paths, &alpha, 0, 10_000).expect("first");
+        assert_eq!(first.limit, MAX_EXACT_DUPLICATE_PAGE_LIMIT);
+        assert_eq!(first.returned, 100);
+        assert_eq!(first.total_groups, 125);
+        assert!(first.has_more);
+        assert!(first.groups.windows(2).all(|pair| {
+            pair[0].size_bytes > pair[1].size_bytes
+                || (pair[0].size_bytes == pair[1].size_bytes
+                    && pair[0].hash_hex < pair[1].hash_hex)
+        }));
+        let second = exact_duplicate_groups(&paths, &alpha, 100, 100).expect("second");
+        assert_eq!(second.returned, 25);
+        assert!(!second.has_more);
+        assert!(second.groups.last().expect("empty group").empty_content);
+
+        let empty = second.groups.last().expect("empty group");
+        let members_one = exact_duplicate_members(&paths, &alpha, &empty.group_id, 0, 100)
+            .expect("member page one");
+        let members_two = exact_duplicate_members(&paths, &alpha, &empty.group_id, 100, 100)
+            .expect("member page two");
+        assert_eq!(members_one.total_members, 105);
+        assert_eq!(members_one.returned, 100);
+        assert!(members_one.has_more);
+        assert_eq!(members_two.returned, 5);
+        assert!(!members_two.has_more);
+        assert_eq!(members_one.unresolved_returned, 100);
+        assert!(members_one.members.windows(2).all(|pair| {
+            pair[0].relative_path < pair[1].relative_path
+        }));
+
+        let shared_hash = "0".repeat(64);
+        let gamma_observations = [
+            hashed_observation("gamma/a.bin".into(), 7, shared_hash.clone(), "gamma-gen", observed_at),
+            hashed_observation("gamma/b.bin".into(), 7, shared_hash, "gamma-gen", observed_at),
+        ];
+        let mut gamma_store =
+            ContentSignalStore::open(&paths.brain_content_signals_database(&gamma.brain_id))
+                .expect("gamma store");
+        gamma_store
+            .replace_generation("gamma-gen", observed_at, "gamma-fingerprint", &gamma_observations)
+            .expect("gamma generation");
+        drop(gamma_store);
+        let gamma_summary = exact_duplicate_summary(&paths, &gamma).expect("gamma summary");
+        assert_eq!(gamma_summary.exact_group_count, 1);
+        assert_eq!(gamma_summary.grouped_occurrence_count, 2);
+        let alpha_after_gamma = exact_duplicate_summary(&paths, &alpha).unwrap();
+        assert_eq!(alpha_after_gamma.generation_id, summary.generation_id);
+        assert_eq!(alpha_after_gamma.exact_group_count, summary.exact_group_count);
+        assert_eq!(
+            alpha_after_gamma.grouped_occurrence_count,
+            summary.grouped_occurrence_count
+        );
+    }
+
+    #[test]
+    fn exact_duplicate_query_rejects_a_digest_with_inconsistent_sizes() {
+        let temp = tempfile::tempdir().expect("temp");
+        let paths = SandboxPaths::under(temp.path().join("sandbox"));
+        let brain = BrainRecord::frozen_by_id("brain-alpha").expect("brain");
+        let hash = "a".repeat(64);
+        let observations = [
+            hashed_observation("a.bin".into(), 1, hash.clone(), "g", 1),
+            hashed_observation("b.bin".into(), 2, hash, "g", 1),
+        ];
+        let mut store =
+            ContentSignalStore::open(&paths.brain_content_signals_database(&brain.brain_id))
+                .expect("store");
+        store
+            .replace_generation("g", 1, "fingerprint", &observations)
+            .expect("generation");
+        drop(store);
+        assert!(matches!(
+            exact_duplicate_summary(&paths, &brain),
+            Err(MapError::ContentObservation(message))
+                if message.starts_with("duplicate_digest_size_mismatch:")
+        ));
     }
 
     #[test]

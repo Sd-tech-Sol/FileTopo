@@ -728,6 +728,40 @@ fn map_content_observations(
 }
 
 #[tauri::command]
+fn map_exact_duplicate_summary(
+    app: tauri::AppHandle,
+    brain_id: String,
+) -> Result<map::content_signals::ExactDuplicateSummary, String> {
+    let (paths, brain) = resolve_brain(&app, &brain_id)?;
+    map::content_signals::exact_duplicate_summary(&paths, &brain).map_err(String::from)
+}
+
+#[tauri::command]
+fn map_exact_duplicate_groups(
+    app: tauri::AppHandle,
+    brain_id: String,
+    offset: usize,
+    limit: usize,
+) -> Result<map::content_signals::ExactDuplicateGroupPage, String> {
+    let (paths, brain) = resolve_brain(&app, &brain_id)?;
+    map::content_signals::exact_duplicate_groups(&paths, &brain, offset, limit)
+        .map_err(String::from)
+}
+
+#[tauri::command]
+fn map_exact_duplicate_members(
+    app: tauri::AppHandle,
+    brain_id: String,
+    group_id: String,
+    offset: usize,
+    limit: usize,
+) -> Result<map::content_signals::ExactDuplicateMemberPage, String> {
+    let (paths, brain) = resolve_brain(&app, &brain_id)?;
+    map::content_signals::exact_duplicate_members(&paths, &brain, &group_id, offset, limit)
+        .map_err(String::from)
+}
+
+#[tauri::command]
 fn map_relation_engine_status(
     app: tauri::AppHandle,
     brain_id: String,
@@ -1115,6 +1149,9 @@ pub fn run() {
             map_content_identical_members,
             map_content_diagnostics,
             map_content_observations,
+            map_exact_duplicate_summary,
+            map_exact_duplicate_groups,
+            map_exact_duplicate_members,
             map_relation_engine_status,
             map_relation_engine_run,
             map_task0024_dr15_prepare,
@@ -1239,6 +1276,9 @@ mod integration_tests {
             "map_content_identical_members",
             "map_content_diagnostics",
             "map_content_observations",
+            "map_exact_duplicate_summary",
+            "map_exact_duplicate_groups",
+            "map_exact_duplicate_members",
         ] {
             assert!(
                 exposed.iter().any(|name| name == required),
