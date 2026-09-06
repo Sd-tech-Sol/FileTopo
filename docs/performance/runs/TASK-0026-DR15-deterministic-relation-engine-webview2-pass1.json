@@ -1,0 +1,216 @@
+{
+  "task": "TASK-0026",
+  "criterion": "DR15",
+  "pass": 1,
+  "capturedAtIso": "2026-09-06T15:57:49.321Z",
+  "host": {
+    "sandboxRoot": "<dépôt>/.filetopo-sandbox/variants/task0024-dr15-20260906115743-75d954",
+    "appVersion": "0.1.0-alpha.1",
+    "sqliteVersion": "3.53.2",
+    "webviewVersion": "152.0.4191.66",
+    "tauriVersion": "2.11.5",
+    "platform": "windows",
+    "nodeCeiling": 5000,
+    "depthCeiling": 40,
+    "cardWidth": 240,
+    "cardHeight": 64,
+    "layoutAlgorithm": "layered-tree-cards-v1",
+    "autoVerify": false,
+    "autoMeasure": false,
+    "autoRelations": false,
+    "autoBrainsPass": 0,
+    "autoComposedPass": 0,
+    "autoCrossPass": 0,
+    "autoTopographicPass": 0,
+    "autoContentPass": 0,
+    "autoDrePass": 1,
+    "autoGenericRelations": false,
+    "autoSr15Pass": 0,
+    "autoEd15Pass": 0
+  },
+  "input": {
+    "brainId": "brain-alpha",
+    "source": "synthetic TASK-0024 proof fixture outside the four frozen fixtures",
+    "noRealData": true
+  },
+  "governance": {
+    "protectedArtifactCount": 34,
+    "protectedDestinations": [],
+    "writesUnderItsOwnTaskOnly": true,
+    "owningTaskId": "TASK-0026"
+  },
+  "evidence": {
+    "freshVariant": true,
+    "catalogActiveBrainId": "brain-alpha",
+    "mapNodeCount": 12,
+    "contentCampaign": {
+      "brainId": "brain-alpha",
+      "storePath": "brains/brain-alpha/signals/content.sqlite",
+      "schemaVersion": 1,
+      "signalEngineVersion": "sha256-v1",
+      "generationId": "58a7bec6-ee66-4096-837c-6f2d2a8e7061",
+      "observedAt": 1788710265630,
+      "sourceFingerprintBefore": "sha256-tree-v1:3bcbb6b5ff988b8bf5a23bb9fd51b4796b448a097de604db57c6b1a46f3ccba9",
+      "sourceFingerprintAfter": "sha256-tree-v1:3bcbb6b5ff988b8bf5a23bb9fd51b4796b448a097de604db57c6b1a46f3ccba9",
+      "sourceStable": true,
+      "indexedFileCount": 8,
+      "hashedCount": 8,
+      "unreadableCount": 0,
+      "unstableCount": 0,
+      "unsupportedCount": 0,
+      "filesOpenedForHash": 8,
+      "bytesRead": 1424,
+      "digestsComputed": 8,
+      "hashAlgorithm": "sha256-v1",
+      "readOnlyConfirmed": true,
+      "durationMs": 22.1701
+    },
+    "proofCampaign": {
+      "brainId": "brain-alpha",
+      "storePath": "brains/brain-alpha/signals/content.sqlite",
+      "schemaVersion": 1,
+      "signalEngineVersion": "sha256-v1",
+      "generationId": "1933ac7c-435b-46cc-8ecf-aa86254df5e4",
+      "observedAt": 1788710265727,
+      "sourceFingerprintBefore": "sha256-tree-v1:1ef39b2bcd4bf5a9d576753753f5e51335710e9154823514da4f9257aa1cb2d2",
+      "sourceFingerprintAfter": "sha256-tree-v1:1ef39b2bcd4bf5a9d576753753f5e51335710e9154823514da4f9257aa1cb2d2",
+      "sourceStable": true,
+      "indexedFileCount": 9,
+      "hashedCount": 9,
+      "unreadableCount": 0,
+      "unstableCount": 0,
+      "unsupportedCount": 0,
+      "filesOpenedForHash": 9,
+      "bytesRead": 150,
+      "digestsComputed": 9,
+      "hashAlgorithm": "sha256-v1",
+      "readOnlyConfirmed": true,
+      "durationMs": 12.8951
+    },
+    "initialStatus": {
+      "brainId": "brain-alpha",
+      "engineVersion": "dre-v1",
+      "inputState": "NOT_RUN",
+      "mapDigest": "fnv1a64:400fab2df3081fc0",
+      "currentContentGenerationId": "58a7bec6-ee66-4096-837c-6f2d2a8e7061",
+      "lastRunId": null,
+      "lastRunUnixMs": null,
+      "lastMapDigest": null,
+      "lastContentGenerationId": null
+    },
+    "userActivation": {
+      "inputMethod": "Tauri window focus followed by Windows key injection via scripts/j12-send-real-key.ps1 — the ordinary Windows input path",
+      "keyRequested": "{ENTER}",
+      "focusedBeforeTag": "BUTTON",
+      "focusedBeforeClass": "relations__analyze",
+      "focusedBeforeText": "Analyser les relations",
+      "focusReached": true,
+      "keydownIsTrusted": true,
+      "keydownKey": "Enter",
+      "activationIsTrusted": true,
+      "programmaticClickCalls": 0,
+      "programmaticClickDispatches": 0,
+      "observedChange": true,
+      "waitedMs": 1732
+    },
+    "approvalActivation": {
+      "inputMethod": "Tauri window focus followed by Windows key injection via scripts/j12-send-real-key.ps1 — the ordinary Windows input path",
+      "keyRequested": "{ENTER}",
+      "focusedBeforeTag": "BUTTON",
+      "focusedBeforeClass": "suggestion__approve",
+      "focusedBeforeText": "Approuver dre1:3dbd496b26f90583",
+      "focusReached": true,
+      "keydownIsTrusted": true,
+      "keydownKey": "Enter",
+      "activationIsTrusted": true,
+      "programmaticClickCalls": 0,
+      "programmaticClickDispatches": 0,
+      "observedChange": true,
+      "waitedMs": 1427
+    },
+    "report": {
+      "brainId": "brain-alpha",
+      "engineVersion": "dre-v1",
+      "runId": "dre1-2b9e514efef85392",
+      "mapDigest": "fnv1a64:400fab2df3081fc0",
+      "contentGenerationId": "1933ac7c-435b-46cc-8ecf-aa86254df5e4",
+      "rulesEvaluated": [
+        "core.identical-content/v1",
+        "core.numbered-sibling-revision-candidate/v1"
+      ],
+      "rulesSkipped": [],
+      "deterministicRelationsProduced": 2,
+      "suggestionsProduced": 1,
+      "emptyContentGroupsSkipped": 1,
+      "establishedCollisionSuppressions": 4,
+      "approvedSuggestionPreservations": 0,
+      "rejectedSuggestionPreservations": 0,
+      "sourceReadOnlyConfirmed": true,
+      "inputState": "CURRENT"
+    },
+    "rerun": {
+      "brainId": "brain-alpha",
+      "engineVersion": "dre-v1",
+      "runId": "dre1-ed941c1d9d5f5691",
+      "mapDigest": "fnv1a64:400fab2df3081fc0",
+      "contentGenerationId": "1933ac7c-435b-46cc-8ecf-aa86254df5e4",
+      "rulesEvaluated": [
+        "core.identical-content/v1",
+        "core.numbered-sibling-revision-candidate/v1"
+      ],
+      "rulesSkipped": [],
+      "deterministicRelationsProduced": 2,
+      "suggestionsProduced": 0,
+      "emptyContentGroupsSkipped": 1,
+      "establishedCollisionSuppressions": 4,
+      "approvedSuggestionPreservations": 1,
+      "rejectedSuggestionPreservations": 0,
+      "sourceReadOnlyConfirmed": true,
+      "inputState": "CURRENT"
+    },
+    "coreIdenticalCount": 2,
+    "approvedSuggestionKey": "dre1:3dbd496b26f90583",
+    "afterApproval": {
+      "deterministic": [
+        "ek1|brain-alpha|identiques/a.bin|ek1|brain-alpha|identiques/b.bin|content-identical|core.identical-content",
+        "ek1|brain-alpha|identiques/a.bin|ek1|brain-alpha|identiques/c.bin|content-identical|core.identical-content"
+      ],
+      "approved": [
+        "ek1|brain-alpha|dossier-a/note-3.txt|ek1|brain-alpha|racine-1.txt|reference",
+        "ek1|brain-alpha|dossier-b/note-1.txt|ek1|brain-alpha|dossier-a/note-3.txt|reference",
+        "ek1|brain-alpha|dossier-b/sous-dossier/note-2.txt|ek1|brain-alpha|dossier-a/note-1.txt|reference",
+        "ek1|brain-alpha|racine-2.txt|ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|revision",
+        "ek1|brain-alpha|revisions/rapport-4.pdf|ek1|brain-alpha|revisions/rapport-5.pdf|revision"
+      ],
+      "pending": [
+        "S-005",
+        "S-006",
+        "S-007",
+        "S-008"
+      ]
+    },
+    "afterRerun": {
+      "deterministic": [
+        "ek1|brain-alpha|identiques/a.bin|ek1|brain-alpha|identiques/b.bin|content-identical|core.identical-content",
+        "ek1|brain-alpha|identiques/a.bin|ek1|brain-alpha|identiques/c.bin|content-identical|core.identical-content"
+      ],
+      "approved": [
+        "ek1|brain-alpha|dossier-a/note-3.txt|ek1|brain-alpha|racine-1.txt|reference",
+        "ek1|brain-alpha|dossier-b/note-1.txt|ek1|brain-alpha|dossier-a/note-3.txt|reference",
+        "ek1|brain-alpha|dossier-b/sous-dossier/note-2.txt|ek1|brain-alpha|dossier-a/note-1.txt|reference",
+        "ek1|brain-alpha|racine-2.txt|ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|revision",
+        "ek1|brain-alpha|revisions/rapport-4.pdf|ek1|brain-alpha|revisions/rapport-5.pdf|revision"
+      ],
+      "pending": [
+        "S-005",
+        "S-006",
+        "S-007",
+        "S-008"
+      ]
+    },
+    "crossDigestBefore": "fnv1a64:3020af7489aab581",
+    "crossDigestAfter": "fnv1a64:3020af7489aab581",
+    "sourceReadOnly": true,
+    "processClosedByHarness": true
+  }
+}

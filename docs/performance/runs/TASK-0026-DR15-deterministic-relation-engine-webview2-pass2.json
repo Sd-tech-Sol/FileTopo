@@ -1,0 +1,118 @@
+{
+  "task": "TASK-0026",
+  "criterion": "DR15",
+  "pass": 2,
+  "capturedAtIso": "2026-09-06T15:57:53.085Z",
+  "host": {
+    "sandboxRoot": "<dépôt>/.filetopo-sandbox/variants/task0024-dr15-20260906115743-75d954",
+    "appVersion": "0.1.0-alpha.1",
+    "sqliteVersion": "3.53.2",
+    "webviewVersion": "152.0.4191.66",
+    "tauriVersion": "2.11.5",
+    "platform": "windows",
+    "nodeCeiling": 5000,
+    "depthCeiling": 40,
+    "cardWidth": 240,
+    "cardHeight": 64,
+    "layoutAlgorithm": "layered-tree-cards-v1",
+    "autoVerify": false,
+    "autoMeasure": false,
+    "autoRelations": false,
+    "autoBrainsPass": 0,
+    "autoComposedPass": 0,
+    "autoCrossPass": 0,
+    "autoTopographicPass": 0,
+    "autoContentPass": 0,
+    "autoDrePass": 2,
+    "autoGenericRelations": false,
+    "autoSr15Pass": 0,
+    "autoEd15Pass": 0
+  },
+  "input": {
+    "brainId": "brain-alpha",
+    "source": "synthetic TASK-0024 proof fixture outside the four frozen fixtures",
+    "noRealData": true
+  },
+  "governance": {
+    "protectedArtifactCount": 34,
+    "protectedDestinations": [],
+    "writesUnderItsOwnTaskOnly": true,
+    "owningTaskId": "TASK-0026"
+  },
+  "evidence": {
+    "realProcessRestart": true,
+    "statusBefore": {
+      "brainId": "brain-alpha",
+      "engineVersion": "dre-v1",
+      "inputState": "CURRENT",
+      "mapDigest": "fnv1a64:400fab2df3081fc0",
+      "currentContentGenerationId": "1933ac7c-435b-46cc-8ecf-aa86254df5e4",
+      "lastRunId": "dre1-ed941c1d9d5f5691",
+      "lastRunUnixMs": 1788710269214,
+      "lastMapDigest": "fnv1a64:400fab2df3081fc0",
+      "lastContentGenerationId": "1933ac7c-435b-46cc-8ecf-aa86254df5e4"
+    },
+    "before": {
+      "deterministic": [
+        "ek1|brain-alpha|identiques/a.bin|ek1|brain-alpha|identiques/b.bin|content-identical|core.identical-content",
+        "ek1|brain-alpha|identiques/a.bin|ek1|brain-alpha|identiques/c.bin|content-identical|core.identical-content"
+      ],
+      "approved": [
+        "ek1|brain-alpha|dossier-a/note-3.txt|ek1|brain-alpha|racine-1.txt|reference",
+        "ek1|brain-alpha|dossier-b/note-1.txt|ek1|brain-alpha|dossier-a/note-3.txt|reference",
+        "ek1|brain-alpha|dossier-b/sous-dossier/note-2.txt|ek1|brain-alpha|dossier-a/note-1.txt|reference",
+        "ek1|brain-alpha|racine-2.txt|ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|revision",
+        "ek1|brain-alpha|revisions/rapport-4.pdf|ek1|brain-alpha|revisions/rapport-5.pdf|revision"
+      ],
+      "pending": [
+        "S-005",
+        "S-006",
+        "S-007",
+        "S-008"
+      ]
+    },
+    "rerun": {
+      "brainId": "brain-alpha",
+      "engineVersion": "dre-v1",
+      "runId": "dre1-02a0f247056e2532",
+      "mapDigest": "fnv1a64:400fab2df3081fc0",
+      "contentGenerationId": "1933ac7c-435b-46cc-8ecf-aa86254df5e4",
+      "rulesEvaluated": [
+        "core.identical-content/v1",
+        "core.numbered-sibling-revision-candidate/v1"
+      ],
+      "rulesSkipped": [],
+      "deterministicRelationsProduced": 2,
+      "suggestionsProduced": 0,
+      "emptyContentGroupsSkipped": 1,
+      "establishedCollisionSuppressions": 4,
+      "approvedSuggestionPreservations": 1,
+      "rejectedSuggestionPreservations": 0,
+      "sourceReadOnlyConfirmed": true,
+      "inputState": "CURRENT"
+    },
+    "after": {
+      "deterministic": [
+        "ek1|brain-alpha|identiques/a.bin|ek1|brain-alpha|identiques/b.bin|content-identical|core.identical-content",
+        "ek1|brain-alpha|identiques/a.bin|ek1|brain-alpha|identiques/c.bin|content-identical|core.identical-content"
+      ],
+      "approved": [
+        "ek1|brain-alpha|dossier-a/note-3.txt|ek1|brain-alpha|racine-1.txt|reference",
+        "ek1|brain-alpha|dossier-b/note-1.txt|ek1|brain-alpha|dossier-a/note-3.txt|reference",
+        "ek1|brain-alpha|dossier-b/sous-dossier/note-2.txt|ek1|brain-alpha|dossier-a/note-1.txt|reference",
+        "ek1|brain-alpha|racine-2.txt|ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|revision",
+        "ek1|brain-alpha|revisions/rapport-4.pdf|ek1|brain-alpha|revisions/rapport-5.pdf|revision"
+      ],
+      "pending": [
+        "S-005",
+        "S-006",
+        "S-007",
+        "S-008"
+      ]
+    },
+    "crossDigestBefore": "fnv1a64:3020af7489aab581",
+    "crossDigestAfter": "fnv1a64:3020af7489aab581",
+    "sourceReadOnly": true,
+    "processClosedByHarness": true
+  }
+}
