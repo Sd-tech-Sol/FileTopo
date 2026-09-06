@@ -8,7 +8,7 @@
 
 - `TASK-0001` à `TASK-0009` : `VERIFIED`.
 - Phases 0 à 6 : `VERIFIED`; phase 7 : `DEFERRED`.
-- Dépôt public : `https://github.com/Vat-faire/FileTopo`.
+- Dépôt public : `https://github.com/Sd-tech-Sol/FileTopo`.
 - Prerelease source seulement : `v0.1.0-alpha.1`, zéro actif joint.
 - CI Windows finale verte; signalement privé, analyse de secrets et blocage au
   push actifs. Aucun binaire n'est distribué.
