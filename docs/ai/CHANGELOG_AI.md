@@ -3585,3 +3585,35 @@ race-safe. `DEC-0013/F` demeure bloquante et `F-046` reste `PROPOSED`.
 **Action unique suivante :** retour à l'orchestrateur pour définir la prochaine
 tranche fonctionnelle après `TASK-0025 VERIFIED`. Aucune `TASK-0026` ni
 `DEC-0028` créée.
+
+## 2026-09-06 — TASK-0026 — explorateur de doublons exacts borné
+
+- Synchronisation fast-forward de la branche de travail avec `origin`, de
+  `e6ba328` à `c92fe90`, sans réécriture d'historique.
+- `TASK-0026` et `DEC-0028` passent à **IMPLEMENTED**, jamais `VERIFIED` par
+  l'exécuteur.
+- Ajout des requêtes Rust bornées et paginées pour groupes exacts et membres,
+  limite maximale 100, ordre stable et couverture unitaire.
+- Ajout de l'explorateur React avec navigation groupes/membres, états vide,
+  erreur et chargement, et frontière explicite entre égalité binaire observée
+  et identité physique non prouvée.
+- Migration runtime `A10` sous identité `TASK-0026`, sans extension X5 : 34
+  artefacts protégés et intersection vide avec les huit nouvelles preuves.
+- Stabilisation du harnais d'entrée réelle : fenêtre FileTopo exacte au premier
+  plan, retry sans consommation du marqueur, succès conditionné à un changement
+  UI mesuré et remplacement effectif de l'artefact `ED15`.
+- Rejeu final WebView2 de `ED15`, puis `EC15`, `DR15` et `SR15`, deux passages
+  chacun. Les huit JSON `TASK-0026` sont publiés comme preuves non canoniques.
+- Validations : Rust ciblé 3/3 et 14/14, Rust complet 227/227, TypeScript ciblé
+  42/42 et complet 241/241, `pnpm check`, `pnpm build`, Tauri debug, X5 34/34
+  refus et aucun artefact protégé modifié.
+- Mise à jour de la fiche, de la décision, de `FEATURE_MATRIX` et des documents
+  durables de transmission.
+
+**Limites :** contrôle indépendant encore requis; preuves `TASK-0026` hors X5;
+identité physique persistante toujours bloquée par `DEC-0013/F`; X10 hors
+Windows toujours non prouvée race-safe; `F-046` reste `PROPOSED`.
+
+**Action unique suivante :** contrôle indépendant de `TASK-0026` sur `ED1` à
+`ED15`, les huit preuves finales, les bornes, la frontière sémantique et
+l'intégrité X5. Ne pas créer `TASK-0027` ni `DEC-0029`.

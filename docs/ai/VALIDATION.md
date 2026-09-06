@@ -3626,3 +3626,81 @@ conformément au périmètre de fermeture. Aucun état persistant `DEFERRED` par
 conception et aucune politique automatique de réévaluation en v1. La garantie
 X10 race-safe hors Windows reste non prouvée. `DEC-0013/F` demeure bloquante;
 `F-046` reste `PROPOSED`.
+
+## AR. TASK-0026 — explorateur exact borné, preuves finales et replays — 2026-09-06
+
+**Verdict d'exécution : IMPLEMENTED.** Aucun verdict `VERIFIED` n'est attribué
+par l'exécuteur; un contrôle indépendant reste requis sur `ED1` à `ED15`.
+
+### Produit livré et frontière sémantique
+
+- Les requêtes Rust de groupes et de membres sont triées, paginées et bornées;
+  elles refusent les limites supérieures à 100.
+- L'explorateur React affiche les groupes puis leurs membres, avec états vide,
+  erreur et chargement, et conserve la frontière : « Contenu binaire identique
+  observé. Cela ne prouve pas qu'il s'agit du même fichier physique ni d'une
+  copie. »
+- La migration runtime `A10` conserve les 34 protections X5 existantes et
+  n'ajoute aucune écriture dans la racine analysée.
+
+### Preuves WebView2 finales
+
+Les huit artefacts non canoniques suivants ont été produits par des processus
+Tauri/WebView2 réels :
+
+- `TASK-0026-ED15-exact-duplicate-explorer-webview2-pass1.json` et `pass2`;
+- `TASK-0026-EC15-exact-content-observations-webview2-pass1.json` et `pass2`;
+- `TASK-0026-DR15-deterministic-relation-engine-webview2-pass1.json` et `pass2`;
+- `TASK-0026-SR15-suggestion-review-memory-webview2-pass1.json` et `pass2`.
+
+`ED15` utilise la même variante fraîche
+`task0026-ed15-20260906115530-c6adb4` sur les deux passages : 1 200 fichiers,
+125 groupes, 373 occurrences groupées et un groupe vide. Les pages de groupes
+et de membres sont stables à 50/50/25, sous la limite backend de 100. Le second
+passage redémarre réellement l'application, reconstruit la carte et retrouve
+les 125 groupes; la seconde campagne inchangée ouvre et hache 1 200/1 200
+fichiers. Les empreintes source restent stables et les stores de relations ne
+changent pas.
+
+Les quatre campagnes totalisent des activations clavier réellement mesurées,
+sans clic ni `dispatchEvent` programmatique non nul : `ED15` 11 frappes et 11
+activations, `EC15` pass1 7/4 puis pass2 2/1, `DR15` pass1 2/2 et `SR15` pass1
+5/5. Les activations nulles d'`EC15` correspondent uniquement à la sélection
+par flèches. `EC15`, `DR15` et `SR15` confirment aussi les invariants hérités :
+observations distinctes, relations déterministes, décisions persistantes,
+redémarrages réels et source en lecture seule.
+
+### Stabilisation du harnais
+
+Le premier mécanisme d'attente pouvait accepter un artefact antérieur sans
+nouvelle écriture. Le runner `ED15` compare désormais l'empreinte du fichier
+existant et n'accepte qu'un contenu effectivement remplacé. L'injection de
+touche n'est permise que lorsque la fenêtre FileTopo exacte est au premier
+plan; sinon le marqueur est différé et réessayé. Des tests de source couvrent
+ces deux garanties. Les preuves `ED15` finales ont été régénérées après ces
+corrections.
+
+### Validations exécutées
+
+| Contrôle | Résultat |
+|---|---|
+| Rust exact duplicate ciblé | **3/3 PASS** |
+| Rust rule engine ciblé | **14/14 PASS** |
+| Rust complet, `CARGO_INCREMENTAL=0` | **227/227 PASS** |
+| TypeScript `ExactDuplicateExplorer` + `runArtifacts` | **42/42 PASS** |
+| TypeScript complet | **241/241 PASS** |
+| `pnpm check` | **PASS** |
+| `pnpm build` | **PASS**, 61 modules, JS ~403,35 KB |
+| Tauri debug `--no-bundle` | **PASS**, WebView2 152.0.4191.66 |
+| X5 PowerShell | **34/34 refus**, 34 noms uniques, probe TASK-0026 autorisée |
+| Intersection TASK-0026 / X5 | **vide**; propriétaire runtime TASK-0026 |
+| Artefacts X5 modifiés | **0** depuis `a691813` |
+| `git diff --check` | **PASS** |
+| `origin/main` | **inchangée** à `91bbe90f0f99026c28cd345784d4f579a0016db2` |
+
+**Non testé / limites :** aucun contrôle indépendant n'a encore été exécuté;
+les huit preuves restent non canoniques et hors X5. L'identité physique
+persistante reste exclue et bloquée par `DEC-0013/F`; `F-046` reste
+`PROPOSED`. La garantie X10 race-safe hors Windows reste non prouvée. Les deux
+avertissements Rust existants (`SUGGESTION_STATES` inutilisé et message de
+bibliothèque du linker) sont non bloquants.

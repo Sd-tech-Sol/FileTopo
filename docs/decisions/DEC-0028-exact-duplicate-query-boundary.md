@@ -1,7 +1,7 @@
 # DEC-0028 — Frontière de requête des contenus binaires identiques observés
 
 - **Date :** 2026-09-05
-- **Statut :** `APPROVED`
+- **Statut :** `IMPLEMENTED` — contrôle indépendant requis sur `TASK-0026`
 - **Phase :** étape A — exploitation bornée des observations exactes
 - **Décideur :** orchestrateur technique, par le GO explicite de
   `.orchestrator/NEXT_PROMPT.md`

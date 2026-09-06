@@ -3,7 +3,8 @@
 - **Date :** 2026-09-05
 - **Branche :** `build/v0.2-a10-exact-duplicate-explorer`
 - **Base contrôlée :** `a6918130202dc164684ed37c969efc90efd8b159`
-- **Statut courant :** `IN_PROGRESS`
+- **Statut courant :** `IMPLEMENTED` — contrôle indépendant requis; Codex ne
+  s'attribue pas `VERIFIED`
 - **Transitions permises :** `PROPOSED → APPROVED → IN_PROGRESS → IMPLEMENTED
   → VERIFIED`; le GO technique de `.orchestrator/NEXT_PROMPT.md` autorise le
   passage à `IN_PROGRESS` après ce gel; l'exécuteur ne s'attribue jamais
@@ -175,3 +176,41 @@ Les documents durables et `.orchestrator/RESULT.md` sont mis à jour et
 - 2026-09-05 — `APPROVED` : critères `ED1` à `ED15` et `DEC-0028` gelés et
   commités avant toute modification de code produit.
 - 2026-09-05 — `IN_PROGRESS` : exécution ouverte après le gel documentaire.
+- 2026-09-06 — `IMPLEMENTED` : `ED1` à `ED15` satisfaits sur preuves
+  synthétiques. Deux nouvelles passes `ED15` ont été capturées sur le HEAD
+  final, puis `EC15`, `DR15` et `SR15` ont été rejoués sous noms `TASK-0026`.
+  Aucun de ces huit JSON n'entre dans X5 avant contrôle indépendant.
+
+## 11. Résultat livré
+
+- **Lecture bornée :** résumé, groupes et membres séparés; génération courante
+  uniquement; limites SQLite maximales à 100; ordres déterministes; invariant
+  de taille contrôlé; aucun store absent créé par une lecture.
+- **Interface :** « Contenus identiques », état non observé explicite, digest
+  complet, pagination groupes/membres, groupe vide marqué et navigation vers
+  un membre résolu par boutons natifs et clavier.
+- **Frontière :** l'interface dit « Contenu binaire identique observé » et
+  rappelle que cela ne prouve ni même fichier physique ni copie. Aucun gain
+  disque, relation ou suggestion n'est produit par l'explorateur.
+- **Échelle ED15 :** 1 200 fichiers, 125 groupes, 373 occurrences groupées,
+  pages groupes et membres `50/50/25`, limite backend 100, groupe vide de 125
+  membres, seconde campagne inchangée rouvrant et rehachant 1 200 fichiers.
+- **Persistance ED15 :** nouveau processus sur la même variante, rebuild map
+  réel, 125 groupes persistés et 50/50 membres non résolus signalés sans être
+  supprimés; source et stores relationnels inchangés.
+- **Entrée réelle :** 11 `keydown` et 11 activations fiables sur ED15, zéro
+  `click()` ou `dispatchEvent(click)` programmatique. Le watcher refuse toute
+  injection tant que le handle FileTopo n'est pas réellement au premier plan.
+- **Régressions :** `EC15`, `DR15` et `SR15`, deux passes chacune, verts sous
+  `TASK-0026`; aucun rejeu H9/J12/K11/K12/L12/M12/N15/X11, conformément au
+  prompt de reprise qui les exclut sans dépendance fonctionnelle nouvelle.
+- **Validations :** Rust exact duplicate **3/3**, moteur **14/14**, suite
+  **227/227**; TypeScript ciblé **42/42**, suite **241/241**;
+  `pnpm check`, `pnpm build`, Tauri debug `--no-bundle` et
+  `git diff --check` verts.
+- **Gouvernance :** X5 reste exactement 34 noms historiques inchangés;
+  `protectedDestinations = []`, `owningTaskId = TASK-0026`,
+  `writesUnderItsOwnTaskOnly = true`. `main` reste `91bbe90f`.
+- **Limites :** `F-046` reste `PROPOSED`; aucune identité physique persistante
+  ni cache taille + mtime; `DEC-0013/F` reste bloquante et X10 hors Windows
+  reste non prouvée race-safe.

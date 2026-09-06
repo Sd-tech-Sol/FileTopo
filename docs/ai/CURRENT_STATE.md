@@ -1,5 +1,34 @@
 # État courant
 
+## TASK-0026 — explorateur borné de contenus identiques — 2026-09-06
+
+- **Statut :** `TASK-0026 = IMPLEMENTED`, contrôle indépendant requis;
+  `DEC-0028 = IMPLEMENTED`. Codex n'attribue pas `VERIFIED`.
+- **Produit livré :** lecture par cerveau de la génération `sha256-v1`
+  courante, résumé et deux paginations SQLite séparées, limite maximale 100,
+  ordres stables, fichiers vides visibles et membres non résolus honnêtes.
+  L'interface « Contenus identiques » est utilisable au clavier et conserve la
+  frontière « contenu identique observé ≠ même fichier physique ou copie ».
+- **ED15 final :** deux vrais processus WebView2 `152.0.4191.66`, même variante
+  synthétique fraîche, 1 200 fichiers, 125 groupes, 373 occurrences, pages
+  `50/50/25`, rehash inchangé 1 200/1 200, source et relations inchangées,
+  rebuild et persistance réels, membres non résolus signalés. Onze keydowns et
+  onze activations fiables, zéro clic programmatique.
+- **Régressions publiées :** `EC15`, `DR15` et `SR15`, pass1/pass2, sous noms
+  `TASK-0026`. Les huit preuves de cette tranche restent non canoniques et hors
+  X5 jusqu'au contrôle indépendant.
+- **Validations :** Rust exact duplicate **3/3**, moteur **14/14**, suite
+  **227/227**; TypeScript ciblé **42/42**, suite **241/241**; typage, build web,
+  Tauri debug et `git diff --check` verts.
+- **Gouvernance :** X5 reste **34** noms append-only inchangés, 34/34 refusés;
+  `protectedDestinations = []`, propriétaire `TASK-0026`, écritures uniquement
+  sous sa tâche. `main` reste `91bbe90f`.
+- **Limites :** `F-046` reste `PROPOSED`; même objet physique reste absent et
+  bloqué par `DEC-0013/F`; aucun cache digest taille + mtime; X10 non-Windows
+  non prouvée race-safe.
+- **Action unique suivante :** contrôle indépendant de `TASK-0026` sur
+  `ED1`–`ED15` et les preuves publiées.
+
 ## ACTION-0042 — TASK-0025 VERIFIED et scellement X5 — 2026-09-05
 
 - **Verdict indépendant enregistré, non rendu par Codex :** `SR1–SR15 =

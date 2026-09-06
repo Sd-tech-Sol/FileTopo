@@ -1,26 +1,25 @@
-TASK_ID: TASK-0025 — VERIFIED / scellement X5
+TASK_ID: TASK-0026
 AGENT: CODEX
 RESULT: DONE
-BRANCH: build/v0.2-a9-suggestion-review-memory
-FINAL_HEAD: e852e4cad7cf5033914de4d3d3c77f581efc0f8b
+BRANCH: build/v0.2-a10-exact-duplicate-explorer
+FINAL_HEAD: b40e1ceb568acad77982738c6634fd810d4d7662
 
 SUMMARY:
-- Verdict indépendant ACTION-0042 enregistré : SR1–SR15 PASS, TASK-0025 VERIFIED; X5 étendu en append-only de 32 à 34 avec exactement les deux preuves SR15.
+- Exact duplicate explorer implemented with bounded Rust queries, React group/member navigation, explicit semantic boundary, and eight final real-WebView2 pass1/pass2 proofs.
 
 VALIDATIONS:
-- TypeScript 36/36; Rust 24/24 (199 filtrés); PowerShell 34/34 refus, 34 uniques et X11 autorisée; parité des trois gardes; git diff --check; aucun JSON de preuve modifié.
+- Rust targeted 3/3 and 14/14, Rust full 227/227; TypeScript targeted 42/42 and full 241/241; pnpm check/build and Tauri debug passed; X5 34/34 refused with empty TASK-0026 intersection; git diff --check passed.
 
 IMPORTANT_FILES:
-- docs/reviews/ACTION-0042-independent-control.md; trois gardes X5; TASK-0025, DEC-0027, FEATURE_MATRIX et documents durables docs/ai.
+- TASK-0026, DEC-0028, ExactDuplicateExplorer, bounded exact-duplicate Rust commands, real-input proof harness, eight TASK-0026 WebView2 proofs, and durable docs/ai state.
 
-COMMIT: e852e4c docs(task-0025): record verification and seal SR15 evidence
+COMMIT: b40e1ce test: capture TASK-0026 SR15 regression
 PUSHED: yes
 
 LIMITS_OR_BLOCKERS:
 - DEC-0013/F physical identity persistence remains blocked
 - non-Windows X10 race-safe guarantee remains unproven
-- no persistent DEFERRED state by design
-- no automatic reconsideration policy in v1
+- F-046 remains PROPOSED
 
 NEXT_ORCHESTRATOR_DECISION:
-- définir la prochaine tranche après TASK-0025 VERIFIED
+- independent control of TASK-0026

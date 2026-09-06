@@ -1,5 +1,38 @@
 # HANDOFF — passage de relais
 
+## Relais actuel — TASK-0026 IMPLEMENTED, 2026-09-06
+
+`TASK-0026` livre l'explorateur borné de contenus binaires identiques observés
+sur `build/v0.2-a10-exact-duplicate-explorer`. Son statut est
+**`IMPLEMENTED`**, jamais `VERIFIED` par Codex; `DEC-0028` est implémentée et
+attend le même contrôle indépendant.
+
+Le backend lit seulement la génération courante d'un cerveau, agrège et page
+dans SQLite avant matérialisation, avec un plafond 100 pour groupes et membres.
+L'UI distingue l'absence de campagne de zéro résultat, montre digest complet,
+groupe vide et fraîcheur, et permet une navigation clavier sans créer relation
+ni suggestion. La limite « contenu identique ≠ même fichier physique/copie »
+reste adjacente et explicite.
+
+ED15 final porte sur 1 200 fichiers synthétiques : 125 groupes, 373
+occurrences, pages `50/50/25`, rehash complet inchangé, vrai restart/rebuild,
+persistance et résolution honnête. Les replays `EC15`, `DR15`, `SR15` sont
+également publiés en deux passes. Les huit JSON `TASK-0026` sont non canoniques
+et hors X5.
+
+Validations finales : Rust **227/227** plus ciblés exact duplicate **3/3** et
+moteur **14/14**; TypeScript **241/241** et ciblés **42/42**; typage, build web,
+Tauri debug et `git diff --check` verts. X5 reste 34/34 inchangé et refusé,
+intersection runtime/protected vide, propriétaire runtime `TASK-0026`.
+
+`F-046` reste `PROPOSED`; aucune identité physique persistante ni cache taille
++ mtime n'existe. `DEC-0013/F` demeure bloquante et X10 hors Windows non
+prouvée race-safe. `main` reste `91bbe90f`.
+
+**Relais unique :** contrôle indépendant de `TASK-0026` sur `ED1` à `ED15`,
+les huit preuves WebView2 et l'intégrité X5. Lui seul peut attribuer
+`VERIFIED` et décider d'un éventuel scellement.
+
 ## Relais actuel — ACTION-0042, TASK-0025 VERIFIED, 2026-09-05
 
 Le verdict rendu par l'orchestrateur technique indépendant est enregistré dans
