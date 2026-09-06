@@ -3,7 +3,7 @@
 - **Date :** 2026-09-05
 - **Branche :** `build/v0.2-a10-exact-duplicate-explorer`
 - **Base contrôlée :** `a6918130202dc164684ed37c969efc90efd8b159`
-- **Statut courant :** `APPROVED`
+- **Statut courant :** `IN_PROGRESS`
 - **Transitions permises :** `PROPOSED → APPROVED → IN_PROGRESS → IMPLEMENTED
   → VERIFIED`; le GO technique de `.orchestrator/NEXT_PROMPT.md` autorise le
   passage à `IN_PROGRESS` après ce gel; l'exécuteur ne s'attribue jamais
@@ -169,3 +169,9 @@ Si `ED1` à `ED15` passent, cette tâche devient `IMPLEMENTED`, jamais
 aucun cache taille + mtime ni identité physique persistante n'est introduit.
 Les documents durables et `.orchestrator/RESULT.md` sont mis à jour et
 `NEXT_ACTION.md` demande uniquement le contrôle indépendant de `TASK-0026`.
+
+## 10. Journal d'exécution
+
+- 2026-09-05 — `APPROVED` : critères `ED1` à `ED15` et `DEC-0028` gelés et
+  commités avant toute modification de code produit.
+- 2026-09-05 — `IN_PROGRESS` : exécution ouverte après le gel documentaire.
