@@ -102,11 +102,13 @@ while ((Get-Date) -lt $deadline) {
                 $shell.SendKeys($key)
                 Write-Output "watcher: frappe reelle $key envoyee (marqueur $($handled + 1))"
                 $sent++
+                $handled++
             }
             else {
-                Write-Output "watcher: frappe $key refusee sans premier plan FileTopo"
+                Write-Output "watcher: frappe $key differee sans premier plan FileTopo"
+                Start-Sleep -Seconds 1
+                break
             }
-            $handled++
         }
     }
     Start-Sleep -Milliseconds 200
