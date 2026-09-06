@@ -3584,3 +3584,45 @@ Aucune n'affaiblit un critère : une règle qui n'apparaît jamais échoue toujo
 - **Limite assumée :** aucun état `DEFERRED` persistant en v1.
 - **Inchangé :** `DEC-0013/F` demeure bloquante, `F-046` reste `PROPOSED`, et la
   garantie `X10` hors Windows reste non prouvée.
+
+---
+
+## AQ. ACTION-0042 — contrôle indépendant enregistré, TASK-0025 VERIFIED et X5 étendue à 34
+
+**Verdict indépendant enregistré, non rendu par Codex :** `SR1–SR15 = PASS`,
+`ACTION-0042 = CLOSED`, `TASK-0025 = VERIFIED`, sans réserve corrective
+ouverte. Claude Code était l'exécuteur de `TASK-0025`; Codex enregistre le
+verdict de l'orchestrateur technique indépendant et ne s'attribue pas
+`VERIFIED`. Détail dans
+[`ACTION-0042`](../reviews/ACTION-0042-independent-control.md).
+
+Cette action est **enregistrement, gouvernance et scellement seulement**. Elle
+ne modifie aucun comportement produit et ne rejoue aucun scénario WebView2.
+
+| Contrôle | Résultat | Preuve |
+|---|---|---|
+| X5 — cardinal | **PASS** | 34 noms, 34 uniques, dans les trois gardes |
+| X5 — append-only | **PASS** | les 32 anciens noms gardent exactement leur ordre; les deux `SR15` suivent, pass1 puis pass2 |
+| X5 — ajout exact | **PASS** | seules `TASK-0025-SR15-…-pass1.json` et `…-pass2.json` sont ajoutées |
+| X5 — non-élargissement | **PASS** | `TASK-0025-DR15-*`, `J12` et `X11` restent non protégés |
+| Parité Rust / TypeScript / PowerShell | **PASS** | comparaison liste contre liste dans `runArtifacts.test.ts` |
+| Refus Rust | **PASS** | `cargo test map::commands::tests::` avec `CARGO_INCREMENTAL=0` — **24/24**, 199 filtrés |
+| Tests TypeScript ciblés | **PASS** | `pnpm test -- src/map/runArtifacts.test.ts` — **36/36** |
+| Contrôle PowerShell | **PASS** | **34/34 refus**, 34 uniques, X11 `TASK-0025` autorisée |
+| État runtime dérivé | **PASS** | `protectedArtifactCount = 34`; `protectedDestinations = exact2 SR15`; propriétaire `TASK-0025`; `writesUnderItsOwnTaskOnly = false` |
+| `git diff --check` | **PASS** | aucune sortie |
+| Preuves immuables | **PASS** | aucun chemin sous `docs/performance/runs/` modifié |
+| `main` | **INCHANGÉE** | `91bbe90f0f99026c28cd345784d4f579a0016db2` |
+
+Les preuves `SR15` contrôlées gardent leur état historique pré-scellement
+(`protectedArtifactCount = 32`, intersection vide) : elles ne sont ni
+réécrites ni maquillées après verdict. Le checkout courant dérive désormais
+l'état post-scellement exact : les deux `SR15` sont protégées et refusées à
+l'écriture.
+
+**Non testé / limites :** aucune suite produit complète, aucun typecheck, aucun
+build Tauri et aucun replay SR15/DR15/J12/X11 ou autre campagne historique,
+conformément au périmètre de fermeture. Aucun état persistant `DEFERRED` par
+conception et aucune politique automatique de réévaluation en v1. La garantie
+X10 race-safe hors Windows reste non prouvée. `DEC-0013/F` demeure bloquante;
+`F-046` reste `PROPOSED`.

@@ -3540,3 +3540,48 @@ reste non prouvée.
 
 **Action unique suivante :** contrôle indépendant de `TASK-0025`. Aucune
 `TASK-0026` créée.
+
+---
+
+## 2026-09-05 — ACTION-0042 — Verdict indépendant TASK-0025, scellement X5 32 → 34
+
+**Agent :** exécuteur Codex
+**Statut à l'issue :** `TASK-0025 = VERIFIED`; `ACTION-0042 = CLOSED`;
+`SR1–SR15 = PASS`; aucune réserve corrective ouverte
+
+### Fait
+
+- Création de `docs/reviews/ACTION-0042-independent-control.md`, qui
+  **enregistre** le verdict externe de l'orchestrateur technique indépendant.
+  Claude Code était l'exécuteur de `TASK-0025`; Codex ne rend pas le verdict et
+  ne s'attribue pas `VERIFIED`.
+- Scellement X5 de 32 à 34 : les deux preuves `SR15` canoniques de `TASK-0025`
+  sont ajoutées, pass1 puis pass2, après les 32 noms historiques inchangés dans
+  les gardes Rust, TypeScript et PowerShell.
+- Les replays `TASK-0025-DR15-*`, `TASK-0025-J12-*` et
+  `TASK-0025-X11-*` restent non canoniques et non protégés.
+- `SEALED_RUNTIME_DESTINATIONS` publie l'intersection exacte des deux `SR15`.
+  Le runtime garde l'identité `TASK-0025`, donc
+  `writesUnderItsOwnTaskOnly = false`, état normal après vérification.
+- Mise à jour de `TASK-0025`, `DEC-0027`, de la matrice produit et des documents
+  durables. `F-044` et `F-045` restent `IMPLEMENTED`, désormais vérifiées par
+  `TASK-0025 / ACTION-0042`.
+
+### Validé
+
+TypeScript ciblé `runArtifacts` **36/36**; Rust ciblé X5 **24/24** avec 199
+tests filtrés; PowerShell **34/34 refus**, 34 noms uniques et X11 `TASK-0025`
+autorisée; parité exacte des trois gardes; `git diff --check`; aucun fichier
+sous `docs/performance/runs/` modifié.
+
+### Non testé / limites
+
+Aucune suite produit complète, aucun typecheck, aucun build Tauri et aucun
+scénario WebView2 rejoué : cette fermeture ne touche pas le comportement
+produit. Aucun état `DEFERRED` persistant par conception et aucune politique
+automatique de réévaluation en v1. X10 hors Windows reste non prouvée
+race-safe. `DEC-0013/F` demeure bloquante et `F-046` reste `PROPOSED`.
+
+**Action unique suivante :** retour à l'orchestrateur pour définir la prochaine
+tranche fonctionnelle après `TASK-0025 VERIFIED`. Aucune `TASK-0026` ni
+`DEC-0028` créée.

@@ -36,12 +36,11 @@
  * unprotected.
  *
  * **`TASK-0025` §4 migrated every destination** from `TASK-0024-*` to
- * `TASK-0025-*` before replaying anything — the sealed three, the replays and
- * the corrective `X11` destination alike. The protected/runtime intersection
- * is empty again and `writesUnderItsOwnTaskOnly` is `true`, obtained by moving
- * destinations and **not** by shrinking the seal: the three executable
- * guards — Rust, TypeScript, PowerShell — still carry the same thirty-two
- * names in the same order.
+ * `TASK-0025-*` before replaying anything. `ACTION-0042` now makes TASK-0025
+ * `VERIFIED` and seals exactly the two SR15 passes. The protected/runtime
+ * intersection is therefore exactly those two names and
+ * `writesUnderItsOwnTaskOnly` is `false`; the three executable guards — Rust,
+ * TypeScript, PowerShell — carry the same thirty-four names in the same order.
  */
 
 import { describe, expect, it } from "vitest";
@@ -220,17 +219,30 @@ const TASK_0024_NONCANONICAL = [
   "TASK-0024-X11-generic-brain-webview2.json",
 ] as const;
 
+/** The exact two proofs sealed when `ACTION-0042` verified `TASK-0025`. */
+const TASK_0025_CANONICAL_EVIDENCE = [
+  "TASK-0025-SR15-suggestion-review-memory-webview2-pass1.json",
+  "TASK-0025-SR15-suggestion-review-memory-webview2-pass2.json",
+] as const;
+
+/** Replays controlled for regression but deliberately not sealed. */
+const TASK_0025_NONCANONICAL = [
+  "TASK-0025-DR15-deterministic-relation-engine-webview2-pass1.json",
+  "TASK-0025-DR15-deterministic-relation-engine-webview2-pass2.json",
+  "TASK-0025-J12-intrabrain-relations-regression-webview2.json",
+  "TASK-0025-X11-generic-brain-webview2.json",
+] as const;
+
 describe("X5 — the runtime never writes over canonical evidence", () => {
-  it("TASK-0025 migrated every destination, so nothing intersects the seal", () => {
+  it("TASK-0025 verification seals exactly its two SR15 runtime destinations", () => {
     const sealed = SEALED_RUNTIME_DESTINATIONS as readonly string[];
     const collisions = (PROTECTED_RUN_ARTIFACTS as readonly string[]).filter((name) =>
       (RUNTIME_RUN_ARTIFACTS as readonly string[]).includes(name),
     );
-    expect(sealed).toStrictEqual([]);
-    expect(collisions).toStrictEqual([]);
-    // The intersection is empty because the destinations moved, never because
-    // the seal shrank: TASK-0024's three canonical names are still protected
-    // and are no longer spelled as destinations.
+    expect(sealed).toStrictEqual([...TASK_0025_CANONICAL_EVIDENCE]);
+    expect(collisions).toStrictEqual(sealed);
+    // TASK-0024's three canonical names remain protected and no longer appear
+    // as destinations; only TASK-0025's own SR15 pair intersects the runtime.
     for (const name of TASK_0024_CANONICAL_EVIDENCE) {
       expect(PROTECTED_RUN_ARTIFACTS as readonly string[]).toContain(name);
       expect(RUNTIME_RUN_ARTIFACTS as readonly string[]).not.toContain(name);
@@ -243,25 +255,27 @@ describe("X5 — the runtime never writes over canonical evidence", () => {
     }
   });
 
-  it("the protected set is the unchanged twenty-nine plus TASK-0024's three", () => {
+  it("the protected set is the unchanged thirty-two plus TASK-0025's two", () => {
     expect(PROTECTED_RUN_ARTIFACTS).toStrictEqual([
       ...ORIGINAL_19_PROTECTED,
       ...TASK_0022_CANONICAL_EVIDENCE,
       ...TASK_0023_CANONICAL_EVIDENCE,
       ...TASK_0024_CANONICAL_EVIDENCE,
+      ...TASK_0025_CANONICAL_EVIDENCE,
     ]);
-    expect(PROTECTED_RUN_ARTIFACTS).toHaveLength(32);
-    // Append-only: the twenty-nine that were sealed before `ACTION-0041` are
+    expect(PROTECTED_RUN_ARTIFACTS).toHaveLength(34);
+    // Append-only: the thirty-two that were sealed before `ACTION-0042` are
     // still there, in the same order, and nothing was silently deduplicated.
-    expect(PROTECTED_RUN_ARTIFACTS.slice(0, 29)).toStrictEqual([
+    expect(PROTECTED_RUN_ARTIFACTS.slice(0, 32)).toStrictEqual([
       ...ORIGINAL_19_PROTECTED,
       ...TASK_0022_CANONICAL_EVIDENCE,
       ...TASK_0023_CANONICAL_EVIDENCE,
-    ]);
-    expect(PROTECTED_RUN_ARTIFACTS.slice(29)).toStrictEqual([
       ...TASK_0024_CANONICAL_EVIDENCE,
     ]);
-    expect(new Set(PROTECTED_RUN_ARTIFACTS).size).toBe(32);
+    expect(PROTECTED_RUN_ARTIFACTS.slice(32)).toStrictEqual([
+      ...TASK_0025_CANONICAL_EVIDENCE,
+    ]);
+    expect(new Set(PROTECTED_RUN_ARTIFACTS).size).toBe(34);
   });
 
   it("TASK-0024 seals only DR15 pass1/pass2 and J12", () => {
@@ -441,19 +455,28 @@ describe("X5 — the runtime never writes over canonical evidence", () => {
     }
   });
 
-  it("SR15 is a TASK-0025 destination and is not protected", () => {
-    // The proof this slice publishes for itself. It is spelled here, written
-    // by the scenario, and deliberately absent from every guard: only an
-    // independent control adds a name to the seal.
+  it("SR15 is exactly TASK-0025's protected canonical pair", () => {
     for (const pass of [1, 2]) {
       const name = sr15Artifact(pass);
       expect(name).toBe(
         `TASK-0025-SR15-suggestion-review-memory-webview2-pass${pass}.json`,
       );
       expect(RUNTIME_RUN_ARTIFACTS as readonly string[]).toContain(name);
-      expect(PROTECTED_RUN_ARTIFACTS as readonly string[]).not.toContain(name);
+      expect(PROTECTED_RUN_ARTIFACTS as readonly string[]).toContain(name);
     }
     expect(sr15Artifact(1)).not.toBe(sr15Artifact(2));
+    expect(
+      (PROTECTED_RUN_ARTIFACTS as readonly string[]).filter(
+        (name) => artifactTaskId(name) === "TASK-0025",
+      ),
+    ).toStrictEqual([...TASK_0025_CANONICAL_EVIDENCE]);
+  });
+
+  it("TASK-0025 DR15, J12 and X11 remain noncanonical and unprotected", () => {
+    for (const name of TASK_0025_NONCANONICAL) {
+      expect(RUNTIME_RUN_ARTIFACTS as readonly string[]).toContain(name);
+      expect(PROTECTED_RUN_ARTIFACTS as readonly string[]).not.toContain(name);
+    }
   });
 
   it("no runtime destination reuses a name from an earlier verified slice", () => {
@@ -475,9 +498,10 @@ describe("X5 — the runtime never writes over canonical evidence", () => {
     }
   });
 
-  it("every runtime name stays acceptable to the Rust artefact guard", () => {
-    // `write_run_artifact` refuses a separator, a `..`, anything outside
-    // `[A-Za-z0-9._-]`, and more than 120 characters.
+  it("every runtime name keeps a syntactically valid artefact shape", () => {
+    // Protection is tested separately. Independently of X5,
+    // `write_run_artifact` rejects separators, `..`, characters outside
+    // `[A-Za-z0-9._-]`, and names longer than 120 characters.
     for (const name of RUNTIME_RUN_ARTIFACTS) {
       expect(name).toMatch(/^[A-Za-z0-9._-]+$/);
       expect(name).not.toContain("..");
@@ -585,7 +609,7 @@ describe("X8 — M12 derives who owns what it writes, and how many names are pro
     expect(powershellGate()).toStrictEqual(gate.names);
     expect(gate.declaredLength).toBe(gate.names.length);
     expect(PROTECTED_RUN_ARTIFACTS).toHaveLength(gate.declaredLength);
-    expect(gate.declaredLength).toBe(32);
+    expect(gate.declaredLength).toBe(34);
   });
 
   it("no historical protected name was dropped by this repair", () => {
@@ -635,12 +659,14 @@ describe("X8 — M12 derives who owns what it writes, and how many names are pro
     }
   });
 
-  it("the three appended names are exactly TASK-0024's canonical proofs", () => {
-    expect(PROTECTED_RUN_ARTIFACTS.slice(29)).toStrictEqual([
+  it("TASK-0024's three proofs retain their exact positions", () => {
+    expect(PROTECTED_RUN_ARTIFACTS.slice(29, 32)).toStrictEqual([
       ...TASK_0024_CANONICAL_EVIDENCE,
     ]);
-    expect(rustGate().names.slice(29)).toStrictEqual([...TASK_0024_CANONICAL_EVIDENCE]);
-    expect(powershellGate().slice(29)).toStrictEqual([
+    expect(rustGate().names.slice(29, 32)).toStrictEqual([
+      ...TASK_0024_CANONICAL_EVIDENCE,
+    ]);
+    expect(powershellGate().slice(29, 32)).toStrictEqual([
       ...TASK_0024_CANONICAL_EVIDENCE,
     ]);
     for (const gate of [
@@ -652,6 +678,30 @@ describe("X8 — M12 derives who owns what it writes, and how many names are pro
         ...TASK_0024_CANONICAL_EVIDENCE,
       ]);
       expect(gate).not.toContain("TASK-0024-X11-generic-brain-webview2.json");
+    }
+  });
+
+  it("the two appended names are exactly TASK-0025's canonical SR15 proofs", () => {
+    expect(PROTECTED_RUN_ARTIFACTS.slice(32)).toStrictEqual([
+      ...TASK_0025_CANONICAL_EVIDENCE,
+    ]);
+    expect(rustGate().names.slice(32)).toStrictEqual([
+      ...TASK_0025_CANONICAL_EVIDENCE,
+    ]);
+    expect(powershellGate().slice(32)).toStrictEqual([
+      ...TASK_0025_CANONICAL_EVIDENCE,
+    ]);
+    for (const gate of [
+      PROTECTED_RUN_ARTIFACTS as readonly string[],
+      rustGate().names,
+      powershellGate(),
+    ]) {
+      expect(gate.filter((name) => artifactTaskId(name) === "TASK-0025")).toStrictEqual([
+        ...TASK_0025_CANONICAL_EVIDENCE,
+      ]);
+      for (const name of TASK_0025_NONCANONICAL) {
+        expect(gate).not.toContain(name);
+      }
     }
   });
 
@@ -681,23 +731,28 @@ describe("X8 — M12 derives who owns what it writes, and how many names are pro
     expect(ownership.taskIdsWritten).toStrictEqual([ownership.owningTaskId]);
   });
 
-  it("the migrated runtime writes under TASK-0025 alone and clears the seal", () => {
+  it("the verified runtime remains under TASK-0025 and intersects its seal", () => {
     const ownership = runtimeWriteOwnership();
-    expect(ownership.writesUnderItsOwnTaskOnly).toBe(true);
+    expect(ownership.writesUnderItsOwnTaskOnly).toBe(false);
     expect(ownership.owningTaskId).toBe("TASK-0025");
     expect(ownership.taskIdsWritten).toStrictEqual(["TASK-0025"]);
-    // TASK-0024 owns protected evidence and no longer owns any destination.
+    // TASK-0024 owns protected evidence and no longer owns any destination;
+    // TASK-0025 now owns exactly the two sealed SR15 destinations.
     expect(ownership.protectedTaskIds).toContain("TASK-0024");
-    expect(ownership.protectedTaskIds).not.toContain("TASK-0025");
-    expect(ownership.protectedDestinations).toStrictEqual([]);
+    expect(ownership.protectedTaskIds).toContain("TASK-0025");
+    expect(ownership.protectedDestinations).toStrictEqual([
+      ...TASK_0025_CANONICAL_EVIDENCE,
+    ]);
   });
 
-  it("no runtime destination is protected evidence any more", () => {
+  it("the protected runtime destinations are exactly the two SR15 proofs", () => {
     const ownership = runtimeWriteOwnership();
     expect(PROTECTED_RUN_ARTIFACTS as readonly string[]).toContain(
       TASK_0022_CANONICAL_EVIDENCE[5],
     );
-    expect(ownership.protectedDestinations).toStrictEqual([]);
+    expect(ownership.protectedDestinations).toStrictEqual([
+      ...TASK_0025_CANONICAL_EVIDENCE,
+    ]);
     expect(ownership.protectedDestinations).toStrictEqual([
       ...SEALED_RUNTIME_DESTINATIONS,
     ]);
@@ -713,12 +768,12 @@ describe("X8 — M12 derives who owns what it writes, and how many names are pro
   });
 
   it("the count M12 publishes is the count the gate enforces", () => {
-    // Thirty-two today. The assertion is not only the number: it is that the
+    // Thirty-four today. The assertion is not only the number: it is that the
     // number published and the number enforced are the same object, so the
     // next extension of `X5` moves both at once.
     const ownership = runtimeWriteOwnership();
     expect(ownership.protectedArtifactCount).toBe(rustGate().declaredLength);
-    expect(ownership.protectedArtifactCount).toBe(32);
+    expect(ownership.protectedArtifactCount).toBe(34);
     expect(ownership.protectedTaskIds).toStrictEqual([
       "TASK-0016",
       "TASK-0017",
@@ -728,10 +783,9 @@ describe("X8 — M12 derives who owns what it writes, and how many names are pro
       "TASK-0022",
       "TASK-0023",
       "TASK-0024",
+      "TASK-0025",
     ]);
-    // The owning task is deliberately **not** among them: TASK-0025 is
-    // IMPLEMENTED, not VERIFIED, so none of its names is sealed yet.
-    expect(ownership.protectedTaskIds).not.toContain(ownership.owningTaskId);
+    expect(ownership.protectedTaskIds).toContain(ownership.owningTaskId);
   });
 
   it("a stale owner among the destinations would break the verdict", () => {

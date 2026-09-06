@@ -1,5 +1,41 @@
 # HANDOFF — passage de relais
 
+## Relais actuel — ACTION-0042, TASK-0025 VERIFIED, 2026-09-05
+
+Le verdict rendu par l'orchestrateur technique indépendant est enregistré dans
+[`ACTION-0042`](../reviews/ACTION-0042-independent-control.md) : `SR1` à `SR15
+= PASS`, `ACTION-0042 = CLOSED`, `TASK-0025 = VERIFIED`, sans réserve
+corrective ouverte. Claude Code était l'exécuteur de la tranche; Codex a
+seulement rédigé l'enregistrement et appliqué le scellement. Aucun des deux ne
+s'est auto-attribué `VERIFIED`.
+
+X5 passe de **32** à **34** noms. Les deux seuls ajouts, après les 32 noms
+historiques inchangés, sont les preuves `TASK-0025-SR15-*` pass1 puis pass2.
+Les replays `TASK-0025-DR15-*`, `TASK-0025-J12-*` et `TASK-0025-X11-*` restent
+non canoniques et non protégés. Les gardes Rust, TypeScript et PowerShell sont
+en parité exacte.
+
+Le runtime écrit encore sous `TASK-0025`; les deux `SR15` sont donc maintenant
+des destinations refusées. État dérivé : `protectedArtifactCount = 34`,
+`protectedDestinations = exact2 SR15`, `owningTaskId = TASK-0025`,
+`writesUnderItsOwnTaskOnly = false`. C'est l'état normal après `VERIFIED` et il
+ne faut pas le masquer par une migration anticipée vers `TASK-0026`.
+
+Validations ciblées : TypeScript **36/36**, Rust **24/24**, PowerShell **34/34
+refus** avec 34 noms uniques et X11 autorisée, parité exacte et
+`git diff --check`. Aucun JSON sous `docs/performance/runs/` n'a changé; aucun
+replay WebView2 ni build produit n'a été lancé.
+
+`F-044` et `F-045` restent `IMPLEMENTED`, désormais vérifiées par
+`TASK-0025 / ACTION-0042`. `F-043` reste vérifiée par `TASK-0024`; `F-046`
+reste `PROPOSED`. Aucun état `DEFERRED` persistant n'est ajouté et aucune
+politique automatique de réévaluation n'est créée. `DEC-0013/F` et la limite
+X10 hors Windows demeurent.
+
+**Relais unique :** retour à l'orchestrateur pour définir la prochaine tranche
+fonctionnelle après `TASK-0025 VERIFIED`. Ne créer ni `TASK-0026` ni
+`DEC-0028` avant ce nouveau GO.
+
 ## Relais actuel — TASK-0025 IMPLEMENTED, 2026-09-05
 
 `TASK-0025` livre `F-044` et `F-045` sur la branche

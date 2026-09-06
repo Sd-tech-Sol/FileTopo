@@ -39,8 +39,11 @@
       * TASK-0024 — verified by ACTION-0041, THREE proofs: DR15 pass1, DR15
         pass2 and the J12 intra-brain regression. The corrective X11 proof and
         every other TASK-0024 output remain noncanonical and unprotected.
+      * TASK-0025 — verified by ACTION-0042, TWO proofs: the SR15 pass1 and
+        pass2 of the suggestion review queue and human decision memory. DR15,
+        J12 and X11 remain noncanonical and unprotected.
 
-    Thirty-two names. Nothing here deletes, renames or moves anything: this file
+    Thirty-four names. Nothing here deletes, renames or moves anything: this file
     only refuses.
 #>
 
@@ -76,11 +79,13 @@ $script:ProtectedRunArtifacts = @(
     'TASK-0023-EC15-exact-content-observations-webview2-pass2.json',
     'TASK-0024-DR15-deterministic-relation-engine-webview2-pass1.json',
     'TASK-0024-DR15-deterministic-relation-engine-webview2-pass2.json',
-    'TASK-0024-J12-intrabrain-relations-regression-webview2.json'
+    'TASK-0024-J12-intrabrain-relations-regression-webview2.json',
+    'TASK-0025-SR15-suggestion-review-memory-webview2-pass1.json',
+    'TASK-0025-SR15-suggestion-review-memory-webview2-pass2.json'
 )
 
 function Get-ProtectedRunArtifact {
-    <# The thirty-two names, for a caller that wants to report them. #>
+    <# The thirty-four names, for a caller that wants to report them. #>
     return $script:ProtectedRunArtifacts
 }
 

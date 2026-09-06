@@ -1,7 +1,8 @@
 # DEC-0027 — File de révision des suggestions et mémoire des décisions humaines
 
 - **Date :** 2026-09-05
-- **Statut :** `IMPLEMENTED` — contrôle indépendant requis
+- **Statut :** `IMPLEMENTED` — implémentation validée par `TASK-0025 /
+  ACTION-0042`
 - **Phase :** étape A — première implémentation de `F-044` et `F-045`
 - **Décideur :** orchestrateur technique, par le GO explicite de `.orchestrator/NEXT_PROMPT.md`
 - **Rédacteur :** Claude Code, agent d'exécution
@@ -118,9 +119,10 @@ réelle. Le polish visuel du graphe reste reporté à une passe ultérieure.
   reconstructible et vit hors de l'index.
 - Un rerun inchangé du moteur devient réellement idempotent du point de vue de
   l'utilisateur : il ne lui repropose pas ce qu'il a déjà refusé.
-- `F-044` et `F-045` passent à `IMPLEMENTED — contrôle indépendant requis`.
-  `F-043` reste vérifiée par `TASK-0024`. `F-046` reste `PROPOSED`, et
-  `DEC-0013/F` demeure bloquante pour l'identité physique persistante.
+- `F-044` et `F-045` sont `IMPLEMENTED`, avec une implémentation vérifiée par
+  `TASK-0025 / ACTION-0042`. `F-043` reste vérifiée par `TASK-0024`. `F-046`
+  reste `PROPOSED`, et `DEC-0013/F` demeure bloquante pour l'identité physique
+  persistante.
 
 ## Alternatives écartées
 

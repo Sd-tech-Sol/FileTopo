@@ -3,10 +3,13 @@
 - **Date :** 2026-09-05
 - **Branche :** `build/v0.2-a9-suggestion-review-memory`
 - **Base contrôlée :** `7bb98573d115f3423617efa55628f39eb41d31ab`
-- **Statut courant :** `IMPLEMENTED` — contrôle indépendant requis
-- **Transitions :** `PROPOSED → APPROVED → IN_PROGRESS → IMPLEMENTED`; démarrage
-  par GO technique explicite de `.orchestrator/NEXT_PROMPT.md`. **`VERIFIED`
-  n'est pas auto-attribué.**
+- **Statut courant :** `VERIFIED` — verdict indépendant enregistré par
+  [`ACTION-0042`](../reviews/ACTION-0042-independent-control.md)
+- **Transitions :** `PROPOSED → APPROVED → IN_PROGRESS → IMPLEMENTED →
+  VERIFIED`; démarrage par GO technique explicite de
+  `.orchestrator/NEXT_PROMPT.md`; verdict `VERIFIED` rendu par l'orchestrateur
+  technique indépendant et enregistré par Codex dans `ACTION-0042`.
+  **`VERIFIED` n'est auto-attribué ni par Claude Code ni par Codex.**
 - **Agent d'exécution :** Claude Code
 - **Décision :** [`DEC-0027`](../decisions/DEC-0027-suggestion-review-memory.md)
 - **Implémente :** `F-044` et `F-045`, sans implémenter `F-046`
@@ -138,8 +141,9 @@ tard.
 - `TASK-0025-SR15-suggestion-review-memory-webview2-pass2.json` — nouveau
   processus WebView2 sur le même variant, persistance et rerun.
 
-Ces deux noms **ne rejoignent pas `X5`** : `TASK-0025` reste `IMPLEMENTED`
-jusqu'au contrôle indépendant.
+Ces deux noms ne rejoignaient pas `X5` avant le contrôle indépendant. Depuis
+`ACTION-0042`, et seulement après le verdict externe `VERIFIED`, ils sont les
+deux preuves canoniques scellées de `TASK-0025`.
 
 Rejeux de régression sous noms `TASK-0025` : `DR15` pass1/pass2, `J12`
 intra-brain, `X11` generic brain. `K11`, `K12`, `L12`, `M12`, `N15`, `H9` et
@@ -243,9 +247,10 @@ refus**, 32 noms uniques, les cinq destinations `TASK-0025` autorisées;
 
 ### 8.7 Non testé et limites
 
-- `TASK-0025` reste `IMPLEMENTED` : aucun contrôle indépendant n'a été rendu, et
-  l'exécuteur ne s'attribue pas `VERIFIED`.
-- Les deux preuves `SR15` **ne rejoignent pas `X5`** et ne sont pas protégées.
+- À la livraison, `TASK-0025` restait `IMPLEMENTED` : aucun contrôle
+  indépendant n'avait encore été rendu, et l'exécuteur ne s'attribuait pas
+  `VERIFIED`.
+- À la livraison, les deux preuves `SR15` ne rejoignaient pas encore `X5`.
 - `K11`, `K12`, `L12`, `M12`, `N15`, `H9` et `EC15` n'ont pas été rejoués —
   décision documentée au §7.
 - Aucune politique automatique de réévaluation d'une décision n'existe;
@@ -254,3 +259,18 @@ refus**, 32 noms uniques, les cinq destinations `TASK-0025` autorisées;
 - `DEC-0013/F` demeure bloquante pour l'identité physique persistante; `F-046`
   reste `PROPOSED`.
 - La garantie `X10` hors Windows reste non prouvée.
+
+## 9. Contrôle indépendant et scellement
+
+[`ACTION-0042`](../reviews/ACTION-0042-independent-control.md) enregistre le
+verdict rendu par l'orchestrateur technique indépendant : `SR1` à `SR15 =
+PASS`, `ACTION-0042 = CLOSED`, `TASK-0025 = VERIFIED`, sans réserve corrective
+ouverte. Claude Code était l'exécuteur; Codex n'a fait qu'enregistrer le
+verdict et appliquer le scellement.
+
+X5 passe de 32 à 34 noms par ajout append-only des deux preuves `SR15`, pass1
+puis pass2. Les replays `DR15`, `J12` et `X11` de `TASK-0025` restent non
+canoniques et non protégés. Le runtime porte toujours ses destinations
+`TASK-0025`; l'intersection protégée contient donc exactement les deux `SR15`,
+`owningTaskId = TASK-0025` et `writesUnderItsOwnTaskOnly = false`, état normal
+après vérification.

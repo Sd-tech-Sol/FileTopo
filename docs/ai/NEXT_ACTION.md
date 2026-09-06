@@ -1,18 +1,17 @@
 # Action suivante
 
-## Contrôle indépendant de TASK-0025
+## Définir la prochaine tranche après TASK-0025 VERIFIED
 
-`TASK-0025` est **`IMPLEMENTED`** sur la branche
-`build/v0.2-a9-suggestion-review-memory`. L'exécuteur ne s'est pas attribué
-`VERIFIED`.
+`TASK-0025` est **`VERIFIED`** par le verdict indépendant enregistré dans
+[`ACTION-0042`](../reviews/ACTION-0042-independent-control.md). `F-044` et
+`F-045` restent `IMPLEMENTED`, avec une implémentation vérifiée par
+`TASK-0025 / ACTION-0042`.
 
-Faire rendre un **contrôle indépendant** de `TASK-0025` par une instance
-distincte de l'exécuteur, sur preuves : les critères `SR1` à `SR15` de
-[`TASK-0025`](../tasks/TASK-0025-suggestion-review-memory.md) §6, la migration
-`v3 → v4`, la mémoire du rejet dans la reconciliation, la file paginée, et les
-deux preuves réelles `TASK-0025-SR15-*`, qui **ne rejoignent pas `X5`** tant que
-ce contrôle n'a pas eu lieu.
+L'action unique suivante est de rendre la main à l'orchestrateur technique
+pour **définir la prochaine tranche fonctionnelle après `TASK-0025
+VERIFIED`**, avec sa propre fiche, son périmètre écrit, ses critères gelés et
+son GO.
 
-`X5` reste à **32** noms. Aucune `TASK-0026` n'est créée. `F-046` reste
-`PROPOSED`; `DEC-0013/F` demeure bloquante pour l'identité physique
-persistante.
+Ne pas créer `TASK-0026` ni `DEC-0028` avant cette décision. `X5` est à 34
+noms; `F-046` reste `PROPOSED`; `DEC-0013/F` demeure bloquante pour l'identité
+physique persistante.

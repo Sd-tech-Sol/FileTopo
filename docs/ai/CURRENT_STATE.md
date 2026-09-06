@@ -1,5 +1,36 @@
 # État courant
 
+## ACTION-0042 — TASK-0025 VERIFIED et scellement X5 — 2026-09-05
+
+- **Verdict indépendant enregistré, non rendu par Codex :** `SR1–SR15 =
+  PASS`, `ACTION-0042 = CLOSED`, `TASK-0025 = VERIFIED`, sans réserve
+  corrective ouverte. Claude Code était l'exécuteur; Codex a seulement
+  enregistré le verdict de l'orchestrateur technique indépendant et appliqué
+  le scellement. Détail dans
+  [`ACTION-0042`](../reviews/ACTION-0042-independent-control.md).
+- **Scellement X5 : 32 → 34.** Exactement les deux preuves `SR15` canoniques
+  de `TASK-0025`, pass1 puis pass2, sont ajoutées en fin des trois gardes. Les
+  32 anciens noms gardent exactement leur ordre. Les replays `DR15`, `J12` et
+  `X11` de `TASK-0025` restent non canoniques et non protégés.
+- **État runtime assumé :** `protectedArtifactCount = 34`,
+  `SEALED_RUNTIME_DESTINATIONS` et `protectedDestinations` = exactement les
+  deux `SR15`, `owningTaskId = TASK-0025`,
+  `writesUnderItsOwnTaskOnly = false`. C'est l'état normal après `VERIFIED`;
+  aucune migration anticipée vers `TASK-0026`.
+- **Validation ciblée :** TypeScript `runArtifacts` **36/36**, Rust X5
+  **24/24** avec 199 filtrés, PowerShell **34/34 refus**, 34 noms uniques et
+  X11 autorisée; parité exacte des trois gardes et `git diff --check` propres.
+  Aucun JSON de preuve modifié, aucun replay WebView2.
+- **Produit :** `F-044` et `F-045` restent `IMPLEMENTED`, maintenant vérifiées
+  par `TASK-0025 / ACTION-0042`. `F-043` reste vérifiée par `TASK-0024`.
+  `F-046` reste `PROPOSED`; `DEC-0013/F` demeure bloquante.
+- **Limites :** aucun état `DEFERRED` persistant par conception; aucune
+  politique automatique de réévaluation en v1; garantie X10 race-safe hors
+  Windows toujours non prouvée; aucune IA/RAG/vector DB, aucune refonte
+  graphique.
+- **Action unique suivante :** retour à l'orchestrateur pour définir la
+  prochaine tranche fonctionnelle après `TASK-0025 VERIFIED`.
+
 ## TASK-0025 — file de révision et mémoire des décisions — 2026-09-05
 
 - **Statut :** `TASK-0025 = IMPLEMENTED`, contrôle indépendant requis.

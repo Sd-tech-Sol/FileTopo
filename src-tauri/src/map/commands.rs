@@ -614,12 +614,17 @@ pub fn self_check(paths: &SandboxPaths, brain: &BrainRecord) -> Result<MapSelfCh
 /// The corrective `X11` proof remains noncanonical, as do the `H9`, `K11`,
 /// `K12`, `L12`, `M12`, `N15`, `EC15` and `-abandon` outputs of this slice.
 ///
+/// **`TASK-0025` is `VERIFIED` since `ACTION-0042`**, so exactly its **two**
+/// canonical `SR15` WebView2 passes join the list. It grows from thirty-two to
+/// thirty-four. The `DR15`, `J12` and corrective `X11` replays remain
+/// noncanonical and unprotected.
+///
 /// The consequence is again deliberate, and again worth stating plainly: the
-/// runtime compiled into this checkout still spells the three `TASK-0024`
-/// canonical names as destinations, so replaying those scenarios now yields a
+/// runtime compiled into this checkout still spells the two `TASK-0025`
+/// canonical names as destinations, so replaying `SR15` now yields a
 /// **refusal**. That is the gate working. The next slice migrates destinations
 /// under its own task name before it replays anything.
-pub const PROTECTED_RUN_ARTIFACTS: [&str; 32] = [
+pub const PROTECTED_RUN_ARTIFACTS: [&str; 34] = [
     "TASK-0016-H1-H7-verification.json",
     "TASK-0016-H9-webview2.json",
     "TASK-0017-J11-isolation.json",
@@ -652,6 +657,8 @@ pub const PROTECTED_RUN_ARTIFACTS: [&str; 32] = [
     "TASK-0024-DR15-deterministic-relation-engine-webview2-pass1.json",
     "TASK-0024-DR15-deterministic-relation-engine-webview2-pass2.json",
     "TASK-0024-J12-intrabrain-relations-regression-webview2.json",
+    "TASK-0025-SR15-suggestion-review-memory-webview2-pass1.json",
+    "TASK-0025-SR15-suggestion-review-memory-webview2-pass2.json",
 ];
 
 /// Writes a measurement artefact into `docs/performance/runs/` of this
@@ -932,14 +939,52 @@ mod tests {
         }
     }
 
-    /// The seal grew by exactly three names, and grew only at the end.
+    /// `ACTION-0042` seals exactly the two canonical `SR15` proofs of
+    /// `TASK-0025`, and the write gate refuses both before filesystem access.
+    #[test]
+    fn task_0025s_two_sr15_proofs_are_protected_after_verification() {
+        for name in [
+            "TASK-0025-SR15-suggestion-review-memory-webview2-pass1.json",
+            "TASK-0025-SR15-suggestion-review-memory-webview2-pass2.json",
+        ] {
+            assert!(
+                PROTECTED_RUN_ARTIFACTS.contains(&name),
+                "{name} is TASK-0025 canonical evidence and is not protected"
+            );
+            assert!(
+                matches!(
+                    write_run_artifact(name, "{}"),
+                    Err(MapError::ArtifactRejected(_))
+                ),
+                "{name} was accepted as a destination"
+            );
+        }
+    }
+
+    /// Replays used for the control remain noncanonical and outside X5.
+    #[test]
+    fn task_0025_noncanonical_destinations_stay_unprotected() {
+        for name in [
+            "TASK-0025-DR15-deterministic-relation-engine-webview2-pass1.json",
+            "TASK-0025-DR15-deterministic-relation-engine-webview2-pass2.json",
+            "TASK-0025-J12-intrabrain-relations-regression-webview2.json",
+            "TASK-0025-X11-generic-brain-webview2.json",
+        ] {
+            assert!(
+                !PROTECTED_RUN_ARTIFACTS.contains(&name),
+                "{name} is noncanonical TASK-0025 output and was protected"
+            );
+        }
+    }
+
+    /// The seal grew by exactly two names, and grew only at the end.
     ///
     /// Stated as one test because the danger of an extension is not that the
     /// new names are missing — the tests above catch that — but that an edit
-    /// reorders, drops or duplicates one of the twenty-nine already there.
+    /// reorders, drops or duplicates one of the thirty-two already there.
     #[test]
-    fn the_seal_is_the_unchanged_twenty_nine_followed_by_task_0024s_three() {
-        assert_eq!(PROTECTED_RUN_ARTIFACTS.len(), 32);
+    fn the_seal_is_the_unchanged_thirty_two_followed_by_task_0025s_two() {
+        assert_eq!(PROTECTED_RUN_ARTIFACTS.len(), 34);
         assert_eq!(
             &PROTECTED_RUN_ARTIFACTS[..27],
             &[
@@ -980,17 +1025,24 @@ mod tests {
             ]
         );
         assert_eq!(
-            &PROTECTED_RUN_ARTIFACTS[29..],
+            &PROTECTED_RUN_ARTIFACTS[29..32],
             &[
                 "TASK-0024-DR15-deterministic-relation-engine-webview2-pass1.json",
                 "TASK-0024-DR15-deterministic-relation-engine-webview2-pass2.json",
                 "TASK-0024-J12-intrabrain-relations-regression-webview2.json",
             ]
         );
+        assert_eq!(
+            &PROTECTED_RUN_ARTIFACTS[32..],
+            &[
+                "TASK-0025-SR15-suggestion-review-memory-webview2-pass1.json",
+                "TASK-0025-SR15-suggestion-review-memory-webview2-pass2.json",
+            ]
+        );
         let mut sorted = PROTECTED_RUN_ARTIFACTS.to_vec();
         sorted.sort_unstable();
         sorted.dedup();
-        assert_eq!(sorted.len(), 32, "the seal holds a duplicate name");
+        assert_eq!(sorted.len(), 34, "the seal holds a duplicate name");
     }
 
     /// `TASK-0022` published no `H9` or `K12` proof, and an abandoned run is
