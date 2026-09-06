@@ -58,7 +58,8 @@ function Invoke-EC15Pass {
     $keys = Start-Process -FilePath 'pwsh' -PassThru -WindowStyle Hidden `
         -ArgumentList @('-NoProfile', '-File', $watcher,
                         '-LogPath', $log,
-                        '-TimeoutSeconds', "$TimeoutSeconds")
+                        '-TimeoutSeconds', "$TimeoutSeconds") `
+        -RedirectStandardOutput "$log.keys" -RedirectStandardError "$log.keys.err"
 
     $produced = Wait-ForArtifact -Path $artifact -Seconds $TimeoutSeconds
     if (-not $application.HasExited) {

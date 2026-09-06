@@ -62,8 +62,15 @@ while ((Get-Date) -lt $deadline) {
                 Sort-Object -Property StartTime -Descending |
                 Select-Object -First 1
             if ($null -ne $process) {
-                $null = $shell.AppActivate($process.Id)
-                Start-Sleep -Milliseconds 400
+                $activated = $shell.AppActivate($process.Id)
+                Write-Output "watcher: AppActivate=$activated pid=$($process.Id)"
+                # WebView2 can finish a React commit immediately after the
+                # marker. Keep the window foregrounded long enough for focus
+                # to settle on the replacement control before injecting input.
+                Start-Sleep -Milliseconds 1500
+            }
+            else {
+                Write-Output 'watcher: aucun processus filetopo a activer'
             }
             $shell.SendKeys($key)
             Write-Output "watcher: frappe reelle $key envoyee (marqueur $($handled + 1))"

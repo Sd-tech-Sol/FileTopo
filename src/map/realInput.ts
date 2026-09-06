@@ -155,7 +155,11 @@ export async function pressRealKey(
 
   // The marker the watcher is waiting for. It names the key, so the page
   // decides which key is sent and the watcher never guesses.
-  log("info", `${marker} key=${key} target=${evidence.focusedBeforeClass}`);
+  log(
+    "info",
+    `${marker} key=${key} target=${evidence.focusedBeforeClass} ` +
+      `tag=${evidence.focusedBeforeTag} focusReached=${evidence.focusReached}`,
+  );
 
   const outcome = await waitUntil(changed, budgetMs);
 
