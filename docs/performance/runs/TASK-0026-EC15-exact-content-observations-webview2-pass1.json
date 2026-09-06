@@ -1,0 +1,315 @@
+{
+  "task": "TASK-0026",
+  "criterion": "EC15",
+  "pass": 1,
+  "startedAt": "2026-09-06T15:56:43.139Z",
+  "realHost": true,
+  "host": {
+    "appVersion": "0.1.0-alpha.1",
+    "tauriVersion": "2.11.5",
+    "webviewVersion": "152.0.4191.66",
+    "platform": "windows"
+  },
+  "pass1": {
+    "sandboxVariant": "<dépôt>/.filetopo-sandbox/variants/task0023-ec15-x10-20260906115641-321ffa",
+    "freshByDriver": true,
+    "alphaInitial": {
+      "activeBrainId": "brain-alpha",
+      "displayedBrainIds": [
+        "brain-alpha"
+      ],
+      "focusedBrainId": "brain-alpha"
+    },
+    "alphaBuild": {
+      "brainId": "brain-alpha",
+      "fixtureId": "quasi-empty",
+      "indexPath": "brains/brain-alpha/map/index.sqlite",
+      "nodeCount": 12,
+      "plannedNodes": 12,
+      "maxDepth": 3,
+      "nodeCeiling": 5000,
+      "depthCeiling": 40,
+      "rebuilt": true,
+      "scanMs": 0.6933,
+      "layoutMs": 0.017499999999999998,
+      "indexMs": 11.3384,
+      "totalMs": 15.3286,
+      "layoutInvocations": 1,
+      "fingerprintBefore": "fnv1a64:3274dbb208e5a14c",
+      "fingerprintAfter": "fnv1a64:3274dbb208e5a14c",
+      "readOnlyConfirmed": true,
+      "reconstructibleDigest": "fnv1a64:400fab2df3081fc0",
+      "nonReconstructible": [
+        "built_unix_ms"
+      ],
+      "schemaVersion": 3,
+      "layoutAlgorithm": "layered-tree-cards-v1",
+      "diagnostics": []
+    },
+    "gammaBuild": {
+      "brainId": "brain-gamma",
+      "fixtureId": "quasi-empty",
+      "indexPath": "brains/brain-gamma/map/index.sqlite",
+      "nodeCount": 12,
+      "plannedNodes": 12,
+      "maxDepth": 3,
+      "nodeCeiling": 5000,
+      "depthCeiling": 40,
+      "rebuilt": false,
+      "scanMs": 0.6966,
+      "layoutMs": 0.0155,
+      "indexMs": 5.581799999999999,
+      "totalMs": 19.7812,
+      "layoutInvocations": 1,
+      "fingerprintBefore": "fnv1a64:3274dbb208e5a14c",
+      "fingerprintAfter": "fnv1a64:3274dbb208e5a14c",
+      "readOnlyConfirmed": true,
+      "reconstructibleDigest": "fnv1a64:400fab2df3081fc0",
+      "nonReconstructible": [
+        "built_unix_ms"
+      ],
+      "schemaVersion": 3,
+      "layoutAlgorithm": "layered-tree-cards-v1",
+      "diagnostics": []
+    },
+    "indexedKinds": {
+      "files": 8,
+      "directoriesNotHashed": 3
+    },
+    "alphaCampaign": {
+      "brainId": "brain-alpha",
+      "storePath": "brains/brain-alpha/signals/content.sqlite",
+      "schemaVersion": 1,
+      "signalEngineVersion": "sha256-v1",
+      "generationId": "e65477aa-cee1-42b9-9b5b-580e8200e38f",
+      "observedAt": 1788710205321,
+      "sourceFingerprintBefore": "sha256-tree-v1:1bad61ca084d14c6575740f6a493d3f6fd4b313c8de844e96574ab29e39be65b",
+      "sourceFingerprintAfter": "sha256-tree-v1:1bad61ca084d14c6575740f6a493d3f6fd4b313c8de844e96574ab29e39be65b",
+      "sourceStable": true,
+      "indexedFileCount": 8,
+      "hashedCount": 8,
+      "unreadableCount": 0,
+      "unstableCount": 0,
+      "unsupportedCount": 0,
+      "filesOpenedForHash": 8,
+      "bytesRead": 1424,
+      "digestsComputed": 8,
+      "hashAlgorithm": "sha256-v1",
+      "readOnlyConfirmed": true,
+      "durationMs": 14.3275,
+      "interaction": {
+        "keyRequested": "{ENTER}",
+        "keydownIsTrusted": true,
+        "activationIsTrusted": true,
+        "programmaticClickCalls": 0,
+        "programmaticClickDispatches": 0,
+        "focusReached": true,
+        "observedChange": true
+      }
+    },
+    "gammaCampaign": {
+      "brainId": "brain-gamma",
+      "storePath": "brains/brain-gamma/signals/content.sqlite",
+      "schemaVersion": 1,
+      "signalEngineVersion": "sha256-v1",
+      "generationId": "cd8809a3-1b8c-4fa3-b7e1-73b80b4ae547",
+      "observedAt": 1788710214813,
+      "sourceFingerprintBefore": "sha256-tree-v1:1bad61ca084d14c6575740f6a493d3f6fd4b313c8de844e96574ab29e39be65b",
+      "sourceFingerprintAfter": "sha256-tree-v1:1bad61ca084d14c6575740f6a493d3f6fd4b313c8de844e96574ab29e39be65b",
+      "sourceStable": true,
+      "indexedFileCount": 8,
+      "hashedCount": 8,
+      "unreadableCount": 0,
+      "unstableCount": 0,
+      "unsupportedCount": 0,
+      "filesOpenedForHash": 8,
+      "bytesRead": 1424,
+      "digestsComputed": 8,
+      "hashAlgorithm": "sha256-v1",
+      "readOnlyConfirmed": true,
+      "durationMs": 14.447899999999999,
+      "interaction": {
+        "keyRequested": "{ENTER}",
+        "keydownIsTrusted": true,
+        "activationIsTrusted": true,
+        "programmaticClickCalls": 0,
+        "programmaticClickDispatches": 0,
+        "focusReached": true,
+        "observedChange": true
+      }
+    },
+    "selection": {
+      "alpha": {
+        "keyRequested": "{RIGHT}",
+        "keydownIsTrusted": true,
+        "activationIsTrusted": null,
+        "programmaticClickCalls": 0,
+        "programmaticClickDispatches": 0,
+        "focusReached": true,
+        "observedChange": true
+      },
+      "gamma": {
+        "keyRequested": "{RIGHT}",
+        "keydownIsTrusted": true,
+        "activationIsTrusted": null,
+        "programmaticClickCalls": 0,
+        "programmaticClickDispatches": 0,
+        "focusReached": true,
+        "observedChange": true
+      },
+      "alphaRef": {
+        "brainId": "brain-alpha",
+        "nodeId": 6
+      },
+      "gammaRef": {
+        "brainId": "brain-gamma",
+        "nodeId": 6
+      },
+      "sameRelativePath": "dossier-a/note-1.txt",
+      "sameDigest": true,
+      "uiDigest": "5cec5fde90215c5d5c6139cfed94dba5cd07250da93d84a367b372eb8e6f843b",
+      "uiText": "Observations de contenuSHA-256 observé5cec5fde90215c5d5c6139cfed94dba5cd07250da93d84a367b372eb8e6f843bObservé le6 sept. 2026, 11 h 56Génératione65477aa-cee1-42b9-9b5b-580e8200e38fCette observation ne crée aucune relation."
+    },
+    "addGamma": {
+      "open": {
+        "keyRequested": "{DOWN}",
+        "keydownIsTrusted": true,
+        "activationIsTrusted": null,
+        "programmaticClickCalls": 0,
+        "programmaticClickDispatches": 0,
+        "focusReached": true,
+        "observedChange": true
+      },
+      "choose": {
+        "keyRequested": "{ENTER}",
+        "keydownIsTrusted": true,
+        "activationIsTrusted": true,
+        "programmaticClickCalls": 0,
+        "programmaticClickDispatches": 0,
+        "focusReached": true,
+        "observedChange": true
+      }
+    },
+    "focusGamma": {
+      "keyRequested": "{ENTER}",
+      "keydownIsTrusted": true,
+      "activationIsTrusted": true,
+      "programmaticClickCalls": 0,
+      "programmaticClickDispatches": 0,
+      "focusReached": true,
+      "observedChange": true
+    },
+    "storesDistinct": true,
+    "relationsBefore": {
+      "intra": {
+        "deterministicCount": 8,
+        "approvedCount": 4,
+        "pendingSuggestionCount": 4,
+        "deterministicDigest": "fnv1a64:f2dc56476a45221f"
+      },
+      "cross": {
+        "deterministicCount": 6,
+        "approvedCount": 0,
+        "pendingSuggestionCount": 4,
+        "deterministicDigest": "fnv1a64:3020af7489aab581"
+      }
+    },
+    "relationsAfter": {
+      "intra": {
+        "deterministicCount": 8,
+        "approvedCount": 4,
+        "pendingSuggestionCount": 4,
+        "deterministicDigest": "fnv1a64:f2dc56476a45221f"
+      },
+      "cross": {
+        "deterministicCount": 6,
+        "approvedCount": 0,
+        "pendingSuggestionCount": 4,
+        "deterministicDigest": "fnv1a64:3020af7489aab581"
+      }
+    },
+    "relationStoresUnchanged": true,
+    "edgesBefore": {
+      "hierarchy": 11,
+      "relation": 12,
+      "cross": 0,
+      "suggestion": 4,
+      "crossSuggestion": 0
+    },
+    "edgesAfterAlphaHash": {
+      "hierarchy": 11,
+      "relation": 12,
+      "cross": 0,
+      "suggestion": 4,
+      "crossSuggestion": 0
+    },
+    "edgesBeforeGammaHash": {
+      "hierarchy": 22,
+      "relation": 24,
+      "cross": 2,
+      "suggestion": 8,
+      "crossSuggestion": 2
+    },
+    "edgesAfterGammaHash": {
+      "hierarchy": 22,
+      "relation": 24,
+      "cross": 2,
+      "suggestion": 8,
+      "crossSuggestion": 2
+    },
+    "edgesAfterRebuild": {
+      "hierarchy": 22,
+      "relation": 24,
+      "cross": 2,
+      "suggestion": 8,
+      "crossSuggestion": 2
+    },
+    "zeroNewEdges": true,
+    "rebuild": {
+      "generationBefore": "e65477aa-cee1-42b9-9b5b-580e8200e38f",
+      "generationAfter": "e65477aa-cee1-42b9-9b5b-580e8200e38f",
+      "digestBefore": "5cec5fde90215c5d5c6139cfed94dba5cd07250da93d84a367b372eb8e6f843b",
+      "digestAfter": "5cec5fde90215c5d5c6139cfed94dba5cd07250da93d84a367b372eb8e6f843b",
+      "persisted": true
+    },
+    "integrity": {
+      "before": {
+        "brainId": "brain-alpha",
+        "fixtureId": "quasi-empty",
+        "fingerprint": "fnv1a64:3274dbb208e5a14c",
+        "filetopoArtifacts": [],
+        "observedEntries": 11
+      },
+      "after": {
+        "brainId": "brain-alpha",
+        "fixtureId": "quasi-empty",
+        "fingerprint": "fnv1a64:3274dbb208e5a14c",
+        "filetopoArtifacts": [],
+        "observedEntries": 11
+      }
+    },
+    "runtimeOwnership": {
+      "owningTaskId": "TASK-0026",
+      "runtimeDestinationCount": 30,
+      "taskIdsWritten": [
+        "TASK-0026"
+      ],
+      "protectedArtifactCount": 34,
+      "protectedTaskIds": [
+        "TASK-0016",
+        "TASK-0017",
+        "TASK-0018",
+        "TASK-0019",
+        "TASK-0020",
+        "TASK-0022",
+        "TASK-0023",
+        "TASK-0024",
+        "TASK-0025"
+      ],
+      "protectedDestinations": [],
+      "writesUnderItsOwnTaskOnly": true
+    },
+    "protectedArtifacts": 34
+  },
+  "finishedAt": "2026-09-06T15:56:56.628Z"
+}
