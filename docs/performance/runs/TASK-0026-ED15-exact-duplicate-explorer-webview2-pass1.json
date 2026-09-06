@@ -1,0 +1,3392 @@
+{
+  "task": "TASK-0026",
+  "criterion": "ED15",
+  "pass": 1,
+  "realHost": true,
+  "capturedAtIso": "2026-09-06T04:51:30.467Z",
+  "host": {
+    "sandboxRoot": "<dépôt>/.filetopo-sandbox/variants/task0026-ed15-20260906005114-0438b4",
+    "appVersion": "0.1.0-alpha.1",
+    "sqliteVersion": "3.53.2",
+    "webviewVersion": "152.0.4191.66",
+    "tauriVersion": "2.11.5",
+    "platform": "windows",
+    "nodeCeiling": 5000,
+    "depthCeiling": 40,
+    "cardWidth": 240,
+    "cardHeight": 64,
+    "layoutAlgorithm": "layered-tree-cards-v1",
+    "autoVerify": false,
+    "autoMeasure": false,
+    "autoRelations": false,
+    "autoBrainsPass": 0,
+    "autoComposedPass": 0,
+    "autoCrossPass": 0,
+    "autoTopographicPass": 0,
+    "autoContentPass": 0,
+    "autoDrePass": 0,
+    "autoGenericRelations": false,
+    "autoSr15Pass": 0,
+    "autoEd15Pass": 1
+  },
+  "runtimeOwnership": {
+    "owningTaskId": "TASK-0026",
+    "runtimeDestinationCount": 30,
+    "taskIdsWritten": [
+      "TASK-0026"
+    ],
+    "protectedArtifactCount": 34,
+    "protectedTaskIds": [
+      "TASK-0016",
+      "TASK-0017",
+      "TASK-0018",
+      "TASK-0019",
+      "TASK-0020",
+      "TASK-0022",
+      "TASK-0023",
+      "TASK-0024",
+      "TASK-0025"
+    ],
+    "protectedDestinations": [],
+    "writesUnderItsOwnTaskOnly": true
+  },
+  "protectedArtifactCount": 34,
+  "freshVariant": true,
+  "preparation": {
+    "sourceId": "task0026-ed15-scale",
+    "totalFiles": 1200,
+    "expectedGroups": 125,
+    "expectedGroupedOccurrences": 373,
+    "expectedEmptyMembers": 125,
+    "mapNodeCount": 1201,
+    "report": {
+      "brainId": "brain-alpha",
+      "storePath": "brains/brain-alpha/signals/content.sqlite",
+      "schemaVersion": 1,
+      "signalEngineVersion": "sha256-v1",
+      "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+      "observedAt": 1788670279156,
+      "sourceFingerprintBefore": "sha256-tree-v1:853c5e196d6b3f341ec1dc401e05171b6b42c43381b8ad4651ccba94b8ed198a",
+      "sourceFingerprintAfter": "sha256-tree-v1:853c5e196d6b3f341ec1dc401e05171b6b42c43381b8ad4651ccba94b8ed198a",
+      "sourceStable": true,
+      "indexedFileCount": 1200,
+      "hashedCount": 1200,
+      "unreadableCount": 0,
+      "unstableCount": 0,
+      "unsupportedCount": 0,
+      "filesOpenedForHash": 1200,
+      "bytesRead": 26876,
+      "digestsComputed": 1200,
+      "hashAlgorithm": "sha256-v1",
+      "readOnlyConfirmed": true,
+      "durationMs": 346.7728
+    }
+  },
+  "summary": {
+    "brainId": "brain-alpha",
+    "availability": "AVAILABLE",
+    "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+    "observedAtUnixMs": 1788670279156,
+    "hashAlgorithm": "sha256-v1",
+    "exactGroupCount": 125,
+    "groupedOccurrenceCount": 373,
+    "emptyGroupCount": 1,
+    "queryDurationMs": 14.9922
+  },
+  "pagination": {
+    "groupPages": [
+      {
+        "brainId": "brain-alpha",
+        "availability": "AVAILABLE",
+        "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+        "observedAtUnixMs": 1788670279156,
+        "hashAlgorithm": "sha256-v1",
+        "totalGroups": 125,
+        "offset": 0,
+        "limit": 50,
+        "maxLimit": 100,
+        "returned": 50,
+        "hasMore": true,
+        "order": "size_bytes descending, hash_hex ascending",
+        "queryDurationMs": 22.0799,
+        "groups": [
+          {
+            "groupId": "sha256-v1:040d9f20716fb974d4e11388498355e8b2c2d90406c2bfeb60d5b307de3b4d92",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "040d9f20716fb974d4e11388498355e8b2c2d90406c2bfeb60d5b307de3b4d92",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:070f344da806e874016450312fba2943bd8b0a823025e683e20936797a696558",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "070f344da806e874016450312fba2943bd8b0a823025e683e20936797a696558",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:0992db6847f7d95f94d62f10ba4d43062ee43003beea53aafbef6ef217c956f9",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "0992db6847f7d95f94d62f10ba4d43062ee43003beea53aafbef6ef217c956f9",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:09baa4287b04db9e620fa08e080cc096c02b56d5f5b62a97ec55b40f14d2a9ab",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "09baa4287b04db9e620fa08e080cc096c02b56d5f5b62a97ec55b40f14d2a9ab",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:0cab8662a881076a01a9e1a50c94f41ebd402ba1ad7ec95eb68c54830a59ac71",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "0cab8662a881076a01a9e1a50c94f41ebd402ba1ad7ec95eb68c54830a59ac71",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:0cfa87136351d17986855cc915104ba68d3b7766757ea69e1f0cd52069faf67d",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "0cfa87136351d17986855cc915104ba68d3b7766757ea69e1f0cd52069faf67d",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:0d05535db7461cdb3bf55bb3e9bc7dc0d2f12eedd237003322e52621a446c03e",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "0d05535db7461cdb3bf55bb3e9bc7dc0d2f12eedd237003322e52621a446c03e",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:0d7d94ce712aed090b9ea27babdd56ac62c598d845c65c323d2ce77aa2bac2e0",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "0d7d94ce712aed090b9ea27babdd56ac62c598d845c65c323d2ce77aa2bac2e0",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:1343a6aefaf0151111a6c62270e4f72cc7070694b100f2ce62b48692fe79fedf",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "1343a6aefaf0151111a6c62270e4f72cc7070694b100f2ce62b48692fe79fedf",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:1559681d6cb4c99ccf450e8b7189948dfede7b7241d54a688c11e80f18e5d1e7",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "1559681d6cb4c99ccf450e8b7189948dfede7b7241d54a688c11e80f18e5d1e7",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:1b4b0cecdb6410b7531c4f2a528401ced915119ee6bc04ce5e97acc1721acf1e",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "1b4b0cecdb6410b7531c4f2a528401ced915119ee6bc04ce5e97acc1721acf1e",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:1c3c5d343b3c92d913e44df2aa1ce5d1603243e3c9bd092dca2198e37c734f79",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "1c3c5d343b3c92d913e44df2aa1ce5d1603243e3c9bd092dca2198e37c734f79",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:1c71097368d7d2a7cbfc61ea4ebe7a8a78f45225e9e3e162464b772c90d2f689",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "1c71097368d7d2a7cbfc61ea4ebe7a8a78f45225e9e3e162464b772c90d2f689",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:1cd8c9efba8f8d5f46eebbffa29cee366acbdf36c0fae5ac40704c3bdacba583",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "1cd8c9efba8f8d5f46eebbffa29cee366acbdf36c0fae5ac40704c3bdacba583",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:1cf2ff4bed7a0c52a4607188a87ed2c5b589cca1a43d5fc5efae04defb61633c",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "1cf2ff4bed7a0c52a4607188a87ed2c5b589cca1a43d5fc5efae04defb61633c",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:1d489fb477e7d398587ee9832e549023bc38d99892873f29e1c8b32586ad748c",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "1d489fb477e7d398587ee9832e549023bc38d99892873f29e1c8b32586ad748c",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:20b6920460660043e7e12c619f9225872d001fe6e9afccc7ffbcc709879ae0cb",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "20b6920460660043e7e12c619f9225872d001fe6e9afccc7ffbcc709879ae0cb",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:235bf40d665e8e3e586c0041e9f3934ea695d9d146149df5a8a1032355f7acd4",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "235bf40d665e8e3e586c0041e9f3934ea695d9d146149df5a8a1032355f7acd4",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:23d10314590911b3f13fc0b9d334036ebe27d866ca886dcaf343d91eb554adef",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "23d10314590911b3f13fc0b9d334036ebe27d866ca886dcaf343d91eb554adef",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:281b7a3e777716d2499cf033158c98870d75311f78d5a92e8cf1b9409aafb202",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "281b7a3e777716d2499cf033158c98870d75311f78d5a92e8cf1b9409aafb202",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:282e1290933347a30234a746dafd1a4aafa5c09b95fc02f3f857e0e63ad8e841",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "282e1290933347a30234a746dafd1a4aafa5c09b95fc02f3f857e0e63ad8e841",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:29293490827b984c177ca04814a98e22d5c0668c23d05bc15ea8c2823a1558d2",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "29293490827b984c177ca04814a98e22d5c0668c23d05bc15ea8c2823a1558d2",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:298e8d8a286a96d89ab44364d401d1db0f492092a1567748cdd59c1ba898aa16",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "298e8d8a286a96d89ab44364d401d1db0f492092a1567748cdd59c1ba898aa16",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:29adcfe866d3471644ab8c0aafa38125b497b72c2599e0c042c6684ee50130c9",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "29adcfe866d3471644ab8c0aafa38125b497b72c2599e0c042c6684ee50130c9",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:2beceb88993a1129618fe0a7b95ff2b7dbb66b9611996f36c88ece64287b128f",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "2beceb88993a1129618fe0a7b95ff2b7dbb66b9611996f36c88ece64287b128f",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:30e1519b073228278eb264831278250ba0340936a218c940f9719d1b84816555",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "30e1519b073228278eb264831278250ba0340936a218c940f9719d1b84816555",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:3178438e0b9c5630218a4e4fc33d75a6526e0dc80adb1858a06627bbc3528f22",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "3178438e0b9c5630218a4e4fc33d75a6526e0dc80adb1858a06627bbc3528f22",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:3570f1d60d8425efb3a9b8f40b394ffa59b01eeaf520d13186523af05ae6f9f5",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "3570f1d60d8425efb3a9b8f40b394ffa59b01eeaf520d13186523af05ae6f9f5",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:35bd32fde989b96cb7258d501c01f352e0c4baaa4d266ce2abb5bb4b61d9ba37",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "35bd32fde989b96cb7258d501c01f352e0c4baaa4d266ce2abb5bb4b61d9ba37",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:36c5c600b56024997a129a32f45466684dd0211007591bdb327aafd5c21a0373",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "36c5c600b56024997a129a32f45466684dd0211007591bdb327aafd5c21a0373",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:36d0bcffbac9f0260bf413ff0353310ec6963c7abf9e54791dd9a3fcacbb2dd2",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "36d0bcffbac9f0260bf413ff0353310ec6963c7abf9e54791dd9a3fcacbb2dd2",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:399cec2db95d2753ebeec79822812e116727bace044935f91f59cde77bc7a092",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "399cec2db95d2753ebeec79822812e116727bace044935f91f59cde77bc7a092",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:421ca648f3ae9ed94b93e4c80dcb709e8cd113c6660d46d8702b6a98b4827a3c",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "421ca648f3ae9ed94b93e4c80dcb709e8cd113c6660d46d8702b6a98b4827a3c",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:4356b18ac181badd7aff9c55f99669d4d7c3f4b7b28a40b638697dcd429e2e55",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "4356b18ac181badd7aff9c55f99669d4d7c3f4b7b28a40b638697dcd429e2e55",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:445060234200484a2aa165741c15e25fc833b73dadbcc26a58846a204502246a",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "445060234200484a2aa165741c15e25fc833b73dadbcc26a58846a204502246a",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:457603e04b493d7c2e8868dfecfcbed54c67e29e4e04a80257266f16478f85a0",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "457603e04b493d7c2e8868dfecfcbed54c67e29e4e04a80257266f16478f85a0",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:478af1e05e4e62cd8e60d3c31c615dee863d8b0f205768e9015b8e1da6917e59",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "478af1e05e4e62cd8e60d3c31c615dee863d8b0f205768e9015b8e1da6917e59",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:48c5ea8b6b8513bd5e6bfc99d11d29806beb67a4b0dadb3a1e73e005614154ea",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "48c5ea8b6b8513bd5e6bfc99d11d29806beb67a4b0dadb3a1e73e005614154ea",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:4b28d15ec6740a5ce123cdb3a703d02615008a7d7cb2f353fabe244faa451bd6",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "4b28d15ec6740a5ce123cdb3a703d02615008a7d7cb2f353fabe244faa451bd6",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:4b85f7aba708fb4ee044eae6c58498a1bf4cd3ea8fedb92215c0f501631659c3",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "4b85f7aba708fb4ee044eae6c58498a1bf4cd3ea8fedb92215c0f501631659c3",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:4d1bfbdae0f0921f9e757af107e7705a50073ca2c7240a3cfea05ccdff8a2933",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "4d1bfbdae0f0921f9e757af107e7705a50073ca2c7240a3cfea05ccdff8a2933",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:5267edbda488a469e8fadcc0341758f1d7055f9f6e7803ad8a3e650f0f581752",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "5267edbda488a469e8fadcc0341758f1d7055f9f6e7803ad8a3e650f0f581752",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:5508d4a45c221064d8cde74816fa34c91f4a40bb98cc8313542aa2876830a029",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "5508d4a45c221064d8cde74816fa34c91f4a40bb98cc8313542aa2876830a029",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:571fc6905b3875f44ea48b1a6c004d6476c54fec94eb115b0f1537058c83fc46",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "571fc6905b3875f44ea48b1a6c004d6476c54fec94eb115b0f1537058c83fc46",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:5767bcec348f8ec4ae60c3301105c87f23f6db6301ed25f016e2d9941c2916af",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "5767bcec348f8ec4ae60c3301105c87f23f6db6301ed25f016e2d9941c2916af",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:5a118a19ca11fe7eab246fe319e3cc641b4233e63ec03c54eb1f53488f50d59e",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "5a118a19ca11fe7eab246fe319e3cc641b4233e63ec03c54eb1f53488f50d59e",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:5a76e86a621fc4cb26141f4306f3206576ff70c6587652a8e40e2e1b01f9134d",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "5a76e86a621fc4cb26141f4306f3206576ff70c6587652a8e40e2e1b01f9134d",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:5b7a353a30fd72367912fd4aeb09a7189ce5089e6aaf65bc9a7548d41e91b0fe",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "5b7a353a30fd72367912fd4aeb09a7189ce5089e6aaf65bc9a7548d41e91b0fe",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:5f11606d793adf7854c6b3fe5e8b58fe0df91cc0125d6b89d58302fce9a0bd6b",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "5f11606d793adf7854c6b3fe5e8b58fe0df91cc0125d6b89d58302fce9a0bd6b",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:5fe536ec3790621179211513e07c7f9ce8f9d225152643ffb4917600f436f6bb",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "5fe536ec3790621179211513e07c7f9ce8f9d225152643ffb4917600f436f6bb",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          }
+        ]
+      },
+      {
+        "brainId": "brain-alpha",
+        "availability": "AVAILABLE",
+        "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+        "observedAtUnixMs": 1788670279156,
+        "hashAlgorithm": "sha256-v1",
+        "totalGroups": 125,
+        "offset": 50,
+        "limit": 50,
+        "maxLimit": 100,
+        "returned": 50,
+        "hasMore": true,
+        "order": "size_bytes descending, hash_hex ascending",
+        "queryDurationMs": 19.3393,
+        "groups": [
+          {
+            "groupId": "sha256-v1:610ae97003f50c52a55b1c83e168283ae75dcacfcbf1112a0e99dde4e6306c97",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "610ae97003f50c52a55b1c83e168283ae75dcacfcbf1112a0e99dde4e6306c97",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:614d2259e930b5f1e5c94b7b7bf1a85f061a7e09ccd2902b4a28a7e632c3c475",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "614d2259e930b5f1e5c94b7b7bf1a85f061a7e09ccd2902b4a28a7e632c3c475",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:6204bdab5e3ae271691517bdb14921c455fd395a5684ede2e478f159463231f2",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "6204bdab5e3ae271691517bdb14921c455fd395a5684ede2e478f159463231f2",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:637c5f73af247a1e306cbcce52c11229c446e256f709961d3a3f11f2277f7668",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "637c5f73af247a1e306cbcce52c11229c446e256f709961d3a3f11f2277f7668",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:653cb68618a98da1d00f0db64fe9dabdc838c3466d9c99a3c2fb297eac892df5",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "653cb68618a98da1d00f0db64fe9dabdc838c3466d9c99a3c2fb297eac892df5",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:684078ebddc2ec6a083d1d9b06a0d82af8c7162445af273c0f3f280e495af589",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "684078ebddc2ec6a083d1d9b06a0d82af8c7162445af273c0f3f280e495af589",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:68926164aabe5c9ea205c608f59a0599e5d723e8f653b8a159a5638124e900f5",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "68926164aabe5c9ea205c608f59a0599e5d723e8f653b8a159a5638124e900f5",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:6a473dd8ab2d8991d26f1b163cabc09eff5954305b5af142e2d4819d1e9e2a0a",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "6a473dd8ab2d8991d26f1b163cabc09eff5954305b5af142e2d4819d1e9e2a0a",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:6c6a468820d63445abaf316fb2f8f5206b82e20a633b309e026f6201b15ced82",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "6c6a468820d63445abaf316fb2f8f5206b82e20a633b309e026f6201b15ced82",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:6ef4e5cfa1aa5ba31f83a1c80ba729b991a7f116d0e06ce7601fec9420cbba1a",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "6ef4e5cfa1aa5ba31f83a1c80ba729b991a7f116d0e06ce7601fec9420cbba1a",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:6fdb304b4c71334fe2c26b29df6c6a8c8e56b27e27cf57f3f11949bccd32327d",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "6fdb304b4c71334fe2c26b29df6c6a8c8e56b27e27cf57f3f11949bccd32327d",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:73b017610ebc94f98d72d1a14c0ed66b524b47e13d625c2556e0bc49eb8048eb",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "73b017610ebc94f98d72d1a14c0ed66b524b47e13d625c2556e0bc49eb8048eb",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:743c46eaa632530d37f20fe20dc55e30c5670fa60f2c0880ea940b706a5eebd9",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "743c46eaa632530d37f20fe20dc55e30c5670fa60f2c0880ea940b706a5eebd9",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:753e6f4453f6e62c114955e2b60d12884a30895334f9bb758753e09ff65302e6",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "753e6f4453f6e62c114955e2b60d12884a30895334f9bb758753e09ff65302e6",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:75a2bb12ebd53b421a92bcf805ccc95c9aa29bbe0f6e44e942281ef848df2484",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "75a2bb12ebd53b421a92bcf805ccc95c9aa29bbe0f6e44e942281ef848df2484",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:7ae27a48548bdd9a771172b9b94b67dd7c4486907f80d12a321ea4f0b1b632c9",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "7ae27a48548bdd9a771172b9b94b67dd7c4486907f80d12a321ea4f0b1b632c9",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:7dfda0ee7832d3c0e92d94fa3ae39320869a99274b6c89f00fd17deb2e25c492",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "7dfda0ee7832d3c0e92d94fa3ae39320869a99274b6c89f00fd17deb2e25c492",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:7f6ea7fa0da1906836350ea7f5d265c019b9c5da27b36011cfe43139ea5dc783",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "7f6ea7fa0da1906836350ea7f5d265c019b9c5da27b36011cfe43139ea5dc783",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:81e8fd83f32e88369a725fcd2d51d31516c7f51d5a9c8939984b04a139cb7194",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "81e8fd83f32e88369a725fcd2d51d31516c7f51d5a9c8939984b04a139cb7194",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:83d26bcf556fb2aa52455dcb1451fd854e96f1707a265e95e090f1f0ba1bdf02",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "83d26bcf556fb2aa52455dcb1451fd854e96f1707a265e95e090f1f0ba1bdf02",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:846ca4dfb9ca42da15a3296c74a234ad9a5fe4f3f199ab1f671f5ba77b82bd56",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "846ca4dfb9ca42da15a3296c74a234ad9a5fe4f3f199ab1f671f5ba77b82bd56",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:86608892bac98fe5cbfa82347c2a8540ea0e27739a6d6fce4aee1c4ac1f0126d",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "86608892bac98fe5cbfa82347c2a8540ea0e27739a6d6fce4aee1c4ac1f0126d",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:89d64d6ffc82206c019d35d8598de5a94c193fed45187b7a2ad1b2e73bd01b4d",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "89d64d6ffc82206c019d35d8598de5a94c193fed45187b7a2ad1b2e73bd01b4d",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:8a394cdb824f0e21743563010c6007ae02454adf7aab3499b3becb4daad1dba7",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "8a394cdb824f0e21743563010c6007ae02454adf7aab3499b3becb4daad1dba7",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:8c94a7a8cf22a0e71894aabd1f42304dd4d8cec03f4e78b5bb0d3ccc22548ff9",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "8c94a7a8cf22a0e71894aabd1f42304dd4d8cec03f4e78b5bb0d3ccc22548ff9",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:8eebb991121aa562cf41e1a37bfcdd1a1c217fe8a2638b91d9e367c9c5ec39c0",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "8eebb991121aa562cf41e1a37bfcdd1a1c217fe8a2638b91d9e367c9c5ec39c0",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:8f2c2a474c716c5b48770b3f6b0d9d225ce880e35df7f897e5752ee3d7ce6d12",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "8f2c2a474c716c5b48770b3f6b0d9d225ce880e35df7f897e5752ee3d7ce6d12",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:91b32f6331d2f43ce141bef4b35dfbfb398e151d135b8cf3f9c2bdaad31431a5",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "91b32f6331d2f43ce141bef4b35dfbfb398e151d135b8cf3f9c2bdaad31431a5",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:97e488bc44dd0ad5d9cf59f4f7bb9cbe6125e04dbb1d5f85ca310bc666593fa4",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "97e488bc44dd0ad5d9cf59f4f7bb9cbe6125e04dbb1d5f85ca310bc666593fa4",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:994e65e76c53f2d3d23c8bc56436bf47b4c2931629ea3a4e2fe3d0f51433dc9e",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "994e65e76c53f2d3d23c8bc56436bf47b4c2931629ea3a4e2fe3d0f51433dc9e",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:a0ce32196bdb4c72167870d11376ee28fc678449a349aab90d7deaf901145a7f",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "a0ce32196bdb4c72167870d11376ee28fc678449a349aab90d7deaf901145a7f",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:a0d7f6f25b7924cb1f646180d1c0d5063b2bc574cc24b0012676cae314784ad2",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "a0d7f6f25b7924cb1f646180d1c0d5063b2bc574cc24b0012676cae314784ad2",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:a0ffa8200d2cc2cf0183fe993a3c803ee3dd4625268ff0bb796e66a56829f0c7",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "a0ffa8200d2cc2cf0183fe993a3c803ee3dd4625268ff0bb796e66a56829f0c7",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:a464126f0fe0d9b2d9887fa0c2f05b40b7088244a2c988209075bace58111e5e",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "a464126f0fe0d9b2d9887fa0c2f05b40b7088244a2c988209075bace58111e5e",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:a6c65aa60597509848e3064ac3f26786936158b03afd278fc1b29d6620f8e476",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "a6c65aa60597509848e3064ac3f26786936158b03afd278fc1b29d6620f8e476",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:a6f851466358b2c6f3b57011aada284b565b5760935a572bc738c5b08badf575",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "a6f851466358b2c6f3b57011aada284b565b5760935a572bc738c5b08badf575",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:a9a5f16bef7ded298daec52fed4d6bd75e5ca39881860c32e951d09fe6ba633a",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "a9a5f16bef7ded298daec52fed4d6bd75e5ca39881860c32e951d09fe6ba633a",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:aba3ff91e148d5ad6d3e32ae0d59215d75c6243a23c919a730123c193cafdce0",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "aba3ff91e148d5ad6d3e32ae0d59215d75c6243a23c919a730123c193cafdce0",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:af3d92e6a0cadb68755dd88543ba2ffd030da92553891d4ff7e9b7ca59822a62",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "af3d92e6a0cadb68755dd88543ba2ffd030da92553891d4ff7e9b7ca59822a62",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:b1c69bf849871bbf17d8d3ab8755663c121324464141a1ddee6fa82052688a3f",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "b1c69bf849871bbf17d8d3ab8755663c121324464141a1ddee6fa82052688a3f",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:b2fb919c38f87a36868d3a69a3124d07279ca07a822ead7ff0a870ebc9be1c7d",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "b2fb919c38f87a36868d3a69a3124d07279ca07a822ead7ff0a870ebc9be1c7d",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:bcc983ed6241c59517bd1552e5912389be0461b820c58705eaa4bee6c3e003b9",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "bcc983ed6241c59517bd1552e5912389be0461b820c58705eaa4bee6c3e003b9",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:bdfdd3f46dd69502b6fbe1315774a1101488b96e5f0eb07dae3c460a4d7c189f",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "bdfdd3f46dd69502b6fbe1315774a1101488b96e5f0eb07dae3c460a4d7c189f",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:be134952bf9875ceae3418f3c8096cef8f16b45899ed054ef62b5a36219232cd",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "be134952bf9875ceae3418f3c8096cef8f16b45899ed054ef62b5a36219232cd",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:be35a5e4fe8ff8ecaac494902f186c6e3bb6eb9c412b415e9fcb9c2c8ac4a6d0",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "be35a5e4fe8ff8ecaac494902f186c6e3bb6eb9c412b415e9fcb9c2c8ac4a6d0",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:c3a635b45eb3797493d6df41593016144b87617f0fa75a85e35e68c15e73863a",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "c3a635b45eb3797493d6df41593016144b87617f0fa75a85e35e68c15e73863a",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:c60d33a1116df871e4c1c9b5495e2a89df3075b3cbdc6ec58d46124a904be906",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "c60d33a1116df871e4c1c9b5495e2a89df3075b3cbdc6ec58d46124a904be906",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:c9610d0430e107ba33d78ba23351f7ebd9e5e4f8f948e6ba8a1a3eda086e10d4",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "c9610d0430e107ba33d78ba23351f7ebd9e5e4f8f948e6ba8a1a3eda086e10d4",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:d076dad28276a3084b8f912ce69517a59cd1a3a64e6723af90c44e90bfebc06d",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "d076dad28276a3084b8f912ce69517a59cd1a3a64e6723af90c44e90bfebc06d",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:d1d2d19b751fcacb395f0c6f9698270d57418b846bcf8db30a94268e5ebcdd03",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "d1d2d19b751fcacb395f0c6f9698270d57418b846bcf8db30a94268e5ebcdd03",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          }
+        ]
+      },
+      {
+        "brainId": "brain-alpha",
+        "availability": "AVAILABLE",
+        "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+        "observedAtUnixMs": 1788670279156,
+        "hashAlgorithm": "sha256-v1",
+        "totalGroups": 125,
+        "offset": 100,
+        "limit": 50,
+        "maxLimit": 100,
+        "returned": 25,
+        "hasMore": false,
+        "order": "size_bytes descending, hash_hex ascending",
+        "queryDurationMs": 19.5994,
+        "groups": [
+          {
+            "groupId": "sha256-v1:d24612431ec84bb77f3a5e4aa5705844d09f9c31c4790f95e310669f9d8dd4c5",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "d24612431ec84bb77f3a5e4aa5705844d09f9c31c4790f95e310669f9d8dd4c5",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:d28d6cbe2afdcf755075f82019eac65f8208b9cee0d8ffc3232cb22f9808dca9",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "d28d6cbe2afdcf755075f82019eac65f8208b9cee0d8ffc3232cb22f9808dca9",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:d2f2b7e5fa102208760bdd839d0366ecbb7847f547fd5c875dc20a45ff339939",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "d2f2b7e5fa102208760bdd839d0366ecbb7847f547fd5c875dc20a45ff339939",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:d7b931becbf0e96d7f47c8534e5eede2ae2d438e9edd3e467a77d81f2e4c8864",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "d7b931becbf0e96d7f47c8534e5eede2ae2d438e9edd3e467a77d81f2e4c8864",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:d9f27b4a6d66b2dbb9c013a47ad3606ab25dfa0ce1b808e683528e1c5cef1842",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "d9f27b4a6d66b2dbb9c013a47ad3606ab25dfa0ce1b808e683528e1c5cef1842",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:db243d9ba3e60bf235527e76b3064fad5ab5dbecf0896c363ebac514c2503c85",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "db243d9ba3e60bf235527e76b3064fad5ab5dbecf0896c363ebac514c2503c85",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:db2832f59d6a30ab0cb3ab71d1ec9b52a314f7e4c200038bbb1d54d06d0abaff",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "db2832f59d6a30ab0cb3ab71d1ec9b52a314f7e4c200038bbb1d54d06d0abaff",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:dbfe6dd0bf5e3c9ae5181bccbe9fd6fcea7500fe06d277feae557228473fae9e",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "dbfe6dd0bf5e3c9ae5181bccbe9fd6fcea7500fe06d277feae557228473fae9e",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:e04e62e6c68a0bf412aad31a2fe8b7d12087a5a9fe88aee351fe541e9f723a82",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e04e62e6c68a0bf412aad31a2fe8b7d12087a5a9fe88aee351fe541e9f723a82",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:e1b85c967762731024b0d86c16ec496f22407525b4fc5015b95f90b4b83aee26",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e1b85c967762731024b0d86c16ec496f22407525b4fc5015b95f90b4b83aee26",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:e1d4a6b728fce1457b1dda20bff917f233b62432c47b6d42b74da9746093210a",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e1d4a6b728fce1457b1dda20bff917f233b62432c47b6d42b74da9746093210a",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:e25b480075bf869a29efdf92f25f5831ea77d01decabaf10f51dc42beed3d1a4",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e25b480075bf869a29efdf92f25f5831ea77d01decabaf10f51dc42beed3d1a4",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:e3c0c79dea06f9bd9ee9abb4176924ff26c72ea3be019a03bfa9a0a7df73f335",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3c0c79dea06f9bd9ee9abb4176924ff26c72ea3be019a03bfa9a0a7df73f335",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:e4975eda6d92cb353ababa54ad1ea15b6f7441b9da1fe3e3471358abb691083b",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e4975eda6d92cb353ababa54ad1ea15b6f7441b9da1fe3e3471358abb691083b",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:e56b6ef500baf22116d69a7dbcec7beec2598ae88358ce8f036dff6612626a30",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e56b6ef500baf22116d69a7dbcec7beec2598ae88358ce8f036dff6612626a30",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:eb25bd1915860fb0feb252928ba853eb54db5ae6099d4d61cf394f8c3bfade70",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "eb25bd1915860fb0feb252928ba853eb54db5ae6099d4d61cf394f8c3bfade70",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:ef71aab6e206c905981476b729f2d044b0eb00d248a23eb91aae016bb35ff321",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "ef71aab6e206c905981476b729f2d044b0eb00d248a23eb91aae016bb35ff321",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:f2bd759800ff1626753376d9a0dd2e523d14be8fa102662ce389336a047f8d84",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "f2bd759800ff1626753376d9a0dd2e523d14be8fa102662ce389336a047f8d84",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:f2c8ca4f5090c731c235df2a8cf418e45ac8396a979e3ea80916083794af754f",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "f2c8ca4f5090c731c235df2a8cf418e45ac8396a979e3ea80916083794af754f",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:f3435124d3366a9ce4ad62d9652d3acc9e1d429de79b2eb67f7d822801c0b1fc",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "f3435124d3366a9ce4ad62d9652d3acc9e1d429de79b2eb67f7d822801c0b1fc",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:f3d1d514123ba34f4d281733668c097d9518fe4bfb5bf1f458ce56add767bb7b",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "f3d1d514123ba34f4d281733668c097d9518fe4bfb5bf1f458ce56add767bb7b",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:f461bddf4ecd10fd4512dd5df023124f112839bfe158b802148621f16e856d37",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "f461bddf4ecd10fd4512dd5df023124f112839bfe158b802148621f16e856d37",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:fdadafed864e3c27c5eea2a79cae3768b3117bcdfc59bf6885cee34e947f5494",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "fdadafed864e3c27c5eea2a79cae3768b3117bcdfc59bf6885cee34e947f5494",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:fe31c7d2ce4408f4887ab537395c7e9b8990c99bc248a691f28c8bb896d4cc0a",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "fe31c7d2ce4408f4887ab537395c7e9b8990c99bc248a691f28c8bb896d4cc0a",
+            "sizeBytes": 15,
+            "memberCount": 2,
+            "emptyContent": false,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          },
+          {
+            "groupId": "sha256-v1:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "sizeBytes": 0,
+            "memberCount": 125,
+            "emptyContent": true,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "observedAtUnixMs": 1788670279156
+          }
+        ]
+      }
+    ],
+    "memberPages": [
+      {
+        "brainId": "brain-alpha",
+        "groupId": "sha256-v1:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+        "observedAtUnixMs": 1788670279156,
+        "hashAlgorithm": "sha256-v1",
+        "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "totalMembers": 125,
+        "unresolvedReturned": 0,
+        "offset": 0,
+        "limit": 50,
+        "maxLimit": 100,
+        "returned": 50,
+        "hasMore": true,
+        "order": "relative_path ascending",
+        "queryDurationMs": 289.6125,
+        "members": [
+          {
+            "relativePath": "empty-000.bin",
+            "name": "empty-000.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 2
+            }
+          },
+          {
+            "relativePath": "empty-001.bin",
+            "name": "empty-001.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 3
+            }
+          },
+          {
+            "relativePath": "empty-002.bin",
+            "name": "empty-002.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 4
+            }
+          },
+          {
+            "relativePath": "empty-003.bin",
+            "name": "empty-003.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 5
+            }
+          },
+          {
+            "relativePath": "empty-004.bin",
+            "name": "empty-004.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 6
+            }
+          },
+          {
+            "relativePath": "empty-005.bin",
+            "name": "empty-005.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 7
+            }
+          },
+          {
+            "relativePath": "empty-006.bin",
+            "name": "empty-006.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 8
+            }
+          },
+          {
+            "relativePath": "empty-007.bin",
+            "name": "empty-007.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 9
+            }
+          },
+          {
+            "relativePath": "empty-008.bin",
+            "name": "empty-008.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 10
+            }
+          },
+          {
+            "relativePath": "empty-009.bin",
+            "name": "empty-009.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 11
+            }
+          },
+          {
+            "relativePath": "empty-010.bin",
+            "name": "empty-010.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 12
+            }
+          },
+          {
+            "relativePath": "empty-011.bin",
+            "name": "empty-011.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 13
+            }
+          },
+          {
+            "relativePath": "empty-012.bin",
+            "name": "empty-012.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 14
+            }
+          },
+          {
+            "relativePath": "empty-013.bin",
+            "name": "empty-013.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 15
+            }
+          },
+          {
+            "relativePath": "empty-014.bin",
+            "name": "empty-014.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 16
+            }
+          },
+          {
+            "relativePath": "empty-015.bin",
+            "name": "empty-015.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 17
+            }
+          },
+          {
+            "relativePath": "empty-016.bin",
+            "name": "empty-016.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 18
+            }
+          },
+          {
+            "relativePath": "empty-017.bin",
+            "name": "empty-017.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 19
+            }
+          },
+          {
+            "relativePath": "empty-018.bin",
+            "name": "empty-018.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 20
+            }
+          },
+          {
+            "relativePath": "empty-019.bin",
+            "name": "empty-019.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 21
+            }
+          },
+          {
+            "relativePath": "empty-020.bin",
+            "name": "empty-020.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 22
+            }
+          },
+          {
+            "relativePath": "empty-021.bin",
+            "name": "empty-021.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 23
+            }
+          },
+          {
+            "relativePath": "empty-022.bin",
+            "name": "empty-022.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 24
+            }
+          },
+          {
+            "relativePath": "empty-023.bin",
+            "name": "empty-023.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 25
+            }
+          },
+          {
+            "relativePath": "empty-024.bin",
+            "name": "empty-024.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 26
+            }
+          },
+          {
+            "relativePath": "empty-025.bin",
+            "name": "empty-025.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 27
+            }
+          },
+          {
+            "relativePath": "empty-026.bin",
+            "name": "empty-026.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 28
+            }
+          },
+          {
+            "relativePath": "empty-027.bin",
+            "name": "empty-027.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 29
+            }
+          },
+          {
+            "relativePath": "empty-028.bin",
+            "name": "empty-028.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 30
+            }
+          },
+          {
+            "relativePath": "empty-029.bin",
+            "name": "empty-029.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 31
+            }
+          },
+          {
+            "relativePath": "empty-030.bin",
+            "name": "empty-030.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 32
+            }
+          },
+          {
+            "relativePath": "empty-031.bin",
+            "name": "empty-031.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 33
+            }
+          },
+          {
+            "relativePath": "empty-032.bin",
+            "name": "empty-032.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 34
+            }
+          },
+          {
+            "relativePath": "empty-033.bin",
+            "name": "empty-033.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 35
+            }
+          },
+          {
+            "relativePath": "empty-034.bin",
+            "name": "empty-034.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 36
+            }
+          },
+          {
+            "relativePath": "empty-035.bin",
+            "name": "empty-035.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 37
+            }
+          },
+          {
+            "relativePath": "empty-036.bin",
+            "name": "empty-036.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 38
+            }
+          },
+          {
+            "relativePath": "empty-037.bin",
+            "name": "empty-037.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 39
+            }
+          },
+          {
+            "relativePath": "empty-038.bin",
+            "name": "empty-038.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 40
+            }
+          },
+          {
+            "relativePath": "empty-039.bin",
+            "name": "empty-039.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 41
+            }
+          },
+          {
+            "relativePath": "empty-040.bin",
+            "name": "empty-040.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 42
+            }
+          },
+          {
+            "relativePath": "empty-041.bin",
+            "name": "empty-041.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 43
+            }
+          },
+          {
+            "relativePath": "empty-042.bin",
+            "name": "empty-042.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 44
+            }
+          },
+          {
+            "relativePath": "empty-043.bin",
+            "name": "empty-043.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 45
+            }
+          },
+          {
+            "relativePath": "empty-044.bin",
+            "name": "empty-044.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 46
+            }
+          },
+          {
+            "relativePath": "empty-045.bin",
+            "name": "empty-045.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 47
+            }
+          },
+          {
+            "relativePath": "empty-046.bin",
+            "name": "empty-046.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 48
+            }
+          },
+          {
+            "relativePath": "empty-047.bin",
+            "name": "empty-047.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 49
+            }
+          },
+          {
+            "relativePath": "empty-048.bin",
+            "name": "empty-048.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 50
+            }
+          },
+          {
+            "relativePath": "empty-049.bin",
+            "name": "empty-049.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 51
+            }
+          }
+        ]
+      },
+      {
+        "brainId": "brain-alpha",
+        "groupId": "sha256-v1:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+        "observedAtUnixMs": 1788670279156,
+        "hashAlgorithm": "sha256-v1",
+        "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "totalMembers": 125,
+        "unresolvedReturned": 0,
+        "offset": 50,
+        "limit": 50,
+        "maxLimit": 100,
+        "returned": 50,
+        "hasMore": true,
+        "order": "relative_path ascending",
+        "queryDurationMs": 308.42740000000003,
+        "members": [
+          {
+            "relativePath": "empty-050.bin",
+            "name": "empty-050.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 52
+            }
+          },
+          {
+            "relativePath": "empty-051.bin",
+            "name": "empty-051.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 53
+            }
+          },
+          {
+            "relativePath": "empty-052.bin",
+            "name": "empty-052.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 54
+            }
+          },
+          {
+            "relativePath": "empty-053.bin",
+            "name": "empty-053.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 55
+            }
+          },
+          {
+            "relativePath": "empty-054.bin",
+            "name": "empty-054.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 56
+            }
+          },
+          {
+            "relativePath": "empty-055.bin",
+            "name": "empty-055.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 57
+            }
+          },
+          {
+            "relativePath": "empty-056.bin",
+            "name": "empty-056.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 58
+            }
+          },
+          {
+            "relativePath": "empty-057.bin",
+            "name": "empty-057.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 59
+            }
+          },
+          {
+            "relativePath": "empty-058.bin",
+            "name": "empty-058.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 60
+            }
+          },
+          {
+            "relativePath": "empty-059.bin",
+            "name": "empty-059.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 61
+            }
+          },
+          {
+            "relativePath": "empty-060.bin",
+            "name": "empty-060.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 62
+            }
+          },
+          {
+            "relativePath": "empty-061.bin",
+            "name": "empty-061.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 63
+            }
+          },
+          {
+            "relativePath": "empty-062.bin",
+            "name": "empty-062.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 64
+            }
+          },
+          {
+            "relativePath": "empty-063.bin",
+            "name": "empty-063.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 65
+            }
+          },
+          {
+            "relativePath": "empty-064.bin",
+            "name": "empty-064.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 66
+            }
+          },
+          {
+            "relativePath": "empty-065.bin",
+            "name": "empty-065.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 67
+            }
+          },
+          {
+            "relativePath": "empty-066.bin",
+            "name": "empty-066.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 68
+            }
+          },
+          {
+            "relativePath": "empty-067.bin",
+            "name": "empty-067.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 69
+            }
+          },
+          {
+            "relativePath": "empty-068.bin",
+            "name": "empty-068.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 70
+            }
+          },
+          {
+            "relativePath": "empty-069.bin",
+            "name": "empty-069.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 71
+            }
+          },
+          {
+            "relativePath": "empty-070.bin",
+            "name": "empty-070.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 72
+            }
+          },
+          {
+            "relativePath": "empty-071.bin",
+            "name": "empty-071.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 73
+            }
+          },
+          {
+            "relativePath": "empty-072.bin",
+            "name": "empty-072.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 74
+            }
+          },
+          {
+            "relativePath": "empty-073.bin",
+            "name": "empty-073.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 75
+            }
+          },
+          {
+            "relativePath": "empty-074.bin",
+            "name": "empty-074.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 76
+            }
+          },
+          {
+            "relativePath": "empty-075.bin",
+            "name": "empty-075.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 77
+            }
+          },
+          {
+            "relativePath": "empty-076.bin",
+            "name": "empty-076.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 78
+            }
+          },
+          {
+            "relativePath": "empty-077.bin",
+            "name": "empty-077.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 79
+            }
+          },
+          {
+            "relativePath": "empty-078.bin",
+            "name": "empty-078.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 80
+            }
+          },
+          {
+            "relativePath": "empty-079.bin",
+            "name": "empty-079.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 81
+            }
+          },
+          {
+            "relativePath": "empty-080.bin",
+            "name": "empty-080.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 82
+            }
+          },
+          {
+            "relativePath": "empty-081.bin",
+            "name": "empty-081.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 83
+            }
+          },
+          {
+            "relativePath": "empty-082.bin",
+            "name": "empty-082.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 84
+            }
+          },
+          {
+            "relativePath": "empty-083.bin",
+            "name": "empty-083.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 85
+            }
+          },
+          {
+            "relativePath": "empty-084.bin",
+            "name": "empty-084.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 86
+            }
+          },
+          {
+            "relativePath": "empty-085.bin",
+            "name": "empty-085.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 87
+            }
+          },
+          {
+            "relativePath": "empty-086.bin",
+            "name": "empty-086.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 88
+            }
+          },
+          {
+            "relativePath": "empty-087.bin",
+            "name": "empty-087.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 89
+            }
+          },
+          {
+            "relativePath": "empty-088.bin",
+            "name": "empty-088.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 90
+            }
+          },
+          {
+            "relativePath": "empty-089.bin",
+            "name": "empty-089.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 91
+            }
+          },
+          {
+            "relativePath": "empty-090.bin",
+            "name": "empty-090.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 92
+            }
+          },
+          {
+            "relativePath": "empty-091.bin",
+            "name": "empty-091.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 93
+            }
+          },
+          {
+            "relativePath": "empty-092.bin",
+            "name": "empty-092.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 94
+            }
+          },
+          {
+            "relativePath": "empty-093.bin",
+            "name": "empty-093.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 95
+            }
+          },
+          {
+            "relativePath": "empty-094.bin",
+            "name": "empty-094.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 96
+            }
+          },
+          {
+            "relativePath": "empty-095.bin",
+            "name": "empty-095.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 97
+            }
+          },
+          {
+            "relativePath": "empty-096.bin",
+            "name": "empty-096.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 98
+            }
+          },
+          {
+            "relativePath": "empty-097.bin",
+            "name": "empty-097.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 99
+            }
+          },
+          {
+            "relativePath": "empty-098.bin",
+            "name": "empty-098.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 100
+            }
+          },
+          {
+            "relativePath": "empty-099.bin",
+            "name": "empty-099.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 101
+            }
+          }
+        ]
+      },
+      {
+        "brainId": "brain-alpha",
+        "groupId": "sha256-v1:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+        "observedAtUnixMs": 1788670279156,
+        "hashAlgorithm": "sha256-v1",
+        "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "totalMembers": 125,
+        "unresolvedReturned": 0,
+        "offset": 100,
+        "limit": 50,
+        "maxLimit": 100,
+        "returned": 25,
+        "hasMore": false,
+        "order": "relative_path ascending",
+        "queryDurationMs": 145.2361,
+        "members": [
+          {
+            "relativePath": "empty-100.bin",
+            "name": "empty-100.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 102
+            }
+          },
+          {
+            "relativePath": "empty-101.bin",
+            "name": "empty-101.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 103
+            }
+          },
+          {
+            "relativePath": "empty-102.bin",
+            "name": "empty-102.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 104
+            }
+          },
+          {
+            "relativePath": "empty-103.bin",
+            "name": "empty-103.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 105
+            }
+          },
+          {
+            "relativePath": "empty-104.bin",
+            "name": "empty-104.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 106
+            }
+          },
+          {
+            "relativePath": "empty-105.bin",
+            "name": "empty-105.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 107
+            }
+          },
+          {
+            "relativePath": "empty-106.bin",
+            "name": "empty-106.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 108
+            }
+          },
+          {
+            "relativePath": "empty-107.bin",
+            "name": "empty-107.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 109
+            }
+          },
+          {
+            "relativePath": "empty-108.bin",
+            "name": "empty-108.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 110
+            }
+          },
+          {
+            "relativePath": "empty-109.bin",
+            "name": "empty-109.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 111
+            }
+          },
+          {
+            "relativePath": "empty-110.bin",
+            "name": "empty-110.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 112
+            }
+          },
+          {
+            "relativePath": "empty-111.bin",
+            "name": "empty-111.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 113
+            }
+          },
+          {
+            "relativePath": "empty-112.bin",
+            "name": "empty-112.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 114
+            }
+          },
+          {
+            "relativePath": "empty-113.bin",
+            "name": "empty-113.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 115
+            }
+          },
+          {
+            "relativePath": "empty-114.bin",
+            "name": "empty-114.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 116
+            }
+          },
+          {
+            "relativePath": "empty-115.bin",
+            "name": "empty-115.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 117
+            }
+          },
+          {
+            "relativePath": "empty-116.bin",
+            "name": "empty-116.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 118
+            }
+          },
+          {
+            "relativePath": "empty-117.bin",
+            "name": "empty-117.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 119
+            }
+          },
+          {
+            "relativePath": "empty-118.bin",
+            "name": "empty-118.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 120
+            }
+          },
+          {
+            "relativePath": "empty-119.bin",
+            "name": "empty-119.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 121
+            }
+          },
+          {
+            "relativePath": "empty-120.bin",
+            "name": "empty-120.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 122
+            }
+          },
+          {
+            "relativePath": "empty-121.bin",
+            "name": "empty-121.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 123
+            }
+          },
+          {
+            "relativePath": "empty-122.bin",
+            "name": "empty-122.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 124
+            }
+          },
+          {
+            "relativePath": "empty-123.bin",
+            "name": "empty-123.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 125
+            }
+          },
+          {
+            "relativePath": "empty-124.bin",
+            "name": "empty-124.bin",
+            "sizeBytes": 0,
+            "observationStatus": "HASHED",
+            "hashAlgorithm": "sha256-v1",
+            "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "observedAtUnixMs": 1788670279156,
+            "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+            "nodeRef": {
+              "brainId": "brain-alpha",
+              "nodeId": 126
+            }
+          }
+        ]
+      }
+    ],
+    "empty": {
+      "groupId": "sha256-v1:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "hashAlgorithm": "sha256-v1",
+      "hashHex": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "sizeBytes": 0,
+      "memberCount": 125,
+      "emptyContent": true,
+      "generationId": "c63285ce-70c4-4f8e-8f2e-4466931d62a6",
+      "observedAtUnixMs": 1788670279156
+    }
+  },
+  "repeatedPageOrderStable": true,
+  "ui": {
+    "open": {
+      "keyRequested": "{ENTER}",
+      "keydownIsTrusted": true,
+      "activationIsTrusted": true,
+      "programmaticClickCalls": 0,
+      "programmaticClickDispatches": 0,
+      "focusReached": true,
+      "observedChange": true
+    },
+    "groupNextOne": {
+      "keyRequested": "{ENTER}",
+      "keydownIsTrusted": true,
+      "activationIsTrusted": true,
+      "programmaticClickCalls": 0,
+      "programmaticClickDispatches": 0,
+      "focusReached": true,
+      "observedChange": true
+    },
+    "groupNextTwo": {
+      "keyRequested": "{ENTER}",
+      "keydownIsTrusted": true,
+      "activationIsTrusted": true,
+      "programmaticClickCalls": 0,
+      "programmaticClickDispatches": 0,
+      "focusReached": true,
+      "observedChange": true
+    },
+    "emptyGroup": {
+      "keyRequested": "{ENTER}",
+      "keydownIsTrusted": true,
+      "activationIsTrusted": true,
+      "programmaticClickCalls": 0,
+      "programmaticClickDispatches": 0,
+      "focusReached": true,
+      "observedChange": true
+    },
+    "memberNextOne": {
+      "keyRequested": "{ENTER}",
+      "keydownIsTrusted": true,
+      "activationIsTrusted": true,
+      "programmaticClickCalls": 0,
+      "programmaticClickDispatches": 0,
+      "focusReached": true,
+      "observedChange": true
+    },
+    "memberNextTwo": {
+      "keyRequested": "{ENTER}",
+      "keydownIsTrusted": true,
+      "activationIsTrusted": true,
+      "programmaticClickCalls": 0,
+      "programmaticClickDispatches": 0,
+      "focusReached": true,
+      "observedChange": true
+    },
+    "memberNavigation": {
+      "keyRequested": "{ENTER}",
+      "keydownIsTrusted": true,
+      "activationIsTrusted": true,
+      "programmaticClickCalls": 0,
+      "programmaticClickDispatches": 0,
+      "focusReached": true,
+      "observedChange": true
+    },
+    "boundary": "Contenu binaire identique observé. Cela ne prouve pas qu’il s’agit du même fichier physique ni d’une copie.",
+    "digestLength": 64
+  },
+  "secondExplicitUnchangedCampaign": {
+    "sourceId": "task0026-ed15-scale",
+    "totalFiles": 1200,
+    "expectedGroups": 125,
+    "expectedGroupedOccurrences": 373,
+    "expectedEmptyMembers": 125,
+    "mapNodeCount": 1201,
+    "report": {
+      "brainId": "brain-alpha",
+      "storePath": "brains/brain-alpha/signals/content.sqlite",
+      "schemaVersion": 1,
+      "signalEngineVersion": "sha256-v1",
+      "generationId": "2fe26009-7022-411a-955f-844c892ca3cf",
+      "observedAt": 1788670290190,
+      "sourceFingerprintBefore": "sha256-tree-v1:853c5e196d6b3f341ec1dc401e05171b6b42c43381b8ad4651ccba94b8ed198a",
+      "sourceFingerprintAfter": "sha256-tree-v1:853c5e196d6b3f341ec1dc401e05171b6b42c43381b8ad4651ccba94b8ed198a",
+      "sourceStable": true,
+      "indexedFileCount": 1200,
+      "hashedCount": 1200,
+      "unreadableCount": 0,
+      "unstableCount": 0,
+      "unsupportedCount": 0,
+      "filesOpenedForHash": 1200,
+      "bytesRead": 26876,
+      "digestsComputed": 1200,
+      "hashAlgorithm": "sha256-v1",
+      "readOnlyConfirmed": true,
+      "durationMs": 340.15319999999997
+    }
+  },
+  "noSizeMtimeCache": true,
+  "relationsBefore": {
+    "intra": {
+      "deterministicCount": 1074,
+      "approvedCount": 4,
+      "pendingSuggestionCount": 4,
+      "deterministicDigest": "fnv1a64:c2a0cf3ab5edb608"
+    },
+    "cross": {
+      "deterministicCount": 6,
+      "approvedCount": 0,
+      "pendingSuggestionCount": 4,
+      "deterministicDigest": "fnv1a64:3020af7489aab581"
+    }
+  },
+  "relationsAfter": {
+    "intra": {
+      "deterministicCount": 1074,
+      "approvedCount": 4,
+      "pendingSuggestionCount": 4,
+      "deterministicDigest": "fnv1a64:c2a0cf3ab5edb608"
+    },
+    "cross": {
+      "deterministicCount": 6,
+      "approvedCount": 0,
+      "pendingSuggestionCount": 4,
+      "deterministicDigest": "fnv1a64:3020af7489aab581"
+    }
+  },
+  "relationStoresUnchanged": true,
+  "betaBefore": {
+    "brainId": "brain-beta",
+    "availability": "NOT_OBSERVED",
+    "generationId": null,
+    "observedAtUnixMs": null,
+    "hashAlgorithm": "sha256-v1",
+    "exactGroupCount": 0,
+    "groupedOccurrenceCount": 0,
+    "emptyGroupCount": 0,
+    "queryDurationMs": 0.0608
+  },
+  "betaAfter": {
+    "brainId": "brain-beta",
+    "availability": "NOT_OBSERVED",
+    "generationId": null,
+    "observedAtUnixMs": null,
+    "hashAlgorithm": "sha256-v1",
+    "exactGroupCount": 0,
+    "groupedOccurrenceCount": 0,
+    "emptyGroupCount": 0,
+    "queryDurationMs": 0.046400000000000004
+  },
+  "gammaBefore": {
+    "brainId": "brain-gamma",
+    "availability": "NOT_OBSERVED",
+    "generationId": null,
+    "observedAtUnixMs": null,
+    "hashAlgorithm": "sha256-v1",
+    "exactGroupCount": 0,
+    "groupedOccurrenceCount": 0,
+    "emptyGroupCount": 0,
+    "queryDurationMs": 0.0541
+  },
+  "gammaAfter": {
+    "brainId": "brain-gamma",
+    "availability": "NOT_OBSERVED",
+    "generationId": null,
+    "observedAtUnixMs": null,
+    "hashAlgorithm": "sha256-v1",
+    "exactGroupCount": 0,
+    "groupedOccurrenceCount": 0,
+    "emptyGroupCount": 0,
+    "queryDurationMs": 0.08349999999999999
+  }
+}
