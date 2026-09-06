@@ -45,6 +45,7 @@ import { runContentScenario as runContent } from "./contentScenario";
 import { runDreScenario as runDre } from "./dreScenario";
 import { runReviewScenario as runReview } from "./reviewScenario";
 import { runGenericRelationScenario as runGeneric } from "./genericRelationScenario";
+import { runExactDuplicateScenario as runExactDuplicates } from "./exactDuplicateScenario";
 import {
   H9_REGRESSION_ABANDON_ARTIFACT,
   H9_REGRESSION_ARTIFACT,
@@ -310,6 +311,7 @@ export default function MapApp() {
   const runDreScenarioRef = useRef<(() => Promise<void>) | null>(null);
   const runReviewScenarioRef = useRef<(() => Promise<void>) | null>(null);
   const runGenericRelationScenarioRef = useRef<(() => Promise<void>) | null>(null);
+  const runExactDuplicateScenarioRef = useRef<(() => Promise<void>) | null>(null);
 
   const order = useMemo(() => catalogueOrder(catalog?.brains ?? []), [catalog]);
 
@@ -435,6 +437,12 @@ export default function MapApp() {
   const autoStarted = useRef(false);
   useEffect(() => {
     if (autoStarted.current || fixtures.length === 0 || !host) return;
+    if (host.autoEd15Pass === 1 || host.autoEd15Pass === 2) {
+      autoStarted.current = true;
+      hostLog("info", `démarrage automatique du scénario ED15, passe ${host.autoEd15Pass}`);
+      void runExactDuplicateScenarioRef.current?.();
+      return;
+    }
     if (host.autoSr15Pass === 1 || host.autoSr15Pass === 2) {
       autoStarted.current = true;
       hostLog("info", `démarrage automatique du scénario SR15, passe ${host.autoSr15Pass}`);
@@ -1704,6 +1712,23 @@ export default function MapApp() {
   }, [host, selectNode, showOnly]);
 
   runContentScenarioRef.current = runContentScenario;
+
+  const runExactDuplicateScenario = useCallback(() => {
+    const pass = host?.autoEd15Pass === 2 ? 2 : 1;
+    return runExactDuplicates(
+      {
+        invoke: (command, args) => invoke(command, args),
+        host,
+        refreshContent: () => setContentRevision((current) => current + 1),
+        readSelection: () => selectedRef.current,
+        setStatus,
+        log: hostLog,
+      },
+      pass,
+    );
+  }, [host]);
+
+  runExactDuplicateScenarioRef.current = runExactDuplicateScenario;
 
   const runDreScenario = useCallback(() => {
     const pass = host?.autoDrePass === 2 ? 2 : 1;

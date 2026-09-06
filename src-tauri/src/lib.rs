@@ -829,6 +829,28 @@ async fn map_task0025_sr15_prepare(
     }
 }
 
+/// Generates the bounded-scale ED15 source inside the selected sandbox and
+/// observes it with the production streaming SHA-256 path.
+#[tauri::command]
+async fn map_task0026_ed15_prepare(
+    app: tauri::AppHandle,
+) -> Result<map::content_signals::Task0026Ed15Preparation, String> {
+    #[cfg(not(debug_assertions))]
+    {
+        let _ = app;
+        return Err("TASK-0026 ED15 synthetic proof exists only in development builds".to_string());
+    }
+    #[cfg(debug_assertions)]
+    {
+        let (paths, brain) = resolve_brain(&app, "brain-alpha")?;
+        tauri::async_runtime::spawn_blocking(move || {
+            map::content_signals::prepare_task0026_ed15(&paths, &brain).map_err(String::from)
+        })
+        .await
+        .map_err(|_| "task0026_ed15_worker_failed".to_string())?
+    }
+}
+
 /// `H8` — the engine actually rendering, read from the host.
 ///
 /// `tauri::webview_version()` reports the WebView2 runtime on Windows. It is
@@ -892,6 +914,11 @@ fn map_host_info(app: tauri::AppHandle) -> map::commands::HostInfo {
         // `SR15`: the review queue and the memory of a decision, in two real
         // processes on one variant — pass 1 decides, pass 2 restarts.
         auto_sr15_pass: std::env::var("FILETOPO_AUTO_SR15")
+            .ok()
+            .and_then(|value| value.parse::<u8>().ok())
+            .filter(|pass| *pass == 1 || *pass == 2)
+            .unwrap_or(0),
+        auto_ed15_pass: std::env::var("FILETOPO_AUTO_ED15")
             .ok()
             .and_then(|value| value.parse::<u8>().ok())
             .filter(|pass| *pass == 1 || *pass == 2)
@@ -1156,6 +1183,7 @@ pub fn run() {
             map_relation_engine_run,
             map_task0024_dr15_prepare,
             map_task0025_sr15_prepare,
+            map_task0026_ed15_prepare,
             map_relations_open,
             map_relations_for_node,
             map_relations_approve,

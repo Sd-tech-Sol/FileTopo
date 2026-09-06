@@ -207,6 +207,11 @@ export function sr15Artifact(pass: number): string {
   return `TASK-0026-SR15-suggestion-review-memory-webview2-pass${pass}.json`;
 }
 
+/** `ED15` — the bounded exact-duplicate explorer in two real processes. */
+export function ed15Artifact(pass: number): string {
+  return `TASK-0026-ED15-exact-duplicate-explorer-webview2-pass${pass}.json`;
+}
+
 /**
  * Every name this runtime **spells as a destination**. The guard test
  * enumerates it.
@@ -243,6 +248,8 @@ export const RUNTIME_RUN_ARTIFACTS = [
   X11_GENERIC_ARTIFACT,
   sr15Artifact(1),
   sr15Artifact(2),
+  ed15Artifact(1),
+  ed15Artifact(2),
 ] as const;
 
 /**

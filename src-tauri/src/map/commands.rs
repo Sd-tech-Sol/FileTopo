@@ -137,6 +137,8 @@ pub struct HostInfo {
     /// `0` none, `1` the deciding pass — confirm, reject and postpone by real
     /// keystroke — and `2` the restart that proves the decisions survived.
     pub auto_sr15_pass: u8,
+    /// `ED15` — bounded exact-duplicate explorer, two real processes.
+    pub auto_ed15_pass: u8,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

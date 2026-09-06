@@ -179,6 +179,8 @@ export interface HostInfo {
    * survived it.
    */
   autoSr15Pass: number;
+  /** `ED15` — bounded exact-duplicate explorer, pass 1 or real restart pass 2. */
+  autoEd15Pass: number;
 }
 
 /* --- TASK-0023 — observations cryptographiques exactes ------------------ */
@@ -313,6 +315,16 @@ export interface ExactDuplicateMemberPage {
   order: string;
   queryDurationMs: number;
   members: ExactDuplicateMember[];
+}
+
+export interface Task0026Ed15Preparation {
+  sourceId: string;
+  totalFiles: number;
+  expectedGroups: number;
+  expectedGroupedOccurrences: number;
+  expectedEmptyMembers: number;
+  mapNodeCount: number;
+  report: ContentObservationReport;
 }
 
 export interface FixtureIntegrity {

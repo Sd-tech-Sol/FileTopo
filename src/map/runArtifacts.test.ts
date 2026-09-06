@@ -38,9 +38,9 @@
  * **`TASK-0025` §4 migrated every destination** from `TASK-0024-*` to
  * `TASK-0025-*` before replaying anything. `ACTION-0042` now makes TASK-0025
  * `VERIFIED` and seals exactly the two SR15 passes. The protected/runtime
- * intersection is therefore exactly those two names and
- * `writesUnderItsOwnTaskOnly` is `false`; the three executable guards — Rust,
- * TypeScript, PowerShell — carry the same thirty-four names in the same order.
+ * `TASK-0026` migrates every destination again before replay: the intersection
+ * is empty and `writesUnderItsOwnTaskOnly` is `true`; the three executable
+ * guards still carry the same thirty-four names in the same order.
  */
 
 import { describe, expect, it } from "vitest";
@@ -52,6 +52,7 @@ import composedScenarioSource from "./composedScenario.ts?raw";
 import contentScenarioSource from "./contentScenario.ts?raw";
 import crossScenarioSource from "./crossScenario.ts?raw";
 import dreScenarioSource from "./dreScenario.ts?raw";
+import exactDuplicateScenarioSource from "./exactDuplicateScenario.ts?raw";
 import genericRelationScenarioSource from "./genericRelationScenario.ts?raw";
 import mapAppSource from "./MapApp.tsx?raw";
 import relationScenarioSource from "./relationScenario.ts?raw";
@@ -68,6 +69,7 @@ import {
   SEALED_RUNTIME_DESTINATIONS,
   artifactTaskId,
   dr15Artifact,
+  ed15Artifact,
   ec15Artifact,
   k12Artifact,
   l12Artifact,
@@ -97,6 +99,7 @@ const WRITING_SOURCES: ReadonlyArray<readonly [string, string]> = [
   // too, and was the one writing source the guard did not hold.
   ["src/map/genericRelationScenario.ts", genericRelationScenarioSource],
   ["src/map/reviewScenario.ts", reviewScenarioSource],
+  ["src/map/exactDuplicateScenario.ts", exactDuplicateScenarioSource],
 ];
 
 const ORIGINAL_19_PROTECTED = [
@@ -388,6 +391,12 @@ describe("X5 — the runtime never writes over canonical evidence", () => {
     expect(l12Artifact(2, "written")).toBe(
       "TASK-0026-L12-composed-view-regression-webview2-pass2.json",
     );
+    expect(ed15Artifact(1)).toBe(
+      "TASK-0026-ED15-exact-duplicate-explorer-webview2-pass1.json",
+    );
+    expect(ed15Artifact(2)).toBe(
+      "TASK-0026-ED15-exact-duplicate-explorer-webview2-pass2.json",
+    );
   });
 
   it("M12 publishes its TASK-0026 regression evidence in two passes", () => {
@@ -547,7 +556,7 @@ describe("X5 — the runtime never writes over canonical evidence", () => {
       for (const call of calls) {
         const argument = call[1].trim();
         expect(
-          /^(H9_REGRESSION_ARTIFACT|H9_REGRESSION_ABANDON_ARTIFACT|J12_REGRESSION_ARTIFACT|J12_REGRESSION_ABANDON_ARTIFACT|K11_ARTIFACT|X11_GENERIC_ARTIFACT|k12Artifact\(|l12Artifact\(|m12Artifact\(|n15Artifact\(|ec15Artifact\(|dr15Artifact\(|sr15Artifact\()/.test(
+          /^(H9_REGRESSION_ARTIFACT|H9_REGRESSION_ABANDON_ARTIFACT|J12_REGRESSION_ARTIFACT|J12_REGRESSION_ABANDON_ARTIFACT|K11_ARTIFACT|X11_GENERIC_ARTIFACT|k12Artifact\(|l12Artifact\(|m12Artifact\(|n15Artifact\(|ec15Artifact\(|dr15Artifact\(|sr15Artifact\(|ed15Artifact\()/.test(
             argument,
           ),
           `${path}: artefact name not taken from runArtifacts.ts — ${argument}`,

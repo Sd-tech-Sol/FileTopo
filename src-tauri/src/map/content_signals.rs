@@ -202,6 +202,18 @@ pub struct ExactDuplicateMemberPage {
     pub members: Vec<ExactDuplicateMember>,
 }
 
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Task0026Ed15Preparation {
+    pub source_id: String,
+    pub total_files: usize,
+    pub expected_groups: usize,
+    pub expected_grouped_occurrences: usize,
+    pub expected_empty_members: usize,
+    pub map_node_count: usize,
+    pub report: ContentObservationReport,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum ObservationEvent {
     BeforeConfinedFileOpen {
@@ -831,6 +843,157 @@ pub(crate) fn observe_task0024_fixture(
     nodes: &[MapNode],
 ) -> Result<ContentObservationReport, MapError> {
     observe_root_with_hook(paths, brain_id, root, nodes, &mut |_| Ok(()))
+}
+
+#[cfg(debug_assertions)]
+const TASK0026_ED15_SOURCE_ID: &str = "task0026-ed15-scale";
+#[cfg(debug_assertions)]
+const TASK0026_ED15_TOTAL_FILES: usize = 1_200;
+#[cfg(debug_assertions)]
+const TASK0026_ED15_EXPECTED_GROUPS: usize = 125;
+#[cfg(debug_assertions)]
+const TASK0026_ED15_EXPECTED_GROUPED_OCCURRENCES: usize = 373;
+#[cfg(debug_assertions)]
+const TASK0026_ED15_EMPTY_MEMBERS: usize = 125;
+
+#[cfg(debug_assertions)]
+fn task0026_ed15_file_plan() -> Vec<(String, Vec<u8>)> {
+    let mut files = Vec::with_capacity(TASK0026_ED15_TOTAL_FILES);
+    for member in 0..TASK0026_ED15_EMPTY_MEMBERS {
+        files.push((format!("empty-{member:03}.bin"), Vec::new()));
+    }
+    for group in 1..TASK0026_ED15_EXPECTED_GROUPS {
+        let bytes = format!("exact-group-{group:03}").into_bytes();
+        for member in 0..2 {
+            files.push((
+                format!("group-{group:03}-member-{member}.bin"),
+                bytes.clone(),
+            ));
+        }
+    }
+    let unique_count = TASK0026_ED15_TOTAL_FILES - files.len();
+    for index in 0..unique_count {
+        files.push((
+            format!("unique-{index:04}.bin"),
+            format!("unique-task0026-payload-{index:04}").into_bytes(),
+        ));
+    }
+    files
+}
+
+/// Generates and observes the dedicated ED15 source entirely inside the
+/// application sandbox. A pre-existing source is verified byte for byte and
+/// never repaired, overwritten or deleted.
+#[cfg(debug_assertions)]
+pub fn prepare_task0026_ed15(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+) -> Result<Task0026Ed15Preparation, MapError> {
+    use crate::domain::NodeDto;
+    use std::collections::BTreeSet;
+
+    if brain.brain_id != "brain-alpha" {
+        return Err(MapError::ContentObservation(
+            "TASK-0026 ED15 proof input is scoped to brain-alpha".into(),
+        ));
+    }
+    let root = paths.fixtures.join(TASK0026_ED15_SOURCE_ID);
+    let plan = task0026_ed15_file_plan();
+    let expected_paths = plan
+        .iter()
+        .map(|(path, _)| path.clone())
+        .collect::<BTreeSet<_>>();
+    if root.exists() {
+        let observed = fixtures::observed_paths(&root)?
+            .into_iter()
+            .filter(|path| root.join(path).is_file())
+            .collect::<BTreeSet<_>>();
+        if observed != expected_paths {
+            return Err(MapError::FixtureMismatch(
+                "TASK-0026 ED15 source differs from its frozen synthetic plan; nothing was deleted"
+                    .into(),
+            ));
+        }
+        for (path, bytes) in &plan {
+            if fs::read(root.join(path))? != *bytes {
+                return Err(MapError::FixtureMismatch(format!(
+                    "TASK-0026 ED15 synthetic file `{path}` differs; nothing was overwritten"
+                )));
+            }
+        }
+    } else {
+        fs::create_dir_all(&root)?;
+        for (path, bytes) in &plan {
+            fs::write(root.join(path), bytes)?;
+        }
+    }
+
+    let mut nodes = Vec::with_capacity(plan.len() + 1);
+    nodes.push(NodeDto {
+        id: 1,
+        parent_id: None,
+        name: TASK0026_ED15_SOURCE_ID.to_string(),
+        relative_path: String::new(),
+        kind: NodeKind::Root,
+        depth: 0,
+        size_bytes: plan.iter().map(|(_, bytes)| bytes.len() as u64).sum(),
+        modified_unix_ms: None,
+        online_only: false,
+        reparse_point: false,
+        child_count: plan.len() as u32,
+        seen: true,
+    });
+    for (index, (path, bytes)) in plan.iter().enumerate() {
+        nodes.push(NodeDto {
+            id: index as i64 + 2,
+            parent_id: Some(1),
+            name: path.clone(),
+            relative_path: path.clone(),
+            kind: NodeKind::File,
+            depth: 1,
+            size_bytes: bytes.len() as u64,
+            modified_unix_ms: None,
+            online_only: false,
+            reparse_point: false,
+            child_count: 0,
+            seen: true,
+        });
+    }
+    let parents = std::iter::once(None)
+        .chain((0..plan.len()).map(|_| Some(0)))
+        .collect::<Vec<_>>();
+    let layout = super::layout::compute(super::layout::LayoutInput { parents: &parents });
+    let database = paths.brain_map_database(&brain.brain_id);
+    let mut map_store = super::store::MapStore::open(&database)?;
+    map_store.replace(
+        &brain.brain_id,
+        TASK0026_ED15_SOURCE_ID,
+        "Source synthétique ED15",
+        &nodes,
+        &layout.rects,
+        layout.width,
+        layout.height,
+        &[],
+        now_ms(),
+    )?;
+    let snapshot = map_store.snapshot()?;
+    drop(map_store);
+    let report = observe_root_with_hook(
+        paths,
+        &brain.brain_id,
+        &root,
+        &snapshot.nodes,
+        &mut |_| Ok(()),
+    )?;
+    Ok(Task0026Ed15Preparation {
+        source_id: TASK0026_ED15_SOURCE_ID.to_string(),
+        total_files: TASK0026_ED15_TOTAL_FILES,
+        expected_groups: TASK0026_ED15_EXPECTED_GROUPS,
+        expected_grouped_occurrences: TASK0026_ED15_EXPECTED_GROUPED_OCCURRENCES,
+        expected_empty_members: TASK0026_ED15_EMPTY_MEMBERS,
+        map_node_count: snapshot.node_count,
+        report,
+    })
 }
 
 fn observe_root_with_hook(
@@ -1667,6 +1830,37 @@ mod tests {
         assert_eq!(summary.availability, ExactDuplicateAvailability::NotObserved);
         assert_eq!(summary.exact_group_count, 0);
         assert!(!database.exists(), "a read created content.sqlite");
+    }
+
+    #[test]
+    fn task0026_ed15_plan_is_bounded_and_exercises_both_paginators() {
+        let plan = task0026_ed15_file_plan();
+        assert_eq!(plan.len(), TASK0026_ED15_TOTAL_FILES);
+        assert!((1_000..=3_000).contains(&plan.len()));
+        assert_eq!(
+            plan.iter().filter(|(_, bytes)| bytes.is_empty()).count(),
+            TASK0026_ED15_EMPTY_MEMBERS
+        );
+
+        let mut frequencies = BTreeMap::<Vec<u8>, usize>::new();
+        for (_, bytes) in plan {
+            *frequencies.entry(bytes).or_default() += 1;
+        }
+        let groups = frequencies.values().filter(|count| **count >= 2).count();
+        let grouped_occurrences = frequencies
+            .values()
+            .filter(|count| **count >= 2)
+            .sum::<usize>();
+        assert_eq!(groups, TASK0026_ED15_EXPECTED_GROUPS);
+        assert_eq!(
+            grouped_occurrences,
+            TASK0026_ED15_EXPECTED_GROUPED_OCCURRENCES
+        );
+        assert!(groups > 100, "group pagination is not exercised");
+        assert!(
+            TASK0026_ED15_EMPTY_MEMBERS > 100,
+            "member pagination is not exercised"
+        );
     }
 
     #[test]
