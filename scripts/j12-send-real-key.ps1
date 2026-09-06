@@ -48,9 +48,12 @@ using System.Runtime.InteropServices;
 public static class FileTopoWindowActivation {
     [DllImport("user32.dll")]
     public static extern void SwitchToThisWindow(IntPtr window, bool altTab);
+    [DllImport("user32.dll")]
+    public static extern IntPtr GetForegroundWindow();
 }
 '@
 $handled = 0
+$sent = 0
 $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
 
 Write-Output "watcher: en attente de '$marker' dans $LogPath"
@@ -63,6 +66,7 @@ while ((Get-Date) -lt $deadline) {
             # The marker names the key it wants, so the page decides and the
             # watcher never guesses.
             $key = if ($line -match 'key=(\S+)') { $Matches[1] } else { '{ENTER}' }
+            $foregroundReady = $false
 
             # Let the page finish focusing before the window changes.
             Start-Sleep -Milliseconds 500
@@ -70,24 +74,42 @@ while ((Get-Date) -lt $deadline) {
                 Sort-Object -Property StartTime -Descending |
                 Select-Object -First 1
             if ($null -ne $process) {
-                [FileTopoWindowActivation]::SwitchToThisWindow($process.MainWindowHandle, $true)
-                Start-Sleep -Milliseconds 300
-                $activated = $shell.AppActivate($process.Id)
-                Write-Output "watcher: AppActivate=$activated pid=$($process.Id)"
+                $activated = $false
+                for ($attempt = 1; $attempt -le 10 -and -not $foregroundReady; $attempt++) {
+                    [FileTopoWindowActivation]::SwitchToThisWindow(
+                        $process.MainWindowHandle,
+                        $true
+                    )
+                    $activated = $shell.AppActivate($process.Id)
+                    Start-Sleep -Milliseconds 250
+                    $foregroundReady =
+                        [FileTopoWindowActivation]::GetForegroundWindow() -eq
+                        $process.MainWindowHandle
+                }
+                Write-Output (
+                    "watcher: AppActivate=$activated foreground=$foregroundReady " +
+                    "pid=$($process.Id) tentatives=$attempt"
+                )
                 # WebView2 can finish a React commit immediately after the
                 # marker. Keep the window foregrounded long enough for focus
                 # to settle on the replacement control before injecting input.
-                Start-Sleep -Milliseconds 1500
+                Start-Sleep -Milliseconds 500
             }
             else {
                 Write-Output 'watcher: aucun processus filetopo a activer'
             }
-            $shell.SendKeys($key)
-            Write-Output "watcher: frappe reelle $key envoyee (marqueur $($handled + 1))"
+            if ($foregroundReady) {
+                $shell.SendKeys($key)
+                Write-Output "watcher: frappe reelle $key envoyee (marqueur $($handled + 1))"
+                $sent++
+            }
+            else {
+                Write-Output "watcher: frappe $key refusee sans premier plan FileTopo"
+            }
             $handled++
         }
     }
     Start-Sleep -Milliseconds 200
 }
 
-Write-Output "watcher: termine, $handled frappe(s) envoyee(s)"
+Write-Output "watcher: termine, $sent frappe(s) envoyee(s), $handled marqueur(s) traite(s)"
