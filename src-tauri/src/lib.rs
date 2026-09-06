@@ -851,6 +851,25 @@ async fn map_task0026_ed15_prepare(
     }
 }
 
+/// Gives a debug proof process the native foreground focus immediately before
+/// its external watcher injects a real Windows key. This is deliberately not a
+/// JavaScript window capability and does not activate any page control.
+#[tauri::command]
+fn map_task0026_focus_proof_window(app: tauri::AppHandle) -> Result<(), String> {
+    #[cfg(not(debug_assertions))]
+    {
+        let _ = app;
+        return Err("TASK-0026 proof window focus exists only in development builds".to_string());
+    }
+    #[cfg(debug_assertions)]
+    {
+        let window = app
+            .get_webview_window("main")
+            .ok_or_else(|| "task0026_proof_window_missing".to_string())?;
+        window.set_focus().map_err(|error| error.to_string())
+    }
+}
+
 /// `H8` — the engine actually rendering, read from the host.
 ///
 /// `tauri::webview_version()` reports the WebView2 runtime on Windows. It is
@@ -1184,6 +1203,7 @@ pub fn run() {
             map_task0024_dr15_prepare,
             map_task0025_sr15_prepare,
             map_task0026_ed15_prepare,
+            map_task0026_focus_proof_window,
             map_relations_open,
             map_relations_for_node,
             map_relations_approve,
