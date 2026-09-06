@@ -11,7 +11,7 @@ interface FR/EN et un pipeline réel scanner → SQLite → DTO.
 
 Le **GO humain spécial de phase 6** a été donné par le propriétaire le
 2026-08-26. Après réauthentification humaine, l'orchestrateur a créé le dépôt
-public `https://github.com/Vat-faire/FileTopo`, poussé `main`, vérifié la CI
+public `https://github.com/Sd-tech-Sol/FileTopo`, poussé `main`, vérifié la CI
 Windows et créé la prerelease source seulement `v0.1.0-alpha.1`. Aucun binaire,
 signature, journal local ni dépense n'a été publié ou créé.
 
@@ -32,7 +32,7 @@ Approuvée par le propriétaire le 2026-08-26, pour rendre le projet attribuable
 dans un portfolio professionnel :
 
 - **publiable** : nom « Sébastien Dubé », copyright 2026, profil GitHub
-  `https://github.com/Vat-faire`;
+  `https://github.com/Sd-tech-Sol`;
 - **jamais publiable** : courriel réel, nom de compte Windows, chemin local
   absolu, document privé, toute autre donnée personnelle.
 
@@ -126,7 +126,7 @@ concret et critères documentés.
 
 ## Preuves vérifiées de `TASK-0009`
 
-- Dépôt public : `https://github.com/Vat-faire/FileTopo`, visibilité publique,
+- Dépôt public : `https://github.com/Sd-tech-Sol/FileTopo`, visibilité publique,
   branche `main`, licence MIT détectée, issues actives, wiki inactif.
 - Sujets : `filesystem`, `offline-first`, `react`, `rust`, `tauri`,
   `typescript`, `visualization`, `windows`.
@@ -134,5 +134,5 @@ concret et critères documentés.
   activés; Dependabot volontairement désactivé.
 - CI finale `33036847625` : chaîne Windows complète réussie en 2 min 30 s,
   sans l'avertissement Node.js 20 corrigé auparavant.
-- Release : `https://github.com/Vat-faire/FileTopo/releases/tag/v0.1.0-alpha.1`,
+- Release : `https://github.com/Sd-tech-Sol/FileTopo/releases/tag/v0.1.0-alpha.1`,
   prerelease, non brouillon, **0 actif joint**, archives source GitHub seulement.
