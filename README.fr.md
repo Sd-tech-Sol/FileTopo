@@ -25,7 +25,7 @@ FileTopo est une **création originale de Sébastien Dubé**, imaginée et dirig
 sont les composants open source listés dans
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-- Auteur et mainteneur : **Sébastien Dubé** — <https://github.com/Vat-faire>
+- Auteur et mainteneur : **Sébastien Dubé** — <https://github.com/Sd-tech-Sol>
 - Licence : [MIT](LICENSE) — © 2026 Sébastien Dubé
 - Conception, architecture et décisions : voir [`docs/decisions/`](docs/decisions/)
   et [`PROJECT_VISION.md`](PROJECT_VISION.md)

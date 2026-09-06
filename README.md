@@ -23,7 +23,7 @@ from scratch. It is not derived from any other software: its only borrowings
 are the open source components listed in
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
-- Author and maintainer: **Sébastien Dubé** — <https://github.com/Vat-faire>
+- Author and maintainer: **Sébastien Dubé** — <https://github.com/Sd-tech-Sol>
 - Licence: [MIT](LICENSE) — © 2026 Sébastien Dubé
 - Design, architecture and decisions: see [`docs/decisions/`](docs/decisions/)
   and [`PROJECT_VISION.md`](PROJECT_VISION.md)
