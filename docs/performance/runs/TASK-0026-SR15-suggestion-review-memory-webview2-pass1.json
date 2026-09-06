@@ -1,0 +1,288 @@
+{
+  "task": "TASK-0026",
+  "criterion": "SR15",
+  "pass": 1,
+  "canonical": false,
+  "joinsX5": false,
+  "capturedAtIso": "2026-09-06T15:58:43.441Z",
+  "host": {
+    "sandboxRoot": "<dépôt>/.filetopo-sandbox/variants/task0025-sr15-20260906115826-5d9d9c",
+    "appVersion": "0.1.0-alpha.1",
+    "sqliteVersion": "3.53.2",
+    "webviewVersion": "152.0.4191.66",
+    "tauriVersion": "2.11.5",
+    "platform": "windows",
+    "nodeCeiling": 5000,
+    "depthCeiling": 40,
+    "cardWidth": 240,
+    "cardHeight": 64,
+    "layoutAlgorithm": "layered-tree-cards-v1",
+    "autoVerify": false,
+    "autoMeasure": false,
+    "autoRelations": false,
+    "autoBrainsPass": 0,
+    "autoComposedPass": 0,
+    "autoCrossPass": 0,
+    "autoTopographicPass": 0,
+    "autoContentPass": 0,
+    "autoDrePass": 0,
+    "autoGenericRelations": false,
+    "autoSr15Pass": 1,
+    "autoEd15Pass": 0
+  },
+  "input": {
+    "brainId": "brain-alpha",
+    "source": "synthetic TASK-0026 SR15 proof fixture, outside the four frozen fixtures",
+    "noRealData": true
+  },
+  "governance": {
+    "protectedArtifactCount": 34,
+    "protectedDestinations": [],
+    "writesUnderItsOwnTaskOnly": true,
+    "owningTaskId": "TASK-0026"
+  },
+  "evidence": {
+    "freshVariant": true,
+    "mapNodeCount": 12,
+    "initialStatus": {
+      "brainId": "brain-alpha",
+      "engineVersion": "dre-v1",
+      "inputState": "NOT_RUN",
+      "mapDigest": "fnv1a64:400fab2df3081fc0",
+      "currentContentGenerationId": "a64145c5-8429-4be0-99ac-356c383fca45",
+      "lastRunId": null,
+      "lastRunUnixMs": null,
+      "lastMapDigest": null,
+      "lastContentGenerationId": null
+    },
+    "proofCampaign": {
+      "brainId": "brain-alpha",
+      "storePath": "brains/brain-alpha/signals/content.sqlite",
+      "schemaVersion": 1,
+      "signalEngineVersion": "sha256-v1",
+      "generationId": "48a56c6c-3375-491b-ac40-31cf782dfe81",
+      "observedAt": 1788710308999,
+      "sourceFingerprintBefore": "sha256-tree-v1:8d6e82dff33046c4d6a8f4010770323d724727010ca19f49d7d7aa0f5f48afd7",
+      "sourceFingerprintAfter": "sha256-tree-v1:8d6e82dff33046c4d6a8f4010770323d724727010ca19f49d7d7aa0f5f48afd7",
+      "sourceStable": true,
+      "indexedFileCount": 6,
+      "hashedCount": 6,
+      "unreadableCount": 0,
+      "unstableCount": 0,
+      "unsupportedCount": 0,
+      "filesOpenedForHash": 6,
+      "bytesRead": 173,
+      "digestsComputed": 6,
+      "hashAlgorithm": "sha256-v1",
+      "readOnlyConfirmed": true,
+      "durationMs": 15.1252
+    },
+    "queueBefore": {
+      "totalPending": 7,
+      "returned": 7,
+      "limit": 100,
+      "maxLimit": 100,
+      "hasMore": false,
+      "order": "suggestion_key ascending",
+      "coreCount": 3
+    },
+    "entryCountOnScreen": 7,
+    "decisions": {
+      "confirmed": "dre1:3fdfedfb761a8ce1",
+      "rejected": "dre1:820befc825253037",
+      "postponed": "dre1:ebaf403cddeba4c7"
+    },
+    "userActivation": {
+      "analyze": {
+        "inputMethod": "Tauri window focus followed by Windows key injection via scripts/j12-send-real-key.ps1 — the ordinary Windows input path",
+        "keyRequested": "{ENTER}",
+        "focusedBeforeTag": "BUTTON",
+        "focusedBeforeClass": "relations__analyze",
+        "focusedBeforeText": "Analyser les relations",
+        "focusReached": true,
+        "keydownIsTrusted": true,
+        "keydownKey": "Enter",
+        "activationIsTrusted": true,
+        "programmaticClickCalls": 0,
+        "programmaticClickDispatches": 0,
+        "observedChange": true,
+        "waitedMs": 1544
+      },
+      "open": {
+        "inputMethod": "Tauri window focus followed by Windows key injection via scripts/j12-send-real-key.ps1 — the ordinary Windows input path",
+        "keyRequested": "{ENTER}",
+        "focusedBeforeTag": "BUTTON",
+        "focusedBeforeClass": "review__toggle",
+        "focusedBeforeText": "7 relation(s) à confirmer",
+        "focusReached": true,
+        "keydownIsTrusted": true,
+        "keydownKey": "Enter",
+        "activationIsTrusted": true,
+        "programmaticClickCalls": 0,
+        "programmaticClickDispatches": 0,
+        "observedChange": true,
+        "waitedMs": 1402
+      },
+      "confirm": {
+        "inputMethod": "Tauri window focus followed by Windows key injection via scripts/j12-send-real-key.ps1 — the ordinary Windows input path",
+        "keyRequested": "{ENTER}",
+        "focusedBeforeTag": "BUTTON",
+        "focusedBeforeClass": "review__confirm",
+        "focusedBeforeText": "Confirmer",
+        "focusReached": true,
+        "keydownIsTrusted": true,
+        "keydownKey": "Enter",
+        "activationIsTrusted": true,
+        "programmaticClickCalls": 0,
+        "programmaticClickDispatches": 0,
+        "observedChange": true,
+        "waitedMs": 1583
+      },
+      "reject": {
+        "inputMethod": "Tauri window focus followed by Windows key injection via scripts/j12-send-real-key.ps1 — the ordinary Windows input path",
+        "keyRequested": "{ENTER}",
+        "focusedBeforeTag": "BUTTON",
+        "focusedBeforeClass": "review__reject",
+        "focusedBeforeText": "Rejeter",
+        "focusReached": true,
+        "keydownIsTrusted": true,
+        "keydownKey": "Enter",
+        "activationIsTrusted": true,
+        "programmaticClickCalls": 0,
+        "programmaticClickDispatches": 0,
+        "observedChange": true,
+        "waitedMs": 1535
+      },
+      "postpone": {
+        "inputMethod": "Tauri window focus followed by Windows key injection via scripts/j12-send-real-key.ps1 — the ordinary Windows input path",
+        "keyRequested": "{ENTER}",
+        "focusedBeforeTag": "BUTTON",
+        "focusedBeforeClass": "review__later",
+        "focusedBeforeText": "Plus tard",
+        "focusReached": true,
+        "keydownIsTrusted": true,
+        "keydownKey": "Enter",
+        "activationIsTrusted": true,
+        "programmaticClickCalls": 0,
+        "programmaticClickDispatches": 0,
+        "observedChange": true,
+        "waitedMs": 1377
+      }
+    },
+    "postponeNavigation": {
+      "walkToConfirm": {
+        "presses": 4,
+        "trusted": true,
+        "programmaticClicks": 0
+      },
+      "walkToReject": {
+        "presses": 0,
+        "trusted": true,
+        "programmaticClicks": 0
+      },
+      "walkToPostpone": {
+        "presses": 0,
+        "trusted": true,
+        "programmaticClicks": 0
+      }
+    },
+    "approvedRelationsForConfirmed": 1,
+    "afterDecisions": {
+      "approved": [
+        "ek1|brain-alpha|dossier-a/note-3.txt|ek1|brain-alpha|racine-1.txt|reference",
+        "ek1|brain-alpha|dossier-b/note-1.txt|ek1|brain-alpha|dossier-a/note-3.txt|reference",
+        "ek1|brain-alpha|dossier-b/sous-dossier/note-2.txt|ek1|brain-alpha|dossier-a/note-1.txt|reference",
+        "ek1|brain-alpha|racine-2.txt|ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|revision",
+        "ek1|brain-alpha|revue/note-1.txt|ek1|brain-alpha|revue/note-2.txt|revision"
+      ],
+      "deterministic": [
+        "ek1|brain-alpha|dossier-a/note-1.txt|ek1|brain-alpha|dossier-a/note-2.txt|revision|suites-numerotees",
+        "ek1|brain-alpha|dossier-a/note-1.txt|ek1|brain-alpha|dossier-b/note-1.txt|reference|homonymes",
+        "ek1|brain-alpha|dossier-a/note-1.txt|ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|reference|homonymes",
+        "ek1|brain-alpha|dossier-a/note-2.txt|ek1|brain-alpha|dossier-a/note-3.txt|revision|suites-numerotees",
+        "ek1|brain-alpha|dossier-a/note-2.txt|ek1|brain-alpha|dossier-b/sous-dossier/note-2.txt|reference|homonymes",
+        "ek1|brain-alpha|dossier-b/note-1.txt|ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|reference|homonymes",
+        "ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|ek1|brain-alpha|dossier-b/sous-dossier/note-2.txt|revision|suites-numerotees",
+        "ek1|brain-alpha|racine-1.txt|ek1|brain-alpha|racine-2.txt|revision|suites-numerotees"
+      ],
+      "pending": [
+        "S-005",
+        "S-006",
+        "S-007",
+        "S-008",
+        "dre1:ebaf403cddeba4c7"
+      ]
+    },
+    "afterRerun": {
+      "approved": [
+        "ek1|brain-alpha|dossier-a/note-3.txt|ek1|brain-alpha|racine-1.txt|reference",
+        "ek1|brain-alpha|dossier-b/note-1.txt|ek1|brain-alpha|dossier-a/note-3.txt|reference",
+        "ek1|brain-alpha|dossier-b/sous-dossier/note-2.txt|ek1|brain-alpha|dossier-a/note-1.txt|reference",
+        "ek1|brain-alpha|racine-2.txt|ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|revision",
+        "ek1|brain-alpha|revue/note-1.txt|ek1|brain-alpha|revue/note-2.txt|revision"
+      ],
+      "deterministic": [
+        "ek1|brain-alpha|dossier-a/note-1.txt|ek1|brain-alpha|dossier-a/note-2.txt|revision|suites-numerotees",
+        "ek1|brain-alpha|dossier-a/note-1.txt|ek1|brain-alpha|dossier-b/note-1.txt|reference|homonymes",
+        "ek1|brain-alpha|dossier-a/note-1.txt|ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|reference|homonymes",
+        "ek1|brain-alpha|dossier-a/note-2.txt|ek1|brain-alpha|dossier-a/note-3.txt|revision|suites-numerotees",
+        "ek1|brain-alpha|dossier-a/note-2.txt|ek1|brain-alpha|dossier-b/sous-dossier/note-2.txt|reference|homonymes",
+        "ek1|brain-alpha|dossier-b/note-1.txt|ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|reference|homonymes",
+        "ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|ek1|brain-alpha|dossier-b/sous-dossier/note-2.txt|revision|suites-numerotees",
+        "ek1|brain-alpha|racine-1.txt|ek1|brain-alpha|racine-2.txt|revision|suites-numerotees"
+      ],
+      "pending": [
+        "S-005",
+        "S-006",
+        "S-007",
+        "S-008",
+        "dre1:ebaf403cddeba4c7"
+      ]
+    },
+    "rerun": {
+      "brainId": "brain-alpha",
+      "engineVersion": "dre-v1",
+      "runId": "dre1-277f208a5d685dc8",
+      "mapDigest": "fnv1a64:400fab2df3081fc0",
+      "contentGenerationId": "d3a77196-0b8d-4e87-ac16-92e0919d4327",
+      "rulesEvaluated": [
+        "core.identical-content/v1",
+        "core.numbered-sibling-revision-candidate/v1"
+      ],
+      "rulesSkipped": [],
+      "deterministicRelationsProduced": 0,
+      "suggestionsProduced": 1,
+      "emptyContentGroupsSkipped": 0,
+      "establishedCollisionSuppressions": 4,
+      "approvedSuggestionPreservations": 1,
+      "rejectedSuggestionPreservations": 1,
+      "sourceReadOnlyConfirmed": true,
+      "inputState": "CURRENT"
+    },
+    "statusAfterRerun": {
+      "brainId": "brain-alpha",
+      "engineVersion": "dre-v1",
+      "inputState": "CURRENT",
+      "mapDigest": "fnv1a64:400fab2df3081fc0",
+      "currentContentGenerationId": "d3a77196-0b8d-4e87-ac16-92e0919d4327",
+      "lastRunId": "dre1-277f208a5d685dc8",
+      "lastRunUnixMs": 1788710323236,
+      "lastMapDigest": "fnv1a64:400fab2df3081fc0",
+      "lastContentGenerationId": "d3a77196-0b8d-4e87-ac16-92e0919d4327"
+    },
+    "postponeLeftPending": {
+      "before": 5,
+      "after": 5
+    },
+    "isolation": {
+      "otherBrainId": "brain-gamma",
+      "otherPendingBefore": 4,
+      "otherPendingAfter": 4,
+      "otherStoreUnchanged": true,
+      "crossDigestBefore": "fnv1a64:3020af7489aab581",
+      "crossDigestAfter": "fnv1a64:3020af7489aab581"
+    },
+    "sourceReadOnly": true,
+    "processClosedByHarness": true
+  }
+}
