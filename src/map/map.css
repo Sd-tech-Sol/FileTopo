@@ -1296,6 +1296,67 @@ button:disabled {
   color: var(--muted);
 }
 
+.duplicates {
+  border-bottom: 1px solid var(--line);
+  padding: 10px 12px 14px;
+}
+
+.duplicates__title,
+.duplicates__members h3 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.duplicates__toggle,
+.duplicates__group,
+.duplicates__member-list button {
+  width: 100%;
+  text-align: left;
+}
+
+.duplicates__boundary {
+  border-left: 3px solid var(--accent);
+  padding-left: 8px;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.duplicates__groups,
+.duplicates__member-list {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.duplicates__group[aria-pressed="true"] {
+  border-color: var(--accent);
+}
+
+.duplicates__paging {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.duplicates__facts {
+  margin: 8px 0;
+}
+
+.duplicates__facts div {
+  display: grid;
+  grid-template-columns: minmax(80px, 0.7fr) minmax(0, 1.3fr);
+  gap: 8px;
+  padding: 3px 0;
+}
+
+.duplicates__facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
 .cross-relations__hint {
   margin: 0;
   font-size: 11px;

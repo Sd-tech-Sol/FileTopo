@@ -6,6 +6,7 @@ import MapView, { type RenderedBrain } from "./MapView";
 import CrossRelationsPanel from "./CrossRelationsPanel";
 import RelationsPanel from "./RelationsPanel";
 import ReviewQueuePanel from "./ReviewQueuePanel";
+import ExactDuplicateExplorer from "./ExactDuplicateExplorer";
 import {
   ComposedViewError,
   addBrain,
@@ -2130,6 +2131,12 @@ export default function MapApp() {
         </div>
 
         <aside className="app__aside">
+          <ExactDuplicateExplorer
+            brainId={composed?.focusedBrainId ?? null}
+            revision={contentRevision}
+            onSelect={selectNode}
+          />
+
           <DetailsPanel
             detail={detail}
             loading={detailLoading}

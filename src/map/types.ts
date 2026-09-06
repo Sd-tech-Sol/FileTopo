@@ -240,6 +240,81 @@ export interface ContentObservationReport {
   durationMs: number;
 }
 
+/* --- TASK-0026 — exploration bornée des contenus identiques ------------ */
+
+export type ExactDuplicateAvailability = "NOT_OBSERVED" | "AVAILABLE";
+
+export interface ExactDuplicateSummary {
+  brainId: string;
+  availability: ExactDuplicateAvailability;
+  generationId: string | null;
+  observedAtUnixMs: number | null;
+  hashAlgorithm: "sha256-v1";
+  exactGroupCount: number;
+  groupedOccurrenceCount: number;
+  emptyGroupCount: number;
+  queryDurationMs: number;
+}
+
+export interface ExactDuplicateGroup {
+  groupId: string;
+  hashAlgorithm: "sha256-v1";
+  hashHex: string;
+  sizeBytes: number;
+  memberCount: number;
+  emptyContent: boolean;
+  generationId: string;
+  observedAtUnixMs: number;
+}
+
+export interface ExactDuplicateGroupPage {
+  brainId: string;
+  availability: ExactDuplicateAvailability;
+  generationId: string | null;
+  observedAtUnixMs: number | null;
+  hashAlgorithm: "sha256-v1";
+  totalGroups: number;
+  offset: number;
+  limit: number;
+  maxLimit: number;
+  returned: number;
+  hasMore: boolean;
+  order: string;
+  queryDurationMs: number;
+  groups: ExactDuplicateGroup[];
+}
+
+export interface ExactDuplicateMember {
+  relativePath: string;
+  name: string;
+  sizeBytes: number;
+  observationStatus: "HASHED";
+  hashAlgorithm: "sha256-v1";
+  hashHex: string;
+  observedAtUnixMs: number;
+  generationId: string;
+  nodeRef: BrainNodeRef | null;
+}
+
+export interface ExactDuplicateMemberPage {
+  brainId: string;
+  groupId: string;
+  generationId: string;
+  observedAtUnixMs: number;
+  hashAlgorithm: "sha256-v1";
+  hashHex: string;
+  totalMembers: number;
+  unresolvedReturned: number;
+  offset: number;
+  limit: number;
+  maxLimit: number;
+  returned: number;
+  hasMore: boolean;
+  order: string;
+  queryDurationMs: number;
+  members: ExactDuplicateMember[];
+}
+
 export interface FixtureIntegrity {
   brainId: string;
   fixtureId: string;
