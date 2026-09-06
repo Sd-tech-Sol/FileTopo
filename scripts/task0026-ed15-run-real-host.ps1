@@ -33,10 +33,19 @@ foreach ($name in $script:ProtectedRunArtifacts) {
 }
 
 function Wait-ForArtifact {
-    param([string]$Path, [int]$Seconds)
+    param(
+        [string]$Path,
+        [int]$Seconds,
+        [AllowNull()][string]$PreviousHash
+    )
     $deadline = (Get-Date).AddSeconds($Seconds)
     while ((Get-Date) -lt $deadline) {
-        if (Test-Path -LiteralPath $Path) { return $true }
+        if (Test-Path -LiteralPath $Path) {
+            $currentHash = (git -C $repository hash-object -- $Path).Trim()
+            if ($null -eq $PreviousHash -or $currentHash -ne $PreviousHash) {
+                return $true
+            }
+        }
         Start-Sleep -Milliseconds 500
     }
     return $false
@@ -46,7 +55,9 @@ function Invoke-ED15Pass {
     param([int]$Pass)
     $artifact = Join-Path $runs "TASK-0026-ED15-exact-duplicate-explorer-webview2-pass$Pass.json"
     Assert-NotProtectedRunArtifact -Path $artifact
+    $previousHash = $null
     if (Test-Path -LiteralPath $artifact) {
+        $previousHash = (git -C $repository hash-object -- $artifact).Trim()
         Write-Host (
             "ED15 passe ${Pass}: remplacement de la preuve non canonique " +
             "explicitement demande par le prompt de reprise"
@@ -60,7 +71,10 @@ function Invoke-ED15Pass {
         -ArgumentList @('-NoProfile', '-File', $watcher,
                         '-LogPath', $log,
                         '-TimeoutSeconds', "$TimeoutSeconds")
-    $produced = Wait-ForArtifact -Path $artifact -Seconds $TimeoutSeconds
+    $produced = Wait-ForArtifact `
+        -Path $artifact `
+        -Seconds $TimeoutSeconds `
+        -PreviousHash $previousHash
     if (-not $application.HasExited) {
         $null = $application.CloseMainWindow()
         if (-not $application.WaitForExit(15000)) {

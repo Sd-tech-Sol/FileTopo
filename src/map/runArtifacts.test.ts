@@ -86,6 +86,7 @@ import {
 import rustGateSource from "../../src-tauri/src/map/commands.rs?raw";
 import powershellGateSource from "../../scripts/protected-run-artifacts.ps1?raw";
 import keyWatcherSource from "../../scripts/j12-send-real-key.ps1?raw";
+import ed15DriverSource from "../../scripts/task0026-ed15-run-real-host.ps1?raw";
 
 /** Every source file of this runtime that may write a run artefact. */
 const WRITING_SOURCES: ReadonlyArray<readonly [string, string]> = [
@@ -586,6 +587,12 @@ describe("real-key proof harness", () => {
     expect(realInputSource).toContain("evidence.activationIsTrusted = activationIsTrusted");
     expect(realInputSource).toContain("programmaticClickCalls");
     expect(realInputSource).toContain("programmaticClickDispatches");
+  });
+
+  it("requires an existing ED15 proof to change before declaring replay success", () => {
+    expect(ed15DriverSource).toContain("[AllowNull()][string]$PreviousHash");
+    expect(ed15DriverSource).toContain("$currentHash -ne $PreviousHash");
+    expect(ed15DriverSource).toContain("-PreviousHash $previousHash");
   });
 });
 
