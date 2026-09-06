@@ -7,7 +7,7 @@
   le 2026-08-26
 - **Exécutant :** Claude Code
 - **Orchestrateur :** instance distincte, qui vérifiera puis commitera
-- **Compte GitHub cible connu :** `Vat-faire`, authentification `gh` expirée
+- **Compte GitHub cible connu :** `Sd-tech-Sol`, authentification `gh` expirée
 
 ## Contexte
 
@@ -50,7 +50,7 @@ rapport factuel permettant à l'orchestrateur de décider de la publication.
 3. `.github/workflows/ci.yml` — vérification continue Windows reproduisant la
    chaîne locale.
 4. `README.md` — paternité explicite de Sébastien Dubé, lien
-   `https://github.com/Vat-faire`, statut **alpha** et limites exactes.
+   `https://github.com/Sd-tech-Sol`, statut **alpha** et limites exactes.
 5. Métadonnées GitHub utiles et proportionnées, avec justification écrite de
    ce qui est délibérément **exclu**.
 6. `docs/reviews/TASK-0008-independent-review.md` — rapport factuel de revue,
@@ -89,7 +89,7 @@ l'orchestrateur ou à l'humain, sur preuve indépendante (section 3 de
 ## Second tour — cinq décisions du propriétaire, 2026-08-26
 
 Le propriétaire a approuvé une **identité publique minimale** — nom
-« Sébastien Dubé », copyright 2026, profil GitHub `https://github.com/Vat-faire`
+« Sébastien Dubé », copyright 2026, profil GitHub `https://github.com/Sd-tech-Sol`
 — afin que le projet soit attribuable dans un portfolio professionnel. Aucun
 courriel réel, nom de compte Windows, chemin local absolu, document privé ou
 autre donnée personnelle ne doit être publiable.

@@ -9,7 +9,7 @@ also applied to the current `main` branch.
 
 **Never publish vulnerability details in a public issue.**
 
-Use [GitHub private vulnerability reporting](https://github.com/Vat-faire/FileTopo/security/advisories/new).
+Use [GitHub private vulnerability reporting](https://github.com/Sd-tech-Sol/FileTopo/security/advisories/new).
 Do not attach exploitable details to a public issue or discussion. The
 maintainer aims to acknowledge a private report within 14 days, but this is a
 best-effort target, not a service-level guarantee.

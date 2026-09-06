@@ -9,7 +9,7 @@ dossiers et documents**. Nom de dossier provisoire.
 
 Le code applicatif **existe** : les phases 0 à 6 sont vérifiées et FileTopo
 possède un MVP Windows construit et testé (Tauri 2, Rust, React/TypeScript).
-Le code source est public dans `Vat-faire/FileTopo` et la prerelease source
+Le code source est public dans `Sd-tech-Sol/FileTopo` et la prerelease source
 seulement `v0.1.0-alpha.1` est publiée. Aucun binaire n'est distribué. La phase
 7 reste optionnelle et `DEFERRED`.
 
