@@ -2,7 +2,7 @@ TASK_ID: TASK-0028 — Synthetic Scale Feasibility Spike
 AGENT: CLAUDE
 RESULT: DONE
 BRANCH: build/v0.2-a12-synthetic-scale-spike
-FINAL_HEAD: <voir COMMIT>
+FINAL_HEAD: 66855a1 (commit substantif)
 
 SUMMARY:
 - Protocole gelé et commité AVANT toute ligne de harness, en un commit distinct,
@@ -69,6 +69,8 @@ IMPORTANT_FILES:
 - docs/ai/{CURRENT_STATE,NEXT_ACTION,HANDOFF,VALIDATION,CHANGELOG_AI}.md
 
 COMMIT:
+- ae25670 docs(task-0028): freeze synthetic scale spike protocol before harness
+- 66855a1 feat(task-0028): measure the synthetic scale boundary and falsify DEC-0029
 PUSHED: yes
 
 LIMITS_OR_BLOCKERS:
