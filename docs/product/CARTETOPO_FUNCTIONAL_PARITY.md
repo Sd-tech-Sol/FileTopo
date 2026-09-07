@@ -31,6 +31,24 @@
   d'un **nœud placé dans la mauvaise branche**, deux échecs qu'un pavage
   correct peut commettre. **Le contrat reste à 22 exigences**; `P-01` et `P-03`
   à `P-22` sont **inchangées**.
+- **Amendement normatif `P-SCALE-R1`, 2026-09-06.** Le **réalignement
+  d'architecture à grande échelle** de
+  [`TASK-0027`](../tasks/TASK-0027-progressive-scale-architecture-realignment.md),
+  sous [`DEC-0029`](../decisions/DEC-0029-progressive-materialization-and-scale-boundary.md),
+  amende **`P-01`, `P-02` et `P-03`**, et **elles seules**. Les trois
+  formulations d'origine confondaient implicitement **« exister dans le
+  cerveau »** et **« être rendu simultanément »** : ainsi écrites, elles
+  **rendaient contractuellement impossible** la matérialisation progressive
+  qu'exige un corpus de 100 000 ou de 1 000 000 d'éléments — et que `P-08` et
+  `P-18` réclament déjà. Les formulations sont amendées **sur ce point**;
+  **les anciennes sont conservées, visibles, sous les nouvelles** — §4.1 — et
+  **ne sont ni supprimées ni réécrites en silence**. **Aucune des trois ne
+  descend** : chaque amendement **ajoute** une obligation de véracité —
+  atteignabilité de tout élément indexé, déclaration explicite avec **compte
+  exact** de tout sous-arbre replié ou agrégé, et interdiction qu'une
+  pagination fasse disparaître un enfant réel. **Le contrat reste à 22
+  exigences**; `P-04` à `P-22` sont **inchangées**. **`P-08` est entière et
+  inchangée**, et devient un **pilier du scale spike** — voir §8.
 - **Autorité :** ce document **prime** sur toute lecture antérieure du
   périmètre produit tirée de l'ancienne version publique de FileTopo.
 
@@ -132,8 +150,23 @@ est falsifiable sur fixtures synthétiques. « Matrice » renvoie aux fonctions 
 
 | # | Exigence | Comportement exigé | Critère d'acceptation | Matrice |
 |---|---|---|---|---|
-| `P-01` | **Carte construite depuis l'arborescence réelle** | Choisir une racine suffit : la carte se construit à partir de la structure réellement observée, sans configuration préalable, sans catégorie codée en dur et sans intervention manuelle | Sur quatre arbres synthétiques de formes différentes — large, profond, mixte, quasi vide —, l'ensemble des nœuds cartographiés **égale** l'ensemble des nœuds indexés, qui égale l'ensemble attendu de la fixture. Aucun élément affiché n'est absent de la source, aucun élément de la source n'est absent sans motif affiché | `F-001`, `F-003`, `F-006`, `F-007` |
-| `P-02` | **Hiérarchie lisible et non ambiguë** — *corrigée par `P02-R1`* | La topographie rend la **hiérarchie réelle lisible et non ambiguë**. Chaque nœud/fichier/dossier possède une **représentation identifiable**. La relation parent/enfant est représentée **nœud par nœud** par une **connexion et/ou une organisation spatiale explicite**. **Aucune relation hiérarchique affichée ne peut être inventée. Aucun parent/enfant réel ne peut être attribué au mauvais nœud** | Sur les mêmes quatre arbres — large, profond, mixte, quasi vide — **huit** contrôles : (1) **ensemble de nœuds correct**, égal à l'index et à l'attendu; (2) **parent exact** pour chaque nœud; (3) **enfants directs exacts** pour chaque nœud; (4) **aucune arête hiérarchique inventée**; (5) **aucun nœud attribué à la mauvaise branche**; (6) **labels disponibles** au niveau de zoom prévu, une indisponibilité étant **déclarée** et non silencieuse; (7) **navigation souris ET clavier**, sans piège; (8) **hiérarchie compréhensible sans la couleur seule**. **Aucun algorithme de disposition n'est imposé** — Sugiyama, *layered graph*, *tree layout*, *orthogonal layout* et les autres restent des choix techniques futurs | `F-007`, `F-008`, `F-042` |
+| `P-01` | **Carte construite depuis l'arborescence réelle** — *amendée par `P-SCALE-R1`* | Choisir une racine suffit : la carte se construit à partir de la structure réellement observée, sans configuration préalable, sans catégorie codée en dur et sans intervention manuelle. **Tous les éléments source doivent être indexés et atteignables; ils ne sont pas requis simultanément dans la vue rendue** | Sur quatre arbres synthétiques de formes différentes — large, profond, mixte, quasi vide —, l'ensemble des nœuds **indexés égale** l'ensemble attendu de la fixture, et **chaque** élément indexé est **atteignable** en un nombre **borné et déclaré** d'actions, par navigation, recherche ou expansion d'agrégat. La **vue rendue** est un **sous-ensemble déclaré** de l'index : **aucun élément affiché n'est absent de la source**, et **aucun élément de la source n'est absent de la vue sans être compté dans un agrégat exact ou déclaré par un motif affiché**. Un élément indexé **inatteignable** est un échec, au même titre qu'un élément inventé | `F-001`, `F-003`, `F-006`, `F-007`, `F-050`, `F-051` |
+
+> **`P-01` — formulation d'origine, conservée pour mémoire, amendée le
+> 2026-09-06 par [`DEC-0029`](../decisions/DEC-0029-progressive-materialization-and-scale-boundary.md) :**
+>
+> | `P-01` | **Carte construite depuis l'arborescence réelle** | Choisir une racine suffit : la carte se construit à partir de la structure réellement observée, sans configuration préalable, sans catégorie codée en dur et sans intervention manuelle | Sur quatre arbres synthétiques de formes différentes — large, profond, mixte, quasi vide —, l'ensemble des nœuds cartographiés **égale** l'ensemble des nœuds indexés, qui égale l'ensemble attendu de la fixture. Aucun élément affiché n'est absent de la source, aucun élément de la source n'est absent sans motif affiché | `F-001`, `F-003`, `F-006`, `F-007` |
+>
+> **Ce qui a été retiré :** l'égalité implicite entre « nœuds cartographiés »
+> et « nœuds indexés », qui rendait obligatoire de **rendre tout le corpus**.
+> **Ce qui a été ajouté :** l'obligation que **tout élément indexé soit
+> atteignable** en un nombre borné d'actions, et que **toute absence de la vue
+> soit comptée dans un agrégat exact ou déclarée**. L'exigence est **plus
+> forte** : l'ancienne formulation était satisfaite par une carte qui rend
+> tout, mais **échouait à interdire** une vue qui cache silencieusement.
+> **`P-01` n'a jamais été déclarée satisfaite, ni avant ni après
+> `P-SCALE-R1`.**
+| `P-02` | **Hiérarchie lisible et non ambiguë** — *corrigée par `P02-R1`, amendée par `P-SCALE-R1`* | La topographie rend la **hiérarchie réelle lisible et non ambiguë**. Chaque nœud/fichier/dossier possède une **représentation identifiable**. La relation parent/enfant est représentée **nœud par nœud** par une **connexion et/ou une organisation spatiale explicite**. **Aucune relation hiérarchique affichée ne peut être inventée. Aucun parent/enfant réel ne peut être attribué au mauvais nœud.** **La vue matérialisée est une projection exacte de l'index : un sous-arbre replié ou agrégé est déclaré comme tel, avec son compte exact** | Sur les mêmes quatre arbres — large, profond, mixte, quasi vide — **onze** contrôles : (1) **ensemble de nœuds correct** — les nœuds **matérialisés** sont un sous-ensemble exact de l'index, sans ajout; (2) **parent exact** pour chaque nœud matérialisé; (3) **enfants directs exacts**, ou **agrégat exact** déclaré à leur place; (4) **aucune arête hiérarchique inventée**; (5) **aucun nœud attribué à la mauvaise branche**; (6) **labels disponibles** au niveau de zoom prévu, une indisponibilité étant **déclarée** et non silencieuse; (7) **navigation souris ET clavier**, sans piège; (8) **hiérarchie compréhensible sans la couleur seule**; (9) **tout repli ou agrégat est déclaré en mots**, jamais silencieux; (10) **son compte est exact**, jamais estimé, arrondi ni tronqué en « 999+ »; (11) **un agrégat n'est jamais présenté comme un dossier** — ni dans un chemin, ni à la copie, ni à l'ouverture Windows. **Aucun algorithme de disposition n'est imposé** — Sugiyama, *layered graph*, *tree layout*, *orthogonal layout* et les autres restent des choix techniques futurs | `F-007`, `F-008`, `F-042`, `F-050`, `F-051` |
 
 > **`P02-R1` — formulation d'origine de `P-02`, conservée pour mémoire, remplacée
 > le 2026-09-02 par [`DEC-0020`](../decisions/DEC-0020-topographic-node-graph.md) :**
@@ -148,7 +181,33 @@ est falsifiable sur fixtures synthétiques. « Matrice » renvoie aux fonctions 
 > elles sont remplacées par les contrôles (1) à (5), qui portent sur la
 > **structure affichée** plutôt que sur la géométrie des rectangles.
 > **`P-02` n'a jamais été déclarée satisfaite, ni avant ni après `P02-R1`.**
-| `P-03` | **Parent et enfants directs** | Depuis n'importe quel nœud, l'utilisateur voit son parent et ses enfants directs, et peut se déplacer vers chacun | Pour **chaque** nœud d'une fixture, le parent et l'ensemble des enfants directs affichés égalent ceux de l'index. Aucun lien affiché sans contrepartie dans l'arborescence | `F-016` |
+
+> **`P-02` — formulation issue de `P02-R1`, conservée pour mémoire, amendée le
+> 2026-09-06 par [`DEC-0029`](../decisions/DEC-0029-progressive-materialization-and-scale-boundary.md) :**
+>
+> | `P-02` | **Hiérarchie lisible et non ambiguë** — *corrigée par `P02-R1`* | La topographie rend la **hiérarchie réelle lisible et non ambiguë**. Chaque nœud/fichier/dossier possède une **représentation identifiable**. La relation parent/enfant est représentée **nœud par nœud** par une **connexion et/ou une organisation spatiale explicite**. **Aucune relation hiérarchique affichée ne peut être inventée. Aucun parent/enfant réel ne peut être attribué au mauvais nœud** | Sur les mêmes quatre arbres — large, profond, mixte, quasi vide — **huit** contrôles : (1) **ensemble de nœuds correct**, égal à l'index et à l'attendu; (2) **parent exact** pour chaque nœud; (3) **enfants directs exacts** pour chaque nœud; (4) **aucune arête hiérarchique inventée**; (5) **aucun nœud attribué à la mauvaise branche**; (6) **labels disponibles** au niveau de zoom prévu, une indisponibilité étant **déclarée** et non silencieuse; (7) **navigation souris ET clavier**, sans piège; (8) **hiérarchie compréhensible sans la couleur seule**. **Aucun algorithme de disposition n'est imposé** | `F-007`, `F-008`, `F-042` |
+>
+> **Ce qui a été retiré :** l'égalité du contrôle (1) entre les nœuds affichés
+> et **tout** l'index, et l'exigence du contrôle (3) que **tous** les enfants
+> directs soient affichés. **Ce qui a été ajouté :** trois contrôles, (9) à
+> (11) — tout repli ou agrégat **déclaré en mots**, son **compte exact**, et
+> l'**interdiction qu'un agrégat se fasse passer pour un dossier**. L'exigence
+> est **plus forte** : l'ancienne interdisait de **mentir par ajout**, la
+> nouvelle interdit aussi de **mentir par omission**.
+
+| `P-03` | **Parent et enfants directs** — *amendée par `P-SCALE-R1`* | Depuis n'importe quel nœud, l'utilisateur voit son parent et ses enfants directs, et peut se déplacer vers chacun. **Parent et enfants restent consultables et navigables; une fratrie énorme peut être paginée ou agrégée plutôt que rendue entièrement d'un coup** | Pour **chaque** nœud d'une fixture, le parent affiché égale celui de l'index, et l'ensemble des enfants directs **atteignables par pagination ou expansion** égale celui de l'index — **la pagination ne fait disparaître aucun enfant réel**, et son **total annoncé est exact**. Aucun lien affiché sans contrepartie dans l'arborescence. Le déplacement vers le parent et vers **chaque** enfant reste possible **à la souris et au clavier**, y compris pour un enfant situé au-delà de la première page | `F-016`, `F-050`, `F-051` |
+
+> **`P-03` — formulation d'origine, conservée pour mémoire, amendée le
+> 2026-09-06 par [`DEC-0029`](../decisions/DEC-0029-progressive-materialization-and-scale-boundary.md) :**
+>
+> | `P-03` | **Parent et enfants directs** | Depuis n'importe quel nœud, l'utilisateur voit son parent et ses enfants directs, et peut se déplacer vers chacun | Pour **chaque** nœud d'une fixture, le parent et l'ensemble des enfants directs affichés égalent ceux de l'index. Aucun lien affiché sans contrepartie dans l'arborescence | `F-016` |
+>
+> **Ce qui a été retiré :** l'exigence que les enfants directs soient
+> **affichés** en une fois. **Ce qui a été ajouté :** l'exigence qu'ils soient
+> tous **atteignables**, que la pagination **n'en perde aucun**, que son
+> **total annoncé soit exact**, et que le déplacement clavier atteigne aussi
+> les enfants au-delà de la première page. **`P-03` n'a jamais été déclarée
+> satisfaite, ni avant ni après `P-SCALE-R1`.**
 
 ### 4.2 Relations
 
@@ -296,6 +355,18 @@ Ils sont écrits ici plutôt que corrigés en silence.
 3. **`P-22` est rejouée à chaque clôture de tranche.**
 4. **Aucune exigence ne disparaît par refonte visuelle** — §3. Toute
    suppression passe par une fiche `DEC`.
+5. **Aucune exigence ne disparaît par mise à l'échelle non plus**, depuis
+   `P-SCALE-R1`. Un contrat amendé pour rendre la matérialisation progressive
+   possible **ajoute** des obligations de véracité; il n'en retire aucune.
+   **Le contrat reste à 22 exigences.**
+6. **`P-08` est le pilier du scale spike.** Sa fixture de **100 000 nœuds
+   synthétiques** et son exigence de résultat **exact, paginé et borné**
+   restent **entières et inchangées** : c'est l'exigence qui, la première,
+   oblige le produit à séparer le **corpus** de la **vue rendue**, et c'est
+   par elle que le futur banc d'échelle sera jugé —
+   [`DEC-0029 I`](../decisions/DEC-0029-progressive-materialization-and-scale-boundary.md).
+   **Aucun chiffre de performance n'est publiable avant l'étape `C`** :
+   réserve `R8`, en vigueur.
 
 ## 9. Confidentialité de ce document
 
@@ -315,5 +386,7 @@ Ils sont écrits ici plutôt que corrigés en silence.
 - [FEATURE_MATRIX.md](FEATURE_MATRIX.md)
 - [USER_JOURNEY.md](USER_JOURNEY.md)
 - [DEC-0015](../decisions/DEC-0015-product-parity-and-layout-scope.md)
+- [DEC-0029](../decisions/DEC-0029-progressive-materialization-and-scale-boundary.md)
+- [PROGRESSIVE_SCALE_ARCHITECTURE.md](../architecture/PROGRESSIVE_SCALE_ARCHITECTURE.md)
 - [ROADMAP.md](../../ROADMAP.md)
 - [TASK-0015](../tasks/TASK-0015-cartetopo-functional-parity.md)

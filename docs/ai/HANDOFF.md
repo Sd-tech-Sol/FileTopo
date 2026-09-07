@@ -1,6 +1,75 @@
 # HANDOFF — passage de relais
 
-## Relais actuel — ACTION-0043, TASK-0026 VERIFIED, 2026-09-06
+## Relais actuel — TASK-0027, réalignement d'architecture à grande échelle, 2026-09-06
+
+**Tranche documentaire livrée `IMPLEMENTED`, en attente de contrôle
+indépendant.** Branche `build/v0.2-a11-progressive-scale-architecture`, créée
+et publiée depuis `b580942`, dont le parent est bien `ffa9504`. Agent
+d'exécution : Claude Code.
+
+**Ce qui a été écrit.** Trois documents créés —
+[`TASK-0027`](../tasks/TASK-0027-progressive-scale-architecture-realignment.md),
+[`DEC-0029`](../decisions/DEC-0029-progressive-materialization-and-scale-boundary.md),
+[`PROGRESSIVE_SCALE_ARCHITECTURE.md`](../architecture/PROGRESSIVE_SCALE_ARCHITECTURE.md) —
+et onze amendés : `PROJECT_VISION.md`, `ROADMAP.md`,
+`ARCHITECTURE_BASELINE.md`, `CARTETOPO_FUNCTIONAL_PARITY.md`,
+`FEATURE_MATRIX.md`, `REQUIREMENTS_BASELINE.md`, les cinq documents `docs/ai/`
+et `.orchestrator/RESULT.md`.
+
+**Ce qui n'a PAS été touché, et c'est le point le plus important pour le
+contrôleur.** **Aucun** fichier sous `src/`, `src-tauri/`, `scripts/`,
+`graph/` ni `docs/performance/runs/`. **Aucun** JSON de preuve. **`X5` reste à
+36 noms.** `MAX_NODES_PER_MAP` reste à `5_000` dans
+`src-tauri/src/map/mod.rs`. `origin/main` reste `1a7d652c`, non fusionné, non
+mergé, non cherry-piqué.
+
+**La frontière gelée.** *FileTopo indexe grand, matérialise petit, et ne rend
+que le contexte utile.* Corpus, graphe logique, vue matérialisée et rendu sont
+quatre plans distincts. `1 élément indexé` = `1 entité accessible`, pas `1
+carte rendue`. `MAX_NODES_PER_MAP = 5000` est requalifié en **limite de
+tranche historique**, destinée à être remplacée par un **budget de vue** — mais
+**pas dans cette tâche**.
+
+**Parité.** `P-01`, `P-02`, `P-03` amendées par **`P-SCALE-R1`**, formulations
+d'origine conservées et visibles sous les nouvelles, à la manière de `P02-R1`.
+Les amendements **ajoutent** des obligations de véracité; aucune exigence n'est
+retirée. **22 exigences**, inchangé. **`P-08` devient le pilier du scale
+spike.**
+
+**Matrice.** 49 → 51. `F-050` et `F-051` ajoutées, `MVP` / `P0`. `F-042` monte
+`ULTÉRIEUR` → `MVP`, motif écrit. Répartition `MVP` 44 / `ULTÉRIEUR` 2 /
+`DIFFÉRÉ` 5. `F-046` reste `PROPOSED`, `F-047` reste `DIFFÉRÉ`.
+
+**Frontières produit.** **Graphify `NOT INTEGRATED`** : aucune dépendance,
+aucun runtime, aucun adaptateur, aucun `graph.json` global, aucun dashboard,
+aucun pipeline LLM obligatoire. **Forge reste distinct.** **Aucun renderer
+choisi.** **Pas de dépendance à un GPU puissant ni à WebGL.**
+
+**Ce que le prochain agent doit faire.** Le **contrôle indépendant de
+`TASK-0027`**, sur preuves documentaires, par une instance distincte de
+l'exécuteur. Rien d'autre. Aucune `TASK-0028` n'est créée; la séquence
+proposée dans `ROADMAP.md` est `PROPOSED` et n'autorise aucun travail.
+
+**Pièges connus pour le contrôleur.**
+
+- Les mentions « 49 lignes » et « `F-001` à `F-049` » subsistent dans
+  `FEATURE_MATRIX.md`, `REQUIREMENTS_BASELINE.md` et `ROADMAP.md` : ce sont
+  des **enregistrements d'époque** du 2026-09-02, volontairement conservés,
+  pas des incohérences. Les répartitions courantes disent bien **51**.
+- `F-042` apparaît en `MVP` dans trois documents — matrice, baseline,
+  `DEC-0029` — avec sa **valeur d'origine `ULTÉRIEUR` conservée en note**.
+  C'est voulu; la note n'est pas une classification concurrente.
+- Les chiffres 10 000 / 100 000 / 1 000 000 apparaissent partout comme
+  **cibles**. Toute lecture qui les prendrait pour des mesures serait fausse :
+  **aucun banc n'a été exécuté**.
+
+**Non testé.** Aucune mesure de performance, aucune suite de tests rejouée,
+aucun build Tauri, aucun `pnpm build`, aucun replay WebView2. La tâche ne
+touchant aucun code, aucune régression d'exécution n'est possible ni
+contrôlée. Réserve `R8` entière; `DEC-0013/F` toujours bloquante; garantie
+`X10` hors Windows toujours non prouvée.
+
+## Relais précédent — ACTION-0043, TASK-0026 VERIFIED, 2026-09-06
 
 Le verdict rendu par l'orchestrateur technique indépendant est enregistré dans
 [`ACTION-0043`](../reviews/ACTION-0043-independent-control.md) : `ED1` à

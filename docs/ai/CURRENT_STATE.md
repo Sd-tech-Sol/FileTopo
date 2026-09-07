@@ -1,5 +1,49 @@
 # État courant
 
+## TASK-0027 — réalignement d'architecture à grande échelle — 2026-09-06
+
+- **Tranche documentaire, `IMPLEMENTED`, contrôle indépendant requis.**
+  [`TASK-0027`](../tasks/TASK-0027-progressive-scale-architecture-realignment.md)
+  enregistre [`DEC-0029`](../decisions/DEC-0029-progressive-materialization-and-scale-boundary.md)
+  et crée [`PROGRESSIVE_SCALE_ARCHITECTURE.md`](../architecture/PROGRESSIVE_SCALE_ARCHITECTURE.md).
+  **Aucune ligne de code produit n'a été touchée** : rien sous `src/`,
+  `src-tauri/`, `scripts/`, `graph/` ni `docs/performance/runs/`.
+- **Énoncé gelé :** **FileTopo indexe grand, matérialise petit, et ne rend que
+  le contexte utile.** Corpus, graphe logique, vue matérialisée et rendu sont
+  **quatre plans distincts**. **`1 élément indexé` = `1 entité accessible`**,
+  **pas** `1 carte simultanément rendue`. Le but fondamental — bureau local,
+  léger, généraliste, laptop ordinaire **sans GPU puissant**, sans LLM, sans
+  API infonuagique, sans compte — **ne change pas**.
+- **`MAX_NODES_PER_MAP = 5000`** est requalifié en **limite de tranche
+  historique**, pas en limite produit de corpus. **La constante est
+  inchangée** dans le code : cette tâche est documentaire.
+- **Parité amendée sans perte :** `P-01`, `P-02` et `P-03` reçoivent
+  l'amendement normatif **`P-SCALE-R1`**, formulations d'origine **conservées
+  et visibles**. Les amendements **ajoutent** des obligations — atteignabilité
+  de tout élément indexé, déclaration de tout repli ou agrégat **avec compte
+  exact**, pagination qui ne perd aucun enfant réel. **Le contrat reste à 22
+  exigences.** **`P-08` devient le pilier du scale spike**, entière.
+- **Matrice 49 → 51.** `F-050` matérialisation progressive et vue bornée, et
+  `F-051` agrégats et méta-nœuds exacts, toutes deux `MVP` / `P0`. **Une
+  seule reclassification, et elle monte : `F-042` `ULTÉRIEUR` → `MVP`.**
+  Répartition : `MVP` **44**, `ULTÉRIEUR` **2**, `DIFFÉRÉ` **5**, total
+  **51**, `F-001` à `F-051` sans trou ni doublon. `F-047` reste `DIFFÉRÉ`;
+  `F-043`/`F-044`/`F-045` restent implémentées et vérifiées; **`F-046` reste
+  `PROPOSED`**.
+- **Décisions de frontière :** **Graphify `NOT INTEGRATED`** — aucune
+  dépendance, aucun runtime, aucun adaptateur, aucun `graph.json` global,
+  aucun pipeline LLM obligatoire; seuls des **enseignements** sont conservés.
+  **Forge reste un projet entièrement distinct.** **Aucun renderer final
+  choisi** — React Flow, ELK, Sigma, Cytoscape, Pixi restent candidats à
+  benchmarker.
+- **`DEC-0029` = `APPROVED`**, enregistrée, **jamais prouvée comme
+  performance**. **Aucune `TASK-0028` créée.** **`X5` reste à 36**, aucune
+  preuve JSON touchée. **`origin/main` reste `1a7d652c`**, non touché.
+- **Non testé / non mesuré :** performance 10k / 100k / 1M **non mesurée** —
+  ce sont des **cibles**; materializer, budget de vue, LOD et agrégats **non
+  implémentés**; aucune suite de tests rejouée, aucun build, aucun replay
+  WebView2. La réserve **`R8`** demeure entière.
+
 ## ACTION-0043 — TASK-0026 VERIFIED et scellement X5 — 2026-09-06
 
 - **Verdict indépendant enregistré, non rendu par Claude Code :** `ED1–ED15 =

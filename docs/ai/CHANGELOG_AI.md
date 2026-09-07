@@ -3670,3 +3670,89 @@ autorisés; parité Rust/TS/PowerShell **PASS**; `git diff --check` **PASS**;
   bloquée par `DEC-0013/F`; X10 hors Windows non prouvée race-safe.
 - `origin/main` porte `1a7d652c`, commit de documentation du propriétaire daté
   du 2026-09-06, extérieur à cette branche et non touché.
+
+---
+
+## 2026-09-06 — TASK-0027 — Réalignement d'architecture à grande échelle
+
+**Agent :** exécuteur Claude Code
+**Statut à l'issue :** `IMPLEMENTED` — **contrôle indépendant requis**.
+L'exécuteur ne s'attribue pas `VERIFIED`.
+**Branche :** `build/v0.2-a11-progressive-scale-architecture`, créée et
+publiée depuis `b580942` (parent `ffa9504`).
+**Nature :** **documentaire / architecture uniquement. Aucune implémentation
+produit.**
+
+### Fait
+
+- Création de
+  [`DEC-0029`](../decisions/DEC-0029-progressive-materialization-and-scale-boundary.md),
+  `APPROVED` : **FileTopo indexe grand, matérialise petit, et ne rend que le
+  contexte utile.** Neuf points `A` à `I` — quatre plans distincts (corpus,
+  graphe logique, vue matérialisée, rendu); navigation progressive comme
+  primitive; agrégats exacts; query engine borné; layout et renderer;
+  hachage sur campagne explicite; **Graphify `NOT INTEGRATED`**; **Forge
+  distinct**; protocole d'échelle 10k / 100k / 1M.
+- Création de
+  [`PROGRESSIVE_SCALE_ARCHITECTURE.md`](../architecture/PROGRESSIVE_SCALE_ARCHITECTURE.md),
+  frontière d'architecture de mise à l'échelle, avec la chaîne cible index →
+  graphe logique → query engine borné → progressive materializer →
+  sous-graphe et agrégats → layout de cette vue → renderer borné.
+- Création de la fiche
+  [`TASK-0027`](../tasks/TASK-0027-progressive-scale-architecture-realignment.md).
+- **Requalification de `MAX_NODES_PER_MAP = 5000`** en **limite de tranche
+  historique**, pas en limite produit de corpus. **La constante n'est pas
+  modifiée** : la tâche est documentaire.
+- **Amendement normatif `P-SCALE-R1`** du contrat de parité sur `P-01`,
+  `P-02` et `P-03`, avec **conservation visible des formulations d'origine**,
+  à la manière de `P02-R1`. Les amendements **ajoutent** des obligations —
+  atteignabilité de tout élément indexé, déclaration de tout repli ou agrégat
+  **avec compte exact**, pagination qui ne perd aucun enfant réel. **Le
+  contrat reste à 22 exigences.** **`P-08` devient le pilier du scale spike.**
+- **Matrice fonctionnelle 49 → 51 :** ajout de **`F-050`** matérialisation
+  progressive et vue bornée, et **`F-051`** agrégats et méta-nœuds exacts,
+  toutes deux `MVP` / `P0`. **`F-042` promue `ULTÉRIEUR` → `MVP`**, motif
+  écrit : sous une architecture progressive, repli/dépli/focus deviennent la
+  primitive qui détermine le contenu de la vue. Répartition `MVP` 44 /
+  `ULTÉRIEUR` 2 / `DIFFÉRÉ` 5, `F-001` à `F-051`.
+- **Arbitrage écrit de `F-051` en `P0`** : `F-050` sans `F-051` produirait une
+  vue qui ment par omission — interdit par `P-02` amendée. Les deux se livrent
+  ensemble ou pas du tout.
+- Amendements par renvoi de `PROJECT_VISION.md`, `ROADMAP.md` et
+  `ARCHITECTURE_BASELINE.md`, **historique préservé**. `ROADMAP.md` reçoit la
+  **séquence proposée** après `TASK-0027` — scale spike, materializer,
+  recherche/watchers, permissions, finition visuelle — **`PROPOSED`, sans
+  qu'aucune tâche soit créée**.
+- Mise à jour de `REQUIREMENTS_BASELINE.md`, `CURRENT_STATE.md`,
+  `NEXT_ACTION.md`, `HANDOFF.md`, `VALIDATION.md` (section `AS`) et
+  `.orchestrator/RESULT.md`.
+
+### Preuves
+
+Validations **documentaires** seulement, détaillées en
+[`VALIDATION.md §AS`](VALIDATION.md) : liens relatifs des trois nouveaux
+documents **PASS**; aucune contradiction entre vision, roadmap, parité,
+matrice, baseline et décision; `F-042` classée **`MVP`** identiquement
+partout; identifiants `F-001` à `F-051` **sans trou ni doublon**; **aucune**
+occurrence de Graphify comme dépendance ou roadmap d'intégration; **aucun**
+chiffre 10k/100k/1M présenté comme mesuré; **aucun** changement sous `src/`,
+`src-tauri/`, `scripts/`, `graph/` ni `docs/performance/runs/`; `X5` toujours
+**36**; `MAX_NODES_PER_MAP` toujours `5_000`; `origin/main` toujours
+`1a7d652c` et non touché; `git diff --check` **PASS**.
+
+### Non fait / limites
+
+- **Aucune performance mesurée** à 10 000, 100 000 ni 1 000 000 d'éléments :
+  ce sont des **cibles**, pas des résultats. Aucun banc exécuté, aucun profil
+  matériel gelé.
+- **Materializer, budget de vue, LOD et agrégats non implémentés.**
+- Aucune suite de tests rejouée, aucun build Tauri, aucun `pnpm build`, aucun
+  replay WebView2. La tâche ne touche aucun code.
+- La cohérence documentaire est établie **par relecture**, pas par un
+  vérificateur automatisé.
+- Aucune `TASK-0028` créée. Aucune fusion, PR, release, étiquette,
+  publication vers `main`, force push ni réécriture d'historique.
+- **Graphify non intégré par décision produit.** **Forge reste distinct.**
+  **Aucun renderer final choisi.**
+- `F-046` reste `PROPOSED`; `DEC-0013/F` bloquante; `X10` hors Windows non
+  prouvée race-safe; réserve `R8` entière.

@@ -14,6 +14,46 @@ question ouverte renvoie à une fiche `DEC-0007` à `DEC-0012`, toutes
 [phase-2-architecture.md](phase-2-architecture.md), qui reste le document
 historique `VERIFIED` de la conception à un million de nœuds en relief.
 
+> **Amendement par renvoi du 2026-09-06 — `DEC-0029`, réalignement
+> d'architecture à grande échelle.**
+>
+> **Rien de cette baseline n'est retiré, réécrit ni invalidé.** Ses
+> contraintes, ses invariants et sa §2 restent en vigueur tels quels — en
+> particulier l'**IPC étroit, typé, validé, en identifiants seulement**,
+> l'**invariant structurel** de la flèche unidirectionnelle en métadonnées
+> seules vers la racine analysée, et la politique de §6.3 sur les fichiers en
+> ligne seulement.
+>
+> **Ce qui s'y ajoute** est une **frontière d'échelle**, écrite dans
+> [`PROGRESSIVE_SCALE_ARCHITECTURE.md`](PROGRESSIVE_SCALE_ARCHITECTURE.md) et
+> décidée par
+> [`DEC-0029`](../decisions/DEC-0029-progressive-materialization-and-scale-boundary.md) :
+> **FileTopo indexe grand, matérialise petit, et ne rend que le contexte
+> utile.**
+>
+> La §2 de ce document décrit **le cœur privilégié et l'interface**. Elle
+> reste exacte, et elle est désormais **complétée** par une chaîne interne
+> plus fine entre le cœur et l'interface : index complet → graphe logique →
+> **query engine borné** → **progressive materializer** → sous-graphe et
+> agrégats → **layout de cette vue seulement** → **renderer borné**. La
+> « Disposition hiérarchique déterministe » du cœur s'applique **à la vue
+> matérialisée**, plus au corpus entier, et le frontend **ne reçoit jamais un
+> whole-graph JSON**.
+>
+> `MAX_NODES_PER_MAP = 5_000` — `src-tauri/src/map/mod.rs` — est une **limite
+> de tranche historique**, **pas une limite produit de corpus**. Elle est
+> **inchangée** par `TASK-0027`, qui est documentaire, et destinée à être
+> remplacée par un **budget de matérialisation et de remplissage de vue**.
+>
+> **Aucun renderer n'est choisi**, **aucun schéma SQLite n'est défini**,
+> **aucune API n'est figée** et **aucune dépendance n'est ajoutée** par cet
+> amendement. **Graphify n'est pas intégré** — `DEC-0029` G. **Forge reste un
+> projet distinct** — `DEC-0029` H. **Non testé, non mesuré :** les niveaux
+> 10 000, 100 000 et 1 000 000 sont des **cibles de validation futures**, et
+> les budgets de [phase-2-architecture.md](phase-2-architecture.md) restent
+> des **hypothèses et critères de rejet historiques**, jamais des résultats.
+> La réserve `R8` demeure entière.
+
 ---
 
 ## 1. Contraintes officielles qui structurent tout le reste
@@ -381,6 +421,13 @@ avertissement affiché, reconstruction proposée.
 | Indexation incrémentale et réconciliation après perte d'événements | [DEC-0010](../decisions/DEC-0010-indexing-and-watching.md) | `PROPOSED` |
 | Stockage par cerveau et stratégie de migration | [DEC-0011](../decisions/DEC-0011-brain-isolation-and-migrations.md) | `PROPOSED` |
 | Où s'arrête le MVP structurel et où commence l'IA facultative | [DEC-0012](../decisions/DEC-0012-ai-architectural-boundary.md) | `PROPOSED` |
+| Comment un corpus très grand est indexé, matérialisé et rendu | [DEC-0029](../decisions/DEC-0029-progressive-materialization-and-scale-boundary.md) | `APPROVED` — **tranchée depuis le 2026-09-06**, voir [PROGRESSIVE_SCALE_ARCHITECTURE.md](PROGRESSIVE_SCALE_ARCHITECTURE.md) |
+
+**Restent non tranchés après `DEC-0029`, et le sont explicitement :** la
+**valeur numérique du budget de vue**, le **renderer final**, le **schéma
+SQLite du query engine borné**, les **signatures d'API et d'IPC**, le
+**remplacement effectif de `MAX_NODES_PER_MAP`** et le **profil matériel exact
+du banc d'échelle** — [`PROGRESSIVE_SCALE_ARCHITECTURE.md §12`](PROGRESSIVE_SCALE_ARCHITECTURE.md).
 
 ## 11. Limites de ce livrable
 

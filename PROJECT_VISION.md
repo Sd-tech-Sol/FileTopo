@@ -45,6 +45,41 @@ couleur, son icône, ses préférences, sa vue, son index et son état vu/non vu
 >    modèle conceptuel, et **la source reste autoritaire sur les
 >    permissions** — `DEC-0023`.
 
+> **Précision du 2026-09-06 — réalignement d'architecture à grande échelle,
+> [`DEC-0029`](docs/decisions/DEC-0029-progressive-materialization-and-scale-boundary.md).**
+> Rien de cette vision n'est retiré. **Le but fondamental ne change pas** :
+> application de bureau **locale**, **légère**, **généraliste**, pensée
+> notamment pour de **très grands cerveaux numériques** et des
+> **environnements documentaires d'entreprise**, utilisable sur un **laptop ou
+> PC ordinaire sans GPU puissant**, **sans LLM**, **sans API infonuagique**,
+> **sans compte** et **sans envoi de documents**.
+>
+> Un seul point est **précisé**, et il porte sur *où le coût est payé* :
+>
+> > **FileTopo indexe grand, matérialise petit, et ne rend que le contexte
+> > utile.**
+>
+> Le **corpus complet** vit dans l'index local durable; le **graphe logique**
+> vit dans les données, jamais dans le SVG ou le DOM; le frontend ne reçoit
+> qu'une **vue matérialisée bornée**. **`1 élément indexé` signifie `1 entité
+> accessible`, et non `1 carte simultanément rendue`.** Le coût de rendu suit
+> le **contexte courant**, jamais la taille du cerveau.
+>
+> Ce que cela **n'autorise pas** : cacher sans le dire. Un sous-arbre replié
+> ou agrégé est **déclaré comme tel, avec son compte exact**, et **tout
+> élément indexé reste atteignable**. Un agrégat n'est **jamais** un faux
+> dossier.
+>
+> **Graphify n'est pas intégré** — aucune dépendance, aucun runtime, aucun
+> adaptateur. **Forge reste un projet entièrement distinct.** **Aucun
+> renderer final n'est choisi**, et le fonctionnement de base **ne peut
+> dépendre ni d'un GPU puissant ni de WebGL**.
+>
+> Détail dans
+> [`PROGRESSIVE_SCALE_ARCHITECTURE.md`](docs/architecture/PROGRESSIVE_SCALE_ARCHITECTURE.md).
+> **Non testé :** aucune performance n'est mesurée à 10 000, 100 000 ni
+> 1 000 000 d'éléments; ce sont des **cibles de validation futures**.
+
 ## Carte générique et relations
 
 La hiérarchie vient exclusivement de l'arborescence observée. Les relations
@@ -94,3 +129,7 @@ Voir [le bilan alpha](docs/archive/v0.1-alpha/BASELINE_ASSESSMENT.md) et
 - Une indisponibilité temporaire ne détruit ni l'index ni les préférences.
 - Les documents sources restent inchangés, démontré par tests synthétiques.
 - Le produit reste utile hors ligne et sans IA.
+- **Un très grand cerveau reste navigable sur une machine ordinaire** : tout
+  élément indexé est atteignable, ce qui est caché est déclaré avec un compte
+  exact, et la charge de rendu **ne croît pas proportionnellement au corpus**
+  — `DEC-0029`. **Non mesuré à ce jour.**

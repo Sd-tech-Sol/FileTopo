@@ -1,6 +1,6 @@
 # VALIDATION.md — État de vérification
 
-**Dernière mise à jour :** 2026-09-05
+**Dernière mise à jour :** 2026-09-06
 **Portée :** TASK-0001 (phase 0) — `VERIFIED` ; TASK-0002 (phase 1) —
 `VERIFIED` le 2026-08-25, sur preuves indépendantes de l'orchestrateur
 (section A.7) ; TASK-0010 (rebaseline et mémoire) — `VERIFIED` le 2026-08-31,
@@ -3759,3 +3759,71 @@ nouveaux interdisent le retour du littéral et exigent le contrôle par nom.
   prouvée.
 - `origin/main` porte `1a7d652c`, un commit de documentation du propriétaire du
   dépôt daté du 2026-09-06, extérieur à cette branche et à cette fermeture.
+
+---
+
+## AS. TASK-0027 — réalignement d'architecture à grande échelle — 2026-09-06
+
+**Nature :** tranche **documentaire / architecture uniquement**. **Aucune
+implémentation produit, aucune mesure, aucun test exécuté.** Les seules
+validations possibles ici sont **documentaires**, et elles sont énumérées
+telles quelles.
+
+**Statut livré :** `TASK-0027` = **`IMPLEMENTED`**, **contrôle indépendant
+requis**. `DEC-0029` = **`APPROVED`** — enregistrée, **jamais prouvée comme
+performance**. L'exécuteur ne s'attribue pas `VERIFIED`.
+
+### Préconditions contrôlées avant écriture
+
+| Contrôle | Constat |
+|---|---|
+| Racine Git | `C:/Users/Vatfaire/Documents/TopographicDocumentMap` |
+| Branche de départ | `build/v0.2-a10-exact-duplicate-explorer` |
+| Arbre local | **propre** |
+| `git fetch origin` | exécuté |
+| Fast-forward | **`Already up to date`** |
+| `HEAD` d'orchestration | `b5809424bfa5c34f956dbe76c0b96777b84dc5fa` |
+| Parent direct exigé | `ffa950452e78cc2fc39678d9d0819527e3a12b21` — **conforme** |
+| `X5` | **36** entrées comptées dans `src/map/runArtifacts.ts` |
+| `TASK-0027` / `DEC-0029` préexistantes | **aucune** |
+| `origin/main` | `1a7d652ca48281c1687f6d1404c56a1404df91d8` |
+| Branche de travail | `build/v0.2-a11-progressive-scale-architecture`, créée et publiée |
+
+**Aucune condition de `STOP / BLOCKED` rencontrée.**
+
+### Validations documentaires effectuées
+
+| Contrôle | Résultat |
+|---|---|
+| Liens relatifs des trois nouveaux documents | **PASS** — chaque cible existe |
+| Contradiction vision / roadmap / parité / matrice / baseline / décision | **aucune trouvée** |
+| `F-042` classée identiquement partout | **PASS** — `MVP` dans `FEATURE_MATRIX.md`, `REQUIREMENTS_BASELINE.md` et `DEC-0029`; valeur d'origine `ULTÉRIEUR` conservée en note, non concurrente |
+| Identifiants `F` sans trou ni doublon | **PASS** — `F-001` à `F-051` |
+| Contrat de parité | **22 exigences**, inchangé; `P-01`/`P-02`/`P-03` amendées par `P-SCALE-R1`, formulations d'origine conservées et visibles |
+| Graphify comme dépendance ou roadmap d'intégration | **aucune occurrence** — `NOT INTEGRATED` partout |
+| Chiffre 10k / 100k / 1M présenté comme mesuré | **aucun** — tous déclarés cibles non mesurées |
+| Changement sous `src/`, `src-tauri/`, `scripts/`, `graph/`, `docs/performance/runs/` | **aucun** |
+| `X5` après écriture | **36**, inchangé |
+| `MAX_NODES_PER_MAP` | **`5_000`, inchangé** dans `src-tauri/src/map/mod.rs` |
+| `origin/main` | `1a7d652c...`, **non touché** |
+| `git diff --check` | **PASS** |
+
+### Non testé / limites
+
+- **Aucune performance mesurée.** Les niveaux **10 000**, **100 000** et
+  **1 000 000** sont des **cibles de validation futures**, pas des résultats.
+  Aucun banc n'a été exécuté, aucun profil matériel n'a été gelé.
+- **Materializer, budget de vue, LOD et agrégats non implémentés.** Ils
+  n'existent que comme cibles écrites.
+- **Aucune suite de tests rejouée**, aucun build Tauri, aucun `pnpm build`,
+  aucun replay WebView2, aucune campagne `ED15`, `EC15`, `DR15` ni `SR15`. La
+  tâche ne touche aucun code : aucune régression d'exécution n'est possible ni
+  contrôlée.
+- **La cohérence documentaire est établie par relecture**, pas par un
+  vérificateur automatisé de liens ou d'identifiants. C'est une limite réelle
+  de cette validation.
+- **`F-046`** reste `PROPOSED`; identité physique persistante absente,
+  `DEC-0013/F` bloquante. Garantie **`X10`** race-safe hors Windows toujours
+  non prouvée. Réserve **`R8`** entière.
+- **Graphify non intégré par décision produit** — `DEC-0029` G. **Forge reste
+  un projet distinct** — `DEC-0029` H.

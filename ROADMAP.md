@@ -48,6 +48,42 @@ attend un contrôle indépendant avant la suivante.
 > n'est créée ni exécutée**. La première, **`TASK-0022`**, attend le prochain
 > prompt de l'orchestrateur.
 
+> **Réalignement d'architecture du 2026-09-06 — aucune étape ne change de rang
+> ni de nature; l'étape A reçoit une CONTRAINTE D'ARCHITECTURE supplémentaire.**
+>
+> [`TASK-0027`](docs/tasks/TASK-0027-progressive-scale-architecture-realignment.md)
+> enregistre [`DEC-0029`](docs/decisions/DEC-0029-progressive-materialization-and-scale-boundary.md) :
+> **FileTopo indexe grand, matérialise petit, et ne rend que le contexte
+> utile.** Corpus, graphe logique, vue matérialisée et rendu sont **quatre
+> plans distincts**; `1 élément indexé` = `1 entité accessible`, **pas** `1
+> carte rendue`; `MAX_NODES_PER_MAP = 5000` est une **limite de tranche
+> historique**, pas une limite produit de corpus.
+>
+> **L'étape A reste « parité fonctionnelle MVP »** et conserve ses **22
+> exigences**. `P-01`, `P-02` et `P-03` sont **amendées** par l'amendement
+> normatif **`P-SCALE-R1`**, qui **ajoute** des obligations de véracité —
+> atteignabilité de tout élément indexé, déclaration de tout repli ou agrégat
+> **avec compte exact**, interdiction qu'une pagination perde un enfant réel.
+> **Aucune exigence n'est supprimée ni affaiblie.** **`P-08` — recherche sur
+> 100 000 nœuds — devient le pilier du scale spike.**
+>
+> **La matrice passe de 49 à 51 fonctions** — `F-050` matérialisation
+> progressive et vue bornée, `F-051` agrégats et méta-nœuds exacts, toutes
+> deux `MVP` / `P0`. **Une seule classification existante change, et elle
+> monte : `F-042` passe d'`ULTÉRIEUR` à `MVP`**, parce que repli, dépli et
+> focus deviennent la **primitive** qui détermine le contenu de la vue.
+> `F-047` reste `DIFFÉRÉ`; `F-046` reste `PROPOSED`.
+>
+> **`Graphify` n'est pas intégré** — `NOT INTEGRATED`, `DEC-0029` G : aucune
+> dépendance, aucun runtime, aucun adaptateur MVP, aucune roadmap
+> d'intégration. **`Forge` reste un projet entièrement distinct** —
+> `DEC-0029` H.
+>
+> **Aucune étape n'est franchie, aucune réserve n'est levée, `R8` demeure
+> entière**, **aucun renderer n'est choisi**, et **rien de cette fiche n'est
+> implémenté ni mesuré**. `TASK-0027` est **`IMPLEMENTED`** et attend un
+> contrôle indépendant.
+
 **Trois règles de passage propres à ces étapes :**
 
 1. **La parité précède l'esthétique.** L'étape **B** ne peut pas commencer
@@ -135,3 +171,43 @@ d'arrêt de [AGENTS.md](AGENTS.md).
 supprimer une exigence de parité; toute suppression passe par une fiche `DEC`
 écrite; et une tranche de production qui n'embarque pas de budget adaptatif
 **doit borner sa charge autrement et le déclarer** dans sa fiche.
+
+**S'y ajoute, depuis le 2026-09-06 — `DEC-0029` :** aucune tranche ne peut
+introduire un chemin où **le frontend reçoit le graphe entier**, ni faire
+croître le nombre d'éléments rendus **proportionnellement au corpus**. Une
+tranche qui rend du contenu **déclare la borne de sa vue** et **déclare ce
+qu'elle cache, avec un compte exact**. Et **aucun chiffre d'échelle — 10 000,
+100 000, 1 000 000 — n'est publiable comme résultat avant d'avoir été mesuré**
+dans un banc dont le profil matériel est gelé; la réserve `R8` s'y applique
+entièrement.
+
+## Séquence proposée après TASK-0027 — `PROPOSED`, aucune tâche créée
+
+**Proposée le 2026-09-06 par
+[`TASK-0027`](docs/tasks/TASK-0027-progressive-scale-architecture-realignment.md),
+sous `DEC-0029`.** Cette séquence **ordonne** des travaux à l'intérieur de
+l'étape **A**, sauf son point 5 qui appartient à l'étape **B**. Elle **ne
+remplace ni les quatre étapes A à D, ni les phases historiques**, et **aucune
+de ces tranches n'est créée**. Chacune exigera sa propre fiche approuvée, son
+périmètre écrit et son contrôle indépendant.
+
+1. **Scale spike synthétique 10k / 100k / 1M.** Le **profil matériel exact du
+   banc est gelé dans cette tranche-là**, pas avant; classe visée : Windows
+   laptop ou desktop ordinaire, RAM modeste, iGPU ou GPU faible. Les neuf
+   mesures minimales sont listées dans
+   [`PROGRESSIVE_SCALE_ARCHITECTURE.md §11.1`](docs/architecture/PROGRESSIVE_SCALE_ARCHITECTURE.md).
+2. **Progressive materializer** + budget de vue + repli/dépli/focus (`F-042`)
+   + agrégats (`F-050`, `F-051`).
+3. **Recherche, filtres, watchers** et mise à jour incrémentale sur cette
+   architecture — `P-08`, `P-09`, `P-18`.
+4. **Permissions et mode équipe** — `F-048`, `F-049`, selon `DEC-0023`, qui se
+   livrent ensemble ou pas du tout.
+5. **Finition visuelle moderne**, **seulement après stabilité fonctionnelle**.
+   C'est l'étape **B**, et sa règle de passage est inchangée : **la parité
+   précède l'esthétique**.
+
+**La tranche design reste explicitement prévue** : design system FileTopo
+**local et neutre vis-à-vis des fournisseurs**, skills et adapters
+Claude/Codex communs, prototypes comparés, et **benchmark des renderers** —
+React Flow, ELK, Sigma, Cytoscape, Pixi restant des candidats. **Aucun design
+ni renderer n'est choisi ni implémenté par `TASK-0027`.**

@@ -60,25 +60,51 @@ décision écrite, jamais par omission silencieuse.
 
 ## 2. Répartition obtenue
 
-**Répartition courante, après l'amendement du 2026-09-02 (`DEC-0019` à
-`DEC-0023`, réalignement produit de
-[`TASK-0021`](../tasks/TASK-0021-product-realignment.md)) :**
+**Répartition courante, après l'amendement du 2026-09-06 (`DEC-0029`,
+réalignement d'architecture à grande échelle de
+[`TASK-0027`](../tasks/TASK-0027-progressive-scale-architecture-realignment.md)) :**
 
 | Classification | Nombre | Fonctions |
 |---|---:|---|
-| `MVP` | **41** | F-001 à F-020, F-022 à F-036, F-040, F-041, **F-043**, **F-044**, **F-045**, **F-046** |
-| `ULTÉRIEUR` | **3** | **F-042**, **F-048**, **F-049** |
-| `DIFFÉRÉ` | **5** | F-021, F-037, F-038, F-039, **F-047** |
-| **Total** | **49** | `F-001` à `F-049`, sans trou ni doublon |
+| `MVP` | **44** | F-001 à F-020, F-022 à F-036, F-040, F-041, **F-042**, F-043, F-044, F-045, F-046, **F-050**, **F-051** |
+| `ULTÉRIEUR` | **2** | F-048, F-049 |
+| `DIFFÉRÉ` | **5** | F-021, F-037, F-038, F-039, F-047 |
+| **Total** | **51** | `F-001` à `F-051`, sans trou ni doublon |
 
-**La catégorie `ULTÉRIEUR` cesse d'être vide.** Elle l'était depuis
-l'amendement du 2026-08-31, et la note de §4 disait que « la parité ne laisse
-rien entre nécessaire et différé ». Cela reste vrai **de la parité** : aucune
-des trois fonctions qui l'occupent désormais n'est une exigence de parité.
-`F-042` est une **possibilité future** nommée par `DEC-0020`; `F-048` et
-`F-049` préparent le **multi-utilisateur** de `DEC-0023`, qui ne peut pas être
-`DIFFÉRÉ` — il conditionne la couche IA — ni `MVP` — rien ne l'exige pour un
-utilisateur seul.
+**Deux fonctions sont ajoutées et une seule monte.** `F-050` —
+matérialisation progressive et vue bornée — et `F-051` — agrégats et
+méta-nœuds exacts — sont des **extensions produit décidées** par
+[`DEC-0029`](../decisions/DEC-0029-progressive-materialization-and-scale-boundary.md),
+classées `MVP` / `P0`. **`F-042` passe d'`ULTÉRIEUR` à `MVP`** : sous une
+architecture progressive, replier, déplier et focaliser deviennent les gestes
+qui **déterminent le contenu de la vue matérialisée**, donc une **primitive de
+navigation et de performance**, et non plus un confort d'interface. **Aucune
+fonction ne descend, aucune ne disparaît.**
+
+**`F-051` est classée `P0` par arbitrage écrit** : `F-050` cache
+nécessairement des éléments réels, et sans `F-051` la vue devrait soit les
+taire — violation de `P-02` amendée — soit renoncer à matérialiser —
+annulation de `F-050`. Les deux se livrent **ensemble ou pas du tout**.
+
+**Répartition du 2026-09-02, après le réalignement produit `DEC-0019` à
+`DEC-0023` et avant `DEC-0029`, conservée pour mémoire :**
+
+| Classification | Nombre | Fonctions |
+|---|---:|---|
+| `MVP` | 41 | F-001 à F-020, F-022 à F-036, F-040, F-041, F-043, F-044, F-045, F-046 |
+| `ULTÉRIEUR` | 3 | F-042, F-048, F-049 |
+| `DIFFÉRÉ` | 5 | F-021, F-037, F-038, F-039, F-047 |
+| **Total** | 49 | `F-001` à `F-049`, sans trou ni doublon |
+
+**Note d'époque, conservée :** « La catégorie `ULTÉRIEUR` cesse d'être vide.
+Elle l'était depuis l'amendement du 2026-08-31, et la note de §4 disait que
+"la parité ne laisse rien entre nécessaire et différé". Cela reste vrai **de la
+parité** : aucune des trois fonctions qui l'occupent désormais n'est une
+exigence de parité. `F-042` est une **possibilité future** nommée par
+`DEC-0020`; `F-048` et `F-049` préparent le **multi-utilisateur** de
+`DEC-0023`, qui ne peut pas être `DIFFÉRÉ` — il conditionne la couche IA — ni
+`MVP` — rien ne l'exige pour un utilisateur seul. » **`DEC-0029` a depuis
+retiré `F-042` de cette catégorie**, sans toucher à `F-048` ni `F-049`.
 
 **Répartition du 2026-09-02, avant le réalignement produit, conservée pour
 mémoire :**
@@ -109,7 +135,7 @@ mémoire :**
 | `ULTÉRIEUR` | 4 | F-013, F-017, F-018, F-019 |
 | `DIFFÉRÉ` | 4 | F-021, F-037, F-038, F-039 |
 
-## 3. Baseline des 49 fonctions
+## 3. Baseline des 51 fonctions
 
 Colonne « Écart » : justification obligatoire lorsque la classification
 s'écarte de la colonne « Priorité » de la matrice fonctionnelle. Un `P0`
@@ -159,7 +185,7 @@ des correspondances attendues et ne constituent pas un écart.
 | F-039 | GraphRAG | `DIFFÉRÉ` | À n'étudier qu'après un RAG hybride cité et sur besoin mesuré. | F-038 | Gain mesuré et reproductible contre le RAG cité, sur données synthétiques. | — (P3) |
 | F-040 | Vue composée multi-cerveaux | `MVP` | La direction produit (`DEC-0017`) fait du multi-cerveaux la forme du produit; une vue doit pouvoir en montrer plusieurs sans jamais les fusionner. | F-002, F-034 | Deux cerveaux synthétiques affichés dans la même vue n'ont **aucun** fichier de stockage commun, **aucun** état commun, et **chaque** élément affiché porte un cerveau d'origine non ambigu; retirer un cerveau de la vue ne modifie **aucune** de ses données. | **Oui** : P1 → `MVP`, extension produit décidée par `DEC-0017`. |
 | F-041 | Relations inter-cerveaux explicites | `MVP` | La direction produit (`DEC-0018`) veut qu'un document d'un cerveau puisse en référencer un autre **sans** que les deux cerveaux soient fusionnés; une vue composée qui montre deux cerveaux côte à côte sans jamais pouvoir les relier reste muette. | F-002, F-017, F-040 | Une relation inter-cerveaux porte **deux** extrémités de **deux cerveaux différents**, un type, et une provenance `DETERMINISTIC` (règle nommée et versionnée) ou `APPROVED` (approbation explicite) — jamais une troisième valeur; elle **survit** à une reconstruction complète des deux index; elle n'implique **jamais** son inverse; une suggestion n'entre dans **aucun** compte avant approbation; et la seule ressemblance de noms, de chemins ou de fichiers n'en crée **aucune**. | **Oui** : P1 → `MVP`, extension produit décidée par `DEC-0018`. |
-| F-042 | Repli/dépli et focus de branche | `ULTÉRIEUR` | `DEC-0020` fait de la représentation principale un **graphe hiérarchique à nœuds reliés**; replier une branche et focaliser sur un sous-ensemble sont les deux gestes qu'un graphe rend possibles et qu'un pavage ne permettait pas. Nommés pour ne pas être oubliés, **non promis au MVP** : `P-02` corrigée est satisfaisable sans eux. | F-007, F-008, F-009, F-010 | Replier une branche masque **exactement** ses descendants; déplier restitue l'état antérieur; le focus n'affiche **aucun** nœud extérieur à la branche et le **dit en mots**; les deux sont atteignables au clavier et réversibles en une action. | **Oui** : `P2` → `ULTÉRIEUR`, extension produit décidée par `DEC-0020`. Un `P2` classé `ULTÉRIEUR` est **conforme** à la règle de §3 et n'exige pas de justification d'écart; la ligne est déclarée pour mémoire. |
+| F-042 | Repli/dépli et focus de branche | **`MVP`** *(promue le 2026-09-06 par `DEC-0029` B; valeur d'origine : `ULTÉRIEUR`, `DEC-0020`)* | `DEC-0020` fait de la représentation principale un **graphe hiérarchique à nœuds reliés**; replier une branche et focaliser sur un sous-ensemble sont les deux gestes qu'un graphe rend possibles et qu'un pavage ne permettait pas. **Motif de la promotion :** sous l'architecture progressive de `DEC-0029`, ces gestes **déterminent le contenu de la vue matérialisée**; ils deviennent donc **primitive de navigation ET primitive de performance**, et non plus un confort. **Motif d'origine, conservé :** « nommés pour ne pas être oubliés, non promis au MVP : `P-02` corrigée est satisfaisable sans eux » — vrai avant `DEC-0029`, faux depuis, parce que `P-02` **amendée par `P-SCALE-R1`** exige de déclarer tout repli avec son compte exact. | F-007, F-008, F-009, F-010, **F-050**, **F-051** | Replier une branche masque **exactement** ses descendants; déplier restitue l'état antérieur; le focus n'affiche **aucun** nœud extérieur à la branche et le **dit en mots**; les deux sont atteignables au clavier et réversibles en une action; **tout sous-arbre replié est déclaré avec son compte exact**. | Non : `P2` → `MVP` **monte** la fonction. Aucune règle de §3 n'interdit une montée; la promotion est **déclarée** par `DEC-0029` B et la valeur d'origine est **conservée** dans cette colonne. |
 | F-043 | Moteur de signaux et relations déterministes explicables | `MVP` | Six tranches ont livré le **modèle** de relation avec provenance, mais **aucune règle n'en produit** : `DETERMINISTIC` est une valeur d'énumération dont rien ne remplit la définition. Sans producteur, un utilisateur obtient une carte et **zéro** relation transversale, et `P-04` reste indéfiniment partielle. `DEC-0021`. | F-003, F-006, F-016, F-017 | Chaque relation produite cite sa **règle** et sa **version**; chaque suggestion est **explicable en langage ordinaire**; **aucun score numérique seul** ne crée de relation établie; le moteur fonctionne **hors ligne, sans clé, sans compte et sans LLM**; aucune règle du noyau ne suppose un métier (`DEC-0019`). | **Oui** : `P0` → `MVP`, conforme; extension produit décidée par `DEC-0021`. |
 | F-044 | File de révision des suggestions | `MVP` | Une suggestion sans moyen simple de la confirmer est une nuisance, et le produit en produira beaucoup dès que `F-043` existe. La file est ce qui rend la distinction « suggestion / relation établie » **utilisable** plutôt que seulement correcte. `DEC-0021` §8. | F-017, F-043 | États **`PENDING`, `APPROVED`, `REJECTED`**, plus `DEFERRED` seulement si le besoin est démontré; l'explication montre **source, cible, type proposé, pourquoi, signaux**; **`Confirmer`** produit une relation `APPROVED` et jamais une troisième valeur; suggestion et relation établie sont distinguables **sans recourir à la seule couleur**; aucune interface technique n'est requise. | **Oui** : `P1` → `MVP`, extension produit décidée par `DEC-0021`. |
 | F-045 | Mémoire des décisions humaines sur les suggestions | `MVP` | Un moteur qui repropose à chaque scan ce que l'utilisateur vient de rejeter est abandonné en une semaine. La mémoire des rejets est ce qui empêche `F-044` de devenir une corvée périodique. `DEC-0021` §9. | F-043, F-044, F-028 | Une décision enregistre **suggestion, règle et version, extrémités, décision, date** et l'éventuelle **cause de réévaluation**; un scan **sans changement pertinent** ne repropose **aucune** suggestion rejetée; la décision **survit au redémarrage** et **n'affecte aucun autre cerveau**. | **Oui** : `P1` → `MVP`, extension produit décidée par `DEC-0021`. |
@@ -167,6 +193,8 @@ des correspondances attendues et ne constituent pas un écart.
 | F-047 | Couche IA facultative `BYOK` | `DIFFÉRÉ` | `PROJECT_VISION.md` prévoit un enrichissement facultatif à fournisseurs configurables; `DEC-0012` a placé la frontière `F-D`. `DEC-0022` dit ce qui a le droit de la traverser : **des suggestions, jamais des relations établies**. Reste `DIFFÉRÉ`, comme `F-037` à `F-039`. | F-043, F-044, F-049 | Le produit est **complet sans clé, sans compte et sans connexion**; l'architecture est **agnostique du fournisseur**; une suggestion IA porte **fournisseur, modèle, date, justification** pour l'audit; approuvée, elle devient `APPROVED` — **aucune troisième provenance « AI »**; **rien ne sort** sans autorisation explicite par niveaux. | Non : `P3` → `DIFFÉRÉ`, conforme. |
 | F-048 | Identités, groupes et mode équipe | `ULTÉRIEUR` | `DEC-0019` nomme les équipes, entreprises et cabinets parmi les cibles; un modèle mono-utilisateur les exclurait dès la première ligne de schéma. `DEC-0023` retient **un seul modèle conceptuel, deux modes de remplissage**, pour éviter deux produits qui divergent. | F-002, F-034, F-040, F-049 | Le mode personnel emploie l'**identité de l'OS courante**, sans compte ni connexion, et **ne montre aucune trace** du mode équipe; `Identity`, `Groups`, `Brains`, `Views`, `Relations`, `Permissions` forment **un seul modèle**; **aucun contrôleur de domaine n'est exigé**; le mode personnel ne paie **aucun** coût du mode équipe. | **Oui** : `P2` → `ULTÉRIEUR`, conforme; extension produit décidée par `DEC-0023`. |
 | F-049 | Rendu, recherche et relations conscients des permissions | `ULTÉRIEUR` | « L'utilisateur ne peut pas ouvrir le fichier » **n'est pas suffisant** : dans beaucoup d'environnements, le **nom** d'un dossier est plus révélateur que son contenu. Le filtrage doit précéder le rendu, la recherche et les relations. `DEC-0023` §5. **Prérequis dur de `F-048`** : un mode équipe sans lui serait une régression de confidentialité. | F-020, F-022, F-023, F-043, F-048 | Pour un objet non autorisé : **ni nom, ni chemin, ni métadonnée, ni relation, ni suggestion, ni résultat de recherche, ni compteur révélateur** — un total qui trahit **par soustraction** est un échec; le filtrage s'applique **avant** rendu, recherche et relations; **la source reste autoritaire**, et **aucun droit n'est écrit, créé ni modifié** (`I-1`). | **Oui** : `P0` → `ULTÉRIEUR`. **Écart déclaré et assumé** : `P0` classé `ULTÉRIEUR` **abaisserait** normalement une fonction, ce que ce document interdit. Ici il n'y a **aucun abaissement**, parce que la fonction est **nouvelle** et n'a jamais été `MVP` : la priorité `P0` dit son **importance quand le mode équipe existera**, et `ULTÉRIEUR` dit qu'un utilisateur seul n'en a pas besoin. Elle devient **obligatoire** dès que `F-048` est entreprise, et les deux se livrent **ensemble ou pas du tout**. |
+| F-050 | Matérialisation progressive et vue bornée | **`MVP`** *(extension produit `DEC-0029` A, 2026-09-06)* | `P-08` exige déjà une recherche exacte sur **100 000 nœuds**, et `P-18` une mise à jour incrémentale mesurée à la même échelle. Aucune des deux n'est satisfaisable tant qu'« exister dans le cerveau » et « être rendu » sont la même chose. `MAX_NODES_PER_MAP = 5_000` refuse la carte au-delà du plafond : c'est une **borne de tranche**, pas une réponse produit. La vue bornée est la **seule** façon de tenir la promesse « très grands cerveaux numériques » sur un laptop **sans GPU puissant**. | F-007, F-008, F-042, F-051 | Le **nombre de nœuds et d'arêtes envoyés au frontend ne croît pas proportionnellement au corpus**, à 10 000, 100 000 et 1 000 000 d'éléments synthétiques; **aucun whole-graph JSON** n'est sérialisé vers l'interface; le layout s'applique **à la vue matérialisée seulement**; le fonctionnement de base **ne dépend ni d'un GPU puissant ni de WebGL**; **tout élément indexé reste atteignable** en un nombre borné d'actions — `P-01` amendée. | Non : `P0` → `MVP`, conforme. |
+| F-051 | Agrégats et méta-nœuds exacts | **`MVP`** *(extension produit `DEC-0029` C, 2026-09-06)* | `F-050` cache nécessairement des éléments réels. Sans une façon **exacte et honnête** de représenter ce qui est caché, la vue devrait soit le **taire** — violation de `P-02` amendée, qui interdit désormais de mentir par omission — soit **renoncer à matérialiser** — annulation de `F-050`. L'agrégat est la **contrepartie de véracité** de la vue bornée, pas un enrichissement ultérieur. | F-050, F-016, F-026 | Un agrégat porte un **compte exact** — jamais estimé, arrondi ni tronqué en « 999+ » — et une **provenance ou raison de regroupement** lisible; ce qu'il résume reste **atteignable**; il **n'est jamais présenté comme un dossier**, ni dans un chemin, ni à la copie, ni à l'ouverture Windows; il **ne crée aucune arête**; **dossier réel**, **agrégat FileTopo**, **communauté calculée** et **suggestion** restent **quatre natures distinctes**. | Non : `P0` → `MVP`, conforme. **Livrée avec `F-050` ou pas du tout** : l'une sans l'autre produit une vue qui ment. |
 
 ## 4. Contrôle de couverture
 
@@ -249,6 +277,39 @@ exécuté :**
   huit fonctions n'est une exigence de parité, et aucune n'en remplace une;
 - **aucune de ces huit fonctions n'est implémentée, prouvée ni commencée.**
   Elles sont toutes `PROPOSED`.
+
+**Après le réalignement d'architecture à grande échelle du 2026-09-06 —
+contrôlé par relecture, non exécuté :**
+
+- **51 lignes**, `F-001` à `F-051`, aucun manquant, aucun dupliqué. **Deux
+  fonctions ont été ajoutées, et elles sont déclarées** : `F-050` et `F-051`,
+  par [DEC-0029](../decisions/DEC-0029-progressive-materialization-and-scale-boundary.md).
+  **Aucune ligne n'est descendue, aucune n'a disparu**;
+- **une seule classification existante change, et elle MONTE** : **`F-042`**
+  passe d'`ULTÉRIEUR` à **`MVP`**, par `DEC-0029` B. La valeur d'origine est
+  **conservée et visible** dans sa colonne, ainsi que son motif d'époque. Ce
+  document interdit d'**abaisser** une fonction; il n'interdit pas d'en monter
+  une, à condition que la montée soit **déclarée** — elle l'est;
+- **24 écarts** avec la colonne « Priorité » : les 21 ci-dessus, **plus**
+  `F-042` (`P2` → `MVP`), `F-050` et `F-051` (`P0` → `MVP`, conformes).
+  **Aucun n'abaisse une fonction**;
+- **la catégorie `ULTÉRIEUR` retombe à deux fonctions**, `F-048` et `F-049`,
+  toutes deux liées au multi-utilisateur de `DEC-0023`. Rien d'autre n'y entre
+  ni n'en sort;
+- **`F-050` et `F-051` ne sont pas des exigences de parité** et n'en
+  remplacent aucune. **Le contrat de parité conserve ses 22 exigences** :
+  `P-01`, `P-02` et `P-03` sont **amendées** par l'amendement normatif
+  **`P-SCALE-R1`** — les formulations d'origine sont **conservées et
+  visibles** —, et `P-04` à `P-22` sont **inchangées**. **`P-08` devient un
+  pilier du scale spike**, entière et inchangée;
+- **`F-051` est livrée avec `F-050` ou pas du tout** : une vue bornée sans
+  agrégat exact ment par omission, ce que `P-02` amendée interdit;
+- **Graphify n'est ajouté comme aucune fonction** : `NOT INTEGRATED`,
+  `DEC-0029` G. **Forge reste un projet distinct**, `DEC-0029` H;
+- **ni `F-050` ni `F-051` n'est implémentée, prouvée ni commencée.** Elles
+  sont `PROPOSED`. **Aucune mesure de performance n'existe** à 10 000,
+  100 000 ni 1 000 000 d'éléments : les trois niveaux sont des **cibles de
+  validation futures**, jamais des résultats.
 
 **Inférence.** Ces 11 écarts se concentrent dans « la navigation et les
 détails essentiels » que la vision place explicitement dans le MVP, plus
