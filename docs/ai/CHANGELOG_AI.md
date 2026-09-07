@@ -3756,3 +3756,47 @@ chiffre 10k/100k/1M présenté comme mesuré; **aucun** changement sous `src/`,
   **Aucun renderer final choisi.**
 - `F-046` reste `PROPOSED`; `DEC-0013/F` bloquante; `X10` hors Windows non
   prouvée race-safe; réserve `R8` entière.
+
+---
+
+## 2026-09-06 — ACTION-0044 — Contrôle documentaire de TASK-0027
+
+**Agent :** Codex, rédacteur de l'enregistrement. Claude Code était
+l'exécuteur de `TASK-0027`.
+**Statut à l'issue :** `ACTION-0044 = CLOSED`; `TASK-0027 = VERIFIED` par
+verdict de l'orchestrateur technique indépendant; aucune réserve corrective
+bloquante.
+
+### Fait
+
+- Création de
+  [`ACTION-0044`](../reviews/ACTION-0044-independent-control.md), qui
+  enregistre le verdict externe. Ni Claude Code ni Codex ne s'attribuent
+  `VERIFIED`.
+- Mise à jour de `TASK-0027`, `DEC-0029`, de la frontière d'architecture et
+  des documents durables de transmission pour refléter la clôture.
+- `DEC-0029` reste `APPROVED`; le contrôle porte sur sa cohérence
+  documentaire, pas sur une performance.
+- `F-042` reste `PROPOSED / MVP`; `F-050` et `F-051` restent
+  `PROPOSED / MVP / P0`. Aucune de ces capacités n'est implémentée.
+- Graphify reste `NOT INTEGRATED`, Forge distinct, aucun renderer final choisi
+  et la finition visuelle moderne reste future en étape B.
+
+### Validé
+
+Contrôle documentaire indépendant **PASS** sur l'architecture, la vision, la
+roadmap, la parité et la matrice; diff substantif limité à 15 fichiers
+documentaires ou d'orchestration; aucune modification de code, runtime, garde
+X5 ou preuve; `X5 = 36`; `origin/main = 1a7d652c`, non touché; aucune
+`TASK-0028` ni `DEC-0030` créée.
+
+### Non testé / limites
+
+Aucun test produit, build Tauri, benchmark ou replay WebView2. Les niveaux
+10k / 100k / 1M restent non mesurés; `F-042`, `F-050` et `F-051` restent non
+implémentées. `F-046` reste bloquée par `DEC-0013/F`; `X10` hors Windows reste
+non prouvée race-safe et `R8` entière. La dette préexistante de l'index des
+décisions n'est pas corrigée partiellement.
+
+**Action unique suivante :** l'orchestrateur décide si le scale spike
+synthétique devient `TASK-0028`. Aucune fiche n'est créée ici.

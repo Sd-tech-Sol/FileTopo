@@ -4,7 +4,9 @@
 - **Tâche :** [`TASK-0027`](../tasks/TASK-0027-progressive-scale-architecture-realignment.md)
 - **Décision :** [`DEC-0029`](../decisions/DEC-0029-progressive-materialization-and-scale-boundary.md)
 - **Statut du document :** **frontière d'architecture courante** pour la mise à
-  l'échelle. `IMPLEMENTED`, en attente de contrôle indépendant.
+  l'échelle. Contrôlée indépendamment par
+  [`ACTION-0044`](../reviews/ACTION-0044-independent-control.md);
+  `TASK-0027 = VERIFIED` sur cohérence documentaire.
 - **Nature :** **documentaire**. **Non testé, non mesuré, non implémenté.**
   Rien de ce document n'est un résultat de performance. Tout y est une
   **cible à falsifier**.
@@ -361,6 +363,7 @@ RAM modeste, iGPU ou GPU faible**.
 
 ## 14. Documents liés
 
+- [`ACTION-0044`](../reviews/ACTION-0044-independent-control.md)
 - [`DEC-0029`](../decisions/DEC-0029-progressive-materialization-and-scale-boundary.md)
 - [`TASK-0027`](../tasks/TASK-0027-progressive-scale-architecture-realignment.md)
 - [`ARCHITECTURE_BASELINE.md`](ARCHITECTURE_BASELINE.md)

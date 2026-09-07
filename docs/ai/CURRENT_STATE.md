@@ -1,5 +1,31 @@
 # État courant
 
+## ACTION-0044 — TASK-0027 VERIFIED — 2026-09-06
+
+- **Verdict indépendant enregistré, non rendu par Codex :** cohérence
+  architecture / vision / roadmap / parité / matrice **PASS**,
+  `ACTION-0044 = CLOSED`, `TASK-0027 = VERIFIED`, aucune réserve corrective
+  bloquante. Claude Code était l'exécuteur; Codex a seulement rédigé
+  l'enregistrement du verdict externe. Détail dans
+  [`ACTION-0044`](../reviews/ACTION-0044-independent-control.md).
+- **Contrôle documentaire uniquement :** les 15 fichiers du diff substantif
+  sont documentaires ou d'orchestration; aucun changement sous `src/`,
+  `src-tauri/`, `scripts/`, `graph/` ou `docs/performance/runs/`.
+- **États produit inchangés :** `F-042 = PROPOSED / MVP`;
+  `F-050 = PROPOSED / MVP / P0`; `F-051 = PROPOSED / MVP / P0`;
+  `F-046 = PROPOSED`; `F-047 = DEFERRED`. Le
+  progressive materializer, le budget de vue, le LOD et les agrégats restent
+  non implémentés.
+- **Frontières confirmées :** Graphify `NOT INTEGRATED`, Forge distinct, aucun
+  renderer final choisi, design moderne toujours futur en étape B.
+- **Aucune performance vérifiée :** 10k / 100k / 1M restent des cibles non
+  mesurées; `R8` entière. `X5 = 36`, inchangé; `origin/main = 1a7d652c`, non
+  touché. `DEC-0013/F` reste bloquante pour l'identité physique et `X10` hors
+  Windows reste non prouvée race-safe.
+- **Action unique suivante :** rendre la main à l'orchestrateur pour décider
+  s'il ouvre `TASK-0028` comme scale spike synthétique. Aucune `TASK-0028` ni
+  `DEC-0030` n'est créée.
+
 ## TASK-0027 — réalignement d'architecture à grande échelle — 2026-09-06
 
 - **Tranche documentaire, `IMPLEMENTED`, contrôle indépendant requis.**

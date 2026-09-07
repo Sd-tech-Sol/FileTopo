@@ -3827,3 +3827,47 @@ performance**. L'exécuteur ne s'attribue pas `VERIFIED`.
   non prouvée. Réserve **`R8`** entière.
 - **Graphify non intégré par décision produit** — `DEC-0029` G. **Forge reste
   un projet distinct** — `DEC-0029` H.
+
+---
+
+## AT. ACTION-0044 — contrôle indépendant documentaire de TASK-0027 — 2026-09-06
+
+**Verdict indépendant enregistré, non rendu par Codex :** cohérence
+architecture / vision / roadmap / parité / matrice **PASS**,
+`ACTION-0044 = CLOSED`, `TASK-0027 = VERIFIED`, sans réserve corrective
+bloquante. Claude Code était l'exécuteur; Codex est seulement le rédacteur de
+l'enregistrement. Voir
+[`ACTION-0044`](../reviews/ACTION-0044-independent-control.md).
+
+### Validations documentaires de fermeture
+
+| Contrôle | Résultat |
+|---|---|
+| Identité de livraison | **PASS** — base `b5809424`, substantif `beef152f`, HEAD exécuteur `b35e9813` |
+| Diff base → livraison | **PASS** — 15 fichiers documentaires ou d'orchestration seulement |
+| Cohérence architecture / vision / roadmap / parité / matrice | **PASS** — verdict indépendant |
+| Frontière « indexe grand, matérialise petit » | **PASS** |
+| `F-042` | **PASS** — `PROPOSED`, classification `MVP`, historique `ULTÉRIEUR` visible |
+| `F-050` / `F-051` | **PASS** — `PROPOSED`, `MVP / P0`, non implémentées |
+| Identifiants fonctionnels | **PASS** — `F-001` à `F-051`, sans trou ni doublon |
+| `P-SCALE-R1` | **PASS** — formulations d'origine conservées, contrat à 22 exigences |
+| Graphify / Forge | **PASS** — Graphify `NOT INTEGRATED`; Forge distinct |
+| Renderer et matériel | **PASS** — aucun renderer choisi; aucune dépendance à un GPU puissant ou à WebGL |
+| 10k / 100k / 1M | **PASS** — cibles futures explicitement non mesurées |
+| Code, runtime et preuves | **PASS** — aucun changement sous `src/`, `src-tauri/`, `scripts/`, `graph/` ou `docs/performance/runs/` |
+| X5 | **PASS** — 36 entrées, inchangé |
+| `origin/main` | **PASS** — `1a7d652ca48281c1687f6d1404c56a1404df91d8`, non touché |
+| `TASK-0028` / `DEC-0030` | **PASS** — aucune créée |
+
+### Non testé / limites
+
+- Aucun test produit, build Tauri, benchmark ou replay WebView2 : le contrôle
+  est documentaire uniquement.
+- Aucune performance 10k / 100k / 1M n'est vérifiée ni promise.
+- `F-042`, `F-050` et `F-051` restent non implémentées et `PROPOSED`.
+- `F-046` reste `PROPOSED`, avec identité physique persistante bloquée par
+  `DEC-0013/F`; `F-047` reste `DEFERRED`.
+- Graphify reste `NOT INTEGRATED`; aucun renderer final n'est choisi.
+- `X10` hors Windows reste non prouvée race-safe et `R8` demeure entière.
+- L'index incomplet préexistant de `docs/decisions/README.md` est une dette
+  documentaire non bloquante, non réparée partiellement ici.

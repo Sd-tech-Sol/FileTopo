@@ -3,8 +3,10 @@
 - **Date :** 2026-09-06
 - **Branche :** `build/v0.2-a11-progressive-scale-architecture`
 - **Base contrôlée :** `b5809424bfa5c34f956dbe76c0b96777b84dc5fa`
-- **Statut courant :** `IMPLEMENTED` — **contrôle indépendant requis**.
-  L'exécuteur ne s'attribue jamais `VERIFIED`.
+- **Statut courant :** `VERIFIED` — contrôle documentaire indépendant clos par
+  [`ACTION-0044`](../reviews/ACTION-0044-independent-control.md). Le verdict a
+  été rendu par l'orchestrateur technique indépendant; l'exécuteur ne se l'est
+  pas attribué.
 - **Transitions permises :** `PROPOSED → APPROVED → IN_PROGRESS →
   IMPLEMENTED → VERIFIED`; le GO technique de `.orchestrator/NEXT_PROMPT.md`
   autorise le passage à `IN_PROGRESS` après le gel des préconditions.
@@ -184,7 +186,9 @@ aucune preuve d'exécution.
 
 ## 9. Règles de clôture
 
-- Statut final exécuteur : **`IMPLEMENTED`**, jamais `VERIFIED`.
+- Statut livré par l'exécuteur : **`IMPLEMENTED`**, jamais `VERIFIED`.
+- Statut après contrôle indépendant : **`VERIFIED`** par
+  [`ACTION-0044`](../reviews/ACTION-0044-independent-control.md).
 - **`DEC-0029` = `APPROVED`** — enregistrée, **jamais prouvée comme
   performance**.
 - **Aucune `TASK-0028` n'est créée.**
@@ -218,5 +222,8 @@ La frontière d'architecture de mise à l'échelle est écrite, la parité est
 amendée sans perte d'exigence, la matrice passe à 51 fonctions cohérentes, et
 la roadmap porte une séquence `PROPOSED` sans qu'aucune tâche soit créée.
 
-`TASK-0027` est **`IMPLEMENTED`** et **attend un contrôle indépendant**, rendu
-par une instance **distincte de l'exécuteur**, **sur preuves**.
+`TASK-0027` est **`VERIFIED`** par
+[`ACTION-0044`](../reviews/ACTION-0044-independent-control.md), sur contrôle
+documentaire rendu par une instance distincte de l'exécuteur. Cette
+vérification ne revendique aucune performance et n'implémente aucune capacité
+produit.

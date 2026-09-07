@@ -1,5 +1,34 @@
 # HANDOFF — passage de relais
 
+## Relais actuel — ACTION-0044, TASK-0027 VERIFIED, 2026-09-06
+
+Le verdict rendu par l'orchestrateur technique indépendant est enregistré dans
+[`ACTION-0044`](../reviews/ACTION-0044-independent-control.md) : cohérence
+architecture / vision / roadmap / parité / matrice **PASS**,
+`ACTION-0044 = CLOSED`, `TASK-0027 = VERIFIED`, sans réserve corrective
+bloquante. Claude Code était l'exécuteur de `TASK-0027`; Codex a seulement
+rédigé l'enregistrement. Aucun des deux ne s'est auto-attribué `VERIFIED`.
+
+Le contrôle est **documentaire uniquement**. Le diff substantif porte sur 15
+fichiers documentaires ou d'orchestration; aucun code, runtime, garde X5 ou
+JSON de preuve n'a changé. `X5` reste à 36 et `origin/main` à `1a7d652c`, non
+touché.
+
+La frontière approuvée demeure une cible : `F-042 = PROPOSED / MVP`;
+`F-050` et `F-051 = PROPOSED / MVP / P0`. Le materializer, le budget de vue,
+le LOD et les agrégats restent non implémentés. Les niveaux 10k / 100k / 1M
+restent non mesurés. Graphify est `NOT INTEGRATED`, Forge reste distinct,
+aucun renderer n'est choisi et la finition visuelle moderne reste future en
+étape B.
+
+`F-046` reste `PROPOSED`, avec `DEC-0013/F` bloquante. `F-047` reste
+`DEFERRED`; `X10` hors Windows reste non prouvée race-safe et `R8` entière.
+La dette préexistante de l'index `docs/decisions/README.md`, qui omet déjà
+`DEC-0024` à `DEC-0028`, n'a pas été réparée partiellement.
+
+**Relais unique :** l'orchestrateur décide si le scale spike synthétique doit
+devenir `TASK-0028`. Aucune `TASK-0028` ni `DEC-0030` n'est créée.
+
 ## Relais actuel — TASK-0027, réalignement d'architecture à grande échelle, 2026-09-06
 
 **Tranche documentaire livrée `IMPLEMENTED`, en attente de contrôle

@@ -9,8 +9,10 @@
 - **Rédacteur :** Claude Code, agent d'exécution
 - **Enregistrée par :**
   [`TASK-0027`](../tasks/TASK-0027-progressive-scale-architecture-realignment.md),
-  `IMPLEMENTED`, en attente de contrôle indépendant
-- **Contrôle indépendant :** **requis, non encore effectué**
+  `VERIFIED` par contrôle documentaire indépendant
+- **Contrôle indépendant :**
+  [`ACTION-0044`](../reviews/ACTION-0044-independent-control.md) — `CLOSED`;
+  cohérence documentaire **PASS**, sans affirmation de performance
 - **Document d'architecture :**
   [`PROGRESSIVE_SCALE_ARCHITECTURE.md`](../architecture/PROGRESSIVE_SCALE_ARCHITECTURE.md)
 - **replaced_by :** —
@@ -241,8 +243,9 @@ classification de `F-042`, absence de trou ou de doublon dans les identifiants
 
 ## Preuves rendues
 
-Voir [`TASK-0027 §8`](../tasks/TASK-0027-progressive-scale-architecture-realignment.md)
-et la section correspondante de [`VALIDATION.md`](../ai/VALIDATION.md).
+Voir [`TASK-0027 §8`](../tasks/TASK-0027-progressive-scale-architecture-realignment.md),
+[`ACTION-0044`](../reviews/ACTION-0044-independent-control.md) et la section
+correspondante de [`VALIDATION.md`](../ai/VALIDATION.md).
 
 **Non testé :** aucune mesure de performance, aucun build, aucun replay
 WebView2, aucune exécution de suite de tests n'est requise ni produite par
