@@ -1,8 +1,8 @@
 # VALIDATION.md — État de vérification
 
 **Dernière mise à jour :** 2026-09-07
-**Dernière tâche évaluée :** TASK-0028 — `IMPLEMENTED` le 2026-09-07, section
-AU, **en attente de contrôle indépendant**.
+**Dernière tâche évaluée :** TASK-0028 — `VERIFIED` le 2026-09-07 par le
+verdict indépendant enregistré dans `ACTION-0045`, section AV.
 **Portée :** TASK-0001 (phase 0) — `VERIFIED` ; TASK-0002 (phase 1) —
 `VERIFIED` le 2026-08-25, sur preuves indépendantes de l'orchestrateur
 (section A.7) ; TASK-0010 (rebaseline et mémoire) — `VERIFIED` le 2026-08-31,
@@ -3954,3 +3954,50 @@ Trois qualificatifs seulement : **vérifié**, **non testé**, **inconnu**.
   reste `NOT INTEGRATED`; `X10` hors Windows reste non prouvée race-safe.
 - La dette préexistante de l'index de `docs/decisions/README.md` n'est pas
   corrigée ici.
+
+---
+
+## AV. ACTION-0045 — contrôle indépendant de TASK-0028 — 2026-09-07
+
+**Verdict indépendant enregistré, non rendu par Codex :** `ACTION-0045 =
+CLOSED`; `TASK-0028 = VERIFIED` comme preuve de faisabilité architecturale /
+benchmark synthétique, sans validation de performance produit. Claude Code
+était l'exécuteur; Codex est seulement le rédacteur de l'enregistrement. Voir
+[`ACTION-0045`](../reviews/ACTION-0045-independent-control.md).
+
+### Validations documentaires de fermeture
+
+| Contrôle | Résultat |
+|---|---|
+| Identité | **PASS** — `HEAD 976bd05`, parent direct `db117fa`, substantif `66855a1`, gel `ae25670` parent de `670704d` |
+| Gel antérieur au harness | **PASS** |
+| Harness et surface | **PASS** — `#[cfg(test)]`, aucune commande Tauri, route ou UX normale ajoutée |
+| SCAN-SCALE 10k / 100k | **PASS dans la portée du spike** — physique, cardinalité exacte, source inchangée |
+| INDEX-SCALE 1M | **PASS dans la portée du spike** — construit et interrogé; pas un scan physique 1M |
+| `P-08` 100k | **PASS** — requête de production, pagination et exactitude vérifiées |
+| Budgets 128/256/512/1024 | **PASS au niveau harness/core** sur 10k, 100k et 1M indexé |
+| `SS9` | **PASS** — cardinalité bornée, layout de la vue bornée seulement |
+| WebView2 / GPU | **PARTIEL** / **`NOT PROVEN`** |
+| État produit | **PASS** — `F-042`, `F-050`, `F-051` restent `PROPOSED`; `MAX_NODES_PER_MAP = 5000` |
+| X5 | **PASS** — 36; aucun scellement ajouté |
+| `origin/main` | **PASS** — `1a7d652ca48281c1687f6d1404c56a1404df91d8`, non touché |
+| Diff de fermeture | **PASS** — 8 fichiers documentaires autorisés; aucun diff sous `src/`, `src-tauri/`, `scripts/` ou `docs/performance/runs/` |
+| Liens relatifs | **PASS** — 0 cible absente dans les 8 documents de fermeture |
+| Action suivante | **PASS** — un seul titre d'action; aucune `TASK-0029` ni `DEC-0030` |
+| Hygiène du diff | **PASS** — `git diff --check` |
+
+### Limites maintenues
+
+- Banc `DEVELOPMENT_BENCH_NOT_ACCEPTANCE`; cible « machine modeste » non
+  validée.
+- 1M physique non prouvé; composition index→frontend non testée.
+- `SS7` partiel; `SS8 NOT PROVEN`; temps Rust en `debug`; voisinage
+  relationnel non mesuré.
+- Le test jsdom prouve seulement la cardinalité DOM/SVG, pas la sémantique
+  `F-051` ni la composition bout-en-bout.
+- La dette préexistante de chemins locaux personnels dans d'anciens documents
+  reste hors périmètre; `TASK-0028` n'en ajoute pas.
+- Les quatre artefacts restent non canoniques et non protégés; X5 reste à 36.
+- Aucun benchmark, replay WebView2, test produit ou build n'a été relancé pour
+  cette fermeture documentaire; seules les validations de fermeture exigées
+  ont été exécutées.

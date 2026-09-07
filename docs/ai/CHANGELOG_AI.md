@@ -3865,3 +3865,38 @@ aucun budget de vue décidé; **aucune `DEC-0030`, aucune `TASK-0029`**.
 `X5 = 36`, `origin/main = 1a7d652c`, non touché.
 
 **Action unique suivante :** contrôle indépendant de `TASK-0028`.
+
+---
+
+## 2026-09-07 — ACTION-0045 — Contrôle indépendant de TASK-0028
+
+**Agent :** Codex, rédacteur de l'enregistrement. Claude Code était
+l'exécuteur de `TASK-0028`.
+**Statut à l'issue :** `ACTION-0045 = CLOSED`; `TASK-0028 = VERIFIED` par
+verdict de l'orchestrateur technique indépendant, comme spike de faisabilité
+architecturale et non comme validation de performance produit.
+
+### Fait
+
+- Création de
+  [`ACTION-0045`](../reviews/ACTION-0045-independent-control.md), qui
+  enregistre le verdict externe sans auto-attribution de `VERIFIED`.
+- Mise à jour de la fiche `TASK-0028`, du rapport et des documents durables de
+  transmission. Aucune mesure n'est réécrite.
+- Critère structurel `SS9` accepté au niveau harness/core; résultats négatifs
+  conservés comme fondations de la tranche suivante.
+- Décision explicite de ne pas étendre X5 : les quatre JSON restent non
+  canoniques et non protégés.
+
+### Limites conservées
+
+Banc hors `TARGET_CLASS`; 1M physique non prouvé; composition bout-en-bout non
+testée; `SS7` partiel; `SS8 NOT PROVEN`; temps Rust en `debug`; voisinage
+relationnel non mesuré; jsdom limité à la cardinalité. `F-042`, `F-050` et
+`F-051` restent `PROPOSED`; `DEC-0029` reste `APPROVED`; `R8` reste entière.
+La dette préexistante de chemins locaux personnels dans d'anciens documents
+reste hors périmètre; `TASK-0028` n'en ajoute pas.
+
+**Action unique suivante :** l'orchestrateur choisit la prochaine tranche de
+fondation d'échelle avant le materializer produit. Aucune `TASK-0029` ni
+`DEC-0030` n'est créée.

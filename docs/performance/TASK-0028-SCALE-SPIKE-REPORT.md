@@ -1,18 +1,25 @@
 # TASK-0028 — Rapport du banc synthétique de mise à l'échelle
 
-> **`ENGINEERING_MEASUREMENT / NOT A PRODUCT CLAIM / NONCANONICAL UNTIL
-> INDEPENDENT CONTROL`**
+> **`ENGINEERING_MEASUREMENT / NOT A PRODUCT CLAIM / NONCANONICAL ENGINEERING
+> EVIDENCE`**
 >
 > Aucun chiffre de ce document n'est une promesse de performance produit,
 > une cible validée, ni un résultat canonique. `R8` reste entière : rien d'ici
 > n'est recopié dans `README`, `PROJECT_VISION`, `ROADMAP`, une page publique,
 > une note de version ou une promesse utilisateur.
 
-- **Tâche :** [`TASK-0028`](../tasks/TASK-0028-synthetic-scale-feasibility-spike.md) — `IMPLEMENTED`
+- **Tâche :** [`TASK-0028`](../tasks/TASK-0028-synthetic-scale-feasibility-spike.md) — `VERIFIED` comme spike synthétique, pas comme performance produit
+- **Contrôle indépendant :** [`ACTION-0045`](../reviews/ACTION-0045-independent-control.md) — `CLOSED`
 - **Protocole gelé avant le harness :** [`TASK-0028-SCALE-SPIKE-PROTOCOL.md`](TASK-0028-SCALE-SPIKE-PROTOCOL.md)
 - **Décision encadrante :** [`DEC-0029`](../decisions/DEC-0029-progressive-materialization-and-scale-boundary.md), non modifiée
 - **Cibles :** [`PROGRESSIVE_SCALE_ARCHITECTURE.md §11`](../architecture/PROGRESSIVE_SCALE_ARCHITECTURE.md)
 - **Date d'exécution :** 2026-09-07
+
+Le contrôle indépendant accepte la faisabilité architecturale démontrée au
+niveau harness/core, sans requalifier les mesures en promesses produit. Les
+quatre artefacts restent **non canoniques et non protégés** : banc hors
+`TARGET_CLASS`, `SS7` partiel, `SS8 NOT PROVEN` et composition bout-en-bout non
+prouvée. X5 reste à 36.
 
 ---
 

@@ -1,5 +1,33 @@
 # État courant
 
+## ACTION-0045 — TASK-0028 VERIFIED comme spike synthétique — 2026-09-07
+
+- **Verdict externe enregistré, non rendu par Codex :** `ACTION-0045 =
+  CLOSED`; `TASK-0028 = VERIFIED` comme preuve de faisabilité architecturale /
+  benchmark synthétique, jamais comme validation de performance produit.
+  Claude Code était l'exécuteur; Codex a seulement rédigé l'enregistrement.
+- **Critère structurel principal : PASS au niveau harness/core.** À budget
+  1024 et focus racine, 10k, 100k et 1M `INDEX-SCALE` donnent chacun 1 024
+  entités et 1 023 arêtes. Comptabilité exacte et invariants d'agrégat tiennent
+  sur les 24 combinaisons prévues.
+- **Résultats négatifs conservés :** `replace_nodes` impose le corpus en
+  mémoire; recherche, page d'enfants triée et compte récursif exact croissent
+  avec le corpus ou le sous-arbre. Les ancêtres restent réellement bornés.
+- **Limites inchangées :** banc `DEVELOPMENT_BENCH_NOT_ACCEPTANCE`; 1M physique
+  non prouvé; composition index→frontend non testée; `SS7` partiel; `SS8 NOT
+  PROVEN`; temps Rust en `debug`; voisinage relationnel non mesuré; jsdom ne
+  prouve que la cardinalité DOM/SVG. La dette préexistante de chemins locaux
+  personnels dans d'anciens documents reste hors périmètre; `TASK-0028` n'en
+  ajoute pas.
+- **X5 reste 36.** Les quatre JSON restent non canoniques et non protégés;
+  aucune garde ni preuve n'est modifiée.
+- **État produit inchangé :** `DEC-0029 = APPROVED`; `F-042`, `F-050`, `F-051`
+  restent `PROPOSED`; `F-046 = PROPOSED`; `F-047 = DEFERRED`;
+  `MAX_NODES_PER_MAP = 5000`; Graphify `NOT INTEGRATED`; Forge distinct;
+  aucun renderer; `R8`, `DEC-0013/F` et X10 hors Windows restent entières.
+- **Action unique suivante :** l'orchestrateur choisit la prochaine tranche
+  de fondation d'échelle avant le materializer produit.
+
 ## TASK-0028 — banc synthétique de mise à l'échelle — 2026-09-07
 
 - **Statut : `IMPLEMENTED`**, livré par l'exécuteur. **Jamais `VERIFIED`** :

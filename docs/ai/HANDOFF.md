@@ -1,5 +1,34 @@
 # HANDOFF — passage de relais
 
+## Relais actuel — ACTION-0045, TASK-0028 VERIFIED, 2026-09-07
+
+Le verdict de l'orchestrateur technique indépendant est enregistré dans
+[`ACTION-0045`](../reviews/ACTION-0045-independent-control.md) : `TASK-0028 =
+VERIFIED` comme **preuve de faisabilité architecturale / benchmark
+synthétique**, sans validation de performance produit. Claude Code était
+l'exécuteur; Codex a seulement rédigé l'enregistrement.
+
+Le critère structurel tient au niveau harness/core : à budget 1024 et focus
+racine, 10k, 100k et 1M `INDEX-SCALE` donnent chacun 1 024 entités et 1 023
+arêtes, avec comptabilité exacte dans les 24 combinaisons. Les résultats
+négatifs guident la suite : corpus global en mémoire pour `replace_nodes`,
+recherche linéaire, tri des enfants non servi par l'index et compte récursif
+exact coûteux.
+
+Les limites restent obligatoires : banc hors `TARGET_CLASS`, 1M physique non
+prouvé, composition index→frontend non testée, `SS7` partiel, `SS8 NOT PROVEN`,
+temps Rust en `debug`, voisinage relationnel non mesuré et portée jsdom limitée
+à la cardinalité. Les quatre JSON restent non canoniques et non protégés; X5
+reste à 36. La dette préexistante de chemins locaux personnels dans d'anciens
+documents reste hors périmètre; `TASK-0028` n'en ajoute pas.
+
+**Relais unique :** l'orchestrateur choisit la prochaine tranche de fondation
+d'échelle avant le materializer produit : pagination/index des enfants,
+sémantique du compte d'agrégat, recherche indexée et indexation par flux ou
+lots. Il décidera ensuite seulement du materializer, de
+`F-042`/`F-050`/`F-051`, d'un budget candidat et d'un replay `TARGET_CLASS`.
+Aucune `TASK-0029` ni `DEC-0030` n'est créée.
+
 ## Relais actuel — TASK-0028 IMPLEMENTED, 2026-09-07
 
 `TASK-0028`, le banc synthétique de mise à l'échelle, est **`IMPLEMENTED`** sur

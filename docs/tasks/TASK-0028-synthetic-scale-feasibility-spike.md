@@ -3,9 +3,10 @@
 - **Date :** 2026-09-07
 - **Branche :** `build/v0.2-a12-synthetic-scale-spike`
 - **Base contrôlée :** `670704dbe563c77bd71d5f353139a78a46779881`
-- **Statut courant :** `IN_PROGRESS` → livré `IMPLEMENTED`. **Jamais
-  `VERIFIED` par l'exécuteur** — le contrôle indépendant appartient à
-  l'orchestrateur technique.
+- **Statut courant :** `VERIFIED` par le verdict indépendant enregistré dans
+  [`ACTION-0045`](../reviews/ACTION-0045-independent-control.md). Claude Code,
+  exécuteur, ne s'est pas attribué cet état; Codex a seulement rédigé
+  l'enregistrement du verdict externe.
 - **Transitions permises :** `PROPOSED → APPROVED → IN_PROGRESS →
   IMPLEMENTED → VERIFIED`. Le GO technique de `.orchestrator/NEXT_PROMPT.md`
   autorise `IN_PROGRESS` après le gel des préconditions.
@@ -233,3 +234,13 @@ Le protocole gelé avant le harness est dans
 - [`DEC-0028`](../decisions/DEC-0028-exact-duplicate-query-boundary.md)
 - [`REQUIREMENTS_BASELINE.md`](../product/REQUIREMENTS_BASELINE.md) — `P-08`
 - [`FEATURE_MATRIX.md`](../product/FEATURE_MATRIX.md) — `F-042`, `F-050`, `F-051`
+
+## 11. Contrôle indépendant
+
+[`ACTION-0045`](../reviews/ACTION-0045-independent-control.md) clôt le spike
+comme **preuve de faisabilité architecturale / benchmark synthétique vérifié**.
+Ce `VERIFIED` ne valide ni une performance produit, ni une cible « machine
+modeste », ni un scan physique à 1M, ni la composition bout-en-bout, ni
+l'implémentation de `F-042`, `F-050` ou `F-051`.
+
+Les quatre artefacts restent non canoniques et non protégés; X5 reste à 36.
