@@ -1,329 +1,137 @@
-# NEXT_PROMPT — TASK-0028 / Synthetic Scale Feasibility Spike
+# NEXT_PROMPT — TASK-0028 / contrôle indépendant du scale spike
 
-**TARGET_AGENT:** CLAUDE  
+**TARGET_AGENT:** CODEX  
 **STATUS:** READY  
-**OWNER:** orchestrateur technique  
+**OWNER:** orchestrateur technique indépendant  
 **TASK:** `TASK-0028 — Synthetic Scale Feasibility Spike`  
-**MODE:** benchmark / preuve d’architecture — aucune implémentation produit du materializer
+**MODE:** enregistrer le verdict externe et fermer le spike — AUCUNE implémentation produit
+
+> Le verdict ci-dessous a déjà été rendu par l’orchestrateur technique indépendant après inspection de la branche, du diff, du protocole gelé, du harness test-only, du rapport et des quatre artefacts de mesure. Codex ne rend pas ce verdict et ne s’attribue pas `VERIFIED`; il l’enregistre seulement.
 
 ## /goal
 
-Falsifier la frontière de mise à l’échelle approuvée par `DEC-0029` avec un banc synthétique reproductible à **10 000 / 100 000 / 1 000 000 d’éléments indexés**, avant toute implémentation produit de `F-042`, `F-050` ou `F-051`.
+Fermer proprement `TASK-0028` comme **spike d’architecture vérifié**, sans transformer ses mesures en promesses produit et sans démarrer la tranche d’implémentation suivante.
 
-Le spike doit répondre à une question précise : **l’architecture “indexer grand, matérialiser petit” est-elle techniquement plausible avec le cœur local Rust/SQLite et un rendu borné, sans faire dépendre le coût graphique de la taille totale du corpus ?**
+Verdict externe à enregistrer :
 
-Cette tranche peut créer du **code de benchmark/test isolé**, mais ne doit pas exposer de nouvelle commande produit, modifier l’UX normale, remplacer `MAX_NODES_PER_MAP`, implémenter le progressive materializer dans l’application, choisir un renderer final, ni changer les états produit de `F-042/F-050/F-051`.
+- `TASK-0028 = VERIFIED` **comme preuve de faisabilité architecturale / benchmark synthétique**, pas comme validation de performance produit;
+- `DEC-0029` reste `APPROVED`;
+- le critère structurel principal « à budget fixe, la cardinalité rendable ne croît pas proportionnellement au corpus » = **PASS au niveau du harness/core**;
+- aucune capacité produit `F-042`, `F-050` ou `F-051` n’est implémentée par TASK-0028; leurs états restent `PROPOSED`;
+- aucune réserve corrective bloquante sur la livraison du spike;
+- les limites ci-dessous restent explicites et empêchent toute affirmation « FileTopo supporte 1M » ou « validé sur machine modeste ».
 
-Graphify reste `NOT INTEGRATED`. Forge reste distinct. Aucun LLM, API cloud, vector DB, RAG, extraction de contenu ou donnée réelle.
-
----
-
-## 0 — synchronisation et branche
+## 0 — synchronisation obligatoire
 
 1. Appliquer les protocoles du dépôt.
-2. Branche de départ attendue : `build/v0.2-a11-progressive-scale-architecture`.
+2. Branche attendue : `build/v0.2-a12-synthetic-scale-spike`.
 3. `git fetch origin`, puis fast-forward uniquement.
 4. HEAD doit être le commit d’orchestration contenant ce fichier.
-5. Son parent direct doit être exactement `db655468789d5ace6853950c52232027c6b56e71`.
-6. `TASK-0027 = VERIFIED`, `ACTION-0044 = CLOSED`, `DEC-0029 = APPROVED`.
-7. X5 = **36** et reste inchangé pendant TASK-0028.
-8. `origin/main = 1a7d652ca48281c1687f6d1404c56a1404df91d8`; ne pas merger/cherry-pick/reset main.
-9. `TASK-0028` et `DEC-0030` doivent être libres.
-10. Créer et publier : `build/v0.2-a12-synthetic-scale-spike`.
-11. Arbre propre avant écriture.
-
-Toute divergence : **STOP / BLOCKED**.
-
----
-
-## 1 — gel documentaire AVANT le harness
-
-Créer et committer avant tout code/harness :
-
-- `docs/tasks/TASK-0028-synthetic-scale-feasibility-spike.md`
-- `docs/performance/TASK-0028-SCALE-SPIKE-PROTOCOL.md`
-
-Ne créer **aucune DEC-0030** : le spike mesure; l’orchestrateur décidera ensuite du budget de vue et de la tranche d’implémentation.
-
-La fiche doit citer au minimum : `DEC-0029`, `PROGRESSIVE_SCALE_ARCHITECTURE.md §11`, `P-08`, `F-042`, `F-050`, `F-051`, `R8`, `I-1..I-3`, `DEC-0025`, `DEC-0028`, `ACTION-0044`.
-
-Statut exécuteur final : `IMPLEMENTED`, jamais `VERIFIED`.
-
----
-
-## 2 — nature du spike : deux couches distinctes
-
-### A. Source physique synthétique
-
-Mesurer le vrai pipeline de scan/index sur des arbres **temporaires synthétiques** :
-
-- **10 000 éléments**;
-- **100 000 éléments**.
-
-Arbres déterministes, avec mélange de dossiers/fichiers, branches larges et profondes, noms synthétiques, fichiers vides ou minuscules. Aucun contenu réel, aucun chemin privé committé.
-
-Avant/après chaque campagne, calculer une empreinte structurelle de la source synthétique et prouver qu’elle reste inchangée. Aucun hash de contenu FileTopo n’est requis : **ne pas lancer les campagnes SHA-256** de TASK-0023/TASK-0026.
-
-Ne pas imposer 1 000 000 de fichiers physiques : cela mesure surtout NTFS et peut gaspiller temps/espace disque.
-
-### B. Index synthétique à 1 000 000
-
-Pour la couche stockage/requêtes, créer **1 000 000 d’éléments indexés** dans une base de benchmark utilisant le **schéma/les primitives FileTopo actuels** ou leur chemin de construction interne le plus fidèle.
-
-- Cette couche doit être explicitement nommée **INDEX-SCALE**, pas SCAN-SCALE.
-- Elle ne prouve pas que le scanner peut parcourir 1M de fichiers physiques.
-- Elle sert à mesurer SQLite, recherche, requêtes bornées expérimentales et faisabilité du rendu borné.
-- Aucun million de fichiers fixture ne doit être committé.
-
-Si le schéma actuel ne permet pas proprement la génération sans copier de logique, créer un builder **test/benchmark only** qui réutilise les types/schema existants. Ne pas créer un second modèle produit concurrent.
-
----
-
-## 3 — profil matériel gelé
-
-Capturer automatiquement le profil du banc, sans données personnelles :
-
-- version Windows;
-- CPU/modèle et cœurs/logiques;
-- RAM installée;
-- GPU(s) modèle(s);
-- type de disque si raisonnablement accessible;
-- build Rust/Node pertinents.
-
-**Ne jamais committer hostname, username, chemin `C:\Users\...`, identifiants de machine ou autre donnée personnelle.**
-
-Classifier le banc :
-
-- `TARGET_CLASS` si réellement laptop/desktop ordinaire, RAM modeste, iGPU/GPU faible;
-- sinon `DEVELOPMENT_BENCH_NOT_ACCEPTANCE`.
-
-Un PC puissant peut fournir des mesures d’ingénierie mais **ne permet pas de déclarer la cible “machine modeste” validée**.
-
-Le harness final doit être portable pour être rejoué plus tard sur un laptop plus modeste sans réécriture du protocole.
-
----
-
-## 4 — mesures obligatoires
-
-Mesurer les neuf familles de `PROGRESSIVE_SCALE_ARCHITECTURE §11.1`, en distinguant clairement ce qui est **production actuelle**, **prototype de benchmark**, ou **non mesurable avant F-050**.
-
-### SS1 — index / reconstruction
-
-Pour 10k et 100k physiques :
-
-- génération synthétique séparée du temps FileTopo;
-- durée de scan/index/rebuild FileTopo;
-- nombre exact d’éléments attendus vs indexés;
-- source fingerprint avant/après;
-- échecs/diagnostics.
-
-Pour 1M INDEX-SCALE : mesurer le temps de construction/chargement de la base de benchmark et le nommer comme tel, jamais “scan 1M”.
-
-### SS2 — SQLite et mémoire
-
-À 10k/100k/1M :
-
-- taille de DB/index;
-- RSS/working set du processus pendant les phases importantes, avec méthode déclarée;
-- absence d’embarquement du million d’objets dans le frontend.
-
-### SS3 — recherche P-08
-
-Sur 100k **obligatoire**, sur 1M **informatif** :
-
-- requêtes déterministes hit-début / hit-milieu / hit-fin / miss;
-- pagination réelle;
-- exactitude des résultats;
-- warm-up séparé des runs mesurés;
-- rapport p50/p95/max ou distribution équivalente, méthode écrite.
-
-Ne pas inventer de cache non existant pour embellir le résultat.
-
-### SS4 — requêtes bornées expérimentales
-
-Sans exposer d’API produit, prototyper dans le harness les formes nécessaires à DEC-0029 :
-
-- enfants directs paginés;
-- ancêtres;
-- compte exact d’un sous-arbre/non-matérialisé;
-- éventuellement voisinage relationnel seulement si le store courant permet une expérience honnête.
-
-Ces requêtes restent **benchmark-only**. Ne pas prétendre que le query engine produit est implémenté.
-
-### SS5 — matérialisation expérimentale bornée
-
-Créer un **prototype de benchmark non exposé au produit** qui construit une vue à partir de l’index avec un budget configurable.
-
-Tester au minimum plusieurs budgets raisonnables, par exemple **128 / 256 / 512 / 1024** entités de vue, sans décider lequel sera final.
-
-Pour le **même budget**, exécuter sur 10k / 100k / 1M et enregistrer :
-
-- temps du prototype;
-- nombre de nœuds réels inclus;
-- nombre d’agrégats expérimentaux;
-- comptes exacts cachés;
-- total d’entités/arêtes de la vue.
-
-**Critère structurel principal : pour un budget fixe, le nombre d’entités rendables ne doit pas croître proportionnellement au corpus.**
-
-Les agrégats du prototype doivent respecter la sémantique de `F-051` : résumé calculé exact, jamais faux dossier, jamais relation.
-
-### SS6 — layout borné
-
-Réutiliser `layered-tree-cards-v1` si possible, mais uniquement sur les vues expérimentales bornées.
-
-Mesurer le layout selon les budgets, **jamais le layout du corpus 100k/1M complet**.
-
-Aucune modification de l’algorithme de layout n’est demandée dans ce spike, sauf instrumentation test-only strictement nécessaire.
-
-### SS7 — frontend / WebView2 borné
-
-Faire au moins une campagne **réelle Windows/Tauri/WebView2** sur une ou plusieurs vues bornées représentatives produites par le harness, si cela peut être fait sans créer un nouveau comportement produit.
-
-Mesurer/vérifier :
-
-- ouverture de la vue bornée;
-- pan/zoom si le runtime actuel les offre réellement; sinon déclarer honnêtement “non disponible dans ce build”;
-- sélection clavier/souris selon ce qui existe réellement;
-- nombre de nœuds/arêtes DOM/SVG réellement présents;
-- absence d’un whole-graph payload correspondant au corpus complet.
-
-Un petit chemin de test/dev **non accessible en utilisation normale** est permis s’il est indispensable au harness. Il doit être clairement isolé et ne pas modifier l’UX normale.
-
-### SS8 — sans GPU puissant
-
-Essayer une passe WebView2 avec accélération GPU désactivée / software rendering **si le mécanisme Windows/WebView2 disponible permet de le prouver proprement**.
-
-- Si la désactivation est confirmable : mesurer la vue bornée et enregistrer le mode.
-- Si elle ne peut pas être confirmée honnêtement : marquer ce sous-critère `NOT PROVEN`, ne pas simuler une preuve.
-- Un run logiciel n’est **pas** équivalent à un test sur iGPU modeste; il vérifie seulement l’absence d’une dépendance dure évidente au GPU.
-
-### SS9 — non-proportionnalité
-
-Comparer 10k/100k/1M à budget identique.
-
-PASS structurel seulement si :
-
-- la cardinalité de la vue reste bornée par le budget;
-- aucun whole-graph JSON n’est sérialisé;
-- les comptes d’agrégats restent exacts;
-- tout élément non rendu reste représenté par un compte/chemin d’atteignabilité dans le prototype;
-- aucune relation ou hiérarchie n’est inventée.
-
-Ce PASS ne signifie **pas** que F-050/F-051 sont implémentées dans le produit.
-
----
-
-## 5 — répétitions et méthode
-
-Les mesures doivent être suffisamment répétées pour éviter un chiffre accidentel :
-
-- séparer cold/warm lorsque pertinent;
-- requêtes courtes : warm-up puis plusieurs répétitions, avec p50/p95/max;
-- opérations lourdes : au moins deux runs lorsque raisonnable; si 1M ne peut être répété sans coût excessif, déclarer le nombre exact de runs;
-- utiliser une horloge haute résolution;
-- journaliser erreurs/timeout/OOM plutôt que les masquer.
-
-Ne pas fixer de seuil marketing a posteriori. Cette tranche **mesure et falsifie**, elle ne fabrique pas un “PASS” en déplaçant la cible.
-
----
-
-## 6 — R8 et publication des chiffres
-
-`R8` reste entière.
-
-Les chiffres de cette tranche sont des **mesures d’ingénierie non canoniques**, pas des promesses de performance produit.
-
-- Ils peuvent vivre uniquement dans des artefacts de preuve `TASK-0028` clairement marqués `ENGINEERING_MEASUREMENT / NOT A PRODUCT CLAIM / NONCANONICAL UNTIL INDEPENDENT CONTROL`.
-- Ne recopier aucun chiffre de benchmark dans README, PROJECT_VISION, page publique, release note, marketing ou promesse utilisateur.
-- Le rapport durable doit rappeler que le profil matériel peut ne pas être la classe d’acceptation et que 1M physique n’est pas prouvé.
-- Aucune conclusion “supporte 1M” ou “fluide à 100k” sans le qualificatif exact de ce qui a réellement été mesuré.
-
----
-
-## 7 — artefacts attendus
-
-Créer au minimum :
-
-- `docs/performance/TASK-0028-SCALE-SPIKE-REPORT.md`
-- `docs/performance/runs/TASK-0028-SS-10k.json`
-- `docs/performance/runs/TASK-0028-SS-100k.json`
-- `docs/performance/runs/TASK-0028-SS-1m-index.json`
-- `docs/performance/runs/TASK-0028-SS-bounded-view-webview2.json` si SS7 est exécuté.
-
-Les JSON doivent être synthétiques/sanitized : aucun username, hostname, chemin privé, contenu réel.
-
-Ils sont **non canoniques et non protégés pendant l’exécution**. Ne pas étendre X5; le contrôle indépendant décidera plus tard si certains deviennent canoniques.
-
-Si un artefact WebView2 ne peut pas être produit honnêtement, ne pas fabriquer le fichier comme PASS : enregistrer le manque dans le rapport et RESULT.
-
----
-
-## 8 — contraintes de code
-
-Préférer un harness isolé : `tools/scale-spike/`, tests/bench helpers ou équivalent.
-
-- Aucun nouveau comportement accessible dans l’app normale.
-- Aucun remplacement de `MAX_NODES_PER_MAP`.
-- Aucun changement d’état de F-042/F-050/F-051.
-- Aucun nouveau renderer.
-- Aucune nouvelle dépendance externe sauf nécessité démontrée; préférer std + dépendances déjà présentes.
-- Aucun hash de contenu massif.
-- Aucun watcher, permission/team, IA, extraction, Graphify.
-- Source synthétique read-only pendant mesure.
-
-Si un petit changement sous `src/` ou `src-tauri/` est indispensable pour rendre une primitive testable, il doit être **strictement test/dev-only**, inaccessible au produit normal, couvert par tests, et justifié dans TASK-0028. Toute modification de comportement normal = hors périmètre / STOP.
-
----
-
-## 9 — critères de sortie
-
-TASK-0028 peut finir `IMPLEMENTED` si :
-
-1. protocole gelé avant harness;
-2. 10k et 100k physiques réellement mesurés ou un blocage réel documenté;
-3. 1M INDEX-SCALE réellement construit et interrogé, ou échec/limite reproductible documenté;
-4. P-08 100k exact/paginé mesuré;
-5. prototype borné testé aux trois tailles;
-6. non-proportionnalité de cardinalité évaluée;
-7. SQLite/mémoire/layout mesurés honnêtement;
-8. SS7/SS8 exécutés quand possible, sinon `NOT PROVEN` explicite;
-9. aucun whole-graph payload 100k/1M envoyé au frontend;
-10. aucune source modifiée;
-11. aucun état produit F-042/F-050/F-051 changé;
-12. X5 reste 36;
-13. main inchangé;
-14. aucune DEC-0030 ni TASK-0029 créée;
-15. RESULT rend la main à l’orchestrateur pour contrôle indépendant et décision du materializer.
-
-Un résultat négatif du spike n’est pas un échec de l’agent : **un FAIL technique honnête est une donnée valide**. `RESULT: DONE` signifie que le spike a été exécuté conformément au protocole, pas que toutes les hypothèses ont réussi.
-
----
-
-## 10 — validations
-
-Selon les fichiers réellement touchés :
-
-- tests unitaires du harness;
-- tests Rust pertinents;
-- tests TS si frontend test-only touché;
-- `pnpm check`;
-- `pnpm build` si le frontend/build est touché;
-- Tauri debug `--no-bundle` si nécessaire à SS7;
-- campagnes synthétiques 10k/100k/1M;
-- `git diff --check`.
-
-Ne pas rejouer les anciennes campagnes EC15/DR15/SR15/ED15 sauf nécessité directe et explicitement justifiée; elles ne sont pas le sujet.
-
----
-
-## 11 — documentation finale
-
-Mettre à jour :
-
-- `docs/tasks/TASK-0028-synthetic-scale-feasibility-spike.md` → `IMPLEMENTED`, jamais VERIFIED;
-- `docs/performance/TASK-0028-SCALE-SPIKE-PROTOCOL.md`;
-- `docs/performance/TASK-0028-SCALE-SPIKE-REPORT.md`;
+5. Son parent direct doit être exactement `db117fa57cc5f1997d4cd1aec657a281ea35c1c9`.
+6. Commit substantif TASK-0028 : `66855a12b63ccbffbb2567fa09dc42c6194e3fdd`.
+7. Commit de gel protocole : `ae25670819c4332a2c76959a7558e59114b98aad`, parent direct `670704dbe563c77bd71d5f353139a78a46779881`.
+8. `TASK-0028 = IMPLEMENTED`, jamais auto-VERIFIED avant cette fermeture.
+9. X5 = **36**, inchangé.
+10. `origin/main = 1a7d652ca48281c1687f6d1404c56a1404df91d8`.
+11. `ACTION-0045` libre.
+12. Aucune `TASK-0029` / `DEC-0030` précréée.
+
+Toute divergence : STOP / BLOCKED.
+
+## 1 — enregistrer ACTION-0045
+
+Créer :
+
+`docs/reviews/ACTION-0045-independent-control.md`
+
+Le document doit préciser :
+
+- Claude Code était l’exécuteur de TASK-0028;
+- Codex est seulement le rédacteur de l’enregistrement du verdict;
+- le protocole a été gelé dans un commit séparé **avant** le harness;
+- contrôle indépendant fondé sur le diff, le protocole, le code test-only, le rapport et les quatre artefacts;
+- aucun benchmark n’est requalifié en promesse produit.
+
+### Verdicts à enregistrer
+
+**Identité / périmètre**
+- branche a12 descend exactement du commit d’orchestration;
+- gel protocole `ae25670...` avant harness : PASS;
+- harness isolé derrière `#[cfg(test)]`; les seuls ajouts hors module sont `#[cfg(test)] mod scale_spike;` et `Index::connection_for_bench()` : PASS;
+- aucune commande Tauri, route ou UX normale ajoutée : PASS;
+- `MAX_NODES_PER_MAP = 5000` inchangé : PASS;
+- aucun état F-042/F-050/F-051 changé : PASS;
+- X5 = 36 et main inchangé : PASS.
+
+**Mesures**
+- SCAN-SCALE physique 10k : mesuré, cardinalité exacte, source inchangée;
+- SCAN-SCALE physique 100k : mesuré, cardinalité exacte, source inchangée;
+- INDEX-SCALE 1M : réellement construit/interrogé, mais **ce n’est pas un scan physique 1M**;
+- P-08 100k : vraie requête de production, pagination et exactitude vérifiées;
+- prototype borné aux budgets 128/256/512/1024 sur 10k/100k/1M : exécuté;
+- `SS9` cardinalité bornée : PASS au niveau harness/core;
+- layout appliqué à la vue bornée seulement : PASS;
+- WebView2 réel : exécuté mais **PARTIEL**;
+- chemin sans GPU puissant : **NOT PROVEN**.
+
+**Constat structurel indépendant**
+À budget 1024, focus racine :
+- 10k → 1024 entités / 1023 arêtes;
+- 100k → 1024 / 1023;
+- 1M INDEX-SCALE → 1024 / 1023.
+Le payload et le layout restent bornés par la vue, pas par le corpus. Les artefacts portent `accountingExact=true`, `aggregateInvariantBreaches=0` et la comparaison couvre les budgets/focus prévus.
+
+### Résultats négatifs à préserver comme résultats utiles
+
+Ne pas les présenter comme bugs de TASK-0028 : le spike avait précisément pour rôle de les découvrir.
+
+- `Index::replace_nodes(&[NodeDto])` impose le corpus en mémoire; ~335 Mio observés à 1M sur ce banc;
+- `Index::query_nodes` est linéaire : ~67 ms p50 à 100k, ~0,67 s p50 à 1M, en **debug**;
+- page de 100 enfants directs ~106 ms à 1M avec l’ordre actuel;
+- compte récursif exact d’un agrégat ~1,34 s à 1M;
+- ancêtres restent plats (~43 µs), preuve qu’une requête réellement bornée est possible.
+
+Ces chiffres restent des **mesures d’ingénierie de ce banc**, pas des objectifs ni promesses.
+
+## 2 — réserves obligatoires du verdict
+
+ACTION-0045 et les docs de clôture doivent conserver explicitement :
+
+1. **Banc hors classe d’acceptation** : i9-9900K / ~32 Gio / RTX 2070 = `DEVELOPMENT_BENCH_NOT_ACCEPTANCE`. La contrainte « machine modeste » reste NON VALIDÉE.
+2. **1M physique NON PROUVÉ** : 1M est INDEX-SCALE seulement.
+3. **Composition index→materializer→frontend NON TESTÉE bout-en-bout** : aucune nouvelle commande produit n’a été ajoutée.
+4. **SS7 PARTIEL** : WebView2 réel a mesuré 12 / 157 entités; les budgets 256/512/1024 n’ont pas été mesurés dans WebView2.
+5. **SS8 NOT PROVEN** : les arguments `--disable-gpu` ont été demandés mais leur application n’est pas confirmable honnêtement.
+6. **Temps Rust en debug seulement** : les nombres de durée ne sont pas une baseline release.
+7. **Voisinage relationnel non mesuré** dans SS4, store incompatible à cette couche.
+8. Le test `boundedViewCardinality.test.tsx` établit seulement la cardinalité DOM/SVG sous jsdom. Son `hiddenCount` local n’est pas injecté dans `MapView`; ne jamais utiliser ce test comme preuve de sémantique F-051 ni de composition bout-en-bout. Ce point est une réserve non bloquante, car la sémantique d’agrégat est testée séparément dans le harness Rust et le rapport limite déjà jsdom à la cardinalité.
+9. La dette préexistante de chemins locaux personnels déjà présente dans d’anciens docs reste hors scope; TASK-0028 n’en ajoute pas.
+
+## 3 — décision X5
+
+**Ne pas étendre X5 dans cette fermeture.**
+
+Raison du verdict indépendant : les quatre JSON TASK-0028 sont des mesures d’ingénierie utiles mais :
+- banc non `TARGET_CLASS`;
+- SS7 partiel;
+- SS8 NOT PROVEN;
+- composition bout-en-bout non prouvée.
+
+Ils restent **non canoniques et non protégés** comme prévu par le protocole. La future preuve d’acceptation sur machine modeste pourra utiliser de nouveaux artefacts dédiés sans confondre les deux niveaux de preuve.
+
+Donc :
+- `PROTECTED_RUN_ARTIFACTS` inchangé;
+- aucune garde Rust/TS/PowerShell modifiée;
+- aucun JSON TASK-0028 modifié, renommé ou supprimé;
+- X5 reste exactement 36.
+
+## 4 — clôture documentaire uniquement
+
+Mettre à jour uniquement ce qui est nécessaire :
+
+- `docs/reviews/ACTION-0045-independent-control.md` — créer;
+- `docs/tasks/TASK-0028-synthetic-scale-feasibility-spike.md` → `VERIFIED`, référence ACTION-0045;
+- `docs/performance/TASK-0028-SCALE-SPIKE-REPORT.md` → ajouter le statut de contrôle indépendant sans réécrire les mesures;
 - `docs/ai/CURRENT_STATE.md`;
 - `docs/ai/NEXT_ACTION.md`;
 - `docs/ai/HANDOFF.md`;
@@ -331,36 +139,71 @@ Mettre à jour :
 - `docs/ai/CHANGELOG_AI.md`;
 - `.orchestrator/RESULT.md`.
 
-Ne pas modifier `DEC-0029` pour transformer une hypothèse en preuve. Ne pas créer DEC-0030.
+Ne modifier aucun fichier sous :
+- `src/`;
+- `src-tauri/`;
+- `scripts/`;
+- `docs/performance/runs/`.
 
-`NEXT_ACTION.md` demande uniquement le **contrôle indépendant de TASK-0028**.
+Ne créer ni TASK-0029 ni DEC-0030.
 
----
+## 5 — état produit à conserver
 
-## 12 — RESULT.md
+- `DEC-0029 = APPROVED`;
+- `F-042 = PROPOSED / MVP`;
+- `F-050 = PROPOSED / MVP/P0`;
+- `F-051 = PROPOSED / MVP/P0`;
+- `F-046 = PROPOSED`;
+- `F-047 = DEFERRED`;
+- Graphify = `NOT INTEGRATED`;
+- Forge distinct;
+- aucun renderer choisi;
+- `MAX_NODES_PER_MAP = 5000` encore en vigueur;
+- `R8` entière;
+- identité physique DEC-0013/F toujours bloquée;
+- X10 hors Windows toujours non prouvée race-safe.
+
+## 6 — prochaine décision, sans la prendre
+
+`NEXT_ACTION.md` doit rendre la main à l’orchestrateur.
+
+Il doit consigner que le spike recommande de traiter **avant le materializer produit** les fondations qui dominent le coût :
+
+- ordre/pagination des enfants compatible avec un index SQLite;
+- sémantique du compte d’agrégat : enfants directs exacts vs total de sous-arbre exact/précalculé;
+- stratégie de recherche indexée avant toute promesse au-delà de 100k;
+- indexation/reconstruction en flux ou par lots au lieu d’un `&[NodeDto]` global;
+- puis seulement materializer/F-042/F-050/F-051 et choix d’un budget candidat;
+- replay ultérieur sur une vraie machine `TARGET_CLASS` avant toute promesse « machine modeste ».
+
+**Ne pas créer ces tâches dans cette fermeture.**
+
+## 7 — validations de fermeture
+
+- `git diff --check`;
+- diff de fermeture documentaire seulement;
+- ACTION-0045 lié correctement;
+- X5 toujours 36;
+- aucun JSON de mesure modifié;
+- `origin/main` toujours `1a7d652c...`;
+- aucune TASK-0029 / DEC-0030;
+- aucune formulation « supporte 1M », « validé machine modeste », « F-050 implémentée » ou équivalente.
+
+Aucun nouveau benchmark, aucun WebView2 replay, aucun test produit requis pour cette fermeture.
+
+## 8 — RESULT.md
 
 Écrire :
 
 ```text
-TASK_ID: TASK-0028 — Synthetic Scale Feasibility Spike
-AGENT: CLAUDE
+TASK_ID: TASK-0028 — VERIFIED / synthetic scale feasibility spike
+AGENT: CODEX
 RESULT: DONE | BLOCKED | FAILED
 BRANCH: build/v0.2-a12-synthetic-scale-spike
-FINAL_HEAD: <commit substantif>
+FINAL_HEAD: <commit substantif de fermeture>
 
 SUMMARY:
 -
-
-SCALE_LEVELS:
-- 10k physical: measured / blocked
-- 100k physical: measured / blocked
-- 1m index-scale: measured / blocked
-
-STRUCTURAL_VERDICT:
-- bounded-cardinality: PASS/FAIL/NOT_PROVEN
-- whole-graph-to-frontend: ABSENT/PRESENT/NOT_PROVEN
-- exact-aggregate-counts: PASS/FAIL/NOT_PROVEN
-- modest-GPU-path: PASS/FAIL/NOT_PROVEN
 
 VALIDATIONS:
 -
@@ -372,16 +215,20 @@ COMMIT:
 PUSHED: yes/no
 
 LIMITS_OR_BLOCKERS:
--
+- development bench is not TARGET_CLASS
+- 1M physical scan not proven
+- end-to-end index→frontend composition not proven
+- SS7 partial
+- SS8 NOT PROVEN
+- release timing baseline unavailable
+- F-042/F-050/F-051 remain PROPOSED
 
 NEXT_ORCHESTRATOR_DECISION:
-- independent control of TASK-0028; then decide materializer/query-engine implementation and candidate view budget
+- choose next scale-foundation slice before product materializer
 ```
 
----
-
-## 13 — Git final
+## 9 — Git final
 
 Commit/push uniquement sur `build/v0.2-a12-synthetic-scale-spike`.
 
-Interdits : merge, PR, release, tag, main, force push, réécriture d’historique, données réelles, création de DEC-0030/TASK-0029, implementation produit F-042/F-050/F-051, modification X5.
+Interdits : merge, PR, release, tag, main, force push, réécriture d’historique, nouvelle mesure, code produit, TASK-0029, DEC-0030.
