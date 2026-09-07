@@ -3704,3 +3704,58 @@ persistante reste exclue et bloquée par `DEC-0013/F`; `F-046` reste
 `PROPOSED`. La garantie X10 race-safe hors Windows reste non prouvée. Les deux
 avertissements Rust existants (`SUGGESTION_STATES` inutilisé et message de
 bibliothèque du linker) sont non bloquants.
+
+---
+
+## ACTION-0043 — contrôle indépendant de TASK-0026 et scellement X5 — 2026-09-06
+
+**Agent :** Claude Code, rédacteur de l'enregistrement et du scellement.
+**Verdict :** rendu par l'orchestrateur technique indépendant, instance
+distincte de l'exécuteur Codex. `ED1–ED15 = PASS`, `ACTION-0043 = CLOSED`,
+`TASK-0026 = VERIFIED`.
+
+### Validations exécutées
+
+| Contrôle | Résultat |
+|---|---|
+| `runArtifacts.test.ts` — gardes X5/X8 | **44/44 PASS** |
+| Rust ciblés `map::commands::tests::` | **26/26 PASS**, 203 filtrés |
+| Rust complet | **229/229 PASS** |
+| TypeScript complet | **246/246 PASS** |
+| `pnpm check` — `tsc --noEmit` | **PASS** |
+| X5 PowerShell | **36/36 refus**, 36 noms uniques, six replays `TASK-0026` autorisés |
+| Parité Rust / TypeScript / PowerShell | **PASS** — 36 noms, même ordre |
+| Intersection runtime / X5 | **exactement les deux `ED15`**, comme attendu après scellement |
+| Artefacts X5 modifiés | **0** — aucun chemin sous `docs/performance/runs/` touché |
+| `git diff --check` | **PASS** |
+| `main` locale | **inchangée** à `91bbe90f0f99026c28cd345784d4f579a0016db2` |
+
+Les comptes montent — Rust 227 → **229**, TypeScript 241 → **246** — parce que
+des tests ont été ajoutés pour démontrer le scellement et tenir la réparation
+ci-dessous. Aucun test existant n'a été supprimé ni affaibli.
+
+### Défaut trouvé et réparé pendant le scellement
+
+`tsc` a refusé le passage à 36 : quatre scénarios d'écriture
+(`dreScenario`, `exactDuplicateScenario`, `genericRelationScenario`,
+`reviewScenario`) exigeaient `PROTECTED_RUN_ARTIFACTS.length === 34`, une
+intersection vide et `writesUnderItsOwnTaskOnly` avant d'écrire. Ces trois
+faits ne sont vrais qu'entre deux scellements; à 36 ils deviennent faux et les
+quatre scénarios auraient avorté, rendant injouables les six replays qui
+doivent rester rejouables. La précondition porte désormais sur le **nom que le
+scénario s'apprête à écrire**, invariant qui ne pourrit pas. Deux tests `X5`
+nouveaux interdisent le retour du littéral et exigent le contrôle par nom.
+
+### Non testé / limites
+
+- Le refus effectif d'une écriture `ED15` **par le harnais réel en hôte
+  WebView2** n'a pas été rejoué : il est démontré par les tests Rust et
+  TypeScript de la garde, qui exercent le refus avant tout accès disque.
+- **Aucun replay WebView2**, aucune campagne `ED15`, `EC15`, `DR15` ni `SR15`,
+  et **aucun build Tauri** ni `pnpm build` n'ont été refaits pour cette
+  fermeture.
+- `F-046` reste `PROPOSED`; l'identité physique persistante reste exclue et
+  bloquée par `DEC-0013/F`. La garantie X10 race-safe hors Windows reste non
+  prouvée.
+- `origin/main` porte `1a7d652c`, un commit de documentation du propriétaire du
+  dépôt daté du 2026-09-06, extérieur à cette branche et à cette fermeture.

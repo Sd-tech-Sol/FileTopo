@@ -56,12 +56,14 @@ function stableSets(overview: RelationsOverview) {
 
 async function writeEvidence(deps: DreScenarioDeps, evidence: Record<string, unknown>) {
   const ownership = runtimeWriteOwnership();
-  requireFact(PROTECTED_RUN_ARTIFACTS.length === 34, "X5 n'est plus exactement 34");
-  requireFact(ownership.protectedDestinations.length === 0, "destination runtime protégée");
-  requireFact(ownership.writesUnderItsOwnTaskOnly, "runtime hors TASK-0026");
+  const destination = dr15Artifact(deps.pass);
   requireFact(ownership.owningTaskId === "TASK-0026", "propriétaire runtime inattendu");
+  requireFact(
+    !(PROTECTED_RUN_ARTIFACTS as readonly string[]).includes(destination),
+    `destination protégée par X5: ${destination}`,
+  );
   return deps.invoke<string>("map_write_run_artifact", {
-    name: dr15Artifact(deps.pass),
+    name: destination,
     contents: JSON.stringify(
       {
         task: "TASK-0026",

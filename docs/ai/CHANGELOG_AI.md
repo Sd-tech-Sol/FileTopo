@@ -3617,3 +3617,56 @@ Windows toujours non prouvée race-safe; `F-046` reste `PROPOSED`.
 **Action unique suivante :** contrôle indépendant de `TASK-0026` sur `ED1` à
 `ED15`, les huit preuves finales, les bornes, la frontière sémantique et
 l'intégrité X5. Ne pas créer `TASK-0027` ni `DEC-0029`.
+
+---
+
+## 2026-09-06 — ACTION-0043 — Contrôle indépendant de TASK-0026 et scellement X5
+
+**Agent :** Claude Code, rédacteur de l'enregistrement, de l'hygiène `X5` et du
+scellement. **Pas l'exécuteur de `TASK-0026`** — c'était Codex.
+**Statut à l'issue :** `ACTION-0043 = CLOSED`, `TASK-0026 = VERIFIED`,
+`DEC-0028` validée par `TASK-0026 / ACTION-0043`.
+
+### Fait
+
+- Enregistrement du verdict externe rendu par l'orchestrateur technique
+  indépendant dans `docs/reviews/ACTION-0043-independent-control.md` :
+  `ED1–ED15 = PASS`, aucune réserve fonctionnelle bloquante, aucune réserve
+  corrective ouverte. Ni Codex ni Claude Code ne se sont attribué `VERIFIED`.
+- **Scellement X5 : 34 → 36**, append-only. Les deux seuls ajouts sont
+  `TASK-0026-ED15-exact-duplicate-explorer-webview2-pass1.json` et `…-pass2`.
+  Les six replays `EC15`, `DR15` et `SR15` republiés sous `TASK-0026` restent
+  non canoniques et non protégés. Gardes Rust, TypeScript et PowerShell en
+  parité exacte.
+- Correction des commentaires `X5` périmés de `src-tauri/src/map/commands.rs`
+  et `src/map/runArtifacts.ts`, qui décrivaient encore l'état
+  post-`ACTION-0042`. Aucun comportement produit changé par cette correction.
+- **Réparation d'un défaut découvert pendant le scellement :** quatre
+  scénarios d'écriture conditionnaient leur écriture au littéral
+  `PROTECTED_RUN_ARTIFACTS.length === 34` et à une intersection vide — vrai
+  seulement entre deux scellements. À 36, cela aurait rendu injouables les six
+  replays devant le rester. La précondition porte désormais sur le nom que le
+  scénario s'apprête à écrire. Deux tests `X5` nouveaux interdisent le retour
+  du littéral et exigent le contrôle par nom.
+- Mise à jour de `TASK-0026`, `DEC-0028`, `FEATURE_MATRIX.md`,
+  `CURRENT_STATE.md`, `NEXT_ACTION.md`, `HANDOFF.md`, `VALIDATION.md` et
+  `.orchestrator/RESULT.md`.
+
+### Preuves
+
+`runArtifacts.test.ts` **44/44**; Rust ciblés **26/26**; suite Rust
+**229/229**; suite TypeScript **246/246**; `pnpm check` **PASS**; garde
+PowerShell **36 refus / 36 noms uniques** avec les six replays toujours
+autorisés; parité Rust/TS/PowerShell **PASS**; `git diff --check` **PASS**;
+**aucun** JSON sous `docs/performance/runs/` modifié, renommé ou supprimé.
+
+### Non fait / limites
+
+- Aucun replay WebView2, aucune campagne `ED15`, `EC15`, `DR15` ni `SR15`,
+  aucun build Tauri ni `pnpm build`.
+- Aucune fusion, PR, release, étiquette, publication vers `main`, force push ni
+  réécriture d'historique.
+- `F-046` reste `PROPOSED`; identité physique persistante toujours absente et
+  bloquée par `DEC-0013/F`; X10 hors Windows non prouvée race-safe.
+- `origin/main` porte `1a7d652c`, commit de documentation du propriétaire daté
+  du 2026-09-06, extérieur à cette branche et non touché.

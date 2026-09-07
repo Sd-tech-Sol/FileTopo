@@ -42,8 +42,13 @@
       * TASK-0025 — verified by ACTION-0042, TWO proofs: the SR15 pass1 and
         pass2 of the suggestion review queue and human decision memory. DR15,
         J12 and X11 remain noncanonical and unprotected.
+      * TASK-0026 — verified by ACTION-0043, TWO proofs: the ED15 pass1 and
+        pass2 of the bounded exact-duplicate explorer, run in the real WebView2
+        host. The six EC15, DR15 and SR15 replays it republished under
+        TASK-0026 remain noncanonical and unprotected: the task was controlled
+        on ED15 alone.
 
-    Thirty-four names. Nothing here deletes, renames or moves anything: this file
+    Thirty-six names. Nothing here deletes, renames or moves anything: this file
     only refuses.
 #>
 
@@ -81,11 +86,13 @@ $script:ProtectedRunArtifacts = @(
     'TASK-0024-DR15-deterministic-relation-engine-webview2-pass2.json',
     'TASK-0024-J12-intrabrain-relations-regression-webview2.json',
     'TASK-0025-SR15-suggestion-review-memory-webview2-pass1.json',
-    'TASK-0025-SR15-suggestion-review-memory-webview2-pass2.json'
+    'TASK-0025-SR15-suggestion-review-memory-webview2-pass2.json',
+    'TASK-0026-ED15-exact-duplicate-explorer-webview2-pass1.json',
+    'TASK-0026-ED15-exact-duplicate-explorer-webview2-pass2.json'
 )
 
 function Get-ProtectedRunArtifact {
-    <# The thirty-four names, for a caller that wants to report them. #>
+    <# The thirty-six names, for a caller that wants to report them. #>
     return $script:ProtectedRunArtifacts
 }
 

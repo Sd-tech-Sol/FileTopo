@@ -36,11 +36,19 @@
  * unprotected.
  *
  * **`TASK-0025` §4 migrated every destination** from `TASK-0024-*` to
- * `TASK-0025-*` before replaying anything. `ACTION-0042` now makes TASK-0025
- * `VERIFIED` and seals exactly the two SR15 passes. The protected/runtime
- * `TASK-0026` migrates every destination again before replay: the intersection
- * is empty and `writesUnderItsOwnTaskOnly` is `true`; the three executable
- * guards still carry the same thirty-four names in the same order.
+ * `TASK-0025-*` before replaying anything. `ACTION-0042` made TASK-0025
+ * `VERIFIED` and sealed exactly the two SR15 passes. `TASK-0026` then migrated
+ * every destination again before replay, so the intersection was empty and
+ * `writesUnderItsOwnTaskOnly` was `true` for the whole slice.
+ *
+ * **`ACTION-0043` makes `TASK-0026` `VERIFIED`**, and the list grows an eighth
+ * time — by exactly two names, the ED15 passes it was controlled on. The six
+ * EC15, DR15 and SR15 replays republished under `TASK-0026-*` stay
+ * noncanonical, unprotected and writable. The runtime spells both sealed ED15
+ * destinations, so the intersection is now exactly those two and
+ * `writesUnderItsOwnTaskOnly` is `false` — the expected state of a runtime
+ * whose own proofs have just been sealed. The three executable guards carry
+ * the same thirty-six names in the same order.
  */
 
 import { describe, expect, it } from "vitest";
@@ -239,17 +247,53 @@ const TASK_0025_NONCANONICAL = [
   "TASK-0025-X11-generic-brain-webview2.json",
 ] as const;
 
+/** The exact two proofs sealed when `ACTION-0043` verified `TASK-0026`. */
+const TASK_0026_CANONICAL_EVIDENCE = [
+  "TASK-0026-ED15-exact-duplicate-explorer-webview2-pass1.json",
+  "TASK-0026-ED15-exact-duplicate-explorer-webview2-pass2.json",
+] as const;
+
+/**
+ * The six replays `TASK-0026` republished under its own name. Green, useful to
+ * the control, and deliberately **not** sealed: the task was controlled on
+ * `ED15` alone, so these destinations stay writable after `ACTION-0043`.
+ */
+const TASK_0026_NONCANONICAL_REPLAYS = [
+  "TASK-0026-EC15-exact-content-observations-webview2-pass1.json",
+  "TASK-0026-EC15-exact-content-observations-webview2-pass2.json",
+  "TASK-0026-DR15-deterministic-relation-engine-webview2-pass1.json",
+  "TASK-0026-DR15-deterministic-relation-engine-webview2-pass2.json",
+  "TASK-0026-SR15-suggestion-review-memory-webview2-pass1.json",
+  "TASK-0026-SR15-suggestion-review-memory-webview2-pass2.json",
+] as const;
+
 describe("X5 — the runtime never writes over canonical evidence", () => {
-  it("TASK-0026 migrates the two sealed SR15 destinations before replay", () => {
+  it("ACTION-0043 seals exactly the two ED15 destinations this runtime spells", () => {
     const sealed = SEALED_RUNTIME_DESTINATIONS as readonly string[];
     const collisions = (PROTECTED_RUN_ARTIFACTS as readonly string[]).filter((name) =>
       (RUNTIME_RUN_ARTIFACTS as readonly string[]).includes(name),
     );
-    expect(sealed).toStrictEqual([]);
-    expect(collisions).toStrictEqual([]);
+    // The intersection is derived from the two lists, not asserted: it is
+    // exactly the pair `SEALED_RUNTIME_DESTINATIONS` names, and nothing else.
+    expect(sealed).toStrictEqual([...TASK_0026_CANONICAL_EVIDENCE]);
+    expect(collisions).toStrictEqual([...TASK_0026_CANONICAL_EVIDENCE]);
+    for (const name of TASK_0026_CANONICAL_EVIDENCE) {
+      expect(PROTECTED_RUN_ARTIFACTS as readonly string[]).toContain(name);
+      expect(RUNTIME_RUN_ARTIFACTS as readonly string[]).toContain(name);
+    }
+    // Every earlier slice's canonical evidence stays protected and stays out
+    // of this runtime's destinations, exactly as before the seal.
     for (const name of [...TASK_0024_CANONICAL_EVIDENCE, ...TASK_0025_CANONICAL_EVIDENCE]) {
       expect(PROTECTED_RUN_ARTIFACTS as readonly string[]).toContain(name);
       expect(RUNTIME_RUN_ARTIFACTS as readonly string[]).not.toContain(name);
+    }
+  });
+
+  it("the six TASK-0026 replays stay unprotected and remain writable", () => {
+    for (const name of TASK_0026_NONCANONICAL_REPLAYS) {
+      expect(PROTECTED_RUN_ARTIFACTS as readonly string[]).not.toContain(name);
+      expect(RUNTIME_RUN_ARTIFACTS as readonly string[]).toContain(name);
+      expect(SEALED_RUNTIME_DESTINATIONS as readonly string[]).not.toContain(name);
     }
   });
 
@@ -259,27 +303,36 @@ describe("X5 — the runtime never writes over canonical evidence", () => {
     }
   });
 
-  it("the protected set is the unchanged thirty-two plus TASK-0025's two", () => {
+  it("the protected set is the unchanged thirty-four plus TASK-0026's two", () => {
     expect(PROTECTED_RUN_ARTIFACTS).toStrictEqual([
       ...ORIGINAL_19_PROTECTED,
       ...TASK_0022_CANONICAL_EVIDENCE,
       ...TASK_0023_CANONICAL_EVIDENCE,
       ...TASK_0024_CANONICAL_EVIDENCE,
       ...TASK_0025_CANONICAL_EVIDENCE,
+      ...TASK_0026_CANONICAL_EVIDENCE,
     ]);
-    expect(PROTECTED_RUN_ARTIFACTS).toHaveLength(34);
-    // Append-only: the thirty-two that were sealed before `ACTION-0042` are
+    expect(PROTECTED_RUN_ARTIFACTS).toHaveLength(36);
+    // Append-only: the thirty-four that were sealed before `ACTION-0043` are
     // still there, in the same order, and nothing was silently deduplicated.
-    expect(PROTECTED_RUN_ARTIFACTS.slice(0, 32)).toStrictEqual([
+    expect(PROTECTED_RUN_ARTIFACTS.slice(0, 34)).toStrictEqual([
       ...ORIGINAL_19_PROTECTED,
       ...TASK_0022_CANONICAL_EVIDENCE,
       ...TASK_0023_CANONICAL_EVIDENCE,
       ...TASK_0024_CANONICAL_EVIDENCE,
-    ]);
-    expect(PROTECTED_RUN_ARTIFACTS.slice(32)).toStrictEqual([
       ...TASK_0025_CANONICAL_EVIDENCE,
     ]);
-    expect(new Set(PROTECTED_RUN_ARTIFACTS).size).toBe(34);
+    expect(PROTECTED_RUN_ARTIFACTS.slice(34)).toStrictEqual([
+      ...TASK_0026_CANONICAL_EVIDENCE,
+    ]);
+    expect(new Set(PROTECTED_RUN_ARTIFACTS).size).toBe(36);
+  });
+
+  it("TASK-0026 seals only its two ED15 passes", () => {
+    const sealedTask0026 = (PROTECTED_RUN_ARTIFACTS as readonly string[]).filter(
+      (name) => artifactTaskId(name) === "TASK-0026",
+    );
+    expect(sealedTask0026).toStrictEqual([...TASK_0026_CANONICAL_EVIDENCE]);
   });
 
   it("TASK-0024 seals only DR15 pass1/pass2 and J12", () => {
@@ -553,15 +606,24 @@ describe("X5 — the runtime never writes over canonical evidence", () => {
   });
 
   it("every write in those sources takes its name from this module", () => {
+    const fromThisModule =
+      /^(H9_REGRESSION_ARTIFACT|H9_REGRESSION_ABANDON_ARTIFACT|J12_REGRESSION_ARTIFACT|J12_REGRESSION_ABANDON_ARTIFACT|K11_ARTIFACT|X11_GENERIC_ARTIFACT|k12Artifact\(|l12Artifact\(|m12Artifact\(|n15Artifact\(|ec15Artifact\(|dr15Artifact\(|sr15Artifact\(|ed15Artifact\()/;
     for (const [path, source] of WRITING_SOURCES) {
       const calls = [...source.matchAll(/map_write_run_artifact[\s\S]{0,400}?name:\s*([^,\n]+)/g)];
       expect(calls.length).toBeGreaterThan(0);
       for (const call of calls) {
-        const argument = call[1].trim();
+        let argument = call[1].trim();
+        // A scenario that checks the seal before writing needs the name in a
+        // local first. One level of aliasing is resolved here — and only if
+        // that local is itself assigned from this module, so the guarantee is
+        // the same one: no artefact name is ever spelled at a write site.
+        if (argument === "destination") {
+          const bound = new RegExp(`const destination = ([^;\n]+);`).exec(source);
+          expect(bound, `${path}: writes \`destination\` without binding it`).not.toBeNull();
+          argument = (bound?.[1] ?? "").trim();
+        }
         expect(
-          /^(H9_REGRESSION_ARTIFACT|H9_REGRESSION_ABANDON_ARTIFACT|J12_REGRESSION_ARTIFACT|J12_REGRESSION_ABANDON_ARTIFACT|K11_ARTIFACT|X11_GENERIC_ARTIFACT|k12Artifact\(|l12Artifact\(|m12Artifact\(|n15Artifact\(|ec15Artifact\(|dr15Artifact\(|sr15Artifact\(|ed15Artifact\()/.test(
-            argument,
-          ),
+          fromThisModule.test(argument),
           `${path}: artefact name not taken from runArtifacts.ts — ${argument}`,
         ).toBe(true);
       }
@@ -647,7 +709,7 @@ describe("X8 — M12 derives who owns what it writes, and how many names are pro
     expect(powershellGate()).toStrictEqual(gate.names);
     expect(gate.declaredLength).toBe(gate.names.length);
     expect(PROTECTED_RUN_ARTIFACTS).toHaveLength(gate.declaredLength);
-    expect(gate.declaredLength).toBe(34);
+    expect(gate.declaredLength).toBe(36);
   });
 
   it("no historical protected name was dropped by this repair", () => {
@@ -719,14 +781,14 @@ describe("X8 — M12 derives who owns what it writes, and how many names are pro
     }
   });
 
-  it("the two appended names are exactly TASK-0025's canonical SR15 proofs", () => {
-    expect(PROTECTED_RUN_ARTIFACTS.slice(32)).toStrictEqual([
+  it("TASK-0025's two SR15 proofs retain their exact positions", () => {
+    expect(PROTECTED_RUN_ARTIFACTS.slice(32, 34)).toStrictEqual([
       ...TASK_0025_CANONICAL_EVIDENCE,
     ]);
-    expect(rustGate().names.slice(32)).toStrictEqual([
+    expect(rustGate().names.slice(32, 34)).toStrictEqual([
       ...TASK_0025_CANONICAL_EVIDENCE,
     ]);
-    expect(powershellGate().slice(32)).toStrictEqual([
+    expect(powershellGate().slice(32, 34)).toStrictEqual([
       ...TASK_0025_CANONICAL_EVIDENCE,
     ]);
     for (const gate of [
@@ -738,6 +800,33 @@ describe("X8 — M12 derives who owns what it writes, and how many names are pro
         ...TASK_0025_CANONICAL_EVIDENCE,
       ]);
       for (const name of TASK_0025_NONCANONICAL) {
+        expect(gate).not.toContain(name);
+      }
+    }
+  });
+
+  it("the two appended names are exactly TASK-0026's canonical ED15 proofs", () => {
+    // `ACTION-0043`, in all three guards, at positions 34 and 35. Two names,
+    // not eight: the six EC15/DR15/SR15 replays this slice republished are not
+    // canonical evidence of it and must stay writable.
+    expect(PROTECTED_RUN_ARTIFACTS.slice(34)).toStrictEqual([
+      ...TASK_0026_CANONICAL_EVIDENCE,
+    ]);
+    expect(rustGate().names.slice(34)).toStrictEqual([
+      ...TASK_0026_CANONICAL_EVIDENCE,
+    ]);
+    expect(powershellGate().slice(34)).toStrictEqual([
+      ...TASK_0026_CANONICAL_EVIDENCE,
+    ]);
+    for (const gate of [
+      PROTECTED_RUN_ARTIFACTS as readonly string[],
+      rustGate().names,
+      powershellGate(),
+    ]) {
+      expect(gate.filter((name) => artifactTaskId(name) === "TASK-0026")).toStrictEqual([
+        ...TASK_0026_CANONICAL_EVIDENCE,
+      ]);
+      for (const name of TASK_0026_NONCANONICAL_REPLAYS) {
         expect(gate).not.toContain(name);
       }
     }
@@ -769,22 +858,28 @@ describe("X8 — M12 derives who owns what it writes, and how many names are pro
     expect(ownership.taskIdsWritten).toStrictEqual([ownership.owningTaskId]);
   });
 
-  it("the TASK-0026 runtime owns every destination and intersects no seal", () => {
+  it("the TASK-0026 runtime owns every destination and now intersects its own seal", () => {
     const ownership = runtimeWriteOwnership();
-    expect(ownership.writesUnderItsOwnTaskOnly).toBe(true);
     expect(ownership.owningTaskId).toBe("TASK-0026");
     expect(ownership.taskIdsWritten).toStrictEqual(["TASK-0026"]);
     expect(ownership.protectedTaskIds).toContain("TASK-0024");
     expect(ownership.protectedTaskIds).toContain("TASK-0025");
-    expect(ownership.protectedDestinations).toStrictEqual([]);
+    // `ACTION-0043` sealed this runtime's own two ED15 proofs, so the owning
+    // task now owns protected evidence and the intersection is no longer
+    // empty. `false` is the expected reading of the checkout, not a defect:
+    // the field reports where the slice is, it is not kept green.
+    expect(ownership.protectedTaskIds).toContain("TASK-0026");
+    expect(ownership.protectedDestinations).toStrictEqual([
+      ...TASK_0026_CANONICAL_EVIDENCE,
+    ]);
+    expect(ownership.writesUnderItsOwnTaskOnly).toBe(false);
   });
 
-  it("no TASK-0026 runtime destination is protected", () => {
+  it("only the two ED15 destinations are protected, and the six replays are not", () => {
     const ownership = runtimeWriteOwnership();
     expect(PROTECTED_RUN_ARTIFACTS as readonly string[]).toContain(
       TASK_0022_CANONICAL_EVIDENCE[5],
     );
-    expect(ownership.protectedDestinations).toStrictEqual([]);
     expect(ownership.protectedDestinations).toStrictEqual([
       ...SEALED_RUNTIME_DESTINATIONS,
     ]);
@@ -797,15 +892,21 @@ describe("X8 — M12 derives who owns what it writes, and how many names are pro
     for (const name of TASK_0023_NONCANONICAL) {
       expect(ownership.protectedDestinations).not.toContain(name);
     }
+    // The replays this slice republished stay outside the seal: still spelled
+    // as destinations, still absent from the intersection.
+    for (const name of TASK_0026_NONCANONICAL_REPLAYS) {
+      expect(RUNTIME_RUN_ARTIFACTS as readonly string[]).toContain(name);
+      expect(ownership.protectedDestinations).not.toContain(name);
+    }
   });
 
   it("the count M12 publishes is the count the gate enforces", () => {
-    // Thirty-four today. The assertion is not only the number: it is that the
+    // Thirty-six today. The assertion is not only the number: it is that the
     // number published and the number enforced are the same object, so the
     // next extension of `X5` moves both at once.
     const ownership = runtimeWriteOwnership();
     expect(ownership.protectedArtifactCount).toBe(rustGate().declaredLength);
-    expect(ownership.protectedArtifactCount).toBe(34);
+    expect(ownership.protectedArtifactCount).toBe(36);
     expect(ownership.protectedTaskIds).toStrictEqual([
       "TASK-0016",
       "TASK-0017",
@@ -816,8 +917,11 @@ describe("X8 — M12 derives who owns what it writes, and how many names are pro
       "TASK-0023",
       "TASK-0024",
       "TASK-0025",
+      "TASK-0026",
     ]);
-    expect(ownership.protectedTaskIds).not.toContain(ownership.owningTaskId);
+    // Since `ACTION-0043` the owning task is itself among them — the reason
+    // `writesUnderItsOwnTaskOnly` reads `false` above.
+    expect(ownership.protectedTaskIds).toContain(ownership.owningTaskId);
   });
 
   it("a stale owner among the destinations would break the verdict", () => {
@@ -842,6 +946,43 @@ describe("X8 — M12 derives who owns what it writes, and how many names are pro
       );
       expect(source, `${path} spells a protected-name count in words`).not.toMatch(
         /\b(fourteen|quatorze|nineteen|dix-neuf)\b/i,
+      );
+    }
+  });
+
+  it("no writing source compares the protected count against a literal", () => {
+    // The same defect in numeric form, and the one `ACTION-0043` actually hit.
+    // Four scenarios asserted `PROTECTED_RUN_ARTIFACTS.length === 34` before
+    // writing. The literal was true only between two seals: extending `X5` to
+    // thirty-six made all four abort, including the replays that had to stay
+    // replayable. A count is a fact to record in the evidence, never a
+    // precondition to write against.
+    for (const [path, source] of WRITING_SOURCES) {
+      expect(source, `${path} compares the protected count to a literal`).not.toMatch(
+        /PROTECTED_RUN_ARTIFACTS\.length\s*[=!]==?\s*\d+/,
+      );
+    }
+  });
+
+  it("the scenarios that pre-flight a write check the seal by name", () => {
+    // What replaced the literal. These four assert before writing, so their
+    // assertion has to be about the name they are about to write: a scenario
+    // refuses exactly when its own destination is canonical evidence, and a
+    // future seal changes which ones refuse without anybody editing a number.
+    // The other writing sources make no pre-flight claim and rely on the Rust
+    // gate alone, which is why they are not held to this.
+    const preflighting = WRITING_SOURCES.filter(([path]) =>
+      [
+        "src/map/dreScenario.ts",
+        "src/map/exactDuplicateScenario.ts",
+        "src/map/genericRelationScenario.ts",
+        "src/map/reviewScenario.ts",
+      ].includes(path),
+    );
+    expect(preflighting).toHaveLength(4);
+    for (const [path, source] of preflighting) {
+      expect(source, `${path} pre-flights a write without checking the seal`).toMatch(
+        /!\(PROTECTED_RUN_ARTIFACTS as readonly string\[\]\)\.includes\(/,
       );
     }
   });

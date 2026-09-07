@@ -1,6 +1,58 @@
 # HANDOFF — passage de relais
 
-## Relais actuel — TASK-0026 IMPLEMENTED, 2026-09-06
+## Relais actuel — ACTION-0043, TASK-0026 VERIFIED, 2026-09-06
+
+Le verdict rendu par l'orchestrateur technique indépendant est enregistré dans
+[`ACTION-0043`](../reviews/ACTION-0043-independent-control.md) : `ED1` à
+`ED15 = PASS`, `ACTION-0043 = CLOSED`, `TASK-0026 = VERIFIED`, sans réserve
+fonctionnelle bloquante ni réserve corrective ouverte. Codex était l'exécuteur
+de la tranche; Claude Code a seulement rédigé l'enregistrement, corrigé les
+commentaires `X5` périmés et appliqué le scellement. Aucun des deux ne s'est
+auto-attribué `VERIFIED`.
+
+X5 passe de **34** à **36** noms. Les deux seuls ajouts, après les 34 noms
+historiques inchangés, sont les preuves `TASK-0026-ED15-*` pass1 puis pass2.
+Les six replays `TASK-0026-EC15-*`, `TASK-0026-DR15-*` et `TASK-0026-SR15-*`
+restent non canoniques et non protégés. Les gardes Rust, TypeScript et
+PowerShell sont en parité exacte sur les 36 noms, dans le même ordre.
+
+Après scellement : `protectedArtifactCount = 36`,
+`protectedDestinations = [ED15 pass1, ED15 pass2]`,
+`owningTaskId = TASK-0026`, `writesUnderItsOwnTaskOnly = false`. Rejouer
+`ED15` depuis ce checkout est refusé — c'est la porte qui fonctionne, pas une
+régression.
+
+**Un défaut a été trouvé et réparé pendant le scellement.** Quatre scénarios
+d'écriture — `dreScenario`, `exactDuplicateScenario`, `genericRelationScenario`
+et `reviewScenario` — exigeaient avant d'écrire que `X5` vaille exactement 34
+et que l'intersection soit vide. Ces deux faits ne sont vrais qu'entre deux
+scellements : portés à 36, les quatre scénarios auraient avorté, rendant
+**injouables** les six replays qui doivent rester rejouables. La condition
+porte désormais sur le nom que le scénario s'apprête à écrire, ce qui ne
+pourrit pas, et deux tests `X5` nouveaux l'imposent. C'est le défaut de la
+réserve `X8` sous forme numérique.
+
+Validations de clôture : `runArtifacts.test.ts` **44/44**, Rust ciblés
+**26/26**, suite Rust **229/229**, suite TypeScript **246/246**, `pnpm check`
+**PASS**, garde PowerShell **36 refus / 36 noms uniques** avec les six replays
+toujours autorisés, parité Rust/TS/PowerShell **PASS**, `git diff --check`
+**PASS**, aucun JSON de preuve modifié. Aucun replay WebView2 et aucun build
+Tauri n'ont été refaits.
+
+`F-046` reste `PROPOSED` : l'exploration exacte à l'échelle est vérifiée,
+l'identité physique persistante reste absente et `DEC-0013/F` bloquante. X10
+hors Windows reste non prouvée race-safe.
+
+**Écart signalé, hors périmètre :** `main` locale reste `91bbe90f`, mais
+`origin/main` porte un commit de plus, `1a7d652c` — « docs: update canonical
+GitHub identity », signé Sébastien Dubé, 2026-09-06 18:16 −0400. C'est une
+action du propriétaire, hors de cette branche; rien n'a été publié vers `main`
+par cette fermeture.
+
+**Relais unique :** rendre la main à l'orchestrateur technique pour définir la
+tranche suivante. Ne pas créer `TASK-0027` ni `DEC-0029` sans GO.
+
+## Relais précédent — TASK-0026 IMPLEMENTED, 2026-09-06
 
 `TASK-0026` livre l'explorateur borné de contenus binaires identiques observés
 sur `build/v0.2-a10-exact-duplicate-explorer`. Son statut est
@@ -29,9 +81,9 @@ intersection runtime/protected vide, propriétaire runtime `TASK-0026`.
 + mtime n'existe. `DEC-0013/F` demeure bloquante et X10 hors Windows non
 prouvée race-safe. `main` reste `91bbe90f`.
 
-**Relais unique :** contrôle indépendant de `TASK-0026` sur `ED1` à `ED15`,
-les huit preuves WebView2 et l'intégrité X5. Lui seul peut attribuer
-`VERIFIED` et décider d'un éventuel scellement.
+**Relais alors demandé :** contrôle indépendant de `TASK-0026` sur `ED1` à
+`ED15`, les huit preuves WebView2 et l'intégrité X5. Il a été rendu par
+`ACTION-0043`, enregistré en tête de ce fichier.
 
 ## Relais actuel — ACTION-0042, TASK-0025 VERIFIED, 2026-09-05
 

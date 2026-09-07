@@ -40,15 +40,22 @@
  * intra-brain regression. The corrective X11 proof and every other
  * `TASK-0024` output remain noncanonical and unprotected.
  *
- * **`TASK-0026` applies the same rule again.** Before replaying anything,
- * every destination below moved from `TASK-0025-*` to `TASK-0026-*`, including
- * all compiled regressions and both formerly sealed `SR15` destinations. The
- * thirty-four protected names remain bit-for-bit unchanged.
+ * **`ACTION-0042` made `TASK-0025` `VERIFIED`**, so exactly its two `SR15`
+ * WebView2 passes joined the protected set. Its `DR15`, `J12` and `X11`
+ * replays remain noncanonical and unprotected.
  *
- * **`ACTION-0042` makes `TASK-0025` `VERIFIED`**, so exactly its two `SR15`
- * WebView2 passes now join the protected set. Its `DR15`, `J12` and `X11`
- * replays remain noncanonical and unprotected. The runtime still spells the
- * two `SR15` destinations, so those writes are now refused as intended.
+ * **`TASK-0026` applied the same rule again.** Before replaying anything,
+ * every destination below moved from `TASK-0025-*` to `TASK-0026-*`, including
+ * all compiled regressions and both freshly sealed `SR15` destinations, so the
+ * protected/runtime intersection was empty for the whole slice and the
+ * thirty-four protected names stayed bit-for-bit unchanged.
+ *
+ * **`ACTION-0043` makes `TASK-0026` `VERIFIED`**, so exactly its two `ED15`
+ * WebView2 passes now join the protected set, thirty-four to thirty-six. The
+ * six `EC15`, `DR15` and `SR15` replays it republished under `TASK-0026-*`
+ * remain noncanonical and unprotected: the task was controlled on `ED15`
+ * alone. The runtime spells the two `ED15` destinations, so those writes are
+ * now refused as intended.
  *
  * Every name lives here so there is one spelling of each and a guard test can
  * hold the whole surface at once — see `runArtifacts.test.ts`.
@@ -63,12 +70,13 @@
  * (added by `ACTION-0029`), six are `TASK-0019`'s, added when `ACTION-0031`
  * made it `VERIFIED`, five are `TASK-0020`'s, added when `ACTION-0032` made it
  * `VERIFIED`, eight are `TASK-0022`'s, added when `ACTION-0036` made it
- * `VERIFIED`, and the last two are `TASK-0023`'s `EC15` passes, added when
- * `ACTION-0039` made it `VERIFIED`, the next three are `TASK-0024`'s canonical
- * proofs, added when `ACTION-0041` made it `VERIFIED`, and the last two are
- * `TASK-0025`'s `SR15` passes, added when `ACTION-0042` made it `VERIFIED`.
+ * `VERIFIED`, two are `TASK-0023`'s `EC15` passes, added when `ACTION-0039`
+ * made it `VERIFIED`, three are `TASK-0024`'s canonical proofs, added when
+ * `ACTION-0041` made it `VERIFIED`, two are `TASK-0025`'s `SR15` passes, added
+ * when `ACTION-0042` made it `VERIFIED`, and the last two are `TASK-0026`'s
+ * `ED15` passes, added when `ACTION-0043` made it `VERIFIED`.
  *
- * Thirty-four names. The order is append-only: the thirty-two that were there
+ * Thirty-six names. The order is append-only: the thirty-four that were there
  * before this extension are still there, in the same order, and the two new
  * ones follow them.
  */
@@ -107,6 +115,8 @@ export const PROTECTED_RUN_ARTIFACTS = [
   "TASK-0024-J12-intrabrain-relations-regression-webview2.json",
   "TASK-0025-SR15-suggestion-review-memory-webview2-pass1.json",
   "TASK-0025-SR15-suggestion-review-memory-webview2-pass2.json",
+  "TASK-0026-ED15-exact-duplicate-explorer-webview2-pass1.json",
+  "TASK-0026-ED15-exact-duplicate-explorer-webview2-pass2.json",
 ] as const;
 
 /**
@@ -217,7 +227,7 @@ export function ed15Artifact(pass: number): string {
  * enumerates it.
  *
  * Every current entry belongs to `TASK-0026`; ownership and the protected
- * intersection are derived from the lists below.
+ * intersection are derived from the lists below, never asserted here.
  */
 export const RUNTIME_RUN_ARTIFACTS = [
   H9_REGRESSION_ARTIFACT,
@@ -256,10 +266,17 @@ export const RUNTIME_RUN_ARTIFACTS = [
  * Exact protected/runtime intersection — the destinations this runtime still
  * spells that the write gate would refuse.
  *
- * `TASK-0026` migrated every destination away from all verified namespaces,
- * so the protected/runtime intersection is empty before any replay.
+ * `TASK-0026` migrated every destination away from all verified namespaces, so
+ * this was empty for the whole slice, through every replay. `ACTION-0043` then
+ * sealed the task's own two canonical `ED15` proofs, and the runtime still
+ * spells both: the intersection is now exactly those two names. The six
+ * `EC15`, `DR15` and `SR15` destinations republished under `TASK-0026-*` stay
+ * noncanonical, unprotected and writable.
  */
-export const SEALED_RUNTIME_DESTINATIONS = [] as const;
+export const SEALED_RUNTIME_DESTINATIONS = [
+  "TASK-0026-ED15-exact-duplicate-explorer-webview2-pass1.json",
+  "TASK-0026-ED15-exact-duplicate-explorer-webview2-pass2.json",
+] as const;
 
 /**
  * The task an artefact name declares as its owner, or `null` when the name
@@ -294,8 +311,8 @@ export interface RuntimeWriteOwnership {
    *
    * Empty while the owning task awaits control; it lists the exact colliding
    * destinations once that task's own proofs are sealed under it — see
-   * {@link SEALED_RUNTIME_DESTINATIONS}. Since `ACTION-0042`, it contains the
-   * two canonical `SR15` destinations.
+   * {@link SEALED_RUNTIME_DESTINATIONS}. Since `ACTION-0043`, it contains the
+   * two canonical `ED15` destinations.
    */
   protectedDestinations: readonly string[];
   /**
@@ -304,8 +321,8 @@ export interface RuntimeWriteOwnership {
    *
    * The field reports the state of the checkout, so it is allowed to say the
    * checkout is past its slice — it is not a health check to be kept green. It
-   * is `false` again since `ACTION-0042`, because this verified runtime still
-   * spells its two newly sealed `SR15` destinations.
+   * is `false` again since `ACTION-0043`, because this verified runtime still
+   * spells its two newly sealed `ED15` destinations.
    */
   writesUnderItsOwnTaskOnly: boolean;
 }

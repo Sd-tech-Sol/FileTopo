@@ -3,8 +3,11 @@
 - **Date :** 2026-09-05
 - **Branche :** `build/v0.2-a10-exact-duplicate-explorer`
 - **Base contrôlée :** `a6918130202dc164684ed37c969efc90efd8b159`
-- **Statut courant :** `IMPLEMENTED` — contrôle indépendant requis; Codex ne
-  s'attribue pas `VERIFIED`
+- **Statut courant :** `VERIFIED` — par
+  [`ACTION-0043`](../reviews/ACTION-0043-independent-control.md), sur preuves,
+  par une instance distincte de l'exécuteur. Codex ne s'est pas attribué
+  `VERIFIED`, et Claude Code n'a fait qu'enregistrer le verdict et appliquer le
+  scellement `X5`.
 - **Transitions permises :** `PROPOSED → APPROVED → IN_PROGRESS → IMPLEMENTED
   → VERIFIED`; le GO technique de `.orchestrator/NEXT_PROMPT.md` autorise le
   passage à `IN_PROGRESS` après ce gel; l'exécuteur ne s'attribue jamais
@@ -214,3 +217,34 @@ Les documents durables et `.orchestrator/RESULT.md` sont mis à jour et
 - **Limites :** `F-046` reste `PROPOSED`; aucune identité physique persistante
   ni cache taille + mtime; `DEC-0013/F` reste bloquante et X10 hors Windows
   reste non prouvée race-safe.
+
+## Clôture — ACTION-0043, 2026-09-06
+
+- **Verdict externe :** `ED1` à `ED15` = **`PASS`**, `ACTION-0043 = CLOSED`,
+  `TASK-0026 = VERIFIED`, aucune réserve fonctionnelle bloquante et aucune
+  réserve corrective ouverte. Détail dans
+  [`ACTION-0043`](../reviews/ACTION-0043-independent-control.md).
+- **Scellement X5 : 34 → 36.** Exactement les deux preuves `ED15` canoniques
+  rejoignent la liste, en append-only après les 34 noms historiques inchangés.
+  Les six replays `EC15`, `DR15` et `SR15` publiés sous `TASK-0026` restent
+  **non canoniques et non protégés**.
+- **Après scellement :** `protectedArtifactCount = 36`,
+  `protectedDestinations = [ED15 pass1, ED15 pass2]`,
+  `owningTaskId = TASK-0026`, `writesUnderItsOwnTaskOnly = false` — l'état
+  attendu d'un runtime dont les preuves propres viennent d'être scellées.
+  Rejouer `ED15` depuis ce checkout est désormais refusé.
+- **Réparation faite pendant le scellement :** quatre scénarios d'écriture
+  conditionnaient leur écriture à `PROTECTED_RUN_ARTIFACTS.length === 34` et à
+  une intersection vide — vrai seulement entre deux scellements. La condition
+  porte désormais sur le nom que le scénario s'apprête à écrire, ce qui ne
+  pourrit pas. Sans cela, les six replays seraient devenus injouables.
+- **Validations de clôture :** `runArtifacts.test.ts` **44/44**; Rust ciblés
+  **26/26**; suite Rust **229/229**; suite TypeScript **246/246**;
+  `pnpm check` **PASS**; garde PowerShell **36 refus / 36 noms uniques**;
+  parité Rust/TS/PowerShell **PASS**; `git diff --check` **PASS**; aucun JSON
+  de preuve modifié.
+- **Non rejoué :** aucun replay WebView2, aucune campagne `ED15`, `EC15`,
+  `DR15` ni `SR15`, aucun build Tauri.
+- **Limites inchangées :** `F-046` reste `PROPOSED`, l'identité physique
+  persistante reste absente et bloquée par `DEC-0013/F`, et la garantie `X10`
+  race-safe hors Windows reste non prouvée.

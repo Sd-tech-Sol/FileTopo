@@ -201,12 +201,17 @@ async function writeEvidence(
   payload: Record<string, unknown>,
 ) {
   const ownership = runtimeWriteOwnership();
-  requireFact(PROTECTED_RUN_ARTIFACTS.length === 34, "X5 n'est plus exactement 34");
-  requireFact(ownership.protectedDestinations.length === 0, "destination runtime protégée");
+  const destination = ed15Artifact(pass);
   requireFact(ownership.owningTaskId === "TASK-0026", "propriétaire runtime inattendu");
-  requireFact(ownership.writesUnderItsOwnTaskOnly, "runtime hors TASK-0026");
+  // Since `ACTION-0043` sealed both `ED15` passes, this refuses in this
+  // checkout — the campaign that produced the canonical evidence cannot
+  // overwrite it. That is the gate working, not a scenario to repair.
+  requireFact(
+    !(PROTECTED_RUN_ARTIFACTS as readonly string[]).includes(destination),
+    `destination protégée par X5: ${destination}`,
+  );
   return deps.invoke<string>("map_write_run_artifact", {
-    name: ed15Artifact(pass),
+    name: destination,
     contents: JSON.stringify(
       {
         task: "TASK-0026",

@@ -1,13 +1,17 @@
 # DEC-0028 — Frontière de requête des contenus binaires identiques observés
 
 - **Date :** 2026-09-05
-- **Statut :** `IMPLEMENTED` — contrôle indépendant requis sur `TASK-0026`
+- **Statut :** `IMPLEMENTED` — implémentation **validée** par
+  `TASK-0026 / ACTION-0043`, sur preuves, par une instance distincte de
+  l'exécuteur
 - **Phase :** étape A — exploitation bornée des observations exactes
 - **Décideur :** orchestrateur technique, par le GO explicite de
   `.orchestrator/NEXT_PROMPT.md`
 - **Rédacteur :** Codex, agent d'exécution
 - **Implémentée par :**
-  [`TASK-0026`](../tasks/TASK-0026-exact-duplicate-explorer.md)
+  [`TASK-0026`](../tasks/TASK-0026-exact-duplicate-explorer.md), `VERIFIED`
+- **Contrôle indépendant :**
+  [`ACTION-0043`](../reviews/ACTION-0043-independent-control.md), `CLOSED`
 - **replaced_by :** —
 
 ## Contexte
@@ -121,3 +125,22 @@ crée aucune relation ni suggestion.
 Les critères gelés `ED1` à `ED15` de `TASK-0026`, les tests synthétiques et les
 deux preuves Windows/WebView2 `ED15` constituent le protocole de preuve.
 `VERIFIED` appartient exclusivement à un contrôle indépendant.
+
+## Preuves rendues
+
+`ACTION-0043` a enregistré, le 2026-09-06, le verdict externe `ED1–ED15 =
+PASS` et fait passer `TASK-0026` à `VERIFIED`. La frontière posée ici est donc
+tenue par le produit livré : lecture en lecture seule de la génération
+courante, groupes et membres bornés à 100 par requête, taille qui ordonne sans
+jamais établir le groupe, groupe vide montré comme fait exact, et le texte
+« Contenu binaire identique observé » assorti de sa limite explicite.
+
+Ce que cette décision refuse reste refusé : aucun cache taille + mtime, aucune
+identité physique persistante — `DEC-0013/F` demeure bloquante — et aucun
+digest partagé transformé en relation. `F-046` reste `PROPOSED`; seule son
+exploitation exacte à l'échelle est vérifiée.
+
+Les deux preuves canoniques sont scellées dans `X5`, portée de 34 à 36 noms :
+
+- `TASK-0026-ED15-exact-duplicate-explorer-webview2-pass1.json`
+- `TASK-0026-ED15-exact-duplicate-explorer-webview2-pass2.json`

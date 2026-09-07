@@ -267,10 +267,11 @@ export async function runGenericRelationScenario(
   }
 
   try {
-    requireFact(PROTECTED_RUN_ARTIFACTS.length === 34, "X5 n'est plus exactement 34");
-    requireFact(ownership.protectedDestinations.length === 0, "destination runtime protégée");
-    requireFact(ownership.writesUnderItsOwnTaskOnly, "runtime hors TASK-0026");
     requireFact(ownership.owningTaskId === "TASK-0026", "propriétaire runtime inattendu");
+    requireFact(
+      !(PROTECTED_RUN_ARTIFACTS as readonly string[]).includes(X11_GENERIC_ARTIFACT),
+      `destination protégée par X5: ${X11_GENERIC_ARTIFACT}`,
+    );
     const written = await deps.invoke<string>("map_write_run_artifact", {
       name: X11_GENERIC_ARTIFACT,
       contents: JSON.stringify(

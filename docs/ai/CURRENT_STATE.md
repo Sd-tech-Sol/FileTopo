@@ -1,9 +1,56 @@
 # État courant
 
+## ACTION-0043 — TASK-0026 VERIFIED et scellement X5 — 2026-09-06
+
+- **Verdict indépendant enregistré, non rendu par Claude Code :** `ED1–ED15 =
+  PASS`, `ACTION-0043 = CLOSED`, `TASK-0026 = VERIFIED`, sans réserve
+  fonctionnelle bloquante ni réserve corrective ouverte. Codex était
+  l'exécuteur; Claude Code a seulement enregistré le verdict de l'orchestrateur
+  technique indépendant et appliqué le scellement. Détail dans
+  [`ACTION-0043`](../reviews/ACTION-0043-independent-control.md).
+- **Scellement X5 : 34 → 36.** Exactement les deux preuves `ED15` canoniques
+  rejoignent la liste, append-only, après les 34 noms historiques inchangés.
+  Les six replays `EC15`, `DR15` et `SR15` publiés sous `TASK-0026` restent
+  **non canoniques et non protégés**.
+- **État X5 après scellement :** `protectedArtifactCount = 36`,
+  `protectedDestinations = [ED15 pass1, ED15 pass2]`,
+  `owningTaskId = TASK-0026`, `writesUnderItsOwnTaskOnly = false`. C'est
+  l'état attendu d'un runtime dont les preuves propres viennent d'être
+  scellées : rejouer `ED15` depuis ce checkout est refusé, et c'est la porte
+  qui fonctionne.
+- **Défaut réparé pendant le scellement :** quatre scénarios d'écriture
+  conditionnaient leur écriture à `PROTECTED_RUN_ARTIFACTS.length === 34` et à
+  une intersection vide — vrai seulement entre deux scellements. Porté à 36,
+  cela aurait rendu **injouables** les six replays qui doivent rester
+  rejouables. La condition porte désormais sur le **nom que le scénario
+  s'apprête à écrire**, ce qui ne pourrit pas; deux tests `X5` nouveaux le
+  tiennent. Même défaut que la réserve `X8`, sous forme numérique.
+- **Hygiène documentaire :** les commentaires `X5` de `commands.rs` et de
+  `runArtifacts.ts` qui décrivaient encore l'état post-`ACTION-0042` disent
+  maintenant l'état réel. Aucun comportement produit changé.
+- **Validations de clôture :** `runArtifacts.test.ts` **44/44**; Rust ciblés
+  **26/26**; suite Rust **229/229**; suite TypeScript **246/246**;
+  `pnpm check` **PASS**; garde PowerShell **36 refus / 36 noms uniques**,
+  replays `TASK-0026` toujours autorisés; parité Rust/TS/PowerShell **PASS**;
+  `git diff --check` **PASS**; aucun JSON de preuve modifié.
+- **Non rejoué :** aucun replay WebView2, aucune campagne `ED15`, `EC15`,
+  `DR15` ni `SR15`, aucun build Tauri.
+- **Limites :** `F-046` reste `PROPOSED` — l'exploration exacte à l'échelle est
+  vérifiée, l'identité physique persistante reste absente et bloquée par
+  `DEC-0013/F`; X10 hors Windows reste non prouvée race-safe.
+- **Écart signalé, hors périmètre :** `main` **locale** reste
+  `91bbe90f0f99026c28cd345784d4f579a0016db2`, mais `origin/main` porte un
+  commit de plus, `1a7d652c` — « docs: update canonical GitHub identity »,
+  signé Sébastien Dubé, 2026-09-06 18:16 −0400. Action du propriétaire, hors
+  de cette branche et hors de cette tranche; rien n'a été publié vers `main`.
+- **Action unique suivante :** rendre la main à l'orchestrateur pour définir la
+  tranche suivante.
+
 ## TASK-0026 — explorateur borné de contenus identiques — 2026-09-06
 
-- **Statut :** `TASK-0026 = IMPLEMENTED`, contrôle indépendant requis;
-  `DEC-0028 = IMPLEMENTED`. Codex n'attribue pas `VERIFIED`.
+- **Statut :** `TASK-0026 = VERIFIED` par `ACTION-0043`;
+  `DEC-0028 = IMPLEMENTED`, validée par `TASK-0026 / ACTION-0043`. Ni Codex ni
+  Claude Code ne se sont attribué `VERIFIED`.
 - **Produit livré :** lecture par cerveau de la génération `sha256-v1`
   courante, résumé et deux paginations SQLite séparées, limite maximale 100,
   ordres stables, fichiers vides visibles et membres non résolus honnêtes.
@@ -15,19 +62,20 @@
   rebuild et persistance réels, membres non résolus signalés. Onze keydowns et
   onze activations fiables, zéro clic programmatique.
 - **Régressions publiées :** `EC15`, `DR15` et `SR15`, pass1/pass2, sous noms
-  `TASK-0026`. Les huit preuves de cette tranche restent non canoniques et hors
-  X5 jusqu'au contrôle indépendant.
+  `TASK-0026`. Après `ACTION-0043`, seules les deux `ED15` sont canoniques et
+  scellées; les six autres restent hors X5.
 - **Validations :** Rust exact duplicate **3/3**, moteur **14/14**, suite
   **227/227**; TypeScript ciblé **42/42**, suite **241/241**; typage, build web,
   Tauri debug et `git diff --check` verts.
-- **Gouvernance :** X5 reste **34** noms append-only inchangés, 34/34 refusés;
-  `protectedDestinations = []`, propriétaire `TASK-0026`, écritures uniquement
-  sous sa tâche. `main` reste `91bbe90f`.
+- **Gouvernance :** au moment de la livraison, X5 valait **34** noms
+  append-only inchangés, 34/34 refusés, `protectedDestinations = []`,
+  propriétaire `TASK-0026`, écritures uniquement sous sa tâche. `ACTION-0043`
+  l'a ensuite porté à **36**. `main` locale reste `91bbe90f`.
 - **Limites :** `F-046` reste `PROPOSED`; même objet physique reste absent et
   bloqué par `DEC-0013/F`; aucun cache digest taille + mtime; X10 non-Windows
   non prouvée race-safe.
-- **Action unique suivante :** contrôle indépendant de `TASK-0026` sur
-  `ED1`–`ED15` et les preuves publiées.
+- **Contrôle indépendant :** rendu par `ACTION-0043` le 2026-09-06 —
+  `ED1`–`ED15 = PASS`.
 
 ## ACTION-0042 — TASK-0025 VERIFIED et scellement X5 — 2026-09-05
 
