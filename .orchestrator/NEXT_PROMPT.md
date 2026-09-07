@@ -1,266 +1,289 @@
-# NEXT_PROMPT — TASK-0026 / contrôle indépendant + scellement X5
+# NEXT_PROMPT — TASK-0027 / Progressive Scale Architecture Realignment
 
 **TARGET_AGENT:** CLAUDE  
 **STATUS:** READY  
-**OWNER:** orchestrateur technique indépendant  
-**TASK:** `TASK-0026 — Exact Duplicate Explorer + Bounded Scale`  
-**MODE:** enregistrement du verdict externe, hygiène documentaire ciblée et scellement
-
-> Ce fichier enregistre un verdict indépendant déjà rendu après inspection du code, de l’historique Git, des preuves ED15 finales et des replays EC15/DR15/SR15. Claude n’est pas l’exécuteur de TASK-0026 et ne doit ni refaire la fonctionnalité ni s’auto-attribuer le verdict.
+**OWNER:** orchestrateur technique  
+**TASK:** `TASK-0027 — Progressive Scale Architecture Realignment`  
+**MODE:** documentaire / architecture uniquement — AUCUNE implémentation produit
 
 ## /goal
 
-Enregistrer le contrôle indépendant de `TASK-0026`, corriger deux commentaires X5 devenus factuellement périmés sans changer le comportement, puis sceller **exactement les deux preuves ED15 propres à la nouvelle capacité**.
+Enregistrer la décision produit approuvée après réévaluation de FileTopo à grande échelle : **FileTopo indexe grand, matérialise petit et ne rend que le contexte utile**.
 
-Verdict externe à enregistrer :
+Le but fondamental ne change pas : application de bureau locale, légère, généraliste, pensée notamment pour de très grands cerveaux numériques et environnements documentaires d’entreprise, utilisable sur un laptop/PC ordinaire **sans GPU puissant**, sans LLM, API cloud, compte ou envoi de documents.
 
-- `ED1` à `ED15` : **PASS**;
-- aucune réserve fonctionnelle bloquante;
-- `TASK-0026 = VERIFIED` après enregistrement de ce contrôle;
-- `DEC-0028` : implémentation validée par `TASK-0026 / ACTION-0043`;
-- `F-046` reste **PROPOSED** : l’exploration exacte à l’échelle est validée, mais l’identité physique persistante reste absente;
-- `DEC-0013/F` demeure bloquante;
-- la garantie X10 race-safe hors Windows reste non prouvée;
-- aucune identité physique, aucun `FileId`, aucun cache digest taille+mtime, aucune IA/RAG/vector DB/extraction, aucune donnée réelle.
+`Graphify` **n’est pas intégré** : aucune dépendance, aucun runtime, aucun adaptateur MVP. Les concepts utiles observés peuvent inspirer FileTopo, mais sont réimplémentés seulement si un besoin FileTopo réel le justifie. `Forge` reste un projet entièrement distinct.
 
-Un écart **documentaire non fonctionnel** a été trouvé pendant le contrôle : certains commentaires X5 dans `src-tauri/src/map/commands.rs` et `src/map/runArtifacts.ts` décrivent encore l’état post-`ACTION-0042` comme si le runtime courant écrivait des destinations `TASK-0025` protégées. C’est faux pour le checkout actuel : avant ce scellement, toutes les destinations ont déjà été migrées vers `TASK-0026`, X5 vaut 34, `SEALED_RUNTIME_DESTINATIONS = []`, l’intersection runtime/protected est vide et `writesUnderItsOwnTaskOnly = true`. Corriger uniquement ces commentaires pendant la fermeture; ne modifier aucune logique pour ce point.
+Cette tâche **écrit la nouvelle frontière d’architecture et la roadmap. Elle ne code rien.**
 
 ---
 
-## 0 — synchronisation obligatoire
+## 0 — synchronisation / branche
 
-1. Appliquer les protocoles de début de session du dépôt.
-2. Branche attendue : `build/v0.2-a10-exact-duplicate-explorer`.
-3. `git fetch origin`, puis fast-forward uniquement sur cette branche.
-4. HEAD doit être le commit d’orchestration qui contient ce fichier.
-5. Son parent direct doit être exactement `b7c94d45dab52a70faa4220a131830c11c54bc19`.
-6. Le commit final substantif/preuve avant handoff reste `b40e1ceb568acad77982738c6634fd810d4d7662`.
-7. Arbre propre; aucun autre changement local.
-8. `TASK-0026 = IMPLEMENTED`, contrôle indépendant requis.
-9. `ACTION-0043` doit être libre.
-10. X5 doit être exactement 34 avant scellement.
-11. `SEALED_RUNTIME_DESTINATIONS = []` avant scellement.
-12. Toutes les destinations runtime doivent appartenir à `TASK-0026`.
-13. `main` doit rester `91bbe90f0f99026c28cd345784d4f579a0016db2`.
+1. Appliquer les protocoles du dépôt.
+2. `git fetch origin`.
+3. Branche de départ : `build/v0.2-a10-exact-duplicate-explorer`.
+4. Fast-forward uniquement jusqu’au commit d’orchestration contenant ce prompt.
+5. Son parent direct doit être `ffa950452e78cc2fc39678d9d0819527e3a12b21`.
+6. `TASK-0026 = VERIFIED`, `ACTION-0043 = CLOSED`, X5 = **36**.
+7. Les deux `TASK-0026-ED15-*` sont scellées; aucun JSON de preuve ne doit être touché.
+8. `origin/main = 1a7d652ca48281c1687f6d1404c56a1404df91d8`, commit propriétaire documentaire « update canonical GitHub identity », descendant direct de `91bbe90f...`. C’est la nouvelle baseline externe de `main`; **ne pas la reset, merger, cherry-pick ni modifier dans cette tâche**.
+9. Identité canonique du dépôt : `Sd-tech-Sol/FileTopo`.
+10. Créer/publier la branche : `build/v0.2-a11-progressive-scale-architecture`.
+11. Arbre propre avant écriture.
 
-Si divergence, `ACTION-0043` occupée, preuve manquante, X5 différent ou autre modification locale : **STOP / BLOCKED**.
+Si TASK-0027 ou DEC-0029 existent déjà, si X5 ≠ 36, ou si le checkout diverge autrement : STOP / BLOCKED.
 
 ---
 
-## 1 — ACTION-0043 à créer
+## 1 — nature de TASK-0027
 
 Créer :
 
-`docs/reviews/ACTION-0043-independent-control.md`
+- `docs/tasks/TASK-0027-progressive-scale-architecture-realignment.md`
+- `docs/decisions/DEC-0029-progressive-materialization-and-scale-boundary.md`
+- `docs/architecture/PROGRESSIVE_SCALE_ARCHITECTURE.md`
 
-Le document doit préciser :
+TASK-0027 est **DOCUMENTAIRE**. Aucun fichier produit sous `src/`, `src-tauri/`, aucun script de campagne, aucun schéma SQLite, aucune dépendance, aucun benchmark exécuté, aucun WebView2 replay, aucun X5.
 
-- verdict rendu par l’orchestrateur technique indépendant;
-- Codex était l’agent d’exécution de TASK-0026;
-- Claude est uniquement le rédacteur de l’enregistrement, de l’hygiène documentaire et du scellement;
-- ni Codex ni Claude ne s’auto-attribuent `VERIFIED`.
-
-### Historique contrôlé
-
-Enregistrer au minimum :
-
-- base d’orchestration initiale : `a6918130202dc164684ed37c969efc90efd8b159`;
-- gel documentaire avant code : `7202e8005d61b25f3171eef65dad64c9c0603080`;
-- migration runtime sous TASK-0026 avant les replays : `9e775024c4889260d668677ed8bca93d812641a1`;
-- backend borné : `7517a592b4c9b7e533a1d22131e5e42ddb71cc73`;
-- UI explorateur : `7efbdabc51a79bb71694784fdfb074d17671bc22`;
-- reprise finale orchestrée depuis `c92fe90d013f889d7cfb6154c3c9ace4dac728ce`;
-- ED15 final rejoué après le dernier durcissement du harnais;
-- EC15, DR15 et SR15 ensuite rejoués sous noms TASK-0026;
-- handoff final : `b7c94d45dab52a70faa4220a131830c11c54bc19`.
-
-### Points fonctionnels contrôlés
-
-Enregistrer que le contrôle indépendant a vérifié notamment :
-
-- lecture du store de contenu en **read-only** pour les requêtes d’exploration; une lecture sur store absent ne crée pas `content.sqlite`;
-- source = génération courante, filtrée explicitement par `generation_id`;
-- seuls `HASHED + sha256-v1 + digest valide` participent;
-- incohérence de taille pour un même digest est rejetée, la taille n’établit jamais le groupe;
-- groupes via agrégation SQLite et `LIMIT/OFFSET`, limite max 100;
-- membres via requête séparée SQLite `ORDER BY relative_path ASC LIMIT/OFFSET`, limite max 100;
-- ordre groupes `size_bytes DESC, hash_hex ASC`;
-- groupe vide visible comme fait exact, aucune relation/suggestion/gain garanti;
-- UI avec boutons natifs, digest complet, date/génération, pages groupes/membres et membre non résolu honnête;
-- texte canonique : « Contenu binaire identique observé » + limite disant que cela ne prouve ni même fichier physique ni copie;
-- isolation stricte par `brain_id`;
-- consultation sans mutation des stores relationnels/intra/inter;
-- aucune identité physique persistante ajoutée.
-
-### ED15 final contrôlé
-
-Les deux preuves propres à TASK-0026 sont :
-
-- `TASK-0026-ED15-exact-duplicate-explorer-webview2-pass1.json`
-- `TASK-0026-ED15-exact-duplicate-explorer-webview2-pass2.json`
-
-Pass1 final, capturé après les correctifs du harnais :
-
-- vrai Windows/WebView2;
-- variante fraîche synthétique;
-- 1 200 fichiers;
-- 1 200 HASHED, 1 200 ouvertures et 1 200 digests;
-- 125 groupes, 373 occurrences groupées, 1 groupe vide;
-- pagination groupes sur plusieurs pages et limite backend 100;
-- groupe >100 membres et pagination membres;
-- activation clavier fiable (`keydownIsTrusted = true`, `activationIsTrusted = true`), zéro clic programmatique;
-- seconde campagne explicite inchangée : 1 200 fichiers réellement rouverts et rehachés;
-- source fingerprint avant/après identique;
-- stores relationnels inchangés;
-- Beta/Gamma non fusionnés;
-- X5 = 34 et intersection vide avant scellement.
-
-Pass2 final :
-
-- vrai nouveau processus sur la même variante;
-- vrai rebuild map;
-- 125 groupes / 373 occurrences persistés avant nouvelle campagne;
-- ordre de pages stable;
-- membres devenus non résolus après rebuild signalés sans effacement;
-- groupe vide persistant, 125 membres;
-- vraies activations clavier, zéro clic programmatique;
-- stores relationnels inchangés;
-- nouvelle campagne lit encore les 1 200 fichiers;
-- source inchangée.
-
-### Régressions contrôlées mais non canoniques
-
-Les six replays suivants sont verts, utiles au contrôle, mais **ne rejoignent pas X5** :
-
-- `TASK-0026-EC15-exact-content-observations-webview2-pass1.json`
-- `TASK-0026-EC15-exact-content-observations-webview2-pass2.json`
-- `TASK-0026-DR15-deterministic-relation-engine-webview2-pass1.json`
-- `TASK-0026-DR15-deterministic-relation-engine-webview2-pass2.json`
-- `TASK-0026-SR15-suggestion-review-memory-webview2-pass1.json`
-- `TASK-0026-SR15-suggestion-review-memory-webview2-pass2.json`
-
-Enregistrer que DR15 conserve notamment `dre-v1`, deux relations `content-identical` pour trois contenus non vides identiques, skip du groupe vide, approbation persistée/idempotente et source read-only. SR15 conserve la mémoire `approved/rejected` après vrai redémarrage et rerun.
-
-### Validations rapportées et cohérentes avec les artefacts
-
-- Rust exact duplicate : 3/3;
-- moteur de règles : 14/14;
-- suite Rust : 227/227;
-- TypeScript ciblé : 42/42;
-- suite TypeScript : 241/241;
-- `pnpm check` PASS;
-- `pnpm build` PASS;
-- Tauri debug `--no-bundle` PASS;
-- `git diff --check` PASS;
-- X5 : 34/34 historiques refusés avant scellement, aucune destination TASK-0026 protégée.
-
-Verdict du document :
-
-- `ED1–ED15 = PASS`;
-- `ACTION-0043 = CLOSED`;
-- `TASK-0026 = VERIFIED`;
-- aucune réserve fonctionnelle corrective ouverte.
+Statut final exécuteur : `IMPLEMENTED`, jamais `VERIFIED`.
 
 ---
 
-## 2 — hygiène documentaire X5, sans comportement
+## 2 — décisions architecture à enregistrer
 
-Corriger les commentaires périmés dans :
+### A. Corpus ≠ vue rendue
 
-- `src-tauri/src/map/commands.rs` autour de `PROTECTED_RUN_ARTIFACTS`;
-- `src/map/runArtifacts.ts` autour de la migration TASK-0026, `SEALED_RUNTIME_DESTINATIONS`, `protectedDestinations` et `writesUnderItsOwnTaskOnly`.
+Figer explicitement :
 
-Avant scellement, la vérité est : runtime entièrement TASK-0026, X5 34, intersection vide.
+- le **corpus complet** vit dans l’index local durable (SQLite / stores FileTopo);
+- le **graphe logique** existe dans les données, pas dans le SVG/DOM/canvas;
+- le frontend reçoit une **vue matérialisée bornée** seulement;
+- la taille totale du cerveau ne doit pas entraîner proportionnellement la même charge de rendu;
+- `1 élément indexé` signifie `1 entité accessible`, **pas** `1 carte simultanément rendue`;
+- le plafond actuel `MAX_NODES_PER_MAP = 5000` est une limite de tranche historique, **pas une limite produit de corpus**;
+- un futur budget de matérialisation/remplissage de vue remplace la logique « tout rendre ou refuser ».
 
-Après scellement ACTION-0043, la vérité devient : le runtime reste TASK-0026 mais ses **deux destinations ED15** sont désormais protégées; l’intersection runtime/protected est exactement ces deux ED15.
-
-Ne pas modifier d’autre commentaire historique sans nécessité. Ne changer aucune API, aucun algorithme, aucune règle, aucun scénario ou comportement produit pour cette correction documentaire.
-
----
-
-## 3 — preuves canoniques TASK-0026
-
-Sceller **exactement deux** preuves, et seulement elles :
-
-1. `TASK-0026-ED15-exact-duplicate-explorer-webview2-pass1.json`
-2. `TASK-0026-ED15-exact-duplicate-explorer-webview2-pass2.json`
-
-Ce sont les preuves propres à la nouvelle capacité ED1–ED15.
-
-Les six EC15/DR15/SR15 restent des replays non canoniques et non protégés.
-
-Ne modifier, régénérer, renommer ni supprimer **aucun JSON** sous `docs/performance/runs/` pendant cette fermeture.
-
----
-
-## 4 — X5 : 34 → 36
-
-Faire passer les trois gardes à **exactement 36** noms, en parité stricte :
-
-- Rust `PROTECTED_RUN_ARTIFACTS`;
-- TypeScript `src/map/runArtifacts.ts`;
-- PowerShell `scripts/protected-run-artifacts.ps1`.
-
-Règles append-only :
-
-- conserver les 34 anciens noms exactement et dans le même ordre;
-- ajouter ED15 pass1 puis ED15 pass2;
-- aucun EC15/DR15/SR15 TASK-0026 n’est ajouté.
-
-Après scellement :
-
-- `protectedArtifactCount = 36`;
-- `SEALED_RUNTIME_DESTINATIONS` = exactement ED15 pass1 + ED15 pass2;
-- `protectedDestinations` = exactement ces deux ED15;
-- `owningTaskId = TASK-0026`;
-- `writesUnderItsOwnTaskOnly = false` — état attendu d’un runtime dont les preuves propres viennent d’être scellées.
-
-Adapter les tests X5 pour démontrer : ancien34 append-only, longueur/unique = 36, parité Rust/TS/PowerShell, exact intersection ED15x2, écriture refusée pour ED15x2, replays EC15/DR15/SR15 TASK-0026 toujours autorisés/non protégés.
-
-Exécuter seulement les tests de garde nécessaires à cette fermeture + `git diff --check`. **Aucun replay WebView2.**
-
----
-
-## 5 — documentation de clôture
-
-Mettre à jour de façon cohérente :
-
-- `docs/reviews/ACTION-0043-independent-control.md`;
-- `docs/tasks/TASK-0026-exact-duplicate-explorer.md` → `VERIFIED`, référence ACTION-0043;
-- `docs/decisions/DEC-0028-exact-duplicate-query-boundary.md` → implémentation validée par TASK-0026/ACTION-0043, sans inventer un statut incompatible avec les conventions;
-- `docs/product/FEATURE_MATRIX.md` : F-046 reste `PROPOSED`, mais l’exploration exacte à l’échelle est désormais **vérifiée par TASK-0026 / ACTION-0043**;
-- `docs/ai/CURRENT_STATE.md`;
-- `docs/ai/NEXT_ACTION.md`;
-- `docs/ai/HANDOFF.md`;
-- `docs/ai/VALIDATION.md`;
-- `docs/ai/CHANGELOG_AI.md`;
-- `.orchestrator/RESULT.md`.
-
-Conserver explicitement :
-
-- F-043 vérifiée TASK-0024;
-- F-044/F-045 vérifiées TASK-0025;
-- F-046 PROPOSED;
-- DEC-0013/F bloquante;
-- X10 hors Windows non race-safe/non prouvée;
-- aucune IA/RAG/vector DB/extraction;
-- aucune refonte graphique;
-- aucune donnée réelle.
-
-`NEXT_ACTION.md` rend la main à l’orchestrateur pour définir la tranche suivante. Ne pas créer `TASK-0027` ni `DEC-0029`.
-
----
-
-## 6 — RESULT.md
-
-Écrire :
+Architecture cible à documenter :
 
 ```text
-TASK_ID: TASK-0026 — VERIFIED / scellement X5
+Sources read-only
+    ↓
+Index complet local / SQLite
+    ↓
+Graphe logique + relations + états
+    ↓
+Query engine borné
+    ↓
+Progressive materializer
+    ↓
+Sous-graphe / agrégats utiles
+    ↓
+Layout de cette vue seulement
+    ↓
+Renderer borné
+```
+
+### B. Navigation progressive
+
+Le coût doit suivre le **contexte courant**, pas le corpus complet.
+
+Une vue matérialisée peut contenir : focus courant, ancêtres nécessaires, enfants utiles/paginés, frères pertinents, relations sélectionnées et agrégats/méta-nœuds.
+
+`F-042 — repli/dépli et focus` cesse d’être un confort ultérieur : **le promouvoir explicitement au MVP**, car il devient aussi une primitive de performance et de navigation.
+
+### C. Agrégats / méta-nœuds
+
+Ajouter une capacité produit explicite à la matrice (nouvel identifiant libre après F-049, normalement `F-050` ou `F-051` selon ce que la fiche décide proprement) pour représenter un sous-ensemble non matérialisé sans mentir.
+
+Distinguer en mots et dans le modèle :
+
+- dossier/hiérarchie réelle = fait source;
+- agrégat/méta-nœud FileTopo = résumé calculé exact d’éléments cachés;
+- communauté calculée éventuelle = classification dérivée;
+- suggestion = hypothèse non établie.
+
+Un agrégat doit porter des comptes exacts et une provenance/raison de regroupement; il ne devient jamais un faux dossier.
+
+### D. Query engine borné
+
+Documenter comme primitive d’architecture : enfants/ancêtres, voisinage relationnel, chemin entre nœuds, recherche, filtres, agrégats — requêtes bornées/paginées/cursorisées côté Rust/SQLite. Le frontend ne reçoit jamais un whole-graph JSON géant.
+
+Ne pas inventer une API finale; décrire les contrats conceptuels et bornes.
+
+### E. Layout / renderer
+
+Le layout `layered-tree-cards-v1` reste une preuve valide pour une vue bornée, mais **ne doit plus être calculé comme obligation sur tout le corpus**.
+
+Ne choisir maintenant ni React Flow, ni ELK, ni Sigma, ni Cytoscape, ni Pixi comme renderer final. Ils restent des candidats futurs à benchmarker.
+
+Le fonctionnement de base **ne peut pas dépendre d’un GPU puissant ou de WebGL**. Une accélération GPU peut être optionnelle plus tard; l’expérience fonctionnelle doit rester possible sur machine modeste grâce au budget de vue.
+
+### F. Hash / analyses lourdes
+
+Conserver les observations SHA-256 déjà vérifiées, mais préciser pour grande échelle :
+
+- métadonnées/index structurel = chemin automatique principal;
+- hash contenu = campagne explicite / arrière-plan / périmètre sélectionnable;
+- ne pas imposer le hachage automatique d’un cerveau de 1M fichiers à l’ouverture;
+- aucune lecture forcée de placeholders/cloud juste pour enrichir la carte.
+
+### G. Graphify
+
+Décision explicite : **NOT INTEGRATED**.
+
+- aucune dépendance Graphify/Python/NetworkX;
+- aucun `graph.json` global comme stockage FileTopo;
+- aucun dashboard Graphify comme UI;
+- aucun pipeline LLM obligatoire;
+- aucune communauté globale obligatoire à l’ouverture.
+
+Conserver seulement comme enseignements/concepts : graphe logique interrogeable indépendamment du renderer; expansion progressive; agrégation/communautés possibles; analyse AST facultative future. Si FileTopo a plus tard besoin d’AST, communautés ou MCP, il pourra employer une bibliothèque spécialisée ou sa propre implémentation, par tranche dédiée.
+
+### H. Forge
+
+Écrire explicitement : **Forge et FileTopo restent deux projets distincts**, sans dépendance runtime ni fusion de produit. Forge peut servir au processus de développement/skills, jamais au fonctionnement de FileTopo.
+
+---
+
+## 3 — contrat de parité à réaligner sans affaiblir la vérité
+
+Mettre à jour `docs/product/CARTETOPO_FUNCTIONAL_PARITY.md` par amendements normatifs visibles, jamais réécriture silencieuse.
+
+Au minimum, corriger les points incompatibles avec un rendu progressif :
+
+- **P-01** : tous les éléments source doivent être indexés/atteignables, mais ne sont pas requis simultanément dans la vue rendue;
+- **P-02** : la vue matérialisée est une projection exacte de l’index; aucune arête inventée, aucun mauvais parent; un sous-arbre replié/agrégé est déclaré comme tel avec compte exact;
+- **P-03** : parent/enfants restent consultables et navigables, mais une fratrie énorme peut être paginée/agrégée plutôt que rendue entièrement d’un coup.
+
+Conserver les anciennes formulations pour historique, comme `P02-R1` l’a fait. Ne supprimer aucune exigence; le contrat reste à 22 exigences.
+
+`P-08` recherche sur 100 000 nœuds reste entière et devient un pilier du scale spike.
+
+---
+
+## 4 — matrice / nouvelles capacités
+
+Mettre à jour `docs/product/FEATURE_MATRIX.md` et, si nécessaire pour cohérence, `docs/product/REQUIREMENTS_BASELINE.md`.
+
+Décisions minimales :
+
+- `F-042` : `ULTÉRIEUR` → **MVP**, avec motif explicite : navigation progressive + borne de rendu;
+- ajouter **Progressive materialization / bounded view** comme fonction MVP P0;
+- ajouter **agrégats / méta-nœuds exacts** comme fonction MVP (P0/P1 selon arbitrage écrit);
+- ne pas ajouter Graphify comme fonction;
+- `F-047` IA reste DEFERRED;
+- F-043/F-044/F-045 restent implémentées/vérifiées;
+- F-046 reste PROPOSED pour son identité physique, malgré ses sous-capacités vérifiées.
+
+Ne reclassifier aucune autre fonction sans nécessité démontrée.
+
+---
+
+## 5 — échelle 10k / 100k / 1M : protocole futur, PAS des promesses
+
+Documenter trois niveaux de validation à exécuter dans la tranche suivante :
+
+- **10 000** éléments : cible de confort sur laptop/desktop ordinaire;
+- **100 000** : cible MVP sérieuse, notamment recherche exacte/paginée;
+- **1 000 000** : cible architecturale / spike obligatoire avant toute promesse produit.
+
+Ne publier aucun chiffre comme performance acquise. Les budgets historiques de `phase-2-architecture.md` restent des hypothèses/critères de rejet historiques, pas des résultats.
+
+Le futur scale spike doit mesurer au minimum :
+
+- temps d’index/reconstruction synthétique;
+- taille SQLite / mémoire processus;
+- latence recherches et requêtes de voisinage;
+- latence de matérialisation d’une vue;
+- nombre de nœuds/arêtes effectivement envoyés au frontend;
+- temps de layout de la vue bornée;
+- interactivité/pan/zoom/sélection sur machine modeste;
+- comportement sans GPU puissant;
+- aucune croissance du nombre rendu proportionnelle au corpus.
+
+Le profil matériel exact du benchmark doit être gelé dans la prochaine tâche, pas inventé ici; viser la classe « Windows laptop/desktop ordinaire, RAM modeste, iGPU ou GPU faible ».
+
+---
+
+## 6 — roadmap future à proposer
+
+Mettre à jour `PROJECT_VISION.md`, `ROADMAP.md` et `docs/architecture/ARCHITECTURE_BASELINE.md` par amendement/renvoi, en préservant l’historique.
+
+Séquence proposée après TASK-0027, **sans créer ces tâches** :
+
+1. scale spike synthétique 10k / 100k / 1M;
+2. progressive materializer + budget de vue + repli/dépli/focus + agrégats;
+3. recherche/filtres/watchers et mise à jour incrémentale sur cette architecture;
+4. permissions/équipe selon décisions existantes;
+5. finition visuelle moderne seulement après stabilité fonctionnelle.
+
+La future tranche design reste explicitement prévue : design system FileTopo local/provider-neutral, skills/adapters Claude/Codex communs, prototypes comparés et benchmark des renderers. **Aucun design/renderer n’est choisi ni implémenté dans TASK-0027.**
+
+---
+
+## 7 — documents durables
+
+Mettre à jour uniquement ce qui est nécessaire et cohérent :
+
+- `PROJECT_VISION.md`
+- `ROADMAP.md`
+- `docs/architecture/ARCHITECTURE_BASELINE.md` (amendement/renvoi; ne pas effacer l’historique)
+- `docs/architecture/PROGRESSIVE_SCALE_ARCHITECTURE.md` (nouveau)
+- `docs/product/CARTETOPO_FUNCTIONAL_PARITY.md`
+- `docs/product/FEATURE_MATRIX.md`
+- `docs/product/REQUIREMENTS_BASELINE.md` si la classification F-042 y est normative
+- `docs/tasks/TASK-0027-progressive-scale-architecture-realignment.md`
+- `docs/decisions/DEC-0029-progressive-materialization-and-scale-boundary.md`
+- `docs/ai/CURRENT_STATE.md`
+- `docs/ai/NEXT_ACTION.md`
+- `docs/ai/HANDOFF.md`
+- `docs/ai/VALIDATION.md`
+- `docs/ai/CHANGELOG_AI.md`
+- `.orchestrator/RESULT.md`
+
+Ne modifier aucun ancien JSON de preuve, aucun code produit, aucun README sauf nécessité stricte liée à un lien cassé — sinon laisser `main` porter ses changements d’identité.
+
+---
+
+## 8 — validation documentaire
+
+Avant clôture :
+
+- liens relatifs des nouveaux docs cohérents;
+- aucune contradiction entre vision / roadmap / parité / matrice / décision;
+- `F-042` classée de façon identique partout;
+- nouveaux identifiants F sans trou/doublon;
+- aucun `Graphify` présenté comme dépendance ou roadmap d’intégration;
+- aucun chiffre 10k/100k/1M présenté comme résultat mesuré;
+- aucun changement sous `src/`, `src-tauri/`, scripts ou `docs/performance/runs/`;
+- X5 toujours 36;
+- `origin/main` toujours `1a7d652c...` et non touché;
+- `git diff --check` PASS.
+
+Si le réalignement exige finalement du code pour être cohérent : STOP / BLOCKED et explique pourquoi. Ne code pas.
+
+---
+
+## 9 — clôture
+
+Si tout est cohérent :
+
+- `TASK-0027 = IMPLEMENTED`, contrôle indépendant requis;
+- `DEC-0029 = APPROVED/IMPLEMENTED` selon la convention documentaire du dépôt, mais jamais « prouvée » comme performance;
+- aucune TASK-0028 créée;
+- `NEXT_ACTION.md` demande uniquement le contrôle indépendant de TASK-0027;
+- aucune modification X5;
+- aucune fusion/PR/release/tag/main.
+
+`.orchestrator/RESULT.md` :
+
+```text
+TASK_ID: TASK-0027
 AGENT: CLAUDE
 RESULT: DONE | BLOCKED | FAILED
-BRANCH: build/v0.2-a10-exact-duplicate-explorer
-FINAL_HEAD: <commit substantif de fermeture>
+BRANCH: build/v0.2-a11-progressive-scale-architecture
+FINAL_HEAD: <commit final>
 
 SUMMARY:
 -
@@ -275,18 +298,13 @@ COMMIT:
 PUSHED: yes/no
 
 LIMITS_OR_BLOCKERS:
-- DEC-0013/F physical identity persistence remains blocked
-- non-Windows X10 race-safe guarantee remains unproven
-- F-046 remains PROPOSED
+- performance 10k/100k/1M not yet measured
+- materializer/LOD/meta-nodes not yet implemented
+- Graphify not integrated by product decision
+- F-046 physical identity remains blocked by DEC-0013/F
 
 NEXT_ORCHESTRATOR_DECISION:
-- définir la prochaine tranche après TASK-0026 VERIFIED
+- independent control of TASK-0027, then scale spike
 ```
 
----
-
-## 7 — Git final
-
-Commit/push uniquement sur `build/v0.2-a10-exact-duplicate-explorer`.
-
-Interdits : merge, PR, release, tag, main, force push, réécriture d’historique, modification des JSON de preuve.
+Commit/push uniquement sur `build/v0.2-a11-progressive-scale-architecture`.
