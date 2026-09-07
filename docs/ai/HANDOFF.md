@@ -1,5 +1,51 @@
 # HANDOFF — passage de relais
 
+## Relais actuel — TASK-0028 IMPLEMENTED, 2026-09-07
+
+`TASK-0028`, le banc synthétique de mise à l'échelle, est **`IMPLEMENTED`** sur
+`build/v0.2-a12-synthetic-scale-spike`. L'exécuteur ne s'est pas attribué
+`VERIFIED`; le contrôle indépendant reste à faire.
+
+**Ce qui a été prouvé.** À budget de vue fixe, ce qui serait rendu ne bouge pas
+quand le corpus passe de 10 000 à 1 000 000 : mêmes 1 024 entités, mêmes 1 023
+arêtes, ~200 Ko de payload, 0,25 ms de layout. Chaque élément non rendu reste
+**compté exactement** et **atteignable**, vérifié dans les 24 combinaisons par
+deux méthodes indépendantes qui doivent s'accorder. C'est le critère de rejet
+principal de `DEC-0029`, et il tient.
+
+**Ce qui ne tient pas, et qu'il faut lire avant d'implémenter.** Trois chemins
+coûtent le corpus ou le sous-arbre, pas le budget : la recherche `P-08`
+(`LIKE` non ancré balaie tout — ~0,67 s à 1M), la page d'enfants directs
+(l'ordre `kind = 'directory' DESC, name COLLATE NOCASE, id` **n'utilise pas**
+`idx_nodes_parent`, d'où 106 ms pour 100 lignes à 1M), et le compte exact des
+éléments d'un agrégat (CTE récursive, 1,34 s à 1M). Les ancêtres, eux, sont
+plats à 43 µs : une requête réellement bornée existe déjà, c'est l'ordre de tri
+qui défait les autres. `Index::replace_nodes` exige en outre **tout le corpus en
+mémoire** — 335 Mo à 1M.
+
+**Ce qui n'a pas été prouvé, et ne doit pas être présenté autrement.** La
+composition bout-en-bout index→vue n'a **pas** été testée : la relier au
+frontend exigerait une commande produit nouvelle, hors périmètre. Les vues
+mesurées dans WebView2 réel comptent **12 et 157** entités, le bas de la plage
+de budgets candidats. `SS8` est **`NOT PROVEN`** : la désactivation du GPU n'est
+pas confirmable depuis l'extérieur de la page. **1 000 000 physique n'est pas
+prouvé** — seul l'index à 1M l'est. Le banc est
+`DEVELOPMENT_BENCH_NOT_ACCEPTANCE` : **aucune cible « machine modeste » n'est
+validée**, et tous les temps Rust sont des temps `debug`.
+
+**Ce qui n'a pas changé.** Aucun état produit : `F-042`, `F-050`, `F-051`
+restent `PROPOSED`; `MAX_NODES_PER_MAP = 5000` est en vigueur; aucun renderer
+n'est choisi; aucun budget de vue n'est décidé; aucune `DEC-0030` ni
+`TASK-0029` n'existe. `X5` reste à **36** et les 36 preuves scellées sont
+intactes, empreintes relevées avant et après les passes WebView2.
+`origin/main = 1a7d652c`, non touché. `R8` est entière : aucun chiffre ne sort
+des artefacts `TASK-0028`.
+
+Le harness est **entièrement `#[cfg(test)]`** : `cargo build` produit le même
+binaire produit, sans avertissement nouveau. Les campagnes sont `#[ignore]` et
+se relancent par `scripts/task0028-scale-spike.ps1`, puis
+`scripts/task0028-ss7-bounded-view-webview2.ps1` pour WebView2.
+
 ## Relais actuel — ACTION-0044, TASK-0027 VERIFIED, 2026-09-06
 
 Le verdict rendu par l'orchestrateur technique indépendant est enregistré dans

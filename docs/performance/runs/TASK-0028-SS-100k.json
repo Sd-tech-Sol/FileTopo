@@ -1,0 +1,416 @@
+{
+  "decision": "DEC-0029",
+  "measurement": {
+    "bench": {
+      "class": "DEVELOPMENT_BENCH_NOT_ACCEPTANCE",
+      "classNote": "Banc plus puissant que la classe visée : AUCUNE cible « machine modeste » n'est validée par ces mesures.",
+      "cpu": "Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz",
+      "diskMedia": "HDD, SSD",
+      "gpus": [
+        "NVIDIA GeForce RTX 2070"
+      ],
+      "logicalCores": 16,
+      "os": "Microsoft Windows 11 Professionnel",
+      "osVersion": "10.0.26200",
+      "physicalCores": 8,
+      "privacy": "Aucun nom d'hôte, nom d'utilisateur, chemin personnel ou identifiant machine n'est lu ni écrit.",
+      "ramBytes": 34272813056,
+      "ramGib": 31.92,
+      "toolchain": {
+        "cargo": "cargo 1.98.0 (797e8a9bc 2026-08-05)",
+        "node": "v24.13.1",
+        "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+        "sqlite": "3.53.2"
+      },
+      "unavailable": []
+    },
+    "buildProfile": "debug (unoptimized + debug assertions)",
+    "focusNodes": {
+      "root": 1,
+      "widestFolder": 1376,
+      "widestFolderDirectChildren": 24981
+    },
+    "layer": "SCAN-SCALE",
+    "layerNote": "Arborescence physique réellement parcourue par le scanner de production.",
+    "requestedElements": 100000,
+    "ss1IndexAndRebuild": {
+      "countsMatch": true,
+      "directoriesCreated": 1398,
+      "expectedElements": 100000,
+      "filesCreated": 98601,
+      "indexBuildUs": 643109,
+      "indexRebuildUs": 1138474,
+      "indexedElements": 100000,
+      "planUs": 55154,
+      "scanColdUs": 3622547,
+      "scanDiagnosticCodes": [],
+      "scanDiagnostics": 0,
+      "scanWarmUs": 3578954,
+      "scannedElements": 100000,
+      "syntheticGenerationNote": "Chronométrée à part : ce temps n'appartient pas à FileTopo.",
+      "syntheticGenerationUs": 29191320
+    },
+    "ss1SourceIntegrity": {
+      "entriesAfter": 99999,
+      "entriesBefore": 99999,
+      "fingerprintAfter": "7a4c11b869d70b08",
+      "fingerprintBefore": "7a4c11b869d70b08",
+      "method": "Empreinte structurelle FNV-1a sur chemin|type|taille. Aucun octet de contenu n'est lu; aucune campagne SHA-256 n'est lancée.",
+      "sourceUnchanged": true
+    },
+    "ss2StorageAndMemory": {
+      "database": {
+        "databaseBytes": 12922880,
+        "shmBytes": 0,
+        "walBytes": 0
+      },
+      "method": "Get-Process -Id <pid> du processus de test, via PowerShell. Aucune dépendance nouvelle. Les relevés sont ponctuels : le maximum publié est le plus grand des échantillons pris, PAS un pic garanti du processus.",
+      "wholeCorpusSerialisedToFrontend": false,
+      "workingSetAfterIndexBytes": 65257472,
+      "workingSetAtEndBytes": 74366976,
+      "workingSetMaxObservedBytes": 74366976
+    },
+    "ss3SearchP08": {
+      "cacheNote": "Aucun cache n'existe sur ce chemin; aucun n'est simulé.",
+      "method": "Index::query_nodes — le chemin de recherche de production, non un prototype.",
+      "patterns": {
+        "hit-debut": {
+          "exactTotal": 10000,
+          "firstPageSize": 100,
+          "latency": {
+            "maxUs": 70431,
+            "minUs": 66074,
+            "p50Us": 67012,
+            "p95Us": 68621,
+            "runs": 21
+          },
+          "needle": "h-000",
+          "pageOverlap": 0,
+          "secondPageSize": 100,
+          "totalStableAcrossPages": true
+        },
+        "hit-fin": {
+          "exactTotal": 2,
+          "firstPageSize": 2,
+          "latency": {
+            "maxUs": 70143,
+            "minUs": 63085,
+            "p50Us": 64748,
+            "p95Us": 67750,
+            "runs": 21
+          },
+          "needle": "leaf-23",
+          "pageOverlap": 0,
+          "secondPageSize": 0,
+          "totalStableAcrossPages": true
+        },
+        "hit-milieu": {
+          "exactTotal": 47639,
+          "firstPageSize": 100,
+          "latency": {
+            "maxUs": 91570,
+            "minUs": 69068,
+            "p50Us": 70979,
+            "p95Us": 85327,
+            "runs": 21
+          },
+          "needle": "f-00",
+          "pageOverlap": 0,
+          "secondPageSize": 100,
+          "totalStableAcrossPages": true
+        },
+        "miss": {
+          "exactTotal": 0,
+          "firstPageSize": 0,
+          "latency": {
+            "maxUs": 68703,
+            "minUs": 63260,
+            "p50Us": 64587,
+            "p95Us": 68591,
+            "runs": 21
+          },
+          "needle": "zzz-aucun-resultat-zzz",
+          "pageOverlap": 0,
+          "secondPageSize": 0,
+          "totalStableAcrossPages": true
+        }
+      },
+      "repetitions": 21,
+      "warmups": 3
+    },
+    "ss4BoundedQueries": {
+      "ancestors": {
+        "chainLength": 2,
+        "latency": {
+          "maxUs": 44,
+          "minUs": 41,
+          "p50Us": 42,
+          "p95Us": 43,
+          "runs": 21
+        }
+      },
+      "childrenPage": {
+        "deterministicOrder": "kind = 'directory' DESC, name COLLATE NOCASE, id",
+        "latency": {
+          "maxUs": 14084,
+          "minUs": 10775,
+          "p50Us": 11010,
+          "p95Us": 12931,
+          "runs": 21
+        },
+        "pageSize": 100
+      },
+      "directChildCountExact": {
+        "latency": {
+          "maxUs": 2000,
+          "minUs": 1366,
+          "p50Us": 1378,
+          "p95Us": 1831,
+          "runs": 21
+        },
+        "value": 24981
+      },
+      "note": "Prototypes de banc. Le query engine borné n'est PAS implémenté dans le produit.",
+      "relationalNeighbourhood": {
+        "measured": false,
+        "reason": "Le store d'index (`nodes`) ne porte aucune relation. Les relations vivent dans le store de cerveau, hors de cette couche. Rien n'est simulé."
+      },
+      "subtreeCountExact": {
+        "latency": {
+          "maxUs": 29656,
+          "minUs": 29019,
+          "p50Us": 29104,
+          "p95Us": 29656,
+          "runs": 3
+        },
+        "note": "Récursif : le coût suit la taille du sous-arbre, pas le budget de vue.",
+        "value": 24981
+      }
+    },
+    "ss5And6BoundedViews": {
+      "budgetsTested": [
+        128,
+        256,
+        512,
+        1024
+      ],
+      "note": "Prototype de banc non exposé au produit. Aucun budget n'est décidé final.",
+      "runs": [
+        {
+          "accountingExact": true,
+          "aggregateInvariantBreaches": 0,
+          "aggregates": 1,
+          "budget": 128,
+          "cheapAndExactAgreeOnCardinality": true,
+          "edges": 127,
+          "elementsAccountedFor": 100000,
+          "elementsInFocusSubtree": 100000,
+          "entities": 128,
+          "focus": "root",
+          "hiddenDirectChildrenExact": 1249,
+          "layout": {
+            "algorithm": "layered-tree-cards-v1",
+            "computeUs": 43,
+            "invocations": 1,
+            "rects": 128,
+            "worldHeight": 11472.0,
+            "worldWidth": 960.0
+          },
+          "materializeDirectCountsUs": 1099,
+          "materializeExactSubtreeCountsUs": 123091,
+          "payloadBytes": 24235,
+          "realNodes": 127,
+          "unexpandedDirectories": 124
+        },
+        {
+          "accountingExact": true,
+          "aggregateInvariantBreaches": 0,
+          "aggregates": 1,
+          "budget": 256,
+          "cheapAndExactAgreeOnCardinality": true,
+          "edges": 255,
+          "elementsAccountedFor": 100000,
+          "elementsInFocusSubtree": 100000,
+          "entities": 256,
+          "focus": "root",
+          "hiddenDirectChildrenExact": 1121,
+          "layout": {
+            "algorithm": "layered-tree-cards-v1",
+            "computeUs": 89,
+            "invocations": 1,
+            "rects": 256,
+            "worldHeight": 23248.0,
+            "worldWidth": 960.0
+          },
+          "materializeDirectCountsUs": 1339,
+          "materializeExactSubtreeCountsUs": 112642,
+          "payloadBytes": 48519,
+          "realNodes": 255,
+          "unexpandedDirectories": 252
+        },
+        {
+          "accountingExact": true,
+          "aggregateInvariantBreaches": 0,
+          "aggregates": 1,
+          "budget": 512,
+          "cheapAndExactAgreeOnCardinality": true,
+          "edges": 511,
+          "elementsAccountedFor": 100000,
+          "elementsInFocusSubtree": 100000,
+          "entities": 512,
+          "focus": "root",
+          "hiddenDirectChildrenExact": 865,
+          "layout": {
+            "algorithm": "layered-tree-cards-v1",
+            "computeUs": 142,
+            "invocations": 1,
+            "rects": 512,
+            "worldHeight": 46800.0,
+            "worldWidth": 960.0
+          },
+          "materializeDirectCountsUs": 1899,
+          "materializeExactSubtreeCountsUs": 96455,
+          "payloadBytes": 97082,
+          "realNodes": 511,
+          "unexpandedDirectories": 508
+        },
+        {
+          "accountingExact": true,
+          "aggregateInvariantBreaches": 0,
+          "aggregates": 1,
+          "budget": 1024,
+          "cheapAndExactAgreeOnCardinality": true,
+          "edges": 1023,
+          "elementsAccountedFor": 100000,
+          "elementsInFocusSubtree": 100000,
+          "entities": 1024,
+          "focus": "root",
+          "hiddenDirectChildrenExact": 353,
+          "layout": {
+            "algorithm": "layered-tree-cards-v1",
+            "computeUs": 233,
+            "invocations": 1,
+            "rects": 1024,
+            "worldHeight": 93904.0,
+            "worldWidth": 960.0
+          },
+          "materializeDirectCountsUs": 2691,
+          "materializeExactSubtreeCountsUs": 57884,
+          "payloadBytes": 194266,
+          "realNodes": 1023,
+          "unexpandedDirectories": 1020
+        },
+        {
+          "accountingExact": true,
+          "aggregateInvariantBreaches": 0,
+          "aggregates": 1,
+          "budget": 128,
+          "cheapAndExactAgreeOnCardinality": true,
+          "edges": 127,
+          "elementsAccountedFor": 24982,
+          "elementsInFocusSubtree": 24982,
+          "entities": 128,
+          "focus": "widest-folder",
+          "hiddenDirectChildrenExact": 24857,
+          "layout": {
+            "algorithm": "layered-tree-cards-v1",
+            "computeUs": 49,
+            "invocations": 1,
+            "rects": 128,
+            "worldHeight": 11472.0,
+            "worldWidth": 1320.0
+          },
+          "materializeDirectCountsUs": 12326,
+          "materializeExactSubtreeCountsUs": 63551,
+          "payloadBytes": 26388,
+          "realNodes": 127,
+          "unexpandedDirectories": 2
+        },
+        {
+          "accountingExact": true,
+          "aggregateInvariantBreaches": 0,
+          "aggregates": 1,
+          "budget": 256,
+          "cheapAndExactAgreeOnCardinality": true,
+          "edges": 255,
+          "elementsAccountedFor": 24982,
+          "elementsInFocusSubtree": 24982,
+          "entities": 256,
+          "focus": "widest-folder",
+          "hiddenDirectChildrenExact": 24729,
+          "layout": {
+            "algorithm": "layered-tree-cards-v1",
+            "computeUs": 70,
+            "invocations": 1,
+            "rects": 256,
+            "worldHeight": 23248.0,
+            "worldWidth": 1320.0
+          },
+          "materializeDirectCountsUs": 13422,
+          "materializeExactSubtreeCountsUs": 62407,
+          "payloadBytes": 52756,
+          "realNodes": 255,
+          "unexpandedDirectories": 2
+        },
+        {
+          "accountingExact": true,
+          "aggregateInvariantBreaches": 0,
+          "aggregates": 1,
+          "budget": 512,
+          "cheapAndExactAgreeOnCardinality": true,
+          "edges": 511,
+          "elementsAccountedFor": 24982,
+          "elementsInFocusSubtree": 24982,
+          "entities": 512,
+          "focus": "widest-folder",
+          "hiddenDirectChildrenExact": 24473,
+          "layout": {
+            "algorithm": "layered-tree-cards-v1",
+            "computeUs": 123,
+            "invocations": 1,
+            "rects": 512,
+            "worldHeight": 46800.0,
+            "worldWidth": 1320.0
+          },
+          "materializeDirectCountsUs": 12941,
+          "materializeExactSubtreeCountsUs": 61415,
+          "payloadBytes": 105492,
+          "realNodes": 511,
+          "unexpandedDirectories": 2
+        },
+        {
+          "accountingExact": true,
+          "aggregateInvariantBreaches": 0,
+          "aggregates": 1,
+          "budget": 1024,
+          "cheapAndExactAgreeOnCardinality": true,
+          "edges": 1023,
+          "elementsAccountedFor": 24982,
+          "elementsInFocusSubtree": 24982,
+          "entities": 1024,
+          "focus": "widest-folder",
+          "hiddenDirectChildrenExact": 23961,
+          "layout": {
+            "algorithm": "layered-tree-cards-v1",
+            "computeUs": 246,
+            "invocations": 1,
+            "rects": 1024,
+            "worldHeight": 93904.0,
+            "worldWidth": 1320.0
+          },
+          "materializeDirectCountsUs": 12569,
+          "materializeExactSubtreeCountsUs": 62653,
+          "payloadBytes": 210990,
+          "realNodes": 1023,
+          "unexpandedDirectories": 2
+        }
+      ]
+    }
+  },
+  "notAProductClaim": "Mesures d'ingénierie sur corpus synthétique. Aucune promesse de performance, aucune cible validée, aucun état produit changé.",
+  "protocol": "docs/performance/TASK-0028-SCALE-SPIKE-PROTOCOL.md",
+  "reserve": "R8 entière — ces chiffres ne sont publiés nulle part ailleurs.",
+  "status": "ENGINEERING_MEASUREMENT / NOT A PRODUCT CLAIM / NONCANONICAL UNTIL INDEPENDENT CONTROL",
+  "task": "TASK-0028",
+  "title": "Synthetic Scale Feasibility Spike"
+}

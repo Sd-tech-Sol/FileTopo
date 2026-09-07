@@ -42,7 +42,7 @@ que le protocole a été exécuté, pas que toutes les hypothèses ont réussi.
 
 | Précondition | Constat |
 |---|---|
-| Racine Git | `C:/Users/Vatfaire/Documents/TopographicDocumentMap` |
+| Racine Git | racine du dépôt public, confirmée par `git rev-parse --show-toplevel`; le chemin local n'est pas consigné |
 | Checkout de départ | `build/v0.2-a11-progressive-scale-architecture` |
 | Arbre local | **propre** avant et après le fast-forward |
 | `git fetch origin` | exécuté |
@@ -73,16 +73,26 @@ n'a été rencontrée à l'ouverture.
 - `src-tauri/src/scale_spike/mod.rs`
 - `src-tauri/src/scale_spike/generator.rs`
 - `src-tauri/src/scale_spike/profile.rs`
+- `src-tauri/src/scale_spike/census.rs`
 - `src-tauri/src/scale_spike/bounded.rs`
 - `src-tauri/src/scale_spike/campaigns.rs`
 - `src-tauri/src/scale_spike/report.rs`
 - `scripts/task0028-scale-spike.ps1`
-- `src/map/boundedViewCardinality.test.ts`
+- `scripts/task0028-ss7-bounded-view-webview2.ps1`
+- `src/map/boundedViewCardinality.test.tsx`
 
 ### 3.3 Modifié
 
-- `src-tauri/src/lib.rs` — **une seule ligne** : `#[cfg(test)] mod
-  scale_spike;`. Voir §5.
+Deux fichiers, **deux ajouts, tous deux `#[cfg(test)]`**. Aucune signature
+existante n'est changée, aucune ligne existante n'est supprimée.
+
+- `src-tauri/src/lib.rs` — la déclaration `#[cfg(test)] mod scale_spike;`.
+- `src-tauri/src/index.rs` — `Index::connection_for_bench()`, un accès en
+  lecture à la connexion, gardé par `#[cfg(test)]`, pour que le harness
+  prototype ses requêtes bornées contre le **vrai** schéma au lieu de le
+  recopier.
+
+Voir §5.
 
 ### 3.4 Preuves produites
 
@@ -118,7 +128,7 @@ n'a été rencontrée à l'ouverture.
 - Lancer les campagnes **SHA-256** de `TASK-0023` / `TASK-0026`.
 - Publier un chiffre de benchmark hors des artefacts `TASK-0028`.
 
-## 5. Justification de l'unique modification sous `src-tauri/`
+## 5. Justification des ajouts `#[cfg(test)]` sous `src-tauri/`
 
 Le protocole demande un harness isolé. Un crate séparé sous `tools/` aurait dû
 **recopier le schéma SQLite et les types `NodeDto`**, ce que le GO interdit
@@ -144,6 +154,11 @@ Conséquences vérifiables :
   `crate::scanner::scan_tree_controlled` et `crate::map::layout` sans les
   modifier;
 - aucune signature publique existante n'est changée.
+
+Le second ajout, `Index::connection_for_bench()`, obéit à la même règle : il
+est lui aussi derrière `#[cfg(test)]`, ne rend qu'une référence en lecture, et
+existe pour que les requêtes bornées du banc s'exécutent contre le **schéma
+réel** plutôt que contre une copie.
 
 **Aucun comportement normal du produit n'est modifié.**
 
@@ -176,6 +191,19 @@ Conséquences vérifiables :
 fixture n'est committé, et aucun n'est créé sur disque.
 
 ## 8. Résultats
+
+**Verdict structurel `SS9` : PASS sur les cinq conditions.** À budget fixe, la
+cardinalité de la vue, ses arêtes, son payload et son temps de layout sont
+**plats** de 10 000 à 1 000 000 d'éléments, et **chaque élément non rendu
+reste compté exactement et atteignable** dans les 24 combinaisons mesurées.
+
+**Trois chemins ne passent pas à l'échelle avec le schéma actuel** — la
+recherche `P-08`, la pagination des enfants directs et le compte exact des
+éléments d'un agrégat. Ce sont les résultats exploitables du spike, pas des
+échecs de l'architecture.
+
+**`SS7` est partiel** (vues réelles bornées à 12 et 157 entités; composition
+bout-en-bout non testée) et **`SS8` est `NOT PROVEN`**.
 
 Les mesures, la méthode, le profil matériel et les verdicts structurels sont
 dans

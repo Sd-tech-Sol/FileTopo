@@ -1,6 +1,8 @@
 # VALIDATION.md — État de vérification
 
-**Dernière mise à jour :** 2026-09-06
+**Dernière mise à jour :** 2026-09-07
+**Dernière tâche évaluée :** TASK-0028 — `IMPLEMENTED` le 2026-09-07, section
+AU, **en attente de contrôle indépendant**.
 **Portée :** TASK-0001 (phase 0) — `VERIFIED` ; TASK-0002 (phase 1) —
 `VERIFIED` le 2026-08-25, sur preuves indépendantes de l'orchestrateur
 (section A.7) ; TASK-0010 (rebaseline et mémoire) — `VERIFIED` le 2026-08-31,
@@ -3871,3 +3873,84 @@ l'enregistrement. Voir
 - `X10` hors Windows reste non prouvée race-safe et `R8` demeure entière.
 - L'index incomplet préexistant de `docs/decisions/README.md` est une dette
   documentaire non bloquante, non réparée partiellement ici.
+
+---
+
+## AU. TASK-0028 — banc synthétique de mise à l'échelle — 2026-09-07
+
+**Statut : `IMPLEMENTED`** le 2026-09-07, livré par Claude Code (exécuteur).
+**Non `VERIFIED`** : l'exécuteur ne s'attribue pas cet état, et le contrôle
+indépendant sur preuves reste à faire.
+
+Trois qualificatifs seulement : **vérifié**, **non testé**, **inconnu**.
+
+### AU.1 Validations exécutées
+
+| Validation | Commande | Résultat |
+|---|---|---|
+| Tests Rust, suite complète | `cargo test --lib` | **258 passés, 0 échec, 3 ignorés** (les trois campagnes, `#[ignore]` par conception) |
+| Tests du harness seuls | `cargo test --lib scale_spike` | **29 passés, 0 échec** |
+| Tests TypeScript, suite complète | `pnpm test` | **261 passés, 0 échec**, 15 fichiers |
+| Typage | `pnpm check` | **propre**, aucune erreur |
+| Build frontend | `pnpm build` | **réussi**, 61 modules |
+| Build produit Rust | `cargo build` | **réussi**; le seul avertissement (`SUGGESTION_STATES`, `relations.rs`) est **préexistant** et sans lien |
+| Hygiène du diff | `git diff --check` | **propre** |
+| Campagnes `SS1`–`SS6`, `SS9` | `cargo test --lib scale_spike::campaigns -- --ignored` | **3 campagnes réussies**, 4 artefacts écrits |
+| Campagnes `SS7`/`SS8` | `scripts/task0028-ss7-bounded-view-webview2.ps1` | **2 processus WebView2 réels**, fermés proprement, `X5` intacte |
+
+### AU.2 Vérifié, sur preuves
+
+- **Non-proportionnalité (`SS9`) : PASS sur les cinq conditions.** À budget
+  fixe, entités, arêtes, payload et temps de layout sont **plats** de 10 000 à
+  1 000 000. Preuve : les 24 combinaisons budget × taille × focus des trois
+  artefacts `TASK-0028-SS-*.json`.
+- **Comptabilité exacte des éléments cachés.** `éléments comptés == éléments
+  existants` dans les 24 combinaisons, vérifié par **deux méthodes
+  indépendantes** — CTE récursive SQLite et recensement Rust `O(n)` — qui
+  doivent s'accorder, sinon le test échoue.
+- **Invariants `F-051`.** 0 infraction : aucun agrégat ne porte de chemin,
+  d'identité de nœud, de compte approximatif, ni d'arête `hierarchy`.
+- **Source non modifiée (`I-1`).** Empreinte structurelle identique avant et
+  après chaque campagne physique, 9 999 et 99 999 entrées.
+- **Isolation (`I-2`).** Source et index de banc côte à côte sous
+  `.filetopo-sandbox/task0028`, ignoré par Git. Aucune écriture hors du dépôt.
+- **`X5` intacte à 36.** Empreintes `git hash-object` des 36 preuves scellées
+  relevées avant et après les passes WebView2, comparées, identiques. Le
+  rédacteur d'artefacts **refuse par assertion** d'écrire un nom scellé.
+- **Aucune donnée personnelle.** Les artefacts sont contrôlés octet à octet
+  avant écriture; l'écriture échoue si un nom d'utilisateur, un nom d'hôte ou
+  un chemin `Users` apparaît. Un test le prouve.
+- **Empreinte produit nulle.** Le harness est entièrement `#[cfg(test)]`;
+  `cargo build` réussit et n'ajoute aucun avertissement.
+
+### AU.3 Non testé, déclaré comme tel
+
+- **1 000 000 d'éléments physiques.** Jamais créés, jamais parcourus. Seul
+  l'**index** à 1M est mesuré. Le scanner à cette taille reste **non testé**.
+- **Composition bout-en-bout index → vue → WebView2.** Non testée : la relier
+  exigerait une commande produit nouvelle, hors périmètre. Les deux couches
+  sont prouvées **séparément**.
+- **Budgets 256, 512 et 1024 dans WebView2.** Non mesurés : les vues réelles du
+  runtime comptent 12 et 157 entités.
+- **`SS8`, absence de dépendance au GPU : `NOT PROVEN`.** Le mécanisme
+  `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS` est documenté, mais rien depuis
+  l'extérieur de la page ne confirme qu'il a été honoré. Rien n'a été simulé.
+- **Voisinage relationnel (`SS4`).** Non mesuré : le store d'index `nodes` ne
+  porte aucune relation. Aucune expérience honnête n'était possible.
+- **Temps en profil `release`.** Non mesurés : la suite de tests du crate ne
+  compile pas en `--release`, constat **antérieur à cette tâche** et reproduit
+  harness retiré. Tous les temps publiés sont des temps `debug`, pessimistes.
+
+### AU.4 Réserves maintenues
+
+- **Le banc n'est pas la classe d'acceptation** (`DEVELOPMENT_BENCH_NOT_ACCEPTANCE`) :
+  **aucune cible « machine modeste » n'est validée**.
+- **`R8` entière** : aucun chiffre publié hors des artefacts `TASK-0028`, tous
+  marqués `NONCANONICAL UNTIL INDEPENDENT CONTROL`.
+- `F-042`, `F-050`, `F-051` restent `PROPOSED` et non implémentées;
+  `MAX_NODES_PER_MAP = 5000` reste en vigueur; aucun renderer n'est choisi;
+  aucun budget de vue n'est décidé.
+- `F-046` reste bloquée par `DEC-0013/F`; `F-047` reste `DEFERRED`; Graphify
+  reste `NOT INTEGRATED`; `X10` hors Windows reste non prouvée race-safe.
+- La dette préexistante de l'index de `docs/decisions/README.md` n'est pas
+  corrigée ici.

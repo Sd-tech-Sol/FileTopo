@@ -2,6 +2,10 @@ mod domain;
 mod index;
 mod map;
 mod registry;
+/// `TASK-0028` synthetic scale bench. Compiled by `cargo test` only: it is
+/// absent from every product binary and exposes no command.
+#[cfg(test)]
+mod scale_spike;
 mod scanner;
 mod synthetic;
 

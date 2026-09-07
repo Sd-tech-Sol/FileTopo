@@ -174,6 +174,16 @@ impl Index {
         Ok((rows.collect::<Result<Vec<_>>>()?, total.max(0) as usize))
     }
 
+    /// Read-only handle for the `TASK-0028` bench harness.
+    ///
+    /// `#[cfg(test)]`, so it exists in no product binary and adds no command.
+    /// The spike prototypes bounded queries against the **real** schema through
+    /// it rather than duplicating the data model.
+    #[cfg(test)]
+    pub fn connection_for_bench(&self) -> &Connection {
+        &self.connection
+    }
+
     pub fn mark_seen(&self, node_id: i64) -> Result<bool> {
         Ok(self
             .connection

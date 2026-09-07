@@ -1,0 +1,274 @@
+{
+  "task": "TASK-0028",
+  "title": "Synthetic Scale Feasibility Spike",
+  "status": "ENGINEERING_MEASUREMENT / NOT A PRODUCT CLAIM / NONCANONICAL UNTIL INDEPENDENT CONTROL",
+  "protocol": "docs/performance/TASK-0028-SCALE-SPIKE-PROTOCOL.md",
+  "decision": "DEC-0029",
+  "reserve": "R8 entiere - ces chiffres ne sont publies nulle part ailleurs.",
+  "notAProductClaim": "Mesures d'ingenierie sur vues bornees synthetiques. Aucune promesse de performance, aucune cible validee, aucun etat produit change.",
+  "measurement": {
+    "criterion": "SS7 + SS8",
+    "ss7": {
+      "engine": "Tauri / WebView2 reel sous Windows",
+      "loop": "Boucle de mesure H9 deja presente dans le runtime, demarree par FILETOPO_AUTO_MEASURE=1. Aucun comportement produit nouveau.",
+      "measured": {
+        "viewOpening": "oui - chaque vue bornee est composee puis peinte avant mesure",
+        "panZoom": "oui - pan et zoom scriptes, reellement offerts par ce build",
+        "selection": "oui - latence de selection, souris et clavier disponibles dans ce build",
+        "domCardinality": "mesuree hors WebView2 (jsdom), voir domSvgCardinality"
+      },
+      "passes": [
+        {
+          "pass": "gpu-default",
+          "browserArguments": "(aucun)",
+          "webviewVersion": "152.0.4191.66",
+          "tauriVersion": "2.11.5",
+          "nodeCeiling": 5000,
+          "layoutAlgorithm": "layered-tree-cards-v1",
+          "framesPerRun": 150,
+          "runsPerFixture": 5,
+          "selectionsPerRun": 12,
+          "warmupFrames": 12,
+          "views": [
+            {
+              "viewId": "brain-alpha",
+              "renderedEntities": 12,
+              "viewport": {
+                "width": 855,
+                "height": 420
+              },
+              "framesMeasured": 750,
+              "frameTimeMedianMs": 4.199999988079071,
+              "frameTimeMaxMs": 30.900000035762787,
+              "worstFrameMs": 30.900000035762787,
+              "selectionMedianMs": 8.399999976158142,
+              "selectionMaxMs": 31.600000023841858,
+              "worstSelectionMs": 31.600000023841858
+            },
+            {
+              "viewId": "brain-beta",
+              "renderedEntities": 157,
+              "viewport": {
+                "width": 855,
+                "height": 1955.546875
+              },
+              "framesMeasured": 750,
+              "frameTimeMedianMs": 4.199999988079071,
+              "frameTimeMaxMs": 8.899999976158142,
+              "worstFrameMs": 8.899999976158142,
+              "selectionMedianMs": 8.300000011920929,
+              "selectionMaxMs": 11.099999964237213,
+              "worstSelectionMs": 11.099999964237213
+            },
+            {
+              "viewId": "brain-gamma",
+              "renderedEntities": 12,
+              "viewport": {
+                "width": 855,
+                "height": 1595.375
+              },
+              "framesMeasured": 750,
+              "frameTimeMedianMs": 4.199999988079071,
+              "frameTimeMaxMs": 8,
+              "worstFrameMs": 8,
+              "selectionMedianMs": 8.399999976158142,
+              "selectionMaxMs": 41.69999998807907,
+              "worstSelectionMs": 41.69999998807907
+            }
+          ]
+        },
+        {
+          "pass": "gpu-disabled",
+          "browserArguments": "--disable-gpu --disable-gpu-compositing",
+          "webviewVersion": "152.0.4191.66",
+          "tauriVersion": "2.11.5",
+          "nodeCeiling": 5000,
+          "layoutAlgorithm": "layered-tree-cards-v1",
+          "framesPerRun": 150,
+          "runsPerFixture": 5,
+          "selectionsPerRun": 12,
+          "warmupFrames": 12,
+          "views": [
+            {
+              "viewId": "brain-alpha",
+              "renderedEntities": 12,
+              "viewport": {
+                "width": 855,
+                "height": 420
+              },
+              "framesMeasured": 750,
+              "frameTimeMedianMs": 4.100000023841858,
+              "frameTimeMaxMs": 25.30000001192093,
+              "worstFrameMs": 25.30000001192093,
+              "selectionMedianMs": 8.450000017881393,
+              "selectionMaxMs": 42.5,
+              "worstSelectionMs": 42.5
+            },
+            {
+              "viewId": "brain-beta",
+              "renderedEntities": 157,
+              "viewport": {
+                "width": 855,
+                "height": 1955.546875
+              },
+              "framesMeasured": 750,
+              "frameTimeMedianMs": 4.100000023841858,
+              "frameTimeMaxMs": 10.299999952316284,
+              "worstFrameMs": 10.299999952316284,
+              "selectionMedianMs": 8.400000005960464,
+              "selectionMaxMs": 9.900000035762787,
+              "worstSelectionMs": 9.900000035762787
+            },
+            {
+              "viewId": "brain-gamma",
+              "renderedEntities": 12,
+              "viewport": {
+                "width": 855,
+                "height": 1595.375
+              },
+              "framesMeasured": 750,
+              "frameTimeMedianMs": 4.100000023841858,
+              "frameTimeMaxMs": 10.100000023841858,
+              "worstFrameMs": 10.100000023841858,
+              "selectionMedianMs": 8.450000017881393,
+              "selectionMaxMs": 71.19999998807907,
+              "worstSelectionMs": 71.19999998807907
+            }
+          ]
+        }
+      ],
+      "renderedEntityCounts": [
+        12,
+        157,
+        12
+      ],
+      "limits": [
+        "L'index de banc TASK-0028 (100 000 / 1 000 000) NE PEUT PAS atteindre ce runtime sans une nouvelle commande produit, que le perimetre interdit. La composition bout-en-bout index-a-vue N'A PAS ete testee.",
+        "Les vues mesurees ici comptent 12, 157, 12 entites : elles couvrent le BAS de la plage de budgets candidats 128-1024. Les budgets 256, 512 et 1024 NE SONT PAS mesures dans WebView2.",
+        "MAX_NODES_PER_MAP = 5000 borne ce que le runtime charge : aucun corpus 100k/1M n'a jamais ete presente au frontend, ce qui est aussi la raison pour laquelle l'absence de whole-graph payload n'est PAS prouvee bout-en-bout ici."
+      ]
+    },
+    "ss8": {
+      "mechanism": "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--disable-gpu --disable-gpu-compositing",
+      "verdict": "NOT PROVEN",
+      "why": "Le mecanisme est documente par Microsoft, mais rien, depuis l'exterieur de la page, ne confirme que le runtime l'a honore. Aucune preuve n'est fabriquee : la passe est enregistree comme indicative, pas comme une demonstration d'absence de GPU.",
+      "equivalence": "Une passe logicielle n'equivaut pas a un test sur iGPU modeste. Elle ne verifierait, si elle etait confirmee, que l'absence d'une dependance dure evidente au GPU.",
+      "indicativeComparison": {
+        "gpuDefaultMedianMs": [
+          4.199999988079071,
+          4.199999988079071,
+          4.199999988079071
+        ],
+        "gpuDisabledMedianMs": [
+          4.100000023841858,
+          4.100000023841858,
+          4.100000023841858
+        ]
+      }
+    },
+    "domSvgCardinality": {
+      "engine": "jsdom (vitest) - PAS un moteur de rendu, PAS WebView2",
+      "proves": "Le nombre exact d'elements DOM/SVG d'une vue bornee, et son independance vis-a-vis du corpus.",
+      "doesNotProve": "Ni un temps de rendu, ni un comportement graphique.",
+      "source": "src/map/boundedViewCardinality.test.tsx",
+      "observations": [
+        {
+          "budget": 128,
+          "corpus": 10000,
+          "treeItems": 128,
+          "hierarchyEdges": 127,
+          "hierarchyElements": 254,
+          "svgElements": 903
+        },
+        {
+          "budget": 128,
+          "corpus": 100000,
+          "treeItems": 128,
+          "hierarchyEdges": 127,
+          "hierarchyElements": 254,
+          "svgElements": 903
+        },
+        {
+          "budget": 128,
+          "corpus": 1000000,
+          "treeItems": 128,
+          "hierarchyEdges": 127,
+          "hierarchyElements": 254,
+          "svgElements": 903
+        },
+        {
+          "budget": 256,
+          "corpus": 10000,
+          "treeItems": 256,
+          "hierarchyEdges": 255,
+          "hierarchyElements": 510,
+          "svgElements": 1799
+        },
+        {
+          "budget": 256,
+          "corpus": 100000,
+          "treeItems": 256,
+          "hierarchyEdges": 255,
+          "hierarchyElements": 510,
+          "svgElements": 1799
+        },
+        {
+          "budget": 256,
+          "corpus": 1000000,
+          "treeItems": 256,
+          "hierarchyEdges": 255,
+          "hierarchyElements": 510,
+          "svgElements": 1799
+        },
+        {
+          "budget": 512,
+          "corpus": 10000,
+          "treeItems": 512,
+          "hierarchyEdges": 511,
+          "hierarchyElements": 1022,
+          "svgElements": 3591
+        },
+        {
+          "budget": 512,
+          "corpus": 100000,
+          "treeItems": 512,
+          "hierarchyEdges": 511,
+          "hierarchyElements": 1022,
+          "svgElements": 3591
+        },
+        {
+          "budget": 512,
+          "corpus": 1000000,
+          "treeItems": 512,
+          "hierarchyEdges": 511,
+          "hierarchyElements": 1022,
+          "svgElements": 3591
+        },
+        {
+          "budget": 1024,
+          "corpus": 10000,
+          "treeItems": 1024,
+          "hierarchyEdges": 1023,
+          "hierarchyElements": 2046,
+          "svgElements": 7175
+        },
+        {
+          "budget": 1024,
+          "corpus": 100000,
+          "treeItems": 1024,
+          "hierarchyEdges": 1023,
+          "hierarchyElements": 2046,
+          "svgElements": 7175
+        },
+        {
+          "budget": 1024,
+          "corpus": 1000000,
+          "treeItems": 1024,
+          "hierarchyEdges": 1023,
+          "hierarchyElements": 2046,
+          "svgElements": 7175
+        }
+      ]
+    }
+  }
+}

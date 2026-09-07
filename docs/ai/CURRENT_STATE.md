@@ -1,5 +1,46 @@
 # État courant
 
+## TASK-0028 — banc synthétique de mise à l'échelle — 2026-09-07
+
+- **Statut : `IMPLEMENTED`**, livré par l'exécuteur. **Jamais `VERIFIED`** :
+  le contrôle indépendant appartient à l'orchestrateur technique.
+- **Protocole gelé avant le harness**, en un commit distinct, pour qu'aucun
+  critère ne puisse être ajusté après coup aux mesures. Détail dans
+  [`TASK-0028-SCALE-SPIKE-PROTOCOL.md`](../performance/TASK-0028-SCALE-SPIKE-PROTOCOL.md).
+- **Deux couches, jamais confondues :** `SCAN-SCALE` — 10 000 et 100 000
+  éléments **physiques** réellement créés puis parcourus par le scanner de
+  production; `INDEX-SCALE` — 1 000 000 d'éléments **indexés** sur le schéma
+  courant. **1 000 000 physique n'est pas prouvé** et n'est jamais appelé
+  « scan 1M ».
+- **Verdict structurel `SS9` : PASS sur les cinq conditions.** À budget fixe,
+  la cardinalité de la vue, ses arêtes, son payload (~200 Ko à budget 1024) et
+  son temps de layout (0,04–0,33 ms) sont **plats** de 10k à 1M. Les
+  **24 combinaisons** budget × taille × focus comptent **exactement** tous les
+  éléments existants, et les invariants `F-051` ne sont enfreints nulle part.
+- **Trois chemins ne passent pas à l'échelle avec le schéma actuel**, et ce
+  sont les résultats exploitables : la recherche `P-08` est **linéaire dans le
+  corpus** (~67 ms p50 à 100k, ~0,67 s à 1M); une **page de 100 enfants
+  directs** coûte **106 ms à 1M** parce que l'ordre d'affichage n'utilise pas
+  `idx_nodes_parent`; le **compte exact des éléments d'un agrégat** coûte
+  **1,34 s à 1M**. En contraste, les **ancêtres sont plats** à 43 µs.
+- **`SS7` partiel, `SS8` `NOT PROVEN`.** Deux processus **WebView2 réels**
+  (152.0.4191.66) ont mesuré ouverture, pan, zoom et sélection, mais sur des
+  vues de **12 et 157** entités seulement — le bas de la plage 128–1024. La
+  **composition bout-en-bout index→vue n'a pas été testée** : elle exigerait
+  une commande produit nouvelle, hors périmètre. La désactivation du GPU n'est
+  **pas confirmable** de l'extérieur de la page; rien n'a été simulé.
+- **Banc `DEVELOPMENT_BENCH_NOT_ACCEPTANCE`** (i9-9900K, 32 Gio, RTX 2070) :
+  **aucune cible « machine modeste » n'est validée**. Tous les temps Rust sont
+  des temps **`debug`**, la suite de tests du crate ne compilant pas en
+  `--release` — constat **antérieur à cette tâche**, reproduit harness retiré.
+- **Aucun état produit changé :** `F-042 = PROPOSED / MVP`; `F-050` et
+  `F-051 = PROPOSED / MVP / P0`; `MAX_NODES_PER_MAP = 5000` en vigueur; aucun
+  renderer choisi; aucun budget de vue décidé. **Aucune `DEC-0030`, aucune
+  `TASK-0029`.** `X5` reste à **36**; `origin/main = 1a7d652c`, non touché.
+- **Empreinte produit du harness : nulle.** Tout vit derrière `#[cfg(test)]`;
+  `cargo build` produit le même binaire, sans avertissement nouveau.
+- **Action unique suivante :** contrôle indépendant de `TASK-0028`.
+
 ## ACTION-0044 — TASK-0027 VERIFIED — 2026-09-06
 
 - **Verdict indépendant enregistré, non rendu par Codex :** cohérence

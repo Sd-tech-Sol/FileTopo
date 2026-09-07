@@ -3800,3 +3800,68 @@ décisions n'est pas corrigée partiellement.
 
 **Action unique suivante :** l'orchestrateur décide si le scale spike
 synthétique devient `TASK-0028`. Aucune fiche n'est créée ici.
+
+---
+
+## 2026-09-07 — TASK-0028 — Banc synthétique de mise à l'échelle
+
+**Agent :** exécuteur Claude Code
+**Statut à l'issue :** `IMPLEMENTED` — **jamais `VERIFIED` par l'exécuteur**
+**Branche :** `build/v0.2-a12-synthetic-scale-spike`, créée et publiée depuis
+`670704d`
+
+### Fait
+
+- **Gel documentaire avant tout code**, en un commit distinct : fiche
+  `TASK-0028` et `TASK-0028-SCALE-SPIKE-PROTOCOL.md`, pour qu'aucun critère ne
+  puisse être ajusté après coup aux mesures.
+- **Harness de banc entièrement `#[cfg(test)]`** sous
+  `src-tauri/src/scale_spike/` : générateur synthétique déterministe,
+  recensement exact, requêtes bornées, materializer expérimental, profil
+  matériel sanitisé, rédacteur d'artefacts. Il vit dans le crate parce que
+  `domain`, `index`, `scanner` et `map` y sont privés, et que recopier le
+  schéma était explicitement interdit.
+- **Deux ajouts `#[cfg(test)]` seulement** hors du module : la déclaration
+  `mod scale_spike;` dans `lib.rs`, et `Index::connection_for_bench()` dans
+  `index.rs`. Aucune signature existante changée, aucune commande, aucune
+  route, aucun élément d'interface.
+- **Campagnes exécutées :** `SCAN-SCALE` à 10 000 et 100 000 éléments
+  **physiques** réellement créés puis parcourus par le scanner de production;
+  `INDEX-SCALE` à 1 000 000 d'éléments **indexés** sur le schéma courant.
+- **`SS7`/`SS8` :** deux processus **Tauri/WebView2 réels** (152.0.4191.66),
+  boucle de mesure déjà présente dans le runtime, plus une mesure de
+  cardinalité DOM/SVG exacte sur le vrai `MapView` sous jsdom.
+- **Quatre artefacts** écrits dans `docs/performance/runs/`, tous marqués
+  `ENGINEERING_MEASUREMENT / NOT A PRODUCT CLAIM / NONCANONICAL UNTIL
+  INDEPENDENT CONTROL`, et **non protégés** : `X5` reste à 36.
+- **Deux scripts de rejeu :** `scripts/task0028-scale-spike.ps1` et
+  `scripts/task0028-ss7-bounded-view-webview2.ps1`.
+
+### Résultat
+
+**`SS9` PASS sur les cinq conditions.** À budget fixe, la vue ne bouge pas
+quand le corpus est multiplié par 100 : mêmes 1 024 entités, mêmes 1 023
+arêtes, ~200 Ko de payload, 0,25 ms de layout, et **chaque élément non rendu
+reste compté exactement et atteignable** dans les 24 combinaisons mesurées.
+
+**Trois chemins ne passent pas à l'échelle avec le schéma actuel** — c'est le
+résultat exploitable : recherche `P-08` linéaire dans le corpus; page d'enfants
+directs coûtant le sous-arbre parce que l'ordre d'affichage n'utilise pas
+`idx_nodes_parent`; compte exact des éléments d'un agrégat en CTE récursive.
+`Index::replace_nodes` exige de surcroît tout le corpus en mémoire.
+
+### Non fait, et déclaré
+
+1 000 000 **physique** non prouvé; composition bout-en-bout index→vue non
+testée; budgets 256/512/1024 non mesurés dans WebView2; `SS8` **`NOT PROVEN`**;
+voisinage relationnel non mesuré, le store d'index ne portant aucune relation;
+temps `release` non mesurés, la suite de tests du crate ne compilant pas en
+`--release` — constat **antérieur à cette tâche**.
+
+Le banc est `DEVELOPMENT_BENCH_NOT_ACCEPTANCE` : **aucune cible « machine
+modeste » n'est validée**. `R8` entière. Aucun état de `F-042`, `F-050`,
+`F-051` changé; `MAX_NODES_PER_MAP = 5000` en vigueur; aucun renderer choisi;
+aucun budget de vue décidé; **aucune `DEC-0030`, aucune `TASK-0029`**.
+`X5 = 36`, `origin/main = 1a7d652c`, non touché.
+
+**Action unique suivante :** contrôle indépendant de `TASK-0028`.
