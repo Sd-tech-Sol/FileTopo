@@ -84,38 +84,6 @@ GO explicite de **Sébastien** requis avant :
 
 Ne jamais modifier les documents analysés.
 
-## Sessions : trois procédures partagées
-
-Ajouté le 2026-08-31. **Gouvernance et outillage seulement** : ces procédures
-ne changent aucune règle ci-dessus.
-
-Les procédures d'ouverture, de reprise et de fermeture de session vivent dans
-**`.orchestrator/protocols/`**, en **un seul exemplaire partagé** par Claude
-Code et Codex :
-
-| Procédure | Fichier | Claude | Codex |
-|---|---|---|---|
-| Début de session | `.orchestrator/protocols/debut-session.md` | `/debut-session` | `$debut-session` |
-| Reprise de session | `.orchestrator/protocols/reprise-session.md` | `/reprise-session` | `$reprise-session` |
-| Fermeture de session | `.orchestrator/protocols/fermeture-session.md` | `/fermeture-session` | `$fermeture-session` |
-
-Les fiches `SKILL.md` sous `.claude/skills/` et `.agents/skills/` sont de
-**simples renvois**. **La procédure n'est jamais recopiée**, pour qu'il n'en
-existe jamais deux versions divergentes.
-
-**Il n'existe pas de skill d'exécution de tâche.** Les prompts de
-l'orchestrateur sont collés directement à l'agent et exécutés normalement.
-
-**`.orchestrator/RESULT.md`** est le **rapport compact de la dernière exécution
-seulement**, remplacé à chaque fois — **Git fournit l'historique**. Il est
-commité et poussé, et c'est **lui** que l'orchestrateur lit avant de contrôler
-GitHub; le rapport terminal peut donc rester très court.
-
-**Les sources durables ne changent pas :** `CURRENT_STATE.md`,
-`NEXT_ACTION.md`, `HANDOFF.md`, `VALIDATION.md`, `CHANGELOG_AI.md`, les fiches
-de tâche et de décision, et Git. `.orchestrator/` reste petit et ne les
-duplique pas.
-
 ## Rapport final minimal
 
 Donner : résultat, branche et commits, fichiers touchés, validations et sorties utiles, non-testé/limites, état exact de la tâche, état Git final, action unique suivante et confirmation des actions distantes ou destructives. Attendre l'examen humain lorsque la tâche reste IMPLEMENTED.

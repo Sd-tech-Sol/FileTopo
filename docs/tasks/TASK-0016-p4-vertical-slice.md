@@ -4,10 +4,11 @@
 - **Titre :** Première tranche de code de production — **une tranche verticale
   minimale** de la racine synthétique jusqu'à la carte sélectionnable, dans un
   **véritable hôte Tauri/WebView2**
-- **Statut :** **`VERIFIED`** le 2026-08-31, sur re-contrôle indépendant
-  [`ACTION-0026`](../reviews/ACTION-0026-independent-control.md) du commit
-  `a6cf092`, après émission et correction de la réserve bloquante **`X2`** —
-  voir §15. **L'exécuteur ne s'est pas auto-attribué ce statut.**
+- **Statut :** **`IMPLEMENTED`** le 2026-08-31 — **jamais `VERIFIED`**.
+  Contrôle indépendant
+  [`ACTION-0026`](../reviews/ACTION-0026-independent-control.md) →
+  **`CHANGES_REQUIRED`**, réserve bloquante **`X2`** corrigée, **re-contrôle
+  attendu** — voir §15.
   Porte `P4` franchie par
   [DEC-0016](../decisions/DEC-0016-p4-gate-crossing-and-first-slice.md);
   critères **gelés avant exécution** en §12; résultat en §13
@@ -497,10 +498,3 @@ attend un **re-contrôle indépendant**.
   réserve bloquante `X2` sur la surface runtime héritée.
 - 2026-08-31 — **correction de `X2` exécutée**, validation intégralement
   rejouée. **Statut inchangé : `IMPLEMENTED`.** En attente de re-contrôle.
-
-- 2026-08-31 — **`VERIFIED`** : re-contrôle indépendant `ACTION-0026`, mené
-  **directement sur GitHub** sur le commit
-  `a6cf092b7f2d0204de5f788e40f014b41c69ff11`. **`X2` : `CLOSED`.
-  `ACTION-0026` : `CLOSED`.** `R8` reste entière, `B0` reste non corrigé,
-  **aucune conclusion nouvelle sur le budget adaptatif**, et les **états de
-  parité restent strictement limités au périmètre déjà déclaré**.

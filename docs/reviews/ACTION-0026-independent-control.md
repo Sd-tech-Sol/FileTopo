@@ -1,4 +1,4 @@
-# ACTION-0026 — Contrôle indépendant de TASK-0016 : X2 émise, corrigée, CLOSED
+# ACTION-0026 — Contrôle indépendant de TASK-0016 : CHANGES_REQUIRED, réserve X2
 
 - **Date :** 2026-08-31
 - **Objet :** contrôle indépendant de la **première tranche de code de
@@ -10,38 +10,15 @@
 - **Rédacteur de la présente fiche :** Claude Code, **exécuteur de la
   correction**, sous le GO technique de l'orchestrateur. **Cette fiche
   enregistre un verdict; elle ne le rend pas.**
-- **Verdict initial :** **`CHANGES_REQUIRED`**, réserve bloquante `X2`.
-- **Verdict final, après re-contrôle direct de GitHub :** **`CLOSED`**.
-  **Réserve `X2` : `CLOSED`. `TASK-0016` : `VERIFIED`.**
-  **Commit contrôlé :** `a6cf092b7f2d0204de5f788e40f014b41c69ff11`.
-  Verdict rendu par l'**orchestrateur technique indépendant**; la présente
-  fiche l'**enregistre**, elle ne le rend pas.
+- **Verdict :** **`CHANGES_REQUIRED`**. `TASK-0016` **reste `IMPLEMENTED`**,
+  **pas `VERIFIED`**.
 
 > **Ce que cette fiche est.** L'enregistrement d'un constat indépendant, de la
 > réserve bloquante `X2` qu'il émet, et de la correction exécutée en réponse.
 >
-> **Ce qu'elle n'est pas.** Elle ne **rend** aucun verdict. Les deux verdicts
-> ci-dessus — `CHANGES_REQUIRED` puis `CLOSED` — viennent de l'**orchestrateur
-> technique indépendant**. L'exécuteur a corrigé, puis **enregistré**.
-
-## 0. Clôture
-
-**Le re-contrôle indépendant a eu lieu, directement sur GitHub**, sur le commit
-`a6cf092b7f2d0204de5f788e40f014b41c69ff11`.
-
-| Objet | Décision de l'orchestrateur |
-|---|---|
-| Réserve `X2` | **`CLOSED`** |
-| `ACTION-0026` | **`CLOSED`** |
-| `TASK-0016` | **`VERIFIED`** |
-| Réserve `R8` | **entière**, inchangée — levée réservée à l'**étape C** |
-| `B0` | **non corrigé**, inchangé |
-| Budget adaptatif | **aucune conclusion nouvelle** |
-| États de parité | **strictement limités au périmètre déjà déclaré** |
-
-**Ce que `VERIFIED` porte ici :** la **qualité des preuves** de la tranche et
-la **conformité de sa surface exposée**. Pas la faisabilité du reste du contrat
-de parité, dont **seize exigences ne sont pas commencées**.
+> **Ce qu'elle n'est pas.** Elle **n'attribue pas `VERIFIED`**. La correction a
+> été faite par l'exécuteur de la tranche; **elle appelle donc un
+> re-contrôle**, par une instance distincte, avant tout changement de statut.
 
 ## 1. Résultat du contrôle
 

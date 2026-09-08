@@ -21,11 +21,3 @@ contenu utilisateur, des dossiers personnels, des documents, des secrets ou des
 données réelles, et **n'ajoute aucune écriture hors du dépôt**. Les points
 d'arrêt réservés à Sébastien restent inchangés. Voir AGENTS.md, section
 « Lecture minimale de l'environnement technique ».
-
-Depuis le 2026-08-31, trois procédures de session sont disponibles en
-**skills de projet** : `/debut-session`, `/reprise-session` et
-`/fermeture-session`. Leur logique vit dans `.orchestrator/protocols/`,
-**partagée avec Codex**; les fiches sous `.claude/skills/` ne sont que des
-renvois et ne doivent pas la recopier. Le rapport compact de la dernière
-exécution s'écrit dans `.orchestrator/RESULT.md`. Voir AGENTS.md, section
-« Sessions : trois procédures partagées ».

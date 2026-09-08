@@ -2,11 +2,14 @@
 
 - **Dernière mise à jour :** 2026-08-31
 - **Branche active :** `build/v0.2-p4-vertical-slice`
-- **Dernière tâche vérifiée :** **`TASK-0016`, `VERIFIED`** le 2026-08-31, sur
-  re-contrôle indépendant
-  [`ACTION-0026`](../reviews/ACTION-0026-independent-control.md) du commit
-  `a6cf092` — **`X2` : `CLOSED`**, **`ACTION-0026` : `CLOSED`**
-- **Tâche livrée, NON vérifiée :** aucune
+- **Dernière tâche vérifiée :** `TASK-0015`, **`VERIFIED`** le 2026-08-31
+  ([`ACTION-0025`](../reviews/ACTION-0025-independent-control.md)), avec la
+  réserve normative **`X1`, corrigée**
+- **Tâche livrée, NON vérifiée :** **`TASK-0016`, `IMPLEMENTED`** le
+  2026-08-31 — première tranche verticale de **code de production**
+- **Contrôle indépendant :**
+  [`ACTION-0026`](../reviews/ACTION-0026-independent-control.md) →
+  **`CHANGES_REQUIRED`**, réserve **`X2`** corrigée, **re-contrôle attendu**
 - **Tâche IN_PROGRESS :** aucune
 - **Porte `P4` :** **FRANCHIE** —
   [`DEC-0016`](../decisions/DEC-0016-p4-gate-crossing-and-first-slice.md)
@@ -30,11 +33,8 @@ commandes héritées de la 0.1, dont un **sélecteur de dossier réel**. La
 correction est faite — le gestionnaire n'expose plus que les neuf commandes de
 la tranche — et **deux tests-gardes** empêchent la régression.
 
-**Le re-contrôle indépendant a eu lieu, directement sur GitHub.** `X2` est
-**`CLOSED`**, `ACTION-0026` est **`CLOSED`**, et **`TASK-0016` est
-`VERIFIED`**. `R8` reste entière, `B0` reste non corrigé, **aucune conclusion
-nouvelle sur le budget adaptatif**, et les **états de parité restent
-strictement limités au périmètre déjà déclaré**.
+**Rien n'est vérifié.** La correction vient de l'exécuteur de la tranche;
+`TASK-0016` **reste `IMPLEMENTED`** et attend le **re-contrôle indépendant**.
 
 ## Ce qu'il faut savoir en douze lignes
 
@@ -119,7 +119,7 @@ aucune réécriture d'historique, aucune suppression de branche.
 
 | # | Point | Ce qui est demandé |
 |---|---|---|
-| 1 | **Aucune tranche suivante n'a de fiche** | La spécifier et **geler ses critères avant tout code**. `P4` n'autorisait que `TASK-0016` |
+| 1 | **`TASK-0016` est `IMPLEMENTED`**, `X2` corrigée | **RE-CONTRÔLE** d'`ACTION-0026`, par une instance **distincte de l'exécuteur** : corriger son propre livrable ne le vérifie pas |
 | 1 bis | **La surface runtime doit rester celle de la tranche** | Les deux tests-gardes échouent si une commande hors tranche est réenregistrée. **Ne pas les contourner** |
 | 2 | **Seize exigences de parité non commencées** | Chaque tranche suivante exige sa **propre fiche**, ses **critères gelés** et son **GO**. Les relations transversales portent la correction `X1` |
 | 3 | **`P-12` et `P-06` sont partielles** | Masquage du panneau, survie au redémarrage, relations transversales et atténuation liée à `F-017` restent à faire |
@@ -130,21 +130,10 @@ aucune réécriture d'historique, aucune suppression de branche.
 | 8 | **`B0`, `B3` inter-volume, `B4` question 3** | Inchangés. Le cache fautif est **conservé**; la question 3 se ferme **avant** l'identité persistante et l'état vu/non vu |
 | 9 | **`P-21`** | Interface **en français seulement**; bilinguisme intégral et audit WCAG restent à faire |
 
-## Sessions : trois procédures partagées
-
-`/debut-session`, `/reprise-session`, `/fermeture-session` côté Claude;
-`$debut-session`, `$reprise-session`, `$fermeture-session` côté Codex. La
-logique vit dans **`.orchestrator/protocols/`**, en un seul exemplaire; les
-`SKILL.md` ne sont que des renvois.
-
-**`.orchestrator/RESULT.md`** est le rapport compact de la **dernière
-exécution seulement**, commité et poussé — c'est lui que l'orchestrateur lit
-avant de contrôler GitHub, ce qui permet au rapport terminal de rester court.
-
 ## Prochaine action unique
 
-**Spécifier la prochaine tranche de l'étape A**, critères gelés avant tout
-code. Détail dans [NEXT_ACTION.md](NEXT_ACTION.md).
+**`ACTION-0026`** — contrôle indépendant de `TASK-0016`. Détail dans
+[NEXT_ACTION.md](NEXT_ACTION.md).
 
 ## Commandes sûres
 

@@ -10,14 +10,15 @@
 - **`rebuild/v0.2-project-brain` :** `db8d3de0…`, **non touchée**
 - **`main` :** inchangée, `91bbe90f0f99026c28cd345784d4f579a0016db2`, **non
   touchée**
-- **Dernière tâche vérifiée :** **`TASK-0016`, `VERIFIED` le 2026-08-31**, sur
-  re-contrôle indépendant
-  [`ACTION-0026`](../reviews/ACTION-0026-independent-control.md) du commit
-  `a6cf092` — réserve **`X2` : `CLOSED`**, **`ACTION-0026` : `CLOSED`**
-- **Tâche précédente vérifiée :** `TASK-0015`, `VERIFIED`
-  ([`ACTION-0025`](../reviews/ACTION-0025-independent-control.md)), avec la
-  réserve normative `X1`, corrigée
-- **Tâche livrée, NON vérifiée :** aucune
+- **Dernière tâche vérifiée :** `TASK-0015`, `VERIFIED` le 2026-08-31
+  ([`ACTION-0025`](../reviews/ACTION-0025-independent-control.md)), **avec la
+  réserve normative `X1`, corrigée**
+- **Tâche livrée, NON vérifiée :** **`TASK-0016`, `IMPLEMENTED` le
+  2026-08-31** — première tranche verticale de **code de production**
+- **Contrôle indépendant :**
+  [`ACTION-0026`](../reviews/ACTION-0026-independent-control.md) →
+  **`CHANGES_REQUIRED`**, réserve bloquante **`X2`**, **corrigée**, en attente
+  de **re-contrôle**
 - **Tâche IN_PROGRESS :** aucune
 - **Porte `P4` :** **FRANCHIE** —
   [`DEC-0016`](../decisions/DEC-0016-p4-gate-crossing-and-first-slice.md)
@@ -184,27 +185,11 @@ transversale. `X1` contraint la tranche qui implémentera `P-04`, `P-05`, `P-07`
 
 ## Porte humaine
 
-**`TASK-0016` est `VERIFIED`**, sur re-contrôle indépendant mené directement
-sur GitHub, commit `a6cf092`. **`X2` et `ACTION-0026` sont `CLOSED`.**
+`TASK-0016` reste **`IMPLEMENTED`**. Le contrôle indépendant `ACTION-0026` a
+rendu **`CHANGES_REQUIRED`** sur la réserve bloquante `X2`; **la correction a
+été exécutée par l'exécuteur de la tranche**, ce qui ne la vérifie pas.
 
-**Ce que `VERIFIED` porte :** la qualité des preuves de la tranche et la
-conformité de sa surface exposée. **Pas** la faisabilité du reste du contrat de
-parité — **seize exigences ne sont pas commencées**.
+L'action unique suivante est le **RE-CONTRÔLE indépendant de `TASK-0016`**, par
+une instance **distincte de son exécuteur**.
 
-L'action unique suivante est de **spécifier la prochaine tranche de l'étape
-A**, avec ses critères **gelés avant tout code**. La porte `P4` n'autorisait
-que `TASK-0016` : **une tranche suivante exige sa propre fiche et son propre
-GO.**
-
-## Sessions : trois procédures partagées
-
-Depuis le 2026-08-31, l'ouverture, la reprise et la fermeture de session
-suivent des procédures écrites, **partagées par Claude Code et Codex** et
-rangées dans `.orchestrator/protocols/` : `/debut-session`,
-`/reprise-session`, `/fermeture-session` côté Claude; `$debut-session`,
-`$reprise-session`, `$fermeture-session` côté Codex.
-
-**`.orchestrator/RESULT.md`** porte le **rapport compact de la dernière
-exécution seulement**, commité et poussé. **Les sources durables ne changent
-pas** : `CURRENT_STATE.md`, `NEXT_ACTION.md`, `HANDOFF.md`, `VALIDATION.md`,
-`CHANGELOG_AI.md`, les fiches et Git.
+**Aucune tranche suivante ne s'ouvre avant ce re-contrôle.**
