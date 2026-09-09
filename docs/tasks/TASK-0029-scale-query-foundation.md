@@ -3,7 +3,7 @@
 - **Date :** 2026-09-09
 - **Branche :** `build/v0.2-a13-scale-query-foundation`
 - **Base contrôlée :** `b3923e0001034d1c752c9e416d5ca9aeabd830d5`
-- **Statut courant :** `APPROVED`
+- **Statut courant :** `IN_PROGRESS`
 - **Transitions permises :** `PROPOSED → APPROVED → IN_PROGRESS →
   IMPLEMENTED → VERIFIED`. Le GO technique de `.orchestrator/NEXT_PROMPT.md`
   autorise `IN_PROGRESS` après le gel documentaire. **L'exécuteur ne
