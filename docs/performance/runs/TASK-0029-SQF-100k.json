@@ -1,0 +1,217 @@
+{
+  "decision": "DEC-0030",
+  "measurement": {
+    "bench": {
+      "class": "DEVELOPMENT_BENCH_NOT_ACCEPTANCE",
+      "classNote": "Banc plus puissant que la classe visée : AUCUNE cible « machine modeste » n'est validée par ces mesures.",
+      "cpu": "Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz",
+      "diskMedia": "HDD, SSD",
+      "gpus": [
+        "NVIDIA GeForce RTX 2070"
+      ],
+      "logicalCores": 16,
+      "os": "Microsoft Windows 11 Professionnel",
+      "osVersion": "10.0.26200",
+      "physicalCores": 8,
+      "privacy": "Aucun nom d'hôte, nom d'utilisateur, chemin personnel ou identifiant machine n'est lu ni écrit.",
+      "ramBytes": 34272813056,
+      "ramGib": 31.92,
+      "toolchain": {
+        "cargo": "cargo 1.98.0 (797e8a9bc 2026-08-05)",
+        "node": "v24.13.1",
+        "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+        "sqlite": "3.53.2"
+      },
+      "unavailable": []
+    },
+    "buildCost": {
+      "indexBuildUs": 929888,
+      "rowsFromPlanUs": 124865,
+      "runs": 1,
+      "runsNote": "Une seule construction : la construction n'est pas l'objet de TASK-0029, et son coût est déclaré, pas caché."
+    },
+    "buildProfile": "debug (unoptimized + debug assertions)",
+    "focus": {
+      "selection": "SELECT id FROM nodes ORDER BY child_count DESC, id LIMIT 1",
+      "widestFolder": 76,
+      "widestFolderDirectChildren": 24981
+    },
+    "indexedElements": 100000,
+    "layer": "INDEX-SCALE",
+    "layerNote": "100000 éléments INDEXÉS sur le schéma FileTopo courant, construits depuis le plan synthétique déterministe de TASK-0028. Aucun fichier physique n'est créé : le coût mesuré est un coût de REQUÊTE, qui dépend du contenu de l'index et non de la façon dont il a été rempli. Cette couche ne prouve rien sur le scanner à cette taille.",
+    "memory": {
+      "architecturalFinding": "`Index::replace_nodes` prend toujours la totalité du corpus en mémoire (`&[NodeDto]`). TASK-0029 ne corrige pas ce point : l'indexation en flux est la tranche suivante, et le constat de TASK-0028 reste entier.",
+      "method": "Get-Process -Id <pid> du processus de test, via PowerShell. Relevés ponctuels : aucun pic garanti n'est publié. Le relevé « avec corpus » est pris pendant que le `Vec<NodeDto>` est encore vivant; les suivants sont pris après sa libération, et sont plus bas pour cette seule raison.",
+      "workingSetAfterCorpusReleasedBytes": 10850304,
+      "workingSetAtEndBytes": 12050432,
+      "workingSetStartBytes": 6336512,
+      "workingSetWithCorpusInMemoryBytes": 28450816
+    },
+    "requestedElements": 100000,
+    "schemaVersion": 3,
+    "sqf1KeysetPaging": {
+      "cacheNote": "Aucun cache n'existe sur ce chemin; aucun n'est simulé.",
+      "cursorContents": "index_id, revision, parent_id, after_id — aucun chemin, aucun nom, aucune position OFFSET.",
+      "pageSize": 100,
+      "path": "Index::children_page — le chemin produit interne de DEC-0030.",
+      "positions": {
+        "curseur-apres-dernier": {
+          "exactDirectChildren": 24981,
+          "hasContinuationCursor": false,
+          "latency": {
+            "maxUs": 288,
+            "minUs": 158,
+            "p50Us": 159,
+            "p95Us": 219,
+            "runs": 21
+          },
+          "resumesAfterNthChild": 24980,
+          "rows": 0
+        },
+        "curseur-median": {
+          "exactDirectChildren": 24981,
+          "hasContinuationCursor": true,
+          "latency": {
+            "maxUs": 443,
+            "minUs": 374,
+            "p50Us": 379,
+            "p95Us": 410,
+            "runs": 21
+          },
+          "resumesAfterNthChild": 12490,
+          "rows": 100
+        },
+        "curseur-proche-fin": {
+          "exactDirectChildren": 24981,
+          "hasContinuationCursor": false,
+          "latency": {
+            "maxUs": 412,
+            "minUs": 367,
+            "p50Us": 373,
+            "p95Us": 387,
+            "runs": 21
+          },
+          "resumesAfterNthChild": 24880,
+          "rows": 100
+        },
+        "premiere-page": {
+          "exactDirectChildren": 24981,
+          "hasContinuationCursor": true,
+          "latency": {
+            "maxUs": 616,
+            "minUs": 311,
+            "p50Us": 327,
+            "p95Us": 611,
+            "runs": 21
+          },
+          "resumesAfterNthChild": null,
+          "rows": 100
+        }
+      },
+      "repetitions": 21,
+      "warmups": 3
+    },
+    "sqf2LegacyOffsetPath": {
+      "note": "Le nouvel index ne sert pas cet ordre — collation et expression diffèrent — donc l'ancien chemin n'est pas accéléré par accident.",
+      "order": "kind = 'directory' DESC, name COLLATE NOCASE, id",
+      "pageSize": 100,
+      "path": "scale_spike::bounded::children_page — le prototype OFFSET de TASK-0028, appelé tel quel, sur la même base et dans le même processus.",
+      "positions": {
+        "offset-median": {
+          "latency": {
+            "maxUs": 22354,
+            "minUs": 18981,
+            "p50Us": 19862,
+            "p95Us": 21823,
+            "runs": 21
+          },
+          "offset": 12490,
+          "rows": 100
+        },
+        "offset-proche-fin": {
+          "latency": {
+            "maxUs": 33801,
+            "minUs": 28346,
+            "p50Us": 30320,
+            "p95Us": 32806,
+            "runs": 21
+          },
+          "offset": 24881,
+          "rows": 100
+        },
+        "premiere-page": {
+          "latency": {
+            "maxUs": 20890,
+            "minUs": 10402,
+            "p50Us": 11593,
+            "p95Us": 13566,
+            "runs": 21
+          },
+          "offset": 0,
+          "rows": 100
+        }
+      },
+      "repetitions": 21,
+      "warmups": 3
+    },
+    "sqf3QueryPlans": {
+      "boundedContinuation": "SEARCH nodes USING INDEX idx_nodes_child_order (parent_id=? AND (child_order_rank,name_fold)>(?,?))",
+      "boundedFirstPage": "SEARCH nodes USING INDEX idx_nodes_child_order (parent_id=?)",
+      "criteria": {
+        "noFullCorpusScan": true,
+        "noOffsetInContinuation": true,
+        "noTempBTreeForOrderBy": true,
+        "usesChildOrderIndex": true
+      },
+      "criteriaNote": "Ces quatre critères sont vérifiés par assertion pendant la campagne : une violation arrête la mesure au lieu d'être publiée.",
+      "legacyOffsetPage": "SEARCH nodes USING INDEX idx_nodes_parent (parent_id=?) | USE TEMP B-TREE FOR ORDER BY"
+    },
+    "sqf4CountsAndChain": {
+      "ancestorChain": {
+        "ceiling": 512,
+        "fromNode": 73,
+        "latency": {
+          "maxUs": 404,
+          "minUs": 221,
+          "p50Us": 234,
+          "p95Us": 351,
+          "runs": 21
+        },
+        "length": 26
+      },
+      "childCountAudit": {
+        "auditUs": 105183,
+        "mismatches": 0,
+        "note": "Audit indépendant du chemin mesuré, chronométré à part : son coût n'est jamais crédité à la primitive qu'il contrôle.",
+        "scope": "tout le corpus"
+      },
+      "exactDirectChildren": {
+        "latency": {
+          "maxUs": 13,
+          "minUs": 11,
+          "p50Us": 12,
+          "p95Us": 12,
+          "runs": 21
+        },
+        "source": "colonne durable child_count, une recherche sur clé primaire",
+        "value": 24981
+      },
+      "recursiveSubtreeCountRefusedOnHotPath": {
+        "note": "Mesuré une fois pour montrer ce que DEC-0030 §D interdit d'imposer au hot path. Le coût suit la taille du sous-arbre, pas le budget de vue.",
+        "runs": 1,
+        "us": 32479,
+        "value": 24981
+      }
+    },
+    "sqf5ScaleCriterion": {
+      "comparisonAvailable": false,
+      "reason": "Campagne de référence : c'est elle que la campagne 1M compare."
+    }
+  },
+  "notAProductClaim": "Mesures d'ingénierie sur corpus synthétique. Aucune promesse de performance, aucune cible validée, aucun état produit changé. Les quatre artefacts TASK-0028 ne sont ni relus ni réécrits par cette campagne.",
+  "report": "docs/performance/TASK-0029-SCALE-QUERY-REPORT.md",
+  "reserve": "R8 entière — ces chiffres ne sont publiés nulle part ailleurs.",
+  "status": "ENGINEERING_MEASUREMENT / NOT A PRODUCT CLAIM / NONCANONICAL UNTIL INDEPENDENT CONTROL",
+  "task": "TASK-0029",
+  "title": "Scale Query Foundation — Bounded Hierarchy Paging"
+}

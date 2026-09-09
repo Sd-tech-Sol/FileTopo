@@ -7,6 +7,10 @@ mod registry;
 /// absent from every product binary and exposes no command.
 #[cfg(test)]
 mod scale_spike;
+/// `TASK-0029` scale query bench. Compiled by `cargo test` only: it is absent
+/// from every product binary and exposes no command.
+#[cfg(test)]
+mod scale_query;
 mod scanner;
 mod synthetic;
 
