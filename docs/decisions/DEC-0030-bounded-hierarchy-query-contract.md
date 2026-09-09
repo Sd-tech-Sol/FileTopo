@@ -3,8 +3,8 @@
 - **Date :** 2026-09-09
 - **Statut :** `APPROVED` — décision technique **enregistrée**. Son
   implémentation par [`TASK-0029`](../tasks/TASK-0029-scale-query-foundation.md)
-  est `IMPLEMENTED` et **attend un contrôle indépendant**; ce document ne
-  prétend rien de vérifié.
+  a passé le contrôle indépendant enregistré dans
+  [`ACTION-0046`](../reviews/ACTION-0046-independent-control.md).
 - **Phase :** étape A — fondation de mise à l'échelle, **avant** tout
   materializer produit
 - **Décideur :** orchestrateur technique, par le GO explicite de
@@ -240,5 +240,5 @@ PRODUCT CLAIM / NONCANONICAL UNTIL INDEPENDENT CONTROL`. **Elles ne sont pas
 canoniques** et n'entrent pas dans `X5`.
 
 **Non testé par la présente décision :** elle n'exécute rien. Tout ce qu'elle
-avance de mesuré vient de `TASK-0029`, dont le contrôle indépendant reste à
-faire.
+avance de mesuré vient de `TASK-0029`, dont le contrôle indépendant est
+enregistré dans [`ACTION-0046`](../reviews/ACTION-0046-independent-control.md).

@@ -3,8 +3,10 @@
 - **Date :** 2026-09-09
 - **Branche :** `build/v0.2-a13-scale-query-foundation`
 - **Base contrôlée :** `b3923e0001034d1c752c9e416d5ca9aeabd830d5`
-- **Statut courant :** `IMPLEMENTED` — livré par l'exécuteur. **Jamais `VERIFIED`** :
-  le contrôle indépendant sur preuves appartient à l'orchestrateur technique.
+- **Statut courant :** `VERIFIED` — verdict indépendant enregistré dans
+  [`ACTION-0046`](../reviews/ACTION-0046-independent-control.md). Claude Code a
+  livré `IMPLEMENTED`; Codex enregistre le verdict externe et ne s'attribue pas
+  la vérification.
 - **Transitions permises :** `PROPOSED → APPROVED → IN_PROGRESS →
   IMPLEMENTED → VERIFIED`. Le GO technique de `.orchestrator/NEXT_PROMPT.md`
   autorise `IN_PROGRESS` après le gel documentaire. **L'exécuteur ne
@@ -15,8 +17,8 @@
   renderer.**
 - **Décision encadrante :**
   [`DEC-0030`](../decisions/DEC-0030-bounded-hierarchy-query-contract.md) —
-  `APPROVED` par le GO de l'orchestrateur, **implémentation en attente de
-  contrôle indépendant**.
+  `APPROVED` par le GO de l'orchestrateur, implémentation contrôlée par
+  [`ACTION-0046`](../reviews/ACTION-0046-independent-control.md).
 - **Décision antérieure :**
   [`DEC-0029`](../decisions/DEC-0029-progressive-materialization-and-scale-boundary.md)
   — `APPROVED`, **non modifiée** par cette tâche.
@@ -271,8 +273,9 @@ touche ni interface, ni renderer, ni commande.
    Son `OFFSET` est conservé, hors périmètre.
 8. **Aucune capacité produit n'est livrée** : pas de commande, pas d'IPC, pas
    d'interface, pas de materializer.
-9. **Contrôle indépendant non fait.** Les deux artefacts restent non canoniques
-   et hors `X5`.
+9. **Contrôle indépendant fait par l'orchestrateur technique indépendant** et
+   enregistré dans [`ACTION-0046`](../reviews/ACTION-0046-independent-control.md).
+   Les deux artefacts restent non canoniques et hors `X5`.
 10. La dette préexistante de chemins locaux personnels dans d'anciens documents
     reste hors périmètre; `TASK-0029` n'en ajoute pas.
 
@@ -287,6 +290,10 @@ touche ni interface, ni renderer, ni commande.
 
 ## 11. Contrôle indépendant
 
-**Requis, et non effectué par l'exécuteur.** `TASK-0029` s'arrête à
-`IMPLEMENTED`. L'action suivante unique est le contrôle indépendant sur
-preuves.
+**Effectué par l'orchestrateur technique indépendant** et enregistré dans
+[`ACTION-0046`](../reviews/ACTION-0046-independent-control.md) :
+`TASK-0029 = VERIFIED — PASS` dans sa portée exacte de fondation Rust/SQLite et
+mesure d'ingénierie non produit.
+
+Claude Code était l'exécuteur de `TASK-0029`. Codex est seulement le rédacteur
+de l'enregistrement du verdict externe et ne s'attribue pas `VERIFIED`.

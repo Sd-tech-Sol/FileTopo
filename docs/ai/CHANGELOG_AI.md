@@ -3968,3 +3968,37 @@ aucune `DEC-0031`**. `X5 = 36`, les quatre artefacts `TASK-0028` inchangés,
 `origin/main = 1a7d652c`, non touché.
 
 **Action unique suivante :** contrôle indépendant de `TASK-0029`.
+
+---
+
+## 2026-09-09 — ACTION-0046 — Contrôle indépendant de TASK-0029
+
+**Agent :** Codex, rédacteur de l'enregistrement. Claude Code était
+l'exécuteur de `TASK-0029`.
+**Statut à l'issue :** `ACTION-0046 = CLOSED`; `TASK-0029 = VERIFIED` par
+verdict de l'orchestrateur technique indépendant, dans sa portée exacte de
+fondation Rust/SQLite et mesure d'ingénierie non produit.
+
+### Fait
+
+- Création de
+  [`ACTION-0046`](../reviews/ACTION-0046-independent-control.md), qui
+  enregistre le verdict externe sans auto-attribution de `VERIFIED`.
+- Mise à jour de la fiche `TASK-0029`, de `DEC-0030` et des documents durables
+  de transmission. Aucun code produit, benchmark ou JSON de preuve n'est
+  modifié.
+- Confirmation que les deux JSON `TASK-0029` restent non canoniques et non
+  protégés, hors `X5`.
+
+### Limites conservées
+
+Banc `DEVELOPMENT_BENCH_NOT_ACCEPTANCE`; timings Rust en `debug`;
+`INDEX-SCALE` seulement, pas un million de fichiers physiques; corpus
+synthétique limité; aucun bout-en-bout index -> vue -> frontend; aucun résultat
+`TARGET_CLASS`; `Index::replace_nodes` garde le corpus en mémoire; recherche
+`P-08` inchangée et linéaire. `F-042`, `F-050` et `F-051` restent `PROPOSED`;
+`MAX_NODES_PER_MAP = 5000`; aucun renderer; `X5 = 36`; `origin/main =
+1a7d652c`, non touché.
+
+**Action unique suivante :** retour à l'orchestrateur pour ouvrir la prochaine
+tranche V1 de convergence du pipeline réel.

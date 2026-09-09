@@ -1,14 +1,17 @@
 # État courant
 
-## TASK-0029 — fondation de requête bornée — 2026-09-09
+## ACTION-0046 — TASK-0029 VERIFIED — 2026-09-09
 
-- **Statut : `IMPLEMENTED`**, livré par l'exécuteur sur
-  `build/v0.2-a13-scale-query-foundation`. **Jamais `VERIFIED`** : le contrôle
-  indépendant sur preuves appartient à l'orchestrateur technique.
+- **Verdict indépendant enregistré, non rendu par Codex :** `ACTION-0046 =
+  CLOSED`; `TASK-0029 = VERIFIED — PASS` dans sa portée exacte de fondation
+  Rust/SQLite et mesure d'ingénierie non produit. Claude Code était
+  l'exécuteur de `TASK-0029`; Codex est seulement le rédacteur de
+  l'enregistrement.
 - **Documents gelés avant tout code**, en un commit distinct :
   [`DEC-0030`](../decisions/DEC-0030-bounded-hierarchy-query-contract.md) —
-  `APPROVED` — et la fiche
-  [`TASK-0029`](../tasks/TASK-0029-scale-query-foundation.md).
+  `APPROVED`, implémentation contrôlée — et la fiche
+  [`TASK-0029`](../tasks/TASK-0029-scale-query-foundation.md), désormais
+  `VERIFIED`.
 - **La réserve d'`ACTION-0045` est levée sur son point précis.** La page d'une
   centaine d'enfants directs ne coûte plus proportionnellement à la fratrie :
   `p95` de **611 → 322 µs** en première page et **387 → 892 µs** en fin de
@@ -43,15 +46,16 @@
   `INDEX-SCALE` seulement, aucun fichier physique; corpus synthétique de forme
   unique; deux positions rendent un rapport inférieur à 1, ce qui est du bruit
   et non un gain.
-- **X5 reste 36.** Les deux JSON `TASK-0029` sont non canoniques et non
-  protégés; les quatre artefacts `TASK-0028` sont inchangés.
+- **X5 reste 36.** Les deux JSON `TASK-0029` restent non canoniques et non
+  protégés; les quatre artefacts `TASK-0028` restent inchangés.
 - **État produit inchangé :** `DEC-0029 = APPROVED`; `DEC-0030 = APPROVED`,
-  implémentation en attente de contrôle; `F-042`, `F-050`, `F-051` restent
+  implémentation contrôlée; `F-042`, `F-050`, `F-051` restent
   `PROPOSED`; `F-046 = PROPOSED`; `F-047 = DEFERRED`;
   `MAX_NODES_PER_MAP = 5000`; aucun renderer; aucune commande Tauri ni contrat
   IPC nouveau; `R8`, `DEC-0013/F` et X10 hors Windows restent entières.
   `origin/main = 1a7d652c`, non touché. Aucune `TASK-0030`, aucune `DEC-0031`.
-- **Action unique suivante :** contrôle indépendant de `TASK-0029`.
+- **Action unique suivante :** retour à l'orchestrateur pour ouvrir la
+  prochaine tranche V1 de convergence du pipeline réel.
 
 ## ACTION-0045 — TASK-0028 VERIFIED comme spike synthétique — 2026-09-07
 

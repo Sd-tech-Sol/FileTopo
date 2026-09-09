@@ -1,10 +1,10 @@
 # VALIDATION.md — État de vérification
 
 **Dernière mise à jour :** 2026-09-09
-**Dernière tâche évaluée :** TASK-0029 — `IMPLEMENTED` le 2026-09-09, section
-AW, **en attente de contrôle indépendant**. TASK-0028 — `VERIFIED` le
-2026-09-07 par le verdict indépendant enregistré dans `ACTION-0045`,
-section AV.
+**Dernière tâche évaluée :** TASK-0029 — `VERIFIED` le 2026-09-09 par le
+verdict indépendant enregistré dans `ACTION-0046`, section AX. TASK-0028 —
+`VERIFIED` le 2026-09-07 par le verdict indépendant enregistré dans
+`ACTION-0045`, section AV.
 **Portée :** TASK-0001 (phase 0) — `VERIFIED` ; TASK-0002 (phase 1) —
 `VERIFIED` le 2026-08-25, sur preuves indépendantes de l'orchestrateur
 (section A.7) ; TASK-0010 (rebaseline et mémoire) — `VERIFIED` le 2026-08-31,
@@ -4115,17 +4115,59 @@ Trois qualificatifs seulement : **vérifié**, **non testé**, **inconnu**.
   (`DEVELOPMENT_BENCH_NOT_ACCEPTANCE`, i9-9900K, 32 Gio) : **aucune cible
   « machine modeste » n'est validée**.
 - **`R8` entière** : aucun chiffre publié hors des artefacts et du rapport
-  `TASK-0029`, tous marqués `NONCANONICAL UNTIL INDEPENDENT CONTROL`.
+  `TASK-0029`. Les deux JSON `TASK-0029` restent non canoniques et hors `X5`
+  après le contrôle indépendant; leurs libellés d'origine ne sont pas réécrits.
 - **Deux positions rendent un rapport inférieur à 1.** C'est du bruit à
   l'échelle de quelques centaines de microsecondes, pas une amélioration.
 - `F-042`, `F-050`, `F-051` restent `PROPOSED` et non implémentées; seule la
   **sémantique du compte** de `F-051` est clarifiée par `DEC-0030`.
   `MAX_NODES_PER_MAP = 5000` reste en vigueur; aucun renderer n'est choisi;
   aucun budget de vue n'est décidé.
-- `DEC-0030` est `APPROVED`, mais **son implémentation attend le contrôle
-  indépendant**; `DEC-0029` est inchangée.
+- `DEC-0030` est `APPROVED` et son implémentation dans `TASK-0029` est
+  contrôlée par `ACTION-0046`; `DEC-0029` est inchangée.
 - `F-046` reste bloquée par `DEC-0013/F`; `F-047` reste `DEFERRED`; Graphify
   reste `NOT INTEGRATED`; `X10` hors Windows reste non prouvée race-safe.
 - La dette préexistante de l'index de `docs/decisions/README.md` et celle des
   chemins locaux personnels dans d'anciens documents ne sont pas corrigées ici;
   `TASK-0029` n'en ajoute pas.
+
+---
+
+## AX. ACTION-0046 — contrôle indépendant de TASK-0029 — 2026-09-09
+
+**Verdict indépendant enregistré, non rendu par Codex :** `ACTION-0046 =
+CLOSED`; `TASK-0029 = VERIFIED — PASS` dans sa portée exacte de fondation
+Rust/SQLite et mesure d'ingénierie non produit. Claude Code était l'exécuteur;
+Codex est seulement le rédacteur de l'enregistrement. Voir
+[`ACTION-0046`](../reviews/ACTION-0046-independent-control.md).
+
+### Validations documentaires de fermeture
+
+| Contrôle | Résultat |
+|---|---|
+| Identité Git | **PASS** — branche `build/v0.2-a13-scale-query-foundation`; commit d'orchestration `6ecec5b`; parent direct `aa1b91209a5fcc64b7d116829160047a7d2ccac4`; substantif `d8f3dbff2c6127352518b33f1ac7650c1652a23b` présent |
+| `origin/main` | **PASS** — `1a7d652ca48281c1687f6d1404c56a1404df91d8`, inchangé |
+| Verdict enregistré | **PASS** — `ACTION-0046 = CLOSED`; `TASK-0029 = VERIFIED`; autorité du verdict attribuée à l'orchestrateur technique indépendant |
+| Portée produit | **PASS** — aucun code produit, benchmark, WebView2, commande Tauri, IPC, UI, materializer, renderer ou dépendance ajouté par la fermeture |
+| Artefacts de mesure | **PASS** — aucun fichier sous `docs/performance/runs/` modifié |
+| X5 | **PASS** — reste exactement à 36; les JSON `TASK-0029` restent non canoniques et non protégés |
+| Action suivante | **PASS** — `NEXT_ACTION.md` contient une seule action de retour à l'orchestrateur |
+| Absences exigées | **PASS** — aucune `TASK-0030`, aucune `DEC-0031` |
+| Hygiène documentaire | **PASS** — `git diff --check`; liens relatifs des documents modifiés/créés vérifiés |
+
+### Limites maintenues
+
+- Banc `DEVELOPMENT_BENCH_NOT_ACCEPTANCE`; aucune cible « machine modeste » ni
+  `TARGET_CLASS` validée.
+- Timings Rust en `debug`; pas de mesure `release`.
+- 1M = `INDEX-SCALE`, pas un million de fichiers physiques.
+- Corpus synthétique de forme limitée.
+- Aucun test bout-en-bout index -> vue -> frontend.
+- `Index::replace_nodes` tient encore le corpus en mémoire, environ 189 Mo
+  déclarés à 1M.
+- Recherche `P-08` encore linéaire et inchangée.
+- Aucune capacité produit `F-042`, `F-050` ou `F-051` implémentée par
+  `TASK-0029`.
+
+`TASK-0029` vérifie une fondation de requête. Elle ne vérifie ni la V1, ni le
+million d'éléments comme capacité commerciale.

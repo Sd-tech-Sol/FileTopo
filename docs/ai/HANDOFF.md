@@ -1,10 +1,13 @@
 # HANDOFF — passage de relais
 
-## Relais actuel — TASK-0029 IMPLEMENTED, 2026-09-09
+## Relais actuel — ACTION-0046, TASK-0029 VERIFIED, 2026-09-09
 
-`TASK-0029`, la fondation de requête bornée, est **`IMPLEMENTED`** sur
-`build/v0.2-a13-scale-query-foundation`. L'exécuteur ne s'est pas attribué
-`VERIFIED`; le contrôle indépendant reste à faire.
+Le verdict rendu par l'orchestrateur technique indépendant est enregistré dans
+[`ACTION-0046`](../reviews/ACTION-0046-independent-control.md) :
+`ACTION-0046 = CLOSED`, `TASK-0029 = VERIFIED — PASS` dans sa portée exacte de
+fondation Rust/SQLite et mesure d'ingénierie non produit. Claude Code était
+l'exécuteur de `TASK-0029`; Codex a seulement rédigé l'enregistrement du
+verdict externe et ne s'attribue pas `VERIFIED`.
 
 **Ce qui a été prouvé.** La réserve d'`ACTION-0045` portait sur un point
 précis : les requêtes qui fabriquent la petite vue n'étaient pas elles-mêmes
@@ -49,7 +52,9 @@ centaines de microsecondes et non un gain. Les deux JSON restent non canoniques
 et non protégés; `X5` reste à **36** et les quatre artefacts `TASK-0028` sont
 inchangés. `origin/main = 1a7d652c`, non touché.
 
-**Relais unique :** contrôle indépendant de `TASK-0029`.
+**Relais unique :** retour à l'orchestrateur pour ouvrir la prochaine tranche
+V1 de convergence du pipeline réel. Ne créer ni `TASK-0030` ni `DEC-0031`
+sans nouveau GO.
 
 ## Relais précédent — ACTION-0045, TASK-0028 VERIFIED, 2026-09-07
 
