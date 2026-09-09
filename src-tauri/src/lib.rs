@@ -1,4 +1,5 @@
 mod domain;
+mod hierarchy;
 mod index;
 mod map;
 mod registry;
