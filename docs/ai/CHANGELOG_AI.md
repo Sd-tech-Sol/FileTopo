@@ -3900,3 +3900,71 @@ reste hors périmètre; `TASK-0028` n'en ajoute pas.
 **Action unique suivante :** l'orchestrateur choisit la prochaine tranche de
 fondation d'échelle avant le materializer produit. Aucune `TASK-0029` ni
 `DEC-0030` n'est créée.
+
+---
+
+## 2026-09-09 — TASK-0029 — Fondation de requête bornée
+
+**Agent :** exécuteur Claude Code
+**Statut à l'issue :** `IMPLEMENTED`. **Jamais `VERIFIED`** : le contrôle
+indépendant sur preuves appartient à l'orchestrateur technique.
+
+### Fait
+
+- **Gel documentaire avant tout code**, en un commit distinct :
+  [`DEC-0030`](../decisions/DEC-0030-bounded-hierarchy-query-contract.md) —
+  ordre des enfants, pagination keyset, cohérence curseur/révision, sémantique
+  du compte d'agrégat sur le hot path, index SQL et migration — et la fiche
+  [`TASK-0029`](../tasks/TASK-0029-scale-query-foundation.md).
+- **Cœur produit interne.** Nouveau module `src-tauri/src/hierarchy.rs` :
+  ordre canonique, curseur keyset, page bornée, compte direct exact, chaîne
+  d'ancêtres bornée, audit de `child_count` et publication du plan de requête.
+  `src-tauri/src/index.rs` reçoit la migration `user_version` 2 → 3, l'identité
+  et la révision d'index, et quatre primitives déléguées.
+- **Schéma.** Deux colonnes générées `VIRTUAL` — `child_order_rank` et
+  `name_fold` — et l'index `idx_nodes_child_order(parent_id, child_order_rank,
+  name_fold, id)`. Migration idempotente, sans réécriture de table.
+- **Banc de mesure** `src-tauri/src/scale_query/`, entièrement `#[cfg(test)]`,
+  campagnes `#[ignore]`, lancé par `scripts/task0029-scale-query.ps1`. Deux
+  artefacts écrits : `TASK-0029-SQF-100k.json` et `TASK-0029-SQF-1m-index.json`,
+  plus le rapport `TASK-0029-SCALE-QUERY-REPORT.md`.
+
+### Prouvé
+
+La réserve d'`ACTION-0045` portait sur un point précis : les requêtes qui
+fabriquent la petite vue n'étaient pas bornées. Elles le sont. `p95` d'une page
+de 100 enfants directs, de 100k à 1M : **611 → 322 µs** en première page,
+**387 → 892 µs** en fin de fratrie. Le prototype `OFFSET` de `TASK-0028`,
+appelé tel quel sur la même base et dans le même processus, va de **13,6 à
+116,7 ms** et de **32,8 à 351,2 ms**. Critère d'ingénierie `p95` 1M ≤ 5 × `p95`
+100k : **`PASS`**, pire rapport **2,30**, calculé par la campagne elle-même.
+
+Les critères structurels sont vérifiés **par assertion pendant la campagne** :
+index utilisé pour `parent_id` et pour l'ordre, aucun
+`USE TEMP B-TREE FOR ORDER BY`, aucun balayage du corpus, aucun `OFFSET` de
+continuation. L'ordre fonctionnel est prouvé **identique** au précédent. Un
+curseur périmé, étranger ou d'un autre parent est refusé explicitement. Le
+compte direct exact coûte 12 à 13 µs et son audit contre le `COUNT(*)` réel
+rapporte **0 désaccord** sur tout le corpus, aux deux tailles. La migration
+préserve nœuds, métadonnées et état `seen`, prouvé sur une base `user_version =
+2`.
+
+### Non fait, et déclaré
+
+Scanner à 100 000 ou 1 000 000 de fichiers **physiques** : non testé, les deux
+campagnes sont `INDEX-SCALE`. Temps `release` non mesurés, la suite de tests du
+crate ne compilant pas en `--release` — constat **antérieur à cette tâche**.
+Recherche `P-08` inchangée et toujours linéaire dans le corpus. Indexation en
+flux non faite : `Index::replace_nodes` prend toujours tout le corpus en
+mémoire, 189 Mo à 1M. Composition bout-en-bout non testée : aucune commande
+n'expose ces primitives, par décision. Aucun replay WebView2, aucun n'étant
+requis.
+
+Le banc est `DEVELOPMENT_BENCH_NOT_ACCEPTANCE` : **aucune cible « machine
+modeste » n'est validée**. `R8` entière. Aucun état de `F-042`, `F-050`,
+`F-051` changé; `MAX_NODES_PER_MAP = 5000` en vigueur; aucun renderer choisi;
+aucun budget de vue décidé; aucune dépendance ajoutée; **aucune `TASK-0030`,
+aucune `DEC-0031`**. `X5 = 36`, les quatre artefacts `TASK-0028` inchangés,
+`origin/main = 1a7d652c`, non touché.
+
+**Action unique suivante :** contrôle indépendant de `TASK-0029`.

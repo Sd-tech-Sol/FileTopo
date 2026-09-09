@@ -3,7 +3,8 @@
 - **Date :** 2026-09-09
 - **Branche :** `build/v0.2-a13-scale-query-foundation`
 - **Base contrôlée :** `b3923e0001034d1c752c9e416d5ca9aeabd830d5`
-- **Statut courant :** `IN_PROGRESS`
+- **Statut courant :** `IMPLEMENTED` — livré par l'exécuteur. **Jamais `VERIFIED`** :
+  le contrôle indépendant sur preuves appartient à l'orchestrateur technique.
 - **Transitions permises :** `PROPOSED → APPROVED → IN_PROGRESS →
   IMPLEMENTED → VERIFIED`. Le GO technique de `.orchestrator/NEXT_PROMPT.md`
   autorise `IN_PROGRESS` après le gel documentaire. **L'exécuteur ne
@@ -180,11 +181,100 @@ plutôt que de rendre une collection non bornée.
 
 ## 8. Résultats
 
-À compléter à la livraison.
+### 8.1 Le résultat principal
+
+`p95` d'une page de **100** enfants directs, sur le dossier le plus large du
+corpus — 24 981 enfants à 100k, 249 981 à 1M :
+
+| Position | 100k | 1M | Rapport |
+|---|---|---|---|
+| première page | 611 µs | 322 µs | **0,53** |
+| curseur médian | 410 µs | 698 µs | **1,70** |
+| curseur proche de la fin | 387 µs | 892 µs | **2,30** |
+| curseur après le dernier élément | 219 µs | 175 µs | **0,80** |
+
+**Critère d'ingénierie « p95 à 1M ≤ 5 × p95 à 100k » : `PASS`**, pire rapport
+**2,30**. Le rapport est calculé par la campagne 1M elle-même, qui relit
+l'artefact 100k, et non à la main.
+
+Le prototype `OFFSET` de `TASK-0028`, appelé tel quel sur la même base et dans
+le même processus, va de 13,6 ms à 116,7 ms en première page et de 32,8 ms à
+351,2 ms en fin de fratrie — **un rapport de 8,6 à 10,8**. La croissance
+quasi linéaire que `ACTION-0045` avait relevée est donc supprimée sur le chemin
+produit interne, et reproduite sur l'ancien, ce qui montre que les deux
+campagnes parlent bien du même banc.
+
+### 8.2 Critères structurels
+
+`EXPLAIN QUERY PLAN`, vérifié **par assertion pendant la campagne** :
+
+- première page : `SEARCH nodes USING INDEX idx_nodes_child_order (parent_id=?)`;
+- continuation :
+  `SEARCH nodes USING INDEX idx_nodes_child_order (parent_id=? AND (child_order_rank,name_fold)>(?,?))`;
+- **aucun `USE TEMP B-TREE FOR ORDER BY`**, aucun balayage du corpus, aucun
+  `OFFSET` dans la requête de continuation.
+
+L'ancien chemin, publié à côté, montre toujours
+`USE TEMP B-TREE FOR ORDER BY` : le nouvel index ne l'accélère pas par
+accident.
+
+### 8.3 Comptes et bornes
+
+- compte exact d'enfants directs : **12 à 13 µs**, indépendant de la taille de
+  la fratrie;
+- audit `child_count` contre le `COUNT(*)` réel, sur **tout le corpus** :
+  **0 désaccord** aux deux tailles;
+- chaîne d'ancêtres de 26 niveaux : p95 237 à 351 µs, plafond 512;
+- CTE récursive de sous-arbre : **342 ms** à 1M — mesurée une fois pour montrer
+  ce que `DEC-0030 §D` interdit d'imposer au hot path.
+
+### 8.4 Validations
+
+| Validation | Commande | Résultat |
+|---|---|---|
+| Tests Rust, suite complète | `cargo test --lib` | **285 passés, 0 échec, 5 ignorés** (les cinq campagnes, `#[ignore]` par conception) |
+| Primitives bornées | `cargo test --lib hierarchy` | **17 passés, 0 échec** |
+| Index et migration | `cargo test --lib index::` | **5 passés, 0 échec** |
+| Harness de mesure | `cargo test --lib scale_query` | **9 passés, 0 échec, 2 ignorés** |
+| Campagnes | `scripts/task0029-scale-query.ps1` | **2 campagnes réussies**, 2 artefacts écrits |
+| Tests TypeScript | `pnpm test` | **261 passés, 0 échec**, 15 fichiers |
+| Typage | `pnpm check` | **propre** |
+| Build frontend | `pnpm build` | **réussi**, 61 modules |
+| Build produit Rust | `cargo build` | **réussi**; seul avertissement `SUGGESTION_STATES` (`relations.rs`), **préexistant** et sans lien |
+| Hygiène du diff | `git diff --check` | **propre** |
+| `X5` | liste Rust et liste PowerShell | **36** des deux côtés, inchangée |
+| `origin/main` | `git rev-parse origin/main` | `1a7d652ca48281c1687f6d1404c56a1404df91d8`, non touché |
+| Artefacts `TASK-0028` | `git diff b3923e0..HEAD -- docs/performance/runs/` | **aucun des quatre modifié** |
+
+Aucun replay WebView2 n'a été exécuté, et aucun n'était requis : `TASK-0029` ne
+touche ni interface, ni renderer, ni commande.
 
 ## 9. Limites déclarées
 
-À compléter à la livraison.
+1. **Banc hors classe cible.** i9-9900K, 32 Gio, `DEVELOPMENT_BENCH_NOT_ACCEPTANCE`.
+   **Aucune cible « machine modeste » n'est validée.**
+2. **Profil `debug`.** La suite de tests du crate ne compile pas en `release` —
+   constat antérieur à cette tâche. Les valeurs absolues ne sont pas un
+   plancher de performance; seule la **croissance** est exploitable.
+3. **INDEX-SCALE seulement.** Aucun fichier physique n'a été créé. Rien ici ne
+   dit quoi que ce soit d'un scanner à 100 000 ou 1 000 000 de fichiers.
+4. **Corpus synthétique de forme unique** — un `hub` très large, une épine
+   profonde. Une arborescence réelle a d'autres distributions de noms, de
+   casses et de profondeurs. Aucune donnée réelle n'a été lue.
+5. **Deux positions rendent un rapport inférieur à 1.** C'est du bruit à
+   l'échelle de quelques centaines de microsecondes, pas un gain.
+6. **`Index::replace_nodes` prend toujours tout le corpus en mémoire** —
+   189 Mo de working set à 1M. `TASK-0029` **ne corrige pas** ce point;
+   l'indexation en flux est la tranche suivante et le constat de `TASK-0028`
+   reste entier.
+7. **La recherche `P-08` est inchangée** et reste linéaire dans le corpus.
+   Son `OFFSET` est conservé, hors périmètre.
+8. **Aucune capacité produit n'est livrée** : pas de commande, pas d'IPC, pas
+   d'interface, pas de materializer.
+9. **Contrôle indépendant non fait.** Les deux artefacts restent non canoniques
+   et hors `X5`.
+10. La dette préexistante de chemins locaux personnels dans d'anciens documents
+    reste hors périmètre; `TASK-0029` n'en ajoute pas.
 
 ## 10. Documents liés
 

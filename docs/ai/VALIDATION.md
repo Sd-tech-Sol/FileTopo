@@ -1,8 +1,10 @@
 # VALIDATION.md — État de vérification
 
-**Dernière mise à jour :** 2026-09-07
-**Dernière tâche évaluée :** TASK-0028 — `VERIFIED` le 2026-09-07 par le
-verdict indépendant enregistré dans `ACTION-0045`, section AV.
+**Dernière mise à jour :** 2026-09-09
+**Dernière tâche évaluée :** TASK-0029 — `IMPLEMENTED` le 2026-09-09, section
+AW, **en attente de contrôle indépendant**. TASK-0028 — `VERIFIED` le
+2026-09-07 par le verdict indépendant enregistré dans `ACTION-0045`,
+section AV.
 **Portée :** TASK-0001 (phase 0) — `VERIFIED` ; TASK-0002 (phase 1) —
 `VERIFIED` le 2026-08-25, sur preuves indépendantes de l'orchestrateur
 (section A.7) ; TASK-0010 (rebaseline et mémoire) — `VERIFIED` le 2026-08-31,
@@ -4001,3 +4003,129 @@ benchmark synthétique, sans validation de performance produit. Claude Code
 - Aucun benchmark, replay WebView2, test produit ou build n'a été relancé pour
   cette fermeture documentaire; seules les validations de fermeture exigées
   ont été exécutées.
+
+---
+
+## AW. TASK-0029 — fondation de requête bornée — 2026-09-09
+
+**Statut : `IMPLEMENTED`** le 2026-09-09, livré par Claude Code (exécuteur).
+**Non `VERIFIED`** : l'exécuteur ne s'attribue pas cet état, et le contrôle
+indépendant sur preuves reste à faire.
+
+Trois qualificatifs seulement : **vérifié**, **non testé**, **inconnu**.
+
+### AW.1 Validations exécutées
+
+| Validation | Commande | Résultat |
+|---|---|---|
+| Tests Rust, suite complète | `cargo test --lib` | **285 passés, 0 échec, 5 ignorés** (les cinq campagnes, `#[ignore]` par conception) |
+| Primitives bornées | `cargo test --lib hierarchy` | **17 passés, 0 échec** |
+| Index, migration et révision | `cargo test --lib index::` | **5 passés, 0 échec** |
+| Harness de mesure | `cargo test --lib scale_query` | **9 passés, 0 échec, 2 ignorés** |
+| Campagnes `SQF1`–`SQF5` | `scripts/task0029-scale-query.ps1` | **2 campagnes réussies**, 2 artefacts écrits |
+| Tests TypeScript, suite complète | `pnpm test` | **261 passés, 0 échec**, 15 fichiers |
+| Typage | `pnpm check` | **propre**, aucune erreur |
+| Build frontend | `pnpm build` | **réussi**, 61 modules |
+| Build produit Rust | `cargo build` | **réussi**; le seul avertissement (`SUGGESTION_STATES`, `relations.rs`) est **préexistant** et sans lien |
+| Hygiène du diff | `git diff --check` | **propre** |
+
+### AW.2 Vérifié, sur preuves
+
+- **Le coût d'une page ne suit plus la fratrie.** `p95` d'une page de 100
+  enfants directs, entre 100k et 1M : première page **611 → 322 µs**, curseur
+  médian **410 → 698 µs**, curseur proche de la fin **387 → 892 µs**, curseur
+  après le dernier élément **219 → 175 µs**. Preuve : les deux artefacts
+  `TASK-0029-SQF-*.json`.
+- **Critère d'ingénierie `p95` 1M ≤ 5 × `p95` 100k : `PASS`**, pire rapport
+  **2,30** à la position `curseur-proche-fin`. Le rapport est **calculé par la
+  campagne 1M elle-même**, qui relit l'artefact 100k, et non recopié à la main.
+- **L'ancien chemin, mesuré dans la même exécution, croît toujours.** Le
+  prototype `OFFSET` de `TASK-0028` passe de 13,6 à 116,7 ms en première page
+  et de 32,8 à 351,2 ms en fin de fratrie — rapport 8,6 à 10,8. Il reproduit
+  les chiffres de `TASK-0028` (12,9 ms et 110,4 ms), ce qui montre que les deux
+  campagnes parlent du même banc.
+- **Critères structurels du plan, vérifiés par assertion pendant la campagne.**
+  `idx_nodes_child_order` sert `parent_id` **et** l'ordre; **aucun
+  `USE TEMP B-TREE FOR ORDER BY`**; aucun balayage du corpus; **aucun `OFFSET`**
+  dans la requête de continuation. Une violation arrête la campagne. Le plan de
+  l'ancien chemin, publié à côté, montre toujours son tri temporaire.
+- **L'ordre fonctionnel est inchangé.** Un test compare l'ordre keyset à l'ordre
+  préexistant `kind = 'directory' DESC, name COLLATE NOCASE, id` sur une fixture
+  mêlant casses, doublons et caractères non ASCII : ils coïncident exactement.
+- **Pagination sans doublon ni omission.** Sur 97 enfants dont la moitié ne
+  diffèrent que par la casse, huit tailles de page — 1, 2, 5, 10, 96, 97, 98,
+  500 — rendent le même ensemble, dans le même ordre, sans répétition.
+- **Curseur périmé refusé.** Après reconstruction, la révision avance et un
+  curseur antérieur est rejeté `stale`. Un curseur d'un autre index est rejeté
+  `foreign`; d'un autre parent, `parent mismatch`. Deux index indépendants ont
+  deux `index_id` distincts alors que leurs révisions coïncident.
+- **Curseur sans donnée sensible.** Un test vérifie que le jeton ne contient ni
+  `/`, ni `\`, ni `:`, ni le mot `offset`, et qu'il n'embarque aucun nom : la
+  clé de tri de la ligne de reprise est relue dans l'index par clé primaire.
+- **Aucune collection non bornée.** Une demande de `usize::MAX` rend exactement
+  `MAX_CHILDREN_PAGE_SIZE = 500` lignes, avec le total exact déclaré et le reste
+  atteignable par curseur. Une demande de 0 est ramenée à 1.
+- **`child_count` est exact.** Audit contre le `COUNT(*)` réel, nœud par nœud,
+  sur **tout le corpus** : **0 désaccord** à 100k et à 1M. Un test injecte
+  volontairement un compte faux et vérifie que l'audit le signale.
+- **Compte direct à coût constant.** 12 à 13 µs `p95` aux deux tailles, contre
+  **342 ms** pour la CTE récursive de sous-arbre à 1M — mesurée une fois pour
+  montrer ce que `DEC-0030 §D` interdit sur le hot path.
+- **Chaîne d'ancêtres bornée.** 26 niveaux lus en 237 à 351 µs `p95`, plafond
+  déclaré à 512, échec explicite au-delà.
+- **Migration `user_version` 2 → 3 sans perte.** Prouvée sur une base construite
+  avec le schéma v2 écrit en toutes lettres dans le test : les quatre nœuds, les
+  métadonnées et les deux drapeaux `seen` survivent verbatim, et la base migrée
+  sert immédiatement la page bornée sur le nouvel index. Une réouverture ne
+  réécrit pas l'identité et ne fait pas avancer la révision.
+- **Empreinte produit nulle.** Aucune commande Tauri, aucune route, aucun
+  contrat IPC, aucun élément d'interface. Le harness de mesure est entièrement
+  `#[cfg(test)]`; `cargo build` réussit sans avertissement nouveau.
+- **`X5` intacte à 36**, dans la liste Rust comme dans la liste PowerShell. Le
+  rédacteur d'artefacts `TASK-0029` **refuse par assertion** d'écrire un nom
+  scellé ou un nom `TASK-0028`.
+- **Artefacts `TASK-0028` inchangés.** `git diff b3923e0..HEAD` ne rapporte
+  aucune modification des quatre JSON.
+- **Aucune donnée personnelle.** Les artefacts sont contrôlés octet à octet
+  avant écriture, par le même garde que `TASK-0028`.
+
+### AW.3 Non testé, déclaré comme tel
+
+- **Le scanner à 100 000 ou 1 000 000 de fichiers physiques.** Les deux
+  campagnes sont `INDEX-SCALE` : aucun fichier n'a été créé. Le coût mesuré est
+  un coût de requête.
+- **Temps en profil `release`.** Non mesurés : la suite de tests du crate ne
+  compile pas en `--release`, constat **antérieur à cette tâche**. Tous les
+  temps publiés sont des temps `debug`.
+- **La recherche `P-08` à ces tailles.** Inchangée par cette tranche, et
+  toujours linéaire dans le corpus. Aucune mesure nouvelle n'a été prise.
+- **L'indexation en flux ou par lots.** Hors périmètre; `Index::replace_nodes`
+  prend toujours tout le corpus en mémoire.
+- **La composition bout-en-bout index → vue → WebView2.** Non testée : aucune
+  commande produit n'expose ces primitives, par décision de `DEC-0030`.
+- **Aucun replay WebView2.** Aucun n'était requis : `TASK-0029` ne modifie ni
+  interface, ni renderer, ni commande.
+- **Une arborescence réelle.** Le corpus a une seule forme — un `hub` très
+  large, une épine profonde. Les distributions réelles de noms, de casses et de
+  profondeurs sont **inconnues** de cette mesure.
+
+### AW.4 Réserves maintenues
+
+- **Le banc n'est pas la classe d'acceptation**
+  (`DEVELOPMENT_BENCH_NOT_ACCEPTANCE`, i9-9900K, 32 Gio) : **aucune cible
+  « machine modeste » n'est validée**.
+- **`R8` entière** : aucun chiffre publié hors des artefacts et du rapport
+  `TASK-0029`, tous marqués `NONCANONICAL UNTIL INDEPENDENT CONTROL`.
+- **Deux positions rendent un rapport inférieur à 1.** C'est du bruit à
+  l'échelle de quelques centaines de microsecondes, pas une amélioration.
+- `F-042`, `F-050`, `F-051` restent `PROPOSED` et non implémentées; seule la
+  **sémantique du compte** de `F-051` est clarifiée par `DEC-0030`.
+  `MAX_NODES_PER_MAP = 5000` reste en vigueur; aucun renderer n'est choisi;
+  aucun budget de vue n'est décidé.
+- `DEC-0030` est `APPROVED`, mais **son implémentation attend le contrôle
+  indépendant**; `DEC-0029` est inchangée.
+- `F-046` reste bloquée par `DEC-0013/F`; `F-047` reste `DEFERRED`; Graphify
+  reste `NOT INTEGRATED`; `X10` hors Windows reste non prouvée race-safe.
+- La dette préexistante de l'index de `docs/decisions/README.md` et celle des
+  chemins locaux personnels dans d'anciens documents ne sont pas corrigées ici;
+  `TASK-0029` n'en ajoute pas.

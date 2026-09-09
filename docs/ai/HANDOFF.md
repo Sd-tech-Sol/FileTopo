@@ -1,6 +1,57 @@
 # HANDOFF — passage de relais
 
-## Relais actuel — ACTION-0045, TASK-0028 VERIFIED, 2026-09-07
+## Relais actuel — TASK-0029 IMPLEMENTED, 2026-09-09
+
+`TASK-0029`, la fondation de requête bornée, est **`IMPLEMENTED`** sur
+`build/v0.2-a13-scale-query-foundation`. L'exécuteur ne s'est pas attribué
+`VERIFIED`; le contrôle indépendant reste à faire.
+
+**Ce qui a été prouvé.** La réserve d'`ACTION-0045` portait sur un point
+précis : les requêtes qui fabriquent la petite vue n'étaient pas elles-mêmes
+bornées. Elles le sont. Une page de 100 enfants directs coûte `p95` **611 →
+322 µs** en première page et **387 → 892 µs** en fin de fratrie quand le corpus
+passe de 100k à 1M, là où le prototype `OFFSET` de `TASK-0028`, appelé tel quel
+sur la même base et dans le même processus, va de **13,6 à 116,7 ms** et de
+**32,8 à 351,2 ms**. Critère d'ingénierie `p95` 1M ≤ 5 × `p95` 100k : **`PASS`**,
+pire rapport **2,30**.
+
+L'ordre fonctionnel n'a pas bougé — dossiers d'abord, nom insensible à la
+casse, puis `id` — et un test prouve qu'il coïncide exactement avec l'ordre
+préexistant. Ce qui a changé est **comment** il est servi : deux colonnes
+générées `VIRTUAL`, un index qui couvre le filtre et l'ordre, et une
+continuation par comparaison de valeurs de ligne que SQLite convertit en
+recherche. Le plan est vérifié **par assertion pendant la campagne**, pas
+raconté après coup.
+
+**Ce qu'il faut lire avant d'implémenter la suite.** Trois choses.
+
+1. `Index::replace_nodes` prend toujours **tout le corpus en mémoire** —
+   189 Mo de working set à un million. `TASK-0029` n'y touche pas.
+2. La recherche `P-08` est **inchangée** et reste linéaire dans le corpus. Elle
+   garde son `OFFSET`, délibérément : c'est la tranche suivante.
+3. Un `total descendants` exact reste **interdit sur le hot path** tant qu'il
+   n'est pas pré-calculé : mesuré à **342 ms** à 1M, son coût suit le
+   sous-arbre et non le budget de vue.
+
+**Ce qui n'a pas été livré, et ne devait pas l'être.** Aucune commande Tauri,
+aucun contrat IPC, aucun changement d'interface, aucun materializer, aucun
+renderer. `F-042`, `F-050` et `F-051` restent `PROPOSED`; seule la sémantique
+du compte de `F-051` est clarifiée par `DEC-0030`, sans que la capacité existe.
+`MAX_NODES_PER_MAP = 5000` est inchangé. Aucune dépendance ajoutée. Aucune
+`TASK-0030`, aucune `DEC-0031`.
+
+**Limites obligatoires.** Banc `DEVELOPMENT_BENCH_NOT_ACCEPTANCE`, hors classe
+cible; temps `debug`, la suite de tests du crate ne compilant pas en `release`;
+`INDEX-SCALE` seulement, aucun fichier physique créé, donc rien n'est dit du
+scanner à ces tailles; corpus synthétique d'une seule forme; deux positions
+rendent un rapport inférieur à 1, ce qui est du bruit à l'échelle de quelques
+centaines de microsecondes et non un gain. Les deux JSON restent non canoniques
+et non protégés; `X5` reste à **36** et les quatre artefacts `TASK-0028` sont
+inchangés. `origin/main = 1a7d652c`, non touché.
+
+**Relais unique :** contrôle indépendant de `TASK-0029`.
+
+## Relais précédent — ACTION-0045, TASK-0028 VERIFIED, 2026-09-07
 
 Le verdict de l'orchestrateur technique indépendant est enregistré dans
 [`ACTION-0045`](../reviews/ACTION-0045-independent-control.md) : `TASK-0028 =

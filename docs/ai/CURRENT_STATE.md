@@ -1,5 +1,58 @@
 # État courant
 
+## TASK-0029 — fondation de requête bornée — 2026-09-09
+
+- **Statut : `IMPLEMENTED`**, livré par l'exécuteur sur
+  `build/v0.2-a13-scale-query-foundation`. **Jamais `VERIFIED`** : le contrôle
+  indépendant sur preuves appartient à l'orchestrateur technique.
+- **Documents gelés avant tout code**, en un commit distinct :
+  [`DEC-0030`](../decisions/DEC-0030-bounded-hierarchy-query-contract.md) —
+  `APPROVED` — et la fiche
+  [`TASK-0029`](../tasks/TASK-0029-scale-query-foundation.md).
+- **La réserve d'`ACTION-0045` est levée sur son point précis.** La page d'une
+  centaine d'enfants directs ne coûte plus proportionnellement à la fratrie :
+  `p95` de **611 → 322 µs** en première page et **387 → 892 µs** en fin de
+  fratrie entre 100k et 1M, contre **13,6 → 116,7 ms** et **32,8 → 351,2 ms**
+  pour le prototype `OFFSET` de `TASK-0028` appelé sur la même base, dans le
+  même processus.
+- **Critère d'ingénierie « p95 à 1M ≤ 5 × p95 à 100k » : `PASS`**, pire rapport
+  **2,30**. Le rapport est calculé par la campagne 1M elle-même, qui relit
+  l'artefact 100k.
+- **Critères structurels tenus, vérifiés par assertion pendant la campagne :**
+  `idx_nodes_child_order` sert `parent_id` **et** l'ordre; **aucun
+  `USE TEMP B-TREE FOR ORDER BY`**; aucun balayage du corpus; **aucun `OFFSET`**
+  dans la requête de continuation. L'ancien chemin, publié à côté, montre
+  toujours son tri temporaire.
+- **Curseur keyset lié à une révision.** Il ne porte que `index_id`, révision,
+  `parent_id` et `after_id` — aucun chemin, aucun nom, aucune position
+  `OFFSET`. Un curseur périmé, étranger ou d'un autre parent est **refusé
+  explicitement**. La révision avance **dans la transaction même** de
+  `replace_nodes`.
+- **Comptes exacts.** Le compte d'enfants directs coûte **12 à 13 µs** quelle
+  que soit la fratrie, depuis la colonne durable `child_count`, dont l'audit
+  contre le `COUNT(*)` réel sur tout le corpus rapporte **0 désaccord** aux deux
+  tailles. La CTE récursive de sous-arbre — **342 ms** à 1M — est mesurée une
+  fois pour montrer ce que `DEC-0030 §D` interdit sur le hot path.
+- **Migration `user_version` 2 → 3**, idempotente, sans réécriture de table,
+  prouvée sur une base v2 : aucun nœud, aucune métadonnée et aucun état `seen`
+  perdu.
+- **Résultats négatifs conservés :** `Index::replace_nodes` prend toujours tout
+  le corpus en mémoire — **189 Mo** de working set à 1M; la recherche `P-08`
+  reste linéaire dans le corpus et **inchangée**.
+- **Limites :** banc `DEVELOPMENT_BENCH_NOT_ACCEPTANCE`; temps `debug`;
+  `INDEX-SCALE` seulement, aucun fichier physique; corpus synthétique de forme
+  unique; deux positions rendent un rapport inférieur à 1, ce qui est du bruit
+  et non un gain.
+- **X5 reste 36.** Les deux JSON `TASK-0029` sont non canoniques et non
+  protégés; les quatre artefacts `TASK-0028` sont inchangés.
+- **État produit inchangé :** `DEC-0029 = APPROVED`; `DEC-0030 = APPROVED`,
+  implémentation en attente de contrôle; `F-042`, `F-050`, `F-051` restent
+  `PROPOSED`; `F-046 = PROPOSED`; `F-047 = DEFERRED`;
+  `MAX_NODES_PER_MAP = 5000`; aucun renderer; aucune commande Tauri ni contrat
+  IPC nouveau; `R8`, `DEC-0013/F` et X10 hors Windows restent entières.
+  `origin/main = 1a7d652c`, non touché. Aucune `TASK-0030`, aucune `DEC-0031`.
+- **Action unique suivante :** contrôle indépendant de `TASK-0029`.
+
 ## ACTION-0045 — TASK-0028 VERIFIED comme spike synthétique — 2026-09-07
 
 - **Verdict externe enregistré, non rendu par Codex :** `ACTION-0045 =
