@@ -1,465 +1,241 @@
-# NEXT_PROMPT — TASK-0030 / V1 Pipeline Convergence — Canonical Brain Index + Bounded Runtime Projection
+# NEXT_PROMPT — ACTION-0047 / Fermeture indépendante de TASK-0030
 
-**TARGET_AGENT:** CODEX  
-**RECOMMENDED_MODEL:** GPT-6 Astra — High  
+**TARGET_AGENT:** CLAUDE  
 **STATUS:** READY  
 **OWNER:** orchestrateur technique  
-**MODE:** code produit V1 — convergence, pas un spike  
+**MODE:** fermeture documentaire uniquement — aucun code produit, aucun benchmark  
 **TASK:** `TASK-0030 — V1 Pipeline Convergence — Canonical Brain Index and Bounded Runtime Projection`  
-**DECISION:** `DEC-0031 — One Canonical Brain Index and Bounded Projection Boundary`
+**ACTION:** `ACTION-0047 — Contrôle indépendant de TASK-0030`
 
 ## /goal
 
-Faire le premier vrai pas de convergence V1 : **FileTopo ne doit plus avoir deux vérités concurrentes pour les mêmes nœuds.**
+Enregistrer dans le dépôt le **verdict indépendant déjà rendu par l’orchestrateur** après inspection de la livraison `TASK-0030` sur `build/v0.2-a14-v1-pipeline-convergence`.
 
-Aujourd'hui :
+Verdict externe à enregistrer :
 
-- `src-tauri/src/index.rs` possède la fondation d'index générique avec la pagination bornée de `TASK-0029`;
-- le runtime `MapApp` courant passe encore par `map::MapStore`, `map_nodes`, `MapSnapshot.nodes`, `MAX_NODES_PER_MAP = 5000`, et un layout calculé/persisté sur tout le corpus de la tranche;
-- le frontend courant reçoit encore un snapshot complet de la carte de la tranche synthétique.
+> **TASK-0030 = VERIFIED — PASS dans sa portée exacte de convergence V1 synthétique : un seul index canonique par cerveau, projection runtime bornée, layout de la vue seulement, et MapApp alimenté par cette projection.**
 
-La cible de cette tâche est :
+Ce verdict **ne signifie pas** que FileTopo V1 est terminé, ni que `F-050`/`F-051` sont entièrement VERIFIED dans leur contrat produit global. Claude ne rend pas le verdict et ne s’attribue pas la vérification : il ne fait que consigner le contrôle externe.
 
-> **Un seul index SQLite canonique par cerveau. Le runtime MapApp lit une projection matérialisée bornée de cet index. Le layout ne porte que sur cette projection. Aucun whole-graph JSON n'est envoyé au frontend.**
-
-Cette tâche est du **code produit**, pas un nouveau prototype. Elle doit réutiliser les briques déjà vérifiées et supprimer la duplication conceptuelle plutôt que créer une troisième couche parallèle.
-
-**Ne branche pas encore un cerveau personnel de Sébastien.** Utiliser uniquement les fixtures synthétiques et des répertoires temporaires synthétiques. L'activation d'une vraie racine utilisateur sera la tranche suivante après contrôle de la frontière read-only.
+Aucun code produit ne doit changer. Aucun benchmark ni replay WebView2 ne doit être relancé. Aucun JSON de preuve ne doit être modifié.
 
 ---
 
-## 0 — synchronisation, identité et branche
+## 0 — synchronisation et préconditions
 
-1. Lire et appliquer `AGENTS.md` et les protocoles actifs du dépôt.
-2. Branche de départ attendue : `build/v0.2-a13-scale-query-foundation`.
+1. Appliquer `AGENTS.md` et les protocoles actifs du dépôt.
+2. Branche attendue : `build/v0.2-a14-v1-pipeline-convergence`.
 3. `git fetch origin`, puis fast-forward uniquement.
-4. HEAD doit être le commit d'orchestration qui porte ce fichier.
-5. Son parent direct doit être exactement :
-   `981e5fe262556208f118ebfc299e5c9333600c4e`.
-6. Vérifier :
-   - `TASK-0029 = VERIFIED`;
-   - `ACTION-0046 = CLOSED`;
-   - `DEC-0030 = APPROVED`;
-   - `origin/main = 1a7d652ca48281c1687f6d1404c56a1404df91d8`;
-   - `X5 = 36`;
-   - aucune `TASK-0030` ni `DEC-0031` préexistante.
-7. Arbre propre avant écriture.
-8. Créer et publier exactement :
-   `build/v0.2-a14-v1-pipeline-convergence`.
-9. Ne toucher ni `main`, ni PR, ni release, ni tag.
+4. Le commit d’orchestration courant doit avoir comme parent direct le HEAD livré par Codex :
+   `58862b7f7cddb149c41e59ccfb9ae40d10b53630`.
+5. Le commit substantif de TASK-0030 reste :
+   `ab1d7e2386dd0cf5b935377c867c89617e4e3e56`.
+6. Le gel documentaire TASK-0030 / DEC-0031 reste :
+   `0255bd10717e11e460ab5a405aa07f9e516fa535`, parent direct du premier code et lui-même enfant de `896e2c39b955688e6a740427691be62255436a04`.
+7. `TASK-0029 = VERIFIED`, `ACTION-0046 = CLOSED`.
+8. `origin/main` doit rester exactement :
+   `1a7d652ca48281c1687f6d1404c56a1404df91d8`.
+9. X5 = **36** et reste inchangé.
+10. `ACTION-0047` doit être libre.
+11. Ne créer ni `TASK-0031`, ni `DEC-0032`, ni branche suivante, PR, merge, tag ou release.
+12. Arbre propre avant écriture.
 
 Toute divergence : **STOP / BLOCKED**.
 
 ---
 
-## 1 — audit ciblé obligatoire AVANT le gel
+## 1 — contrôle indépendant à enregistrer
 
-Avant toute modification, tracer les dépendances réelles de :
+Créer :
 
-- `src-tauri/src/index.rs`;
-- `src-tauri/src/map/store.rs`;
-- `src-tauri/src/map/commands.rs`;
-- `src-tauri/src/map/brains.rs`;
-- `src-tauri/src/map/layout.rs`;
-- `src-tauri/src/map/content_signals.rs`;
-- relations intra/inter-cerveaux;
-- `src/map/MapApp.tsx`;
-- `src/map/MapView.tsx`;
-- DTOs partagés dans `src/map/types.ts`.
+- `docs/reviews/ACTION-0047-independent-control.md`
 
-Identifier précisément :
+Le document doit indiquer explicitement :
 
-1. quels consommateurs lisent `MapStore`;
-2. lesquels ont besoin de nœuds seulement;
-3. lesquels ont besoin des rectangles persistés;
-4. lesquels ont seulement besoin d'une identité `brain_id + node_id`;
-5. quels invariants/tests supposent encore `MapSnapshot.nodes = tout le corpus`;
-6. si les relations/doublons dépendent de `map_nodes` ou seulement de l'identité/path.
+- `ACTION-0047 = CLOSED`;
+- `TASK-0030 = VERIFIED`;
+- exécuteur de TASK-0030 : **Codex**;
+- rédacteur de la fermeture : **Claude Code**;
+- autorité du verdict : **orchestrateur technique indépendant**;
+- Claude ne rend pas le verdict et ne s’attribue pas `VERIFIED`.
 
-**Ne pas créer une couche de compatibilité durable sans nécessité.** Si un adaptateur transitoire est nécessaire pour migrer un consommateur, il doit être explicitement temporaire et ne doit pas écrire une deuxième copie canonique des nœuds.
+### Points PASS du contrôle externe
 
----
+Consigner au minimum les faits suivants, sans les exagérer :
 
-## 2 — gel documentaire AVANT le code
-
-Créer et committer avant toute modification de code :
-
-- `docs/tasks/TASK-0030-v1-pipeline-convergence.md`
-- `docs/decisions/DEC-0031-one-canonical-brain-index-and-bounded-projection.md`
-
-`TASK-0030` part `APPROVED`, puis `IN_PROGRESS` après le gel.
-
-### DEC-0031 doit décider explicitement
-
-### A. Une seule vérité de corpus
-
-`Index` devient la **source canonique unique** des nœuds d'un cerveau pour le produit V1.
-
-Il est interdit d'entretenir deux tables concurrentes contenant chacune la vérité complète du même corpus (`nodes` d'un côté, `map_nodes` de l'autre).
-
-`MapStore` peut :
-
-- être supprimé;
-- être réduit à un cache non canonique;
-- ou rester temporairement comme lecteur de migration/tests,
-
-mais il ne doit plus être le store canonique utilisé par le runtime normal une fois TASK-0030 terminée.
-
-### B. Layout = propriété de la vue, pas du corpus
-
-Les rectangles/coordonnées de layout ne sont plus une propriété durable obligatoire de chaque nœud du corpus.
-
-Le pipeline devient :
-
-`Index canonique -> materialize_view() borné -> layout(view) -> DTO borné -> MapApp`
-
-Le layout `layered-tree-cards-v1` est **conservé**. Aucun nouveau renderer ni moteur de layout n'est introduit dans cette tâche.
-
-### C. Vue matérialisée bornée
-
-Créer une primitive produit réelle, pas test-only, équivalente à :
-
-- focus courant;
-- ancêtres nécessaires;
-- enfants directs paginés/bornés via les primitives `TASK-0029`;
-- nœuds utiles jusqu'à un budget fini;
-- agrégat exact lorsqu'une partie réelle n'est pas matérialisée.
-
-La cardinalité envoyée au frontend doit dépendre du **budget de vue**, pas du nombre total d'éléments indexés.
-
-Un budget d'ingénierie fixe peut être choisi pour cette tranche (ex. 512 ou valeur mieux justifiée par les tests existants), mais il doit être documenté comme **borne de runtime de la vue**, jamais comme limite de corpus ni promesse marketing.
-
-### D. Sémantique d'agrégat
-
-Un agrégat FileTopo :
-
-- n'est PAS un dossier;
-- n'a PAS de chemin de fichier;
-- n'est PAS une relation;
-- n'est PAS une suggestion;
-- porte un **compte exact d'enfants directs non matérialisés**;
-- porte une raison explicite de regroupement;
-- est expansible/paginable;
-- n'invente aucune arête.
-
-Ne pas calculer un total récursif de descendants sur le hot path.
-
-### E. Frontière IPC
-
-Le runtime normal ne doit plus exposer au frontend une API qui sérialise implicitement tout le corpus.
-
-Créer/adapter un contrat Tauri borné pour la vue courante. Les commandes peuvent être renommées/ajoutées si nécessaire, mais la nouvelle frontière doit être explicite et testée.
-
-Un garde automatisé doit empêcher la réintroduction d'un `all_nodes()`/`MapSnapshot.nodes` complet sur le chemin runtime normal.
-
-### F. Confidentialité
-
-- aucun réseau;
-- aucun contenu/nom/path de fixture ou cerveau dans un artefact public hors données synthétiques;
-- aucun log automatique de chemin réel;
-- aucune écriture sous une racine analysée;
-- aucun compte/cloud/LLM;
-- aucune télémétrie.
-
-### G. Portée volontaire
-
-**TASK-0030 ne branche PAS encore une vraie racine utilisateur.** Elle converge le moteur et le runtime sur données synthétiques seulement. Cela évite d'exposer des données personnelles tant que la nouvelle frontière canonique n'est pas contrôlée.
+1. **Chaîne Git correcte.** Le gel TASK-0030 + DEC-0031 précède le code; la branche descend sans divergence du commit d’orchestration `896e2c39...`.
+2. **Un seul corpus canonique runtime.** `crate::index::Index` / table `nodes` est la vérité de corpus par cerveau. `map::store` est devenu DTO-only; l’ancien `MapStore/map_nodes` ne subsiste que comme `legacy_store` sous `#[cfg(test)]` pour migration/régression.
+3. **Build sans layout global.** `map::commands::build_map` scanne la source synthétique en lecture seule, publie l’Index canonique puis ne calcule aucun layout de corpus; `MAX_NODES_PER_MAP=5000` n’est plus une limite runtime et reste seulement sous `#[cfg(test)]`.
+4. **Projection produit bornée réelle.** `map_view -> materialize_view() -> layered-tree-cards-v1 -> DTO -> MapApp`; `VIEW_BUDGET=512`, avec au plus 256 nœuds matériels et suffisamment de places réservées pour que nœuds + agrégats restent <= 512.
+5. **Agrégats exacts et distincts.** Ils portent le parent, le nombre exact d’enfants directs absents de la vue, la raison et un curseur éventuel; aucun chemin, faux dossier, relation ou suggestion n’est inventé.
+6. **Layout seulement sur la projection.** Les rectangles de la vue sont calculés après sélection bornée des entités; aucun rectangle n’est persisté pour tout le corpus runtime.
+7. **100k sur le cœur produit.** Le test produit crée un Index de 100 000 nœuds, appelle le vrai materializer, sérialise un DTO borné, vérifie que les 99 999 enfants sont atteignables par pagination sans doublon ni omission, et refuse un curseur périmé après révision.
+8. **Passage physique >5000.** Le scénario synthétique réel à 6001 nœuds passe par scan -> Index canonique -> projection, confirme la source inchangée et invalide le curseur après rebuild.
+9. **WebView2 réel.** La preuve non canonique rapporte 6001 indexés -> 256 matérialisés + 1 agrégat, navigation progressive, pan/zoom/sélection, 24 keydowns de confiance et 0 erreur console fatale.
+10. **Relations/contenu hors projection.** Un endpoint relationnel hors vue reste résolu contre l’Index canonique et l’UI le déclare au lieu d’inventer des coordonnées; les consommateurs d’analyse ne créent aucun second stockage canonique.
+11. **Aucune nouvelle dépendance/stack.** Aucun changement de renderer, package manifest, cloud, LLM, MCP ou réseau produit.
+12. **Données exclusivement synthétiques.** Aucun folder picker réel n’est exposé; aucun cerveau réel n’a été lu.
+13. Les validations exécutées par l’agent sont enregistrées comme **preuves d’exécuteur**, pas comme nouvelle exécution indépendante : Rust 290/0/5 ignored, TypeScript 264/0, `pnpm check`, `pnpm build`, `cargo build --offline`, runtime source guard et `git diff --check` PASS.
 
 ---
 
-## 3 — implémentation attendue
+## 2 — réserves non bloquantes à conserver explicitement
 
-Le design exact des types/fichiers est à déterminer après l'audit, mais le résultat fonctionnel doit comporter au minimum :
+La fermeture DOIT enregistrer ces réserves; aucune ne doit être effacée ou transformée en promesse :
 
-### 3.1 Index canonique par cerveau
+### R-T30-1 — Clippy strict non vert
 
-- chaque cerveau de la tranche synthétique utilise le `Index` canonique sous son espace applicatif isolé;
-- identité `brain_id + node_id` préservée;
-- `index_id` / `index_revision` de TASK-0029 préservés;
-- pagination enfants keyset préservée;
-- `child_count` exact préservé;
-- aucun partage de lignes entre cerveaux.
+`cargo clippy --all-targets --offline -- -D warnings` est rapporté en échec. L’exécuteur a classé les diagnostics comme dette préexistante à partir d’extraits présents au baseline, mais **le contrôle indépendant n’a pas réexécuté le baseline Clippy**. La V1 publiable devra avoir une chaîne CI/release propre ou une décision écrite sur chaque exception. TASK-0030 n’est pas bloquée par ce point car aucun nouveau diagnostic propre à la convergence n’a été démontré.
 
-### 3.2 Build/rebuild
+### R-T30-2 — ouvrir != encore réutiliser l’index existant
 
-Le build synthétique doit :
+Le code courant `map_open/build_map` rescane et republie encore le corpus lors du chargement, même lorsque l’index est compatible; `rebuild=false` ne signifie pas encore « ouvrir l’index persistant sans rescan ». **Avant d’exposer une vraie racine utilisateur**, la V1 doit distinguer clairement :
 
-1. matérialiser la fixture synthétique;
-2. scanner read-only;
-3. publier/remplacer l'index canonique;
-4. ne PAS calculer un layout sur tout le corpus avant publication;
-5. ne PAS refuser le corpus uniquement parce qu'il dépasse `MAX_NODES_PER_MAP = 5000`.
+- ouverture/reprise d’un index valide existant;
+- actualisation explicite/reconciliation;
+- reconstruction forcée.
 
-La constante historique peut rester pour des tests/compatibilité si nécessaire, mais **elle ne doit plus être la limite produit du chemin runtime convergé**.
+Sinon un cerveau réel pourrait être rescanné inutilement à chaque chargement et les révisions/cursors seraient invalidés sans besoin.
 
-### 3.3 Materializer produit
+### R-T30-3 — certaines analyses restent corpus-memory
 
-Créer un materializer déterministe et testable qui produit un DTO borné contenant au minimum :
+`AnalysisInput` / `analysis_nodes()` et certaines opérations d’analyse/digest peuvent encore matérialiser les métadonnées du corpus complet en mémoire. Cela ne traverse pas le DTO de carte et ne recrée pas `map_nodes`, donc la frontière de rendu reste correcte, mais la dette mémoire/indexation doit être traitée avant la validation V1 sur très gros cerveaux.
 
-- `brainId`;
-- `indexRevision`;
-- focus;
-- nœuds matériels;
-- arêtes hiérarchiques exactes entre nœuds matériels;
-- agrégats exacts nécessaires;
-- compte total indexé;
-- compte matérialisé;
-- compte non matérialisé déclaré;
-- indicateur/raison lorsqu'une partie est masquée.
+### R-T30-4 — performances produit non encore acceptées
 
-Pas de whole-graph JSON caché dans un autre champ.
+- WebView2 physique : 6001 nœuds synthétiques, pas 100k physiques;
+- 100k : cœur produit Rust/jsdom, pas acceptance Windows complète;
+- aucune validation laptop `TARGET_CLASS`;
+- aucune preuve GPU désactivé;
+- aucun 1M physique;
+- R8 reste ouverte.
 
-### 3.4 Layout borné
+### R-T30-5 — périmètre produit encore synthétique
 
-`layered-tree-cards-v1` s'applique uniquement aux nœuds/agrégats de la vue matérialisée.
+`SourceKind`/MapApp restent synthétiques et le folder picker réel reste volontairement non exposé. Ce contrôle autorise **la prochaine tranche de préparation au vrai cerveau**, pas l’utilisation silencieuse de données personnelles.
 
-Le layout ne doit jamais demander l'ensemble du corpus pour positionner une vue de 512 éléments.
+### R-T30-6 — dette test-only historique
 
-### 3.5 Runtime MapApp
-
-Faire consommer à `MapApp` le nouveau DTO borné.
-
-Préserver autant que possible les comportements actuels :
-
-- pan;
-- zoom;
-- fit;
-- reset;
-- sélection souris/clavier;
-- parent/enfants;
-- détails;
-- multi-cerveaux;
-- relations/suggestions/doublons déjà exposés lorsque leurs extrémités sont matérialisées.
-
-Pour une relation dont une extrémité existe dans l'index mais n'est pas dans la vue, **ne jamais la faire disparaître silencieusement** : le panneau peut la déclarer « hors de la vue courante »/équivalent; ne pas fabriquer de coordonnée ni d'arête fantôme.
-
-Sur les petites fixtures existantes qui tiennent dans le budget, le comportement observable doit rester équivalent à la tranche actuelle.
-
-### 3.6 MapStore
-
-À la fin :
-
-- aucun runtime normal ne doit dépendre de `MapStore` comme vérité complète des nœuds;
-- aucune nouvelle écriture du corpus complet dans `map_nodes`;
-- si le module reste, documenter exactement pourquoi et dans quel rôle non canonique;
-- idéalement supprimer le code devenu mort plutôt que le garder « au cas où », si les tests prouvent qu'il n'est plus nécessaire.
-
-Appliquer la discipline Ponytail/YAGNI de l'audit : **réutiliser, simplifier, supprimer la duplication**. Ne pas installer Ponytail ni exécuter ses hooks dans cette tâche.
+`legacy_store.rs` conserve une copie importante de l’ancien store pour les tests/migrations. C’est acceptable pour TASK-0030, mais avant publication il faudra réduire/supprimer ce code s’il n’est plus nécessaire, plutôt que conserver un second pseudo-moteur uniquement par inertie.
 
 ---
 
-## 4 — tests obligatoires
+## 3 — états à poser après fermeture
 
-### 4.1 Non-régression complète
+Mettre à jour uniquement les documents nécessaires pour refléter :
 
-- tests Rust ciblés;
-- `cargo test --lib` complet;
-- `pnpm test` complet;
-- `pnpm check`;
-- `pnpm build`;
-- `cargo build`;
-- `cargo clippy --all-targets -- -D warnings` si le dépôt courant le permet sans dette préexistante nouvelle;
-- `git diff --check`.
-
-Toute régression d'une fonction déjà vérifiée doit être réparée, jamais masquée en modifiant un test.
-
-### 4.2 Convergence structurelle
-
-Ajouter des tests qui prouvent :
-
-1. un cerveau a un seul index canonique de nœuds;
-2. le runtime convergé ne lit pas `MapStore::all_nodes()`;
-3. le runtime convergé ne sérialise jamais tout le corpus par défaut;
-4. le layout reçoit seulement la vue matérialisée;
-5. `MapStore`, s'il existe encore, n'écrit plus de copie canonique concurrente;
-6. deux cerveaux restent isolés.
-
-### 4.3 Vue bornée 100k
-
-Créer/réutiliser une fixture synthétique 100k **sans utiliser un harness parallèle qui contourne le runtime produit**.
-
-Le test doit passer par le même cœur produit :
-
-`Index canonique -> materializer produit -> layout -> DTO sérialisable`
-
-Vérifier :
-
-- corpus = 100 000 exactement;
-- DTO <= budget déclaré;
-- arêtes <= borne cohérente avec la vue;
-- payload ne contient pas les 100 000 noms/paths;
-- tout élément omis est comptabilisé par agrégat/raison exacte;
-- aucune arête inventée;
-- chaque nœud matériel existe dans l'index;
-- `P-01/P-02/P-03` amendées ne sont pas contredites.
-
-### 4.4 Navigation progressive
-
-Sur une fixture large :
-
-- page/expansion suivante n'a ni doublon ni omission;
-- agrégat compte exactement les enfants non matérialisés;
-- expansion d'un agrégat remplace correctement une partie agrégée par des nœuds réels;
-- curseur stale après rebuild = erreur explicite, jamais résultat silencieux;
-- clavier et sélection continuent de fonctionner sur la vue.
-
-### 4.5 Read-only
-
-Empreinte synthétique avant/après une session couvrant build, materialize, expand, select, relations et doublons : identique.
-
-Aucun fichier FileTopo créé sous la racine synthétique analysée.
-
----
-
-## 5 — preuve WebView2 obligatoire
-
-Cette tâche modifie réellement le runtime et le frontend. Exécuter au moins une preuve Windows/WebView2 réelle sur :
-
-1. une petite fixture actuelle — non-régression fonctionnelle;
-2. une vue matérialisée bornée issue d'un corpus synthétique large, si le protocole de test permet de la charger honnêtement par le chemin produit.
-
-Mesurer au minimum :
-
-- nombre de nœuds DOM/SVG;
-- nombre d'arêtes;
-- pan;
-- zoom;
-- sélection;
-- absence d'erreur console fatale;
-- moteur WebView2 réellement utilisé.
-
-**Ne pas publier un chiffre « laptop modeste » et ne pas prétendre avoir prouvé un mode sans GPU.** Le produit ne doit cependant introduire aucune dépendance WebGL/GPU obligatoire.
-
-Les nouveaux artefacts de preuve restent non canoniques jusqu'au contrôle indépendant; ne pas modifier X5 pendant l'exécution.
-
----
-
-## 6 — explicitement HORS TASK-0030
-
-Ne pas implémenter :
-
-- vraie racine personnelle de Sébastien;
-- activation générale du folder picker sur données personnelles;
-- watcher / `notify-rs`;
-- journal de changements;
-- FTS5 / optimisation `P-08`;
-- indexation en streaming/batches — sauf le minimum strictement nécessaire si la convergence est impossible autrement; dans ce cas STOP et documenter avant d'élargir;
-- identité physique `F-046`;
-- OCR/RAG/IA/LLM;
-- Graphify;
-- MCP;
-- OmniRoute;
-- React Flow / ELK / Sigma / Cytoscape;
-- refonte graphique complète;
-- mode équipe/permissions;
-- nouvelle télémétrie;
-- compte ou cloud.
-
-Ne pas installer de nouveau skill/plugin/hook externe dans le repo ou la machine pour cette tâche.
-
----
-
-## 7 — dette à supprimer, pas déplacer
-
-À la fin, produire dans la fiche TASK un tableau :
-
-- code supprimé;
-- code réutilisé;
-- code migré;
-- code encore temporaire;
-- raison exacte de tout doublon restant.
-
-Une nouvelle abstraction n'est acceptable que si elle **remplace** une duplication ou matérialise une frontière de DEC-0031.
-
-Ne pas ajouter une troisième base/table de nœuds.
-
----
-
-## 8 — état produit attendu en sortie exécuteur
-
-Si tout passe :
-
-- `TASK-0030 = IMPLEMENTED`, jamais `VERIFIED`;
-- `DEC-0031 = APPROVED`, implémentation en attente de contrôle indépendant;
-- `F-050` peut passer de `PROPOSED` à `IMPLEMENTED` **seulement si** le runtime produit utilise effectivement une vue bornée et les critères structurels ci-dessus passent;
-- `F-051` peut passer de `PROPOSED` à `IMPLEMENTED` **seulement si** les agrégats exacts sont réellement dans le runtime produit et testés;
-- `F-042` reste `PROPOSED` sauf si les gestes de repli/dépli/focus sont effectivement exposés et testés dans le produit; ne pas la promouvoir par association;
+- `TASK-0030 = VERIFIED` dans **sa portée synthétique de convergence**;
+- `ACTION-0047 = CLOSED`;
+- `DEC-0031 = APPROVED`, implémentation TASK-0030 contrôlée;
+- `F-050 = IMPLEMENTED`, **pas VERIFIED globalement**;
+- `F-051 = IMPLEMENTED`, **pas VERIFIED globalement**;
+- `F-042 = PROPOSED / MVP`;
 - `F-046 = PROPOSED`;
 - `F-047 = DEFERRED`;
-- Graphify `NOT INTEGRATED`;
-- aucun renderer nouveau;
-- `X5 = 36` pendant la livraison;
-- aucune `TASK-0031` / `DEC-0032` créée;
+- X5 = 36;
 - `origin/main` inchangé.
 
-`NEXT_ACTION.md` doit contenir une seule action : **contrôle indépendant de TASK-0030**.
+Raison de ne pas mettre `F-050/F-051` à VERIFIED : leur contrat produit complet exige encore davantage que cette tranche synthétique, notamment acceptance d’échelle/rendu et intégration ultérieure au vrai flux V1. Le contrôle valide la **tranche**, pas toute la fonction commerciale finale.
 
----
+Mettre à jour :
 
-## 9 — documentation à mettre à jour
-
-- `docs/tasks/TASK-0030-v1-pipeline-convergence.md`
-- `docs/decisions/DEC-0031-one-canonical-brain-index-and-bounded-projection.md`
-- `docs/architecture/PROGRESSIVE_SCALE_ARCHITECTURE.md` uniquement si nécessaire pour refléter l'implémentation réelle sans changer la décision;
-- `docs/product/FEATURE_MATRIX.md` uniquement pour les états réellement implémentés;
-- `docs/product/CARTETOPO_FUNCTIONAL_PARITY.md` uniquement si un état de preuve doit être ajouté — aucune exigence ne doit être réécrite;
+- `docs/tasks/TASK-0030-v1-pipeline-convergence.md`;
+- `docs/decisions/DEC-0031-one-canonical-brain-index-and-bounded-projection.md`;
 - `docs/ai/CURRENT_STATE.md`;
 - `docs/ai/NEXT_ACTION.md`;
 - `docs/ai/HANDOFF.md`;
 - `docs/ai/VALIDATION.md`;
 - `docs/ai/CHANGELOG_AI.md`;
-- `.orchestrator/RESULT.md`.
+- `.orchestrator/RESULT.md`;
+- éventuellement `docs/product/FEATURE_MATRIX.md` uniquement si nécessaire pour remplacer « contrôle indépendant attendu » par la portée exacte contrôlée, **sans promouvoir F-050/F-051 à VERIFIED**.
 
-Créer un rapport technique court si nécessaire, mais pas une nouvelle collection de documents redondants.
+Ne modifier aucun code sous `src/`, `src-tauri/`, `scripts/`, aucun package manifest et aucun JSON sous `docs/performance/runs/`.
 
 ---
 
-## 10 — RESULT.md
+## 4 — artefacts / X5
+
+Les trois artefacts TASK-0030 restent **non canoniques**, non protégés et inchangés :
+
+- `TASK-0030-materialized-view-100k.json`
+- `TASK-0030-webview2.json`
+- `TASK-0030-validation.json`
+
+Ne pas les régénérer, modifier, renommer, supprimer ni ajouter à X5.
+
+Les 36 noms existants de X5 restent bit-for-bit inchangés.
+
+---
+
+## 5 — action suivante après fermeture
+
+`NEXT_ACTION.md` doit contenir **une seule action**, formulée sans créer la prochaine TASK :
+
+> Retour à l’orchestrateur pour décider et ouvrir la prochaine tranche V1 après convergence, avec priorité à la préparation sûre du vrai pipeline `REAL_ROOT` et à la séparation ouverture / actualisation / reconstruction avant toute donnée réelle.
+
+Ne pas créer `TASK-0031`, `DEC-0032` ni une branche suivante. L’orchestrateur le fera après avoir vérifié cette fermeture.
+
+---
+
+## 6 — validations de fermeture
+
+Exécuter seulement les contrôles documentaires/structurels nécessaires :
+
+- `git diff --check`;
+- diff de fermeture uniquement documentaire;
+- aucun changement sous `src/`, `src-tauri/`, `scripts/`, `docs/performance/runs/`;
+- X5 exactement 36;
+- trois JSON TASK-0030 inchangés;
+- anciens artefacts protégés inchangés;
+- `origin/main` inchangé;
+- liens relatifs des documents modifiés/créés valides;
+- absence de `TASK-0031`, `DEC-0032` avant et après.
+
+Ne pas relancer les benchmarks, WebView2 ou les suites lourdes : cette action consigne un verdict déjà rendu.
+
+---
+
+## 7 — RESULT.md
 
 Écrire :
 
 ```text
-TASK_ID: TASK-0030 — V1 Pipeline Convergence — Canonical Brain Index and Bounded Runtime Projection
-AGENT: CODEX
+TASK_ID: ACTION-0047 — Independent closure of TASK-0030
+AGENT: CLAUDE
 RESULT: DONE | BLOCKED | FAILED
 BRANCH: build/v0.2-a14-v1-pipeline-convergence
-FINAL_HEAD: <commit substantif>
+FINAL_HEAD: <commit de fermeture>
 
 SUMMARY:
--
-
-CANONICAL_INDEX_RESULT:
--
-
-BOUNDED_RUNTIME_RESULT:
--
-
-REMOVED_OR_RETIRED_DUPLICATION:
--
+- recorded external independent PASS with explicit reserves
+- TASK-0030 -> VERIFIED in synthetic convergence scope
+- ACTION-0047 -> CLOSED
+- F-050/F-051 remain IMPLEMENTED, not globally VERIFIED
 
 VALIDATIONS:
 -
 
-WEBVIEW2_EVIDENCE:
--
+RESERVES_RECORDED:
+- R-T30-1 through R-T30-6
 
 FILES_CHANGED:
 -
 
+CODE_OR_EVIDENCE_CHANGED: no
+X5: 36
+MAIN_UNCHANGED: yes/no
+
 COMMIT:
 PUSHED: yes/no
 
-LIMITS_OR_BLOCKERS:
--
-
 NEXT_ORCHESTRATOR_DECISION:
-- independent control of TASK-0030
+- decide/open next V1 tranche; no real data yet
 ```
 
 ---
 
-## 11 — Git final
+## 8 — Git final
 
 Commit/push uniquement sur `build/v0.2-a14-v1-pipeline-convergence`.
 
-Interdits : merge, PR, main, release, tag, force push, vraie donnée personnelle, nouvelle tâche, prochaine décision, nouveau renderer, cloud/LLM/MCP.
+Interdits : code produit, benchmark, JSON de preuve, nouveau TASK/DEC, nouvelle branche, PR, merge, main, release, tag, force push, données réelles.
