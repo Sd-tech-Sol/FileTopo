@@ -756,6 +756,40 @@ fn map_node_detail(
     map::commands::detail(&paths, &brain, &reference).map_err(String::from)
 }
 
+/// `TASK-0034` A — bounded local search, behind the current runtime only.
+/// `limit` is optional so the frontend can omit it and simply get the
+/// product ceiling; the command itself clamps whatever it is handed.
+#[tauri::command]
+fn map_search_nodes(
+    app: tauri::AppHandle,
+    brain_id: String,
+    query: String,
+    offset: usize,
+    limit: Option<usize>,
+) -> Result<map::commands::SearchPage, String> {
+    let (paths, brain) = resolve_brain(&app, &brain_id)?;
+    map::commands::search_nodes(
+        &paths,
+        &brain,
+        &query,
+        offset,
+        limit.unwrap_or(map::commands::SEARCH_LIMIT_MAX),
+    )
+    .map_err(String::from)
+}
+
+/// `TASK-0034` C — "Ouvrir dans l'Explorateur Windows". The **only**
+/// argument is a [`map::brains::BrainNodeRef`]; no path, root or folder name
+/// crosses the IPC boundary in either direction.
+#[tauri::command]
+fn map_reveal_node(
+    app: tauri::AppHandle,
+    reference: map::brains::BrainNodeRef,
+) -> Result<(), String> {
+    let (paths, brain) = resolve_brain(&app, &reference.brain_id)?;
+    map::commands::reveal_node(&paths, &brain, &reference).map_err(String::from)
+}
+
 #[tauri::command]
 fn map_integrity(
     app: tauri::AppHandle,
@@ -1315,6 +1349,8 @@ pub fn run() {
             map_view,
             map_resolve_node,
             map_node_detail,
+            map_search_nodes,
+            map_reveal_node,
             map_integrity,
             map_self_check,
             map_content_observe,
@@ -1547,6 +1583,55 @@ mod integration_tests {
                     "`{command}` would let the WebView name a place on disk: {parameter}"
                 );
             }
+        }
+    }
+
+    /// `TASK-0034` — search and reveal are reachable, and reveal's **only**
+    /// parameter is the `BrainNodeRef` pair. `generate_handler!` expands to an
+    /// opaque closure, so a parameter type can only be checked by reading the
+    /// command function's own signature back — exactly how
+    /// `exposed_commands_stay_within_the_slice` above already checks that
+    /// `query_collection_nodes`/`reveal_indexed_node` never return.
+    #[test]
+    fn search_and_reveal_are_exposed_and_reveal_takes_only_a_brain_node_ref() {
+        let exposed = registered_commands();
+        for required in ["map_search_nodes", "map_reveal_node"] {
+            assert!(
+                exposed.iter().any(|name| name == required),
+                "TASK-0034 needs `{required}` reachable from the WebView"
+            );
+        }
+
+        let start = THIS_SOURCE
+            .find("fn map_reveal_node(")
+            .expect("map_reveal_node must be defined in this file");
+        let end = THIS_SOURCE[start..]
+            .find(") -> Result<(), String> {")
+            .expect("map_reveal_node's signature must end where expected");
+        let signature = &THIS_SOURCE[start..start + end];
+        assert!(
+            signature.contains("reference: map::brains::BrainNodeRef"),
+            "map_reveal_node must take a BrainNodeRef: {signature}"
+        );
+        for forbidden in ["path", "root", "folder", "directory", "target: String"] {
+            assert!(
+                !signature.contains(forbidden),
+                "map_reveal_node's signature must not accept `{forbidden}` from the WebView: {signature}"
+            );
+        }
+
+        let search_start = THIS_SOURCE
+            .find("fn map_search_nodes(")
+            .expect("map_search_nodes must be defined in this file");
+        let search_end = THIS_SOURCE[search_start..]
+            .find(") -> Result<map::commands::SearchPage, String> {")
+            .expect("map_search_nodes's signature must end where expected");
+        let search_signature = &THIS_SOURCE[search_start..search_start + search_end];
+        for forbidden in ["absolute", "root:", "folder", "directory"] {
+            assert!(
+                !search_signature.contains(forbidden),
+                "map_search_nodes's signature must not accept `{forbidden}`: {search_signature}"
+            );
         }
     }
 

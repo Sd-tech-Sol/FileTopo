@@ -1,6 +1,60 @@
 # HANDOFF — passage de relais
 
-## Relais actuel — TASK-0033, acceptation WebView2 faite, en attente de contrôle — 2026-09-10
+## Relais actuel — TASK-0034 livrée, en attente de contrôle — 2026-09-10
+
+- **Ce qui vient d'être fait :** `TASK-0033` était déjà `VERIFIED` dans sa
+  portée par `ACTION-0051` (déjà sur la branche précédente, mais dont les
+  documents durables n'avaient jamais été synchronisés — corrigé au
+  passage, aucun contenu technique changé). `TASK-0034 — V1 Find & Open`
+  est livrée sur `build/v0.2-a18-v1-find-open` : `IMPLEMENTED`, jamais
+  auto-`VERIFIED`. Aucune nouvelle DEC.
+- **Le geste central :** deux commandes raccordées au runtime convergé,
+  `map_search_nodes` (recherche bornée à 50, sur `Index::query_nodes()`
+  existant, jamais dupliqué) et `map_reveal_node` (« Ouvrir dans
+  l'Explorateur », **seul** argument `BrainNodeRef`). L'activation d'un
+  résultat de recherche réutilise `changeProjection`/`map_view` tels quels —
+  aucune nouvelle logique de caméra n'a été écrite, celle de `TASK-0033`
+  gère déjà tout ce qu'il fallait.
+- **Qui a fait quoi :** Claude Code a écrit la tranche entière. **Il ne peut
+  pas rendre le verdict.**
+- **Ce que le prochain relais doit savoir :**
+  - **`confine_indexed_target()` (`commands.rs`) est l'unique porte entre un
+    `relative_path` indexé et le disque.** Elle revalide chaque composante
+    contre un lien/point d'analyse et refuse toute cible absente — ne jamais
+    contourner cette fonction pour un raccourci de confort.
+  - **`explorer_argument()` est délibérément séparée de `reveal_node()`**
+    pour rester testable sans lancer de processus — un test qui appellerait
+    `reveal_node()` en entier spawnerait une vraie fenêtre Explorer à chaque
+    `cargo test`. Ne pas fusionner les deux.
+  - **La recherche ne doit jamais appeler `Index::query_nodes()` avec une
+    requête vide.** Sa clause `WHERE` traite `''` comme « tout » pour
+    d'autres appelants légitimes (la file de révision legacy); `search_nodes`
+    court-circuite avant l'appel pour une requête vide/blanche.
+  - **Piège de harnais découvert en écrivant le rejeu :** appeler
+    `map_refresh`/`map_rebuild` directement depuis un script de preuve, en
+    plus du clic UI qui l'a déjà déclenché, avance la révision côté backend
+    **sans que l'état React de l'application ne le sache** (celui-ci
+    n'apprend une nouvelle révision que par ses propres appels internes).
+    Un futur rejeu qui a besoin d'un rapport de build doit le lire via
+    `map_view` (lecture seule), jamais via un second `map_refresh`/
+    `map_rebuild` direct.
+  - `scripts/task0034-seed-proof.py` + `task0034-webview2.mjs`/`.ps1`
+    réutilisent l'arbre `REAL_ROOT` à quatre branches de `TASK-0033`, avec un
+    nom de fichier fixe (`cible-recherche-unique.txt`, sous `C/`) ajouté
+    comme cible de recherche connue.
+  - L'invocation « Ouvrir dans l'Explorateur » du rejeu est un appel direct,
+    pas un clic UI en plus : cela évite un second spawn `explorer.exe`
+    visible pour le même fait. Une fenêtre Explorer réelle **peut rester
+    ouverte** après un rejeu — ne jamais la fermer en tuant `explorer.exe`
+    globalement.
+- **Ce qui reste ouvert :** `cargo clippy` strict rouge à 26 erreurs, dette
+  inchangée. Aucun watcher, aucun incrémental, aucun FTS5, aucune
+  acceptance laptop modeste (poste de développement seulement), aucune
+  copie de chemin absolu, aucune préférence d'écran/icône.
+- **Action unique suivante :** contrôle indépendant de `TASK-0034`, sur les
+  preuves de cette passe.
+
+## Relais précédent — TASK-0033, acceptation WebView2 faite, en attente de contrôle — 2026-09-10
 
 - **Ce qui vient d'être fait :** `ACTION-0050` avait contrôlé `TASK-0033` et
   trouvé le code cohérent avec `DEC-0034`, mais **le rejeu produit WebView2

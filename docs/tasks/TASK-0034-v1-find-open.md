@@ -1,7 +1,7 @@
 # TASK-0034 — V1 Find & Open
 
 - Date : 2026-09-10
-- Statut : `READY`
+- Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`. Exécuteur : Claude Code.
 - Branche : `build/v0.2-a18-v1-find-open`
 - Prérequis : `TASK-0033 = VERIFIED` par `ACTION-0051`
 - Décisions applicables : `DEC-0031`, `DEC-0033`, `DEC-0034`
@@ -197,3 +197,77 @@ Exécuter les tests ciblés puis les suites pertinentes complètes : Rust, TypeS
 - `NEXT_ACTION = contrôle indépendant de TASK-0034`;
 - commit/push uniquement sur `build/v0.2-a18-v1-find-open`;
 - aucun PR/merge/tag/release sans instruction ultérieure de l'orchestrateur.
+
+## Livraison — 2026-09-10
+
+Détail complet dans [VALIDATION section BH](../ai/VALIDATION.md). Résumé :
+
+### Réutilisé, adapté, non réactivé
+
+- **Réutilisé tel quel :** `Index::query_nodes()` (échappement `%`/`_`/`\`,
+  tri dossiers avant fichiers, total exact) derrière `open_store()`;
+  `map_view(brain_id, focus_id, after)` et `changeProjection()` côté
+  frontend pour l'activation d'un résultat — aucune nouvelle logique de
+  focalisation n'a été écrite, la caméra `VERIFIED` de `TASK-0033` gère le
+  recentrage sans modification; `BrainNodeRef` comme identité IPC.
+- **Adapté :** la marche de confinement `resolve_indexed_target()` du
+  prototype 0.1 devient `confine_indexed_target()`, contre
+  `BrainSource::resolve(...).root(...)` au lieu du `Registry`; le lancement
+  direct d'`explorer.exe` (`/select,` pour un fichier, chemin nu pour un
+  dossier) est repris à l'identique, extrait dans `explorer_argument()` pour
+  rester testable sans lancer de processus.
+- **Non réactivé :** `query_collection_nodes`, `mark_node_seen` et
+  `reveal_indexed_node` restent `#[allow(dead_code)]`, non enregistrés — le
+  test `exposed_commands_stay_within_the_slice` (existant, revérifié) le
+  garantit toujours; aucun `Registry` 0.1 n'est ouvert par le nouveau code.
+
+### Surface IPC ajoutée
+
+- `map_search_nodes(brain_id, query, offset, limit?) -> SearchPage` — page
+  bornée à 50, `total`/`offset`/`limit`/`indexRevision` publiés, chaque hit
+  ne porte que `brainId`/`nodeId`/`name`/`relativePath`/`kind`.
+- `map_reveal_node(reference: BrainNodeRef) -> ()` — **seul** argument
+  frontend; aucune permission `shell:`/`fs:`/`opener:`/`dialog:` ajoutée à la
+  capability (revérifié par le test existant, inchangé).
+
+### Preuves
+
+15 tests Rust (`find_open_tests.rs`) + 1 garde structurelle `lib.rs` :
+recherche partielle nom/chemin bornée à 50, requête vide/blanche sans dump du
+corpus, total/offset/limit exacts sans chevauchement de page, `%`/`_`/`\`
+échappés littéralement, isolation par cerveau, recherche fonctionnant sans
+source, DTO sans chemin absolu, révision qui avance à la republication,
+refus cross-brain, refus reparse/skipped/id inconnu, refus d'une cible
+disparue après indexation (sur un vrai dossier réel), confinement contre un
+`..` injecté, construction de l'argument Explorer dossier/fichier — jamais
+via un spawn dans les tests. 5 tests TypeScript (`DetailsPanel.test.tsx`) :
+le bouton Explorer n'appelle `onReveal` qu'avec exactement `{brainId,
+nodeId}`, visibilité conditionnelle, état occupé, message d'erreur
+générique sans chemin.
+
+Rejeu **WebView2 réel** (`scripts/task0034-seed-proof.py`/`-webview2.mjs`/
+`.ps1`, arbre `REAL_ROOT` de 5 206 éléments réutilisé de `TASK-0033`) :
+recherche d'un fichier volontairement hors projection ordinaire (dans la
+branche à 4 356 fichiers plats), résultat exact et borné, activation par
+frappe/clic réels menant à une nouvelle projection avec sélection et
+panneau cohérents, un refresh réel fait avancer la révision et l'interface
+la republie automatiquement plutôt que de garder une page périmée,
+`map_reveal_node` invoqué sur une cible synthétique avec spawn réussi,
+aucune fuite de chemin absolu, 0 erreur console fatale.
+
+### Validations
+
+Rust **344 PASS** (328 + 16), TypeScript **294 PASS** (289 + 5), `pnpm
+check`, `pnpm build`, `cargo build --offline`, `git diff --check` verts;
+`cargo fmt --check` propre sur les fichiers Rust touchés; `cargo clippy
+--all-targets --offline -- -D warnings` rouge à **26 erreurs**, même compte
+qu'avant, aucune nouvelle.
+
+### Non testé, limites
+
+Poste de développement, pas une acceptance laptop modeste. L'invocation
+« Ouvrir dans l'Explorateur » du rejeu utilise un appel direct plutôt qu'un
+clic UI en plus, pour éviter un second spawn `explorer.exe` visible pour le
+même fait — le câblage du bouton est prouvé par `DetailsPanel.test.tsx`. Une
+fenêtre Explorer réelle peut rester ouverte après le rejeu; `explorer.exe`
+n'est jamais tué globalement, conformément à la consigne.

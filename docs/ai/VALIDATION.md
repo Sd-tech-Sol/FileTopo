@@ -1,10 +1,12 @@
 # VALIDATION.md — État de vérification
 
 **Dernière mise à jour :** 2026-09-10
-**Dernière livraison exécutée :** TASK-0033, sections BE puis **BF** (passe d'acceptation produit WebView2, deux défauts trouvés et corrigés), `IMPLEMENTED`, **en attente de nouvelle vérification indépendante** (`ACTION-0050` avait exigé cette passe). TASK-0032, sections BB/BC, est `VERIFIED` dans sa portée par le verdict indépendant enregistré dans `ACTION-0049`, section BD.
-**Dernière tâche évaluée indépendamment :** TASK-0032 — `VERIFIED` le
-2026-09-10 par le verdict indépendant enregistré dans `ACTION-0049`, section
-BD, dans sa portée. TASK-0031 — `VERIFIED` le 2026-09-10
+**Dernière livraison exécutée :** TASK-0034, section **BH** (recherche bornée et « Ouvrir dans l'Explorateur »), `IMPLEMENTED`, **en attente de vérification indépendante**. TASK-0033, sections BE/BF, est `VERIFIED` dans sa portée par le verdict indépendant enregistré dans `ACTION-0051`, section BG.
+**Dernière tâche évaluée indépendamment :** TASK-0033 — `VERIFIED` le
+2026-09-10 par le verdict indépendant enregistré dans `ACTION-0051`, section
+BG, dans sa portée. TASK-0032 — `VERIFIED` le 2026-09-10 par le verdict
+indépendant enregistré dans `ACTION-0049`, section BD, dans sa portée.
+TASK-0031 — `VERIFIED` le 2026-09-10
 par le verdict indépendant enregistré dans `ACTION-0048`, dans sa portée
 synthétique V1. TASK-0030 — `VERIFIED` le 2026-09-09 par le
 verdict indépendant enregistré dans `ACTION-0047`, section AZ, **avec six
@@ -4954,3 +4956,205 @@ produit obligatoire est fait, réel, aux deux résolutions demandées, et les
 deux défauts qu'il a révélés sont corrigés dans la portée stricte de
 `TASK-0033`. **`TASK-0033` reste `IMPLEMENTED` — le verdict `VERIFIED`
 appartient au prochain contrôle indépendant, pas à cette passe.**
+
+## BG. ACTION-0051 — contrôle indépendant enregistré, TASK-0033 VERIFIED — 2026-09-10
+
+**Verdict indépendant déjà rendu, sur la branche précédente** —
+[`docs/reviews/ACTION-0051-independent-recontrol.md`](../reviews/ACTION-0051-independent-recontrol.md),
+livraison contrôlée `243e21b`, résultat épinglé par `156361a` — **enregistré
+ici seulement maintenant** parce que ce commit n'avait mis à jour aucun des
+cinq documents durables (`CURRENT_STATE.md`, `HANDOFF.md`, `VALIDATION.md`
+— ce fichier —, `CHANGELOG_AI.md`, la fiche `TASK-0033`), qui affichaient
+donc encore « en attente de contrôle » alors que le verdict était déjà sur
+la branche. Cette section ne rend aucun verdict : elle consigne celui déjà
+rendu par l'orchestrateur technique indépendant, comme `BD` l'a fait pour
+`ACTION-0049`.
+
+**Verdict :** `TASK-0033 = VERIFIED` dans sa portée. Le contrôle confirme :
+preuve WebView2 réelle (152.0.4191.66, corpus 5 206 nœuds, deux résolutions);
+`VIEW_BUDGET = 512` reste la borne dure, `ORDINARY_MATERIAL_TARGET = 64`
+reste une cible produit; le défaut A (expansion automatique multi-niveaux de
+la vue ordinaire) est correctement circonscrit — seule la page des enfants
+directs du focus est matérialisée; le défaut B (`clampView` sur changement
+de dimensions du viewport) ne recentre pas et ne remplace pas
+`readableView`/`recenterOnFocus`; les tests ajustés naviguent explicitement
+sans changer le sujet qu'ils testent; confidentialité confirmée (arbre
+généré par le harnais, aucun chemin absolu observé); validations de
+l'exécuteur (Rust 328, TypeScript 289, clippy rouge à 26 erreurs
+historiques) rapportées telles quelles.
+
+**Réserves non bloquantes maintenues :** redimensionnement émulé via CDP,
+pas un changement physique de moniteur; poste de développement, pas un
+laptop modeste; palette directionnelle historique des relations restée hors
+portée.
+
+**État :** `TASK-0033 = VERIFIED` dans sa portée; `DEC-0034 = APPROVED`.
+Action suivante à cette date-là : continuer vers une V1 utilisable sans
+rouvrir l'architecture — devenue `TASK-0034`, section `BH`.
+
+## BH. TASK-0034 — V1 Find & Open — 2026-09-10
+
+**Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche
+`build/v0.2-a18-v1-find-open`. Aucune nouvelle décision — `DEC-0031`,
+`DEC-0033`, `DEC-0034` inchangées. Exécuteur : Claude Code. Prérequis
+`TASK-0033 = VERIFIED` (`BG`) satisfait avant tout code.
+
+### BH.1 But et réutilisation
+
+Retrouver un nœud par nom ou chemin relatif dans l'Index canonique, le
+focaliser dans la carte progressive, puis permettre « Ouvrir dans
+l'Explorateur Windows » sans jamais exposer de chemin absolu au WebView.
+Aucun nouvel index, aucun nouveau moteur de recherche : la tranche raccorde
+des primitives déjà présentes.
+
+| Primitive | Statut |
+|---|---|
+| `Index::query_nodes()` | Réutilisée telle quelle — échappement `%`/`_`/`\`, tri dossiers-avant-fichiers, total exact, aucun SQL dupliqué |
+| `map_view(brain_id, focus_id, after)` / `changeProjection()` | Réutilisés tels quels pour l'activation d'un résultat — aucune nouvelle logique de caméra |
+| `BrainNodeRef` | Réutilisé tel quel comme identité IPC |
+| `resolve_indexed_target()` (prototype 0.1) | Adapté en `confine_indexed_target()`, contre `BrainSource::resolve(...).root(...)` au lieu du `Registry` |
+| lancement direct `explorer.exe` (prototype 0.1) | Adapté à l'identique (`/select,` fichier, chemin nu dossier), extrait dans `explorer_argument()` pour rester testable sans spawn |
+| `query_collection_nodes`, `mark_node_seen`, `reveal_indexed_node` | **Non réactivés** — toujours `#[allow(dead_code)]`, non enregistrés |
+
+### BH.2 Recherche bornée — `map_search_nodes`
+
+`src-tauri/src/map/commands.rs::search_nodes` : `open_store()` obligatoire
+(appartenance + binding), `SEARCH_LIMIT_MAX = 50` comme plafond serveur,
+`SEARCH_QUERY_MAX_CHARS = 200`. Une requête vide ou blanche court-circuite
+**avant** tout appel à `query_nodes` : sa clause `WHERE` traite `''` comme
+« tout » pour d'autres appelants légitimes (la file de révision legacy), et
+une recherche n'en est pas un. Chaque page publie `total`, `offset`,
+`limit`, `indexRevision`.
+
+| Preuve (`find_open_tests.rs`) | Ce qui est établi |
+|---|---|
+| `a_partial_name_or_path_match_is_found_and_the_page_is_bounded` | Correspondance nom et chemin relatif; une limite demandée au-delà de 50 est plafonnée, jamais honorée |
+| `an_empty_or_blank_query_returns_an_empty_page_never_the_corpus` | `""`, `"   "`, `"\t"` rendent tous une page vide |
+| `total_offset_and_limit_are_exact_across_pages` | Deux pages de 10 sur 30 résultats : comptes exacts, aucun id répété entre les pages |
+| `percent_underscore_and_backslash_are_search_targets_not_wildcards` | `%`, `_` et `\` recherchés littéralement; un `_` non échappé ne se comporte jamais comme le joker SQL « un caractère quelconque » |
+| `results_are_isolated_by_brain` | Deux cerveaux, même terme : chaque recherche ne rend que ses propres résultats |
+| `search_reads_only_the_index_even_once_the_source_is_gone` | Recherche réussie sans qu'aucune fixture n'ait jamais été matérialisée sur disque |
+| `the_search_dto_carries_no_absolute_or_source_path` | Le JSON sérialisé ne contient ni `absolutePath`, ni `rootPath`, ni `sourcePath`, ni `folderPath` |
+| `the_published_revision_changes_when_the_index_is_republished` | Une republication fait avancer `indexRevision` |
+
+### BH.3 « Ouvrir dans l'Explorateur » — `map_reveal_node`, frontière sûre
+
+`reveal_node(paths, brain, reference: &BrainNodeRef)` : vérifie
+`reference.belongs_to(&brain.brain_id)`, ouvre via `open_store()`, lit le
+nœud depuis l'Index, refuse `reparse_point` ou `kind == Skipped` **avant**
+toute résolution de racine. `BrainSource::resolve(paths, brain)?.root(paths)`
+donne la vraie racine; `confine_indexed_target()` marche chaque composante du
+`relative_path`, refusant tout lien/point d'analyse ou toute entrée absente.
+`explorer_argument()` construit l'argument (`/select,<chemin>` pour un
+fichier, chemin nu pour un dossier), et `reveal_node` lance
+`std::process::Command::new("explorer.exe")` directement — jamais via un
+shell. Aucun chemin n'est jamais retourné au frontend : `Result<(), MapError>`.
+
+| Preuve (`find_open_tests.rs`) | Ce qui est établi |
+|---|---|
+| `reveal_refuses_a_reference_from_another_brain` | `BrainMismatch` sur un `BrainNodeRef` d'un autre cerveau |
+| `reveal_refuses_a_skipped_or_reparse_flagged_node_before_touching_disk` | Refus avant toute résolution de racine, sur les deux drapeaux |
+| `reveal_refuses_an_unknown_node_id` | `NodeMissing` sur un id absent de l'Index |
+| `reveal_refuses_a_target_that_disappeared_after_indexing` | Sur un **vrai** dossier de fixture, fichier supprimé après indexation : refus `indexed_target_unavailable`, via la vraie marche de confinement |
+| `confinement_rejects_a_crafted_parent_directory_component` | Un `..` injecté dans le chemin est refusé |
+| `confinement_accepts_a_real_nested_entry_and_refuses_a_missing_one` | Chemin confiné exact sur une vraie entrée; refus exact sur une entrée absente |
+| `the_explorer_argument_selects_a_file_and_opens_a_directory_directly` | Construction de l'argument, sans jamais lancer de processus |
+
+Guard structurel (`lib.rs::search_and_reveal_are_exposed_and_reveal_takes_only_a_brain_node_ref`,
+étend le guard existant `exposed_commands_stay_within_the_slice`) : les deux
+commandes sont enregistrées; la signature de `map_reveal_node` ne contient
+que `reference: map::brains::BrainNodeRef`, sans `path`/`root`/`folder`/
+`directory`; celle de `map_search_nodes` ne contient aucun mot-clé
+`absolute`/`root:`/`folder`/`directory`. Le guard préexistant
+`the_capability_grants_the_webview_no_dialogue_and_no_filesystem_access`
+reste vert sans modification — aucune permission nouvelle.
+
+### BH.4 Interface — recherche et activation
+
+`src/map/MapApp.tsx` ajoute une section de recherche dans la barre d'outils
+du cerveau focalisé (champ, résultats, pagination, effacement). Activation
+d'un résultat : vérifie la révision courante contre celle de la page (garde
+défensive; l'effet de recherche se re-déclenche déjà automatiquement sur un
+changement de révision), puis appelle **`changeProjection` tel quel** — la
+même fonction qui gère déjà la navigation d'agrégat et de sélection depuis
+`TASK-0033`. Aucune nouvelle logique de caméra n'a été écrite.
+
+`src/map/DetailsPanel.tsx` ajoute « Ouvrir dans l'Explorateur », visible
+uniquement avec une `reference` et un gestionnaire fournis, appelant
+**exactement** `onReveal(reference)` — prouvé par
+`DetailsPanel.test.tsx::calls onReveal with exactly the reference it was
+given — no extra field`, qui compare les clés de l'objet reçu à
+`["brainId", "nodeId"]` sans rien d'autre. États occupé et erreur générique
+(sans chemin) également prouvés.
+
+### BH.5 Rejeu WebView2
+
+`scripts/task0034-seed-proof.py` réutilise le harnais `TASK-0033` — arbre
+`REAL_ROOT` synthétique de **5 206 éléments**, quatre branches
+déséquilibrées — avec un fichier nommé de façon fixe
+(`C/cible-recherche-unique.txt`) comme cible de recherche connue, hors de
+la projection ordinaire. `scripts/task0034-webview2.mjs`/`.ps1` pilotent le
+vrai produit : `Input.insertText` pour une frappe réelle dans le champ de
+recherche, `Input.dispatchMouseEvent`/`dispatchKeyEvent` pour la sélection
+et l'activation.
+
+| Étape | Résultat |
+|---|---|
+| Indexation | 5 206 nœuds |
+| Cible hors projection ordinaire | Confirmé — absente de la vue racine |
+| Recherche | 1 résultat exact, borné, chemin relatif et révision corrects; DOM et DTO direct concordent |
+| Requête vide | Aucun panneau de résultats affiché |
+| Activation | Nouvelle projection chargée, nœud sélectionné, panneau de détails cohérent (`.details__name`, `.details__path`) |
+| Invalidation de révision | Un refresh réel fait avancer la révision (1 → 2); l'interface la republie automatiquement plutôt que de garder une page périmée |
+| Ouvrir dans l'Explorateur | Invocation directe sur la cible synthétique, spawn réussi |
+| Confidentialité | Aucune fuite de chemin absolu dans le DOM, les payloads `map_view`/`map_search_nodes`, ni le journal hôte |
+| Erreurs console | 0 erreur fatale |
+
+**Défaut de harnais trouvé et corrigé pendant l'écriture de cette preuve, pas
+dans le produit :** appeler `map_refresh` directement depuis le script, en
+plus du clic UI qui l'avait déjà déclenché, avançait la révision côté
+backend sans que l'état React de l'application ne le sache — celui-ci
+n'apprend une révision que par ses propres appels internes. Corrigé en
+lisant l'état via `map_view` (lecture seule) plutôt qu'en rappelant
+`map_refresh`. Documenté dans `HANDOFF.md` pour le prochain rejeu.
+
+Preuve non canonique :
+[`TASK-0034-webview2.json`](../performance/runs/TASK-0034-webview2.json).
+
+### BH.6 Validations
+
+Rust **344 PASS**, 0 échec, 5 ignorés (328 avant cette passe, +16 : 15
+`find_open_tests` + 1 garde `lib.rs`). TypeScript **294 PASS** (289 avant,
++5 `DetailsPanel.test.tsx`). `pnpm check`, `pnpm build`,
+`cargo build --offline`, `git diff --check` verts.
+
+`cargo fmt --check` : propre sur `lib.rs`, `map/commands.rs`, `map/mod.rs`
+et le nouveau `map/find_open_tests.rs`, vérifiée fichier par fichier et
+hunk par hunk contre `git diff`. Dette préexistante ailleurs dans le crate
+(143 diagnostics, essentiellement `relation_commands.rs` hors des lignes
+touchées) rapportée et laissée intacte.
+
+`cargo clippy --all-targets --offline -- -D warnings` : rouge à **26
+erreurs**, même compte qu'avant cette passe, aucune dans un fichier touché
+(vérifié emplacement par emplacement contre le rapport clippy).
+
+### BH.7 Non testé, et limites
+
+**Non testé :** acceptance laptop modeste — poste de développement
+seulement. L'invocation « Ouvrir dans l'Explorateur » du rejeu est un appel
+direct plutôt qu'un clic UI en plus, pour éviter un second spawn
+`explorer.exe` visible pour le même fait — le câblage du bouton est prouvé
+séparément par `DetailsPanel.test.tsx`. Une fenêtre Explorer réelle peut
+rester ouverte après le rejeu; `explorer.exe` n'est jamais tué globalement,
+conformément à la consigne.
+
+Hors portée, comme prévu par la fiche `TASK-0034` : FTS5/recherche
+avancée, filtres nouveaux/non-vus, watcher/incrémental, historique de
+changements, copie de chemin absolu, préférences d'écran/icône, nouveau
+moteur graphique, réseau/cloud/LLM/MCP. Palette de relations par direction
+toujours non reprise.
+
+**Réserves :** inchangées par rapport à `BF`/`BG` — `R-T30-1` (clippy strict
+rouge), `R-T30-3`, `R-T30-4`, `R-T30-6`, `R8` ouvertes; `R-T30-5` traitée
+uniquement dans la portée `REAL_ROOT` de test. **X5 inchangé**;
+`origin/main` inchangé.

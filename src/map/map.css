@@ -594,6 +594,48 @@ button:disabled {
   font-weight: 700;
 }
 
+.details__reveal {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0 0 10px;
+}
+
+.details__reveal-error {
+  color: var(--warn);
+  font-size: 12px;
+}
+
+/* `TASK-0034` A/B — bounded local search, in the focused brain's toolbar area. */
+input[type="text"] {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: inherit;
+  font: inherit;
+}
+
+[data-testid="search-results"] ul {
+  margin: 6px 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 220px;
+  overflow: auto;
+}
+
+[data-testid="search-hit"] {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
 .details__subtitle {
   margin: 12px 0 6px;
   font-size: 12px;

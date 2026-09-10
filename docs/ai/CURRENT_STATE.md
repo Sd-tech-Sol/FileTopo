@@ -1,5 +1,86 @@
 # État courant
 
+## TASK-0034 — V1 Find & Open — IMPLEMENTED — 2026-09-10
+
+- **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche
+  `build/v0.2-a18-v1-find-open`. Aucune nouvelle décision requise —
+  `DEC-0031`, `DEC-0033`, `DEC-0034` inchangées. Prérequis
+  `TASK-0033 = VERIFIED` (`ACTION-0051`, ci-dessous) satisfait avant tout
+  code. Détail : [VALIDATION section BH](VALIDATION.md).
+- **But :** retrouver rapidement un nœud par nom ou chemin relatif dans
+  l'Index canonique d'un cerveau, focaliser ce résultat dans la carte
+  progressive, puis permettre « Ouvrir dans l'Explorateur Windows » sans
+  jamais exposer de chemin absolu au WebView.
+- **`map_search_nodes` réutilise `Index::query_nodes()` sans dupliquer le
+  SQL.** Recherche bornée à 50 résultats par page, derrière `open_store()`
+  (appartenance + binding vérifiés), avec `total`/`offset`/`limit`/
+  `indexRevision` publiés. Une requête vide ou blanche rend une page vide
+  sans jamais appeler `query_nodes` — sa clause `WHERE` traite `''` comme
+  « tout » pour d'autres appelants légitimes (la file de révision legacy),
+  et une recherche n'est pas un de ces appelants.
+- **`map_reveal_node(reference: BrainNodeRef)` est la seule porte
+  « Ouvrir dans l'Explorateur ».** Aucun argument `path`/`root`/`folder` ne
+  vient du WebView; le chemin relatif est lu depuis l'Index, la vraie racine
+  résolue côté Rust via `BrainSource::resolve(...).root(...)`, chaque
+  composante revalidée contre un lien/point d'analyse via
+  `confine_indexed_target()` — adapté de `resolve_indexed_target()` du
+  prototype 0.1, jamais du `Registry` qu'il utilisait. `explorer.exe` est
+  lancé directement (`/select,` pour un fichier, chemin nu pour un dossier),
+  jamais via un shell. `query_collection_nodes`, `mark_node_seen` et
+  `reveal_indexed_node` restent non enregistrés — vérifié par le test
+  structurel existant, revérifié sans modification.
+- **Aucune permission frontend ajoutée.** La capability WebView reste
+  `["core:default"]` seul — le test qui l'exige déjà (`TASK-0032`) reste
+  vert sans changement.
+- **Preuves :** 15 tests Rust + 1 garde structurelle `lib.rs` (recherche
+  bornée/échappée/isolée par cerveau, source non lue, DTO sans chemin
+  absolu, révision qui avance à la republication, refus cross-brain, refus
+  reparse/skipped/id inconnu/cible disparue, confinement contre `..`,
+  construction de l'argument Explorer sans spawn dans les tests); 5 tests
+  TypeScript (`DetailsPanel.test.tsx` : le bouton Explorer n'appelle
+  `onReveal` qu'avec exactement `{brainId, nodeId}`). Rejeu **WebView2
+  réel** sur l'arbre `REAL_ROOT` de 5 206 éléments de `TASK-0033` : recherche
+  d'un fichier hors projection ordinaire, activation par frappe/clic réels
+  vers une nouvelle projection sélectionnée, un refresh réel avance la
+  révision et l'interface la republie automatiquement plutôt que de garder
+  une page périmée, `map_reveal_node` invoqué sur cible synthétique avec
+  spawn réussi, aucune fuite de chemin absolu, 0 erreur console fatale.
+- **Validations :** Rust **344 PASS** (328 + 16), TypeScript **294 PASS**
+  (289 + 5), `pnpm check`, `pnpm build`, `cargo build --offline`,
+  `git diff --check` verts; `cargo fmt --check` propre sur les fichiers
+  touchés; `cargo clippy --all-targets --offline -- -D warnings` rouge à
+  **26 erreurs**, même compte qu'avant, aucune nouvelle.
+- **Non testé / limite assumée :** poste de développement, pas une
+  acceptance laptop modeste. Le rejeu invoque `map_reveal_node` directement
+  plutôt que par un clic UI en plus, pour éviter un second spawn
+  `explorer.exe` visible pour le même fait; une fenêtre Explorer réelle peut
+  rester ouverte après le rejeu, `explorer.exe` n'étant jamais tué
+  globalement.
+- **Aucune donnée personnelle**, comme toujours. **X5 inchangé**,
+  `origin/main` inchangé. Aucune `TASK-0035`, aucune nouvelle DEC, aucune
+  PR, fusion, étiquette ni release.
+- **Action unique suivante : contrôle indépendant de `TASK-0034`.**
+
+## ACTION-0051 — TASK-0033 VERIFIED (recontrôle indépendant) — 2026-09-10
+
+- **Verdict indépendant déjà rendu et déjà sur la branche précédente,
+  enregistré ici pour que les documents durables cessent de contredire
+  ce qui est déjà arrivé :**
+  [`docs/reviews/ACTION-0051-independent-recontrol.md`](../reviews/ACTION-0051-independent-recontrol.md)
+  rend `TASK-0033 = VERIFIED` dans sa portée, sur la livraison `243e21b`
+  (résultat épinglé par `156361a`) — la passe d'acceptation WebView2 qui a
+  trouvé et corrigé les deux défauts (expansion multi-niveaux de la vue
+  ordinaire; caméra non réajustée sur un changement de dimensions du
+  viewport) décrits dans le bloc précédent. **Aucun `VERIFIED` n'est
+  auto-attribué ici : ce paragraphe consigne un verdict déjà rendu par
+  l'orchestrateur technique indépendant.**
+- **Ce verdict ne valide pas** l'acceptance de performance sur laptop
+  modeste ni les fonctions hors portée (watcher, changements récents,
+  recherche avancée, ouverture Explorer, préférences écran/icône) — cette
+  dernière réserve devient précisément la tranche `TASK-0034` ci-dessus.
+- **Action suivante à cette date-là :** continuer vers une V1 utilisable
+  sans rouvrir l'architecture — devenue `TASK-0034`, ci-dessus.
+
 ## TASK-0033 — passe d'acceptation produit WebView2 — IMPLEMENTED — 2026-09-10
 
 - **Statut inchangé : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Même branche

@@ -112,6 +112,13 @@ pub enum MapError {
     SourceMismatch { brain_id: String },
     #[error("map_artifact_rejected: {0}")]
     ArtifactRejected(String),
+    /// `TASK-0034` C — the confinement/openability refusal for "Ouvrir dans
+    /// l'Explorateur". The inner code is a fixed word (never a path):
+    /// `indexed_target_unavailable`, `indexed_target_reparse_point`,
+    /// `indexed_target_not_openable`, `explorer_launch_failed` or
+    /// `platform_not_supported`.
+    #[error("map_reveal_refused: {0}")]
+    RevealRefused(String),
     #[error("content_observation_failed: {0}")]
     ContentObservation(String),
     #[error("relation_engine_failed: {0}")]

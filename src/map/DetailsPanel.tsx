@@ -1,4 +1,4 @@
-import type { MapNode, NodeDetail } from "./types";
+import type { BrainNodeRef, MapNode, NodeDetail } from "./types";
 import ContentObservationsPanel from "./ContentObservationsPanel";
 import type { ContentObservation, ContentObservationSummary } from "./types";
 
@@ -21,6 +21,19 @@ interface DetailsPanelProps {
   identicalContentMemberCount?: number;
   contentLoading?: boolean;
   contentObservedThisSession?: boolean;
+  /**
+   * `TASK-0034` D — the pair identifying the current selection. `onReveal`
+   * is called with **this and nothing else**: the panel never assembles a
+   * path itself, it only asks the backend to act on an identity it already
+   * has.
+   */
+  reference?: BrainNodeRef | null;
+  onReveal?: (reference: BrainNodeRef) => void | Promise<void>;
+  revealBusy?: boolean;
+  /** Already a short, user-facing message — never an absolute path. */
+  revealError?: string | null;
+  revealActionLabel?: string;
+  revealBusyLabel?: string;
 }
 
 export interface PanelStrings {
@@ -71,6 +84,12 @@ export default function DetailsPanel({
   identicalContentMemberCount = 0,
   contentLoading = false,
   contentObservedThisSession = false,
+  reference = null,
+  onReveal,
+  revealBusy = false,
+  revealError = null,
+  revealActionLabel = "Ouvrir dans l'Explorateur",
+  revealBusyLabel = "Ouverture…",
 }: DetailsPanelProps) {
   if (loading) {
     return (
@@ -91,6 +110,24 @@ export default function DetailsPanel({
   return (
     <section className="details" aria-label={strings.title}>
       <h2 className="details__name">{node.name}</h2>
+
+      {reference && onReveal ? (
+        <p className="details__reveal">
+          <button
+            type="button"
+            data-testid="reveal-in-explorer"
+            disabled={revealBusy}
+            onClick={() => void onReveal(reference)}
+          >
+            {revealBusy ? revealBusyLabel : revealActionLabel}
+          </button>
+          {revealError ? (
+            <span className="details__reveal-error" data-testid="reveal-error" role="alert">
+              {revealError}
+            </span>
+          ) : null}
+        </p>
+      ) : null}
 
       <dl className="details__list">
         <div className="details__row">

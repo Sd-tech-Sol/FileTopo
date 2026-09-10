@@ -18,7 +18,6 @@ use super::{MAX_FIXTURE_DEPTH, MapError, fixtures};
 use crate::domain::ScanDiagnostic;
 use crate::scanner::scan_tree_controlled;
 use serde::{Deserialize, Serialize};
-#[cfg(test)]
 use std::path::{Path, PathBuf};
 use std::sync::Mutex;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
@@ -102,6 +101,42 @@ pub struct MapOpenReport {
     pub index_reused: bool,
     pub freshness: String,
 }
+
+/// One search hit — `TASK-0034` A. Identity, a name and a **relative** path
+/// only; never an absolute path, a root or a source handle.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchHit {
+    pub brain_id: String,
+    pub node_id: i64,
+    pub name: String,
+    pub relative_path: String,
+    pub kind: crate::domain::NodeKind,
+}
+
+/// A bounded page of search results, tied to the revision it was read
+/// against — `TASK-0034` E. `indexRevision` is what lets a caller tell a
+/// stale result from a current one after a refresh/rebuild, without this
+/// module having to track sessions or invalidate anything itself.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct SearchPage {
+    pub brain_id: String,
+    pub query: String,
+    pub total: usize,
+    pub offset: usize,
+    pub limit: usize,
+    pub index_revision: u64,
+    pub items: Vec<SearchHit>,
+}
+
+/// Server-side ceiling on a search page — `TASK-0034` A. A page this size is
+/// still a handful of screenfuls, never a corpus dump.
+pub const SEARCH_LIMIT_MAX: usize = 50;
+/// A search box is not a text field for a whole document; this is generous
+/// for a folder or file name/relative path and cheap to bind as a SQL
+/// parameter.
+const SEARCH_QUERY_MAX_CHARS: usize = 200;
 
 pub fn open_map(paths: &SandboxPaths, brain: &BrainRecord) -> Result<MapOpenReport, MapError> {
     let store = open_store(paths, brain)?;
@@ -593,6 +628,164 @@ pub fn detail(
         });
     }
     open_store(paths, brain)?.detail(reference.node_id)
+}
+
+/// Bounded local search over one brain's canonical Index — `TASK-0034` A.
+///
+/// Reuses [`crate::index::Index::query_nodes`] rather than a second SQL
+/// statement: the escaping of `%`, `_` and `\`, the directories-first order
+/// and the `total` count all come from the one place that already owns them.
+/// `open_store` is the only door — a search never reads the source, and
+/// never runs against an index that is not this brain's current one.
+///
+/// An empty (or all-whitespace) query returns an **empty** page rather than
+/// calling into `query_nodes` at all: that function's `WHERE` clause treats
+/// `''` as "match everything" for callers who already have a reason to list
+/// a corpus (`TASK-0016`'s legacy review queue, for instance), and a search
+/// box is not one of those callers — `DEC-0034`-style "a search is not a
+/// corpus dump" applies here just as it does to the map.
+pub fn search_nodes(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+    query: &str,
+    offset: usize,
+    limit: usize,
+) -> Result<SearchPage, MapError> {
+    let store = open_store(paths, brain)?;
+    let bounded_limit = limit.clamp(1, SEARCH_LIMIT_MAX);
+    let trimmed: String = query.trim().chars().take(SEARCH_QUERY_MAX_CHARS).collect();
+    if trimmed.is_empty() {
+        let identity = store.index.identity()?;
+        return Ok(SearchPage {
+            brain_id: brain.brain_id.clone(),
+            query: trimmed,
+            total: 0,
+            offset,
+            limit: bounded_limit,
+            index_revision: identity.revision,
+            items: Vec::new(),
+        });
+    }
+    let (nodes, total) =
+        store
+            .index
+            .query_nodes(&trimmed, None, None, false, bounded_limit, offset)?;
+    let identity = store.index.identity()?;
+    let items = nodes
+        .into_iter()
+        .map(|node| SearchHit {
+            brain_id: brain.brain_id.clone(),
+            node_id: node.id,
+            name: node.name,
+            relative_path: node.relative_path,
+            kind: node.kind,
+        })
+        .collect();
+    Ok(SearchPage {
+        brain_id: brain.brain_id.clone(),
+        query: trimmed,
+        total,
+        offset,
+        limit: bounded_limit,
+        index_revision: identity.revision,
+        items,
+    })
+}
+
+/// Walks an indexed relative path onto a resolved root, one component at a
+/// time, refusing anywhere a symlink, a reparse point or a missing entry
+/// appears — `TASK-0034` C. Adapted from the 0.1 prototype's
+/// `resolve_indexed_target`, which did the same walk against the old
+/// `Registry`; this version takes the root [`BrainSource`] already resolves,
+/// so it carries no dependency on that store.
+///
+/// Every `Path` normal-component check also rejects `..`, a root prefix or an
+/// empty component outright — the Index never writes those into
+/// `relative_path`, but a defensive walk does not have to trust that.
+fn confine_indexed_target(root: &Path, relative_path: &str) -> Result<PathBuf, MapError> {
+    let mut target = root.to_path_buf();
+    for component in Path::new(relative_path).components() {
+        let std::path::Component::Normal(name) = component else {
+            return Err(MapError::RevealRefused("indexed_path_invalid".into()));
+        };
+        target.push(name);
+        let metadata = std::fs::symlink_metadata(&target)
+            .map_err(|_| MapError::RevealRefused("indexed_target_unavailable".into()))?;
+        if metadata.file_type().is_symlink() || crate::path_codec::is_reparse_point(&metadata) {
+            return Err(MapError::RevealRefused(
+                "indexed_target_reparse_point".into(),
+            ));
+        }
+    }
+    Ok(target)
+}
+
+/// The `explorer.exe` argument for a confined target — a folder opens as
+/// itself, a file opens with `/select,` so Explorer highlights it in its
+/// parent folder. Kept apart from [`reveal_node`] and unconditionally
+/// compiled so this construction is testable without spawning a process or
+/// requiring Windows — `TASK-0034` F.11.
+fn explorer_argument(target: &Path) -> std::ffi::OsString {
+    if target.is_dir() {
+        target.as_os_str().to_os_string()
+    } else {
+        let mut selection = std::ffi::OsString::from("/select,");
+        selection.push(target.as_os_str());
+        selection
+    }
+}
+
+/// "Ouvrir dans l'Explorateur Windows" — `TASK-0034` C.
+///
+/// The **only** input is a [`BrainNodeRef`]; every path used here is read
+/// from the Index and resolved against the brain's real root **inside**
+/// this function. Nothing that reaches this far ever received a path,
+/// a root or a folder name from the WebView, and nothing it returns ever
+/// carries one back.
+///
+/// `explorer.exe` is launched directly via [`std::process::Command`] — never
+/// through a shell — with `/select,<path>` for a file and the bare directory
+/// path for a folder, exactly as the 0.1 prototype's `reveal_indexed_node`
+/// did against the old `Registry`. That command is not re-registered; this
+/// is the same primitive adapted to `BrainRecord`/`BrainIndex`.
+pub fn reveal_node(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+    reference: &BrainNodeRef,
+) -> Result<(), MapError> {
+    if !reference.belongs_to(&brain.brain_id) {
+        return Err(MapError::BrainMismatch {
+            expected: brain.brain_id.clone(),
+            found: reference.brain_id.clone(),
+        });
+    }
+    let store = open_store(paths, brain)?;
+    let node = store
+        .index
+        .node(reference.node_id)?
+        .ok_or(MapError::NodeMissing(reference.node_id))?;
+    if node.reparse_point || node.kind == crate::domain::NodeKind::Skipped {
+        return Err(MapError::RevealRefused(
+            "indexed_target_not_openable".into(),
+        ));
+    }
+    let root = BrainSource::resolve(paths, brain)?.root(paths);
+    let target = confine_indexed_target(&root, &node.relative_path)?;
+
+    #[cfg(windows)]
+    {
+        let argument = explorer_argument(&target);
+        std::process::Command::new("explorer.exe")
+            .arg(argument)
+            .spawn()
+            .map_err(|_| MapError::RevealRefused("explorer_launch_failed".into()))?;
+        Ok(())
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = target;
+        Err(MapError::RevealRefused("platform_not_supported".into()))
+    }
 }
 
 pub fn integrity(paths: &SandboxPaths, brain: &BrainRecord) -> Result<FixtureIntegrity, MapError> {
@@ -1838,3 +2031,7 @@ mod real_root_tests;
 #[cfg(test)]
 #[path = "legacy_binding_tests.rs"]
 mod legacy_binding_tests;
+
+#[cfg(test)]
+#[path = "find_open_tests.rs"]
+mod find_open_tests;

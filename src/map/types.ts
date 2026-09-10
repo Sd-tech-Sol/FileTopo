@@ -129,6 +129,37 @@ export interface NodeDetail {
   children: MapNode[];
 }
 
+/* --- TASK-0034 — recherche bornée et « Ouvrir dans l'Explorateur » ------ */
+
+/**
+ * One search hit — identity, name and a **relative** path only. Never an
+ * absolute path, a root or a source handle — `DEC-0033` B applies to search
+ * results exactly as it does to every other DTO.
+ */
+export interface SearchHit {
+  brainId: string;
+  nodeId: number;
+  name: string;
+  relativePath: string;
+  kind: MapNodeKind;
+}
+
+/**
+ * A bounded page of search results, tied to the revision it was read
+ * against. `indexRevision` is what lets the interface tell a stale result
+ * from a current one after a refresh/rebuild — never trust an old `nodeId`
+ * against a new revision without checking this first.
+ */
+export interface SearchPage {
+  brainId: string;
+  query: string;
+  total: number;
+  offset: number;
+  limit: number;
+  indexRevision: number;
+  items: SearchHit[];
+}
+
 export interface FixtureSummary {
   id: string;
   labelFr: string;

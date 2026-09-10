@@ -92,6 +92,8 @@ import type {
   RelationsSelfCheck,
   RelationEngineReport,
   RelationEngineStatus,
+  SearchHit,
+  SearchPage,
   SuggestionReviewQueue,
 } from "./types";
 import {
@@ -176,6 +178,24 @@ const strings = {
     index: "index",
     engine: "Moteur de rendu",
     sandbox: "Bac à sable",
+    searchLabel: "Rechercher un dossier ou fichier",
+    searchPlaceholder: "Nom ou chemin relatif…",
+    searchClear: "Effacer",
+    searchEmpty: "Aucun résultat.",
+    searchTotal: (total: number) => `${total} résultat${total > 1 ? "s" : ""}`,
+    searchPrevious: "Page précédente",
+    searchNext: "Page suivante",
+    searchStale: "Résultats périmés après une actualisation — relancez la recherche.",
+    revealAction: "Ouvrir dans l'Explorateur",
+    revealBusy: "Ouverture…",
+    revealError: {
+      indexed_target_unavailable: "Cet élément est introuvable ou inaccessible.",
+      indexed_target_reparse_point: "Cet élément est un lien et ne peut pas être ouvert ainsi.",
+      indexed_target_not_openable: "Cet élément ne peut pas être ouvert.",
+      explorer_launch_failed: "Impossible de lancer l'Explorateur Windows.",
+      platform_not_supported: "Cette action n'est disponible que sous Windows.",
+    } as Record<string, string>,
+    revealErrorGeneric: "Impossible d'ouvrir cet élément.",
     panel: {
       title: "Détails de la sélection",
       empty: "Sélectionnez un bloc sur la carte, ou appuyez sur Origine.",
@@ -295,6 +315,14 @@ export default function MapApp() {
   // only. Not persisted: composition persistence is out of scope, and only the
   // **active brain** survives a restart, in the catalogue.
   const [sessions, setSessions] = useState<CompositionSessionMemory>(emptyCompositionMemory);
+  // `TASK-0034` A/B. Search is scoped to the focused brain; a query, its
+  // bounded page and the offset it was fetched at. Cleared on a brain switch
+  // or a revision change (refresh/rebuild) — never carried across either.
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchPage, setSearchPage] = useState<SearchPage | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [revealBusy, setRevealBusy] = useState(false);
+  const [revealError, setRevealError] = useState<string | null>(null);
 
   // The measurement loop drives the same state the interface does, so what it
   // times is what a person would experience — not a parallel code path.
@@ -1970,6 +1998,93 @@ export default function MapApp() {
   const focusedBrain = composed ? loaded.get(composed.focusedBrainId) ?? null : null;
   const report = focusedBrain?.report ?? null;
   const integrity = focusedBrain?.integrity ?? null;
+  const focusedBrainId = focusedBrain?.record.brainId ?? null;
+  const focusedBrainRevision = focusedBrain?.snapshot.indexRevision ?? null;
+
+  // `TASK-0034` A — bounded local search, behind the current runtime only.
+  const runSearch = useCallback(async (brainId: string, query: string, offset: number) => {
+    setSearchLoading(true);
+    try {
+      const page = await invoke<SearchPage>("map_search_nodes", {
+        brainId,
+        query,
+        offset,
+        limit: 50,
+      });
+      setSearchPage(page);
+    } catch (error) {
+      hostLog("error", `recherche refusée: ${String(error)}`);
+      setSearchPage(null);
+    } finally {
+      setSearchLoading(false);
+    }
+  }, []);
+
+  // The query text is scoped to whichever brain is focused — switching
+  // brains starts a fresh search rather than carrying one over.
+  useEffect(() => {
+    setSearchQuery("");
+  }, [focusedBrainId]);
+
+  // Re-issued on every keystroke and on every revision change: a
+  // refresh/rebuild re-runs the same query against the new index instead of
+  // leaving a page read from a superseded revision on screen — `TASK-0034` E.
+  useEffect(() => {
+    if (!focusedBrainId || searchQuery.trim().length === 0) {
+      setSearchPage(null);
+      return;
+    }
+    void runSearch(focusedBrainId, searchQuery, 0);
+  }, [focusedBrainId, focusedBrainRevision, searchQuery, runSearch]);
+
+  const goToSearchPage = useCallback(
+    (offset: number) => {
+      if (!focusedBrainId) return;
+      void runSearch(focusedBrainId, searchQuery, Math.max(0, offset));
+    },
+    [focusedBrainId, searchQuery, runSearch],
+  );
+
+  const clearSearch = useCallback(() => {
+    setSearchQuery("");
+    setSearchPage(null);
+  }, []);
+
+  // Activation replaces the projection and selects the result — `TASK-0034`
+  // B — but only after re-checking the revision the page was read against:
+  // the effect above already re-searches on a revision change, so this is a
+  // defensive backstop against the narrow window before that finishes, never
+  // the primary guard.
+  const activateSearchHit = useCallback(
+    (hit: SearchHit) => {
+      const currentRevision = loadedRef.current.get(hit.brainId)?.snapshot.indexRevision;
+      if (searchPage && currentRevision !== undefined && currentRevision !== searchPage.indexRevision) {
+        setSearchPage(null);
+        setStatus(t.searchStale);
+        return;
+      }
+      void changeProjection(hit.brainId, hit.nodeId);
+    },
+    [changeProjection, searchPage],
+  );
+
+  // `TASK-0034` C/D — "Ouvrir dans l'Explorateur", from the details panel.
+  const revealInExplorer = useCallback(async (reference: BrainNodeRef) => {
+    setRevealBusy(true);
+    setRevealError(null);
+    try {
+      await invoke("map_reveal_node", { reference });
+    } catch (error) {
+      const code = String(error).replace(/^map_reveal_refused:\s*/, "").trim();
+      setRevealError(t.revealError[code] ?? t.revealErrorGeneric);
+    } finally {
+      setRevealBusy(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    setRevealError(null);
+  }, [selected]);
 
   const labelFor = useCallback(
     (node: MapNode, brain: BrainRecord) =>
@@ -2339,6 +2454,85 @@ export default function MapApp() {
           ) : null}
 
           {focusedBrain ? (
+            <section aria-label={t.searchLabel} data-testid="search-panel">
+              <label htmlFor="map-search-input">{t.searchLabel}</label>
+              <input
+                id="map-search-input"
+                type="text"
+                data-testid="search-input"
+                value={searchQuery}
+                placeholder={t.searchPlaceholder}
+                onChange={(event) => setSearchQuery(event.target.value)}
+              />
+              <button
+                type="button"
+                data-testid="search-clear"
+                onClick={clearSearch}
+                disabled={searchQuery.length === 0}
+              >
+                {t.searchClear}
+              </button>
+              {searchQuery.trim().length > 0 ? (
+                <div data-testid="search-results" aria-live="polite">
+                  {searchLoading ? (
+                    <p>{t.compositionBusy}</p>
+                  ) : !searchPage || searchPage.items.length === 0 ? (
+                    <p>{t.searchEmpty}</p>
+                  ) : (
+                    <>
+                      <p
+                        data-testid="search-total"
+                        data-total={searchPage.total}
+                        data-offset={searchPage.offset}
+                        data-limit={searchPage.limit}
+                        data-index-revision={searchPage.indexRevision}
+                      >
+                        {t.searchTotal(searchPage.total)}
+                      </p>
+                      <ul>
+                        {searchPage.items.map((hit) => (
+                          <li key={`${hit.brainId}:${hit.nodeId}`}>
+                            <button
+                              type="button"
+                              data-testid="search-hit"
+                              data-node-id={hit.nodeId}
+                              onClick={() => activateSearchHit(hit)}
+                            >
+                              {hit.name}
+                              <span> · {t.panel.kinds[hit.kind]}</span>
+                              <span> · {hit.relativePath}</span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                      {searchPage.total > searchPage.limit ? (
+                        <p>
+                          <button
+                            type="button"
+                            data-testid="search-prev"
+                            disabled={searchPage.offset === 0}
+                            onClick={() => goToSearchPage(searchPage.offset - searchPage.limit)}
+                          >
+                            {t.searchPrevious}
+                          </button>
+                          <button
+                            type="button"
+                            data-testid="search-next"
+                            disabled={searchPage.offset + searchPage.items.length >= searchPage.total}
+                            onClick={() => goToSearchPage(searchPage.offset + searchPage.limit)}
+                          >
+                            {t.searchNext}
+                          </button>
+                        </p>
+                      ) : null}
+                    </>
+                  )}
+                </div>
+              ) : null}
+            </section>
+          ) : null}
+
+          {focusedBrain ? (
             <section aria-label="Navigation progressive" data-testid="projection-controls">
               <p>{focusedBrain.snapshot.materializedCount} éléments visibles sur {focusedBrain.snapshot.nodeCount}; {focusedBrain.snapshot.nonMaterializedCount} hors de la vue courante.</p>
               <button type="button" disabled={!selected || selected.brainId !== focusedBrain.record.brainId}
@@ -2401,6 +2595,12 @@ export default function MapApp() {
             contentObservedThisSession={
               selected ? contentObservedBrains.has(selected.brainId) : false
             }
+            reference={selected}
+            onReveal={revealInExplorer}
+            revealBusy={revealBusy}
+            revealError={revealError}
+            revealActionLabel={t.revealAction}
+            revealBusyLabel={t.revealBusy}
           />
 
           <section aria-label="Extrémités hors de la vue courante">

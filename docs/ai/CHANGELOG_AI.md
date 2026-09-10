@@ -4544,3 +4544,115 @@ direction non reprise. Aucune donnée personnelle. `X5` inchangé; aucune
 
 **Action unique suivante :** nouveau contrôle indépendant de `TASK-0033`,
 sur les preuves de cette passe, par une instance distincte de Claude Code.
+
+---
+
+## 2026-09-10 — ACTION-0051 — Enregistrement tardif du contrôle indépendant, TASK-0033 VERIFIED
+
+**Agent :** exécuteur Claude Code
+**Statut à l'issue :** enregistrement documentaire seulement; aucun verdict
+rendu ici
+
+### Fait
+
+- `docs/reviews/ACTION-0051-independent-recontrol.md` rendait déjà
+  `TASK-0033 = VERIFIED` dans sa portée, sur la livraison `243e21b`
+  (résultat épinglé par `156361a`), avant cette session. Ce commit n'avait
+  mis à jour aucun des cinq documents durables, qui affichaient donc encore
+  « en attente de contrôle » en contradiction avec le verdict déjà sur la
+  branche — le même écart que celui corrigé pour `ACTION-0049`.
+- Les cinq documents sont corrigés pour refléter le verdict déjà rendu :
+  `VALIDATION.md` section `BG`, `CURRENT_STATE.md`, `HANDOFF.md`, la fiche
+  `TASK-0033` (déjà corrigée par l'orchestrateur avant cette session), et
+  cette entrée. **Aucun contenu technique n'a changé.**
+
+### Non fait, volontairement
+
+- Aucun nouveau code, aucune nouvelle preuve, aucun rejeu.
+
+---
+
+## 2026-09-10 — TASK-0034 — V1 Find & Open
+
+**Agent :** exécuteur Claude Code
+**Statut à l'issue :** `IMPLEMENTED`, jamais auto-`VERIFIED`
+
+### Fait
+
+Recherche locale bornée nom/chemin relatif dans l'Index canonique, focalisée
+dans la carte progressive, puis « Ouvrir dans l'Explorateur Windows » sans
+jamais exposer de chemin absolu au WebView. Branche
+`build/v0.2-a18-v1-find-open`; aucune nouvelle DEC; prérequis
+`TASK-0033 = VERIFIED` (`ACTION-0051`) satisfait avant tout code.
+
+- **`map_search_nodes`** réutilise `Index::query_nodes()` sans dupliquer le
+  SQL, derrière `open_store()`. Bornée à 50 résultats par page
+  (`SEARCH_LIMIT_MAX`), publie `total`/`offset`/`limit`/`indexRevision`.
+  Une requête vide/blanche court-circuite avant tout appel à `query_nodes`
+  — sa clause `WHERE` traite `''` comme « tout » pour d'autres appelants
+  légitimes, jamais pour une recherche.
+- **`map_reveal_node(reference: BrainNodeRef)`** est la seule porte
+  « Ouvrir dans l'Explorateur » : aucun chemin ne vient du WebView, le
+  `relative_path` est lu depuis l'Index, la vraie racine résolue côté Rust
+  via `BrainSource::resolve(...).root(...)`, chaque composante confinée et
+  revalidée (`confine_indexed_target`, adapté du `resolve_indexed_target()`
+  du prototype 0.1, contre `BrainSource` au lieu du `Registry`).
+  `explorer.exe` lancé directement (`/select,` fichier, chemin nu dossier),
+  jamais via un shell. `query_collection_nodes`/`mark_node_seen`/
+  `reveal_indexed_node` restent non enregistrés.
+- **Aucune nouvelle logique de caméra** : l'activation d'un résultat
+  réutilise `map_view`/`changeProjection` tels quels, la caméra `VERIFIED`
+  de `TASK-0033` gérant déjà le recentrage.
+- **Aucune permission frontend ajoutée** — la capability reste
+  `["core:default"]` seul, revérifié par le test existant sans modification.
+
+### Preuves
+
+15 tests Rust (`find_open_tests.rs`) + 1 garde structurelle `lib.rs` :
+recherche bornée/échappée (`%`/`_`/`\`)/isolée par cerveau, requête
+vide/blanche sans dump, total/offset/limit exacts sans chevauchement,
+recherche fonctionnant sans source, DTO sans chemin absolu, révision qui
+avance à la republication, refus cross-brain/reparse/skipped/id inconnu,
+refus d'une cible réellement disparue après indexation, confinement contre
+un `..` injecté, construction de l'argument Explorer sans spawn dans les
+tests. 5 tests TypeScript (`DetailsPanel.test.tsx`) : le bouton Explorer
+n'appelle `onReveal` qu'avec exactement `{brainId, nodeId}`.
+
+Rejeu **WebView2 réel** (`scripts/task0034-seed-proof.py`/`-webview2.mjs`/
+`.ps1`, arbre `REAL_ROOT` de 5 206 éléments réutilisé de `TASK-0033`,
+fichier-cible fixe hors projection ordinaire) : recherche exacte et bornée,
+activation par frappe/clic réels vers une nouvelle projection sélectionnée,
+un refresh réel avance la révision et l'interface la republie
+automatiquement plutôt que de garder une page périmée, `map_reveal_node`
+invoqué sur cible synthétique avec spawn réussi, aucune fuite de chemin
+absolu, 0 erreur console fatale. Artefact non canonique :
+`docs/performance/runs/TASK-0034-webview2.json`.
+
+**Défaut de harnais trouvé et corrigé pendant l'écriture du rejeu, pas dans
+le produit :** appeler `map_refresh` directement en plus du clic UI qui
+l'avait déjà déclenché désynchronise la révision que l'état React de
+l'application connaît de celle du backend — corrigé en lisant l'état via
+`map_view` (lecture seule) au lieu de rappeler `map_refresh`.
+
+Rust **344 PASS** (328 + 16), TypeScript **294 PASS** (289 + 5), `pnpm
+check`, `pnpm build`, `cargo build --offline`, `git diff --check` verts.
+`cargo fmt --check` propre sur les lignes écrites par cette passe. `cargo
+clippy` strict reste **rouge à 26 erreurs**, même compte qu'avant, aucune
+nouvelle.
+
+### Non fait, et limites
+
+Poste de développement, pas une acceptance laptop modeste. L'invocation
+« Ouvrir dans l'Explorateur » du rejeu est un appel direct plutôt qu'un
+clic UI en plus, pour éviter un second spawn `explorer.exe` visible pour le
+même fait — le câblage du bouton est prouvé séparément par
+`DetailsPanel.test.tsx`. Une fenêtre Explorer réelle peut rester ouverte
+après le rejeu; `explorer.exe` n'est jamais tué globalement. Hors portée :
+FTS5, filtres nouveaux/non-vus, watcher/incrémental, historique de
+changements, copie de chemin absolu, préférences d'écran/icône, nouveau
+moteur graphique, réseau/cloud/LLM/MCP. Aucune donnée personnelle. `X5`
+inchangé; aucune `TASK-0035`, aucune nouvelle DEC, aucune PR, fusion,
+étiquette ni release; `origin/main` inchangé.
+
+**Action unique suivante :** contrôle indépendant de `TASK-0034`, par une
+instance distincte de Claude Code.
