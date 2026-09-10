@@ -1,7 +1,7 @@
 # TASK-0033 — V1 Progressive Topographic UX
 
 - Date : 2026-09-10
-- Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`. Exécuteur : Claude Code.
+- Statut : `VERIFIED` dans sa portée par `ACTION-0051`. Exécuteur : Claude Code.
 - Branche : `build/v0.2-a17-v1-topographic-ux`
 - Prérequis : `TASK-0032 = VERIFIED` par `ACTION-0049`
 - Décision : `DEC-0034-progressive-topographic-view.md`, `APPROVED`
@@ -89,13 +89,13 @@ Utiliser uniquement une arborescence synthétique générée, idéalement >= 5 0
 
 ## Sortie attendue
 
-À la fin :
+À la livraison exécuteur :
 
 - code + tests + documentation sur `build/v0.2-a17-v1-topographic-ux`;
 - `TASK-0033 = IMPLEMENTED`, jamais auto-`VERIFIED`;
 - rapport complet dans `.orchestrator/RESULT.md`;
 - `docs/ai/CURRENT_STATE.md`, `HANDOFF.md`, `NEXT_ACTION.md`, `VALIDATION.md`, `CHANGELOG_AI.md` mis à jour;
-- aucune TASK-0034 précréée;
+- aucune TASK-0034 précréée par l'exécuteur;
 - `NEXT_ACTION` = contrôle indépendant de TASK-0033.
 
 ## Livraison — 2026-09-10
@@ -129,14 +129,11 @@ Détail complet dans [VALIDATION section BE](../ai/VALIDATION.md) et
   `cargo build --offline`, `git diff --check` verts; `cargo fmt --check`
   propre sur les fichiers touchés; `cargo clippy --all-targets --offline --
   -D warnings` rouge à **26 erreurs**, aucune nouvelle.
-- **Non testé, déclaré explicitement : aucun rejeu WebView2** dans cette
-  passe (ni 1366×768 ni 1920×1080, ni arborescence synthétique à grande
-  échelle). La lisibilité produit sur un vrai volume n'est donc prouvée qu'au
-  niveau unitaire/composant, pas au niveau produit — à faire avant tout
-  `VERIFIED`.
+- La première livraison n'avait pas exécuté le rejeu WebView2; cette lacune a
+  déclenché `ACTION-0050` et la passe d'acceptation ci-dessous.
 - Palette de relations par direction (sortante/entrante/bidirectionnelle) de
-  `REFERENCE_UX_OLD_FILETOPO.md` **non reprise** : laissée à une tranche
-  ultérieure, comme direction plutôt que dépendance.
+  `REFERENCE_UX_OLD_FILETOPO.md` non reprise dans cette tranche, comme direction
+  graphique ultérieure.
 
 ## Passe d'acceptation produit WebView2 — 2026-09-10
 
@@ -151,55 +148,36 @@ produit obligatoire manquant). Détail complet dans
   en WebView2 réel (`scripts/task0033-webview2.mjs`/`.ps1`) à **1366×768**
   puis **1920×1080** dans le même processus. Preuve non canonique :
   [`docs/performance/runs/TASK-0033-webview2.json`](../performance/runs/TASK-0033-webview2.json).
-- **Un vrai défaut trouvé et corrigé dans la portée de cette tâche.**
-  `materialize_view` continuait, après la page des enfants directs du focus,
-  à paginer récursivement les enfants du **premier** enfant rencontré tant
-  que la cible n'était pas atteinte — un reliquat d'avant `DEC-0034`. Sur un
-  arbre où ce premier enfant a un gros sous-arbre (`A`, 120 dossiers), cela
-  consommait presque toute la cible de 64 sur une seule branche arbitraire,
-  masquant les vraies branches soeurs (`B`, `C`, `D`) de la vue racine —
-  exactement ce que `DEC-0034` B interdit. **Corrigé :** l'expansion
-  automatique s'arrête désormais aux enfants directs du focus; descendre
-  d'un niveau est toujours une navigation explicite. Un test Rust dédié
-  (`ordinary_view_never_pulls_in_grandchildren_even_from_a_small_branch`)
-  verrouille ce comportement. Quatre tests préexistants qui présupposaient
-  l'ancien comportement (obtenir un nœud imbriqué via la vue par défaut) ont
-  été corrigés pour naviguer explicitement plutôt que de changer le contrat
-  produit qu'ils testaient par ailleurs.
-- **Un second défaut trouvé et corrigé, dans la caméra.** `.map-view` peut
-  grandir après le premier positionnement (le panneau latéral se remplit de
-  vraies données de manière asynchrone, ce qui change la hauteur de rangée
-  de la grille `.app__main`); rien ne réappliquait alors les bornes de la
-  caméra à la nouvelle taille, laissant la vue échouée hors du canevas
-  visible. **Corrigé :** un effet dédié réapplique `clampView` (jamais un
-  recentrage) à chaque changement de dimensions du viewport, en plus de
-  l'effet d'ouverture existant.
-- **Preuves confirmées en conditions réelles :** cible ordinaire ≤ 64
-  respectée; dossiers d'abord sur un dossier purement dossiers (120 → 62
-  affichés, 58 omis) et sur un dossier mixte (40 dossiers + 90 fichiers → 40
-  dossiers + 22 fichiers affichés, aucun fichier avant qu'un dossier ne le
-  soit); continuation sans accumulation sur la pile plate; navigation vers
-  la chaîne profonde; caméra à échelle constante lors d'une navigation de
-  branche; `Ajuster à l'écran` produit bien un fit exhaustif (échelle très
-  inférieure à l'échelle lisible sur cette colonne haute); `Réinitialiser`
-  revient à l'échelle lisible (`1`), jamais au fit exhaustif; pastille
-  d'agrégat mesurée à 150×34, très sous une carte 240×64; aucun vocabulaire
-  interne, aucune fuite de chemin absolu, 0 erreur console fatale aux deux
-  résolutions.
-- **Incohérence documentaire signalée par `ACTION-0050` corrigée** : la
-  fiche et `HANDOFF.md` disaient encore que `fitView` restait utilisé à la
-  première ouverture; c'est `readableView` depuis la livraison initiale.
-- **Validations rejouées après correction** : Rust **328 PASS** (327 + 1
-  nouveau test de régression), TypeScript **289 PASS** (inchangé),
-  `pnpm check`, `pnpm build`, `cargo build --offline`, `git diff --check`
-  verts; `cargo fmt --check` propre sur les fichiers Rust touchés par cette
-  passe; `cargo clippy --all-targets --offline -- -D warnings` rouge à **26
-  erreurs**, même compte qu'avant, aucune dans un fichier touché par cette
-  passe.
-- **Non testé, limite assumée :** poste de développement, pas une
-  acceptance laptop modeste; le redimensionnement utilise
-  `Emulation.setDeviceMetricsOverride` (CDP), pas un changement physique de
-  moniteur.
-- **État final :** `TASK-0033` reste `IMPLEMENTED`, **jamais auto-
-  `VERIFIED`**. `DEC-0034` reste `APPROVED`. Aucune `TASK-0034` précréée.
-  **Action unique suivante : nouveau contrôle indépendant de `TASK-0033`.**
+- **Défaut A trouvé et corrigé.** `materialize_view` continuait, après la page
+  des enfants directs du focus, à paginer récursivement les enfants du premier
+  enfant rencontré tant que la cible n'était pas atteinte. Cela pouvait
+  engloutir une branche arbitraire et masquer ses sœurs. L'expansion automatique
+  s'arrête désormais aux enfants directs du focus; descendre est une navigation
+  explicite. Le test
+  `ordinary_view_never_pulls_in_grandchildren_even_from_a_small_branch`
+  verrouille ce comportement.
+- **Défaut B trouvé et corrigé.** `.map-view` peut grandir après le premier
+  positionnement lorsque le panneau latéral se remplit de façon asynchrone.
+  Un effet dédié réapplique désormais `clampView` à chaque changement de taille
+  du viewport, sans recentrage et sans modifier le zoom choisi.
+- **Preuves en conditions réelles :** cible ordinaire <= 64; dossiers d'abord
+  sur overflow pur et mixte; continuation sans accumulation; navigation
+  profonde; échelle conservée lors d'une navigation de branche; `Ajuster`
+  produit un fit exhaustif et `Réinitialiser` revient à l'échelle lisible `1`;
+  pastille 150×34; aucun jargon interne, aucune fuite de chemin absolu et
+  0 erreur console fatale aux deux résolutions.
+- **Validations après correction :** Rust **328 PASS**, TypeScript **289 PASS**,
+  `pnpm check`, `pnpm build`, `cargo build --offline`, `git diff --check` verts;
+  Clippy strict reste rouge à 26 erreurs historiques selon le rapport.
+- **Limite assumée :** poste de développement, pas une acceptance laptop
+  modeste; redimensionnement par CDP plutôt que changement physique de moniteur.
+
+## Contrôle indépendant final — ACTION-0051
+
+`ACTION-0051-independent-recontrol.md` contrôle la livraison `243e21b`,
+épinglée par `156361a`, ainsi que l'artefact WebView2. Verdict : **VERIFIED dans
+la portée de TASK-0033**.
+
+Ce verdict confirme le cœur topographique progressif et ses protections; il ne
+valide pas les fonctions hors portée ni une promesse de performance sur laptop
+modeste.
