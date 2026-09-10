@@ -2,7 +2,7 @@ TASK_ID: TASK-0034 — V1 Find & Open
 AGENT: CLAUDE
 RESULT: DONE
 BRANCH: build/v0.2-a18-v1-find-open
-FINAL_HEAD: (pending — see the follow-up pin commit on this branch)
+FINAL_HEAD: d0f79ac
 GO: 7707761, child of 81f9d2c
 
 SUMMARY:
