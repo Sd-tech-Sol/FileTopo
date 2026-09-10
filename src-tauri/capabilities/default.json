@@ -1,12 +1,11 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Capability for the main window",
+  "description": "Capability for the main window. The dialogue plugin is initialised for the Rust side only; its frontend `open` command is deliberately NOT granted - DEC-0033 H.",
   "windows": [
     "main"
   ],
   "permissions": [
-    "core:default",
-    "dialog:allow-open"
+    "core:default"
   ]
 }

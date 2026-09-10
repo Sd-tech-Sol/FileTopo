@@ -4267,3 +4267,102 @@ restent `IMPLEMENTED`, **pas `VERIFIED` globalement**; `F-042 = PROPOSED/MVP`,
 
 **Action unique suivante :** contrôle indépendant de `TASK-0032`, par une
 instance distincte de Claude Code.
+
+---
+
+## 2026-09-10 — TASK-0032 — Passe corrective, deux défauts bloquants
+
+**Agent :** exécuteur Claude Code
+**Statut à l'issue :** `IMPLEMENTED`, **jamais auto-`VERIFIED`** — inchangé
+**Branche :** `build/v0.2-a16-v1-real-root`, GO de la passe à `a279ef9`
+**Décision :** `DEC-0033`, `APPROVED`, **corrigée** en `D`, `H` et `I`
+
+Le contrôle indépendant de `TASK-0032` a trouvé **deux défauts bloquants**.
+**Les deux étaient réels**, et la livraison précédente affirmait le contraire
+sur les deux points. Aucune `TASK-0033`, aucune `DEC-0034`.
+
+### Défaut A — la permission de dialogue ouvrait la frontière
+
+La capacité accordait `dialog:allow-open` au WebView, présenté comme « la
+permission nécessaire au sélecteur ». Vérification faite sur les sources
+installées de `tauri-plugin-dialog 2.7.2` : cette permission active
+`plugin:dialog|open`, dont les options portent `default_path: Option<PathBuf>`
+**fourni par la page** et qui **retourne les chemins choisis** à la page. Les
+deux moitiés sont exactement ce que `DEC-0033` A et B interdisent. La
+permission n'était pas nécessaire; elle était la brèche. Le test écrit avec
+elle exigeait sa présence : il prouvait le trou au lieu de la garantie.
+
+**Corrigé :** la capacité `default` porte `core:default` et rien d'autre.
+`tauri_plugin_dialog::init()` reste — une capacité ne gouverne que les
+commandes atteignables depuis le WebView, jamais `app.dialog()` appelé depuis
+l'hôte, ce qui a été vérifié sur les sources du plugin. Les tests Rust et
+TypeScript sont retournés : ils exigent l'absence de tout `dialog:`, `fs:`,
+`shell:`, `opener:` et `http:`. Une preuve **à l'exécution** a été ajoutée au
+rejeu WebView2 : `plugin:dialog|open` avec et sans `defaultPath`, et
+`plugin:dialog|save`, sont refusés par la couche de permissions; aucun dialogue
+ne s'ouvre et aucun chemin réel n'est passé.
+
+### Défaut B — un index antérieur à DEC-0033 ne pouvait pas être republié
+
+`publish_map` appelait `open_store` en pré-contrôle, et `open_store` exige un
+binding courant. Un index écrit par `TASK-0031` n'en porte aucun : il était donc
+refusé **par tous les chemins**, actualiser et reconstruire compris, et restait
+bloqué pour toujours — l'inverse de ce que `DEC-0033` D promettait. **La
+« limite délibérément assumée » que la livraison précédente déclarait décrivait
+en réalité ce défaut.**
+
+**Corrigé :** trois portes distinctes au lieu d'une. `open_for_brain` vérifie
+l'appartenance; `open_store` y ajoute le binding courant, exigé par toute
+lecture de corpus; `check_publishable` autorise en plus une voie de
+compatibilité **étroite** pour un index sans binding — cerveau synthétique
+seulement, bon `brain_id`, schéma compatible, ni `source_kind` ni `source_ref`,
+et `fixture_id` exactement égal au `source_ref` du catalogue. **Un `REAL_ROOT`
+n'y a jamais droit.** Le contrôle passe désormais avant la résolution de
+source, donc avant même que le catalogue soit consulté.
+
+Le binding vérifié est désormais la **paire** `source_kind` + `source_ref` :
+un même identifiant sous un type différent est refusé, cas que la vérification
+d'origine laissait passer.
+
+### Preuves
+
+`B1` à `B5` dans `src-tauri/src/map/legacy_binding_tests.rs`, sur un index
+ramené à la forme exacte de `TASK-0031`, dont les douze clés de métadonnée sont
+écrites dans le test pour qu'il ne dérive pas vers une forme jamais livrée :
+refus à l'ouverture sans toucher le fichier, republication par actualisation
+avec `index_id` conservé et `revision +1`, échec de publication sans perte,
+`REAL_ROOT` refusé sans lecture de source, désaccord sur l'un **ou** l'autre
+terme du binding refusé, demi-binding refusé, rebuild équivalent.
+
+Rust **324 PASS**, TypeScript **280 PASS**, `pnpm check`, `pnpm build`,
+`cargo build --offline`, `git diff --check` verts. `cargo fmt --check` propre
+sur chaque ligne écrite ici. `cargo clippy` strict reste **rouge à 26
+erreurs**, le même nombre qu'avant la passe : une 27ᵉ était apparue dans le
+nouveau fichier de test et a été corrigée avant livraison.
+
+Rejeu **WebView2 152.0.4191.66** relancé en entier, cycle `REAL_ROOT` inchangé :
+1 210 nœuds indexés, révisions 2 → 3 → 4 à `indexId` constant, 256 nœuds et
+4 agrégats sous le budget de 512, `absolutePathLeak = false`, source inchangée,
+0 erreur console fatale.
+
+### Non fait, et limites
+
+**Une limite nouvelle, créée par la correction elle-même :** l'appel Rust au
+dialogue natif n'est pas exercé à l'exécution — l'ouvrir demanderait de piloter
+une fenêtre modale Windows. Que `app.dialog()` ne dépende d'aucune permission a
+été établi **sur les sources installées** du plugin, non par une exécution.
+
+**Une seconde limite, délibérée :** la voie de compatibilité ne s'ouvre que
+pour un cerveau synthétique dont le `fixture_id` correspond encore. Un index
+legacy dont la fixture a été renommée doit être reconstruit depuis zéro.
+
+Tout le reste demeure : aucune donnée personnelle, aucun watcher, aucun
+incrémental, aucun FTS5, aucune identité physique `F-046`, aucun redesign,
+aucune acceptance de performance sur grande racine, dette
+`Registry`/`legacy_store` non supprimée. **`X5 = 36`**, inchangé; l'artefact
+`TASK-0032-webview2.json` reste non canonique et hors sceau. Aucune PR, fusion,
+étiquette, release, `reset`, `clean`, `force push` ni donnée réelle.
+`origin/main = 1a7d652c`, non touché.
+
+**Action unique suivante :** contrôle indépendant de `TASK-0032` sur la version
+corrigée, par une instance distincte de Claude Code.

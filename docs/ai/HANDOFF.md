@@ -1,6 +1,59 @@
 # HANDOFF — passage de relais
 
-## Relais actuel — TASK-0032 IMPLEMENTED, en attente de contrôle — 2026-09-10
+## Relais actuel — TASK-0032 corrigée, en attente d'un nouveau contrôle — 2026-09-10
+
+- **Ce qui vient d'être fait :** le contrôle indépendant de `TASK-0032` a trouvé
+  **deux défauts bloquants**. Les deux étaient réels; les deux sont corrigés sur
+  la même branche, `build/v0.2-a16-v1-real-root`. `TASK-0032` reste
+  `IMPLEMENTED`, **jamais auto-`VERIFIED`**; `DEC-0033` reste `APPROVED`,
+  corrigée en `D`, `H` et `I`.
+- **Défaut A, corrigé :** `dialog:allow-open` n'accordait pas « le sélecteur
+  qu'utilise notre commande ». Elle accordait `plugin:dialog|open`, la commande
+  **frontend** du plugin, qui accepte un `defaultPath` venu de la page et lui
+  retourne les chemins choisis. La capacité porte désormais `core:default` et
+  rien d'autre.
+- **Défaut B, corrigé :** `publish_map` utilisait `open_store` en pré-contrôle,
+  donc un index écrit par `TASK-0031` — sans binding — était refusé partout et
+  bloqué pour toujours, alors que `DEC-0033` D promettait sa republication.
+- **Qui a fait quoi :** Claude Code a écrit la tranche **et** sa passe
+  corrective. **Il ne peut pas rendre le verdict.**
+- **Ce que le prochain relais doit savoir :**
+  - **Ne jamais rajouter `dialog:allow-open`.** Le plugin doit rester
+    initialisé côté Rust — `app.dialog()` en dépend — mais sa commande frontend
+    ne doit jamais être autorisée. Une capacité ne gouverne que les commandes
+    atteignables depuis le WebView; elle ne gouverne pas `app.dialog()` appelé
+    depuis l'hôte, ce qui a été vérifié sur les sources installées de
+    `tauri-plugin-dialog 2.7.2`, dont le `FileDialogBuilder` ne porte aucun
+    contrôle de permission.
+  - **Trois portes distinctes, à ne pas refondre en une :** `open_for_brain`
+    (appartenance), `open_store` (appartenance + binding courant, exigé par
+    toute lecture de corpus) et `check_publishable` (appartenance + binding
+    courant **ou** la voie legacy étroite). Rebrancher `publish_map` sur
+    `open_store` reproduirait exactement le défaut B.
+  - **La voie legacy est interdite aux `REAL_ROOT`,** et ce n'est pas une
+    précaution décorative : aucune racine réelle n'existait avant `DEC-0033`,
+    donc un index sans binding sous un `REAL_ROOT` n'est pas ancien, il est
+    faux. `B3` échoue si quelqu'un l'élargit.
+  - **Le binding est la paire** `source_kind` + `source_ref`. Vérifier le seul
+    identifiant laisse passer le cas que `B4` couvre.
+  - `legacy_binding_tests.rs` **écrit les douze clés** de métadonnée d'un index
+    `TASK-0031`. Si un jour la forme change, ce tableau doit changer avec elle,
+    sans quoi le test prouverait la compatibilité d'un fichier qui n'existe pas.
+  - `scripts/task0032-webview2.ps1` prouve maintenant aussi la frontière de
+    permission : trois `invoke` directs de commandes du plugin, refusés, sans
+    ouvrir de dialogue et sans passer de chemin réel.
+- **Ce qui reste ouvert :** `R-T30-1` clippy strict rouge à 26 erreurs.
+  `R-T30-3`, `R-T30-4`, `R-T30-6` et `R8` ouvertes. `R-T30-5` traitée
+  **uniquement** dans la portée `REAL_ROOT` de test. L'appel Rust au dialogue
+  natif n'est pas exercé à l'exécution. Un index legacy dont la fixture a été
+  renommée n'est pas republiable et doit être reconstruit. Aucun watcher, aucun
+  incrémental, aucun FTS5, aucune identité physique, aucun redesign, aucune
+  acceptance de performance sur grande racine. Dette `Registry`/`legacy_store`
+  non supprimée.
+- **Action unique suivante :** contrôle indépendant de `TASK-0032`, sur la
+  version corrigée.
+
+## Relais précédent — TASK-0032, première livraison — 2026-09-10
 
 - **Ce qui vient d'être fait :** FileTopo peut recevoir un **vrai dossier
   local**, choisi explicitement par la personne, sans jamais faire sortir son

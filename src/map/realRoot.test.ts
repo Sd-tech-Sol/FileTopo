@@ -60,6 +60,17 @@ describe("TASK-0032 RR2 — the interface asks for a folder, it never names one"
     }
   });
 
+  it("never invokes a plugin command that could name or return a path", () => {
+    // Even with the capability closed, an interface that *tried* would be a
+    // bug worth catching here rather than at runtime: the page's only door to
+    // the disk is our own argument-less command — DEC-0033 A.
+    for (const [name, source] of INTERFACE_SOURCES) {
+      for (const forbidden of ["plugin:dialog", "@tauri-apps/plugin-dialog", "plugin:fs", "@tauri-apps/plugin-fs"]) {
+        expect(source, `${name} must not reach for \`${forbidden}\``).not.toContain(forbidden);
+      }
+    }
+  });
+
   it("states the unindexed brain rather than scanning to find out", () => {
     // The fact comes from what the composition failed to load, never from a
     // probe of the source — `DEC-0033` E.
@@ -95,12 +106,18 @@ describe("TASK-0032 RR9 — no network, no new stack", () => {
     );
   });
 
-  it("grants the WebView the dialogue and no filesystem access", () => {
+  it("grants the WebView no dialogue command and no filesystem access", () => {
+    // This expectation was inverted until the independent control of
+    // TASK-0032 corrected it. `dialog:allow-open` does not grant "the picker
+    // our command uses" — it grants the plugin's own frontend command,
+    // `plugin:dialog|open`, which accepts a `defaultPath` from the page and
+    // returns the chosen paths to it. Both halves are forbidden by DEC-0033 A
+    // and B. The Rust side needs no permission: a capability gates IPC
+    // commands, never `app.dialog()` called from the host.
     const capability = JSON.parse(capabilitySource) as { permissions: string[] };
-    expect(capability.permissions).toEqual(["core:default", "dialog:allow-open"]);
-    for (const permission of capability.permissions) {
-      expect(permission.startsWith("fs:")).toBe(false);
-      expect(permission.startsWith("shell:")).toBe(false);
+    expect(capability.permissions).toEqual(["core:default"]);
+    for (const prefix of ["dialog:", "fs:", "shell:", "opener:", "http:"]) {
+      expect(capability.permissions.some((p) => p.startsWith(prefix))).toBe(false);
     }
   });
 

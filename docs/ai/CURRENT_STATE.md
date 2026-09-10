@@ -1,5 +1,77 @@
 # État courant
 
+## TASK-0032 — passe corrective, deux défauts bloquants — IMPLEMENTED — 2026-09-10
+
+- **Statut inchangé : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Même branche
+  `build/v0.2-a16-v1-real-root`, même `DEC-0033`, **corrigée** en `D`, `H` et
+  `I`. GO de la passe à `a279ef9`. Aucune `TASK-0033`, aucune `DEC-0034`.
+  Détail : [VALIDATION section BC](VALIDATION.md).
+- **Le contrôle indépendant a trouvé deux défauts bloquants, et les deux
+  étaient réels.** La section précédente affirmait le contraire sur les deux
+  points; elle est corrigée plutôt que laissée à contredire le code.
+- **Défaut A — la permission de dialogue ouvrait la frontière au lieu de la
+  fermer.** La capacité accordait `dialog:allow-open` « pour le sélecteur ».
+  Vérifié sur les sources de `tauri-plugin-dialog 2.7.2` : cette permission
+  active `plugin:dialog|open`, dont les options portent un `default_path`
+  **fourni par la page** et qui **retourne les chemins choisis** à la page —
+  exactement ce que `DEC-0033` A et B interdisent. Mon propre test exigeait sa
+  présence : il prouvait la brèche au lieu de la garantie.
+- **Correction A :** la capacité porte `core:default` et **rien d'autre**.
+  `tauri_plugin_dialog::init()` reste, parce qu'une capacité ne gouverne que
+  les commandes atteignables depuis le WebView, jamais `app.dialog()` appelé
+  depuis l'hôte. Les deux tests sont retournés : ils exigent l'**absence** de
+  tout `dialog:`, `fs:`, `shell:`, `opener:` et `http:`. **Preuve à
+  l'exécution** dans WebView2 : un `invoke` direct de `plugin:dialog|open`,
+  avec et sans `defaultPath`, et de `plugin:dialog|save`, est refusé par la
+  couche de permissions; Tauri nomme lui-même la permission manquante.
+- **Défaut B — un index antérieur à `DEC-0033` ne pouvait pas être republié.**
+  `publish_map` utilisait `open_store` en pré-contrôle, et `open_store` exige
+  un binding courant. Un index écrit par `TASK-0031` n'en porte aucun : il
+  était refusé **par tous les chemins**, actualiser et reconstruire compris, et
+  restait bloqué pour toujours. **La « limite délibérément assumée » que la
+  livraison précédente déclarait décrivait en réalité ce défaut.**
+- **Correction B :** ouvrir et republier ne posent plus la même question au
+  même fichier. `open_for_brain` vérifie l'appartenance; `open_store` y ajoute
+  le binding courant; `check_publishable` autorise en plus une voie **étroite**
+  pour un index sans binding — synthétique seulement, bon `brain_id`, schéma
+  compatible, ni `source_kind` ni `source_ref`, et `fixture_id` exactement égal
+  au `source_ref` du catalogue. **Un `REAL_ROOT` n'y a jamais droit** : aucune
+  racine réelle n'existait avant la décision. Le contrôle passe désormais
+  **avant** la résolution de source.
+- **Le binding vérifié est la paire.** `source_kind` **et** `source_ref`, plus
+  seulement l'identifiant : deux choses différentes peuvent porter le même nom.
+  Un demi-binding — un terme sans l'autre — n'a été écrit par aucune version du
+  programme et est refusé partout.
+- **Preuves :** `B1` à `B5` dans `legacy_binding_tests.rs`, sur un index ramené
+  à la forme exacte de `TASK-0031`, dont les douze clés de métadonnée sont
+  écrites dans le test pour qu'il ne puisse pas dériver. Refus à l'ouverture
+  sans toucher le fichier, republication par actualisation avec `index_id`
+  conservé et `revision +1`, échec de publication sans perte, `REAL_ROOT`
+  jamais admis et source jamais lue, désaccord sur l'un ou l'autre terme
+  refusé, rebuild équivalent.
+- **Validations :** Rust **324 PASS**, TypeScript **280 PASS**, `pnpm check`,
+  `pnpm build`, `cargo build --offline`, `git diff --check` verts.
+  `cargo fmt --check` propre sur chaque ligne écrite ici. `cargo clippy` strict
+  reste **rouge à 26 erreurs**, le même nombre qu'avant la passe : une 27ᵉ était
+  apparue dans le nouveau fichier de test et a été corrigée avant livraison.
+  Rejeu **WebView2 152.0.4191.66** relancé en entier, cycle `REAL_ROOT`
+  inchangé — 1 210 nœuds, révisions 2 → 3 → 4 à `indexId` constant, 256 nœuds
+  et 4 agrégats sous 512, `absolutePathLeak = false`, 0 erreur console fatale.
+- **Une limite nouvelle, créée par la correction et déclarée comme telle :**
+  l'appel Rust au dialogue natif n'est pas exercé à l'exécution — l'ouvrir
+  demanderait de piloter une fenêtre modale Windows. Que `app.dialog()` ne
+  dépende d'aucune permission a été établi **sur les sources installées** du
+  plugin, non par une exécution.
+- **Une seconde limite, délibérée :** la voie de compatibilité ne s'ouvre que
+  pour un cerveau synthétique dont le `fixture_id` correspond encore. Un index
+  legacy dont la fixture a été renommée doit être reconstruit depuis zéro.
+- **Aucune donnée personnelle**, ici comme avant. **X5 = 36**, inchangé;
+  l'artefact `TASK-0032-webview2.json` reste non canonique et hors sceau.
+  `origin/main = 1a7d652ca48281c1687f6d1404c56a1404df91d8`, inchangé.
+- **Action unique suivante : contrôle indépendant de TASK-0032**, sur la
+  version corrigée.
+
+
 ## TASK-0032 — première racine réelle contrôlée — IMPLEMENTED — 2026-09-10
 
 - **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Livré sur
@@ -52,7 +124,10 @@
   refusée. Un frère nommé `filetopo-state-archive` reste acceptable — ce
   qu'un préfixe de texte aurait cassé.
 - **Réserve `X2` levée et remplacée.** Le runtime initialise enfin le plugin de
-  dialogue; la capacité accorde `dialog:allow-open` et **rien d'autre**;
+  dialogue; ~~la capacité accorde `dialog:allow-open` et **rien d'autre**~~ —
+  **faux, corrigé par la passe corrective ci-dessus** : cette permission
+  exposait `plugin:dialog|open` à la page. La capacité porte `core:default`
+  seul;
   `choose_collection` reste non enregistrée; et un test lit le texte des
   signatures que `generate_handler!` enregistre pour prouver qu'**aucune
   commande exposée ne laisse le WebView nommer un endroit du disque**.
@@ -74,10 +149,11 @@
   `active()`, du code antérieur dont seul le numéro de ligne a bougé. Un
   diagnostic **avait** été introduit sur `BrainIndex::replace` et a été corrigé
   avant livraison par le regroupement `SourceStamp`.
-- **Un refus délibérément large, déclaré :** un index publié avant `DEC-0033`
-  ne porte aucun binding et est refusé. Il n'est jamais supprimé; une
-  actualisation explicite le republie. Le coût est assumé pour ne jamais servir
-  un index dont la source ne peut pas être confirmée.
+- ~~**Un refus délibérément large, déclaré :** un index publié avant `DEC-0033`
+  ne porte aucun binding et est refusé; une actualisation explicite le
+  republie.~~ — **Faux, corrigé par la passe corrective ci-dessus.**
+  L'actualisation était refusée elle aussi : un tel index était bloqué pour
+  toujours. Ce n'était pas un coût assumé, c'était un défaut.
 - **`R-T30-5` est traitée uniquement dans la portée `REAL_ROOT` de test.**
   Aucune validation sur donnée personnelle, et aucune n'est demandée avant le
   contrôle indépendant. `R-T30-1`, `R-T30-3`, `R-T30-4`, `R-T30-6` et `R8`

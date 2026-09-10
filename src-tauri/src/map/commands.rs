@@ -8,7 +8,7 @@
 
 #[cfg(test)]
 use super::MAX_NODES_PER_MAP;
-use super::brain_index::{BrainIndex, SourceStamp};
+use super::brain_index::{BrainIndex, IndexBinding, SourceStamp};
 use super::brains::{BrainNodeRef, BrainRecord, SourceKind};
 use super::layout::{self, LAYOUT_ALGORITHM};
 use super::sandbox::{self, SandboxPaths};
@@ -300,16 +300,23 @@ fn publish_map(
     let _publication = PUBLICATION_LOCK
         .lock()
         .map_err(|_| MapError::View("publication lock".into()))?;
-    // Resolving the source is what separates refresh and rebuild from open:
-    // this is the line `map_open` does not have — `DEC-0032` A, `DEC-0033` E.
-    let source = BrainSource::resolve(paths, brain)?;
     let started = Instant::now();
     let database = paths.brain_map_database(&brain.brain_id);
     let reused = database.try_exists()?;
-    // Refuse incompatible state before touching the source. Never remove an index.
+    // Refuse incompatible state **first**, before the source is resolved and
+    // long before it is read. Never remove an index.
+    //
+    // Deliberately **not** `open_store`: republishing is how a pre-`DEC-0033`
+    // index acquires a binding, so requiring one first would strand it
+    // forever — `DEC-0033` D.
     if reused {
-        open_store(paths, brain)?;
+        check_publishable(paths, brain)?;
     }
+    // Resolving the source is what separates refresh and rebuild from open:
+    // this is the line `map_open` does not have — `DEC-0032` A, `DEC-0033` E.
+    // It comes after the check so a brain whose binding already disagrees is
+    // refused without the catalogue even being consulted for its root.
+    let source = BrainSource::resolve(paths, brain)?;
     let root = source.root(paths);
     // Fingerprinting is a **second full traversal**. It stays where it earns
     // its cost — on a frozen fixture whose size is known — and a real root is
@@ -440,39 +447,104 @@ fn elapsed_ms(started: Instant) -> f64 {
 /// a [`MapError::BrainMismatch`] rather than another brain's nodes served
 /// under the active brain's name.
 pub fn open_store(paths: &SandboxPaths, brain: &BrainRecord) -> Result<BrainIndex, MapError> {
+    let store = open_for_brain(paths, brain)?;
+    // `DEC-0033` D — the index must also prove it was built from the source the
+    // catalogue still binds this brain to. **Both keys**, not just the handle:
+    // the same `source_ref` under a different `source_kind` describes a
+    // different thing entirely, and reading it as this brain's corpus is the
+    // silent substitution the contract exists to prevent.
+    //
+    // A pre-`DEC-0033` index carries no binding at all and is refused here too.
+    // **Nothing is deleted** — the file stays exactly where it is, and an
+    // explicit refresh republishes it: see [`check_publishable`].
+    match store.binding()? {
+        IndexBinding::Bound { kind, source_ref }
+            if kind == brain.source_kind && source_ref == brain.source_ref => {}
+        _ => {
+            return Err(MapError::SourceMismatch {
+                brain_id: brain.brain_id.clone(),
+            });
+        }
+    }
+    Ok(store)
+}
+
+/// Opens a brain's index and checks **only** that it belongs to that brain.
+///
+/// Split out of [`open_store`] because opening and republishing ask different
+/// questions of the same file. Reading a corpus requires a current binding;
+/// republishing one is precisely how a file *acquires* a current binding, so
+/// demanding it beforehand would strand every index written before
+/// `DEC-0033` — the defect this split repairs.
+fn open_for_brain(paths: &SandboxPaths, brain: &BrainRecord) -> Result<BrainIndex, MapError> {
     let database = paths.brain_map_database(&brain.brain_id);
     if !database.is_file() {
         return Err(MapError::NotBuilt(brain.brain_id.clone()));
     }
     let store = BrainIndex::open_existing(&database, false)?;
     match store.built_for_brain()? {
-        Some(found) if found == brain.brain_id => {}
-        Some(found) => {
-            return Err(MapError::BrainMismatch {
-                expected: brain.brain_id.clone(),
-                found,
-            });
-        }
+        Some(found) if found == brain.brain_id => Ok(store),
+        Some(found) => Err(MapError::BrainMismatch {
+            expected: brain.brain_id.clone(),
+            found,
+        }),
         // A version-1 index names no brain at all, so it is not this one's.
-        None => {
-            return Err(MapError::BrainMismatch {
-                expected: brain.brain_id.clone(),
-                found: "index sans cerveau (schema v1)".to_string(),
-            });
+        None => Err(MapError::BrainMismatch {
+            expected: brain.brain_id.clone(),
+            found: "index sans cerveau (schema v1)".to_string(),
+        }),
+    }
+}
+
+/// Whether an existing index may be **republished** for this brain — decided
+/// **before a single byte of the source is read**.
+///
+/// Three outcomes, and the narrow middle one is the whole point of this
+/// function:
+///
+/// * **Bound, and matching.** Both `source_kind` and `source_ref` agree with
+///   the catalogue. Ordinary refresh or rebuild.
+/// * **Legacy, and recognisable.** No binding at all, which only an index
+///   written before `DEC-0033` can be. `DEC-0033` D promises such a file can be
+///   republished by an explicit gesture, so it is accepted — but only under
+///   every one of these conditions at once:
+///   - the brain reads a `SYNTHETIC_FIXTURE`. **A `REAL_ROOT` can never take
+///     this path**: no real root existed before `DEC-0033`, so a legacy index
+///     claiming to be one is not old, it is wrong;
+///   - the file is for this `brain_id`, on a compatible canonical schema —
+///     both already established by [`open_for_brain`];
+///   - its `fixture_id` is exactly the fixture the catalogue still names. The
+///     old metadata is thin, and this is the one fact in it that ties the file
+///     to a source; without the match there is nothing to recognise.
+/// * **Anything else** — a different binding, half a binding, a legacy file
+///   under a `REAL_ROOT`, a legacy file naming another fixture — is refused
+///   here, before the scan, and **nothing is deleted**.
+///
+/// Acceptance is not a promise about the *contents*: the republication rescans
+/// the source and replaces the corpus wholesale. What it decides is only
+/// whether this file is allowed to become this brain's index again.
+fn check_publishable(paths: &SandboxPaths, brain: &BrainRecord) -> Result<(), MapError> {
+    let store = open_for_brain(paths, brain)?;
+    let refused = || MapError::SourceMismatch {
+        brain_id: brain.brain_id.clone(),
+    };
+    match store.binding()? {
+        IndexBinding::Bound { kind, source_ref } => {
+            if kind != brain.source_kind || source_ref != brain.source_ref {
+                return Err(refused());
+            }
         }
+        IndexBinding::Legacy { fixture_id } => {
+            if brain.source_kind != SourceKind::SyntheticFixture {
+                return Err(refused());
+            }
+            if fixture_id.as_deref() != Some(brain.source_ref.as_str()) {
+                return Err(refused());
+            }
+        }
+        IndexBinding::Incoherent => return Err(refused()),
     }
-    // `DEC-0033` D — the index must also prove it was built from the source the
-    // catalogue still binds this brain to. Same brain, different source, is
-    // exactly the shape a silent substitution takes; so is an index published
-    // before this contract, which carries no binding at all. Both are refused,
-    // and **nothing is deleted**: the file stays, and an explicit refresh
-    // republishes it under the current binding.
-    if store.source_binding()?.as_deref() != Some(brain.source_ref.as_str()) {
-        return Err(MapError::SourceMismatch {
-            brain_id: brain.brain_id.clone(),
-        });
-    }
-    Ok(store)
+    Ok(())
 }
 
 /// Temporary metadata input for existing analysis consumers; never an IPC response.
@@ -1752,3 +1824,7 @@ mod lifecycle_tests;
 #[cfg(test)]
 #[path = "real_root_tests.rs"]
 mod real_root_tests;
+
+#[cfg(test)]
+#[path = "legacy_binding_tests.rs"]
+mod legacy_binding_tests;

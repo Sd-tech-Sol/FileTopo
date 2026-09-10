@@ -1,7 +1,7 @@
 # TASK-0032 — V1 REAL_ROOT — Controlled Local Folder Onboarding
 
 - Date : 2026-09-10
-- Statut : `IMPLEMENTED` le 2026-09-10, sur preuves; **jamais auto-`VERIFIED`**. Gel `c3507bf`, parent direct du premier commit de code; GO technique du NEXT_PROMPT à `05fc371`.
+- Statut : `IMPLEMENTED` le 2026-09-10, sur preuves; **jamais auto-`VERIFIED`**. Gel `c3507bf`, parent direct du premier commit de code; GO technique du NEXT_PROMPT à `05fc371`. **Passe corrective le 2026-09-10** sur deux défauts bloquants trouvés par le contrôle indépendant, GO à `a279ef9`.
 - Exécuteur : Claude Code. Aucun `VERIFIED` auto-attribué.
 - Branche : `build/v0.2-a16-v1-real-root`, créée depuis `05fc371`.
 - Décision : [DEC-0033](../decisions/DEC-0033-real-root-privacy-and-source-binding.md).
@@ -51,8 +51,12 @@ inchangé. `X5 = 36`, inchangé. `TASK-0032`, `DEC-0033` et
   `brain-gamma` partagent `quasi-empty` depuis `TASK-0018`. Rien à inventer là.
 - **`tauri-plugin-dialog`** — déjà dans `Cargo.toml`, déjà importé dans
   `lib.rs`, mais **jamais initialisé** dans `run()` : la réserve `X2` l'interdisait
-  et un test le vérifiait. Il manque `.plugin(tauri_plugin_dialog::init())` et la
-  permission `dialog:allow-open` dans `capabilities/default.json`.
+  et un test le vérifiait. Il manque `.plugin(tauri_plugin_dialog::init())`.
+  *(Cet audit concluait aussi qu'il fallait ajouter `dialog:allow-open` à
+  `capabilities/default.json`. **C'était l'erreur du défaut A**, corrigée le
+  2026-09-10 : cette permission expose `plugin:dialog|open` à la page, avec un
+  `defaultPath` entrant et les chemins choisis en retour. La capacité ne porte
+  donc rien du tout — voir §Passe corrective.)*
 - **Le chemin `map_refresh -> scan_tree_controlled -> BrainIndex -> map_view`**
   existe et reste tel quel. `publish_map` refuse un index incompatible **avant**
   de lire la source, refuse un scan diagnostiqué, publie en une transaction et ne
@@ -109,6 +113,49 @@ Un bouton **Ajouter un dossier**, l'entrée du nouveau cerveau dans la
 composition, un état « non indexé » explicite, et le bouton **Indexer** existant
 (`Actualiser`). Aucun redesign, aucune finition visuelle.
 
+## Passe corrective — 2026-09-10
+
+Le contrôle indépendant a trouvé **deux défauts bloquants**. Tous deux étaient
+réels; les voici et ce qui les corrige.
+
+### Défaut A — `dialog:allow-open` ouvrait la frontière au lieu de la fermer
+
+La capacité accordait `dialog:allow-open` au WebView « pour le sélecteur ».
+Vérifié sur les sources installées de `tauri-plugin-dialog 2.7.2` : cette
+permission active `plugin:dialog|open`, dont les options portent
+`default_path: Option<PathBuf>` **fourni par la page** et qui **retourne les
+chemins choisis** à la page. C'est précisément ce que `DEC-0033` A et B
+interdisent. Pire, mon propre test affirmait que la permission **devait** être
+présente : il prouvait la brèche au lieu de la garantie.
+
+**Correction :** la capacité porte `core:default` et rien d'autre.
+`tauri_plugin_dialog::init()` reste, parce qu'une capacité ne gouverne que les
+commandes atteignables depuis le WebView et jamais `app.dialog()` appelé depuis
+l'hôte — vérifié sur les sources du plugin, dont le `FileDialogBuilder` ne
+porte aucun contrôle de permission. Les deux tests, Rust et TypeScript, sont
+retournés : ils exigent maintenant l'**absence** de tout `dialog:`, `fs:`,
+`shell:`, `opener:` et `http:`.
+
+### Défaut B — un index antérieur à `DEC-0033` ne pouvait pas être republié
+
+`publish_map` appelait `open_store` en pré-contrôle. Or `open_store` exige un
+binding courant. Un index écrit par `TASK-0031` n'en porte aucun : il était donc
+refusé **par tous les chemins**, actualiser et reconstruire compris, et restait
+bloqué pour toujours — l'inverse exact de ce que `DEC-0033` D promettait. La
+limite que la première livraison déclarait fièrement comme « assumée » décrivait
+en réalité un défaut.
+
+**Correction :** ouvrir et republier ne posent plus la même question au même
+fichier. `open_for_brain` vérifie l'appartenance; `open_store` y ajoute le
+binding courant; `check_publishable` autorise en plus une voie de compatibilité
+**étroite** pour un index sans binding — synthétique seulement, bon `brain_id`,
+schéma compatible, `fixture_id` égal au `source_ref` du catalogue. Un
+`REAL_ROOT` n'y a jamais droit. Le contrôle passe désormais **avant** la
+résolution de source, donc avant que le catalogue soit même consulté.
+
+Le binding vérifié est la **paire** `source_kind` + `source_ref` : un même
+identifiant sous un type différent est refusé.
+
 ## Preuves
 
 Le détail exécuté est en section `BB` de `docs/ai/VALIDATION.md`. En résumé :
@@ -121,8 +168,9 @@ Le détail exécuté est en section `BB` de `docs/ai/VALIDATION.md`. En résumé
   déplacée, lecture seule octet pour octet, deux cerveaux sur un dossier,
   containment.
 - `RR9` et `RR10` en gardes structurelles, dans `src/map/realRoot.test.ts` :
-  CSP inchangée au caractère près, capacité limitée à `dialog:allow-open`,
-  aucun réseau, dépendances inchangées, cycle `DEC-0032` intact.
+  CSP inchangée au caractère près, capacité limitée à `core:default` — voir
+  §Passe corrective, défaut A —, aucun réseau, dépendances inchangées, cycle
+  `DEC-0032` intact.
 - Le codec de chemin est prouvé séparément, y compris sur un chemin contenant
   un surrogate isolé que `to_string_lossy()` détruit.
 - Rejeu **WebView2 152.0.4191.66** par `scripts/task0032-webview2.ps1`, sur un
@@ -130,7 +178,20 @@ Le détail exécuté est en section `BB` de `docs/ai/VALIDATION.md`. En résumé
   `docs/performance/runs/TASK-0032-webview2.json`, **non canonique**, hors
   `X5`. `absolutePathLeak = false`, y compris sur le fichier d'index et sur le
   journal de l'hôte.
-- Rust **319 PASS**, TypeScript **279 PASS**, `pnpm check`, `pnpm build`,
+- Défaut B : `B1` à `B5` dans `src-tauri/src/map/legacy_binding_tests.rs`, sur
+  un index ramené à la forme exacte de `TASK-0031` — les douze clés de
+  métadonnée, pinnées dans le test pour qu'il ne dérive pas vers une forme qui
+  n'a jamais existé. Refus à l'ouverture, republication par actualisation avec
+  `index_id` conservé et `revision +1`, échec de publication sans perte,
+  `REAL_ROOT` jamais admis sur la voie legacy, désaccord sur l'un **ou** l'autre
+  des deux termes du binding refusé, demi-binding refusé, rebuild équivalent.
+- Défaut A : la capacité est vérifiée en Rust et en TypeScript, et **à
+  l'exécution** dans WebView2 — un `invoke` direct de `plugin:dialog|open`,
+  avec et sans `defaultPath`, et de `plugin:dialog|save`, est refusé par la
+  couche de permissions. Le message de Tauri nomme lui-même la permission
+  manquante : `dialog.open not allowed. Permissions associated with this
+  command: dialog:allow-open, dialog:default`.
+- Rust **324 PASS**, TypeScript **280 PASS**, `pnpm check`, `pnpm build`,
   `cargo build --offline`, `git diff --check` verts. `cargo fmt --check` propre
   sur chaque ligne écrite ici. `cargo clippy` strict reste rouge à **26**
   erreurs, le même nombre qu'à l'entrée.
@@ -144,6 +205,21 @@ racine réelle. Le dialogue natif lui-même n'est pas automatisé : sa
 compilation, son enregistrement et sa primitive sont prouvés, son ouverture ne
 l'est pas. La dette `Registry`/`legacy_store` n'est pas supprimée.
 
-Un refus délibérément large est assumé : un index publié avant `DEC-0033` ne
-porte aucun `source_ref` et est refusé en `map_source_mismatch`. Il n'est
-jamais supprimé; une actualisation explicite le republie.
+**Ce que la première livraison déclarait ici comme « un refus délibérément
+large » était un défaut**, pas un choix : un index antérieur à `DEC-0033` était
+refusé sur tous les chemins et ne pouvait plus jamais être republié. C'est le
+défaut B, corrigé. Ce qui reste, et qui est cette fois réellement un choix :
+un tel index reste refusé **à l'ouverture** tant qu'une actualisation explicite
+ne l'a pas republié, et il n'est jamais supprimé.
+
+La voie de compatibilité ne s'ouvre **que** pour un cerveau synthétique dont le
+`fixture_id` correspond encore. Un index legacy dont la fixture a été renommée
+dans le catalogue n'est pas reconnu et n'est pas republiable : il faudrait
+alors le reconstruire depuis zéro. C'est délibéré — le `fixture_id` est le seul
+fait de l'ancienne métadonnée qui rattache le fichier à une source.
+
+L'appel Rust au dialogue natif n'est pas exercé à l'exécution : l'ouvrir
+demanderait de piloter une fenêtre modale Windows. Que `app.dialog()` ne
+dépende d'aucune permission a été établi sur les sources installées de
+`tauri-plugin-dialog 2.7.2`, où l'ACL ne porte que sur les commandes IPC de
+`src/commands.rs`.

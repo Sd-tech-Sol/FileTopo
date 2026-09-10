@@ -1256,9 +1256,15 @@ pub fn run() {
         // `DEC-0033` H and I — the native folder picker, and the only change of
         // stack in this slice. The plugin has been declared in `Cargo.toml`
         // since the 0.1 prototype and was deliberately left uninitialised while
-        // reserve `X2` stood; `TASK-0032` is the task that lifts it. What
-        // replaces `X2` is narrower and tested: no exposed command accepts a
-        // path, and the capability grants `dialog:allow-open` and nothing else.
+        // reserve `X2` stood; `TASK-0032` is the task that lifts it.
+        //
+        // Initialising it makes `app.dialog()` available **to this file**. It
+        // does **not** make the plugin's own frontend command reachable from
+        // the page: that would need `dialog:allow-open` in the capability, and
+        // the capability grants nothing of the sort — `plugin:dialog|open`
+        // accepts a `defaultPath` and returns the chosen paths, which is
+        // exactly what `DEC-0033` A and B forbid. The page's only door is
+        // `map_brain_choose_real_root`, below, which takes no argument.
         .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             // An unattended H9 run needs frames, and Chromium stops delivering
@@ -1544,15 +1550,39 @@ mod integration_tests {
         }
     }
 
-    /// `DEC-0033` H — the WebView gets the picker and nothing else.
+    /// `DEC-0033` H — the WebView gets **nothing**, the picker included.
+    ///
+    /// This test asserted the opposite until the independent control of
+    /// `TASK-0032` showed why that was wrong. `dialog:allow-open` does not
+    /// grant "the picker our command uses"; it grants the **plugin's own
+    /// frontend command**, `plugin:dialog|open`, which takes a `defaultPath`
+    /// from the page and hands the chosen paths back to it. That is precisely
+    /// the two things `DEC-0033` A and B forbid, dressed as a convenience.
+    ///
+    /// The Rust side needs no permission at all: a capability gates **IPC
+    /// commands reachable from the WebView**, never `app.dialog()` called from
+    /// the host. So the plugin stays initialised, the grant goes away, and the
+    /// only door left is our own argument-less command.
     #[test]
-    fn the_capability_grants_the_dialogue_and_no_filesystem_access() {
+    fn the_capability_grants_the_webview_no_dialogue_and_no_filesystem_access() {
         let capability = include_str!("../capabilities/default.json");
-        assert!(capability.contains("\"dialog:allow-open\""));
-        for forbidden in ["fs:", "dialog:allow-save", "dialog:default", "shell:"] {
+        let parsed: serde_json::Value =
+            serde_json::from_str(capability).expect("the capability must be valid JSON");
+        let granted = parsed["permissions"]
+            .as_array()
+            .expect("permissions array")
+            .iter()
+            .map(|value| value.as_str().expect("permission string").to_string())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            granted,
+            vec!["core:default"],
+            "the main window gets the core defaults and nothing else"
+        );
+        for forbidden in ["dialog:", "fs:", "shell:", "opener:", "http:"] {
             assert!(
-                !capability.contains(forbidden),
-                "the main window must not be granted `{forbidden}`"
+                !granted.iter().any(|name| name.starts_with(forbidden)),
+                "the main window must not be granted `{forbidden}*`"
             );
         }
     }

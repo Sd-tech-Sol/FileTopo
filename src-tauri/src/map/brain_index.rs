@@ -8,6 +8,22 @@ use crate::index::Index;
 use rusqlite::OptionalExtension;
 use std::path::Path;
 
+/// What an index claims about its own source — see [`BrainIndex::binding`].
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum IndexBinding {
+    /// Written under `DEC-0033`: it names both its kind and its handle.
+    Bound {
+        kind: SourceKind,
+        source_ref: String,
+    },
+    /// Written before `DEC-0033`: neither key is present. `fixture_id` is what
+    /// `TASK-0016`..`TASK-0031` wrote in their place, and it is the only thing
+    /// a legacy index can be recognised by.
+    Legacy { fixture_id: Option<String> },
+    /// One key without the other. No version of this program writes that.
+    Incoherent,
+}
+
 /// **What an index was built from**, travelling as one value — `DEC-0033` D.
 ///
 /// The three facts are meaningless apart: a `source_ref` without its `kind` is
@@ -74,14 +90,31 @@ impl BrainIndex {
             })
             .optional()?)
     }
-    /// The opaque source handle this index was built from, if it carries one.
+    /// What an existing index says about the source it was built from.
     ///
-    /// `None` means an index published before `DEC-0033` existed. `open_store`
-    /// treats that as a mismatch rather than as permission: an index whose
-    /// source cannot be confirmed is exactly the case the contract refuses to
-    /// serve silently. Nothing is deleted — an explicit refresh republishes it.
-    pub fn source_binding(&self) -> Result<Option<String>, MapError> {
-        self.meta("source_ref")
+    /// Three answers, and the third is the one that matters: an index written
+    /// before `DEC-0033` carries **neither** `source_kind` nor `source_ref`,
+    /// because `TASK-0031`'s `replace` did not write them. That is not a
+    /// corruption and not an attack — it is simply an older file, and
+    /// `DEC-0033` D promises it can be republished by an explicit refresh
+    /// rather than being stranded.
+    ///
+    /// Half a binding is a different matter. A file carrying one key without
+    /// the other was never written by any version of this program, so it is
+    /// reported as [`IndexBinding::Incoherent`] and trusted by nobody.
+    pub fn binding(&self) -> Result<IndexBinding, MapError> {
+        let kind = self.meta("source_kind")?;
+        let source_ref = self.meta("source_ref")?;
+        Ok(match (kind, source_ref) {
+            (Some(kind), Some(source_ref)) => IndexBinding::Bound {
+                kind: SourceKind::parse(&kind)?,
+                source_ref,
+            },
+            (None, None) => IndexBinding::Legacy {
+                fixture_id: self.meta("fixture_id")?,
+            },
+            _ => IndexBinding::Incoherent,
+        })
     }
 
     pub fn built_for_brain(&self) -> Result<Option<String>, MapError> {

@@ -2,6 +2,12 @@
 
 - Date : 2026-09-10
 - Statut : `APPROVED` — GO technique du NEXT_PROMPT ouvrant `TASK-0032`.
+- **Corrigée le 2026-09-10**, sections **D**, **H** et **I**, sur constat du
+  contrôle indépendant de `TASK-0032`. Deux affirmations étaient fausses : la
+  permission `dialog:allow-open` **ouvrait** la frontière au lieu de la fermer,
+  et la republication promise d'un index antérieur était en réalité
+  impossible. Les corrections sont marquées **« Corrigé »** là où elles
+  portent; le reste de la décision est inchangé.
 - Exécution : [TASK-0032](../tasks/TASK-0032-v1-real-root.md).
 - Décision antérieure conservée : [DEC-0032](DEC-0032-persistent-brain-lifecycle-contract.md),
   `APPROVED`, dont le cycle ouvrir / actualiser / reconstruire reste inchangé.
@@ -63,11 +69,44 @@ Chaque cerveau porte un `source_ref` **opaque** — un UUID v4 pour un `REAL_ROO
 l'identifiant de fixture pour une source synthétique. L'index canonique
 enregistre `brain_id`, `source_kind` et ce `source_ref`, jamais le chemin.
 
-Ouvrir un index dont le `source_ref` ne correspond pas à celui que le catalogue
+Ouvrir un index dont le binding ne correspond pas à celui que le catalogue
 attend est un **refus explicite**, `map_source_mismatch`, jamais une
-substitution silencieuse. Un index construit avant ce contrat, qui ne porte
-aucun `source_ref`, est refusé de la même façon : il reste sur le disque et une
-actualisation explicite le republie.
+substitution silencieuse.
+
+**Corrigé le 2026-09-10 — le binding, c'est la paire.** La vérification porte
+sur `source_kind` **et** `source_ref`, jamais sur le seul identifiant : deux
+choses différentes peuvent porter le même nom, et seule la paire dit laquelle
+un index contient. Un `source_ref` identique sous un `source_kind` différent
+est refusé.
+
+**Corrigé le 2026-09-10 — la republication d'un index antérieur.** La première
+livraison refusait un index sans binding sur **tous** les chemins, y compris
+actualiser et reconstruire : la republication promise ci-dessous était donc
+impossible, et un tel fichier restait bloqué pour toujours. Ouvrir et
+republier ne posent pas la même question au même fichier :
+
+- **Ouvrir** exige un binding courant. Un index sans binding est refusé, et
+  **rien n'est supprimé**.
+- **Actualiser ou reconstruire** est le geste par lequel un fichier *acquiert*
+  un binding. Une voie de compatibilité **étroite** l'autorise, sous toutes ces
+  conditions à la fois :
+  - le cerveau lit une `SYNTHETIC_FIXTURE`. **Un `REAL_ROOT` n'y a jamais
+    droit** : aucune racine réelle n'existait avant cette décision, donc un
+    index sans binding sous un `REAL_ROOT` n'est pas ancien, il est faux;
+  - le fichier porte le bon `brain_id`, sur un schéma canonique compatible;
+  - il ne porte **ni** `source_kind` **ni** `source_ref`. Un fichier qui n'en
+    porte qu'un seul n'a été écrit par aucune version de ce programme et n'est
+    accepté nulle part;
+  - son `fixture_id` est exactement la fixture que le catalogue nomme encore.
+    C'est le seul fait de l'ancienne métadonnée qui rattache le fichier à une
+    source; sans lui il n'y a rien à reconnaître.
+
+  La republication rescanne la source et remplace le corpus dans la même
+  transaction : `index_id` est conservé, `revision` n'avance qu'à la
+  publication réussie, et le binding moderne est écrit à ce moment-là. Un échec
+  laisse l'ancien index intact et toujours refusé par l'ouverture.
+
+Aucune de ces voies ne supprime jamais un fichier pour « réparer ».
 
 ## E. Séparation index / source conservée — DEC-0032 inchangé
 
@@ -128,9 +167,28 @@ cloud, aucun MCP, aucun Graphify, aucune IA. Aucune nouvelle dépendance :
 `tauri-plugin-dialog`, déjà déclaré dans `Cargo.toml` depuis le prototype 0.1,
 est **initialisé** dans le runtime; c'est la seule modification de pile.
 
-Le WebView ne reçoit **aucune** permission filesystem générale. La capacité
-`default` reste `core:default` plus la seule permission `dialog:allow-open`,
-nécessaire au sélecteur, et rien d'autre.
+**Corrigé le 2026-09-10.** La première rédaction disait que la capacité
+`default` porterait « `core:default` plus la seule permission
+`dialog:allow-open`, nécessaire au sélecteur ». C'était faux, et dans le sens
+qui compte : `dialog:allow-open` n'accorde pas « le sélecteur qu'utilise notre
+commande », elle accorde la **commande frontend du plugin**,
+`plugin:dialog|open`, qui accepte un `defaultPath` **venu de la page** et lui
+**retourne les chemins choisis**. Les deux moitiés sont exactement ce que les
+sections A et B interdisent. La permission n'était pas nécessaire : elle était
+la brèche.
+
+La règle correcte est donc :
+
+- **plugin initialisé côté Rust**, ce qui rend `app.dialog()` disponible à
+  `lib.rs`;
+- **aucune commande frontend du plugin autorisée**. La capacité `default` porte
+  `core:default` et **rien d'autre** — ni `dialog:allow-open`, ni
+  `dialog:default`, ni `dialog:allow-save`, ni `fs:*`, ni `shell:*`.
+
+Une capacité ne contrôle que les **commandes atteignables depuis le WebView**;
+elle ne gouverne jamais `app.dialog()` appelé depuis l'hôte. Le sélecteur natif
+continue donc de fonctionner par notre seule commande sans argument, et la page
+ne peut plus l'appeler directement.
 
 ## I. Réserve X2 — levée, et remplacée
 
@@ -138,11 +196,22 @@ nécessaire au sélecteur, et rien d'autre.
 tâche n'avait alors le droit d'ouvrir un dossier réel. `TASK-0032` est cette
 tâche, et `X2` est **levée par la présente décision**.
 
-Elle est remplacée par une garantie plus étroite, testée : le runtime initialise
-le plugin de dialogue, mais **aucune commande exposée n'accepte un chemin en
-argument**, et `choose_collection` — le sélecteur du prototype 0.1, qui écrivait
-dans l'ancien `Registry` — reste **non enregistré**. L'ancien `Registry` n'est
-pas ressuscité comme vérité produit; seul son codec de chemin est réutilisé.
+Elle est remplacée par une garantie plus étroite, testée, **en trois parties**
+— la troisième ajoutée le 2026-09-10, la garantie initiale ayant été jugée
+incomplète par le contrôle indépendant :
+
+1. **aucune commande exposée n'accepte un chemin en argument**, vérifié sur le
+   texte des signatures que `generate_handler!` enregistre;
+2. `choose_collection` — le sélecteur du prototype 0.1, qui écrivait dans
+   l'ancien `Registry` — reste **non enregistré**;
+3. **la commande frontend du plugin de dialogue est hors de portée de la
+   page**, faute de permission dans la capacité. Prouvé au repos sur le JSON de
+   la capacité, et **à l'exécution** dans WebView2 : un `invoke` direct de
+   `plugin:dialog|open`, avec et sans `defaultPath`, est refusé par la couche
+   de permissions avant que le plugin ne le voie, et aucun dialogue ne s'ouvre.
+
+L'ancien `Registry` n'est pas ressuscité comme vérité produit; seul son codec de
+chemin est réutilisé.
 
 ## J. Frontière inchangée
 
