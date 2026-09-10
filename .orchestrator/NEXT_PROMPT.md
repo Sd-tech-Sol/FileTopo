@@ -1,369 +1,157 @@
-# NEXT_PROMPT — TASK-0032 / V1 REAL_ROOT — Controlled Local Folder Onboarding
+# NEXT_PROMPT — TASK-0032 / CORRECTIVE PASS — REAL_ROOT Privacy + Legacy Index Compatibility
 
 **TARGET_AGENT:** CLAUDE CODE  
-**RECOMMENDED_MODEL:** Claude Opus 5  
 **STATUS:** READY  
-**OWNER:** orchestrateur technique  
-**MODE:** code produit V1 — première vraie source locale, pas un spike  
+**OWNER:** orchestrateur technique indépendant  
+**MODE:** correction ciblée de TASK-0032 — ne créer aucune nouvelle TASK/DEC  
 **TASK:** `TASK-0032 — V1 REAL_ROOT — Controlled Local Folder Onboarding`  
-**DECISION À CRÉER SI PRÉCONDITIONS OK:** `DEC-0033 — Real Root Privacy and Source Binding Contract`
+**BRANCHE:** `build/v0.2-a16-v1-real-root`
 
 ## /goal
 
-Introduire la première vraie source utilisateur dans FileTopo **sans casser les garanties obtenues par TASK-0030/TASK-0031**.
+Le contrôle indépendant de TASK-0032 a trouvé **deux défauts bloquants**. Corriger uniquement ces défauts, leurs tests et leur documentation. Ne pas élargir la V1, ne pas utiliser de donnée personnelle et ne pas créer TASK-0033/DEC-0034.
 
-À la fin de cette tranche, FileTopo doit pouvoir :
-
-1. laisser l'utilisateur choisir explicitement un dossier local avec le sélecteur natif déjà présent dans le code historique / dépendance `tauri-plugin-dialog` déjà installée;
-2. créer un cerveau `REAL_ROOT` dans le catalogue local sans envoyer ni journaliser le chemin absolu;
-3. conserver le chemin canonique uniquement dans l'état local FileTopo, hors de la racine analysée;
-4. indexer ce dossier uniquement sur une action explicite `Actualiser/Indexer`, avec le scanner Rust existant en lecture seule;
-5. ouvrir ensuite ce cerveau depuis son index persistant **sans relire la source**, conformément à DEC-0032;
-6. afficher la projection bornée existante dans MapApp, sans whole-graph DTO et sans nouveau renderer;
-7. continuer à fonctionner hors ligne, sans compte, sans cloud, sans télémétrie et sans LLM.
-
-**Cette tranche NE doit PAS utiliser le vrai cerveau personnel de Sébastien.** Les preuves utilisent uniquement des arborescences de test générées localement. Le vrai cerveau sera demandé seulement après contrôle indépendant de TASK-0032.
+TASK-0032 reste `IMPLEMENTED`, **pas VERIFIED**, jusqu'au prochain contrôle indépendant.
 
 ---
 
-## 0 — Synchronisation et vérité Git
+## 0 — Préconditions et Git
 
 1. Appliquer `AGENTS.md`, `CLAUDE.md` et les protocoles actifs.
 2. `git fetch origin`, puis fast-forward uniquement.
-3. Branche de départ attendue : `build/v0.2-a15-v1-brain-lifecycle`.
-4. HEAD distant attendu au départ : `31bc4ac4decac7220083f24e2ce77010b5db294f`.
-5. `ACTION-0048 = CLOSED` et son verdict externe est autoritatif : `TASK-0031 = VERIFIED` dans sa portée synthétique.
-6. La fiche TASK-0031 et `CURRENT_STATE.md` peuvent encore contenir `IMPLEMENTED`/« attend le contrôle » : **corriger uniquement cette incohérence documentaire dans le commit de gel**, sans réinterpréter le verdict.
-7. `TASK-0030 = VERIFIED`, `ACTION-0047 = CLOSED`; `TASK-0029 = VERIFIED`.
-8. `DEC-0032 = APPROVED`.
-9. `origin/main` doit rester exactement `1a7d652ca48281c1687f6d1404c56a1404df91d8`.
-10. X5 = **36**, inchangé.
-11. `TASK-0032`, `DEC-0033` et la branche suivante doivent être libres.
-12. Arbre de travail propre avant écriture. Si le transfert Codex/Claude précédent a laissé des changements locaux non poussés, STOP et les inventorier; ne rien écraser.
+3. Branche attendue : `build/v0.2-a16-v1-real-root`.
+4. HEAD distant attendu au départ : `efec2ea94e7e0cb73c064ed92baaccc5ac8a1f2c`.
+5. Le point de départ orchestration de TASK-0032 reste `05fc37137f6a6983b020d993e838176341ef3fc4`; gel `c3507bf`, code `7302291`, preuve `f00fb55`, docs `2ce3a17`, RESULT-pin `efec2ea`.
+6. `origin/main` doit rester `1a7d652ca48281c1687f6d1404c56a1404df91d8`.
+7. X5 = 36 et doit rester inchangé.
+8. Arbre propre avant écriture. Toute divergence inexpliquée : STOP/BLOCKED.
 
-Toute divergence inexpliquée : **BLOCKED**.
-
-### Branche de travail
-
-Créer depuis le HEAD synchronisé :
-
-`build/v0.2-a16-v1-real-root`
-
-Pas de PR, merge, tag, release ni modification de `main`.
+Aucune nouvelle branche nécessaire : corriger TASK-0032 sur sa branche actuelle et pousser uniquement celle-ci.
 
 ---
 
-## 1 — DEFINE : gel avant code
+## 1 — DÉFAUT BLOQUANT A : `dialog:allow-open` viole la frontière de confidentialité
 
-Avant le premier changement produit, créer et committer ensemble :
+### Constat indépendant
 
-- `docs/tasks/TASK-0032-v1-real-root.md`
-- `docs/decisions/DEC-0033-real-root-privacy-and-source-binding.md`
-- correction documentaire minimale de TASK-0031/CURRENT_STATE vers `VERIFIED` par ACTION-0048 si nécessaire.
+`src-tauri/capabilities/default.json` accorde actuellement `dialog:allow-open` au WebView. Or cette permission Tauri **active la commande frontend `open` du plugin dialog**. Le code officiel du plugin accepte un `default_path: Option<PathBuf>` et retourne le ou les chemins choisis au frontend.
 
-Le gel doit être parent direct du premier commit de code.
+Cela contredit directement `DEC-0033 A/B` :
 
-### DEC-0033 doit figer au minimum
+- le WebView ne doit jamais pouvoir nommer un emplacement disque;
+- le chemin absolu ne doit jamais traverser l'IPC vers le WebView;
+- le seul geste autorisé doit être notre commande Rust `map_brain_choose_real_root()`, sans argument, qui ouvre elle-même le dialogue natif et garde le chemin côté Rust.
 
-#### A. Sélection explicite seulement
+### Correction obligatoire
 
-- Un `REAL_ROOT` n'est créé qu'après un geste utilisateur explicite sur **Ajouter un cerveau / Choisir un dossier**.
-- Aucun scan n'est déclenché par l'ouverture du sélecteur ni par l'enregistrement du cerveau.
-- Annuler le sélecteur ne crée ni cerveau, ni index, ni état partiel.
-- Le frontend **ne fournit jamais un chemin arbitraire** à une commande produit. Le chemin est obtenu côté Rust via le sélecteur natif.
+1. **Retirer `dialog:allow-open` de la capability du WebView.**
+2. Garder `tauri_plugin_dialog::init()` si nécessaire pour l'API Rust `app.dialog()`.
+3. Ne donner aucune permission `dialog:default`, `dialog:allow-save`, `fs:*`, `shell:*` ou autre surface filesystem au WebView.
+4. Garder `map_brain_choose_real_root()` comme seule porte produit d'ajout d'une racine : aucun argument de chemin.
+5. Corriger `DEC-0033 H/I`, TASK-0032 et les docs qui affirment actuellement que `dialog:allow-open` est souhaitable. La règle correcte est : **plugin initialisé côté Rust, commande frontend du plugin non autorisée**.
 
-#### B. Chemin privé et local
+### Preuves obligatoires A
 
-- Le chemin absolu canonique peut être stocké uniquement dans la base de catalogue locale FileTopo.
-- Il ne doit pas être sérialisé dans `BrainCatalogView`, `BrainRecord` destiné au frontend, `MapOpenReport`, `MapBuildReport`, logs, messages d'erreur, artefacts de preuve, docs ou Git.
-- Le frontend reçoit seulement les informations nécessaires : identité FileTopo, nom/label local affichable, type de source et métadonnées non sensibles utiles.
-- Les tests doivent prouver qu'un chemin sentinelle complet n'apparaît dans aucun DTO JSON retourné au WebView ni artefact TASK-0032.
-
-#### C. Encodage Windows exact
-
-- Réutiliser/adopter le codec de chemin déjà présent dans `registry.rs` (BLOB UTF-16 sous Windows) ou une primitive équivalente réutilisée, **pas `to_string_lossy()` pour persister le chemin canonique**.
-- Les noms affichés peuvent être lossy si nécessaire, mais la résolution source doit conserver le chemin réel.
-
-#### D. Source binding
-
-- `brain_id` reste l'identité du cerveau, jamais le chemin.
-- Deux cerveaux peuvent légitimement pointer vers le même dossier; pas de contrainte UNIQUE sur le chemin source.
-- L'index reste séparé par `brain_id`.
-- L'index doit pouvoir prouver qu'il correspond au cerveau/source attendus sans recopier le chemin absolu dans ses métadonnées. Utiliser un identifiant opaque/local (`source_ref`/UUID ou équivalent) plutôt que le chemin en clair.
-- Une substitution silencieuse de source est interdite.
-
-#### E. Séparation index / source conservée
-
-- Nouveau cerveau REAL_ROOT non indexé : `map_open` répond `NotBuilt`; **aucun scan automatique**.
-- Première indexation : action explicite `map_refresh`/« Indexer ».
-- Ouverture suivante : index persistant seulement, sans source, conformément à TASK-0031.
-- `map_rebuild` reste explicite et fail-safe.
-
-#### F. Lecture seule absolue
-
-- FileTopo ne crée, modifie, renomme ou supprime rien sous REAL_ROOT.
-- Tout état FileTopo reste hors de la racine analysée.
-- Reparse point/symlink comme racine : refus.
-- Les reparse points internes continuent d'être gérés par le scanner existant sans suivi hors racine.
-- Refuser une racine qui contiendrait l'espace d'état FileTopo ou qui serait un ancêtre de cet espace, afin d'éviter que l'index se scanne lui-même. Documenter précisément la règle de containment retenue.
-
-#### G. Aucun réseau
-
-- Aucun nouveau domaine CSP, aucune requête réseau, télémétrie, cloud, MCP, Graphify ou IA.
-- `tauri-plugin-dialog` est déjà présent : ne pas ajouter une nouvelle bibliothèque de picker si l'existante suffit.
-- Ne donner au WebView aucune permission filesystem générale pour contourner le backend Rust.
+- Test structurel : capability sans `dialog:allow-open`, `dialog:default`, `dialog:allow-save`, `fs:` et `shell:`.
+- Test structurel : `map_brain_choose_real_root` est enregistré et ne prend aucun chemin/root/folder/directory/Path/PathBuf venant du WebView; `choose_collection` reste non enregistré.
+- **Preuve runtime WebView2 si réalisable sans donnée personnelle :** un `invoke` direct de la commande frontend du plugin dialog (`plugin:dialog|open` ou nom réellement utilisé par la version installée) doit être refusé par la capability. Cette preuve ne doit pas ouvrir de dialogue ni inclure de chemin réel. Si l'invocation exacte diffère, l'établir depuis les sources installées/officielles et documenter le résultat.
+- Le custom command Rust doit toujours compiler et rester enregistré.
 
 ---
 
-## 2 — PLAN : audit minimal de réutilisation avant code
+## 2 — DÉFAUT BLOQUANT B : un index pré-DEC-0033 ne peut pas être republié comme la décision le promet
 
-Documenter dans TASK-0032, avant BUILD :
+### Constat indépendant
 
-- l'ancien `choose_collection` dans `src-tauri/src/lib.rs` et ce qui peut être repris;
-- `registry.rs` et son encode/decode path BLOB Windows;
-- l'état actuel de `BrainCatalog` / `SourceKind` / schéma `brains` limité à `SYNTHETIC_FIXTURE`;
-- l'initialisation réelle de `tauri-plugin-dialog` et les permissions Tauri nécessaires;
-- le chemin `map_refresh -> scan_tree_controlled -> BrainIndex -> map_view` déjà existant;
-- tout endroit où `BrainRecord.source_ref`, erreurs ou `hostLog()` pourraient exposer un chemin;
-- les protections CSP/réseau existantes.
+Avant TASK-0032, `BrainIndex::replace` écrivait notamment `brain_id`, `fixture_id`, `label`, `node_count`, etc., **mais pas `source_ref` ni `source_kind`**.
 
-Ne recréer ni scanner, ni index, ni materializer, ni layout, ni catalogue parallèle.
+Le nouveau `open_store()` refuse correctement un index sans `source_ref`. Cependant `publish_map()` fait actuellement, pour tout fichier existant :
 
-Si l'ancien `Registry` n'est plus nécessaire au runtime final, **ne pas fusionner toute sa suppression dans cette tâche** : reprendre seulement les primitives utiles. La suppression de dette historique sera une tranche distincte si elle reste nécessaire.
+`if reused { open_store(paths, brain)?; }`
 
----
+Donc **Refresh et Rebuild sont eux aussi refusés avant le scan** sur un ancien index non bindé. Cela contredit `DEC-0033 D`, qui dit qu'un ancien index est refusé à l'ouverture mais qu'une actualisation explicite peut le republier avec le nouveau binding.
 
-## 3 — BUILD : catalogue REAL_ROOT
+### Contrat corrigé obligatoire
 
-Étendre le catalogue existant, pas l'ancien Registry comme deuxième vérité.
+#### Open
 
-### Migration catalogue
+- Un index sans binding `source_kind + source_ref` reste refusé par `map_open` avec `map_source_mismatch` (ou erreur équivalente explicite).
+- Aucun scan automatique, aucune suppression.
 
-Passer le catalogue à un schéma qui supporte au minimum :
+#### Refresh/Rebuild d'un index déjà bindé
 
-- `SYNTHETIC_FIXTURE`;
-- `REAL_ROOT`.
+- Vérifier **brain_id + source_kind + source_ref**, pas seulement `source_ref`.
+- Toute divergence est refusée **avant lecture de source**, sans suppression.
 
-Exigences :
+#### Refresh/Rebuild d'un index legacy non bindé
 
-- migration transactionnelle et idempotente depuis le schéma courant;
-- préserver les cerveaux synthétiques existants, leurs noms/couleurs/icônes et `active_brain_id`;
-- aucune perte du catalogue si la migration échoue;
-- le chemin réel est stocké en BLOB/local uniquement;
-- aucun chemin absolu dans une colonne destinée au DTO/UI;
-- pas de contrainte empêchant deux cerveaux de partager la même racine.
+Il faut un chemin de compatibilité étroit et prouvable, sans affaiblir REAL_ROOT :
 
-Éviter un design où `BrainRecord` sérialisé transporte accidentellement `PathBuf`. Séparer au besoin **record public** et **source résolue interne**, ou utiliser un champ privé/skip explicite et testé.
+- seuls les cerveaux `SYNTHETIC_FIXTURE` peuvent être reconnus comme index legacy pré-DEC-0033, puisqu'aucun `REAL_ROOT` n'existait avant cette décision;
+- exiger un schéma canonique compatible, le bon `brain_id`, l'absence de `source_ref/source_kind` **et** `fixture_id == brain.source_ref`;
+- alors seulement une action explicite Refresh/Rebuild peut scanner la fixture connue et republier transactionnellement le même index avec `source_kind` + `source_ref` modernes;
+- conserver `index_id`; avancer `revision` uniquement lors de la publication réussie;
+- si scan/publication échoue, l'ancien index reste byte/logiquement intact et toujours refusé par Open tant qu'il n'a pas été republié;
+- **ne jamais appliquer cette voie legacy à un REAL_ROOT**;
+- ne jamais supprimer l'ancien fichier pour “réparer”.
 
-### Enregistrement d'un REAL_ROOT
+Si l'architecture permet une stratégie encore plus étroite et plus sûre, elle est acceptable, mais elle doit satisfaire exactement la compatibilité ci-dessus.
 
-Ajouter une primitive interne testable du type `register_real_root(path)` et une seule commande produit de sélection native, par exemple :
+### Source binding complet
 
-`map_brain_choose_real_root()`
+L'index écrit déjà `source_kind` et `source_ref`. `open_store` et la validation de publication doivent vérifier **les deux**. Un `source_ref` égal avec `source_kind` différent doit être refusé.
 
-La commande :
+### Preuves obligatoires B
 
-1. ouvre le sélecteur natif de dossier;
-2. sur annulation retourne `None` sans effet;
-3. canonicalise et valide la racine;
-4. refuse fichier, symlink/reparse root et conflit de containment avec l'espace FileTopo;
-5. crée un `brain_id`/source binding opaques;
-6. stocke le chemin uniquement localement;
-7. retourne un DTO **sans chemin absolu**;
-8. ne scanne rien.
+Ajouter un test construit avec **la vraie forme de métadonnées de l'index TASK-0031** :
 
-Ne pas ajouter une commande produit `register_path(path: string)` accessible au WebView.
+1. index legacy valide avec `brain_id`, `fixture_id`, projection contract, identity/revision, mais sans `source_kind/source_ref`;
+2. `map_open` refuse explicitement et ne modifie rien;
+3. Refresh explicite sur le cerveau synthétique correspondant réussit;
+4. `index_id` conservé, `revision +1`, `source_kind/source_ref` ajoutés;
+5. `map_open` fonctionne ensuite sans lire la source;
+6. un échec de refresh avant publication conserve l'ancien index;
+7. un legacy non bindé présenté comme `REAL_ROOT` est refusé sans scan et sans mutation;
+8. `source_ref` identique + `source_kind` différent est refusé;
+9. binding `source_ref` différent est refusé comme aujourd'hui.
 
----
-
-## 4 — BUILD : résolution de source unifiée
-
-Remplacer les suppositions « une source = fixture » par une petite abstraction interne, sans framework :
-
-- synthétique -> chemin de fixture contrôlé;
-- REAL_ROOT -> chemin local résolu depuis le catalogue.
-
-`map_open` ne doit toujours pas résoudre/lire physiquement la racine REAL_ROOT si l'index existe.
-
-`map_refresh` / `map_rebuild` résolvent la source et passent le **même scanner existant**.
-
-Généraliser les métadonnées qui portent aujourd'hui des noms `fixture_id` uniquement si nécessaire; ne pas conserver un mensonge sémantique pour REAL_ROOT. Les rapports UI doivent porter des faits réels, et aucun chemin absolu.
-
-Pour une source réelle, ne pas exécuter un second parcours complet uniquement pour calculer une « empreinte de lecture seule » de production. La lecture seule se prouve par le design et les tests. Les empreintes synthétiques historiques peuvent rester pour leurs scénarios.
+Ne pas affaiblir RR1-RR10 existants.
 
 ---
 
-## 5 — BUILD : MapApp minimal
+## 3 — Confidentialité / portée inchangée
 
-Pas de redesign.
-
-Ajouter seulement ce qui est nécessaire pour le flux V1 :
-
-- **Ajouter un cerveau / Choisir un dossier**;
-- entrée du nouveau cerveau dans la composition/catalogue;
-- état « non indexé » clair;
-- action explicite **Indexer/Actualiser**;
-- ensuite Ouvrir / Actualiser / Reconstruire continuent à utiliser le cycle TASK-0031;
-- afficher un label de racine utile sans exposer inutilement le chemin complet dans les logs ou diagnostics.
-
-Le choix de dossier ne doit jamais lancer automatiquement un scan.
-
-Les cerveaux synthétiques/scénarios de preuve doivent continuer à fonctionner. Ne pas faire la finition visuelle dans cette tranche.
+- **Aucun cerveau personnel.** Utiliser uniquement des tempdirs/arbres générés par tests.
+- Aucun chemin absolu dans Git, docs, logs ou artefacts.
+- Aucun réseau, cloud, LLM, MCP, Graphify ou télémétrie.
+- Aucun watcher/incrémental, aucun FTS, aucun redesign, aucun changement de renderer.
+- Aucun nouveau scanner, index canonique, catalogue ou store.
+- Ne pas modifier `main`, ne pas créer PR/merge/tag/release.
+- Ne pas sceller de nouveaux artefacts X5.
 
 ---
 
-## 6 — VERIFY : preuves obligatoires
+## 4 — Validation
 
-Toutes les preuves utilisent des données de test générées localement. **Aucun vrai cerveau personnel.**
+Exécuter au minimum :
 
-### RR1 — Migration catalogue
-
-Construire un catalogue v1 avec les données synthétiques courantes et un `active_brain_id` modifié. Ouvrir avec le nouveau code :
-
-- migration réussie;
-- mêmes cerveaux/noms/couleurs/icônes;
-- même cerveau actif;
-- réouverture idempotente;
-- schéma courant exact.
-
-### RR2 — Picker/registration sans scan
-
-Tester la primitive interne avec une racine temporaire réelle :
-
-- cerveau REAL_ROOT créé;
-- source inchangée;
-- aucun index créé;
-- `map_open` -> `NotBuilt`;
-- annulation du picker -> zéro effet;
-- validation refuse fichier et root reparse/symlink lorsque la plateforme le permet.
-
-Le test du picker natif lui-même peut être un smoke test si l'automatisation Windows du dialogue est raisonnable; **ne pas introduire une dépendance lourde juste pour automatiser le dialogue**. La logique d'enregistrement doit être testée indépendamment du GUI natif.
-
-### RR3 — Confidentialité du chemin
-
-Créer une racine portant une sentinelle clairement reconnaissable, par exemple un chemin temporaire avec `FILETOPO_PRIVATE_SENTINEL_<random>`.
-
-Après création/indexation/ouverture :
-
-- sérialiser les DTO publics pertinents;
-- inspecter les logs/artefacts TASK-0032 générés;
-- la chaîne absolue sentinelle ne doit apparaître nulle part hors du catalogue local de test et de la mémoire interne du test;
-- aucun artefact Git ne doit contenir le chemin réel de la machine.
-
-Ne pas écrire le chemin sentinelle lui-même dans un JSON de preuve; n'enregistrer que `absolutePathLeak=false`.
-
-### RR4 — Première indexation réelle
-
-Sur un dossier temporaire créé par le test avec dossiers/fichiers Unicode et profondeur >1 :
-
-- `map_refresh` initialise l'index canonique;
-- `map_view` rend une projection bornée;
-- détails et résolution de chemin relatif fonctionnent;
-- source binding et brain isolation corrects;
-- aucun fichier FileTopo créé sous la racine.
-
-### RR5 — Open offline de la source
-
-Après indexation REAL_ROOT :
-
-- relever index_id/revision/projection;
-- renommer/déplacer temporairement la racine sous garde de restauration;
-- `map_open` et `map_view` continuent de réussir exactement depuis le dernier index;
-- `map_refresh`/`map_rebuild` échouent explicitement sans altérer l'index;
-- restaurer la source quoi qu'il arrive.
-
-### RR6 — Lecture seule
-
-Avant/après refresh puis rebuild d'une racine de test :
-
-- mêmes chemins relatifs;
-- mêmes bytes/tailles des fichiers;
-- mêmes mtimes lorsque le filesystem le permet de façon stable;
-- aucun nouvel artefact sous la source;
-- aucune suppression/rename par FileTopo.
-
-Ne pas utiliser l'atime comme preuve normative.
-
-### RR7 — Deux cerveaux, même REAL_ROOT
-
-Créer deux cerveaux pointant vers la même racine :
-
-- brain_id distincts;
-- index_id distincts;
-- index DB distinctes;
-- refresh/rebuild de l'un ne change ni identité ni révision de l'autre;
-- le chemin n'est pas exposé au frontend.
-
-### RR8 — Containment
-
-Prouver le refus d'une racine qui engloberait l'espace d'état FileTopo ou créerait une relation de containment dangereuse. Aucun scan récursif de l'index FileTopo lui-même ne doit être possible par construction.
-
-### RR9 — Pas de réseau / pas de nouvelle stack
-
-Garde structurelle :
-
-- CSP Internet inchangée;
-- aucun fetch/HTTP ajouté;
-- aucune nouvelle dépendance sauf modification strictement nécessaire pour activer le plugin dialog **déjà déclaré**;
-- aucun permission filesystem générique côté WebView;
-- aucun Graphify/MCP/LLM/cloud/télémétrie.
-
-### RR10 — Projection bornée inchangée
-
-REAL_ROOT suit :
-
-`catalogue -> source interne -> scanner -> Index canonique -> map_view bornée -> layout de vue -> MapApp`
-
-Aucun `all_nodes` frontend, aucun layout global, aucun retour au vieux Registry/MapStore comme corpus produit.
-
----
-
-## 7 — Validation générale
-
-Exécuter :
-
-- tests Rust ciblés puis complets;
-- tests TypeScript ciblés puis complets;
+- tests Rust ciblés privacy/capability/source-binding/legacy upgrade;
+- suite Rust complète `cargo test --offline`;
+- tests TypeScript ciblés puis `pnpm test` complet;
 - `pnpm check`;
 - `pnpm build`;
 - `cargo build --offline`;
-- `cargo fmt --check` sur fichiers touchés et état global rapporté honnêtement;
-- `cargo clippy --all-targets --offline -- -D warnings` : aucun nouveau diagnostic TASK-0032; ne pas transformer la tranche en nettoyage global Clippy;
+- `cargo fmt --check` sur les fichiers touchés et rapport honnête de la dette globale;
+- `cargo clippy --all-targets --offline -- -D warnings`; la dette historique peut rester, mais aucun nouveau diagnostic de cette correction;
 - `git diff --check`.
 
-Effectuer un passage Windows/Tauri/WebView2 **sans données personnelles** si possible avec un dossier temporaire local. Il doit au minimum prouver le chemin produit après enregistrement interne : REAL_ROOT -> explicit refresh -> open -> bounded map. Le dialogue natif n'a pas besoin d'une automatisation fragile si cela exige du surdéveloppement; sa commande/compilation et la primitive partagée doivent être prouvées séparément.
-
-Artefacts `TASK-0032-*` : non canoniques, sans chemin absolu, hors X5 jusqu'au contrôle indépendant.
+Rejouer WebView2 pour la frontière de permission frontend et pour le cycle REAL_ROOT synthétique si possible. Toute preuve reste **non canonique** jusqu'au contrôle indépendant.
 
 ---
 
-## 8 — Interdits
+## 5 — Documentation finale
 
-TASK-0032 ne doit PAS :
-
-- utiliser le vrai cerveau de Sébastien;
-- ajouter watcher/notify-rs ou mise à jour incrémentale;
-- implémenter FTS5/recherche P-08;
-- implémenter l'identité physique F-046;
-- changer renderer/layout/stack;
-- faire le redesign UX/UI;
-- ajouter Graphify, MCP, IA, cloud, télémétrie ou réseau;
-- envoyer un nom, chemin, métadonnée ou graphe à Internet;
-- créer un second catalogue/index canonique;
-- ressusciter l'ancien `Registry` comme vérité produit;
-- exposer une API WebView qui accepte un chemin arbitraire;
-- supprimer toute la dette legacy_store/Registry dans cette tranche;
-- modifier X5 ou des preuves historiques;
-- créer TASK-0033 / DEC-0034;
-- modifier main / PR / merge / release / tag / force push.
-
-`F-050/F-051` restent IMPLEMENTED jusqu'à leur acceptance globale. `F-042`, FTS, watcher et autres fonctions non visées gardent leur statut actuel.
-
----
-
-## 9 — État final attendu
-
-Mettre à jour :
+Mettre à jour uniquement ce qui est nécessaire :
 
 - `docs/tasks/TASK-0032-v1-real-root.md`;
 - `docs/decisions/DEC-0033-real-root-privacy-and-source-binding.md`;
@@ -372,65 +160,34 @@ Mettre à jour :
 - `docs/ai/HANDOFF.md`;
 - `docs/ai/VALIDATION.md`;
 - `docs/ai/CHANGELOG_AI.md`;
-- `docs/product/FEATURE_MATRIX.md` uniquement si nécessaire;
-- `.orchestrator/RESULT.md`.
+- `docs/product/FEATURE_MATRIX.md` seulement si un état factuel doit être corrigé;
+- `.orchestrator/RESULT.md`;
+- artefact TASK-0032 correctif seulement si nécessaire.
 
 À la fin :
 
-- TASK-0032 = `IMPLEMENTED`, jamais auto-VERIFIED;
-- DEC-0033 = `APPROVED`;
-- TASK-0031 = `VERIFIED` par ACTION-0048 partout où son état courant est mentionné;
-- R-T30-5 peut être déclarée **traitée uniquement dans la portée REAL_ROOT de test**; pas de validation sur données personnelles avant contrôle indépendant;
-- R-T30-1/-3/-4/-6 et R8 restent ouvertes sauf preuve explicite contraire;
-- `NEXT_ACTION` = contrôle indépendant de TASK-0032 uniquement;
-- aucune tâche suivante précréée.
+- `TASK-0032 = IMPLEMENTED`, jamais auto-VERIFIED;
+- `DEC-0033 = APPROVED`, corrigée pour refléter la vraie frontière de permission;
+- `NEXT_ACTION` = **contrôle indépendant de TASK-0032 uniquement**;
+- aucune TASK-0033/DEC-0034 précréée.
 
-## 10 — RESULT.md
+---
 
-Rapporter au minimum :
+## 6 — RESULT.md
 
-```text
-TASK_ID: TASK-0032 — V1 REAL_ROOT — Controlled Local Folder Onboarding
-AGENT: CLAUDE
-RESULT: DONE | BLOCKED | FAILED
-BRANCH: build/v0.2-a16-v1-real-root
-FINAL_HEAD: <commit substantif final avant RESULT-only>
+Rapporter clairement :
 
-SUMMARY:
--
+- HEAD/branche;
+- commits de correction;
+- correction A et preuve que le WebView ne peut plus appeler directement le picker plugin;
+- correction B et preuve de migration explicite d'un index legacy synthétique sans perte d'identité;
+- vérification `source_kind + source_ref`;
+- suites exécutées et résultats;
+- limites restantes;
+- X5 = 36;
+- main inchangée;
+- `TASK_STATUS: IMPLEMENTED`;
+- `DECISION_STATUS: APPROVED`;
+- `NEXT: independent control only`.
 
-REAL_ROOT_CONTRACT:
-- picker explicit / no scan on registration
-- absolute path local-only / not serialized
-- first refresh explicit
-- open index-only
-- source read-only
-- bounded projection unchanged
-
-PRIVACY_PROOF:
-- absolutePathLeak: true/false
-- networkAdded: true/false
-- sourceArtifacts: <count>
-
-VALIDATIONS:
--
-
-LIMITS:
-- no personal brain used
-- no watcher/incremental
-- no FTS
-- performance/laptop acceptance still separate
-
-FILES_CHANGED:
--
-
-X5: 36
-MAIN_UNCHANGED: yes/no
-TASK_STATUS: IMPLEMENTED
-DECISION_STATUS: APPROVED
-COMMIT:
-PUSHED: yes/no
-NEXT: independent control only
-```
-
-Push uniquement `build/v0.2-a16-v1-real-root`.
+Commit et push uniquement sur `build/v0.2-a16-v1-real-root`.
