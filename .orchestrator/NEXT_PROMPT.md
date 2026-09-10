@@ -1,143 +1,179 @@
-# NEXT_PROMPT — TASK-0033 / PRODUCT ACCEPTANCE — WebView2
+# NEXT_PROMPT — TASK-0034 — V1 Find & Open
 
 **TARGET_AGENT:** CLAUDE CODE  
+**RECOMMENDED_MODEL:** Sonnet 5, high effort  
 **STATUS:** READY  
 **OWNER:** orchestrateur ChatGPT  
-**MODE:** validation produit ciblée + corrections seulement si observées  
-**TASK:** `TASK-0033 — V1 Progressive Topographic UX`  
-**BRANCHE:** `build/v0.2-a17-v1-topographic-ux`
+**MODE:** exécution technique ciblée  
+**TASK:** `TASK-0034 — V1 Find & Open`  
+**BRANCHE:** `build/v0.2-a18-v1-find-open`
 
 ## /goal
 
-Ne crée aucune nouvelle fonctionnalité. Ferme uniquement le verrou d'acceptation restant de `TASK-0033` : exécuter le rejeu produit WebView2 obligatoire sur une grande arborescence synthétique, vérifier que la nouvelle topographie est réellement lisible et navigable, et corriger seulement les défauts observés dans cette portée.
+Implémenter `TASK-0034` telle qu'écrite dans `docs/tasks/TASK-0034-v1-find-open.md` : recherche locale bornée par nom/chemin relatif dans l'Index canonique, focalisation d'un résultat hors projection, puis action sûre « Ouvrir dans l'Explorateur Windows » basée uniquement sur `BrainNodeRef` côté IPC.
 
-`TASK-0033` reste `IMPLEMENTED`, jamais auto-`VERIFIED`. Le verdict final appartiendra ensuite à l'orchestrateur indépendant.
+Ne crée aucune architecture parallèle. Réutilise `Index::query_nodes()`, `map_view`, `BrainNodeRef` et la logique historique de confinement/ouverture Windows lorsque sûre, mais **ne réactive jamais** l'ancien `Registry`, `query_collection_nodes` ou `reveal_indexed_node` comme surface produit.
+
+`TASK-0034` doit finir `IMPLEMENTED`, jamais auto-`VERIFIED`. Le verdict appartiendra ensuite à l'orchestrateur indépendant.
 
 ---
 
-## 0 — Préconditions / Git
+## 0 — Préconditions Git et source de vérité
 
 1. Appliquer `AGENTS.md`, `CLAUDE.md` et les protocoles actifs.
-2. Basculer explicitement sur `build/v0.2-a17-v1-topographic-ux`.
+2. Basculer explicitement sur `build/v0.2-a18-v1-find-open`.
 3. `git fetch origin`, puis fast-forward uniquement.
-4. HEAD d'orchestration attendu au minimum : commit contenant `docs/reviews/ACTION-0050-independent-control.md` et le présent prompt. Si la branche distante a avancé, expliquer chaque commit et continuer uniquement si cohérent.
+4. HEAD d'orchestration attendu au minimum : `81f9d2c` ou un descendant explicable contenant `TASK-0034` et ce prompt.
 5. Arbre propre avant écriture; divergence inexpliquée => `BLOCKED`.
-6. Lire avant action :
-   - `docs/reviews/ACTION-0050-independent-control.md`
-   - `docs/tasks/TASK-0033-v1-topographic-ux.md`
-   - `docs/decisions/DEC-0034-progressive-topographic-view.md`
-   - `docs/product/REFERENCE_UX_OLD_FILETOPO.md`
-   - `docs/ai/NEXT_ACTION.md`
-   - `.orchestrator/RESULT.md`
-   - scripts de preuve WebView2 existants (`TASK-0032` et autres) avant d'en écrire un nouveau.
+6. Lire avant code :
+   - `docs/reviews/ACTION-0051-independent-recontrol.md`;
+   - `docs/tasks/TASK-0033-v1-topographic-ux.md`;
+   - `docs/tasks/TASK-0034-v1-find-open.md`;
+   - `docs/decisions/DEC-0031-one-canonical-brain-index-and-bounded-projection.md`;
+   - `docs/decisions/DEC-0033-real-root-privacy-and-source-binding.md`;
+   - `docs/decisions/DEC-0034-progressive-topographic-view.md`;
+   - `src-tauri/src/index.rs` (`Index::query_nodes`);
+   - `src-tauri/src/map/brain_index.rs`;
+   - `src-tauri/src/map/commands.rs`;
+   - `src-tauri/src/lib.rs` (ancien `query_collection_nodes`, `resolve_indexed_target`, `reveal_indexed_node`, invoke handler actuel);
+   - `src/map/MapApp.tsx`, `DetailsPanel.tsx`, `types.ts`, tests associés;
+   - harnais WebView2 de TASK-0033 avant d'en créer un autre.
+7. Avant de coder, confirmer dans `RESULT.md` quelles briques sont **réutilisées**, **adaptées** et **non réactivées**.
 
-## 1 — Réutiliser le harnais existant
+## 1 — Recherche : une seule source canonique
 
-Auditer d'abord les scripts WebView2 déjà présents. Réutiliser/adapters le minimum nécessaire; ne crée pas un second framework de test UI si l'existant peut couvrir le besoin.
+Implémenter une commande produit dédiée, nom raisonnable comme `map_search_nodes`, derrière le runtime courant.
 
-La preuve doit utiliser uniquement des données synthétiques générées automatiquement. Aucun cerveau personnel, aucun chemin privé dans Git, aucune dépendance réseau.
+Contraintes :
 
-## 2 — Rejeu produit obligatoire
+- cerveau résolu depuis le catalogue;
+- `open_store()` obligatoire avant toute recherche;
+- réutiliser `Index::query_nodes()`; ne dupliquer le SQL que si une impossibilité réelle est démontrée;
+- aucune lecture de source/scanner;
+- aucun `analysis_nodes`, `list_nodes` ou snapshot complet;
+- requête vide => page vide, jamais un dump du corpus;
+- limite serveur <= 50 résultats par page;
+- résultat borné avec `total`, `offset`, `limit`, `indexRevision`;
+- chaque hit contient uniquement identité de cerveau/nœud, nom, chemin relatif et type;
+- aucun chemin absolu/root/source dans le DTO.
 
-Construire/générer une arborescence synthétique représentative d'au moins **5 000 éléments indexés** avec assez de dossiers imbriqués et de fichiers pour exercer réellement la projection dossier-first, les agrégats et plusieurs niveaux de navigation.
+Tests : recherche nom, chemin relatif, casse, `%`, `_`, `\\`, pagination, total, isolement entre cerveaux, source indisponible après index mais recherche encore fonctionnelle, révision explicite.
 
-Exécuter le vrai produit dans **WebView2** et contrôler au minimum :
+## 2 — UI recherche
 
-### 1366 × 768
+Dans la barre d'outils du cerveau focalisé :
 
-- première ouverture centrée sur racine/focus à une échelle lisible, sans fit exhaustif;
-- vrais noms de dossiers lisibles;
-- pas de superposition de cartes, toolbar ou panneau contextuel;
-- la carte peut déborder et reste pannable;
-- zoom molette/boutons fonctionne;
-- `Ajuster à l'écran` force explicitement le fit global;
-- `Réinitialiser` revient à une échelle lisible, pas à un fit exhaustif;
-- une pastille `+N éléments — Voir la suite` est petite et clairement distincte d'un dossier;
-- activation de la pastille produit une **nouvelle projection de vrais nœuds**, sans accumulation de la page précédente;
-- navigation dans une branche garde le focus visible sans changer arbitrairement l'échelle;
-- sélection d'un bloc et panneau de détails restent cohérents;
-- relations existantes autour d'une sélection restent visibles et sans régression.
+- champ « Rechercher un dossier ou fichier »;
+- recherche locale simple, sans FTS5;
+- résultats nom + type + chemin relatif;
+- pagination bornée si total > 50;
+- effacement simple;
+- accessibilité clavier raisonnable;
+- aucun jargon technique.
 
-### 1920 × 1080
+Activation d'un résultat :
 
-Rejouer les mêmes points essentiels et confirmer que l'interface utilise l'espace supplémentaire sans modifier le contrat de projection.
+1. vérifier qu'il appartient encore à la révision attendue; sinon invalider/rechercher plutôt que réutiliser silencieusement un ancien `nodeId`;
+2. appeler `map_view` avec `brainId + nodeId` comme focus;
+3. remplacer la projection courante;
+4. sélectionner le résultat;
+5. laisser la caméra `TASK-0033` gérer le recentrage sans auto-fit;
+6. afficher les détails normaux.
 
-## 3 — Mesures / assertions obligatoires
+Après refresh/rebuild, invalider les résultats de recherche du cerveau concerné.
 
-La preuve doit enregistrer de façon vérifiable :
+## 3 — Ouvrir dans l'Explorateur : frontière de sécurité
 
-- total indexé >= 5 000;
-- `materializedCount <= 64` pour les projections ordinaires testées;
-- `nodes + aggregates <= 512` toujours;
-- après activation d'une continuation, les vrais nœuds de la nouvelle page sont différents de ceux omis de la page précédente et aucune concaténation hors budget n'est faite;
-- échelle caméra avant/après une navigation de branche : conservée sauf nécessité explicite liée aux bornes;
-- `Ajuster` modifie vers le fit attendu;
-- `Réinitialiser` utilise l'échelle lisible;
-- aucun texte visible ne contient `view_budget_or_focus`, `outside_current_projection`, `omitted_direct_children` ou « enfants directs hors vue »;
-- aucune fuite de chemin absolu dans DTO, DOM/texte visible, logs de preuve ou artefact;
-- 0 erreur console fatale.
+Créer une commande produit, p. ex. `map_reveal_node(reference: BrainNodeRef)`.
 
-Si le harnais permet des captures, conserver au minimum une preuve synthétique pour 1366×768 et une pour 1920×1080. Aucun nom/path personnel dans les images.
+Obligatoire :
 
-## 4 — Point d'attention du contrôle indépendant
+- **seul argument frontend : `BrainNodeRef`**;
+- aucune chaîne `path`, `relativePath`, `root`, `folder`, `directory` ou target provenant du WebView;
+- `resolve_brain` + `open_store` vérifient cerveau et binding;
+- le `relative_path` est lu depuis l'Index canonique;
+- la vraie racine est résolue côté Rust uniquement;
+- adapter la logique `resolve_indexed_target()` historique : composantes normales, refus reparse/symlink/skipped, cible disparue/inaccessible refusée;
+- `explorer.exe` lancé directement via `std::process::Command`, jamais via shell;
+- dossier : ouvrir; fichier : sélectionner;
+- aucun chemin absolu retourné, journalisé ou inclus dans une erreur frontend;
+- aucune permission `shell:*`, `fs:*`, `opener:*`, `dialog:*` ajoutée à la capability WebView.
 
-La pastille compacte conserve aujourd'hui un **créneau de layout de taille carte** pour éviter les chevauchements. Ne change pas ce choix par préférence esthétique. Observe-le dans le vrai rendu :
+Ne pas enregistrer les anciennes commandes `query_collection_nodes` ou `reveal_indexed_node`.
 
-- s'il garde une topographie claire, laisse-le;
-- s'il crée des trous/espacements qui rendent encore la carte inutilement énorme ou difficile à lire, corrige de la façon minimale dans le layout borné existant, sans créer un nouveau moteur.
+## 4 — DetailsPanel
 
-Même règle pour tout autre défaut : **preuve d'abord, correction ensuite**.
+Ajouter une action « Ouvrir dans l'Explorateur » pour la sélection courante.
 
-## 5 — Corrections autorisées si le rejeu échoue
+- invoque uniquement la nouvelle commande avec `reference`;
+- succès discret;
+- erreurs utilisateur génériques et sans chemin absolu;
+- chemin relatif existant inchangé.
 
-Uniquement dans la portée TASK-0033 :
+## 5 — Preuves structurelles
 
-- projection/focus/pagination bornés;
-- géométrie/layout de la vue bornée;
-- taille/placement de la pastille;
-- caméra `readableView` / `recenterOnFocus` / reset / fit;
-- CSS/SVG nécessaires à la lisibilité;
-- harnais de preuve et tests associés.
+Ajouter des gardes qui échouent si :
 
-Interdits : nouveau renderer, second index/store/catalogue, snapshot complet frontend, watcher/incrémental, FTS5, Explorer, nouvelle permission filesystem, cloud/réseau/LLM/MCP, GPU requis, ou nouvelle TASK.
+- une commande search/reveal accepte une propriété de chemin venant du frontend;
+- une permission shell/fs/opener/dialog frontend est ajoutée;
+- une ancienne commande 0.1 est réenregistrée;
+- le search DTO contient un champ absolu/root/source;
+- la recherche dépasse 50 hits dans une page;
+- un résultat d'une ancienne révision est activé silencieusement.
 
-## 6 — Régressions/tests
+## 6 — Rejeu WebView2
 
-Après le rejeu — et après toute correction éventuelle — exécuter au minimum :
+Réutiliser le harnais TASK-0033 et son principe de `REAL_ROOT` synthétique >= 5 000 éléments. Adapter plutôt que créer un second framework.
 
-- tests Rust ciblés projection + suite Rust complète `cargo test --offline`;
+Scénario obligatoire :
+
+1. indexer le corpus synthétique;
+2. rechercher par nom un fichier volontairement hors projection ordinaire;
+3. confirmer résultat borné et `indexRevision`;
+4. activer le résultat par entrée utilisateur réelle/CDP : la carte doit charger une nouvelle projection avec ce nœud sélectionné et le panneau cohérent;
+5. effectuer refresh/rebuild puis prouver qu'un résultat de l'ancienne révision n'est pas réutilisé silencieusement;
+6. tester l'action Explorer sur une **cible synthétique seulement**. Le retour réussi après `spawn` direct d'Explorer est suffisant; ne capture ni ne persiste le chemin absolu;
+7. vérifier DOM/payload/log : aucune fuite de chemin absolu;
+8. 0 erreur console fatale.
+
+Si lancer Explorer laisse une fenêtre ouverte, ne tue jamais globalement `explorer.exe`; laisse Windows gérer la fenêtre ou ferme seulement une instance si une méthode sûre et ciblée existe.
+
+## 7 — Validation générale
+
+Exécuter au minimum :
+
+- tests Rust ciblés search/reveal/privacy puis suite `cargo test --offline`;
 - tests TypeScript ciblés puis suite complète;
 - `pnpm check`;
 - `pnpm build`;
 - `cargo build --offline`;
-- `cargo fmt --check` sur les fichiers Rust touchés;
-- `cargo clippy --all-targets --offline -- -D warnings` et comparaison honnête avec la dette de 26 erreurs;
-- `git diff --check`.
+- `cargo fmt --check` sur les lignes/fichiers touchés;
+- `cargo clippy --all-targets --offline -- -D warnings`, dette historique distinguée de tout nouveau diagnostic;
+- `git diff --check`;
+- rejeu WebView2 ci-dessus.
 
-Aucun nouveau diagnostic attribuable à cette passe.
+Aucune donnée personnelle dans les tests, captures, logs ou artefacts Git.
 
-## 7 — Documentation
+## 8 — Documentation et sortie
 
-Mettre à jour uniquement ce qui est nécessaire :
+Après implémentation, mettre à jour :
 
-- `docs/tasks/TASK-0033-v1-topographic-ux.md`;
+- `docs/tasks/TASK-0034-v1-find-open.md`;
 - `docs/ai/CURRENT_STATE.md`;
 - `docs/ai/HANDOFF.md`;
 - `docs/ai/NEXT_ACTION.md`;
 - `docs/ai/VALIDATION.md`;
 - `docs/ai/CHANGELOG_AI.md`;
-- `.orchestrator/RESULT.md`;
-- artefacts/captures WebView2 synthétiques nécessaires.
+- `.orchestrator/RESULT.md`.
 
-Corriger aussi la petite incohérence documentaire signalée par `ACTION-0050` : la première ouverture utilise `readableView`, pas `fitView`.
+Harmoniser aussi l'état durable de `TASK-0033 = VERIFIED par ACTION-0051` là où les documents hérités disent encore qu'un recontrôle est attendu; ne réécris pas l'historique, ajoute/corrige seulement l'état courant.
 
-## 8 — État final attendu
+À la fin :
 
-- `TASK-0033 = IMPLEMENTED`, **jamais auto-VERIFIED**;
-- `DEC-0034 = APPROVED`;
-- aucune `TASK-0034` précréée;
-- `NEXT_ACTION = nouveau contrôle indépendant de TASK-0033`;
-- commit + push uniquement sur `build/v0.2-a17-v1-topographic-ux`;
-- aucun PR/merge/tag/release.
-
-Dans `.orchestrator/RESULT.md`, fournir : HEAD/commits, harnais réutilisé ou adapté, taille de l'arbre synthétique, résultats séparés 1366×768 et 1920×1080, métriques caméra/projection, captures/artefacts créés, corrections éventuellement nécessaires et pourquoi, tests complets, état Clippy, confidentialité, `TASK_STATUS: IMPLEMENTED`, puis `NEXT: independent recontrol only`.
+- `TASK-0034 = IMPLEMENTED`, jamais auto-`VERIFIED`;
+- `DEC-0031/0033/0034` inchangées sauf correction factuelle indispensable;
+- aucun TASK-0035 précréé;
+- `NEXT_ACTION = contrôle indépendant de TASK-0034`;
+- commit/push uniquement sur `build/v0.2-a18-v1-find-open`;
+- aucun PR/merge/tag/release;
+- `RESULT.md` doit inclure HEAD, commits, réutilisation/adaptation, surface IPC finale, preuves search/revision/reveal, WebView2, validations, confidentialité, limites et dette restante.
