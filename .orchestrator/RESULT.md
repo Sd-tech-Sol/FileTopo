@@ -2,7 +2,7 @@ TASK_ID: TASK-0032 — V1 REAL_ROOT — Controlled Local Folder Onboarding (corr
 AGENT: CLAUDE
 RESULT: DONE
 BRANCH: build/v0.2-a16-v1-real-root
-FINAL_HEAD: (substantive commit before this RESULT-only commit — see git log)
+FINAL_HEAD: cc0d46c
 GO: a279ef9, child of efec2ea
 
 SUMMARY:
@@ -61,6 +61,6 @@ X5: 36
 MAIN_UNCHANGED: yes
 TASK_STATUS: IMPLEMENTED
 DECISION_STATUS: APPROVED
-COMMIT: see git log on the branch
+COMMIT: cc0d46c (corrective pass, code + proofs + docs)
 PUSHED: yes — build/v0.2-a16-v1-real-root only, no PR, no merge, no tag, no release, no history rewrite
 NEXT: independent control only
