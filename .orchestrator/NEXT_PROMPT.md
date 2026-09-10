@@ -1,155 +1,143 @@
-# NEXT_PROMPT — TASK-0033 — V1 Progressive Topographic UX
+# NEXT_PROMPT — TASK-0033 / PRODUCT ACCEPTANCE — WebView2
 
 **TARGET_AGENT:** CLAUDE CODE  
 **STATUS:** READY  
 **OWNER:** orchestrateur ChatGPT  
-**MODE:** exécution technique ciblée  
+**MODE:** validation produit ciblée + corrections seulement si observées  
 **TASK:** `TASK-0033 — V1 Progressive Topographic UX`  
 **BRANCHE:** `build/v0.2-a17-v1-topographic-ux`
 
 ## /goal
 
-Reprendre FileTopo exactement à l'état du dépôt et implémenter `TASK-0033` sans nouvelle architecture. Conserver Tauri + Rust + SQLite + React/TypeScript, `REAL_ROOT`, l'Index canonique, la projection bornée et le renderer SVG existant. Faire converger la carte vers la lisibilité de l'ancien FileTopo : vrais noms de dossiers en blocs, branches lisibles, navigation spatiale, pan/zoom, panneau contextuel et relations visibles. La carte normale doit viser quelques dizaines de blocs utiles, pas 256 cartes + agrégats techniques. Ne jamais envoyer le corpus complet ni un chemin absolu au frontend.
+Ne crée aucune nouvelle fonctionnalité. Ferme uniquement le verrou d'acceptation restant de `TASK-0033` : exécuter le rejeu produit WebView2 obligatoire sur une grande arborescence synthétique, vérifier que la nouvelle topographie est réellement lisible et navigable, et corriger seulement les défauts observés dans cette portée.
+
+`TASK-0033` reste `IMPLEMENTED`, jamais auto-`VERIFIED`. Le verdict final appartiendra ensuite à l'orchestrateur indépendant.
 
 ---
 
-## 0 — Préconditions
+## 0 — Préconditions / Git
 
-1. Lire `AGENTS.md`, `CLAUDE.md` et les protocoles actifs.
-2. `git fetch origin`, fast-forward uniquement.
-3. Travailler uniquement sur `build/v0.2-a17-v1-topographic-ux`.
-4. Vérifier arbre propre avant code; divergence inexpliquée => `BLOCKED`.
-5. `TASK-0032` est désormais `VERIFIED` par `docs/reviews/ACTION-0049-independent-recontrol.md`.
-6. Lire avant code :
+1. Appliquer `AGENTS.md`, `CLAUDE.md` et les protocoles actifs.
+2. Basculer explicitement sur `build/v0.2-a17-v1-topographic-ux`.
+3. `git fetch origin`, puis fast-forward uniquement.
+4. HEAD d'orchestration attendu au minimum : commit contenant `docs/reviews/ACTION-0050-independent-control.md` et le présent prompt. Si la branche distante a avancé, expliquer chaque commit et continuer uniquement si cohérent.
+5. Arbre propre avant écriture; divergence inexpliquée => `BLOCKED`.
+6. Lire avant action :
+   - `docs/reviews/ACTION-0050-independent-control.md`
    - `docs/tasks/TASK-0033-v1-topographic-ux.md`
    - `docs/decisions/DEC-0034-progressive-topographic-view.md`
    - `docs/product/REFERENCE_UX_OLD_FILETOPO.md`
-   - `docs/decisions/DEC-0031-one-canonical-brain-index-and-bounded-projection.md`
-   - `docs/decisions/DEC-0033-real-root-privacy-and-source-binding.md`
-   - `src-tauri/src/map/projection.rs`
-   - `src-tauri/src/map/layout.rs`
-   - `src-tauri/src/map/store.rs`
-   - `src/map/MapView.tsx`
-   - `src/map/MapApp.tsx`
-   - `src/map/types.ts`
-7. Audit de réutilisation d'abord : utiliser le SVG, la sélection, les relations, le panneau et le layout borné existants. Aucun nouveau renderer/store/index/catalogue.
+   - `docs/ai/NEXT_ACTION.md`
+   - `.orchestrator/RESULT.md`
+   - scripts de preuve WebView2 existants (`TASK-0032` et autres) avant d'en écrire un nouveau.
 
-## 1 — Projection topographique
+## 1 — Réutiliser le harnais existant
 
-- Garder `VIEW_BUDGET = 512` comme borne dure, agrégats inclus.
-- Introduire une cible visuelle ordinaire de **<= 64 vrais blocs**.
-- Racine + ancestry du focus toujours prioritaires.
-- Dans la vue d'ensemble, prioriser les `DIRECTORY`; les fichiers restent dans l'Index et accessibles aux détails/analyses mais ne doivent pas saturer la carte.
-- Un fichier explicitement ciblé par navigation/relation peut être matérialisé avec contexte borné.
-- Navigation/pagination remplace la projection; ne jamais accumuler les pages précédentes hors budget.
-- Aucun whole-corpus read, snapshot intégral IPC ou layout global.
+Auditer d'abord les scripts WebView2 déjà présents. Réutiliser/adapters le minimum nécessaire; ne crée pas un second framework de test UI si l'existant peut couvrir le besoin.
 
-## 2 — Remplacer les gros agrégats techniques
+La preuve doit utiliser uniquement des données synthétiques générées automatiquement. Aucun cerveau personnel, aucun chemin privé dans Git, aucune dépendance réseau.
 
-Le type technique peut rester pour préserver l'exactitude de `DEC-0031`, mais il ne doit plus être rendu comme une grande carte.
+## 2 — Rejeu produit obligatoire
 
-- Remplacer visuellement les rectangles `N enfants hors vue` par un indicateur compact attaché au parent.
-- Vocabulaire utilisateur seulement : p. ex. `+17 dossiers`, `+23 éléments`, `Voir la suite`.
-- Aucun `view_budget_or_focus`, `outside_current_projection`, `omitted_direct_children` ou vocabulaire interne visible.
-- Activer l'indicateur => projection suivante contenant de vrais nœuds issus de l'Index.
+Construire/générer une arborescence synthétique représentative d'au moins **5 000 éléments indexés** avec assez de dossiers imbriqués et de fichiers pour exercer réellement la projection dossier-first, les agrégats et plusieurs niveaux de navigation.
 
-## 3 — Layout et rendu
+Exécuter le vrai produit dans **WebView2** et contrôler au minimum :
 
-Adapter le moteur actuel, pas le remplacer.
+### 1366 × 768
 
-- vrais noms de dossiers clairement lisibles;
-- cartes plus proches du prototype historique : fond clair quadrillé, coins arrondis, ombre légère, racine sombre/dominante;
-- branches hiérarchiques nettes par profondeur;
-- espace vertical suffisant, aucune superposition;
-- relations transversales discrètes au repos, fortes autour de la sélection;
-- direction de palette documentée dans `REFERENCE_UX_OLD_FILETOPO.md`;
-- police système / Segoe UI sur Windows;
-- panneau contextuel droit et toolbar sans recouvrement.
+- première ouverture centrée sur racine/focus à une échelle lisible, sans fit exhaustif;
+- vrais noms de dossiers lisibles;
+- pas de superposition de cartes, toolbar ou panneau contextuel;
+- la carte peut déborder et reste pannable;
+- zoom molette/boutons fonctionne;
+- `Ajuster à l'écran` force explicitement le fit global;
+- `Réinitialiser` revient à une échelle lisible, pas à un fit exhaustif;
+- une pastille `+N éléments — Voir la suite` est petite et clairement distincte d'un dossier;
+- activation de la pastille produit une **nouvelle projection de vrais nœuds**, sans accumulation de la page précédente;
+- navigation dans une branche garde le focus visible sans changer arbitrairement l'échelle;
+- sélection d'un bloc et panneau de détails restent cohérents;
+- relations existantes autour d'une sélection restent visibles et sans régression.
 
-Ne copier aucun nom, chemin, capture ou donnée privée de l'ancien prototype dans Git.
+### 1920 × 1080
 
-## 4 — Caméra / navigation
+Rejouer les mêmes points essentiels et confirmer que l'interface utilise l'espace supplémentaire sans modifier le contrat de projection.
 
-Le problème principal actuel est le `fitView(world)` automatique après chaque projection.
+## 3 — Mesures / assertions obligatoires
 
-- Le supprimer comme comportement implicite.
-- Première ouverture : échelle lisible centrée sur racine/focus.
-- Entrer dans une branche : recentrer sur le nouveau focus sans miniaturiser toute la carte.
-- Conserver le zoom/pan utilisateur lorsque spatialement cohérent.
-- `Ajuster à l'écran` reste la seule action qui force un fit global.
-- `Réinitialiser` revient à une vue lisible centrée, pas à un fit exhaustif.
-- À 1366x768, autoriser le débordement + pan plutôt que réduire les cartes jusqu'à l'illisibilité.
+La preuve doit enregistrer de façon vérifiable :
 
-## 5 — Interactions existantes à préserver
+- total indexé >= 5 000;
+- `materializedCount <= 64` pour les projections ordinaires testées;
+- `nodes + aggregates <= 512` toujours;
+- après activation d'une continuation, les vrais nœuds de la nouvelle page sont différents de ceux omis de la page précédente et aucune concaténation hors budget n'est faite;
+- échelle caméra avant/après une navigation de branche : conservée sauf nécessité explicite liée aux bornes;
+- `Ajuster` modifie vers le fit attendu;
+- `Réinitialiser` utilise l'échelle lisible;
+- aucun texte visible ne contient `view_budget_or_focus`, `outside_current_projection`, `omitted_direct_children` ou « enfants directs hors vue »;
+- aucune fuite de chemin absolu dans DTO, DOM/texte visible, logs de preuve ou artefact;
+- 0 erreur console fatale.
 
-- clic/sélection;
-- clavier;
-- pan/zoom molette et boutons +/-;
-- panneau parent/enfants;
-- relations intra/inter-brain;
-- navigation vers une cible hors projection en demandant une nouvelle projection;
-- détails et diagnostics.
+Si le harnais permet des captures, conserver au minimum une preuve synthétique pour 1366×768 et une pour 1920×1080. Aucun nom/path personnel dans les images.
 
-**Ne pas ajouter `Ouvrir dans Explorer` dans cette tâche** si cela exige une nouvelle surface Rust. Cette fonction viendra plus tard via `brain_id + node_id`, jamais via chemin IPC.
+## 4 — Point d'attention du contrôle indépendant
 
-## 6 — Hors portée
+La pastille compacte conserve aujourd'hui un **créneau de layout de taille carte** pour éviter les chevauchements. Ne change pas ce choix par préférence esthétique. Observe-le dans le vrai rendu :
 
-Aucun watcher/incrémental, changements récents/vu-non-vu, FTS5/recherche avancée, préférence d'écran/icône, raccourci Bureau, Canvas/WebGL/Pixi obligatoire, réseau/cloud/LLM/MCP, GPU puissant ou nouvelle API filesystem frontend.
+- s'il garde une topographie claire, laisse-le;
+- s'il crée des trous/espacements qui rendent encore la carte inutilement énorme ou difficile à lire, corrige de la façon minimale dans le layout borné existant, sans créer un nouveau moteur.
 
-## 7 — Preuves obligatoires
+Même règle pour tout autre défaut : **preuve d'abord, correction ensuite**.
 
-### Rust
+## 5 — Corrections autorisées si le rejeu échoue
 
-Prouver au minimum :
+Uniquement dans la portée TASK-0033 :
 
-1. total projection <= 512;
-2. vue ordinaire <= 64 vrais blocs;
-3. ancestry/focus conservés;
-4. priorité dossiers;
-5. pagination/navigation remplace la projection sans accumulation;
-6. comptes d'omission exacts;
-7. fichier explicitement ciblé possible avec contexte borné;
-8. aucun parcours/layout global réintroduit.
+- projection/focus/pagination bornés;
+- géométrie/layout de la vue bornée;
+- taille/placement de la pastille;
+- caméra `readableView` / `recenterOnFocus` / reset / fit;
+- CSS/SVG nécessaires à la lisibilité;
+- harnais de preuve et tests associés.
 
-### TypeScript
+Interdits : nouveau renderer, second index/store/catalogue, snapshot complet frontend, watcher/incrémental, FTS5, Explorer, nouvelle permission filesystem, cloud/réseau/LLM/MCP, GPU requis, ou nouvelle TASK.
 
-Prouver :
+## 6 — Régressions/tests
 
-1. aucun gros bloc d'agrégat;
-2. aucun vocabulaire technique d'agrégat visible;
-3. indicateur compact activable;
-4. aucun auto-fit global sur changement de projection;
-5. `Ajuster à l'écran` fonctionne explicitement;
-6. reset/recentrage conserve une échelle lisible;
-7. sélection, clavier, détails et relations sans régression.
+Après le rejeu — et après toute correction éventuelle — exécuter au minimum :
 
-### Rejeu WebView2
+- tests Rust ciblés projection + suite Rust complète `cargo test --offline`;
+- tests TypeScript ciblés puis suite complète;
+- `pnpm check`;
+- `pnpm build`;
+- `cargo build --offline`;
+- `cargo fmt --check` sur les fichiers Rust touchés;
+- `cargo clippy --all-targets --offline -- -D warnings` et comparaison honnête avec la dette de 26 erreurs;
+- `git diff --check`.
 
-Utiliser **uniquement une arborescence synthétique générée**, idéalement >= 5 000 éléments. Vérifier 1366x768 et 1920x1080 si possible : vrais noms visibles, carte non comprimée, pan/zoom, navigation de branche, relations sélectionnées, borne respectée, aucune fuite de chemin, 0 erreur console fatale.
+Aucun nouveau diagnostic attribuable à cette passe.
 
-## 8 — Validation générale
+## 7 — Documentation
 
-Exécuter les suites ciblées puis complètes pertinentes : Rust, TypeScript, `pnpm check`, `pnpm build`, `cargo build --offline`, `git diff --check`, `cargo fmt --check` sur les fichiers touchés. Exécuter Clippy strict et rapporter honnêtement la dette historique; aucun nouveau diagnostic attribuable à TASK-0033.
+Mettre à jour uniquement ce qui est nécessaire :
 
-## 9 — Documentation / sortie
+- `docs/tasks/TASK-0033-v1-topographic-ux.md`;
+- `docs/ai/CURRENT_STATE.md`;
+- `docs/ai/HANDOFF.md`;
+- `docs/ai/NEXT_ACTION.md`;
+- `docs/ai/VALIDATION.md`;
+- `docs/ai/CHANGELOG_AI.md`;
+- `.orchestrator/RESULT.md`;
+- artefacts/captures WebView2 synthétiques nécessaires.
 
-Mettre à jour après implémentation :
+Corriger aussi la petite incohérence documentaire signalée par `ACTION-0050` : la première ouverture utilise `readableView`, pas `fitView`.
 
-- `docs/tasks/TASK-0033-v1-topographic-ux.md`
-- `docs/ai/CURRENT_STATE.md`
-- `docs/ai/HANDOFF.md`
-- `docs/ai/NEXT_ACTION.md`
-- `docs/ai/VALIDATION.md`
-- `docs/ai/CHANGELOG_AI.md`
-- `.orchestrator/RESULT.md`
-
-À la fin :
+## 8 — État final attendu
 
 - `TASK-0033 = IMPLEMENTED`, **jamais auto-VERIFIED**;
 - `DEC-0034 = APPROVED`;
-- aucun TASK-0034 précréé;
-- `NEXT_ACTION = contrôle indépendant de TASK-0033`;
+- aucune `TASK-0034` précréée;
+- `NEXT_ACTION = nouveau contrôle indépendant de TASK-0033`;
 - commit + push uniquement sur `build/v0.2-a17-v1-topographic-ux`;
-- aucun PR/merge/tag/release sauf instruction explicite ultérieure de l'orchestrateur.
+- aucun PR/merge/tag/release.
 
-Dans `.orchestrator/RESULT.md`, fournir HEAD, commits, fichiers modifiés, décisions techniques, résultats de tests, preuve WebView2, limites restantes, état Clippy, confirmation confidentialité, `TASK_STATUS: IMPLEMENTED`, puis `NEXT: independent control only`.
+Dans `.orchestrator/RESULT.md`, fournir : HEAD/commits, harnais réutilisé ou adapté, taille de l'arbre synthétique, résultats séparés 1366×768 et 1920×1080, métriques caméra/projection, captures/artefacts créés, corrections éventuellement nécessaires et pourquoi, tests complets, état Clippy, confidentialité, `TASK_STATUS: IMPLEMENTED`, puis `NEXT: independent recontrol only`.
