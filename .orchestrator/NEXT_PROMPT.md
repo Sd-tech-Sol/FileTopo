@@ -1,193 +1,155 @@
-# NEXT_PROMPT — TASK-0032 / CORRECTIVE PASS — REAL_ROOT Privacy + Legacy Index Compatibility
+# NEXT_PROMPT — TASK-0033 — V1 Progressive Topographic UX
 
 **TARGET_AGENT:** CLAUDE CODE  
 **STATUS:** READY  
-**OWNER:** orchestrateur technique indépendant  
-**MODE:** correction ciblée de TASK-0032 — ne créer aucune nouvelle TASK/DEC  
-**TASK:** `TASK-0032 — V1 REAL_ROOT — Controlled Local Folder Onboarding`  
-**BRANCHE:** `build/v0.2-a16-v1-real-root`
+**OWNER:** orchestrateur ChatGPT  
+**MODE:** exécution technique ciblée  
+**TASK:** `TASK-0033 — V1 Progressive Topographic UX`  
+**BRANCHE:** `build/v0.2-a17-v1-topographic-ux`
 
 ## /goal
 
-Le contrôle indépendant de TASK-0032 a trouvé **deux défauts bloquants**. Corriger uniquement ces défauts, leurs tests et leur documentation. Ne pas élargir la V1, ne pas utiliser de donnée personnelle et ne pas créer TASK-0033/DEC-0034.
-
-TASK-0032 reste `IMPLEMENTED`, **pas VERIFIED**, jusqu'au prochain contrôle indépendant.
+Reprendre FileTopo exactement à l'état du dépôt et implémenter `TASK-0033` sans nouvelle architecture. Conserver Tauri + Rust + SQLite + React/TypeScript, `REAL_ROOT`, l'Index canonique, la projection bornée et le renderer SVG existant. Faire converger la carte vers la lisibilité de l'ancien FileTopo : vrais noms de dossiers en blocs, branches lisibles, navigation spatiale, pan/zoom, panneau contextuel et relations visibles. La carte normale doit viser quelques dizaines de blocs utiles, pas 256 cartes + agrégats techniques. Ne jamais envoyer le corpus complet ni un chemin absolu au frontend.
 
 ---
 
-## 0 — Préconditions et Git
+## 0 — Préconditions
 
-1. Appliquer `AGENTS.md`, `CLAUDE.md` et les protocoles actifs.
-2. `git fetch origin`, puis fast-forward uniquement.
-3. Branche attendue : `build/v0.2-a16-v1-real-root`.
-4. HEAD distant attendu au départ : `efec2ea94e7e0cb73c064ed92baaccc5ac8a1f2c`.
-5. Le point de départ orchestration de TASK-0032 reste `05fc37137f6a6983b020d993e838176341ef3fc4`; gel `c3507bf`, code `7302291`, preuve `f00fb55`, docs `2ce3a17`, RESULT-pin `efec2ea`.
-6. `origin/main` doit rester `1a7d652ca48281c1687f6d1404c56a1404df91d8`.
-7. X5 = 36 et doit rester inchangé.
-8. Arbre propre avant écriture. Toute divergence inexpliquée : STOP/BLOCKED.
+1. Lire `AGENTS.md`, `CLAUDE.md` et les protocoles actifs.
+2. `git fetch origin`, fast-forward uniquement.
+3. Travailler uniquement sur `build/v0.2-a17-v1-topographic-ux`.
+4. Vérifier arbre propre avant code; divergence inexpliquée => `BLOCKED`.
+5. `TASK-0032` est désormais `VERIFIED` par `docs/reviews/ACTION-0049-independent-recontrol.md`.
+6. Lire avant code :
+   - `docs/tasks/TASK-0033-v1-topographic-ux.md`
+   - `docs/decisions/DEC-0034-progressive-topographic-view.md`
+   - `docs/product/REFERENCE_UX_OLD_FILETOPO.md`
+   - `docs/decisions/DEC-0031-one-canonical-brain-index-and-bounded-projection.md`
+   - `docs/decisions/DEC-0033-real-root-privacy-and-source-binding.md`
+   - `src-tauri/src/map/projection.rs`
+   - `src-tauri/src/map/layout.rs`
+   - `src-tauri/src/map/store.rs`
+   - `src/map/MapView.tsx`
+   - `src/map/MapApp.tsx`
+   - `src/map/types.ts`
+7. Audit de réutilisation d'abord : utiliser le SVG, la sélection, les relations, le panneau et le layout borné existants. Aucun nouveau renderer/store/index/catalogue.
 
-Aucune nouvelle branche nécessaire : corriger TASK-0032 sur sa branche actuelle et pousser uniquement celle-ci.
+## 1 — Projection topographique
 
----
+- Garder `VIEW_BUDGET = 512` comme borne dure, agrégats inclus.
+- Introduire une cible visuelle ordinaire de **<= 64 vrais blocs**.
+- Racine + ancestry du focus toujours prioritaires.
+- Dans la vue d'ensemble, prioriser les `DIRECTORY`; les fichiers restent dans l'Index et accessibles aux détails/analyses mais ne doivent pas saturer la carte.
+- Un fichier explicitement ciblé par navigation/relation peut être matérialisé avec contexte borné.
+- Navigation/pagination remplace la projection; ne jamais accumuler les pages précédentes hors budget.
+- Aucun whole-corpus read, snapshot intégral IPC ou layout global.
 
-## 1 — DÉFAUT BLOQUANT A : `dialog:allow-open` viole la frontière de confidentialité
+## 2 — Remplacer les gros agrégats techniques
 
-### Constat indépendant
+Le type technique peut rester pour préserver l'exactitude de `DEC-0031`, mais il ne doit plus être rendu comme une grande carte.
 
-`src-tauri/capabilities/default.json` accorde actuellement `dialog:allow-open` au WebView. Or cette permission Tauri **active la commande frontend `open` du plugin dialog**. Le code officiel du plugin accepte un `default_path: Option<PathBuf>` et retourne le ou les chemins choisis au frontend.
+- Remplacer visuellement les rectangles `N enfants hors vue` par un indicateur compact attaché au parent.
+- Vocabulaire utilisateur seulement : p. ex. `+17 dossiers`, `+23 éléments`, `Voir la suite`.
+- Aucun `view_budget_or_focus`, `outside_current_projection`, `omitted_direct_children` ou vocabulaire interne visible.
+- Activer l'indicateur => projection suivante contenant de vrais nœuds issus de l'Index.
 
-Cela contredit directement `DEC-0033 A/B` :
+## 3 — Layout et rendu
 
-- le WebView ne doit jamais pouvoir nommer un emplacement disque;
-- le chemin absolu ne doit jamais traverser l'IPC vers le WebView;
-- le seul geste autorisé doit être notre commande Rust `map_brain_choose_real_root()`, sans argument, qui ouvre elle-même le dialogue natif et garde le chemin côté Rust.
+Adapter le moteur actuel, pas le remplacer.
 
-### Correction obligatoire
+- vrais noms de dossiers clairement lisibles;
+- cartes plus proches du prototype historique : fond clair quadrillé, coins arrondis, ombre légère, racine sombre/dominante;
+- branches hiérarchiques nettes par profondeur;
+- espace vertical suffisant, aucune superposition;
+- relations transversales discrètes au repos, fortes autour de la sélection;
+- direction de palette documentée dans `REFERENCE_UX_OLD_FILETOPO.md`;
+- police système / Segoe UI sur Windows;
+- panneau contextuel droit et toolbar sans recouvrement.
 
-1. **Retirer `dialog:allow-open` de la capability du WebView.**
-2. Garder `tauri_plugin_dialog::init()` si nécessaire pour l'API Rust `app.dialog()`.
-3. Ne donner aucune permission `dialog:default`, `dialog:allow-save`, `fs:*`, `shell:*` ou autre surface filesystem au WebView.
-4. Garder `map_brain_choose_real_root()` comme seule porte produit d'ajout d'une racine : aucun argument de chemin.
-5. Corriger `DEC-0033 H/I`, TASK-0032 et les docs qui affirment actuellement que `dialog:allow-open` est souhaitable. La règle correcte est : **plugin initialisé côté Rust, commande frontend du plugin non autorisée**.
+Ne copier aucun nom, chemin, capture ou donnée privée de l'ancien prototype dans Git.
 
-### Preuves obligatoires A
+## 4 — Caméra / navigation
 
-- Test structurel : capability sans `dialog:allow-open`, `dialog:default`, `dialog:allow-save`, `fs:` et `shell:`.
-- Test structurel : `map_brain_choose_real_root` est enregistré et ne prend aucun chemin/root/folder/directory/Path/PathBuf venant du WebView; `choose_collection` reste non enregistré.
-- **Preuve runtime WebView2 si réalisable sans donnée personnelle :** un `invoke` direct de la commande frontend du plugin dialog (`plugin:dialog|open` ou nom réellement utilisé par la version installée) doit être refusé par la capability. Cette preuve ne doit pas ouvrir de dialogue ni inclure de chemin réel. Si l'invocation exacte diffère, l'établir depuis les sources installées/officielles et documenter le résultat.
-- Le custom command Rust doit toujours compiler et rester enregistré.
+Le problème principal actuel est le `fitView(world)` automatique après chaque projection.
 
----
+- Le supprimer comme comportement implicite.
+- Première ouverture : échelle lisible centrée sur racine/focus.
+- Entrer dans une branche : recentrer sur le nouveau focus sans miniaturiser toute la carte.
+- Conserver le zoom/pan utilisateur lorsque spatialement cohérent.
+- `Ajuster à l'écran` reste la seule action qui force un fit global.
+- `Réinitialiser` revient à une vue lisible centrée, pas à un fit exhaustif.
+- À 1366x768, autoriser le débordement + pan plutôt que réduire les cartes jusqu'à l'illisibilité.
 
-## 2 — DÉFAUT BLOQUANT B : un index pré-DEC-0033 ne peut pas être republié comme la décision le promet
+## 5 — Interactions existantes à préserver
 
-### Constat indépendant
+- clic/sélection;
+- clavier;
+- pan/zoom molette et boutons +/-;
+- panneau parent/enfants;
+- relations intra/inter-brain;
+- navigation vers une cible hors projection en demandant une nouvelle projection;
+- détails et diagnostics.
 
-Avant TASK-0032, `BrainIndex::replace` écrivait notamment `brain_id`, `fixture_id`, `label`, `node_count`, etc., **mais pas `source_ref` ni `source_kind`**.
+**Ne pas ajouter `Ouvrir dans Explorer` dans cette tâche** si cela exige une nouvelle surface Rust. Cette fonction viendra plus tard via `brain_id + node_id`, jamais via chemin IPC.
 
-Le nouveau `open_store()` refuse correctement un index sans `source_ref`. Cependant `publish_map()` fait actuellement, pour tout fichier existant :
+## 6 — Hors portée
 
-`if reused { open_store(paths, brain)?; }`
+Aucun watcher/incrémental, changements récents/vu-non-vu, FTS5/recherche avancée, préférence d'écran/icône, raccourci Bureau, Canvas/WebGL/Pixi obligatoire, réseau/cloud/LLM/MCP, GPU puissant ou nouvelle API filesystem frontend.
 
-Donc **Refresh et Rebuild sont eux aussi refusés avant le scan** sur un ancien index non bindé. Cela contredit `DEC-0033 D`, qui dit qu'un ancien index est refusé à l'ouverture mais qu'une actualisation explicite peut le republier avec le nouveau binding.
+## 7 — Preuves obligatoires
 
-### Contrat corrigé obligatoire
+### Rust
 
-#### Open
+Prouver au minimum :
 
-- Un index sans binding `source_kind + source_ref` reste refusé par `map_open` avec `map_source_mismatch` (ou erreur équivalente explicite).
-- Aucun scan automatique, aucune suppression.
+1. total projection <= 512;
+2. vue ordinaire <= 64 vrais blocs;
+3. ancestry/focus conservés;
+4. priorité dossiers;
+5. pagination/navigation remplace la projection sans accumulation;
+6. comptes d'omission exacts;
+7. fichier explicitement ciblé possible avec contexte borné;
+8. aucun parcours/layout global réintroduit.
 
-#### Refresh/Rebuild d'un index déjà bindé
+### TypeScript
 
-- Vérifier **brain_id + source_kind + source_ref**, pas seulement `source_ref`.
-- Toute divergence est refusée **avant lecture de source**, sans suppression.
+Prouver :
 
-#### Refresh/Rebuild d'un index legacy non bindé
+1. aucun gros bloc d'agrégat;
+2. aucun vocabulaire technique d'agrégat visible;
+3. indicateur compact activable;
+4. aucun auto-fit global sur changement de projection;
+5. `Ajuster à l'écran` fonctionne explicitement;
+6. reset/recentrage conserve une échelle lisible;
+7. sélection, clavier, détails et relations sans régression.
 
-Il faut un chemin de compatibilité étroit et prouvable, sans affaiblir REAL_ROOT :
+### Rejeu WebView2
 
-- seuls les cerveaux `SYNTHETIC_FIXTURE` peuvent être reconnus comme index legacy pré-DEC-0033, puisqu'aucun `REAL_ROOT` n'existait avant cette décision;
-- exiger un schéma canonique compatible, le bon `brain_id`, l'absence de `source_ref/source_kind` **et** `fixture_id == brain.source_ref`;
-- alors seulement une action explicite Refresh/Rebuild peut scanner la fixture connue et republier transactionnellement le même index avec `source_kind` + `source_ref` modernes;
-- conserver `index_id`; avancer `revision` uniquement lors de la publication réussie;
-- si scan/publication échoue, l'ancien index reste byte/logiquement intact et toujours refusé par Open tant qu'il n'a pas été republié;
-- **ne jamais appliquer cette voie legacy à un REAL_ROOT**;
-- ne jamais supprimer l'ancien fichier pour “réparer”.
+Utiliser **uniquement une arborescence synthétique générée**, idéalement >= 5 000 éléments. Vérifier 1366x768 et 1920x1080 si possible : vrais noms visibles, carte non comprimée, pan/zoom, navigation de branche, relations sélectionnées, borne respectée, aucune fuite de chemin, 0 erreur console fatale.
 
-Si l'architecture permet une stratégie encore plus étroite et plus sûre, elle est acceptable, mais elle doit satisfaire exactement la compatibilité ci-dessus.
+## 8 — Validation générale
 
-### Source binding complet
+Exécuter les suites ciblées puis complètes pertinentes : Rust, TypeScript, `pnpm check`, `pnpm build`, `cargo build --offline`, `git diff --check`, `cargo fmt --check` sur les fichiers touchés. Exécuter Clippy strict et rapporter honnêtement la dette historique; aucun nouveau diagnostic attribuable à TASK-0033.
 
-L'index écrit déjà `source_kind` et `source_ref`. `open_store` et la validation de publication doivent vérifier **les deux**. Un `source_ref` égal avec `source_kind` différent doit être refusé.
+## 9 — Documentation / sortie
 
-### Preuves obligatoires B
+Mettre à jour après implémentation :
 
-Ajouter un test construit avec **la vraie forme de métadonnées de l'index TASK-0031** :
-
-1. index legacy valide avec `brain_id`, `fixture_id`, projection contract, identity/revision, mais sans `source_kind/source_ref`;
-2. `map_open` refuse explicitement et ne modifie rien;
-3. Refresh explicite sur le cerveau synthétique correspondant réussit;
-4. `index_id` conservé, `revision +1`, `source_kind/source_ref` ajoutés;
-5. `map_open` fonctionne ensuite sans lire la source;
-6. un échec de refresh avant publication conserve l'ancien index;
-7. un legacy non bindé présenté comme `REAL_ROOT` est refusé sans scan et sans mutation;
-8. `source_ref` identique + `source_kind` différent est refusé;
-9. binding `source_ref` différent est refusé comme aujourd'hui.
-
-Ne pas affaiblir RR1-RR10 existants.
-
----
-
-## 3 — Confidentialité / portée inchangée
-
-- **Aucun cerveau personnel.** Utiliser uniquement des tempdirs/arbres générés par tests.
-- Aucun chemin absolu dans Git, docs, logs ou artefacts.
-- Aucun réseau, cloud, LLM, MCP, Graphify ou télémétrie.
-- Aucun watcher/incrémental, aucun FTS, aucun redesign, aucun changement de renderer.
-- Aucun nouveau scanner, index canonique, catalogue ou store.
-- Ne pas modifier `main`, ne pas créer PR/merge/tag/release.
-- Ne pas sceller de nouveaux artefacts X5.
-
----
-
-## 4 — Validation
-
-Exécuter au minimum :
-
-- tests Rust ciblés privacy/capability/source-binding/legacy upgrade;
-- suite Rust complète `cargo test --offline`;
-- tests TypeScript ciblés puis `pnpm test` complet;
-- `pnpm check`;
-- `pnpm build`;
-- `cargo build --offline`;
-- `cargo fmt --check` sur les fichiers touchés et rapport honnête de la dette globale;
-- `cargo clippy --all-targets --offline -- -D warnings`; la dette historique peut rester, mais aucun nouveau diagnostic de cette correction;
-- `git diff --check`.
-
-Rejouer WebView2 pour la frontière de permission frontend et pour le cycle REAL_ROOT synthétique si possible. Toute preuve reste **non canonique** jusqu'au contrôle indépendant.
-
----
-
-## 5 — Documentation finale
-
-Mettre à jour uniquement ce qui est nécessaire :
-
-- `docs/tasks/TASK-0032-v1-real-root.md`;
-- `docs/decisions/DEC-0033-real-root-privacy-and-source-binding.md`;
-- `docs/ai/CURRENT_STATE.md`;
-- `docs/ai/NEXT_ACTION.md`;
-- `docs/ai/HANDOFF.md`;
-- `docs/ai/VALIDATION.md`;
-- `docs/ai/CHANGELOG_AI.md`;
-- `docs/product/FEATURE_MATRIX.md` seulement si un état factuel doit être corrigé;
-- `.orchestrator/RESULT.md`;
-- artefact TASK-0032 correctif seulement si nécessaire.
+- `docs/tasks/TASK-0033-v1-topographic-ux.md`
+- `docs/ai/CURRENT_STATE.md`
+- `docs/ai/HANDOFF.md`
+- `docs/ai/NEXT_ACTION.md`
+- `docs/ai/VALIDATION.md`
+- `docs/ai/CHANGELOG_AI.md`
+- `.orchestrator/RESULT.md`
 
 À la fin :
 
-- `TASK-0032 = IMPLEMENTED`, jamais auto-VERIFIED;
-- `DEC-0033 = APPROVED`, corrigée pour refléter la vraie frontière de permission;
-- `NEXT_ACTION` = **contrôle indépendant de TASK-0032 uniquement**;
-- aucune TASK-0033/DEC-0034 précréée.
+- `TASK-0033 = IMPLEMENTED`, **jamais auto-VERIFIED**;
+- `DEC-0034 = APPROVED`;
+- aucun TASK-0034 précréé;
+- `NEXT_ACTION = contrôle indépendant de TASK-0033`;
+- commit + push uniquement sur `build/v0.2-a17-v1-topographic-ux`;
+- aucun PR/merge/tag/release sauf instruction explicite ultérieure de l'orchestrateur.
 
----
-
-## 6 — RESULT.md
-
-Rapporter clairement :
-
-- HEAD/branche;
-- commits de correction;
-- correction A et preuve que le WebView ne peut plus appeler directement le picker plugin;
-- correction B et preuve de migration explicite d'un index legacy synthétique sans perte d'identité;
-- vérification `source_kind + source_ref`;
-- suites exécutées et résultats;
-- limites restantes;
-- X5 = 36;
-- main inchangée;
-- `TASK_STATUS: IMPLEMENTED`;
-- `DECISION_STATUS: APPROVED`;
-- `NEXT: independent control only`.
-
-Commit et push uniquement sur `build/v0.2-a16-v1-real-root`.
+Dans `.orchestrator/RESULT.md`, fournir HEAD, commits, fichiers modifiés, décisions techniques, résultats de tests, preuve WebView2, limites restantes, état Clippy, confirmation confidentialité, `TASK_STATUS: IMPLEMENTED`, puis `NEXT: independent control only`.
