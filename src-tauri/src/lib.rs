@@ -622,13 +622,49 @@ fn map_brain_update(
 async fn map_open(
     app: tauri::AppHandle,
     brain_id: String,
-    rebuild: bool,
+) -> Result<map::commands::MapOpenReport, String> {
+    let (paths, brain) = resolve_brain(&app, &brain_id)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        map::commands::open_map(&paths, &brain).map_err(String::from)
+    })
+    .await
+    .map_err(|_| "map_worker_failed".to_string())?
+}
+
+#[tauri::command]
+async fn map_refresh(
+    app: tauri::AppHandle,
+    brain_id: String,
 ) -> Result<map::commands::MapBuildReport, String> {
     let (paths, brain) = resolve_brain(&app, &brain_id)?;
-    // Scanning and indexing block; keeping them off the UI thread is what lets
-    // the frame-time measurement of `H9` mean anything at all.
     tauri::async_runtime::spawn_blocking(move || {
-        map::commands::build_map(&paths, &brain, rebuild).map_err(String::from)
+        map::commands::refresh_map(&paths, &brain).map_err(String::from)
+    })
+    .await
+    .map_err(|_| "map_worker_failed".to_string())?
+}
+
+#[tauri::command]
+async fn map_rebuild(
+    app: tauri::AppHandle,
+    brain_id: String,
+) -> Result<map::commands::MapBuildReport, String> {
+    let (paths, brain) = resolve_brain(&app, &brain_id)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        map::commands::rebuild_map(&paths, &brain).map_err(String::from)
+    })
+    .await
+    .map_err(|_| "map_worker_failed".to_string())?
+}
+
+#[tauri::command]
+async fn map_prepare_synthetic_source(
+    app: tauri::AppHandle,
+    brain_id: String,
+) -> Result<(), String> {
+    let (paths, brain) = resolve_brain(&app, &brain_id)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        map::commands::prepare_synthetic_source(&paths, &brain).map_err(String::from)
     })
     .await
     .map_err(|_| "map_worker_failed".to_string())?
@@ -739,8 +775,7 @@ fn map_content_identical_members(
     hash: String,
 ) -> Result<Vec<map::content_signals::ContentObservation>, String> {
     let (paths, brain) = resolve_brain(&app, &brain_id)?;
-    map::content_signals::identical_content_members(&paths, &brain, &hash)
-        .map_err(String::from)
+    map::content_signals::identical_content_members(&paths, &brain, &hash).map_err(String::from)
 }
 
 #[tauri::command]
@@ -749,8 +784,7 @@ fn map_content_diagnostics(
     brain_id: String,
 ) -> Result<Vec<map::content_signals::ContentObservation>, String> {
     let (paths, brain) = resolve_brain(&app, &brain_id)?;
-    map::content_signals::content_observation_diagnostics(&paths, &brain)
-        .map_err(String::from)
+    map::content_signals::content_observation_diagnostics(&paths, &brain).map_err(String::from)
 }
 
 #[tauri::command]
@@ -832,12 +866,12 @@ async fn map_task0024_dr15_prepare(
     }
     #[cfg(debug_assertions)]
     {
-    let (paths, brain) = resolve_brain(&app, map::rule_engine::TASK0024_DR15_BRAIN_ID)?;
-    tauri::async_runtime::spawn_blocking(move || {
-        map::rule_engine::prepare_task0024_dr15(&paths, &brain).map_err(String::from)
-    })
-    .await
-    .map_err(|_| "task0024_dr15_worker_failed".to_string())?
+        let (paths, brain) = resolve_brain(&app, map::rule_engine::TASK0024_DR15_BRAIN_ID)?;
+        tauri::async_runtime::spawn_blocking(move || {
+            map::rule_engine::prepare_task0024_dr15(&paths, &brain).map_err(String::from)
+        })
+        .await
+        .map_err(|_| "task0024_dr15_worker_failed".to_string())?
     }
 }
 
@@ -963,8 +997,7 @@ fn map_host_info(app: tauri::AppHandle) -> map::commands::HostInfo {
         // Reserve `X11`: the same engine, on a brain the legacy slice never
         // covered. One pass, because what it proves is genericity rather than
         // persistence across a restart.
-        auto_generic_relations: std::env::var("FILETOPO_AUTO_X11")
-            .is_ok_and(|value| value == "1"),
+        auto_generic_relations: std::env::var("FILETOPO_AUTO_X11").is_ok_and(|value| value == "1"),
         // `SR15`: the review queue and the memory of a decision, in two real
         // processes on one variant — pass 1 decides, pass 2 restarts.
         auto_sr15_pass: std::env::var("FILETOPO_AUTO_SR15")
@@ -1029,8 +1062,7 @@ fn map_relations_reject(
     suggestion_key: String,
 ) -> Result<map::relation_commands::RelationsOverview, String> {
     let (paths, brain) = resolve_brain(&app, &brain_id)?;
-    map::relation_commands::reject_suggestion(&paths, &brain, &suggestion_key)
-        .map_err(String::from)
+    map::relation_commands::reject_suggestion(&paths, &brain, &suggestion_key).map_err(String::from)
 }
 
 /// `F-044` — one bounded page of the suggestions a brain is waiting on.
@@ -1220,6 +1252,9 @@ pub fn run() {
             map_brain_activate,
             map_brain_update,
             map_open,
+            map_refresh,
+            map_rebuild,
+            map_prepare_synthetic_source,
             map_snapshot,
             map_view,
             map_resolve_node,
@@ -1370,8 +1405,16 @@ mod integration_tests {
                 "TASK-0023 needs `{required}` reachable from the WebView"
             );
         }
-        assert!(!exposed.iter().any(|name| name.contains("same_hash_relation")));
-        assert!(!exposed.iter().any(|name| name.contains("content_suggestion")));
+        assert!(
+            !exposed
+                .iter()
+                .any(|name| name.contains("same_hash_relation"))
+        );
+        assert!(
+            !exposed
+                .iter()
+                .any(|name| name.contains("content_suggestion"))
+        );
     }
 
     #[test]

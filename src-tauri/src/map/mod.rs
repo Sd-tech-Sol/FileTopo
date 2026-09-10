@@ -83,6 +83,8 @@ pub enum MapError {
     FixtureMismatch(String),
     #[error("map_node_missing: {0}")]
     NodeMissing(i64),
+    #[error("map_index_incompatible: {0}")]
+    IndexIncompatible(String),
     #[error("map_not_built: {0}")]
     NotBuilt(String),
     #[error("map_artifact_rejected: {0}")]
@@ -123,7 +125,11 @@ impl Rng {
     pub fn new(seed: u64) -> Self {
         // A zero state is absorbing for xorshift; the fixtures never use it,
         // but the type refuses to be constructed into that trap anyway.
-        Self(if seed == 0 { 0x9e37_79b9_7f4a_7c15 } else { seed })
+        Self(if seed == 0 {
+            0x9e37_79b9_7f4a_7c15
+        } else {
+            seed
+        })
     }
 
     pub fn next_u64(&mut self) -> u64 {

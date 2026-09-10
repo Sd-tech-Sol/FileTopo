@@ -1,3 +1,4 @@
+import { prepareScenarioIndex } from "./lifecycle";
 import { settle, waitForCompositionReady } from "./compositionDriver";
 import { afterPaint } from "./measure";
 import { pressRealKey, waitUntil, type RealKeyEvidence, type ScenarioLog } from "./realInput";
@@ -13,7 +14,6 @@ import type {
   ExactDuplicateMemberPage,
   ExactDuplicateSummary,
   HostInfo,
-  MapBuildReport,
   RelationsOverview,
   Task0026Ed15Preparation,
 } from "./types";
@@ -327,10 +327,7 @@ async function passOne(deps: ExactDuplicateScenarioDeps) {
 }
 
 async function passTwo(deps: ExactDuplicateScenarioDeps) {
-  const rebuiltMap = await deps.invoke<MapBuildReport>("map_open", {
-    brainId: ALPHA,
-    rebuild: true,
-  });
+  const rebuiltMap = await prepareScenarioIndex(deps.invoke, ALPHA, "map_rebuild");
   const persisted = await summary(deps, ALPHA);
   requireFact(persisted.availability === "AVAILABLE", "résumé non persisté au restart");
   requireFact(persisted.exactGroupCount === 125, "groupes non persistés au restart");

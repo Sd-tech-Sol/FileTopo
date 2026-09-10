@@ -1,3 +1,4 @@
+import { prepareScenarioIndex } from "./lifecycle";
 /** `EC15` — exact content observations in the real Tauri/WebView2 host. */
 
 import {
@@ -25,7 +26,6 @@ import type {
   CrossRelationsOverview,
   FixtureIntegrity,
   HostInfo,
-  MapBuildReport,
   MapNode,
   MapSnapshot,
   RelationsOverview,
@@ -206,7 +206,7 @@ async function firstPass(deps: ContentScenarioDeps, evidence: Record<string, unk
   await waitForCompositionReady();
   await showOnlyAndWait(deps, ALPHA);
 
-  const alphaBuild = await invoke<MapBuildReport>("map_open", { brainId: ALPHA, rebuild: true });
+  const alphaBuild = await prepareScenarioIndex(invoke, ALPHA, "map_rebuild");
   const alphaSnapshot = await invoke<MapSnapshot>("map_snapshot", { brainId: ALPHA });
   const alphaInitial = {
     activeBrainId: (await invoke<BrainCatalogView>("map_brains")).activeBrainId,
@@ -280,7 +280,7 @@ async function firstPass(deps: ContentScenarioDeps, evidence: Record<string, unk
   );
   requireFact(focusGamma.activationIsTrusted === true, "Gamma non activé par interaction réelle");
   await settle();
-  const gammaBuild = await invoke<MapBuildReport>("map_open", { brainId: GAMMA, rebuild: false });
+  const gammaBuild = await prepareScenarioIndex(invoke, GAMMA, "map_refresh");
   const gammaSnapshot = await invoke<MapSnapshot>("map_snapshot", { brainId: GAMMA });
   const edgesBeforeGammaHash = graphEdgeState();
   const gammaCampaign = await observeByRealKey(deps);
@@ -297,7 +297,7 @@ async function firstPass(deps: ContentScenarioDeps, evidence: Record<string, unk
 
   const alphaGenerationBeforeRebuild = (await summary(deps, ALPHA)).currentGenerationId;
   const alphaDigestBeforeRebuild = alphaObservation.hashHex;
-  await invoke<MapBuildReport>("map_open", { brainId: ALPHA, rebuild: true });
+  await prepareScenarioIndex(invoke, ALPHA, "map_rebuild");
   const alphaAfterRebuild = await summary(deps, ALPHA);
   const alphaObservationAfterRebuild = await persistedObservation(deps, ALPHA);
   const alphaIntegrityAfter = await invoke<FixtureIntegrity>("map_integrity", { brainId: ALPHA });

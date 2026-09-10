@@ -1,3 +1,4 @@
+import { prepareScenarioIndex } from "./lifecycle";
 /**
  * `M12` — inter-brain relations in the **real host**, unattended.
  *
@@ -728,10 +729,7 @@ async function firstPass(
   log("info", "M12.21: reconstruction des trois index");
   const rebuilds: unknown[] = [];
   for (const brainId of ["brain-alpha", "brain-gamma", "brain-beta"]) {
-    const report = await invoke<{ indexPath: string; rebuilt: boolean; nodeCount: number }>(
-      "map_open",
-      { brainId, rebuild: true },
-    );
+    const report = await prepareScenarioIndex(invoke, brainId, "map_rebuild");
     rebuilds.push({
       brainId,
       rebuilt: report.rebuilt,

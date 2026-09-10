@@ -1,3 +1,4 @@
+import { prepareScenarioIndex } from "./lifecycle";
 /**
  * `L12` — the composed view in the **real host**, unattended.
  *
@@ -60,7 +61,7 @@ import type {
   BrainCatalogView,
   BrainNodeRef,
   HostInfo,
-  MapBuildReport,
+  MapOpenReport,
   MapSnapshot,
   RelationsOverview,
 } from "./types";
@@ -238,14 +239,8 @@ async function firstPass(
   // --- 4. one SVG, two territories, 12 + 12 --------------------------------
   const alphaSnapshot = await invoke<MapSnapshot>("map_snapshot", { brainId: "brain-alpha" });
   const gammaSnapshot = await invoke<MapSnapshot>("map_snapshot", { brainId: "brain-gamma" });
-  const alphaReport = await invoke<MapBuildReport>("map_open", {
-    brainId: "brain-alpha",
-    rebuild: false,
-  });
-  const gammaReport = await invoke<MapBuildReport>("map_open", {
-    brainId: "brain-gamma",
-    rebuild: false,
-  });
+  const alphaReport = await prepareScenarioIndex(invoke, "brain-alpha", "map_refresh");
+  const gammaReport = await prepareScenarioIndex(invoke, "brain-gamma", "map_refresh");
   const alphaRectsComposed = rectsOf("brain-alpha");
   evidence.step4_c2 = {
     canvases: canvasCount(),
@@ -517,9 +512,7 @@ async function firstPass(
     betaStillInCatalogue: (await invoke<BrainCatalogView>("map_brains")).brains.some(
       (brain) => brain.brainId === "brain-beta",
     ),
-    betaIndexStillThere: (
-      await invoke<MapBuildReport>("map_open", { brainId: "brain-beta", rebuild: false })
-    ).indexPath,
+    betaIndexStillThere: (await invoke<MapOpenReport>("map_open", { brainId: "brain-beta" })).indexId,
     betaNodesStillThere: (
       await invoke<MapSnapshot>("map_snapshot", { brainId: "brain-beta" })
     ).nodeCount,

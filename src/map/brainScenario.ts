@@ -49,8 +49,8 @@ import type {
   BrainNodeRef,
   BrainRecord,
   HostInfo,
-  MapBuildReport,
   MapSnapshot,
+  MapOpenReport,
   NodeRelations,
   RelationsOverview,
 } from "./types";
@@ -147,7 +147,7 @@ async function firstPass(
     await waitForCompositionReady();
     // The counts come back from the commands, not from the screen.
     const snapshot = await invoke<MapSnapshot>("map_snapshot", { brainId });
-    const report = await invoke<MapBuildReport>("map_open", { brainId, rebuild: false });
+    const report = await invoke<MapOpenReport>("map_open", { brainId });
     const shown = focusedChipText();
     switches.push({
       brainId,
@@ -156,7 +156,7 @@ async function firstPass(
       reportNodes: report.nodeCount,
       countMatchesFrozenExpectation: snapshot.nodeCount === EXPECTED_NODES[brainId],
       snapshotBelongsToThisBrain: snapshot.brainId === brainId,
-      indexPath: report.indexPath,
+      indexId: report.indexId,
       sourceRef: record.sourceRef,
       nameOnScreen: shown.includes(record.displayName),
       iconOnScreen: shown.includes(record.icon),

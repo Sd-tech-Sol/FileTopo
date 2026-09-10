@@ -19,6 +19,33 @@ impl BrainIndex {
             index: Index::open(path)?,
         })
     }
+    /// Opens only an existing canonical schema. No CREATE, migration or source access.
+    pub fn open_existing(path: &Path, writable: bool) -> Result<Self, MapError> {
+        let flags = if writable {
+            rusqlite::OpenFlags::SQLITE_OPEN_READ_WRITE
+        } else {
+            rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY
+        };
+        let connection = rusqlite::Connection::open_with_flags(path, flags)?;
+        connection.execute_batch("PRAGMA foreign_keys=ON;")?;
+        let version: i64 = connection.query_row("PRAGMA user_version", [], |r| r.get(0))?;
+        if version != super::store::MAP_SCHEMA_VERSION {
+            return Err(MapError::IndexIncompatible(format!("schema {version}")));
+        }
+        let store = Self {
+            index: Index { connection },
+        };
+        if !store
+            .is_built()
+            .map_err(|_| MapError::IndexIncompatible("canonical metadata".into()))?
+        {
+            return Err(MapError::IndexIncompatible("canonical contract".into()));
+        }
+        store.index.identity()?;
+        store.count()?;
+        store.root_id()?;
+        Ok(store)
+    }
     pub fn meta(&self, key: &str) -> Result<Option<String>, MapError> {
         Ok(self
             .index

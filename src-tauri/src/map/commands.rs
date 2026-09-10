@@ -17,7 +17,9 @@ use super::{MAX_FIXTURE_DEPTH, MapError, fixtures};
 use crate::domain::ScanDiagnostic;
 use crate::scanner::scan_tree_controlled;
 use serde::{Deserialize, Serialize};
+#[cfg(test)]
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -41,6 +43,11 @@ pub struct MapBuildReport {
     /// The synthetic source that brain reads — a developer diagnostic, never
     /// the brain's identity (`TASK-0018` §4.6).
     pub fixture_id: String,
+    pub state: String,
+    pub index_id: String,
+    pub revision: u64,
+    pub source_read: bool,
+    pub index_reused: bool,
     /// Where the index really landed, named relative to the sandbox. `K3` is
     /// checked by comparing these across brains, and a relative name keeps a
     /// personal absolute path out of the repository.
@@ -65,6 +72,51 @@ pub struct MapBuildReport {
     /// The algorithm persisted by the map store and read back after the build.
     pub layout_algorithm: String,
     pub diagnostics: Vec<ScanDiagnostic>,
+}
+
+/// Lifecycle facts only; opening never invents scan timings or source freshness.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MapOpenReport {
+    pub brain_id: String,
+    pub state: String,
+    pub index_id: String,
+    pub revision: u64,
+    pub node_count: usize,
+    pub schema_version: i64,
+    pub source_read: bool,
+    pub index_reused: bool,
+    pub freshness: String,
+}
+
+pub fn open_map(paths: &SandboxPaths, brain: &BrainRecord) -> Result<MapOpenReport, MapError> {
+    let store = open_store(paths, brain)?;
+    let _read = store.index.connection.unchecked_transaction()?;
+    let identity = store.index.identity()?;
+    Ok(MapOpenReport {
+        brain_id: brain.brain_id.clone(),
+        state: "OPENED_EXISTING".into(),
+        index_id: identity.index_id,
+        revision: identity.revision,
+        node_count: store.count()?,
+        schema_version: super::store::MAP_SCHEMA_VERSION,
+        source_read: false,
+        index_reused: true,
+        freshness: "UNKNOWN".into(),
+    })
+}
+
+/// Explicit developer fixture preparation, separate from all lifecycle operations.
+pub fn prepare_synthetic_source(paths: &SandboxPaths, brain: &BrainRecord) -> Result<(), MapError> {
+    fixtures::materialize(&paths.fixtures, brain.source_fixture()?)?;
+    Ok(())
+}
+
+pub fn refresh_map(paths: &SandboxPaths, brain: &BrainRecord) -> Result<MapBuildReport, MapError> {
+    publish_map(paths, brain, "REFRESHED", || false)
+}
+pub fn rebuild_map(paths: &SandboxPaths, brain: &BrainRecord) -> Result<MapBuildReport, MapError> {
+    publish_map(paths, brain, "REBUILT", || false)
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -186,51 +238,70 @@ fn now_ms() -> i64 {
         .min(i64::MAX as u128) as i64
 }
 
-/// Materialises the fixture, scans it read-only and publishes the canonical index.
-///
-/// Canonical rebuilds retain index identity and advance the revision atomically.
-/// Only an incompatible legacy derived database is removed and reconstructed.
+/// Historical test preparation helper, absent from the product runtime.
+#[cfg(test)]
 pub fn build_map(
     paths: &SandboxPaths,
     brain: &BrainRecord,
     rebuild: bool,
 ) -> Result<MapBuildReport, MapError> {
-    // `brain_id` -> source, resolved **here and nowhere above**. The fixture
-    // is shared: two brains may materialise and read the very same tree, and
-    // it stays read-only for both.
+    prepare_synthetic_source(paths, brain)?;
+    if rebuild {
+        rebuild_map(paths, brain)
+    } else {
+        refresh_map(paths, brain)
+    }
+}
+
+// Serialize publications in this runtime; readers retain SQLite snapshots.
+static PUBLICATION_LOCK: Mutex<()> = Mutex::new(());
+
+fn publish_map(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+    state: &str,
+    cancelled: impl Fn() -> bool,
+) -> Result<MapBuildReport, MapError> {
+    let _publication = PUBLICATION_LOCK
+        .lock()
+        .map_err(|_| MapError::View("publication lock".into()))?;
     let spec = brain.source_fixture()?;
     let started = Instant::now();
-
-    let plan = fixtures::materialize(&paths.fixtures, spec)?;
+    let database = paths.brain_map_database(&brain.brain_id);
+    let reused = database.try_exists()?;
+    // Refuse incompatible state before touching the source. Never remove an index.
+    if reused {
+        open_store(paths, brain)?;
+    }
+    let plan = fixtures::plan(spec);
     let root = fixtures::fixture_root(&paths.fixtures, spec.id);
     let fingerprint_before = fixtures::fingerprint(&root)?;
 
-    // The index is keyed by the **brain**, never by the fixture. This single
-    // line is what makes `brain-alpha` and `brain-gamma` two brains rather
-    // than one shared index wearing two names.
-    let database = paths.brain_map_database(&brain.brain_id);
-    // An index built for another brain — or a version-1 index, which names no
-    // brain at all — is **rebuilt**, never read. Serving it would be exactly
-    // the leak `K3` forbids.
-    let mut compatibility_rebuild = false;
-    if database.is_file() {
-        let existing = BrainIndex::open(&database)?;
-        let built_for = existing.built_for_brain()?;
-        let compatible = existing.is_built()?;
-        drop(existing);
-        if built_for.as_deref() != Some(brain.brain_id.as_str()) || !compatible {
-            compatibility_rebuild = true;
-            remove_index_files(&database)?;
-        }
-    }
-
     let scan_started = Instant::now();
-    let scan = scan_tree_controlled(&root, || false, |_| {})
+    let scan = scan_tree_controlled(&root, &cancelled, |_| {})
         .map_err(|error| MapError::Scan(error.to_string()))?;
     let scan_ms = elapsed_ms(scan_started);
 
+    if !scan.diagnostics.is_empty() {
+        return Err(MapError::Scan(
+            "incomplete scan; previous index retained".into(),
+        ));
+    }
+    let fingerprint_after = fixtures::fingerprint(&root)?;
+    if fingerprint_before != fingerprint_after {
+        return Err(MapError::Scan(
+            "source changed during scan; previous index retained".into(),
+        ));
+    }
+    if cancelled() {
+        return Err(MapError::Scan("scan_cancelled".into()));
+    }
     let index_started = Instant::now();
-    let mut store = BrainIndex::open(&database)?;
+    let mut store = if reused {
+        BrainIndex::open_existing(&database, true)?
+    } else {
+        BrainIndex::open(&database)?
+    };
     store.replace(
         &brain.brain_id,
         spec.id,
@@ -241,19 +312,24 @@ pub fn build_map(
     )?;
     let index_ms = elapsed_ms(index_started);
 
-    let fingerprint_after = fixtures::fingerprint(&root)?;
+    let identity = store.index.identity()?;
     let max_depth = scan.nodes.iter().map(|node| node.depth).max().unwrap_or(0);
 
     Ok(MapBuildReport {
         brain_id: brain.brain_id.clone(),
         fixture_id: spec.id.to_string(),
+        state: state.into(),
+        index_id: identity.index_id,
+        revision: identity.revision,
+        source_read: true,
+        index_reused: reused,
         index_path: paths.relative_name(&database),
         node_count: scan.nodes.len(),
         planned_nodes: plan.node_count(),
         max_depth,
         node_ceiling: 0, // No corpus ceiling on the converged runtime.
         depth_ceiling: MAX_FIXTURE_DEPTH,
-        rebuilt: rebuild || compatibility_rebuild,
+        rebuilt: state == "REBUILT",
         scan_ms,
         layout_ms: 0.0,
         index_ms,
@@ -280,6 +356,7 @@ pub fn build_map(
 /// Scoped deliberately narrowly: the only files this slice ever deletes are
 /// ones it wrote itself, inside **one brain's** `map/`. No brain is ever
 /// rebuilt by removing another brain's state — `TASK-0018` §4.4.
+#[cfg(test)]
 fn remove_index_files(database: &Path) -> Result<(), MapError> {
     for suffix in ["", "-wal", "-shm"] {
         let mut candidate = database.as_os_str().to_os_string();
@@ -308,10 +385,7 @@ pub fn open_store(paths: &SandboxPaths, brain: &BrainRecord) -> Result<BrainInde
     if !database.is_file() {
         return Err(MapError::NotBuilt(brain.brain_id.clone()));
     }
-    let store = BrainIndex::open(&database)?;
-    if !store.is_built()? {
-        return Err(MapError::NotBuilt(brain.brain_id.clone()));
-    }
+    let store = BrainIndex::open_existing(&database, false)?;
     match store.built_for_brain()? {
         Some(found) if found == brain.brain_id => Ok(store),
         Some(found) => Err(MapError::BrainMismatch {
@@ -1321,7 +1395,7 @@ mod tests {
     }
 
     #[test]
-    fn a_schema_two_treemap_is_detected_and_rebuilt_as_schema_three() {
+    fn a_schema_two_treemap_is_refused_without_migration_or_deletion() {
         let temp = tempfile::tempdir().expect("temp");
         let paths = SandboxPaths::under(temp.path().join("sandbox"));
         let brain = brain_reading("quasi-empty");
@@ -1389,22 +1463,19 @@ mod tests {
             .expect("user version 2");
         drop(legacy);
 
-        let rebuilt = build_map(&paths, &brain, false).expect("compatibility rebuild");
-        assert!(
-            rebuilt.rebuilt,
-            "an incompatible index must report its rebuild"
+        let before = std::fs::read(&database).unwrap();
+        for result in [
+            open_map(&paths, &brain).map(|_| ()),
+            refresh_map(&paths, &brain).map(|_| ()),
+            rebuild_map(&paths, &brain).map(|_| ()),
+        ] {
+            assert!(matches!(result, Err(MapError::IndexIncompatible(_))));
+        }
+        assert_eq!(std::fs::read(&database).unwrap(), before);
+        assert_eq!(
+            fixtures::fingerprint(&fixtures::fixture_root(&paths.fixtures, "quasi-empty")).unwrap(),
+            first.fingerprint_before
         );
-        assert_eq!(rebuilt.schema_version, 3);
-        assert_eq!(rebuilt.layout_algorithm, LAYOUT_ALGORITHM);
-        assert_eq!(rebuilt.layout_invocations, 0);
-        assert_eq!(rebuilt.fingerprint_before, first.fingerprint_before);
-        assert_eq!(rebuilt.fingerprint_after, first.fingerprint_after);
-        let snapshot = snapshot(&paths, &brain).expect("v3 snapshot");
-        assert_eq!(snapshot.schema_version, 3);
-        assert_eq!(snapshot.layout_algorithm, LAYOUT_ALGORITHM);
-        assert!(snapshot.nodes.iter().all(|node| {
-            node.rect.w == layout::CARD_WIDTH && node.rect.h == layout::CARD_HEIGHT
-        }));
     }
 
     #[test]
@@ -1593,3 +1664,7 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+#[path = "lifecycle_tests.rs"]
+mod lifecycle_tests;

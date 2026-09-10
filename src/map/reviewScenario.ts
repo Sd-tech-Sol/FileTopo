@@ -1,3 +1,4 @@
+import { prepareScenarioIndex } from "./lifecycle";
 /**
  * `TASK-0026` / `SR15` — the review queue and the memory of a human decision,
  * in two real Tauri/WebView2 processes.
@@ -210,7 +211,7 @@ async function passOne(deps: ReviewScenarioDeps) {
   // The other brain, read before anything is decided, so `SR12` compares a
   // measurement rather than an assumption. Nothing else is displaying it, so
   // opening it here competes with no one.
-  await deps.invoke("map_open", { brainId: OTHER, rebuild: false });
+  await prepareScenarioIndex(deps.invoke, OTHER, "map_refresh");
   const otherBefore = stableSets(
     await deps.invoke<RelationsOverview>("map_relations_open", { brainId: OTHER }),
   );

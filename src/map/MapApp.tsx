@@ -1,3 +1,5 @@
+import { runLifecycle, type LifecycleAction } from "./lifecycle";
+import { prepareScenarioIndex } from "./lifecycle";
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CompositionBar from "./CompositionBar";
@@ -73,7 +75,7 @@ import type {
   FixtureIntegrity,
   FixtureSummary,
   HostInfo,
-  MapBuildReport,
+  MapOpenReport,
   MapNode,
   MapSelfCheck,
   MapProjection,
@@ -193,7 +195,7 @@ const t = strings.fr;
  */
 export interface LoadedBrain {
   record: BrainRecord;
-  report: MapBuildReport;
+  report: MapOpenReport;
   snapshot: MapProjection;
   integrity: FixtureIntegrity | null;
   relations: RelationsOverview | null;
@@ -518,18 +520,18 @@ export default function MapApp() {
    * Loads a brain — and **does not make it active**.
    *
    * `§4.1` rule 6: reading a brain's data is not choosing it. `map_open`,
-   * `map_snapshot`, `map_integrity` and `map_relations_open` all take a
+   * `map_view` and `map_relations_open` all take a
    * `brain_id` and none of them touches the catalogue's active brain, so
    * bringing Gamma into the view alongside Alpha leaves Alpha active.
    */
   const loadBrain = useCallback(
-    async (brainId: string, rebuild: boolean): Promise<LoadedBrain> => {
+    async (brainId: string, action: LifecycleAction): Promise<LoadedBrain> => {
       projectionRequest.current.set(brainId, (projectionRequest.current.get(brainId) ?? 0) + 1);
       const record = catalogRef.current?.brains.find((brain) => brain.brainId === brainId);
       if (!record) throw new Error(`cerveau absent du catalogue : ${brainId}`);
-      const report = await invoke<MapBuildReport>("map_open", { brainId, rebuild });
+      const report = await runLifecycle(invoke, brainId, action);
       const snapshot = await invoke<MapProjection>("map_view", { brainId });
-      const integrity = await invoke<FixtureIntegrity>("map_integrity", { brainId });
+      const integrity = null; // Opening must never read or fingerprint the source.
 
       // The snapshot has to be the one that was asked for. A mismatch here
       // would be exactly the leak `K3` and `L2` forbid, so it is refused
@@ -587,7 +589,7 @@ export default function MapApp() {
     async (
       next: ComposedView,
       options: {
-        rebuild?: boolean;
+        action?: LifecycleAction;
         /**
          * An endpoint to land on once the composition is loaded — `M9`.
          *
@@ -620,8 +622,8 @@ export default function MapApp() {
 
         const nextLoaded = new Map(loadedRef.current);
         for (const brainId of next.displayedBrainIds) {
-          if (options.rebuild || !nextLoaded.has(brainId)) {
-            nextLoaded.set(brainId, await loadBrain(brainId, options.rebuild ?? false));
+          if (options.action || !nextLoaded.has(brainId)) {
+            nextLoaded.set(brainId, await loadBrain(brainId, options.action ?? "open"));
           }
         }
         // A brain removed from the view keeps nothing on screen. Its index,
@@ -677,8 +679,11 @@ export default function MapApp() {
         setRelationsCheck(null);
         setMeasurement(null);
       } catch (error) {
-        setStatus(`Échec : ${String(error)}`);
-        hostLog("error", `composition refusée: ${String(error)}`);
+        setComposed(next);
+        setStatus(String(error).includes("map_not_built")
+          ? "Index absent. Préparez l’exemple synthétique si nécessaire, puis choisissez Actualiser pour construire l’index."
+          : `Échec : ${String(error)}. Le dernier index enregistré reste disponible via Ouvrir.`);
+        hostLog("info", `composition refusée: ${String(error)}`);
       } finally {
         setBusy(false);
       }
@@ -1384,20 +1389,14 @@ export default function MapApp() {
       for (const brain of brains) {
         const fixture = fixtures.find((entry) => entry.id === brain.sourceRef) ?? null;
         hostLog("info", `vérification ${brain.brainId}: ouverture`);
-        const first = await invoke<MapBuildReport>("map_open", {
-          brainId: brain.brainId,
-          rebuild: false,
-        });
+        const first = await prepareScenarioIndex(invoke, brain.brainId, "map_refresh");
         const check = await invoke<MapSelfCheck>("map_self_check", { brainId: brain.brainId });
         const before = await invoke<FixtureIntegrity>("map_integrity", {
           brainId: brain.brainId,
         });
 
-        hostLog("info", `vérification ${brain.brainId}: index supprimé puis reconstruit`);
-        const rebuilt = await invoke<MapBuildReport>("map_open", {
-          brainId: brain.brainId,
-          rebuild: true,
-        });
+        hostLog("info", `vérification ${brain.brainId}: reconstruction transactionnelle explicite`);
+        const rebuilt = await prepareScenarioIndex(invoke, brain.brainId, "map_rebuild");
         const after = await invoke<FixtureIntegrity>("map_integrity", { brainId: brain.brainId });
 
         const entry = {
@@ -1511,7 +1510,8 @@ export default function MapApp() {
     try {
       for (const brain of brains) {
         hostLog("info", `cerveau ${brain.brainId}: composition d'un seul cerveau`);
-        await applyComposition(singleBrainView(order, brain.brainId));
+        await prepareScenarioIndex(invoke, brain.brainId);
+        await applyComposition(singleBrainView(order, brain.brainId), { action: "open" });
         await afterPaint();
         const measuredViewport = await awaitLaidOutViewport(() => viewportRef.current);
         const loadedBrain = loadedRef.current.get(brain.brainId);
@@ -1628,23 +1628,39 @@ export default function MapApp() {
     [applyComposition, order],
   );
 
+  // Explicit proof preparation, invoked only by scenario actions/automation.
+  const prepareScenarioBrains = useCallback(async (allowBuild: boolean) => {
+    const current = await invoke<BrainCatalogView>("map_brains");
+    for (const brain of current.brains) {
+      try { await invoke<MapOpenReport>("map_open", { brainId: brain.brainId }); }
+      catch (error) {
+        if (!allowBuild || !String(error).includes("map_not_built")) throw error;
+        await prepareScenarioIndex(invoke, brain.brainId);
+      }
+    }
+    await applyComposition(singleBrainView(current.brains.map(brain => brain.brainId), current.activeBrainId), { action: "open" });
+  }, [applyComposition]);
+
   const runRelationScenario = useCallback(
-    () =>
-      runScenario({
+    async () => {
+      await prepareScenarioBrains(true);
+      return runScenario({
         invoke: (command, args) => invoke(command, args),
         host,
         showOnly,
         setSelected: (reference) => setSelected(reference),
         setStatus,
         log: hostLog,
-      }),
-    [host, showOnly],
+      });
+    },
+    [host, showOnly, prepareScenarioBrains],
   );
 
   runRelationScenarioRef.current = runRelationScenario;
 
-  const runBrainScenario = useCallback(() => {
+  const runBrainScenario = useCallback(async () => {
     const pass = host?.autoBrainsPass === 2 ? 2 : 1;
+    await prepareScenarioBrains(pass === 1);
     return runBrains(
       {
         invoke: (command, args) => invoke(command, args),
@@ -1660,12 +1676,13 @@ export default function MapApp() {
       },
       pass,
     );
-  }, [host, showOnly]);
+  }, [host, showOnly, prepareScenarioBrains]);
 
   runBrainScenarioRef.current = runBrainScenario;
 
-  const runComposedScenario = useCallback(() => {
+  const runComposedScenario = useCallback(async () => {
     const pass = host?.autoComposedPass === 2 ? 2 : 1;
+    await prepareScenarioBrains(pass === 1);
     return runComposed(
       {
         invoke: (command, args) => invoke(command, args),
@@ -1681,12 +1698,13 @@ export default function MapApp() {
       },
       pass,
     );
-  }, [host, onRemoveBrain, selectNode, showOnly]);
+  }, [host, onRemoveBrain, selectNode, showOnly, prepareScenarioBrains]);
 
   runComposedScenarioRef.current = runComposedScenario;
 
-  const runCrossScenario = useCallback(() => {
+  const runCrossScenario = useCallback(async () => {
     const pass = host?.autoCrossPass === 2 ? 2 : 1;
+    await prepareScenarioBrains(pass === 1);
     return runCross(
       {
         invoke: (command, args) => invoke(command, args),
@@ -1700,12 +1718,13 @@ export default function MapApp() {
       },
       pass,
     );
-  }, [host, onRemoveBrain, selectNode, showOnly]);
+  }, [host, onRemoveBrain, selectNode, showOnly, prepareScenarioBrains]);
 
   runCrossScenarioRef.current = runCrossScenario;
 
-  const runTopographicScenario = useCallback(() => {
+  const runTopographicScenario = useCallback(async () => {
     const pass = host?.autoTopographicPass === 2 ? 2 : 1;
+    await prepareScenarioBrains(pass === 1);
     return runTopographic(
       {
         invoke: (command, args) => invoke(command, args),
@@ -1720,12 +1739,13 @@ export default function MapApp() {
       },
       pass,
     );
-  }, [host, onRemoveBrain, selectNode, showOnly]);
+  }, [host, onRemoveBrain, selectNode, showOnly, prepareScenarioBrains]);
 
   runTopographicScenarioRef.current = runTopographicScenario;
 
-  const runContentScenario = useCallback(() => {
+  const runContentScenario = useCallback(async () => {
     const pass = host?.autoContentPass === 2 ? 2 : 1;
+    await prepareScenarioBrains(pass === 1);
     return runContent(
       {
         invoke: (command, args) => invoke(command, args),
@@ -1738,12 +1758,13 @@ export default function MapApp() {
       },
       pass,
     );
-  }, [host, selectNode, showOnly]);
+  }, [host, selectNode, showOnly, prepareScenarioBrains]);
 
   runContentScenarioRef.current = runContentScenario;
 
-  const runExactDuplicateScenario = useCallback(() => {
+  const runExactDuplicateScenario = useCallback(async () => {
     const pass = host?.autoEd15Pass === 2 ? 2 : 1;
+    await prepareScenarioBrains(pass === 1);
     return runExactDuplicates(
       {
         invoke: (command, args) => invoke(command, args),
@@ -1755,12 +1776,13 @@ export default function MapApp() {
       },
       pass,
     );
-  }, [host]);
+  }, [host, prepareScenarioBrains]);
 
   runExactDuplicateScenarioRef.current = runExactDuplicateScenario;
 
-  const runDreScenario = useCallback(() => {
+  const runDreScenario = useCallback(async () => {
     const pass = host?.autoDrePass === 2 ? 2 : 1;
+    await prepareScenarioBrains(pass === 1);
     return runDre({
       invoke: (command, args) => invoke(command, args),
       host,
@@ -1770,14 +1792,15 @@ export default function MapApp() {
       log: hostLog,
       pass,
     });
-  }, [host, selectNode, showOnly]);
+  }, [host, selectNode, showOnly, prepareScenarioBrains]);
 
   runDreScenarioRef.current = runDreScenario;
 
   // `SR15`. The same wiring as DR15, on the review queue: two passes on one
   // variant, every decision taken by a real keystroke.
-  const runReviewScenario = useCallback(() => {
+  const runReviewScenario = useCallback(async () => {
     const pass = host?.autoSr15Pass === 2 ? 2 : 1;
+    await prepareScenarioBrains(pass === 1);
     return runReview({
       invoke: (command, args) => invoke(command, args),
       host,
@@ -1787,13 +1810,14 @@ export default function MapApp() {
       log: hostLog,
       pass,
     });
-  }, [host, selectNode, showOnly]);
+  }, [host, selectNode, showOnly, prepareScenarioBrains]);
 
   runReviewScenarioRef.current = runReviewScenario;
 
   // Reserve `X11`. The same wiring as DR15, on the brain the legacy fixture
   // never covered — same commands, same panel, same real-keystroke mechanism.
-  const runGenericRelationScenario = useCallback(() => {
+  const runGenericRelationScenario = useCallback(async () => {
+    await prepareScenarioBrains(true);
     return runGeneric({
       invoke: (command, args) => invoke(command, args),
       host,
@@ -1802,7 +1826,7 @@ export default function MapApp() {
       setStatus,
       log: hostLog,
     });
-  }, [host, selectNode, showOnly]);
+  }, [host, selectNode, showOnly, prepareScenarioBrains]);
 
   runGenericRelationScenarioRef.current = runGenericRelationScenario;
 
@@ -1888,10 +1912,25 @@ export default function MapApp() {
           />
         ) : null}
         <div className="app__actions">
+          <button type="button" data-testid="lifecycle-open" disabled={!composed || busy || measuring}
+            onClick={() => composed && void applyComposition(composed, { action: "open" })}>Ouvrir</button>
+          <button type="button" data-testid="lifecycle-refresh" disabled={!composed || busy || measuring}
+            onClick={() => composed && void applyComposition(composed, { action: "refresh" })}>Actualiser</button>
+          <button type="button" data-testid="lifecycle-prepare" disabled={!composed || busy || measuring}
+            onClick={async () => {
+              if (!composed) return;
+              setBusy(true);
+              try {
+                for (const brainId of composed.displayedBrainIds) await invoke("map_prepare_synthetic_source", { brainId });
+                setStatus("Exemple synthétique préparé. Choisissez Actualiser pour construire l’index.");
+              } catch (error) { setStatus(`Préparation refusée : ${String(error)}`); }
+              finally { setBusy(false); }
+            }}>Préparer l’exemple synthétique</button>
           <button
             type="button"
             disabled={!composed || busy || measuring}
-            onClick={() => composed && void applyComposition(composed, { rebuild: true })}
+            data-testid="lifecycle-rebuild"
+            onClick={() => composed && void applyComposition(composed, { action: "rebuild" })}
           >
             {busy ? t.building : t.rebuild}
           </button>
@@ -1943,9 +1982,9 @@ export default function MapApp() {
       ) : null}
 
       {report ? (
-        <section className="app__report" aria-label="Rapport de construction">
+        <section className="app__report" aria-label="Dernier index enregistré">
           <span data-testid="report-brain">
-            {report.brainId} · {report.indexPath}
+            {report.brainId} · révision {report.revision}
           </span>
           <span data-testid="composed-total">
             {renderedBrains.length} territoire(s) ·{" "}
@@ -1955,18 +1994,9 @@ export default function MapApp() {
             {report.nodeCount} éléments indexés
           </span>
           <span data-testid="layout-algorithm">
-            schema {report.schemaVersion} · {report.layoutAlgorithm}
+            schema {report.schemaVersion} · {focusedBrain?.snapshot.layoutAlgorithm}
           </span>
-          <span>
-            {t.depth} {report.maxDepth} / {report.depthCeiling}
-          </span>
-          <span>
-            {t.scan} {report.scanMs.toFixed(1)} ms · {t.layout} {report.layoutMs.toFixed(1)} ms ·{" "}
-            {t.index} {report.indexMs.toFixed(1)} ms
-          </span>
-          <span className={report.readOnlyConfirmed ? "ok" : "ko"}>
-            {report.readOnlyConfirmed ? t.readOnly : t.readOnlyFailed}
-          </span>
+          <span>Dernier index enregistré · source non vérifiée · fraîcheur inconnue</span>
           {integrity ? (
             <span className={integrity.filetopoArtifacts.length === 0 ? "ok" : "ko"}>
               {integrity.filetopoArtifacts.length === 0 ? t.noArtifacts : t.artifactsFound}

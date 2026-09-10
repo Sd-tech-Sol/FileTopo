@@ -1,3 +1,4 @@
+import { prepareScenarioIndex } from "./lifecycle";
 /** TASK-0024/DR15 — real Tauri/WebView2 deterministic-rule proof. */
 
 import { settle, waitForCompositionReady } from "./compositionDriver";
@@ -93,7 +94,7 @@ async function writeEvidence(deps: DreScenarioDeps, evidence: Record<string, unk
 async function passOne(deps: DreScenarioDeps) {
   await deps.showOnly(ALPHA);
   await waitForCompositionReady();
-  await deps.invoke("map_open", { brainId: ALPHA, rebuild: true });
+  await prepareScenarioIndex(deps.invoke, ALPHA, "map_rebuild");
   const snapshot = await deps.invoke<MapSnapshot>("map_snapshot", { brainId: ALPHA });
   deps.select({ brainId: ALPHA, nodeId: snapshot.nodes.find((node) => node.kind === "file")!.id });
   await settle();

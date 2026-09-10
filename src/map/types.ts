@@ -125,7 +125,24 @@ export interface FixtureSummary {
   plannedMaxDepth: number;
 }
 
+export interface MapOpenReport {
+  brainId: string;
+  state: "OPENED_EXISTING";
+  indexId: string;
+  revision: number;
+  nodeCount: number;
+  schemaVersion: number;
+  sourceRead: false;
+  indexReused: true;
+  freshness: "UNKNOWN";
+}
+
 export interface MapBuildReport {
+  state: "REFRESHED" | "REBUILT";
+  indexId: string;
+  revision: number;
+  sourceRead: true;
+  indexReused: boolean;
   brainId: string;
   fixtureId: string;
   /** Where the index landed, relative to the sandbox — `K3`. */

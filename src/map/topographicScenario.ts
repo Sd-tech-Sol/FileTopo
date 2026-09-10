@@ -1,3 +1,4 @@
+import { prepareScenarioIndex } from "./lifecycle";
 /** `N15` — TASK-0022's topographic node graph in the real Tauri host. */
 
 import {
@@ -20,6 +21,7 @@ import type {
   FrozenCrossReference,
   HostInfo,
   MapBuildReport,
+  MapOpenReport,
   MapNode,
   MapSnapshot,
   RelationsOverview,
@@ -209,10 +211,7 @@ async function firstPass(
   await waitForCompositionReady();
   showOnly("brain-alpha");
   await settle();
-  const alphaReport = await invoke<MapBuildReport>("map_open", {
-    brainId: "brain-alpha",
-    rebuild: true,
-  });
+  const alphaReport = await prepareScenarioIndex(invoke, "brain-alpha", "map_rebuild");
   const alpha = await invoke<MapSnapshot>("map_snapshot", { brainId: "brain-alpha" });
   const alphaIntegrityBefore = await invoke<FixtureIntegrity>("map_integrity", {
     brainId: "brain-alpha",
@@ -554,7 +553,7 @@ async function firstPass(
   }
   const rebuilds: MapBuildReport[] = [];
   for (const brainId of ["brain-alpha", "brain-gamma", "brain-beta"]) {
-    rebuilds.push(await invoke<MapBuildReport>("map_open", { brainId, rebuild: true }));
+    rebuilds.push(await prepareScenarioIndex(invoke, brainId, "map_rebuild"));
   }
   const crossAfter = await invoke<CrossRelationsOverview>("map_cross_relations_open");
   const integrityAfter = await Promise.all(
@@ -618,7 +617,7 @@ async function secondPass(
   const catalog = await invoke<BrainCatalogView>("map_brains");
   const reports = await Promise.all(
     ["brain-alpha", "brain-gamma", "brain-beta"].map((brainId) =>
-      invoke<MapBuildReport>("map_open", { brainId, rebuild: false }),
+      invoke<MapOpenReport>("map_open", { brainId }),
     ),
   );
   const snapshots = await Promise.all(
@@ -639,16 +638,16 @@ async function secondPass(
     webviewVersion: host?.webviewVersion,
     reports: reports.map((report) => ({
       brainId: report.brainId,
-      rebuilt: report.rebuilt,
+      state: report.state,
       schemaVersion: report.schemaVersion,
-      layoutAlgorithm: report.layoutAlgorithm,
+      sourceRead: report.sourceRead,
     })),
     snapshots: snapshots.map((snapshot) => ({
       brainId: snapshot.brainId,
       schemaVersion: snapshot.schemaVersion,
       layoutAlgorithm: snapshot.layoutAlgorithm,
     })),
-    noUnexpectedRebuild: reports.every((report) => !report.rebuilt),
+    noUnexpectedRebuild: reports.every((report) => report.state === "OPENED_EXISTING" && !report.sourceRead),
   };
   evidence.step66_to_72_persistence = {
     activeBrainId: catalog.activeBrainId,
