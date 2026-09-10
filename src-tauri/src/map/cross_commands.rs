@@ -210,7 +210,7 @@ struct ResolvedBrain {
 fn resolve_brains(paths: &SandboxPaths, brains: &[BrainRecord]) -> Vec<ResolvedBrain> {
     brains
         .iter()
-        .map(|record| match commands::snapshot(paths, record) {
+        .map(|record| match commands::analysis_input(paths, record) {
             Ok(snapshot) => ResolvedBrain {
                 indexed: true,
                 by_key: snapshot
@@ -466,7 +466,7 @@ pub fn node_cross_relations(
         .iter()
         .find(|brain| brain.brain_id == reference.brain_id)
         .ok_or_else(|| MapError::UnknownBrain(reference.brain_id.clone()))?;
-    let snapshot = commands::snapshot(paths, own)?;
+    let snapshot = commands::analysis_input(paths, own)?;
     let node = snapshot
         .nodes
         .iter()
@@ -901,7 +901,9 @@ mod tests {
         let towards_gamma = overview
             .established
             .iter()
-            .find(|edge| edge.source.brain_id == "brain-alpha" && edge.target.brain_id == "brain-gamma")
+            .find(|edge| {
+                edge.source.brain_id == "brain-alpha" && edge.target.brain_id == "brain-gamma"
+            })
             .expect("XB-D01 must still be there");
         assert!(towards_gamma.source.node_id.is_some(), "Alpha is built");
         assert!(towards_gamma.target.node_id.is_none(), "Gamma is not");

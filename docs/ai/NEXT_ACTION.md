@@ -1,11 +1,7 @@
 # Action suivante
 
-## Retour à l'orchestrateur pour ouvrir la prochaine tranche V1 de convergence du pipeline réel
+## Contrôle indépendant de TASK-0030
 
-`TASK-0029` est `VERIFIED` par le verdict indépendant de l'orchestrateur
-technique, enregistré dans
-[`ACTION-0046`](../reviews/ACTION-0046-independent-control.md).
-
-L'orchestrateur doit définir la prochaine tranche. Ne pas créer `TASK-0030`,
-`DEC-0031`, branche suivante, PR, merge, tag ou release sans nouveau GO dans
-une fiche approuvée.
+Contrôler la [convergence du pipeline V1](../tasks/TASK-0030-v1-pipeline-convergence.md)
+livrée `IMPLEMENTED` par Codex, sur les commits, tests et preuves TASK-0030.
+DEC-0031 reste `APPROVED`; l'exécuteur ne s'attribue pas `VERIFIED`.

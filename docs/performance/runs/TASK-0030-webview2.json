@@ -1,0 +1,59 @@
+{
+  "task": "TASK-0030",
+  "status": "NONCANONICAL_ENGINEERING_EVIDENCE",
+  "engine": "Windows Tauri / real WebView2",
+  "webviewVersion": "152.0.4191.66",
+  "tauriVersion": "2.11.5",
+  "sqliteVersion": "3.53.2",
+  "source": "normal map_open scan -> canonical Index -> map_view -> MapApp/MapView",
+  "small": {
+    "brainId": "brain-alpha",
+    "indexed": 12,
+    "materialized": 12,
+    "nonMaterialized": 0,
+    "budget": 512,
+    "payloadBytes": 3420,
+    "nodes": 12,
+    "aggregates": 0,
+    "edges": 11,
+    "svgElements": 83,
+    "selectionMs": 156.81619999999998,
+    "zoomMs": 842.8865000000001,
+    "panMs": 137.3451,
+    "panChanged": true,
+    "zoomChanged": true,
+    "selectionChanged": true
+  },
+  "large": {
+    "brainId": "brain-beta",
+    "indexed": 6001,
+    "materialized": 256,
+    "nonMaterialized": 5745,
+    "budget": 512,
+    "payloadBytes": 69552,
+    "nodes": 256,
+    "aggregates": 1,
+    "edges": 255,
+    "svgElements": 1794,
+    "selectionMs": 155.02349999999933,
+    "zoomMs": 857.6916999999994,
+    "panMs": 139.55109999999877,
+    "panChanged": true,
+    "zoomChanged": true,
+    "selectionChanged": true
+  },
+  "progressiveNavigation": {
+    "pageReplaced": true,
+    "noDuplicatePageMembers": true,
+    "domMatchesProductPage": true
+  },
+  "trustedKeydowns": 24,
+  "fatalConsoleErrors": 0,
+  "sourceArtifacts": [],
+  "limits": [
+    "Development workstation; not a modest-laptop acceptance test",
+    "No GPU-disabled claim",
+    "100k product DTO is covered by Rust and jsdom; this WebView2 pass uses 6001 physically scanned synthetic nodes",
+    "Gesture timings include deliberate CDP settling waits; not renderer latency benchmarks"
+  ]
+}

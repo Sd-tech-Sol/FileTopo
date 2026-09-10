@@ -129,6 +129,7 @@ export default function DetailsPanel({
       <h3 className="details__subtitle">
         {strings.children} <span className="details__count">{children.length}</span>
       </h3>
+      {(detail.omittedChildren ?? 0) > 0 ? <p>{detail.omittedChildren} enfants directs supplémentaires — utiliser la navigation progressive.</p> : null}
       {children.length === 0 ? (
         <p className="details__empty">{strings.noChildren}</p>
       ) : (

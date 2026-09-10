@@ -5,12 +5,12 @@
 //! meet, so an unresolved endpoint is reported rather than silently dropped —
 //! `J10` needs the difference to be visible.
 
+use super::brains::{BrainNodeRef, BrainRecord};
 use super::relations::{
     EXPECTED_COUNTS, FORBIDDEN_INVERSES, MAX_REVIEW_QUEUE_LIMIT, RELATIONS_FIXTURE,
-    RELATIONS_SCHEMA_VERSION, RelationError, RelationStore, RejectionOutcome, SEEDED_SUGGESTIONS,
+    RELATIONS_SCHEMA_VERSION, RejectionOutcome, RelationError, RelationStore, SEEDED_SUGGESTIONS,
     StoredRelation, StoredSuggestion, endpoint_key,
 };
-use super::brains::{BrainNodeRef, BrainRecord};
 use super::sandbox::SandboxPaths;
 use super::store::MapNode;
 use super::{MapError, commands, fixtures};
@@ -357,7 +357,7 @@ pub fn open_relations(
 ) -> Result<RelationsOverview, MapError> {
     let spec = source_spec(brain)?;
     let legacy_scope = legacy_fixture_spec(brain)?.is_some();
-    let snapshot = commands::snapshot(paths, brain)?;
+    let snapshot = commands::analysis_input(paths, brain)?;
     // One store per brain. `brain-alpha` and `brain-gamma` read the same tree
     // and derive the same eight relations — into two separate databases.
     let database = paths.brain_relations_database(&brain.brain_id);
@@ -504,7 +504,7 @@ pub fn node_relations(
         });
     }
     let node_id = reference.node_id;
-    let snapshot = commands::snapshot(paths, brain)?;
+    let snapshot = commands::analysis_input(paths, brain)?;
     // The node is looked up in **this** brain's snapshot. A `node_id` that
     // only another brain holds is missing here, and says so — `K5`.
     let node = snapshot
@@ -604,7 +604,7 @@ pub fn approve_suggestion(
     // matters here is staleness, below, not the legacy fixture.
     let spec = source_spec(brain)?;
     let legacy_scope = legacy_fixture_spec(brain)?.is_some();
-    let snapshot = commands::snapshot(paths, brain)?;
+    let snapshot = commands::analysis_input(paths, brain)?;
     // Opened on **this** brain's store, so the approval cannot reach another
     // brain's copy of the same suggestion key — `K6`.
     let database = paths.brain_relations_database(&brain.brain_id);
@@ -688,7 +688,7 @@ pub fn review_queue(
     limit: usize,
 ) -> Result<SuggestionReviewQueue, MapError> {
     let spec = source_spec(brain)?;
-    let snapshot = commands::snapshot(paths, brain)?;
+    let snapshot = commands::analysis_input(paths, brain)?;
     let store = RelationStore::open(&paths.brain_relations_database(&brain.brain_id))?;
     let engine_current = super::rule_engine::is_current(paths, brain)?;
     let effective_nodes = super::rule_engine::effective_nodes(&snapshot.nodes);
@@ -753,7 +753,7 @@ pub fn reject_suggestion(
     // fixture.
     let spec = source_spec(brain)?;
     let legacy_scope = legacy_fixture_spec(brain)?.is_some();
-    let snapshot = commands::snapshot(paths, brain)?;
+    let snapshot = commands::analysis_input(paths, brain)?;
     // Opened on **this** brain's store, so a refusal cannot reach another
     // brain's copy of the same suggestion key — `K6`, `SR12`.
     let database = paths.brain_relations_database(&brain.brain_id);
@@ -796,7 +796,7 @@ pub fn self_check(
 ) -> Result<RelationsSelfCheck, MapError> {
     let spec = ensure_in_scope(brain)?;
     let brain_id = brain.brain_id.as_str();
-    let snapshot = commands::snapshot(paths, brain)?;
+    let snapshot = commands::analysis_input(paths, brain)?;
     let mut store = RelationStore::open(&paths.brain_relations_database(brain_id))?;
     let by_key = index_by_key(brain_id, &snapshot.nodes);
 

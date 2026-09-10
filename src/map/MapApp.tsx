@@ -76,7 +76,7 @@ import type {
   MapBuildReport,
   MapNode,
   MapSelfCheck,
-  MapSnapshot,
+  MapProjection,
   CrossRelationsOverview,
   ContentObservation,
   ContentObservationReport,
@@ -194,7 +194,7 @@ const t = strings.fr;
 export interface LoadedBrain {
   record: BrainRecord;
   report: MapBuildReport;
-  snapshot: MapSnapshot;
+  snapshot: MapProjection;
   integrity: FixtureIntegrity | null;
   relations: RelationsOverview | null;
   hierarchy: Hierarchy;
@@ -379,13 +379,14 @@ export default function MapApp() {
           brainId,
           record: brain.record,
           hierarchy: brain.hierarchy,
-          // Projected from this brain's own persisted rectangles. Rebuilt when
+          // Projected from this brain's own projection rectangles. Rebuilt when
           // its tree, its relations or the selection change — never for a pan
           // or a zoom, and never by recomputing a layout.
           segments: relationSegments(brain.relations, brain.hierarchy.byId, localSelection),
           relationNeighbours: establishedNeighbours(brain.relations, localSelection),
           crossNeighbours: crossNeighbours.get(brainId) ?? new Set<number>(),
-          nodeCount: brain.snapshot.nodeCount,
+          nodeCount: brain.snapshot.materializedCount,
+          aggregates: brain.snapshot.aggregates,
         },
       ];
     });
@@ -523,10 +524,11 @@ export default function MapApp() {
    */
   const loadBrain = useCallback(
     async (brainId: string, rebuild: boolean): Promise<LoadedBrain> => {
+      projectionRequest.current.set(brainId, (projectionRequest.current.get(brainId) ?? 0) + 1);
       const record = catalogRef.current?.brains.find((brain) => brain.brainId === brainId);
       if (!record) throw new Error(`cerveau absent du catalogue : ${brainId}`);
       const report = await invoke<MapBuildReport>("map_open", { brainId, rebuild });
-      const snapshot = await invoke<MapSnapshot>("map_snapshot", { brainId });
+      const snapshot = await invoke<MapProjection>("map_view", { brainId });
       const integrity = await invoke<FixtureIntegrity>("map_integrity", { brainId });
 
       // The snapshot has to be the one that was asked for. A mismatch here
@@ -638,18 +640,15 @@ export default function MapApp() {
         if (options.selectEndpoint) {
           const parsed = splitCrossEndpointKey(options.selectEndpoint.endpointKey);
           const brain = nextLoaded.get(options.selectEndpoint.brainId);
-          const node =
-            parsed && brain
-              ? brain.snapshot.nodes.find(
-                  (candidate) => candidate.relativePath === parsed.relativePath,
-                )
-              : undefined;
-          if (node) forced = { brainId: options.selectEndpoint.brainId, nodeId: node.id };
-          else {
-            hostLog(
-              "error",
-              `endpoint inter-cerveaux non résolu: ${options.selectEndpoint.endpointKey}`,
-            );
+          if (parsed && brain) {
+            const reference = await invoke<BrainNodeRef | null>("map_resolve_node", {brainId:brain.record.brainId,relativePath:parsed.relativePath});
+            if (reference) {
+              if (!brain.hierarchy.byId.has(reference.nodeId)) {
+                const snapshot = await invoke<MapProjection>("map_view", {brainId:reference.brainId,focusId:reference.nodeId});
+                nextLoaded.set(reference.brainId,{...brain,snapshot,hierarchy:buildHierarchy(snapshot.nodes,snapshot.rootId)});
+              }
+              forced=reference;
+            } else setStatus("Extrémité absente de l'index courant.");
           }
         }
 
@@ -756,8 +755,40 @@ export default function MapApp() {
    * panel without changing the focus would leave the interface saying two
    * different things about which brain the user is in.
    */
+  const projectionRequest = useRef(new Map<string, number>());
+  const changeProjection = useCallback(async (brainId: string, focusId: number, after: string | null = null) => {
+    const ticket = (projectionRequest.current.get(brainId) ?? 0) + 1;
+    projectionRequest.current.set(brainId, ticket);
+    try {
+      const snapshot = await invoke<MapProjection>("map_view", { brainId, focusId, after });
+      if (projectionRequest.current.get(brainId) !== ticket || !loadedRef.current.has(brainId)) return;
+      if (snapshot.brainId !== brainId) throw new Error("projection d'un autre cerveau refusée");
+      setLoaded(current => {
+        const previous = current.get(brainId);
+        if (!previous) return current;
+        const next = new Map(current);
+        next.set(brainId, { ...previous, snapshot, hierarchy: buildHierarchy(snapshot.nodes, snapshot.rootId) });
+        return next;
+      });
+      const current = composedRef.current;
+      if (current?.displayedBrainIds.includes(brainId)) {
+        setComposed(focusBrain(current, order, brainId));
+        await activate(brainId);
+      }
+      setSelected({ brainId, nodeId: focusId });
+      setStatus(`${snapshot.materializedCount} éléments visibles sur ${snapshot.nodeCount}`);
+    } catch (error) {
+      if (projectionRequest.current.get(brainId) === ticket) setStatus(`Projection refusée : ${String(error)}`);
+    }
+  }, [activate, order]);
+
   const selectNode = useCallback(
     (reference: BrainNodeRef) => {
+      const brain = loadedRef.current.get(reference.brainId);
+      if (brain && !brain.hierarchy.byId.has(reference.nodeId)) {
+        void changeProjection(reference.brainId, reference.nodeId);
+        return;
+      }
       setSelected((current) => (sameNodeRef(current, reference) ? current : reference));
       const current = composedRef.current;
       if (!current || current.focusedBrainId === reference.brainId) return;
@@ -767,7 +798,7 @@ export default function MapApp() {
         setStatus(`Cerveau actif non enregistré : ${String(error)}`),
       );
     },
-    [activate, order],
+    [activate, order, changeProjection],
   );
 
   /** Selection helper for the panels, which only ever describe one brain. */
@@ -827,6 +858,9 @@ export default function MapApp() {
     // memo without adding a case this does not already cover.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [compositionId, composition.territories.length, viewport.width, viewport.height]);
+
+  const projectionKey = renderedBrains.map(b => `${b.brainId}:${loaded.get(b.brainId)?.snapshot.focusId}:${loaded.get(b.brainId)?.snapshot.indexRevision}:${b.hierarchy.drawOrder.map(n => n.id).join(",")}`).join("|");
+  useEffect(() => { if (projectionKey) setView(fitView(world, viewportRef.current)); }, [projectionKey]);
 
   /**
    * The common inter-brain store, re-read whenever the loaded brains change.
@@ -1268,14 +1302,9 @@ export default function MapApp() {
         // Displayed but handed as a key — resolve it in the brain already on
         // hand rather than reloading the composition for nothing.
         const parsed = splitCrossEndpointKey(target.endpointKey);
-        const node = parsed
-          ? loadedRef.current
-              .get(brainId)
-              ?.snapshot.nodes.find(
-                (candidate) => candidate.relativePath === parsed.relativePath,
-              )
-          : undefined;
-        if (node) selectNode({ brainId, nodeId: node.id });
+        if (parsed) void invoke<BrainNodeRef | null>("map_resolve_node", {brainId,relativePath:parsed.relativePath})
+          .then(reference => { if (reference) selectNode(reference); else setStatus("Extrémité absente de l'index courant."); })
+          .catch(error => setStatus(`Résolution refusée : ${String(error)}`));
         return;
       }
 
@@ -1923,7 +1952,7 @@ export default function MapApp() {
             {renderedBrains.reduce((total, brain) => total + brain.nodeCount, 0)} {t.nodes}
           </span>
           <span>
-            {report.nodeCount} {t.nodes} / {t.ceiling} {report.nodeCeiling}
+            {report.nodeCount} éléments indexés
           </span>
           <span data-testid="layout-algorithm">
             schema {report.schemaVersion} · {report.layoutAlgorithm}
@@ -2126,6 +2155,19 @@ export default function MapApp() {
             </output>
           ) : null}
 
+          {focusedBrain ? (
+            <section aria-label="Navigation progressive" data-testid="projection-controls">
+              <p>{focusedBrain.snapshot.materializedCount} éléments visibles sur {focusedBrain.snapshot.nodeCount}; {focusedBrain.snapshot.nonMaterializedCount} hors de la vue courante.</p>
+              <button type="button" disabled={!selected || selected.brainId !== focusedBrain.record.brainId}
+                onClick={() => selected && void changeProjection(selected.brainId, selected.nodeId)}>Explorer la sélection</button>
+              <button type="button" onClick={() => void changeProjection(focusedBrain.record.brainId, focusedBrain.snapshot.rootId)}>Revenir à la racine</button>
+              {focusedBrain.snapshot.aggregates.map(a => <button type="button" key={a.parentId}
+                data-testid="expand-aggregate" data-parent-id={a.parentId}
+                onClick={() => void changeProjection(focusedBrain.record.brainId, a.parentId, a.nextCursor)}>
+                {a.omittedDirectChildren} enfants directs hors vue — {a.nextCursor ? "page suivante" : "ouvrir la première page"}
+              </button>)}
+            </section>
+          ) : null}
           {renderedBrains.length > 0 && composed ? (
             <MapView
               brains={renderedBrains}
@@ -2135,6 +2177,7 @@ export default function MapApp() {
               viewport={viewport}
               selected={selected}
               focusedBrainId={composed.focusedBrainId}
+              onExpand={(brainId, aggregate) => void changeProjection(brainId, aggregate.parentId, aggregate.nextCursor)}
               onViewChange={setView}
               onSelect={selectNode}
               onViewportChange={setViewport}
@@ -2176,6 +2219,18 @@ export default function MapApp() {
               selected ? contentObservedBrains.has(selected.brainId) : false
             }
           />
+
+          <section aria-label="Extrémités hors de la vue courante">
+            {renderedBrains.flatMap(b => (loaded.get(b.brainId)?.relations?.established ?? []).flatMap(edge =>
+              [edge.source, edge.target].filter(e => e.nodeId !== null && !b.hierarchy.byId.has(e.nodeId)).map((e, i) =>
+                <p key={`${b.brainId}:${edge.id}:${i}`}>{e.name} — relation hors de la vue courante.
+                  <button type="button" onClick={() => selectNode({brainId:b.brainId,nodeId:e.nodeId!})}>Afficher {e.name}</button>
+                </p>)))}
+            {(nodeCross ? [...nodeCross.outgoing, ...nodeCross.incoming] : []).filter(e => e.other.nodeId !== null && !loaded.get(e.other.brainId)?.hierarchy.byId.has(e.other.nodeId)).map((e,i) =>
+              <p key={`cross:${i}`}>{e.other.name} — relation hors de la vue courante.
+                <button type="button" onClick={() => navigateCross({brainId:e.other.brainId,endpointKey:e.other.key})}>Afficher {e.other.name}</button>
+              </p>)}
+          </section>
 
           <RelationsPanel
             relations={nodeRelations}

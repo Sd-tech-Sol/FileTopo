@@ -1,5 +1,42 @@
 # État courant
 
+## TASK-0030 — convergence V1 livrée — 2026-09-09
+
+- **Statut : `IMPLEMENTED`**, livré par Codex, contrôle indépendant attendu.
+  [Fiche et audit](../tasks/TASK-0030-v1-pipeline-convergence.md);
+  [DEC-0031](../decisions/DEC-0031-one-canonical-brain-index-and-bounded-projection.md)
+  reste `APPROVED`.
+- **Branche active :** `build/v0.2-a14-v1-pipeline-convergence`; gel préalable
+  `0255bd1`. `Index.nodes` devient canonique par cerveau. `MapStore` est retiré
+  du runtime et conservé uniquement comme fixture historique sous `cfg(test)`.
+  Métadonnées, diagnostics et révision sont publiés dans la transaction du corpus.
+- **Vue produit bornée :** `map_view` fournit focus, ancêtres, enfants keyset,
+  agrégats d'enfants directs exacts et géométrie calculée sur la projection.
+  Budget **512 entités**, dont au plus 256 nœuds matériels et une place réservée
+  par nœud pour un agrégat. `map_snapshot` reste un alias borné. Aucun layout
+  global au build; la limite historique de 5000 est désormais test-only.
+- **Preuves :** 100 000 nœuds indexés par le cœur produit, toutes les pages
+  parcourues sans doublon ni omission; build physique synthétique de **6 001**
+  nœuds, empreinte inchangée après navigation, relations, hash et rebuild.
+  WebView2 **152.0.4191.66** : **12/11** nœuds/arêtes sur petite fixture;
+  **256 nœuds + 1 agrégat / 255 arêtes** sur 6001 indexés; 24 keydowns fiables,
+  page suivante conforme au DTO produit, zéro erreur fatale. Preuves
+  [WebView2](../performance/runs/TASK-0030-webview2.json) et
+  [validations](../performance/runs/TASK-0030-validation.json), non canoniques.
+- **Validations :** Rust **290 PASS, 5 ignorés**, TypeScript **264 PASS**,
+  typage et builds PASS. Clippy **échoue sur la dette préexistante** : 24 extraits
+  de diagnostics retrouvés dans `896e2c3`, dont l'ancien store déplacé en tests.
+  Aucun passage clippy vert n'est revendiqué; baseline clippy non réexécutée.
+- **Limites :** analyse/hash/règles/résolution de relations collectent encore des
+  métadonnées du corpus en mémoire via un adaptateur temporaire non sérialisable.
+  Pas de streaming ni optimisation P-08. Pas de racine personnelle, de preuve
+  physique 100k/1M, de promesse laptop modeste ou de preuve GPU désactivé.
+- **États :** F-050/F-051 `IMPLEMENTED` dans cette première tranche synthétique;
+  F-042/F-046 restent `PROPOSED`, F-047 `DEFERRED`. Graphify `NOT INTEGRATED`;
+  aucun renderer nouveau; R8, DEC-0013/F et X10 hors Windows restent ouvertes.
+  **X5 = 36**, preuves antérieures intactes; `origin/main = 1a7d652c`, inchangé.
+- **Action unique suivante : contrôle indépendant de TASK-0030.**
+
 ## ACTION-0046 — TASK-0029 VERIFIED — 2026-09-09
 
 - **Verdict indépendant enregistré, non rendu par Codex :** `ACTION-0046 =

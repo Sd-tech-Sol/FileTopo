@@ -340,9 +340,9 @@ fn evaluate(
             }
         }
     }
-    evaluation.suggestions.sort_by(|left, right| {
-        left.suggestion_key.cmp(&right.suggestion_key)
-    });
+    evaluation
+        .suggestions
+        .sort_by(|left, right| left.suggestion_key.cmp(&right.suggestion_key));
     Ok(evaluation)
 }
 
@@ -607,12 +607,9 @@ pub fn is_current(paths: &SandboxPaths, brain: &BrainRecord) -> Result<bool, Map
     Ok(status(paths, brain)?.input_state == "CURRENT")
 }
 
-pub fn run(
-    paths: &SandboxPaths,
-    brain: &BrainRecord,
-) -> Result<RelationEngineReport, MapError> {
+pub fn run(paths: &SandboxPaths, brain: &BrainRecord) -> Result<RelationEngineReport, MapError> {
     let map_store = commands::open_store(paths, brain)?;
-    let snapshot = map_store.snapshot()?;
+    let nodes = map_store.analysis_nodes()?;
     let map_digest = map_store.reconstructible_digest()?;
     let content_summary = content_signals::content_observation_summary(paths, brain)?;
     let generation = content_summary.current_generation_id.clone();
@@ -621,7 +618,7 @@ pub fn run(
     } else {
         None
     };
-    let effective = effective_nodes(&snapshot.nodes);
+    let effective = effective_nodes(&nodes);
     let evaluation = evaluate(
         &brain.brain_id,
         &effective,
@@ -696,7 +693,12 @@ mod tests {
             modified_unix_ms: None,
             child_count: 0,
             access_diagnostic: None,
-            rect: Rect { x: 0.0, y: 0.0, w: 240.0, h: 64.0 },
+            rect: Rect {
+                x: 0.0,
+                y: 0.0,
+                w: 240.0,
+                h: 64.0,
+            },
         }
     }
 

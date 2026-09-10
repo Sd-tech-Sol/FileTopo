@@ -22,12 +22,8 @@
 //!   [`MAX_ANCESTOR_CHAIN`], and going past a ceiling is an error, never a
 //!   silent truncation.
 //!
-//! **This is product-internal core only.** It exposes no Tauri command, no
-//! route and no IPC contract: `DEC-0030` refuses a premature wire format, and
-//! the progressive materializer that will consume these primitives belongs to
-//! a later slice. Everything here is therefore unreachable from the current
-//! runtime by design — hence the module-wide `dead_code` allowance below,
-//! which states that reason rather than hiding it.
+//! Product core consumed by the DEC-0031 projection. The remaining development
+//! query-plan helpers and constants are exercised by the historical campaigns.
 #![allow(dead_code)]
 
 use crate::domain::NodeDto;
@@ -180,10 +176,7 @@ pub fn identity(connection: &Connection) -> Result<IndexIdentity, HierarchyError
         |row| row.get(0),
     )?;
     let revision = read_revision(connection)?;
-    Ok(IndexIdentity {
-        index_id,
-        revision,
-    })
+    Ok(IndexIdentity { index_id, revision })
 }
 
 pub(crate) fn read_revision(connection: &Connection) -> rusqlite::Result<u64> {

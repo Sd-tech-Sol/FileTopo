@@ -1,16 +1,19 @@
 //! The commands the map view calls, and the pipeline behind them.
 //!
 //! One pipeline, in one place: materialise the fixture, fingerprint it, scan it
-//! read-only, lay it out once, persist both, and read back. Everything the
+//! read-only, publish the canonical Index, then materialize a bounded view. Everything the
 //! frozen criteria need to be checked — timings, fingerprints, engine version,
 //! digests — comes out of this file rather than being reconstructed later from
 //! guesswork.
 
+#[cfg(test)]
+use super::MAX_NODES_PER_MAP;
+use super::brain_index::BrainIndex;
 use super::brains::{BrainNodeRef, BrainRecord};
-use super::layout::{self, LAYOUT_ALGORITHM, LayoutInput};
+use super::layout::{self, LAYOUT_ALGORITHM};
 use super::sandbox::{self, SandboxPaths};
-use super::store::{MapSnapshot, MapStore, NON_RECONSTRUCTIBLE_KEYS, NodeDetail};
-use super::{MAX_FIXTURE_DEPTH, MAX_NODES_PER_MAP, MapError, fixtures};
+use super::store::{MapSnapshot, NON_RECONSTRUCTIBLE_KEYS, NodeDetail};
+use super::{MAX_FIXTURE_DEPTH, MapError, fixtures};
 use crate::domain::ScanDiagnostic;
 use crate::scanner::scan_tree_controlled;
 use serde::{Deserialize, Serialize};
@@ -183,11 +186,10 @@ fn now_ms() -> i64 {
         .min(i64::MAX as u128) as i64
 }
 
-/// Materialises the fixture, scans it, lays it out and persists the index.
+/// Materialises the fixture, scans it read-only and publishes the canonical index.
 ///
-/// `rebuild` deletes nothing on disk beyond the index file itself — the
-/// analysed tree is never touched, and `H7` needs exactly that: drop the
-/// index, rebuild, compare.
+/// Canonical rebuilds retain index identity and advance the revision atomically.
+/// Only an incompatible legacy derived database is removed and reconstructed.
 pub fn build_map(
     paths: &SandboxPaths,
     brain: &BrainRecord,
@@ -207,15 +209,12 @@ pub fn build_map(
     // line is what makes `brain-alpha` and `brain-gamma` two brains rather
     // than one shared index wearing two names.
     let database = paths.brain_map_database(&brain.brain_id);
-    if rebuild && database.exists() {
-        remove_index_files(&database)?;
-    }
     // An index built for another brain — or a version-1 index, which names no
     // brain at all — is **rebuilt**, never read. Serving it would be exactly
     // the leak `K3` forbids.
     let mut compatibility_rebuild = false;
-    if database.is_file() && !rebuild {
-        let existing = MapStore::open(&database)?;
+    if database.is_file() {
+        let existing = BrainIndex::open(&database)?;
         let built_for = existing.built_for_brain()?;
         let compatible = existing.is_built()?;
         drop(existing);
@@ -230,39 +229,13 @@ pub fn build_map(
         .map_err(|error| MapError::Scan(error.to_string()))?;
     let scan_ms = elapsed_ms(scan_started);
 
-    // `B-1`, applied before anything is written. No truncation, no sampling,
-    // no level of detail: the build refuses and says so.
-    if scan.nodes.len() > MAX_NODES_PER_MAP {
-        return Err(MapError::NodeBudgetExceeded {
-            found: scan.nodes.len(),
-            ceiling: MAX_NODES_PER_MAP,
-        });
-    }
-
-    let mut index_by_id = std::collections::HashMap::with_capacity(scan.nodes.len());
-    for (position, node) in scan.nodes.iter().enumerate() {
-        index_by_id.insert(node.id, position);
-    }
-    let parents = scan
-        .nodes
-        .iter()
-        .map(|node| node.parent_id.and_then(|id| index_by_id.get(&id).copied()))
-        .collect::<Vec<_>>();
-
-    let layout_started = Instant::now();
-    let laid_out = layout::compute(LayoutInput { parents: &parents });
-    let layout_ms = elapsed_ms(layout_started);
-
     let index_started = Instant::now();
-    let mut store = MapStore::open(&database)?;
+    let mut store = BrainIndex::open(&database)?;
     store.replace(
         &brain.brain_id,
         spec.id,
         spec.label_fr,
         &scan.nodes,
-        &laid_out.rects,
-        laid_out.width,
-        laid_out.height,
         &scan.diagnostics,
         now_ms(),
     )?;
@@ -278,14 +251,14 @@ pub fn build_map(
         node_count: scan.nodes.len(),
         planned_nodes: plan.node_count(),
         max_depth,
-        node_ceiling: MAX_NODES_PER_MAP,
+        node_ceiling: 0, // No corpus ceiling on the converged runtime.
         depth_ceiling: MAX_FIXTURE_DEPTH,
         rebuilt: rebuild || compatibility_rebuild,
         scan_ms,
-        layout_ms,
+        layout_ms: 0.0,
         index_ms,
         total_ms: elapsed_ms(started),
-        layout_invocations: laid_out.invocations,
+        layout_invocations: 0,
         read_only_confirmed: fingerprint_before == fingerprint_after,
         fingerprint_before,
         fingerprint_after,
@@ -330,12 +303,12 @@ fn elapsed_ms(started: Instant) -> f64 {
 /// copied sandbox, a future migration, a mistake in a caller — the answer is
 /// a [`MapError::BrainMismatch`] rather than another brain's nodes served
 /// under the active brain's name.
-pub fn open_store(paths: &SandboxPaths, brain: &BrainRecord) -> Result<MapStore, MapError> {
+pub fn open_store(paths: &SandboxPaths, brain: &BrainRecord) -> Result<BrainIndex, MapError> {
     let database = paths.brain_map_database(&brain.brain_id);
     if !database.is_file() {
         return Err(MapError::NotBuilt(brain.brain_id.clone()));
     }
-    let store = MapStore::open(&database)?;
+    let store = BrainIndex::open(&database)?;
     if !store.is_built()? {
         return Err(MapError::NotBuilt(brain.brain_id.clone()));
     }
@@ -351,6 +324,28 @@ pub fn open_store(paths: &SandboxPaths, brain: &BrainRecord) -> Result<MapStore,
             found: "index sans cerveau (schema v1)".to_string(),
         }),
     }
+}
+
+/// Temporary metadata input for existing analysis consumers; never an IPC response.
+pub(crate) struct AnalysisInput {
+    pub nodes: Vec<super::store::MapNode>,
+}
+pub(crate) fn analysis_input(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+) -> Result<AnalysisInput, MapError> {
+    Ok(AnalysisInput {
+        nodes: open_store(paths, brain)?.analysis_nodes()?,
+    })
+}
+
+pub fn view(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+    focus: Option<i64>,
+    after: Option<&str>,
+) -> Result<MapSnapshot, MapError> {
+    super::projection::materialize_view(&open_store(paths, brain)?, focus, after)
 }
 
 pub fn snapshot(paths: &SandboxPaths, brain: &BrainRecord) -> Result<MapSnapshot, MapError> {
@@ -416,9 +411,10 @@ pub fn self_check(paths: &SandboxPaths, brain: &BrainRecord) -> Result<MapSelfCh
     let planned = fixtures::plan(spec).expected_paths();
     let observed = fixtures::observed_paths(&root)?;
     let store = open_store(paths, brain)?;
-    let nodes = store.all_nodes()?;
+    let corpus = store.analysis_nodes()?;
+    let nodes = store.snapshot()?.nodes;
 
-    let mut indexed = nodes
+    let mut indexed = corpus
         .iter()
         .filter(|node| node.parent_id.is_some())
         .map(|node| node.relative_path.clone())
@@ -528,10 +524,10 @@ pub fn self_check(paths: &SandboxPaths, brain: &BrainRecord) -> Result<MapSelfCh
             .map(|child| child.id)
             .collect::<Vec<_>>();
         reported.sort_unstable();
-        if reported != expected_children {
+        if !expected_children.iter().all(|id| reported.contains(id)) {
             hierarchy_mismatches.push(format!("children mismatch on {}", node.relative_path));
         }
-        if detail.children.len() as u32 != node.child_count {
+        if detail.children.len() as u64 + detail.omitted_children != u64::from(node.child_count) {
             hierarchy_mismatches.push(format!("child count mismatch on {}", node.relative_path));
         }
         if detail.node.name != node.name
@@ -1246,8 +1242,8 @@ mod tests {
             // H6 — the analysed tree is byte-identical before and after.
             assert!(report.read_only_confirmed, "{} was modified", spec.id);
 
-            // H10 — layout runs once per tree.
-            assert_eq!(report.layout_invocations, 1);
+            // DEC-0031 supersedes build-time H10: only the view is laid out.
+            assert_eq!(report.layout_invocations, 0);
 
             // H1, H2, H3, H5.
             let check = self_check(&paths, &brain).expect("self check");
@@ -1332,6 +1328,46 @@ mod tests {
         let first = build_map(&paths, &brain, false).expect("initial v3 build");
         let database = paths.brain_map_database(&brain.brain_id);
 
+        // Construct an actual old store, not a mutation of the new schema.
+        remove_index_files(&database).expect("replace this test's derived index only");
+        let scan = scan_tree_controlled(
+            &fixtures::fixture_root(&paths.fixtures, "quasi-empty"),
+            || false,
+            |_| {},
+        )
+        .expect("scan");
+        let positions = scan
+            .nodes
+            .iter()
+            .enumerate()
+            .map(|(i, n)| (n.id, i))
+            .collect::<std::collections::HashMap<_, _>>();
+        let parents = scan
+            .nodes
+            .iter()
+            .map(|n| n.parent_id.and_then(|p| positions.get(&p).copied()))
+            .collect::<Vec<_>>();
+        let old_layout = layout::compute(layout::LayoutInput { parents: &parents });
+        let mut old_store =
+            super::super::legacy_store::MapStore::open(&database).expect("old store");
+        old_store
+            .replace(
+                &brain.brain_id,
+                "quasi-empty",
+                "Quasi vide",
+                &scan.nodes,
+                &old_layout.rects,
+                old_layout.width,
+                old_layout.height,
+                &scan.diagnostics,
+                0,
+            )
+            .expect("legacy corpus");
+        assert_eq!(
+            old_store.built_for_brain().unwrap().as_deref(),
+            Some(brain.brain_id.as_str())
+        );
+        drop(old_store);
         let legacy = rusqlite::Connection::open(&database).expect("legacy index");
         legacy
             .execute(
@@ -1360,7 +1396,7 @@ mod tests {
         );
         assert_eq!(rebuilt.schema_version, 3);
         assert_eq!(rebuilt.layout_algorithm, LAYOUT_ALGORITHM);
-        assert_eq!(rebuilt.layout_invocations, 1);
+        assert_eq!(rebuilt.layout_invocations, 0);
         assert_eq!(rebuilt.fingerprint_before, first.fingerprint_before);
         assert_eq!(rebuilt.fingerprint_after, first.fingerprint_after);
         let snapshot = snapshot(&paths, &brain).expect("v3 snapshot");

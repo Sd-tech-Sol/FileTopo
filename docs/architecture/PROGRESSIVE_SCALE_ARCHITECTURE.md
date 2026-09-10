@@ -16,6 +16,19 @@
 
 ---
 
+## 0. Convergence réalisée par TASK-0030 — 2026-09-09
+
+La cible documentaire ci-dessous reste inchangée. Sa première tranche produit
+est livrée `IMPLEMENTED`, en attente de contrôle indépendant :
+[DEC-0031](../decisions/DEC-0031-one-canonical-brain-index-and-bounded-projection.md)
+et [TASK-0030](../tasks/TASK-0030-v1-pipeline-convergence.md).
+`Index.nodes` est canonique par cerveau, `map_view` matérialise au plus 512 entités
+(256 places de nœuds et réserve d'agrégats), puis le layout existant s'applique
+à cette vue. Aucun plafond de corpus 5000 ni layout global sur ce chemin.
+Les métadonnées d'analyse sont encore collectées en mémoire; ce point, P-08,
+le streaming et l'acceptation produit à 1M restent ouverts. Les résultats sont
+synthétiques et ne valident aucune performance sur machine modeste.
+
 ## 1. L'énoncé unique
 
 > **FileTopo indexe grand, matérialise petit, et ne rend que le contexte

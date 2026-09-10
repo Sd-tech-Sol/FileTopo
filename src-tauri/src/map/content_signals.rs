@@ -8,15 +8,15 @@ use super::brains::{BrainNodeRef, BrainRecord};
 use super::fixtures;
 use super::sandbox::SandboxPaths;
 use super::store::MapNode;
-use super::{commands, MapError};
+use super::{MapError, commands};
 use crate::domain::NodeKind;
-use rusqlite::{params, Connection, OptionalExtension, Transaction};
+use rusqlite::{Connection, OptionalExtension, Transaction, params};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::fmt::Write as _;
-use std::fs::{self, File, Metadata};
 #[cfg(windows)]
 use std::fs::OpenOptions;
+use std::fs::{self, File, Metadata};
 use std::io::{self, Read};
 use std::path::{Component, Path, PathBuf};
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
@@ -628,9 +628,10 @@ fn visit_source_tree(
                 stream_open_file_into(file, hasher, buffer, observer)?;
             }
             TREE_MARKER_DIRECTORY => {
-                let directory_guard = opened.file.as_ref().ok_or_else(|| {
-                    MapError::FixtureMismatch("directory was not opened".into())
-                })?;
+                let directory_guard = opened
+                    .file
+                    .as_ref()
+                    .ok_or_else(|| MapError::FixtureMismatch("directory was not opened".into()))?;
                 visit_source_tree(
                     base,
                     &path,
@@ -827,7 +828,7 @@ pub fn observe_content(
     brain: &BrainRecord,
 ) -> Result<ContentObservationReport, MapError> {
     let store = commands::open_store(paths, brain)?;
-    let nodes = store.all_nodes()?;
+    let nodes = store.analysis_nodes()?;
     let root = fixtures::fixture_root(&paths.fixtures, &brain.source_ref);
     observe_root_with_hook(paths, &brain.brain_id, &root, &nodes, &mut |_| Ok(()))
 }
@@ -959,39 +960,30 @@ pub fn prepare_task0026_ed15(
             seen: true,
         });
     }
-    let parents = std::iter::once(None)
-        .chain((0..plan.len()).map(|_| Some(0)))
-        .collect::<Vec<_>>();
-    let layout = super::layout::compute(super::layout::LayoutInput { parents: &parents });
     let database = paths.brain_map_database(&brain.brain_id);
-    let mut map_store = super::store::MapStore::open(&database)?;
+    let mut map_store = super::brain_index::BrainIndex::open(&database)?;
     map_store.replace(
         &brain.brain_id,
         TASK0026_ED15_SOURCE_ID,
         "Source synthétique ED15",
         &nodes,
-        &layout.rects,
-        layout.width,
-        layout.height,
         &[],
         now_ms(),
     )?;
-    let snapshot = map_store.snapshot()?;
+    let analysis_nodes = map_store.analysis_nodes()?;
+    let map_node_count = map_store.count()?;
     drop(map_store);
-    let report = observe_root_with_hook(
-        paths,
-        &brain.brain_id,
-        &root,
-        &snapshot.nodes,
-        &mut |_| Ok(()),
-    )?;
+    let report =
+        observe_root_with_hook(paths, &brain.brain_id, &root, &analysis_nodes, &mut |_| {
+            Ok(())
+        })?;
     Ok(Task0026Ed15Preparation {
         source_id: TASK0026_ED15_SOURCE_ID.to_string(),
         total_files: TASK0026_ED15_TOTAL_FILES,
         expected_groups: TASK0026_ED15_EXPECTED_GROUPS,
         expected_grouped_occurrences: TASK0026_ED15_EXPECTED_GROUPED_OCCURRENCES,
         expected_empty_members: TASK0026_ED15_EMPTY_MEMBERS,
-        map_node_count: snapshot.node_count,
+        map_node_count,
         report,
     })
 }
@@ -1449,13 +1441,11 @@ fn map_node_ref_for_path(
     if !database.is_file() {
         return Ok(None);
     }
-    let connection = Connection::open_with_flags(
-        database,
-        rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
-    )?;
+    let connection =
+        Connection::open_with_flags(database, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)?;
     let built_for = connection
         .query_row(
-            "SELECT value FROM map_meta WHERE key='brain_id'",
+            "SELECT value FROM schema_meta WHERE key='brain_id'",
             [],
             |row| row.get::<_, String>(0),
         )
@@ -1465,7 +1455,7 @@ fn map_node_ref_for_path(
     }
     Ok(connection
         .query_row(
-            "SELECT id FROM map_nodes WHERE relative_path=?1",
+            "SELECT id FROM nodes WHERE relative_path=?1",
             [relative_path],
             |row| row.get::<_, i64>(0),
         )

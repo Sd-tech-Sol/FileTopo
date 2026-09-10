@@ -4002,3 +4002,22 @@ synthétique limité; aucun bout-en-bout index -> vue -> frontend; aucun résult
 
 **Action unique suivante :** retour à l'orchestrateur pour ouvrir la prochaine
 tranche V1 de convergence du pipeline réel.
+
+## 2026-09-09 — TASK-0030 — convergence V1 du pipeline
+
+**Agent :** Codex. **Statut :** IMPLEMENTED, contrôle indépendant attendu.
+Branche `build/v0.2-a14-v1-pipeline-convergence`, gel préalable `0255bd1`.
+
+Remplacement du store runtime par l'Index canonique; publication atomique de ses
+métadonnées/diagnostics/révision; projection keyset et agrégats exacts sous budget
+512; layout de vue et IPC borné; navigation progressive et résolution d'extrémités
+hors vue. Ancien MapStore limité aux fixtures de migration et tests historiques.
+Build synthétique au-delà de 5000; aucune racine personnelle activée.
+
+Rust 290 PASS (5 ignorés), TS 264 PASS, typage/builds PASS; clippy en échec sur
+extraits préexistants retrouvés dans la base. WebView2 réel 12 puis 6001 indexés,
+vue large de 256 nœuds + 1 agrégat, page suivante et 24 keydowns fiables. Échec
+initial du pilote CDP conservé dans les limites de validation. F-050/F-051
+IMPLEMENTED dans la tranche; F-042/F-046 PROPOSED, F-047 DEFERRED. X5 inchangé.
+Branche de travail publiée, aucune action sur main/PR/tag/release; aucun reset,
+clean, force push ni suppression de sandbox persistant. Suite unique : contrôle indépendant.

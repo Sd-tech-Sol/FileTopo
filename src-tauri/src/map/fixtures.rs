@@ -9,7 +9,9 @@
 //! Nothing here reads, lists or writes a user folder. The trees are invented
 //! from the seed and written into the sandbox.
 
-use super::{MAX_FIXTURE_DEPTH, MAX_NODES_PER_MAP, MapError, Rng, fnv1a64};
+#[cfg(test)]
+use super::MAX_NODES_PER_MAP;
+use super::{MAX_FIXTURE_DEPTH, MapError, Rng, fnv1a64};
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -20,6 +22,7 @@ pub enum Shape {
     Deep,
     Wide,
     Mixed,
+    ScaleRuntime,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -69,7 +72,20 @@ pub const FIXTURES: [FixtureSpec; 4] = [
     },
 ];
 
+/// Additional synthetic fixture for DEC-0031; does not change the four frozen plans.
+pub static SCALE_RUNTIME: FixtureSpec = FixtureSpec {
+    id: "scale-runtime",
+    label_fr: "Échelle synthétique",
+    label_en: "Synthetic scale",
+    seed: 20_260_909_030,
+    max_nodes: 6_001,
+    shape: Shape::ScaleRuntime,
+};
+
 pub fn spec(fixture_id: &str) -> Result<&'static FixtureSpec, MapError> {
+    if fixture_id == SCALE_RUNTIME.id {
+        return Ok(&SCALE_RUNTIME);
+    }
     FIXTURES
         .iter()
         .find(|candidate| candidate.id == fixture_id)
@@ -168,6 +184,16 @@ pub fn plan(spec: &'static FixtureSpec) -> FixturePlan {
         Shape::Deep => plan_deep(spec, &mut entries, &mut rng),
         Shape::Wide => plan_wide(spec, &mut entries, &mut rng),
         Shape::Mixed => plan_mixed(spec, &mut entries, &mut rng),
+        Shape::ScaleRuntime => {
+            for i in 0..6_000 {
+                push_file(
+                    &mut entries,
+                    spec.id,
+                    format!("synthetic-{i:05}.txt"),
+                    &mut rng,
+                );
+            }
+        }
     }
     FixturePlan { entries }
 }
@@ -314,12 +340,6 @@ pub fn materialize(fixtures_root: &Path, spec: &'static FixtureSpec) -> Result<F
             plan.node_count(),
             spec.max_nodes
         )));
-    }
-    if plan.node_count() > MAX_NODES_PER_MAP {
-        return Err(MapError::NodeBudgetExceeded {
-            found: plan.node_count(),
-            ceiling: MAX_NODES_PER_MAP,
-        });
     }
     if plan.max_depth() > MAX_FIXTURE_DEPTH {
         return Err(MapError::FixtureMismatch(format!(

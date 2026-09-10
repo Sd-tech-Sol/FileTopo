@@ -1,0 +1,163 @@
+{
+  "task": "TASK-0030",
+  "status": "EXECUTOR_VALIDATION_NOT_INDEPENDENT_CONTROL",
+  "rust": {
+    "command": "cargo test --lib --offline",
+    "passed": 290,
+    "failed": 0,
+    "ignored": 5
+  },
+  "typescript": {
+    "command": "pnpm test",
+    "passed": 264,
+    "failed": 0
+  },
+  "checks": {
+    "pnpm check": "PASS",
+    "pnpm build": "PASS",
+    "cargo build --offline": "PASS",
+    "runtime_source_guard": "PASS (replayed after strengthening the source boundary)",
+    "git diff --check": "PASS"
+  },
+  "clippy": {
+    "command": "cargo clippy --all-targets --offline -- -D warnings",
+    "result": "FAIL_PREEXISTING_DEBT",
+    "libErrors": 13,
+    "libTestErrors": 22,
+    "diagnosticSourceExcerptsCompared": 24,
+    "baseline": "896e2c39b955688e6a740427691be62255436a04",
+    "allExcerptsPresentInBaseline": true,
+    "baselineClippyRerun": false,
+    "sourceChecks": [
+      {
+        "file": "src-tauri/src/map/relations.rs",
+        "diagnostic": "constant `SUGGESTION_STATES` is never used",
+        "baselineExcerptFound": true
+      },
+      {
+        "file": "src-tauri/src/map/brains.rs",
+        "diagnostic": "this `if` statement can be collapsed",
+        "baselineExcerptFound": true
+      },
+      {
+        "file": "src-tauri/src/map/content_signals.rs",
+        "diagnostic": "this expression creates a reference which is immediately dereferenced by the compiler",
+        "baselineExcerptFound": true
+      },
+      {
+        "file": "src-tauri/src/map/relation_commands.rs",
+        "diagnostic": "this function has too many arguments (8/7)",
+        "baselineExcerptFound": true
+      },
+      {
+        "file": "src-tauri/src/map/relation_commands.rs",
+        "diagnostic": "this `if` statement can be collapsed",
+        "baselineExcerptFound": true
+      },
+      {
+        "file": "src-tauri/src/map/relation_commands.rs",
+        "diagnostic": "this `if` statement can be collapsed",
+        "baselineExcerptFound": true
+      },
+      {
+        "file": "src-tauri/src/map/relation_commands.rs",
+        "diagnostic": "this `if` statement can be collapsed",
+        "baselineExcerptFound": true
+      },
+      {
+        "file": "src-tauri/src/map/relation_commands.rs",
+        "diagnostic": "this `if` statement can be collapsed",
+        "baselineExcerptFound": true
+      },
+      {
+        "file": "src-tauri/src/map/relations.rs",
+        "diagnostic": "useless use of `format!`",
+        "baselineExcerptFound": true
+      },
+      {
+        "file": "src-tauri/src/map/relations.rs",
+        "diagnostic": "very complex type used. Consider factoring parts into `type` definitions",
+        "baselineExcerptFound": true
+      },
+      {
+        "file": "src-tauri/src/map/rule_engine.rs",
+        "diagnostic": "unneeded `return` statement",
+        "baselineExcerptFound": true
+      },
+      {
+        "file": "src-tauri/src/map/rule_engine.rs",
+        "diagnostic": "unneeded `return` statement",
+        "baselineExcerptFound": true
+      },
+      {
+        "file": "src-tauri/src/lib.rs",
+        "diagnostic": "this `if` statement can be collapsed",
+        "baselineExcerptFound": true
+      },
+      {
+        "file": "src-tauri/src/scale_spike/bounded.rs",
+        "diagnostic": "method `to_json` is never used",
+        "baselineExcerptFound": true
+      },
+      {
+        "file": "src-tauri/src/map/content_signals.rs",
+        "diagnostic": "this assertion has a constant value",
+        "baselineExcerptFound": true
+      },
+      {
+        "file": "src-tauri/src/map/store.rs",
+        "diagnostic": "this function has too many arguments (10/7)",
+        "baselineExcerptFound": true
+      },
+      {
+        "file": "src-tauri/src/map/relation_commands.rs",
+        "diagnostic": "this function has too many arguments (8/7)",
+        "baselineExcerptFound": true
+      },
+      {
+        "file": "src-tauri/src/scale_query/campaigns.rs",
+        "diagnostic": "this `if` statement can be collapsed",
+        "baselineExcerptFound": true
+      },
+      {
+        "file": "src-tauri/src/scale_query/mod.rs",
+        "diagnostic": "this assertion has a constant value",
+        "baselineExcerptFound": true
+      },
+      {
+        "file": "src-tauri/src/scale_spike/bounded.rs",
+        "diagnostic": "very complex type used. Consider factoring parts into `type` definitions",
+        "baselineExcerptFound": true
+      },
+      {
+        "file": "src-tauri/src/scale_spike/profile.rs",
+        "diagnostic": "this `if` statement can be collapsed",
+        "baselineExcerptFound": true
+      },
+      {
+        "file": "src-tauri/src/scale_spike/profile.rs",
+        "diagnostic": "this `if` statement can be collapsed",
+        "baselineExcerptFound": true
+      },
+      {
+        "file": "src-tauri/src/scale_spike/profile.rs",
+        "diagnostic": "this `if` statement can be collapsed",
+        "baselineExcerptFound": true
+      },
+      {
+        "file": "src-tauri/src/scale_spike/report.rs",
+        "diagnostic": "this `if` statement can be collapsed",
+        "baselineExcerptFound": true
+      }
+    ]
+  },
+  "initialFailures": [
+    "Rust: build-time layout assertion and legacy schema setup depended on retired storage; replaced by explicit DEC-0031 and actual legacy-store migration checks",
+    "WebView2 driver: native Enter activation timed out; corrected CDP key metadata and replayed in a fresh synthetic namespace"
+  ],
+  "limits": [
+    "Rust ignored development campaigns were not run",
+    "No personal data, physical 100k or 1M product acceptance run",
+    "Analysis engines still collect canonical metadata in memory; only the view/layout/DTO boundary is bounded"
+  ]
+}

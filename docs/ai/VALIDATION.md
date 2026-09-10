@@ -1,7 +1,8 @@
 # VALIDATION.md — État de vérification
 
 **Dernière mise à jour :** 2026-09-09
-**Dernière tâche évaluée :** TASK-0029 — `VERIFIED` le 2026-09-09 par le
+**Dernière livraison exécutée :** TASK-0030 `IMPLEMENTED`, section AY, contrôle indépendant attendu.
+**Dernière tâche évaluée indépendamment :** TASK-0029 — `VERIFIED` le 2026-09-09 par le
 verdict indépendant enregistré dans `ACTION-0046`, section AX. TASK-0028 —
 `VERIFIED` le 2026-09-07 par le verdict indépendant enregistré dans
 `ACTION-0045`, section AV.
@@ -4171,3 +4172,37 @@ Codex est seulement le rédacteur de l'enregistrement. Voir
 
 `TASK-0029` vérifie une fondation de requête. Elle ne vérifie ni la V1, ni le
 million d'éléments comme capacité commerciale.
+
+## AY. TASK-0030 — index canonique et projection bornée — 2026-09-09
+
+Exécution Codex, **pas une vérification indépendante**. DEC-0031 APPROVED;
+TASK-0030 IMPLEMENTED. Gel documentaire préalable `0255bd1`.
+
+| Contrôle exécuté | Résultat et preuve |
+|---|---|
+| Rust complet `cargo test --lib --offline` | 290 PASS, 0 FAIL, 5 campagnes ignorées |
+| Produit 100k, pagination complète, isolation, rebuild stale, read-only 6001, relation hors vue | 5 tests `map::projection::tests` PASS; `projection_tests.rs` |
+| Garde runtime | PASS, contrôle explicitement non vide du code de commandes; rejeu ciblé après renforcement |
+| TypeScript complet | 264 PASS, dont 3 sur le DTO produit 100k exporté |
+| `pnpm check`, `pnpm build`, `cargo build --offline` | PASS |
+| `cargo clippy --all-targets --offline -- -D warnings` | FAIL : 13 erreurs lib et 22 lib test; 24 extraits de diagnostic tous présents dans la base `896e2c3` (ancien store déplacé compris). Aucun clippy vert; base non réexécutée |
+| WebView2 réel | 152.0.4191.66; petite vue 12 nœuds/11 arêtes; 6001 physiques → 256 nœuds, 1 agrégat exact, 255 arêtes; page suivante exacte; 24 keydowns isTrusted; aucune erreur fatale |
+| Confidentialité | Empreinte source inchangée après build, navigation, sélection, relations, hash et rebuild; aucun fichier applicatif dans la source synthétique |
+| X5 / Git | 36 noms protégés inchangés, aucun JSON antérieur modifié; diff sans erreur d'espaces |
+
+Les résultats sont consultables dans
+[`TASK-0030-validation.json`](../performance/runs/TASK-0030-validation.json),
+[`TASK-0030-webview2.json`](../performance/runs/TASK-0030-webview2.json) et le
+[DTO produit 100k exporté](../performance/runs/TASK-0030-materialized-view-100k.json).
+Ils restent non canoniques. `scripts/task0030-webview2.ps1` prépare un catalogue
+synthétique neuf (Bêta lit `scale-runtime`), puis utilise le runtime normal et
+un pilote CDP. Vite doit servir ce checkout sur le port 1420. Aucun autre chemin
+produit n'est substitué au scan/index/projection.
+
+Échecs conservés : première suite Rust avec deux anciennes hypothèses de stockage
+(non-régression migrée, fonctions conservées); première tentative WebView2 en
+timeout sur l'activation native d'Entrée, pilote corrigé et rejeu neuf réussi.
+Les durées de gestes incluent les pauses CDP, **pas des benchmarks de rendu**.
+Non testé : 100k physique, 1M produit, portable modeste, GPU désactivé, hors Windows,
+données personnelles et campagnes historiques ignorées. Les consommateurs
+d'analyse restent en mémoire; aucune optimisation P-08 ou indexation streaming.

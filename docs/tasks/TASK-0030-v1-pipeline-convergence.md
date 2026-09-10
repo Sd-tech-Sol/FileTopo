@@ -1,7 +1,7 @@
 # TASK-0030 — V1 Pipeline Convergence — Canonical Brain Index and Bounded Runtime Projection
 
 - Date : 2026-09-09
-- Statut : `APPROVED` — GO technique dans `.orchestrator/NEXT_PROMPT.md`, exécuté à la demande de Sébastien.
+- Statut : `IMPLEMENTED` — GO technique dans `.orchestrator/NEXT_PROMPT.md`, exécuté à la demande de Sébastien.
 - Exécuteur : Codex; contrôle indépendant requis, jamais auto-attribué.
 - Branche : `build/v0.2-a14-v1-pipeline-convergence`.
 - Base : `896e2c39b955688e6a740427691be62255436a04`, parent `981e5fe262556208f118ebfc299e5c9333600c4e`.
@@ -78,3 +78,74 @@ jamais VERIFIED. F-050/F-051 ne changent que sur preuves; F-042 reste PROPOSED
 sauf gestes effectivement exposés et testés; F-046 PROPOSED, F-047 DEFERRED.
 X5 reste 36. Aucune TASK-0031/DEC-0032. Action suivante : contrôle indépendant
 de TASK-0030. Tableau final de code supprimé/réutilisé/migré/temporaire requis.
+
+## Résultat livré
+
+Gel `APPROVED` commité en `0255bd1`, puis exécution `IN_PROGRESS`, livraison
+`IMPLEMENTED`. Aucun VERIFIED auto-attribué. Les critères 1–10 ci-dessus sont
+exécutés dans leur portée synthétique; clippy reste en échec sur dette antérieure
+et n'est jamais déclaré PASS. Résultats détaillés : [VALIDATION AY](../ai/VALIDATION.md),
+[rapport de checks](../performance/runs/TASK-0030-validation.json),
+[WebView2](../performance/runs/TASK-0030-webview2.json),
+[projection 100k](../performance/runs/TASK-0030-materialized-view-100k.json).
+
+### Contrat effectivement livré
+
+`BrainIndex` porte seulement les opérations/métadonnées de cerveau autour de
+`Index`; il ne possède aucune table de nœuds supplémentaire. `schema_meta` et
+`node_diagnostics` sont publiés avec `nodes` et sa révision. `map_view` est le
+contrat principal; `map_snapshot` son alias borné pour les anciens scénarios.
+`map_resolve_node` résout un chemin relatif dans l'index du cerveau pour la
+navigation inter-cerveaux; il n'accède pas au système de fichiers.
+
+Le budget de 512 réserve une place d'agrégat par nœud matériel : **256 nœuds
+matériels maximum**; un arbre adversarial dont chaque nœud omet des enfants ne
+peut pas dépasser 512 entités. Sur la fratrie plate 100k, 256 nœuds + 1 agrégat.
+Le compte global absent vaut total indexé moins matérialisé. Chaque agrégat
+compte seulement les enfants directs absents de **la page courante**, y compris
+ceux des pages antérieures; ce n'est jamais un total récursif ni un compte
+« restant à visiter ». Une dernière page propose de revenir à la première.
+
+Les ancêtres au-delà des places matérielles sont refusés explicitement; les
+fixtures produit restent sous profondeur 40. Pan/zoom/sélection ordinaires ne
+recalculent pas le layout; focus/page en produisent un nouveau, borné. Les
+petites fixtures historiques de 12 et 157 éléments restent complètes. Les
+fixtures historiques plus grandes sont désormais projetées sous budget.
+
+### Dette supprimée, réutilisée, migrée et temporaire
+
+| Nature | Code et résultat |
+|---|---|
+| Retiré du produit | `MapStore`, table `map_nodes`, ses requêtes globales, rectangles persistés, plafond 5000 au build, layout sur le corpus |
+| Réutilisé | `Index`, transactions SQLite, keyset/révision/child_count TASK-0029, scanner, catalogue isolé, `layered-tree-cards-v1`, composants de rendu et gestes |
+| Migré | Build, vue/détails, campagnes de hash/ED15, SQL du résolveur de doublons, consommateurs de relations et règles; ils lisent tous l'index canonique |
+| Temporaire | `BrainIndex::analysis_nodes` et `commands::AnalysisInput` non sérialisable : adaptent les moteurs existants qui attendent des métadonnées `MapNode`; rectangles à zéro inutilisés par ces moteurs, jamais rendus. Leur optimisation demanderait une tranche distincte; aucun cache durable ni second corpus |
+| Historique test-only | `legacy_store.rs`, copie de l'ancien store et de ses tests pour fabriquer de vrais anciens schémas et vérifier leur reconstruction. Module `cfg(test)` privé, absent du binaire produit; aucune écriture runtime `map_nodes` |
+| Alias transitoire | `map_snapshot` reste compilé pour les scénarios historiques, mais appelle exclusivement le même materializer borné que `map_view` |
+
+Les changements de tests ne suppriment pas des fonctions : le contrôle d'un
+layout au build est remplacé par l'interdiction de layout au build et le contrôle
+de la géométrie de vue; la migration fabrique une vraie base ancienne plutôt
+que de supposer que la nouvelle possède encore des colonnes de rectangles.
+La garde source teste explicitement qu'elle a bien lu le corps runtime.
+
+### Validations et limites
+
+- Rust complet : **290 PASS**, **5 ignorés**. Ciblés projection : **5 PASS**;
+  garde renforcée rejouée : **1 PASS**. TS complet : **264 PASS**.
+- Typage, build web, build Rust : PASS. Clippy strict : FAIL sur dette préexistante;
+  **24 extraits de diagnostic** retrouvés dans `896e2c3` (ancien store compris).
+  Ce contrôle est une comparaison de sources, pas une réexécution de la baseline.
+- WebView2 **152.0.4191.66**, 12 puis 6001 indexés : cardinalités et arêtes exactes,
+  24 keydowns fiables, pan/zoom/sélection et page suivante exercés, aucune erreur
+  fatale. Première tentative du pilote en timeout sur Entrée; rejeu neuf réussi
+  après correction. Aucun artefact raté publié comme PASS.
+- Pas de 100k physique, 1M produit, cible portable modeste, mode GPU désactivé,
+  données personnelles ou exécution hors Windows. `R8`, `DEC-0013/F`, X10 restent
+  entières. Les campagnes d'analyse ont encore un coût proportionnel au corpus.
+- Trois nouveaux JSON TASK-0030 non canoniques, aucun scellement; **X5 reste 36**.
+  Aucun artefact antérieur modifié. Aucun renderer, cloud/LLM/MCP, nouvelle tâche
+  ou prochaine décision. F-042/F-046 PROPOSED, F-047 DEFERRED; F-050/F-051
+  IMPLEMENTED dans cette tranche, pas VERIFIED.
+
+**Action unique suivante : contrôle indépendant de TASK-0030.**

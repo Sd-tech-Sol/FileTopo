@@ -1,8 +1,8 @@
 //! Deterministic left-to-right layered tree layout (`DEC-0024`).
 //!
 //! The input order is the scanner/index order and is preserved exactly. The
-//! layout is paid once while the reconstructible map index is built; rendering,
-//! selection, pan, zoom and territory composition only consume its rectangles.
+//! layout is paid once per bounded projection (DEC-0031); rendering,
+//! selection, pan, zoom and territory composition consume that view geometry.
 
 use serde::{Deserialize, Serialize};
 
@@ -45,7 +45,7 @@ pub struct LayoutOutput {
     pub rects: Vec<Rect>,
     pub width: f64,
     pub height: f64,
-    /// One invocation per build/rebuild, never per interaction.
+    /// One invocation per projection, never for pan, zoom or ordinary selection.
     pub invocations: u32,
 }
 

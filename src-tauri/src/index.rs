@@ -1,4 +1,4 @@
-use crate::domain::{NodeDto, NodeKind};
+use crate::domain::{NodeDto, NodeKind, ScanDiagnostic};
 use crate::hierarchy::{self, ChildCursor, ChildrenPage, HierarchyError, IndexIdentity};
 use rusqlite::{Connection, Result, params};
 use std::collections::HashSet;
@@ -18,12 +18,11 @@ pub(crate) const NODE_COLUMNS: &str = "id, parent_id, name, relative_path, kind,
      size_bytes, modified_unix_ms, online_only, reparse_point, child_count, seen";
 
 pub struct Index {
-    connection: Connection,
+    pub(crate) connection: Connection,
 }
 
 impl Index {
-    /// Used by the tests only: the current runtime reaches neither the
-    /// development fixture nor the prototype index — reserve `X2`.
+    /// In-memory constructor used by synthetic tests.
     #[allow(dead_code)]
     pub fn in_memory() -> Result<Self> {
         let connection = Connection::open_in_memory()?;
@@ -50,6 +49,9 @@ impl Index {
             CREATE TABLE IF NOT EXISTS schema_meta (
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS node_diagnostics (
+                relative_path TEXT PRIMARY KEY, code TEXT NOT NULL
             );
             CREATE TABLE IF NOT EXISTS nodes (
                 id INTEGER PRIMARY KEY,
@@ -147,6 +149,16 @@ impl Index {
     }
 
     pub fn replace_nodes(&mut self, nodes: &[NodeDto]) -> Result<()> {
+        self.replace_nodes_with_metadata(nodes, &[], &[])
+    }
+
+    /// Atomically publishes corpus, diagnostics, brain metadata and revision.
+    pub(crate) fn replace_nodes_with_metadata(
+        &mut self,
+        nodes: &[NodeDto],
+        metadata: &[(&str, String)],
+        diagnostics: &[ScanDiagnostic],
+    ) -> Result<()> {
         let seen_paths = {
             let mut statement = self
                 .connection
@@ -185,6 +197,19 @@ impl Index {
         // replaces the rows. A reader therefore never sees new data under an
         // old revision, nor an old cursor accepted against new data: the two
         // become visible together, or neither does.
+        transaction.execute("DELETE FROM node_diagnostics", [])?;
+        for diagnostic in diagnostics {
+            transaction.execute(
+                "INSERT OR REPLACE INTO node_diagnostics VALUES (?1, ?2)",
+                params![diagnostic.relative_path, diagnostic.code],
+            )?;
+        }
+        for (key, value) in metadata {
+            transaction.execute(
+                "INSERT OR REPLACE INTO schema_meta VALUES (?1, ?2)",
+                params![key, value],
+            )?;
+        }
         hierarchy::advance_revision(&transaction)?;
         transaction.commit()
     }
@@ -194,12 +219,8 @@ impl Index {
 impl Index {
     /// The bounded hierarchy primitives of `DEC-0030`.
     ///
-    /// They are **product-internal foundation**: `TASK-0029` builds what the
-    /// future progressive materializer needs, and `DEC-0030` refuses to freeze
-    /// an IPC shape before that materializer exists. Nothing in the current
-    /// runtime therefore calls them yet — hence the allowance, which states
-    /// that reason rather than hiding an oversight. The tests and the
-    /// `TASK-0029` campaigns exercise every one of them.
+    /// Used by the DEC-0031 product projection; benchmark-only helpers remain
+    /// available to the TASK-0029 test campaigns.
     ///
     /// Which index this is, and which revision of it — `DEC-0030 §C`.
     pub fn identity(&self) -> std::result::Result<IndexIdentity, HierarchyError> {
@@ -208,9 +229,7 @@ impl Index {
 
     /// One bounded, keyset-paged page of direct children — `DEC-0030 §B`.
     ///
-    /// Product-internal: no command exposes it, and `DEC-0030` deliberately
-    /// declines to freeze an IPC shape before the materializer that will use it
-    /// exists.
+    /// Internal primitive; DEC-0031 transports its cursor in bounded view DTOs.
     pub fn children_page(
         &self,
         parent_id: i64,

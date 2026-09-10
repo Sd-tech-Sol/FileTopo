@@ -81,13 +81,35 @@ export interface MapSnapshot {
   layoutWidth: number;
   layoutHeight: number;
   schemaVersion: number;
-  /** Persisted by and read from the backend map index. */
+  /** Provided by the backend projection. */
   layoutAlgorithm: string;
   nodes: MapNode[];
   diagnostics: ScanDiagnostic[];
 }
 
+/** The runtime contract of DEC-0031. MapSnapshot remains the legacy test shape. */
+export interface ViewAggregate {
+  parentId: number;
+  omittedDirectChildren: number;
+  reason: string;
+  nextCursor: string | null;
+  rect: Rect;
+}
+export interface MapProjection extends MapSnapshot {
+  indexRevision: number;
+  focusId: number;
+  viewBudget: number;
+  materializedCount: number;
+  nonMaterializedCount: number;
+  hiddenReason: string | null;
+  aggregates: ViewAggregate[];
+  hierarchyEdges: { parentId: number; childId: number }[];
+}
+
 export interface NodeDetail {
+  /** Always present on DEC-0031 runtime replies; optional for legacy fixtures. */
+  omittedChildren?: number;
+  nextCursor?: string | null;
   node: MapNode;
   parent: MapNode | null;
   children: MapNode[];

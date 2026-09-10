@@ -1,3 +1,4 @@
+import type { ViewAggregate } from "./types";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { domNodeId, domTerritoryId } from "./composedView";
 import type { Hierarchy } from "./hierarchy";
@@ -63,7 +64,7 @@ export interface RenderedBrain {
   hierarchy: Hierarchy;
   /**
    * Cross-cutting relations of **this brain**, already projected onto its own
-   * persisted rectangles — `TASK-0017` `J9`. Both endpoints are always inside
+   * projection rectangles — `TASK-0017` `J9`. Both endpoints are always inside
    * this brain: `L8` forbids an edge from crossing a territory boundary, and
    * the only way to make that structurally true is never to build one.
    */
@@ -81,9 +82,11 @@ export interface RenderedBrain {
    */
   crossNeighbours: Set<number>;
   nodeCount: number;
+  aggregates?: ViewAggregate[];
 }
 
 interface MapViewProps {
+  onExpand?: (brainId: string, aggregate: ViewAggregate) => void;
   brains: RenderedBrain[];
   /**
    * Inter-brain relations, with **one end in each of two brains' own
@@ -158,6 +161,7 @@ export default function MapView({
   focusedBrainId,
   onViewChange,
   onSelect,
+  onExpand,
   onViewportChange,
   labelFor,
   territoryLabelFor,
@@ -793,6 +797,14 @@ export default function MapView({
                   {entry.hierarchy}
                 </g>
                 {entry.blocks}
+                {(entry.brain.aggregates ?? []).map(a => <g key={`aggregate:${a.parentId}`}
+                  data-aggregate="true" role="button" tabIndex={0}
+                  aria-label={`${a.omittedDirectChildren} enfants directs hors vue; ${a.nextCursor ? "page suivante" : "première page"}`}
+                  onClick={() => onExpand?.(entry.brain.brainId, a)}
+                  onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); event.stopPropagation(); onExpand?.(entry.brain.brainId, a); } }}>
+                  <rect {...{x:a.rect.x,y:a.rect.y,width:a.rect.w,height:a.rect.h}} fill="#e9eef2" stroke="#536570" strokeDasharray="5 3" />
+                  <text x={a.rect.x+12} y={a.rect.y+36} fill="#243843">{a.omittedDirectChildren} enfants hors vue…</text>
+                </g>)}
               </g>
             ) : null,
           )}

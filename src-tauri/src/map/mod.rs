@@ -1,21 +1,11 @@
-//! Production vertical slice of `TASK-0016`: synthetic fixture, read-only
-//! scan, persistent rebuildable index, hierarchical layout, and the read APIs
-//! the map view needs.
+//! Synthetic-only V1 pipeline: read-only scan, one canonical Index per brain,
+//! bounded materialization and view layout (DEC-0031).
 //!
-//! Three rules govern every module below, and none of them is negotiable.
-//!
-//! * `I-1` — the analysed tree is **read only**. Nothing here renames, moves,
-//!   deletes, rewrites or touches a byte of it once it has been materialised.
-//! * `I-2` — **nothing of FileTopo lives inside the analysed tree**. Index,
-//!   layout and reports live in the sandbox, beside the fixture root, never in
-//!   it.
-//! * `B-1` — the node budget frozen by `TASK-0016` §12.2 is **5 000 nodes per
-//!   map**, and going over it is an explicit error, never a silent truncation.
-//!
-//! This slice carries **no adaptive render budget**: `DEC-0015` F forbids
-//! reusing either spike controller, and `B-1` is a declared ceiling, not a
-//! regulator — it adjusts to nothing and measures nothing.
+//! Sources stay read-only. Indexes and evidence stay in the application space,
+//! never under the source. The historical 5000-node ceiling exists only in
+//! legacy tests; the converged runtime limits its projection, not its corpus.
 
+pub mod brain_index;
 pub mod brains;
 pub mod commands;
 pub mod content_signals;
@@ -23,6 +13,9 @@ pub mod cross_commands;
 pub mod cross_relations;
 pub mod fixtures;
 pub mod layout;
+#[cfg(test)]
+mod legacy_store;
+pub mod projection;
 pub mod relation_commands;
 pub mod relations;
 pub mod rule_engine;
@@ -35,6 +28,7 @@ use thiserror::Error;
 ///
 /// A limit of this task, **not** a product limit: the parity contract requires
 /// `P-08` on 100 000 nodes, which belongs to later slices of stage A.
+#[cfg(test)]
 pub const MAX_NODES_PER_MAP: usize = 5_000;
 
 /// Depth ceiling frozen by `TASK-0016` §12.2, bound `B-2`.
@@ -42,6 +36,10 @@ pub const MAX_FIXTURE_DEPTH: u32 = 40;
 
 #[derive(Debug, Error)]
 pub enum MapError {
+    #[error("{0}")]
+    Hierarchy(#[from] crate::hierarchy::HierarchyError),
+    #[error("map_view_rejected: {0}")]
+    View(String),
     #[error("map_io_failed: {0}")]
     Io(#[from] std::io::Error),
     #[error("map_sqlite_failed: {0}")]

@@ -70,3 +70,12 @@ Aucune vraie racine utilisateur ni activation du folder picker. Pas de watcher,
 streaming d'indexation, nouveau moteur graphique, FTS5 ou identité physique.
 Le contrôle de la frontière read-only précède toute tranche sur donnée réelle.
 Les performances ne sont pas acceptées produit par cette décision.
+
+## État d'exécution — 2026-09-09
+
+TASK-0030 est livrée `IMPLEMENTED`; cette décision reste `APPROVED`,
+implémentation en attente de contrôle indépendant. Budget effectivement appliqué :
+512 entités, avec 256 places matérielles et jusqu'à un agrégat par nœud. Le store
+historique est limité aux tests de migration; le conteneur temporaire `AnalysisInput` ne dérive pas `Serialize`; aucun IPC
+ne renvoie sa collection de métadonnées et aucun corpus concurrent n’est stocké. Voir la fiche
+TASK pour le tableau de dette et les preuves. Aucun choix produit nouveau.

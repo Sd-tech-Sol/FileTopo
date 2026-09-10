@@ -3,14 +3,14 @@ mod hierarchy;
 mod index;
 mod map;
 mod registry;
-/// `TASK-0028` synthetic scale bench. Compiled by `cargo test` only: it is
-/// absent from every product binary and exposes no command.
-#[cfg(test)]
-mod scale_spike;
 /// `TASK-0029` scale query bench. Compiled by `cargo test` only: it is absent
 /// from every product binary and exposes no command.
 #[cfg(test)]
 mod scale_query;
+/// `TASK-0028` synthetic scale bench. Compiled by `cargo test` only: it is
+/// absent from every product binary and exposes no command.
+#[cfg(test)]
+mod scale_spike;
 mod scanner;
 mod synthetic;
 
@@ -644,6 +644,32 @@ fn map_snapshot(
 }
 
 #[tauri::command]
+fn map_resolve_node(
+    app: tauri::AppHandle,
+    brain_id: String,
+    relative_path: String,
+) -> Result<Option<map::brains::BrainNodeRef>, String> {
+    let (paths, brain) = resolve_brain(&app, &brain_id)?;
+    let store = map::commands::open_store(&paths, &brain).map_err(String::from)?;
+    Ok(store
+        .resolve_path(&relative_path)
+        .map_err(String::from)?
+        .map(|id| map::brains::BrainNodeRef::new(&brain_id, id)))
+}
+
+/// Explicit bounded projection boundary; legacy map_snapshot is a bounded alias.
+#[tauri::command]
+fn map_view(
+    app: tauri::AppHandle,
+    brain_id: String,
+    focus_id: Option<i64>,
+    after: Option<String>,
+) -> Result<map::store::MapSnapshot, String> {
+    let (paths, brain) = resolve_brain(&app, &brain_id)?;
+    map::commands::view(&paths, &brain, focus_id, after.as_deref()).map_err(String::from)
+}
+
+#[tauri::command]
 fn map_node_detail(
     app: tauri::AppHandle,
     reference: map::brains::BrainNodeRef,
@@ -896,7 +922,7 @@ fn map_host_info(app: tauri::AppHandle) -> map::commands::HostInfo {
             .unwrap_or_else(|error| format!("indisponible: {error}")),
         tauri_version: tauri::VERSION.to_string(),
         platform: std::env::consts::OS.to_string(),
-        node_ceiling: map::MAX_NODES_PER_MAP,
+        node_ceiling: 0, // DEC-0031: no corpus ceiling.
         depth_ceiling: map::MAX_FIXTURE_DEPTH,
         card_width: map::layout::CARD_WIDTH,
         card_height: map::layout::CARD_HEIGHT,
@@ -1195,6 +1221,8 @@ pub fn run() {
             map_brain_update,
             map_open,
             map_snapshot,
+            map_view,
+            map_resolve_node,
             map_node_detail,
             map_integrity,
             map_self_check,
