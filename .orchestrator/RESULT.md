@@ -2,7 +2,7 @@ TASK_ID: ACTION-0047 — Independent closure of TASK-0030
 AGENT: CLAUDE
 RESULT: DONE
 BRANCH: build/v0.2-a14-v1-pipeline-convergence
-FINAL_HEAD: <closure commit>
+FINAL_HEAD: 50d76511e79163aeb4cbe329c3b2d28a18ba0e07
 
 SUMMARY:
 - recorded external independent PASS with explicit reserves
@@ -49,7 +49,7 @@ CODE_OR_EVIDENCE_CHANGED: no
 X5: 36
 MAIN_UNCHANGED: yes
 
-COMMIT: <closure commit>
+COMMIT: 50d7651 (closure); this RESULT is a separate following report commit
 PUSHED: yes
 
 NEXT_ORCHESTRATOR_DECISION:
