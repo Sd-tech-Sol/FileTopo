@@ -2,7 +2,7 @@ TASK_ID: TASK-0032 — V1 REAL_ROOT — Controlled Local Folder Onboarding
 AGENT: CLAUDE
 RESULT: DONE
 BRANCH: build/v0.2-a16-v1-real-root
-FINAL_HEAD: (substantive commit before this RESULT-only commit — see git log)
+FINAL_HEAD: 2ce3a17
 
 SUMMARY:
 - FileTopo can take a real local folder the person chose, without the path ever leaving the local catalogue and without reading a byte until somebody presses Indexer
@@ -61,6 +61,6 @@ X5: 36
 MAIN_UNCHANGED: yes
 TASK_STATUS: IMPLEMENTED
 DECISION_STATUS: APPROVED
-COMMIT: freeze c3507bf, code 7302291, docs — see git log on the branch
+COMMIT: freeze c3507bf, code 7302291, host proof f00fb55, docs 2ce3a17
 PUSHED: yes — build/v0.2-a16-v1-real-root only, no PR, no merge, no tag, no release, no history rewrite
 NEXT: independent control only
