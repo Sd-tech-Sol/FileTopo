@@ -1,5 +1,103 @@
 # État courant
 
+## TASK-0032 — première racine réelle contrôlée — IMPLEMENTED — 2026-09-10
+
+- **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Livré sur
+  `build/v0.2-a16-v1-real-root`, gel documentaire `c3507bf` parent direct du
+  premier commit de code. Exécuteur : Claude Code.
+  [Fiche](../tasks/TASK-0032-v1-real-root.md);
+  [DEC-0033](../decisions/DEC-0033-real-root-privacy-and-source-binding.md),
+  `APPROVED`.
+- **Aucune donnée personnelle n'a été utilisée.** Tout ce que cette tranche a
+  lu a été créé par ses propres preuves, dans des répertoires temporaires ou
+  sous le bac à sable de la preuve, et détruit avec eux. Le vrai cerveau de
+  Sébastien reste un point d'arrêt qui lui est réservé.
+- **Choisir un dossier est un geste, jamais un effet de bord.** Une seule
+  commande produit, `map_brain_choose_real_root`, **sans argument** : le
+  WebView ne peut pas nommer un dossier, il peut seulement demander le
+  sélecteur natif. Annuler rend `null` et ne crée ni cerveau, ni index, ni
+  ligne partielle. Enregistrer ne scanne rien : le cerveau naît non indexé et
+  `map_open` répond `map_not_built` jusqu'à ce que quelqu'un presse
+  **Indexer**.
+- **Le chemin absolu ne sort pas du catalogue local.** Il y vit en `BLOB`
+  UTF-16LE, dans une colonne `source_path` que la requête alimentant chaque
+  `BrainRecord` **ne sélectionne pas**. `BrainRecord` ne porte aucun champ de
+  chemin; la seule porte est `real_root_path`, qui rend un `PathBuf` — un type
+  qui n'implémente pas `Serialize` et ne peut donc pas voyager par accident.
+  Ce que l'interface reçoit : l'identité, un `sourceRef` **opaque** (un UUID),
+  et un **label** qui est le nom terminal du dossier, jamais son chemin.
+- **Le codec de chemin est sans perte, et le prouve.** Extrait de `registry.rs`
+  vers `src/path_codec.rs`, partagé plutôt que recopié, sa moitié non-Windows
+  corrigée de `to_string_lossy()` vers les octets bruts d'`OsStr`. Son test
+  passe un chemin contenant un **surrogate isolé** et échoue d'abord si la
+  conversion lossy ne perd rien : il ne peut pas réussir par accident.
+- **L'index dit de quelle source il vient.** Il porte `brain_id`, `source_kind`
+  et le `source_ref` opaque — **jamais le chemin**, parce qu'un fichier d'index
+  peut être copié d'une machine à l'autre. `open_store` refuse en
+  `map_source_mismatch` un index dont le binding ne correspond plus, et **ne
+  supprime rien** : une actualisation explicite le republie.
+- **Le rapport arrête d'appeler « fixture » un vrai dossier.**
+  `MapBuildReport.fixtureId` devient `sourceKind` + `sourceRef` + `sourceLabel`.
+  Les empreintes deviennent nullables : sur une racine réelle le second
+  parcours d'empreinte n'est **pas** fait — il doublerait le coût de chaque
+  indexation — et le rapport le **dit**, `fingerprintBefore/After = null` et
+  `readOnlyConfirmed = false`, au lieu de prétendre une confirmation qu'il n'a
+  pas. La lecture seule est portée par le scanner et par `RR6`.
+- **Le catalogue migre sans rien perdre.** Schéma 2, reconstruction de table en
+  **une** transaction; `catalog_meta` — donc `active_brain_id` — n'est pas
+  touché. Migration bloquée : ouverture refusée, `user_version` reste 1,
+  cerveaux, renommages et cerveau actif intacts.
+- **Containment écrit noir sur blanc, comparé par composants :** une racine qui
+  contient l'espace d'état FileTopo, qui est cet espace, ou qui est dedans, est
+  refusée. Un frère nommé `filetopo-state-archive` reste acceptable — ce
+  qu'un préfixe de texte aurait cassé.
+- **Réserve `X2` levée et remplacée.** Le runtime initialise enfin le plugin de
+  dialogue; la capacité accorde `dialog:allow-open` et **rien d'autre**;
+  `choose_collection` reste non enregistrée; et un test lit le texte des
+  signatures que `generate_handler!` enregistre pour prouver qu'**aucune
+  commande exposée ne laisse le WebView nommer un endroit du disque**.
+- **Preuves réelles :** `RR1` à `RR8` en Rust sur de vrais dossiers créés par
+  les tests, `RR9` et `RR10` en gardes structurelles. Rejeu **WebView2
+  152.0.4191.66** sur un arbre de 1 209 entrées généré par la preuve : avant
+  indexation le bouton s'appelle **Indexer** et `map_open` rend
+  `map_not_built` sans créer de fichier; après une frappe réelle, 1 210 nœuds
+  indexés; ouvrir laisse la révision à 2, actualiser la porte à 3, reconstruire
+  à 4, `indexId` inchangé; **1 210 nœuds rendus par 256 nœuds et 4 agrégats**
+  sous le budget de 512; `absolutePathLeak = false` sur sept DTO, sur le
+  fichier d'index et sur le journal de l'hôte; source inchangée octet pour
+  octet; 0 erreur console fatale.
+- **Validations :** Rust **319 PASS**, TypeScript **279 PASS**, `pnpm check`,
+  `pnpm build`, `cargo build --offline`, `git diff --check` verts.
+  `cargo fmt --check` propre sur **chaque ligne écrite ici**, vérifié fichier
+  par fichier. `cargo clippy` strict reste **rouge à 26 erreurs**, le même
+  nombre qu'à l'entrée : le seul diagnostic dans un fichier modifié porte sur
+  `active()`, du code antérieur dont seul le numéro de ligne a bougé. Un
+  diagnostic **avait** été introduit sur `BrainIndex::replace` et a été corrigé
+  avant livraison par le regroupement `SourceStamp`.
+- **Un refus délibérément large, déclaré :** un index publié avant `DEC-0033`
+  ne porte aucun binding et est refusé. Il n'est jamais supprimé; une
+  actualisation explicite le republie. Le coût est assumé pour ne jamais servir
+  un index dont la source ne peut pas être confirmée.
+- **`R-T30-5` est traitée uniquement dans la portée `REAL_ROOT` de test.**
+  Aucune validation sur donnée personnelle, et aucune n'est demandée avant le
+  contrôle indépendant. `R-T30-1`, `R-T30-3`, `R-T30-4`, `R-T30-6` et `R8`
+  restent ouvertes; `R-T30-2` reste levée dans sa portée synthétique par
+  `ACTION-0048`.
+- **Hors portée et non fait :** aucun watcher, aucune mise à jour incrémentale
+  — `F-027`, `F-030`, `F-031` restent `PROPOSED`; aucun FTS5; aucune identité
+  physique `F-046`; aucun redesign; aucune acceptance de performance sur grande
+  racine. Le dialogue natif lui-même n'est pas automatisé. La dette
+  `Registry`/`legacy_store` n'est pas supprimée — seul son codec de chemin a
+  été extrait, comme la fiche l'annonçait.
+- **`F-042` reste `PROPOSED / MVP`, `F-046` `PROPOSED`, `F-047` `DIFFÉRÉ`;
+  `F-050` et `F-051` restent `IMPLEMENTED`**, pas `VERIFIED` globalement.
+  **X5 = 36**, l'artefact `TASK-0032-webview2.json` est **non canonique** et
+  hors sceau. Aucune `TASK-0033`, aucune `DEC-0034`, aucune PR, fusion,
+  étiquette ni release; `origin/main = 1a7d652ca48281c1687f6d1404c56a1404df91d8`,
+  inchangé.
+- **Action unique suivante : contrôle indépendant de TASK-0032.**
+
+
 ## TASK-0031 — cycle de vie du cerveau séparé — VERIFIED — 2026-09-10
 
 - **Statut : `VERIFIED` dans sa portée synthétique V1**, par

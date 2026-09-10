@@ -4161,3 +4161,109 @@ restent `IMPLEMENTED`, **pas `VERIFIED` globalement**; `F-042 = PROPOSED/MVP`,
 
 **Action unique suivante :** contrôle indépendant de `TASK-0031`, par une
 instance distincte de Codex et de Claude Code.
+
+---
+
+## 2026-09-10 — TASK-0032 — Première racine réelle contrôlée
+
+**Agent :** exécuteur Claude Code
+**Statut à l'issue :** `IMPLEMENTED`, **jamais auto-`VERIFIED`**
+**Branche :** `build/v0.2-a16-v1-real-root`, depuis `05fc371`
+**Décision :** `DEC-0033`, `APPROVED`
+
+### Gel avant code
+
+`c3507bf` — fiche `TASK-0032`, décision `DEC-0033`, et correction de
+l'incohérence documentaire laissée par `ACTION-0048` : `TASK-0031` est
+`VERIFIED` dans sa portée synthétique, `R-T30-2` y est levée. Le gel est le
+**parent direct** du premier commit de code.
+
+### Fait
+
+- **Contrat figé avant la première ligne de produit.** `DEC-0033` fixe la
+  sélection explicite, l'interdiction de tout chemin sur l'IPC, le chemin
+  absolu local au catalogue et jamais sérialisé, un codec Windows exact, un
+  binding de source opaque, le cycle `DEC-0032` inchangé, la lecture seule
+  absolue, la règle de containment exacte, et l'absence de réseau ou de pile
+  nouvelle. Elle **lève la réserve `X2`** et la remplace par une garantie plus
+  étroite et testée.
+- **Catalogue en schéma 2.** `REAL_ROOT` rejoint `SYNTHETIC_FIXTURE`; un
+  `source_label` affichable apparaît; le chemin absolu est persisté en `BLOB`
+  dans une colonne `source_path` que la requête alimentant les `BrainRecord`
+  **ne sélectionne pas**. Migration transactionnelle et idempotente, sans
+  toucher `catalog_meta` — donc sans risque pour `active_brain_id`. Aucune
+  contrainte `UNIQUE` sur la source : deux cerveaux peuvent lire le même
+  dossier.
+- **Codec de chemin partagé.** `encode_path`/`decode_path` et
+  `is_reparse_point` sortent de `registry.rs` vers `src/path_codec.rs`;
+  `registry.rs` y délègue au lieu d'en garder une copie. La branche non-Windows
+  est **corrigée** : elle passait par `to_string_lossy()`, ce que `DEC-0033` C
+  interdit pour persister une source. Le reste du `Registry` n'est pas touché.
+- **Une seule commande produit pour le sélecteur**,
+  `map_brain_choose_real_root`, **sans argument**. Annuler ne crée rien;
+  enregistrer ne scanne rien.
+- **Résolution de source explicite.** `map/source.rs` porte la validation de
+  racine — pas un dossier, un lien ou point d'analyse, et les trois cas de
+  containment — et la résolution vers la fixture ou le chemin catalogué.
+  `map_open` ne l'appelle pas : ouvrir ne résout ni ne lit la source.
+- **Binding de source dans l'index.** Il porte `brain_id`, `source_kind` et le
+  `source_ref` opaque, jamais le chemin. `open_store` refuse en
+  `map_source_mismatch` un index dont le binding ne correspond plus, **sans
+  rien supprimer**.
+- **Rapports honnêtes.** `fixtureId` devient `sourceKind` + `sourceRef` +
+  `sourceLabel`; les empreintes deviennent nullables, `null` sur une racine
+  réelle, avec `readOnlyConfirmed = false` — « aucune empreinte prise », jamais
+  « lecture seule confirmée ».
+- **MapApp minimal :** un bouton **Ajouter un dossier**, un état non indexé lu
+  de ce que la composition n'a pas chargé, et l'action existante renommée
+  **Indexer** tant que l'index n'existe pas. Aucun redesign.
+- **Plugin de dialogue initialisé**, capacité étendue à `dialog:allow-open` et
+  à rien d'autre. Le test `X2` est réécrit en la garantie qui le remplace.
+
+### Preuves
+
+`RR1` à `RR8` en Rust, sur de vrais dossiers créés par les tests : migration et
+migration échouée sans perte, enregistrement sans scan, refus sans effet,
+sentinelle de chemin absente de tout DTO, première indexation d'un arbre
+Unicode, ouverture avec la source déplacée, lecture seule octet pour octet à
+travers actualiser et reconstruire, deux cerveaux sur un dossier, containment.
+`RR9` et `RR10` en gardes structurelles : CSP, capacité, absence de réseau,
+dépendances inchangées, cycle `DEC-0032` intact.
+
+Rejeu **WebView2 152.0.4191.66** sur un arbre de 1 209 entrées généré par la
+preuve, jamais un dossier personnel : `map_not_built` avant indexation sans
+créer de fichier, 1 210 nœuds indexés par une frappe réelle, révisions 2 → 3 →
+4 avec `indexId` inchangé, **256 nœuds et 4 agrégats** sous le budget de 512,
+`absolutePathLeak = false` sur sept DTO, sur le fichier d'index et sur le
+journal de l'hôte, source inchangée, 0 erreur console fatale.
+
+Rust **319 PASS**, TypeScript **279 PASS**, `pnpm check`, `pnpm build`,
+`cargo build --offline`, `git diff --check` verts. `cargo fmt --check` propre
+sur chaque ligne écrite ici. `cargo clippy` strict reste **rouge à 26
+erreurs**, le même nombre qu'à l'entrée : un diagnostic avait été introduit sur
+`BrainIndex::replace` et a été corrigé avant livraison par `SourceStamp`.
+
+### Non fait, et limites
+
+**Aucune donnée personnelle, aucun vrai cerveau** — point d'arrêt réservé à
+Sébastien. Le dialogue natif lui-même n'est pas automatisé. Aucun watcher ni
+incrémental : `F-027`, `F-030`, `F-031` restent `PROPOSED`. Aucun FTS5, aucune
+identité physique `F-046`, aucun redesign, aucune acceptance de performance sur
+grande racine. La dette `Registry`/`legacy_store` n'est **pas** supprimée :
+seul le codec de chemin en a été extrait.
+
+Un refus délibérément large est déclaré : un index publié avant `DEC-0033` ne
+porte aucun binding et est refusé — jamais supprimé, republié par une
+actualisation explicite.
+
+`R-T30-5` est traitée **uniquement dans la portée `REAL_ROOT` de test**.
+`R-T30-1`, `R-T30-3`, `R-T30-4`, `R-T30-6` et `R8` restent ouvertes; `R-T30-2`
+reste levée dans sa portée synthétique par `ACTION-0048`. `F-050` et `F-051`
+restent `IMPLEMENTED`, **pas `VERIFIED` globalement**; `F-042 = PROPOSED/MVP`,
+`F-046 = PROPOSED`, `F-047 = DEFERRED`. **`X5 = 36`**, l'artefact
+`TASK-0032-webview2.json` est non canonique et hors sceau. Aucune `TASK-0033`,
+`DEC-0034`, branche suivante, PR, fusion, étiquette, release, `reset`,
+`clean`, `force push` ni donnée réelle. `origin/main = 1a7d652c`, non touché.
+
+**Action unique suivante :** contrôle indépendant de `TASK-0032`, par une
+instance distincte de Claude Code.

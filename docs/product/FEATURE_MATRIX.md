@@ -171,9 +171,36 @@ Les preuves et constats ci-dessous sont inchangés.
 >
 > **`TASK-0031` est `IMPLEMENTED`, en attente de contrôle indépendant.**
 
+### Note du 2026-09-10 — `TASK-0032`, première racine réelle contrôlée
+
+> **`DEC-0033` est `APPROVED`. Aucune ligne n'est ajoutée, aucune
+> classification ne change, et aucune donnée personnelle n'est utilisée.**
+>
+> **Une seule ligne change de constat : `F-001` choix de racine.** Le sélecteur
+> Windows existe désormais pour de vrai : `map_brain_choose_real_root` ouvre le
+> dialogue natif, crée un cerveau `REAL_ROOT` et **ne scanne rien**. La note de
+> `TASK-0031` disait « aucun `REAL_ROOT`, aucun sélecteur de dossier réel n'est
+> ajouté ni réactivé » — c'était vrai alors, ce ne l'est plus, et la ligne est
+> corrigée plutôt que laissée à contredire le code.
+>
+> **`F-001` reste `IMPLEMENTED`, pas `VERIFIED`**, et son critère d'acceptation
+> n'est atteint que dans une portée de test : toutes les racines analysées par
+> `TASK-0032` sont créées par ses propres preuves. **La première utilisation
+> d'un vrai cerveau reste un point d'arrêt réservé à Sébastien.**
+>
+> **Ce qui ne change pas :** `F-002` cerveau indépendant reste `PROPOSED` — deux
+> cerveaux sur un même dossier réel sont prouvés isolés, mais les préférences et
+> la reprise manquent toujours. `F-027`, `F-030` et `F-031` restent `PROPOSED`
+> et hors portée : aucun watcher, aucun incrémental. `F-050` et `F-051` restent
+> `IMPLEMENTED`, pas `VERIFIED` globalement; la projection bornée est inchangée
+> et reste le seul chemin de rendu, y compris pour une racine réelle. `F-042`
+> reste `PROPOSED / MVP`, `F-046` `PROPOSED`, `F-047` `DIFFÉRÉ`.
+>
+> **`TASK-0032` est `IMPLEMENTED`, en attente de contrôle indépendant.**
+
 | Identifiant | Fonction | Comportement cible | Prototype actuel | Preuve dans le dépôt | Écart | Priorité | Phase | État | Critères d'acceptation | Baseline TASK-0011 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| F-001 | Choix de racine | Sélecteur Windows guidé | Présent | src-tauri/src/lib.rs:136 | Flux cerveau incomplet | P0 | 2 | IMPLEMENTED | Sélection synthétique testée, annulation sûre | `MVP` |
+| F-001 | Choix de racine | Sélecteur Windows guidé | **Sélecteur natif réel** : `map_brain_choose_real_root`, sans argument, crée un cerveau `REAL_ROOT` **sans rien scanner**; annuler ne crée rien | `TASK-0032` `IMPLEMENTED`, en attente de contrôle; `DEC-0033`; `map/source.rs::validate_real_root`; preuves `RR2`, `RR3`, `RR8` et rejeu WebView2 | Prouvé **sur des arborescences créées par les preuves seulement**. Aucune racine personnelle : point d'arrêt réservé à Sébastien. Flux cerveau encore incomplet — préférences et reprise, voir `F-002` | P0 | 2 | IMPLEMENTED | Sélection réelle et synthétique testées, annulation sûre, racine invalide ou englobant l'état FileTopo refusée, **chemin absolu jamais exposé** | `MVP` |
 | F-002 | Cerveau indépendant | Racine, index et état isolés | Présent mais incomplet | registry.rs:60; lib.rs:229 | Préférences et reprise manquent | P0 | 3 | PROPOSED | Deux cerveaux ne partagent aucun état | `MVP` |
 | F-003 | Scan hiérarchique | Dossiers, fichiers, noms, métadonnées | Présent | scanner.rs:46 | Robustesse à étendre | P0 | 2 | IMPLEMENTED | Arbre synthétique exact, sources inchangées | `MVP` |
 | F-004 | Identifiants stables | Survivre aux changements raisonnables | IDs recréés par parcours | scanner.rs:68; index.rs:85 | Instables au déplacement | P0 | 2 | PROPOSED | Renommage/déplacement corrélé sans faux positif | `MVP` |

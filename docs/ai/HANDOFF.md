@@ -1,6 +1,61 @@
 # HANDOFF — passage de relais
 
-## Relais actuel — TASK-0031 IMPLEMENTED, en attente de contrôle — 2026-09-10
+## Relais actuel — TASK-0032 IMPLEMENTED, en attente de contrôle — 2026-09-10
+
+- **Ce qui vient d'être fait :** FileTopo peut recevoir un **vrai dossier
+  local**, choisi explicitement par la personne, sans jamais faire sortir son
+  chemin du catalogue local et sans rien lire tant que personne n'a pressé
+  **Indexer**. `TASK-0032 = IMPLEMENTED`, **jamais auto-`VERIFIED`**;
+  [DEC-0033](../decisions/DEC-0033-real-root-privacy-and-source-binding.md) est
+  `APPROVED`. Branche `build/v0.2-a16-v1-real-root`, gel `c3507bf` parent
+  direct du premier commit de code.
+- **Aucune donnée personnelle n'a été utilisée**, et aucune n'est demandée. Le
+  vrai cerveau de Sébastien reste un point d'arrêt qui lui est réservé.
+- **Qui a fait quoi :** Claude Code a écrit la tranche entière. **Il ne peut
+  pas rendre le verdict.** Le contrôle doit venir d'une instance distincte.
+- **Ce que le prochain relais doit savoir :**
+  - Le contrat vit dans `DEC-0033` et se lit dans le code à quatre endroits :
+    `map/source.rs` pour la validation de racine et la résolution,
+    `map/brains.rs` pour le stockage `BLOB` et la migration, `path_codec.rs`
+    pour l'encodage exact, et `commands.rs::open_store` pour le refus de
+    binding.
+  - **`BrainRecord` ne doit jamais gagner un champ de chemin.** C'est le DTO
+    que l'IPC sérialise, et un `PathBuf` ajouté là arriverait dans le WebView
+    dès que personne ne regarderait le JSON. La seule porte est
+    `BrainCatalog::real_root_path`, qui rend un type non-`Serialize`.
+  - **Aucune commande exposée ne doit accepter un chemin.** Un test lit le
+    texte des signatures que `generate_handler!` enregistre. `relativePath` de
+    `map_resolve_node` est admis et documenté : c'est un chemin **dans l'index
+    d'un cerveau**, résolu en SQL, jamais sur le disque.
+  - **`source_fixture()` refuse maintenant un `REAL_ROOT`** en
+    `map_source_not_synthetic`. Les fonctions synthétiques par nature —
+    `integrity`, `self_check`, la préparation de fixture, les scénarios de
+    relations historiques — échouent donc explicitement sur un cerveau réel.
+    C'est voulu : elles comparent à un plan figé qui n'existe pas pour un vrai
+    dossier. **Ne pas les « réparer » en inventant une fixture.**
+  - **Le second parcours d'empreinte reste synthétique.** Sur une racine réelle
+    il doublerait le coût de chaque indexation. Le rapport porte donc `null`
+    et `readOnlyConfirmed = false` : c'est « aucune empreinte prise », pas
+    « quelque chose a changé ». Ne pas le rebrancher sans mesurer.
+  - **Un index sans `source_ref` est refusé, jamais supprimé.** Un bac à sable
+    de développement antérieur à `DEC-0033` verra donc `map_source_mismatch` à
+    l'ouverture; une actualisation explicite le republie. C'est le
+    comportement voulu.
+  - `scripts/task0032-webview2.ps1` rejoue le chemin produit dans le vrai
+    hôte. Il **génère lui-même** son arbre de test et écrit la ligne
+    `REAL_ROOT` par `scripts/task0032-seed-proof.py` : le dialogue natif n'est
+    pas automatisé, ce que `TASK-0032` §6 autorise. Le serveur Vite doit servir
+    ce dépôt sur le port 1420 avant de le lancer.
+- **Ce qui reste ouvert :** `R-T30-1` clippy strict rouge, inchangée à 26
+  erreurs. `R-T30-3`, `R-T30-4`, `R-T30-6` et `R8` ouvertes. `R-T30-5` traitée
+  **uniquement** dans la portée `REAL_ROOT` de test. Aucun watcher, aucun
+  incrémental, aucun FTS5, aucune identité physique, aucun redesign, aucune
+  acceptance de performance sur grande racine. La dette
+  `Registry`/`legacy_store` n'est pas supprimée : seul le codec de chemin en a
+  été extrait, et sa retraite éventuelle est une tranche distincte.
+- **Action unique suivante :** contrôle indépendant de `TASK-0032`.
+
+## Relais précédent — TASK-0031, VERIFIED depuis par ACTION-0048 — 2026-09-10
 
 - **Ce qui vient d'être fait :** la réserve `R-T30-2` est devenue une frontière
   produit. Ouvrir un cerveau lit l'index persistant et **ne scanne plus la
@@ -44,7 +99,7 @@
   `origin/main = 1a7d652ca48281c1687f6d1404c56a1404df91d8`, inchangé.
 
 
-## Relais actuel — ACTION-0047 close, TASK-0030 VERIFIED — 2026-09-09
+## Relais antérieur — ACTION-0047 close, TASK-0030 VERIFIED — 2026-09-09
 
 - **Ce qui vient d'être fait :** enregistrement du verdict indépendant sur
   `TASK-0030`. `ACTION-0047 = CLOSED`; `TASK-0030 = VERIFIED` **dans sa portée

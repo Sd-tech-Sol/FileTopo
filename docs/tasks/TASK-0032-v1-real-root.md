@@ -1,7 +1,7 @@
 # TASK-0032 — V1 REAL_ROOT — Controlled Local Folder Onboarding
 
 - Date : 2026-09-10
-- Statut : `PROPOSED` au gel; `APPROVED` par le GO technique du NEXT_PROMPT.
+- Statut : `IMPLEMENTED` le 2026-09-10, sur preuves; **jamais auto-`VERIFIED`**. Gel `c3507bf`, parent direct du premier commit de code; GO technique du NEXT_PROMPT à `05fc371`.
 - Exécuteur : Claude Code. Aucun `VERIFIED` auto-attribué.
 - Branche : `build/v0.2-a16-v1-real-root`, créée depuis `05fc371`.
 - Décision : [DEC-0033](../decisions/DEC-0033-real-root-privacy-and-source-binding.md).
@@ -111,10 +111,39 @@ composition, un état « non indexé » explicite, et le bouton **Indexer** exis
 
 ## Preuves
 
-Voir `docs/ai/VALIDATION.md` pour le détail exécuté.
+Le détail exécuté est en section `BB` de `docs/ai/VALIDATION.md`. En résumé :
+
+- `RR1` à `RR8` en Rust, dans `src-tauri/src/map/real_root_tests.rs`, sur de
+  vrais dossiers créés par les tests eux-mêmes, avec le scanner et SQLite
+  réels : migration et migration échouée sans perte, enregistrement sans scan,
+  refus sans effet, sentinelle de chemin absente de tout DTO et du fichier
+  d'index, première indexation d'un arbre Unicode, ouverture avec la source
+  déplacée, lecture seule octet pour octet, deux cerveaux sur un dossier,
+  containment.
+- `RR9` et `RR10` en gardes structurelles, dans `src/map/realRoot.test.ts` :
+  CSP inchangée au caractère près, capacité limitée à `dialog:allow-open`,
+  aucun réseau, dépendances inchangées, cycle `DEC-0032` intact.
+- Le codec de chemin est prouvé séparément, y compris sur un chemin contenant
+  un surrogate isolé que `to_string_lossy()` détruit.
+- Rejeu **WebView2 152.0.4191.66** par `scripts/task0032-webview2.ps1`, sur un
+  arbre de 1 209 entrées généré par la preuve. Artefact
+  `docs/performance/runs/TASK-0032-webview2.json`, **non canonique**, hors
+  `X5`. `absolutePathLeak = false`, y compris sur le fichier d'index et sur le
+  journal de l'hôte.
+- Rust **319 PASS**, TypeScript **279 PASS**, `pnpm check`, `pnpm build`,
+  `cargo build --offline`, `git diff --check` verts. `cargo fmt --check` propre
+  sur chaque ligne écrite ici. `cargo clippy` strict reste rouge à **26**
+  erreurs, le même nombre qu'à l'entrée.
 
 ## Limites déclarées
 
-Aucun cerveau personnel. Aucun watcher, aucune mise à jour incrémentale.
-Aucun FTS5. Aucune identité physique `F-046`. Aucune acceptation de performance
-sur grande racine réelle. Le dialogue natif lui-même n'est pas automatisé.
+Aucun cerveau personnel : toutes les arborescences analysées sont créées par
+les preuves. Aucun watcher, aucune mise à jour incrémentale. Aucun FTS5.
+Aucune identité physique `F-046`. Aucune acceptation de performance sur grande
+racine réelle. Le dialogue natif lui-même n'est pas automatisé : sa
+compilation, son enregistrement et sa primitive sont prouvés, son ouverture ne
+l'est pas. La dette `Registry`/`legacy_store` n'est pas supprimée.
+
+Un refus délibérément large est assumé : un index publié avant `DEC-0033` ne
+porte aucun `source_ref` et est refusé en `map_source_mismatch`. Il n'est
+jamais supprimé; une actualisation explicite le republie.

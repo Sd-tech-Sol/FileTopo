@@ -1,8 +1,10 @@
 # VALIDATION.md — État de vérification
 
 **Dernière mise à jour :** 2026-09-10
-**Dernière livraison exécutée :** TASK-0031, section BA, `IMPLEMENTED`, **en attente de vérification indépendante**. TASK-0030, section AY, reste `VERIFIED` dans sa portée synthétique de convergence V1.
-**Dernière tâche évaluée indépendamment :** TASK-0030 — `VERIFIED` le 2026-09-09 par le
+**Dernière livraison exécutée :** TASK-0032, section BB, `IMPLEMENTED`, **en attente de vérification indépendante**. TASK-0031, section BA, est `VERIFIED` dans sa portée synthétique V1 par `ACTION-0048`.
+**Dernière tâche évaluée indépendamment :** TASK-0031 — `VERIFIED` le 2026-09-10
+par le verdict indépendant enregistré dans `ACTION-0048`, dans sa portée
+synthétique V1. TASK-0030 — `VERIFIED` le 2026-09-09 par le
 verdict indépendant enregistré dans `ACTION-0047`, section AZ, **avec six
 réserves `R-T30-1` à `R-T30-6` maintenues**. TASK-0029 — `VERIFIED` le
 2026-09-09 par le verdict indépendant enregistré dans `ACTION-0046`, section AX.
@@ -4336,3 +4338,134 @@ dans sa portée synthétique**, en attente du contrôle indépendant. `R-T30-3`,
 synthétique. `F-050` et `F-051` restent `IMPLEMENTED`, **pas `VERIFIED`
 globalement**; `F-042` reste `PROPOSED / MVP`, `F-046` `PROPOSED`, `F-047`
 `DIFFÉRÉ`. **X5 = 36.**
+
+---
+
+## BB. TASK-0032 — première racine réelle contrôlée — 2026-09-10
+
+**Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche
+`build/v0.2-a16-v1-real-root`, gel `c3507bf` parent direct du premier commit de
+code. Exécuteur : Claude Code. Décision
+[DEC-0033](../decisions/DEC-0033-real-root-privacy-and-source-binding.md),
+`APPROVED`.
+
+**Aucune donnée personnelle n'a été utilisée.** Toutes les arborescences lues
+par cette tranche ont été créées par les preuves elles-mêmes, dans des
+répertoires temporaires ou sous le bac à sable de la preuve, et détruites avec
+eux.
+
+### BB.1 Preuves Rust — `RR1` à `RR8`, sur de vrais dossiers
+
+`src-tauri/src/map/real_root_tests.rs`. Scanner et SQLite réels.
+
+| Preuve | Ce qui est établi |
+|---|---|
+| `RR1` migration | Un catalogue de schéma 1 écrit à la main — trois cerveaux dont un renommé en `Alpha renommé`/`#123456`/`★`, actif `brain-gamma` — migre vers le schéma 2 : mêmes cerveaux, mêmes noms, couleurs, icônes, positions et sources; **même cerveau actif**; réouverture idempotente; `user_version = 2` exact |
+| `RR1` échec | Migration bloquée par une table `brains_next` préexistante : ouverture **refusée**, `user_version` reste 1, le renommage et le cerveau actif sont intacts. Rien de perdu |
+| `RR2` enregistrement | Cerveau `REAL_ROOT` créé, `brain_id` en `real-<uuid>`, label = nom terminal du dossier; **source inchangée octet pour octet**; aucun index créé; `map_open` rend `map_not_built` **sans** créer d'index ni scanner |
+| `RR2` refus | Un fichier, un dossier absent : refusés; le catalogue est **identique avant et après**, aucun dossier créé. Un lien symbolique de dossier est refusé comme racine tandis que sa cible reste enregistrable — le refus porte sur le lien, pas sur le dossier derrière |
+| `RR3` confidentialité | Racine nommée `FILETOPO_PRIVATE_SENTINEL_<uuid>`. Après enregistrement, indexation et ouverture : `absolutePathLeak = false` sur `BrainRecord`, `BrainCatalogView`, `MapBuildReport`, `MapOpenReport`, la projection et le détail de nœud; **aucun message de refus ne nomme le chemin**; le fichier d'index ne contient pas la chaîne absolue. Le catalogue local, lui, rend bien le chemin canonique — la seule place où il a le droit d'être |
+| `RR4` première indexation | Arbre Unicode de profondeur > 1, 8 nœuds : `map_refresh` publie la révision 1, `map_view` rend une projection bornée, la résolution de `Dossier accentué/sous-dossier` et le détail de nœud fonctionnent. `fingerprintBefore`/`After = null`, `readOnlyConfirmed = false`, `plannedNodes = 0` — dit, jamais prétendu. Aucun état FileTopo sous la racine |
+| `RR5` ouverture hors ligne | Racine déplacée sous garde `Drop` : `map_open` et `map_view` rendent **exactement** les mêmes valeurs; `map_refresh` et `map_rebuild` échouent en `map_scan_failed`; le fichier d'index est **identique octet pour octet** après les échecs; la racine restaurée, une actualisation reprend et n'avance que la révision |
+| `RR6` lecture seule | Inventaire complet — chemins relatifs, tailles, `mtime`, **contenu octet pour octet** — identique avant, après `map_refresh` et après `map_rebuild`. Rien d'ajouté, rien de supprimé, aucun `.sqlite` ni nom contenant `filetopo` sous la racine. `atime` volontairement exclu, non normatif |
+| `RR7` deux cerveaux | Deux cerveaux sur **le même dossier** : `brain_id` distincts, `source_ref` distincts, `index_id` distincts, bases distinctes. Reconstruire le premier porte sa révision à 2 et laisse le second **rigoureusement identique** |
+| `RR7` binding | Un index dont le `source_ref` ne correspond plus est refusé en `map_source_mismatch`, **le fichier reste intact**, et le vrai cerveau continue de s'ouvrir |
+| `RR8` containment | La racine qui engloberait l'espace d'état FileTopo est refusée en nommant le risque; l'espace d'état lui-même, `brains/` et l'espace propre d'un cerveau le sont aussi. Aucun cerveau parasite créé. Un frère nommé `filetopo-state-archive` est **accepté** : la comparaison porte sur des composants, pas sur un préfixe de texte |
+
+Le codec de chemin est prouvé séparément dans `src-tauri/src/path_codec.rs` :
+aller-retour exact, y compris sur un chemin contenant un **surrogate isolé**
+que `to_string_lossy()` détruit — le test échoue si la conversion lossy ne perd
+rien, donc il ne peut pas passer par accident.
+
+### BB.2 Preuves TypeScript — `RR9` et `RR10`
+
+`src/map/realRoot.test.ts`, gardes structurelles lues sur les sources mêmes.
+
+| Preuve | Ce qui est établi |
+|---|---|
+| Sélecteur | `map_brain_choose_real_root` est invoquée **sans aucun argument**; aucun appel `invoke` de `MapApp` ne porte une clé nommant un endroit du disque. `relativePath` est explicitement admis : c'est un chemin **dans l'index d'un cerveau**, résolu en SQL, jamais sur le disque |
+| État non indexé | Lu de ce que la composition n'a pas réussi à charger, jamais d'une sonde de la source |
+| Types | Aucun champ `rootPath`/`absolutePath`/`sourcePath`/`folderPath` déclaré; empreintes nullables |
+| `RR9` réseau | CSP **identique** au caractère près à celle de `TASK-0031`; capacité = `core:default` + `dialog:allow-open`, rien d'autre; aucun `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource`, `http://` ni `https://` dans l'interface; dépendances npm et `tauri-plugin-dialog` inchangées |
+| `RR10` cycle | `runLifecycle` : ouvrir → `map_open` seul; actualiser → `map_refresh` puis `map_open`; reconstruire → `map_rebuild` puis `map_open`. `DEC-0032` intact |
+
+Côté Rust, deux gardes supplémentaires remplacent la réserve `X2` : le runtime
+**doit** initialiser le plugin de dialogue, `choose_collection` **doit** rester
+non enregistrée, et **aucune signature de commande exposée** ne porte un type
+`Path`/`PathBuf` ni un paramètre nommé `path`, `root`, `folder`, `directory` ou
+`absolute_path` — lu sur le texte des signatures que `generate_handler!`
+enregistre.
+
+### BB.3 Rejeu WebView2 réel
+
+`scripts/task0032-webview2.ps1`, WebView2 **152.0.4191.66**, Tauri **2.11.5**,
+SQLite **3.53.2**. Artefact `docs/performance/runs/TASK-0032-webview2.json`,
+**non canonique**, hors `X5`.
+
+Arbre de test **généré par la preuve**, 1 209 entrées, noms accentués et
+idéogrammes, sous le bac à sable de la preuve — jamais un dossier personnel.
+
+- Le bouton **Ajouter un dossier** est présent et actif dans la page produit.
+  **Le dialogue natif n'est pas ouvert** : il n'est pas automatisé, ce que
+  `TASK-0032` §6 autorise explicitement, et ce que fait la commande derrière
+  lui est prouvé par `RR2` sur la même primitive `register_real_root`.
+- `map_open` avant indexation : `map_not_built`, **aucun fichier d'index créé**,
+  source inchangée. Le bouton s'appelle alors **« Indexer »**.
+- Frappe réelle sur **Indexer** : 1 210 nœuds indexés, `sourceKind = REAL_ROOT`,
+  `sourceRef` = le UUID opaque, `fingerprintBefore/After = null`,
+  `readOnlyConfirmed = false`, `plannedNodes = 0`, aucun diagnostic. Le bouton
+  s'appelle ensuite **« Actualiser »**.
+- Trois frappes réelles : ouvrir laisse la révision à 2, actualiser la porte à
+  3, reconstruire à 4, `indexId` **inchangé** aux trois étapes, `sourceRead =
+  false` à chaque ouverture, **source inchangée à chaque étape**.
+- Projection bornée : **1 210 nœuds indexés rendus par 256 nœuds et 4
+  agrégats**, budget 512 respecté, DOM égal exactement à la page produit.
+- Lecture seule : inventaire complet identique avant et après; **aucun artefact
+  FileTopo** sous la racine.
+- Confidentialité : `absolutePathLeak = false` sur sept charges utiles DTO,
+  **sur le fichier d'index lui-même** et **sur le journal de l'hôte**.
+- 4 frappes, toutes `isTrusted`; **0 erreur console fatale**.
+
+### BB.4 Validations générales
+
+Rust **319 PASS**, 0 échec, 5 ignorés. TypeScript **279 PASS**, 18 fichiers.
+`pnpm check`, `pnpm build`, `cargo build --offline` et `git diff --check` verts.
+
+`cargo fmt --check` : **toutes les lignes écrites par cette tâche sont
+propres**, vérifiées fichier par fichier. La dette de forme préexistante de
+`hierarchy.rs`, `content_signals.rs` et `relation_commands.rs` est inchangée et
+n'a pas été touchée.
+
+`cargo clippy --all-targets --offline -- -D warnings` : **rouge à 26 erreurs**,
+exactement le même nombre qu'à l'entrée. Un seul diagnostic tombe dans un
+fichier modifié ici — `brains.rs`, `collapsible_if` sur `active()` — et ce code
+est **antérieur à la tâche**, vérifié dans `git show HEAD:` : seul son numéro de
+ligne a bougé. Un diagnostic **avait** été introduit, `too_many_arguments` sur
+`BrainIndex::replace`, et il a été corrigé avant livraison en regroupant les
+trois faits de source dans `SourceStamp`. `R-T30-1` inchangée.
+
+### BB.5 Non testé, et limites
+
+**Non testé :** le vrai cerveau personnel de Sébastien, et tout dossier
+personnel — hors portée, et point d'arrêt qui lui est réservé. Le **dialogue
+natif** lui-même n'est pas automatisé : sa compilation, son enregistrement et
+sa primitive sont prouvés, son ouverture ne l'est pas. Aucun watcher, aucune
+mise à jour incrémentale : `F-027`, `F-030`, `F-031` restent `PROPOSED`. Aucun
+FTS5, aucune identité physique `F-046`. Aucune acceptance de performance sur
+une grande racine réelle : 1 210 nœuds sur un poste de développement ne
+mesurent rien de tel. La suppression de la dette `Registry`/`legacy_store`
+n'est pas faite — seul le codec de chemin en a été extrait.
+
+**Un refus délibérément large :** un index publié avant `DEC-0033` ne porte
+aucun `source_ref` et est donc refusé en `map_source_mismatch`. Il n'est
+**jamais supprimé**; une actualisation explicite le republie. C'est un coût
+assumé pour ne jamais servir un index dont la source ne peut pas être
+confirmée.
+
+**Réserves :** `R-T30-1` clippy strict rouge, inchangée. `R-T30-5` est
+**traitée uniquement dans la portée `REAL_ROOT` de test** — aucune validation
+sur donnée personnelle, et aucune n'est demandée avant le contrôle indépendant.
+`R-T30-3`, `R-T30-4`, `R-T30-6` et `R8` restent ouvertes. `R-T30-2` reste levée
+dans sa portée synthétique par `ACTION-0048`. `F-050` et `F-051` restent
+`IMPLEMENTED`, **pas `VERIFIED` globalement**; `F-042` reste `PROPOSED / MVP`,
+`F-046` `PROPOSED`, `F-047` `DIFFÉRÉ`. **X5 = 36.**
