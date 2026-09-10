@@ -1,12 +1,15 @@
 # Action suivante
 
-## Contrôle indépendant de TASK-0031
+## Retour à l'orchestrateur — prochaine tranche V1
 
-Contrôler indépendamment, sur preuves,
-[TASK-0031](../tasks/TASK-0031-v1-brain-lifecycle.md), livrée `IMPLEMENTED` le
-2026-09-10 sur la branche `build/v0.2-a15-v1-brain-lifecycle`, et statuer sur la
-réserve `R-T30-2` : ouvrir un cerveau lit désormais l'index persistant sans
-scanner la source, actualiser et reconstruire sont des intentions explicites, et
-un échec de publication laisse le dernier index fiable ouvrable. L'instance de
-contrôle doit être distincte des exécuteurs, Codex et Claude Code, dont aucun ne
-s'est attribué `VERIFIED`.
+`TASK-0031` est `VERIFIED` dans sa portée synthétique par
+[ACTION-0048](../reviews/ACTION-0048-independent-control.md). La réserve
+`R-T30-2` est levée dans cette portée : ouvrir réutilise l'index persistant sans
+scanner la source; actualiser et reconstruire restent des actions explicites et
+fail-safe.
+
+Action unique suivante : décider et ouvrir la tranche V1 d'introduction
+contrôlée de `REAL_ROOT`, sans watcher, sans IA/cloud et sans accès silencieux à
+une donnée réelle. Toute première utilisation d'un vrai cerveau doit être
+locale, explicitement choisie par l'utilisateur et conserver la source en
+lecture seule.
