@@ -1,7 +1,7 @@
 # VALIDATION.md — État de vérification
 
 **Dernière mise à jour :** 2026-09-10
-**Dernière livraison exécutée :** TASK-0033, section **BE** (projection topographique progressive), `IMPLEMENTED`, **en attente de vérification indépendante**. TASK-0032, sections BB/BC, est `VERIFIED` dans sa portée par le verdict indépendant enregistré dans `ACTION-0049`, section **BD**.
+**Dernière livraison exécutée :** TASK-0033, sections BE puis **BF** (passe d'acceptation produit WebView2, deux défauts trouvés et corrigés), `IMPLEMENTED`, **en attente de nouvelle vérification indépendante** (`ACTION-0050` avait exigé cette passe). TASK-0032, sections BB/BC, est `VERIFIED` dans sa portée par le verdict indépendant enregistré dans `ACTION-0049`, section BD.
 **Dernière tâche évaluée indépendamment :** TASK-0032 — `VERIFIED` le
 2026-09-10 par le verdict indépendant enregistré dans `ACTION-0049`, section
 BD, dans sa portée. TASK-0031 — `VERIFIED` le 2026-09-10
@@ -4789,3 +4789,168 @@ absolu IPC, aucun réseau/cloud/LLM/MCP, aucune donnée personnelle.
 rouge), `R-T30-3`, `R-T30-4`, `R-T30-6`, `R8` ouvertes; `R-T30-5` traitée
 uniquement dans la portée `REAL_ROOT` de test. **X5 = 36**, inchangé;
 `origin/main` inchangé.
+
+## BF. TASK-0033 — passe d'acceptation produit WebView2 — 2026-09-10
+
+**Statut inchangé : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Même branche
+`build/v0.2-a17-v1-topographic-ux`, même `DEC-0034`, inchangée. Suite au
+contrôle indépendant `ACTION-0050`, section ci-après, qui trouvait le code
+cohérent mais le rejeu produit obligatoire manquant.
+
+### BF.1 Le rejeu, réel
+
+`scripts/task0033-seed-proof.py` génère une arborescence `REAL_ROOT`
+synthétique de **5 206 éléments**, quatre branches délibérément
+déséquilibrées : `A` (120 sous-dossiers, aucun fichier à ce niveau — un
+overflow purement dossier), `B` (40 dossiers + 90 fichiers directs — la
+vraie compétition dossier-first), `C` (4 356 fichiers plats — remplissage
+par des fichiers quand rien ne fait concurrence, et une longue chaîne de
+pagination), `D` (chaîne à enfant unique, 15 niveaux — ancestry profonde).
+`scripts/task0033-webview2.mjs`/`.ps1` pilotent le vrai produit en WebView2
+via CDP (`Input.dispatchKeyEvent` pour le clavier, `Input.dispatchMouseEvent`
+pour un clic de sélection réel — jamais `element.click()`,
+`Emulation.setDeviceMetricsOverride` pour rejouer 1366×768 puis 1920×1080
+dans le même processus sans dépendre de `Browser.setWindowBounds`, non
+garanti sur la session CDP scoped-page de WebView2). Preuve non canonique :
+[`TASK-0033-webview2.json`](../performance/runs/TASK-0033-webview2.json).
+
+Noms de dossiers volontairement très courts (`A`, `B`, `C`, `D`, `t` pour la
+racine) : au-delà d'une quinzaine de niveaux, un chemin absolu réaliste sous
+un vrai checkout dépasse vite `MAX_PATH` (260 caractères) sous Windows sans
+support des chemins longs — mesuré en pratique lors de l'écriture de cette
+passe.
+
+### BF.2 Défaut trouvé A — la vue ordinaire pouvait engloutir un arbre entier dans une seule branche
+
+**Le constat.** `materialize_view` gardait, après la page des enfants
+directs du focus, une boucle qui continuait à paginer récursivement les
+enfants du **premier** élément de la file — un reliquat de l'algorithme
+d'avant `DEC-0034`, où le budget de 256 rendait la question sans
+conséquence pratique. À la cible de 64, sur l'arbre de preuve, `A` (premier
+dossier alphabétique parmi les enfants de la racine, 120 sous-dossiers)
+consommait à lui seul presque toute la cible restante, si bien que `B`, `C`
+et `D` n'apparaissaient dans la vue racine que comme de simples cartes,
+**jamais leurs propres enfants** — mais surtout, le mécanisme aurait pu tout
+aussi bien vider la cible entière sur `A` avant même que `B`/`C`/`D` ne
+soient traités, selon l'ordre. C'est exactement ce que `DEC-0034` B
+interdit : « la racine et l'ancestry du focus restent prioritaires; ensuite,
+la projection privilégie les dossiers » — pas « le premier dossier rencontré
+dévore le budget des autres ».
+
+**La correction.** L'expansion automatique s'arrête à la page des enfants
+directs du focus. Descendre d'un niveau est désormais **toujours** une
+navigation explicite (`DEC-0034` C) — une nouvelle requête avec cet enfant
+comme focus — jamais un effet de bord de l'affichage de son parent.
+
+**Les preuves.**
+
+| Preuve | Ce qui est établi |
+|---|---|
+| Rust, `ordinary_view_never_pulls_in_grandchildren_even_from_a_small_branch` | Sur un arbre à trois branches de tailles très différentes (100, 5 et 0 enfants), la vue ordinaire ne matérialise que les trois enfants directs — aucun petit-enfant, quelle que soit la taille de la branche; chaque branche non vide porte son propre agrégat au compte exact; entrer explicitement dans la grosse branche révèle bien ses propres enfants |
+| WebView2, réel | Depuis la racine de l'arbre de preuve, `A`, `B`, `C`, `D` apparaissent tous les quatre comme cartes, chacun avec sa propre pastille d'agrégat si applicable; aucun enfant de `A` n'apparaît avant d'être explicitement sélectionné |
+| Rust, `directories_are_retained_over_files_when_the_ordinary_target_cuts_the_page` (préexistant, revérifié) | Toujours vert : le retrait de l'expansion multi-niveaux ne change rien à la priorité dossier-first au niveau d'un seul focus |
+
+**Corrections de tests entraînées, pas un changement de contrat.** Quatre
+tests préexistants (`the_same_node_id_in_two_brains_resolves_only_inside_its_own`
+dans `commands.rs`; `a_node_reference_resolves_only_inside_its_own_brain` et
+`a_pending_suggestion_enters_no_count_until_it_is_approved` dans
+`cross_commands.rs`; `approval_moves_a_suggestion_into_the_counts_and_only_then`
+dans `relation_commands.rs`) obtenaient l'id d'un nœud imbriqué (par exemple
+`dossier-a/note-1.txt`) en lisant la vue **par défaut** de `quasi-empty` —
+qui, avant cette correction, listait accidentellement tout l'arbre parce que
+`quasi-empty` est assez petit pour que l'ancienne expansion multi-niveaux
+l'atteigne en entier. Une fois cette expansion retirée, la vue par défaut
+n'y donne plus accès. Corrigés pour résoudre le chemin par navigation
+explicite, segment par segment (`resolve_by_path` dans `cross_commands.rs`,
+`source_id` dans `relation_commands.rs`) — ce que le produit fait
+réellement désormais. Aucun de ces quatre tests ne portait sur la
+profondeur de la vue par défaut; leur objet (isolation entre cerveaux,
+comptage de suggestions) est inchangé et toujours vérifié.
+
+### BF.3 Défaut trouvé B — la caméra pouvait rester coincée hors du canevas visible
+
+**Le constat.** `.map-view` peut grandir **après** le premier
+positionnement de la composition : le panneau latéral se remplit de données
+réelles de façon asynchrone (relations, observations de contenu), ce qui
+change la hauteur de la rangée de grille `.app__main` et donc la taille de
+`.map-view`, qui la suit (`flex: 1`). Rien ne réappliquait alors les bornes
+de la caméra à la nouvelle taille : la vue restait calculée pour l'ancienne
+hauteur, plaçant potentiellement le focus hors du canevas désormais plus
+grand — observé concrètement lors du rejeu, où la carte `A` rendait à une
+coordonnée écran située au-dessus du sommet réel du canevas.
+
+**La correction.** Un effet dédié, distinct de celui qui positionne une
+composition fraîche, réapplique `clampView` — jamais un recentrage —
+chaque fois que les dimensions du viewport changent. Il conserve tout pan/
+zoom déjà choisi tant qu'il reste valide, et le ramène dans les bornes
+seulement quand la nouvelle taille l'exige.
+
+**La preuve.** Rejeu WebView2 réel : après redimensionnement du viewport
+émulé de 1366×768 à 1920×1080 en cours de session, la sélection et la
+navigation vers `A` restent cohérentes (panneau de détails, DOM) aux deux
+tailles, sans qu'aucune carte ne rende hors du canevas mesuré.
+
+### BF.4 Preuves confirmées en conditions réelles, aux deux résolutions
+
+| Preuve | 1366×768 | 1920×1080 |
+|---|---|---|
+| Total indexé | 5 206 | 5 206 |
+| Vue ordinaire ≤ 64 | ✓ | ✓ |
+| Dossiers d'abord, overflow pur (`A`) | 62 affichés, tous dossiers, 58 omis | identique |
+| Dossiers d'abord, overflow mixte (`B`) | 40 dossiers + 22 fichiers, aucun fichier avant un dossier, 68 omis | identique |
+| Continuation sans accumulation (`C`) | ✓, pages disjointes | — |
+| Navigation profonde (`D`) | ✓, 5 sauts réels | — |
+| Échelle caméra inchangée sur navigation de branche | ✓ | ✓ |
+| `Ajuster à l'écran` produit un fit exhaustif | échelle ≈ 0,094 (colonne de 62 cartes) | échelle ≈ 0,085 |
+| `Réinitialiser` revient à l'échelle lisible | `1`, jamais le fit exhaustif | `1`, jamais le fit exhaustif |
+| Pastille d'agrégat compacte | 150×34 | 150×34 |
+| Vocabulaire interne visible | aucun | aucun |
+| Fuite de chemin absolu | aucune | aucune |
+| Erreurs console fatales | 0 | 0 |
+
+### BF.5 Validations rejouées après correction
+
+Rust **328 PASS**, 0 échec, 5 ignorés (327 avant cette passe, +1 nouveau
+test de régression). TypeScript **289 PASS**, inchangé. `pnpm check`,
+`pnpm build`, `cargo build --offline`, `git diff --check` verts.
+
+`cargo fmt --check` : propre sur chaque ligne écrite par cette passe dans
+`projection.rs`, `cross_commands.rs`, `relation_commands.rs`, `commands.rs`,
+vérifiée hunk par hunk contre `git diff`. Dette préexistante ailleurs dans
+le crate (143 diagnostics, dont l'essentiel dans `relation_commands.rs` en
+dehors des lignes touchées ici) rapportée et laissée intacte.
+
+`cargo clippy --all-targets --offline -- -D warnings` : rouge à **26
+erreurs**, même compte qu'avant cette passe, aucune dans un fichier touché
+par cette passe (vérifié ligne par ligne contre les emplacements rapportés).
+
+### BF.6 Non testé, et limites
+
+**Non testé :** acceptance laptop modeste — poste de développement
+seulement. Le redimensionnement du rejeu utilise
+`Emulation.setDeviceMetricsOverride` (CDP), pas un changement physique de
+moniteur; le comportement d'un vrai changement de moniteur/DPI n'est pas
+couvert.
+
+**Incohérence documentaire signalée par `ACTION-0050`, corrigée :**
+`NEXT_ACTION.md`/`HANDOFF.md` de la livraison précédente laissaient entendre
+que `fitView` restait utilisé à la première ouverture d'une composition;
+c'est `readableView` depuis le code livré à `393d319`. Corrigé dans la
+fiche `TASK-0033`, `HANDOFF.md` et `CURRENT_STATE.md`.
+
+Tout le reste des limites de `BE` demeure : aucun watcher, aucun
+incrémental, aucun FTS5, aucune identité physique, aucune « Ouvrir dans
+l'Explorateur », palette de relations par direction non reprise.
+
+**Réserves :** inchangées par rapport à `BE` — `R-T30-1` (clippy strict
+rouge), `R-T30-3`, `R-T30-4`, `R-T30-6`, `R8` ouvertes; `R-T30-5` traitée
+uniquement dans la portée `REAL_ROOT` de test. **X5 inchangé**;
+`origin/main` inchangé.
+
+### BF.7 Conclusion
+
+Le verrou d'acceptation qu'`ACTION-0050` avait posé est levé : le rejeu
+produit obligatoire est fait, réel, aux deux résolutions demandées, et les
+deux défauts qu'il a révélés sont corrigés dans la portée stricte de
+`TASK-0033`. **`TASK-0033` reste `IMPLEMENTED` — le verdict `VERIFIED`
+appartient au prochain contrôle indépendant, pas à cette passe.**

@@ -1755,9 +1755,14 @@ mod tests {
         let alpha_nodes = snapshot(&paths, &alpha).expect("alpha").nodes;
         let beta_nodes = snapshot(&paths, &beta).expect("beta").nodes;
 
-        // A id held by both brains — `quasi-empty` has 12 nodes, `deep` 157.
+        // A id held by both brains — `quasi-empty` has 12 nodes, `deep` 157 —
+        // whether or not either one's *ordinary* projection reaches that far;
+        // `detail` resolves any valid id directly, never only the default view.
         let shared_id = alpha_nodes.last().expect("a node").id;
-        assert!(beta_nodes.iter().any(|node| node.id == shared_id));
+        assert!(
+            detail(&paths, &beta, &BrainNodeRef::new("brain-beta", shared_id)).is_ok(),
+            "beta must hold a node under this id too"
+        );
 
         let in_alpha = detail(&paths, &alpha, &BrainNodeRef::new("brain-alpha", shared_id))
             .expect("alpha detail");
@@ -1784,9 +1789,14 @@ mod tests {
                 || in_alpha.node.relative_path == in_beta.node.relative_path
         );
 
-        // And an id that only `deep` can hold is unreachable from Alpha.
-        let beta_only = beta_nodes.last().expect("a node").id;
-        assert!(beta_only > alpha_nodes.len() as i64);
+        // And an id that only `deep` can hold is unreachable from Alpha. Ids
+        // are assigned 1..=node_count in scan order, so `deep`'s own total —
+        // far past every id `quasi-empty` ever hands out — is one such id,
+        // whether or not it happens to sit inside either brain's *ordinary*
+        // (now narrower) projection.
+        let alpha_total = snapshot(&paths, &alpha).expect("alpha").node_count as i64;
+        let beta_only = snapshot(&paths, &beta).expect("beta").node_count as i64;
+        assert!(beta_only > alpha_total);
         let error = detail(&paths, &alpha, &BrainNodeRef::new("brain-alpha", beta_only))
             .expect_err("must not resolve");
         assert!(matches!(error, MapError::NodeMissing(_)));

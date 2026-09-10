@@ -64,28 +64,23 @@ pub fn materialize_view(
         .max(selected.len())
         .min(MATERIAL_BUDGET);
     let cursor = after.map(ChildCursor::decode).transpose()?;
-    let mut queue = selected.len() - 1;
     let mut next_by_parent = HashMap::new();
     // Validate even a cursor submitted for a leaf or a full ancestry chain.
+    //
+    // Only the focus's own direct children are paged in here — never a
+    // grandchild. An earlier version kept walking into whichever child
+    // happened to sort first and paginating *its* children too, which spent
+    // most of an ordinary 64-block target on one arbitrary branch's own
+    // descendants instead of showing the focus's real siblings; a live
+    // WebView2 replay of `TASK-0033` caught it. `DEC-0034` C's "explorer une
+    // branche" is what descends a level, by asking again with that child as
+    // the new focus — never a side effect of viewing its parent.
     let first =
         store
             .index
             .children_page(focus_id, effective_target - selected.len(), cursor.as_ref())?;
     next_by_parent.insert(focus_id, first.next_cursor.map(|c| c.encode()));
     selected.extend(first.items);
-    queue += 1;
-    while queue < selected.len() && selected.len() < effective_target {
-        let parent = selected[queue].id;
-        if selected[queue].child_count > 0 {
-            let page =
-                store
-                    .index
-                    .children_page(parent, effective_target - selected.len(), None)?;
-            next_by_parent.insert(parent, page.next_cursor.map(|c| c.encode()));
-            selected.extend(page.items);
-        }
-        queue += 1;
-    }
     // Scanner IDs preserve the historical ordering for complete small views.
     selected.sort_by_key(|n| n.id);
     let ids = selected.iter().map(|n| n.id).collect::<HashSet<_>>();

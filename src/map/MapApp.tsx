@@ -95,6 +95,7 @@ import type {
   SuggestionReviewQueue,
 } from "./types";
 import {
+  clampView,
   fitToBox,
   fitView,
   panBy,
@@ -960,6 +961,23 @@ export default function MapApp() {
     // already cover.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [compositionId, composition.territories.length, viewport.width, viewport.height]);
+
+  // `.map-view` can grow after this composition was already positioned — the
+  // aside panel filling in with real data (relations, content observations)
+  // changes `.app__main`'s grid row height, and the canvas follows it. This
+  // never re-centres — `shouldFitComposition` above already decided this
+  // composition keeps its view — it only keeps the existing pan/zoom valid
+  // against whatever the viewport actually measures now, so a projection
+  // positioned before that growth cannot end up stranded outside the visible
+  // canvas.
+  useEffect(() => {
+    if (composition.territories.length === 0) return;
+    setView((current) => clampView(current, world, viewport));
+    // `world` changes with the composition, not the viewport; reacting to it
+    // here too would refire this for reasons `shouldFitComposition` above
+    // already owns.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewport.width, viewport.height]);
 
   const projectionKey = renderedBrains.map(b => `${b.brainId}:${loaded.get(b.brainId)?.snapshot.focusId}:${loaded.get(b.brainId)?.snapshot.indexRevision}:${b.hierarchy.drawOrder.map(n => n.id).join(",")}`).join("|");
   // A branch navigation, an expanded indicator or a refresh replaces the
@@ -2274,6 +2292,7 @@ export default function MapApp() {
             </button>
             <button
               type="button"
+              data-testid="reset-view"
               onClick={() => {
                 const anchor = focusAnchorRect(composition);
                 setView(anchor ? readableView(anchor, world, viewport) : fitView(world, viewport));

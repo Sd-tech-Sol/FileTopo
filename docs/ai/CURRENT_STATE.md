@@ -1,5 +1,67 @@
 # État courant
 
+## TASK-0033 — passe d'acceptation produit WebView2 — IMPLEMENTED — 2026-09-10
+
+- **Statut inchangé : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Même branche
+  `build/v0.2-a17-v1-topographic-ux`, même `DEC-0034`, inchangée. Suite au
+  contrôle indépendant `ACTION-0050` (code cohérent, mais rejeu produit
+  obligatoire manquant). Détail : [VALIDATION section BF](VALIDATION.md).
+- **Rejeu WebView2 réel exécuté**, ce qui manquait à la livraison
+  précédente : arborescence `REAL_ROOT` synthétique de **5 206 éléments**
+  (`scripts/task0033-seed-proof.py`), quatre branches délibérément
+  déséquilibrées pour exercer réellement dossier-first, agrégats et
+  navigation multi-niveaux, pilotée en WebView2 réel
+  (`scripts/task0033-webview2.mjs`/`.ps1`) à 1366×768 puis 1920×1080.
+  Preuve non canonique :
+  [`TASK-0033-webview2.json`](../performance/runs/TASK-0033-webview2.json).
+- **Un vrai défaut trouvé et corrigé : la vue ordinaire pouvait engloutir un
+  arbre entier dans une seule branche arbitraire.** `materialize_view`
+  continuait, après la page des enfants directs du focus, à paginer
+  récursivement les enfants du **premier** enfant rencontré tant que la
+  cible de 64 n'était pas atteinte — un reliquat d'avant `DEC-0034`. Sur
+  l'arbre de preuve, le premier dossier (120 sous-dossiers) consommait
+  presque toute la cible, masquant ses vraies branches soeurs de la vue
+  racine. **Corrigé :** l'expansion automatique s'arrête aux enfants directs
+  du focus; descendre d'un niveau est toujours une navigation explicite,
+  jamais un effet de bord de la vue du parent. Verrouillé par un nouveau
+  test Rust; quatre tests préexistants qui présupposaient l'ancien
+  comportement ont été corrigés pour naviguer explicitement au lieu de
+  changer le contrat qu'ils testaient par ailleurs.
+- **Un second défaut trouvé et corrigé : la caméra pouvait rester coincée
+  hors du canevas visible.** `.map-view` grandit après le premier
+  positionnement quand le panneau latéral se remplit de données réelles de
+  façon asynchrone; rien ne réappliquait les bornes de la caméra à la
+  nouvelle taille. **Corrigé :** un effet dédié réapplique `clampView`
+  (jamais un recentrage) à chaque changement de dimensions du viewport.
+- **Preuves confirmées en conditions réelles, aux deux résolutions :** cible
+  ≤ 64 respectée; dossiers d'abord sur overflow pur (120 → 62 dossiers, 58
+  omis) et sur overflow mixte (40 dossiers + 90 fichiers → 40 dossiers + 22
+  fichiers, aucun fichier avant un dossier); continuation sans accumulation;
+  navigation profonde; caméra à échelle constante lors d'une navigation de
+  branche; `Ajuster à l'écran` produit un vrai fit exhaustif; `Réinitialiser`
+  revient à l'échelle lisible, jamais au fit exhaustif; pastille d'agrégat
+  150×34, sous une carte 240×64; aucun vocabulaire interne, aucune fuite de
+  chemin absolu, 0 erreur console fatale.
+- **Incohérence documentaire signalée par `ACTION-0050` corrigée :** la
+  fiche `TASK-0033` et `HANDOFF.md` disaient encore que `fitView` restait
+  utilisé à la première ouverture; c'est `readableView` depuis la livraison
+  initiale.
+- **Validations rejouées après correction :** Rust **328 PASS** (327 + 1
+  nouveau test de régression), TypeScript **289 PASS** (inchangé),
+  `pnpm check`, `pnpm build`, `cargo build --offline`, `git diff --check`
+  verts; `cargo fmt --check` propre sur les fichiers Rust touchés par cette
+  passe (dette préexistante ailleurs, inchangée); `cargo clippy
+  --all-targets --offline -- -D warnings` rouge à **26 erreurs**, même
+  compte qu'avant, aucune nouvelle.
+- **Non testé / limite assumée :** poste de développement, pas une
+  acceptance laptop modeste; le redimensionnement de fenêtre utilise
+  `Emulation.setDeviceMetricsOverride` (CDP), pas un changement physique de
+  moniteur.
+- **Aucune donnée personnelle**, comme toujours. **X5 inchangé**,
+  `origin/main` inchangé. Aucune `TASK-0034`, aucune `DEC-0035`, aucune PR,
+  fusion, étiquette ni release.
+- **Action unique suivante : nouveau contrôle indépendant de `TASK-0033`.**
+
 ## TASK-0033 — projection topographique progressive — IMPLEMENTED — 2026-09-10
 
 - **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche

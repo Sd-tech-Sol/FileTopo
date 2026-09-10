@@ -1092,15 +1092,24 @@ mod tests {
         let paths = built("approve");
         open_relations(&paths, &alpha()).expect("relations");
 
-        // `S-005` runs `dossier-a/note-1.txt` → `racine-2.txt`.
-        let source_id = |paths: &SandboxPaths, path: &str| {
-            commands::snapshot(paths, &alpha())
+        // `S-005` runs `dossier-a/note-1.txt` → `racine-2.txt`. Walked one
+        // segment at a time: `TASK-0033` narrowed the ordinary projection to
+        // a focus's own direct children, so a nested path is no longer
+        // guaranteed to sit in the root's default view.
+        let source_id = |paths: &SandboxPaths, relative_path: &str| -> i64 {
+            let mut current_id = commands::snapshot(paths, &alpha())
                 .expect("snapshot")
-                .nodes
-                .iter()
-                .find(|node| node.relative_path == path)
-                .expect("node")
-                .id
+                .root_id;
+            for segment in relative_path.split('/') {
+                let view = commands::view(paths, &alpha(), Some(current_id), None).expect("view");
+                current_id = view
+                    .nodes
+                    .iter()
+                    .find(|n| n.parent_id == Some(current_id) && n.name == segment)
+                    .unwrap_or_else(|| panic!("missing segment {segment} of {relative_path}"))
+                    .id;
+            }
+            current_id
         };
         let a1 = source_id(&paths, "dossier-a/note-1.txt");
         let r2 = source_id(&paths, "racine-2.txt");

@@ -1,6 +1,62 @@
 # HANDOFF — passage de relais
 
-## Relais actuel — TASK-0033 livrée, en attente de contrôle — 2026-09-10
+## Relais actuel — TASK-0033, acceptation WebView2 faite, en attente de contrôle — 2026-09-10
+
+- **Ce qui vient d'être fait :** `ACTION-0050` avait contrôlé `TASK-0033` et
+  trouvé le code cohérent avec `DEC-0034`, mais **le rejeu produit WebView2
+  obligatoire manquait**. Cette passe l'exécute : arborescence `REAL_ROOT`
+  synthétique de 5 206 éléments, quatre branches délibérément déséquilibrées,
+  pilotée en WebView2 réel à 1366×768 puis 1920×1080. `TASK-0033` reste
+  `IMPLEMENTED`, jamais auto-`VERIFIED`.
+- **Le rejeu a trouvé un vrai défaut, corrigé dans la portée de la tâche :**
+  la vue ordinaire continuait, après les enfants directs du focus, à
+  paginer récursivement les enfants du **premier** enfant rencontré tant
+  que la cible de 64 n'était pas atteinte — un reliquat d'avant `DEC-0034`.
+  Sur un dossier au premier rang avec un gros sous-arbre, cela consommait
+  presque toute la cible sur une seule branche arbitraire, masquant les
+  vraies branches soeurs de la vue racine. **Ne jamais réintroduire cette
+  expansion automatique multi-niveaux.** `materialize_view` ne doit paginer
+  que les enfants directs du focus; descendre d'un niveau est toujours une
+  navigation explicite (`DEC-0034` C), jamais un effet de bord de la vue du
+  parent.
+- **Un second défaut, dans la caméra :** `.map-view` peut grandir après le
+  premier positionnement (le panneau latéral se remplit de données réelles
+  de façon asynchrone, changeant la hauteur de rangée de la grille
+  `.app__main`); rien ne réappliquait alors les bornes de la caméra à la
+  nouvelle taille, laissant la vue échouée hors du canevas visible. **Un
+  effet dédié réapplique désormais `clampView` à chaque changement de
+  dimensions du viewport — ne jamais confondre ceci avec un recentrage : il
+  ne fait que garder le pan/zoom existant valide, jamais n'en calcule un
+  nouveau.**
+- **Qui a fait quoi :** Claude Code a exécuté le rejeu et les deux
+  corrections. **Il ne peut pas rendre le verdict.**
+- **Ce que le prochain relais doit savoir :**
+  - `scripts/task0033-seed-proof.py` + `task0033-webview2.mjs`/`.ps1` sont
+    le harnais réutilisable pour tout futur rejeu produit de la topographie.
+    Noms de dossiers volontairement très courts (`A`, `B`, `C`, `D`,
+    `t`) : au-delà d'une quinzaine de niveaux, un chemin absolu réaliste
+    dépasse vite `MAX_PATH` (260 caractères) sous Windows sans support des
+    chemins longs.
+  - Le redimensionnement du rejeu utilise `Emulation.setDeviceMetricsOverride`
+    (CDP), pas `Browser.setWindowBounds` : ce dernier n'est pas garanti
+    disponible sur la session CDP scoped-page de WebView2.
+  - Quatre tests préexistants (`commands.rs`, `cross_commands.rs`,
+    `relation_commands.rs`) obtenaient l'id d'un chemin imbriqué via la vue
+    par défaut (désormais trop étroite pour l'atteindre). Corrigés pour
+    naviguer explicitement (`resolve_by_path`/`source_id` par segment) au
+    lieu de changer le contrat produit qu'ils testaient par ailleurs.
+  - L'incohérence documentaire qu'`ACTION-0050` avait signalée
+    (« `fitView` reste utilisé à la première ouverture ») est corrigée ici
+    et dans la fiche `TASK-0033` : c'est `readableView` depuis la livraison
+    initiale.
+- **Ce qui reste ouvert :** `cargo clippy` strict rouge à 26 erreurs, dette
+  inchangée. Palette de relations par direction non reprise. Aucun watcher,
+  aucun incrémental, aucun FTS5, aucune identité physique, aucune
+  acceptance laptop modeste (poste de développement seulement).
+- **Action unique suivante :** nouveau contrôle indépendant de `TASK-0033`,
+  sur les preuves de cette passe.
+
+## Relais précédent — TASK-0033 livrée, en attente de contrôle — 2026-09-10
 
 - **Ce qui vient d'être fait :** `TASK-0032` était déjà `VERIFIED` dans sa
   portée par `ACTION-0049` (déjà sur la branche avant cette session, mais dont
@@ -18,10 +74,11 @@
 - **Le second geste :** la caméra ne réduit plus toute la carte à chaque
   changement de projection. `fitView(world, …)` était appelé à chaque
   navigation de branche, dépliage d'agrégat et actualisation — c'est le défaut
-  que `DEC-0034` E visait. Il ne reste que sur **Ajuster à l'écran** et la
-  toute première ouverture; partout ailleurs, `recenterOnFocus` pan minimal
-  sans jamais changer l'échelle, et **Réinitialiser** utilise `readableView`
-  (échelle `1`, jamais un fit exhaustif) plutôt qu'un fit global.
+  que `DEC-0034` E visait. **`fitView` ne reste que sur l'action explicite
+  Ajuster à l'écran** (et le raccourci `f`/`F` sur la sélection); partout
+  ailleurs, `recenterOnFocus` pan minimal sans jamais changer l'échelle. La
+  **première ouverture d'une composition et Réinitialiser utilisent
+  `readableView`** (échelle `1`, jamais un fit exhaustif), pas `fitView`.
 - **Qui a fait quoi :** Claude Code a écrit la tranche entière. **Il ne peut
   pas rendre le verdict.**
 - **Ce que le prochain relais doit savoir :**

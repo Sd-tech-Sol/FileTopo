@@ -1,21 +1,46 @@
 # Action suivante
 
-## TASK-0033 — passe PRODUCT ACCEPTANCE WebView2
+## Nouveau contrôle indépendant de TASK-0033, sur preuves de rejeu réel
 
-`ACTION-0050` a contrôlé indépendamment la livraison de `TASK-0033`. Le code est cohérent avec `DEC-0034`, mais **TASK-0033 reste `IMPLEMENTED`, pas `VERIFIED`**, parce que le rejeu produit WebView2 obligatoire n'a pas été exécuté.
+`ACTION-0050` avait contrôlé `TASK-0033` : code cohérent avec `DEC-0034`,
+mais **rejeu produit WebView2 obligatoire manquant**. Cette passe l'exécute
+et corrige deux défauts qu'il a révélés. `TASK-0033` reste `IMPLEMENTED`,
+**jamais auto-`VERIFIED`**. **Claude Code a exécuté la passe et ne peut donc
+pas rendre le verdict.**
 
-Le contrôle indépendant confirme sur lecture du code :
+Ce qui a été fait cette fois :
 
-- `VIEW_BUDGET = 512` reste la borne dure; `ORDINARY_MATERIAL_TARGET = 64` est seulement la cible visuelle ordinaire;
-- ancestry/focus restent prioritaires;
-- la priorité dossiers repose sur l'ordre canonique existant, sans nouveau tri parallèle;
-- les agrégats sont rendus comme pastilles compactes avec vocabulaire utilisateur;
-- les changements de projection utilisent `recenterOnFocus` au lieu d'un `fitView` global;
-- la première ouverture et Réinitialiser utilisent `readableView`; `Ajuster` reste l'action explicite de fit global;
-- aucune nouvelle architecture, aucun chemin absolu IPC ni corpus complet frontend n'a été introduit.
+- **Rejeu WebView2 réel exécuté**, sur une arborescence `REAL_ROOT`
+  synthétique de 5 206 éléments, à 1366×768 puis 1920×1080. Preuve non
+  canonique : `docs/performance/runs/TASK-0033-webview2.json`.
+- **Défaut A, corrigé :** la vue ordinaire pouvait engloutir tout un arbre
+  dans une seule branche arbitraire — `materialize_view` continuait à
+  paginer récursivement les enfants du premier enfant rencontré au lieu de
+  s'arrêter aux enfants directs du focus. Corrigé; verrouillé par un
+  nouveau test Rust.
+- **Défaut B, corrigé :** la caméra pouvait rester coincée hors du canevas
+  visible quand `.map-view` grandissait après coup (panneau latéral rempli
+  de façon asynchrone). Un effet dédié réapplique désormais `clampView` à
+  chaque changement de dimensions du viewport.
+- **Incohérence documentaire signalée par `ACTION-0050` corrigée** : c'est
+  `readableView`, pas `fitView`, qui est utilisé à la première ouverture.
 
-**Blocage unique avant VERIFIED :** acceptance WebView2 réelle sur arborescence synthétique >= 5 000 éléments, au minimum à 1366×768 et 1920×1080, avec validation de la lisibilité, pan/zoom, navigation progressive, relations, borne, absence de fuite de chemin et 0 erreur console fatale.
+Action unique suivante : faire contrôler `TASK-0033` par une instance
+**distincte de l'exécuteur**, sur les preuves de cette passe, et rendre un
+verdict.
 
-Action unique suivante : exécuter la passe `TASK-0033 / PRODUCT ACCEPTANCE` décrite dans `.orchestrator/NEXT_PROMPT.md`, corriger uniquement les défauts observés dans cette portée, puis remettre le résultat à un nouveau contrôle indépendant.
+Ce que ce contrôle doit regarder en priorité :
 
-Aucune `TASK-0034` ne doit être créée avant ce recontrôle.
+- que le rejeu WebView2 est bien réel (processus WebView2, pas une
+  simulation) et couvre effectivement les deux résolutions demandées;
+- que la correction du défaut A n'a pas de portée plus large que
+  « l'expansion automatique s'arrête aux enfants directs du focus » — aucun
+  nouveau tri, aucune nouvelle architecture;
+- que la correction du défaut B (`clampView` sur changement de viewport)
+  reste un simple réajustement de bornes, jamais un recentrage déguisé;
+- que les quatre tests Rust corrigés (`commands.rs`, `cross_commands.rs`,
+  `relation_commands.rs`) testent toujours ce qu'ils prétendent tester,
+  simplement via une navigation explicite plutôt que la vue par défaut;
+- que rien dans cette passe n'a lu, listé ou touché une donnée personnelle.
+
+Aucune tâche suivante n'est précréée.

@@ -439,6 +439,138 @@ fn real_relations_remain_resolved_when_endpoints_leave_the_projection() {
     );
 }
 
+/// A root with three direct children of very different sizes: `big` (many
+/// children), `mid` (a few), and one plain file — built to prove the
+/// ordinary view stops at direct children regardless of how large or small
+/// a branch is, rather than greedily unfolding whichever one sorts first.
+fn root_with_uneven_branches(big_children: usize, mid_children: usize) -> Vec<NodeDto> {
+    let total_children = 3;
+    let mut nodes = vec![NodeDto {
+        id: 1,
+        parent_id: None,
+        name: "root".into(),
+        relative_path: String::new(),
+        kind: NodeKind::Root,
+        depth: 0,
+        size_bytes: 0,
+        modified_unix_ms: None,
+        online_only: false,
+        reparse_point: false,
+        child_count: total_children,
+        seen: false,
+    }];
+    nodes.push(NodeDto {
+        id: 2,
+        parent_id: Some(1),
+        name: "big".into(),
+        relative_path: "big".into(),
+        kind: NodeKind::Directory,
+        depth: 1,
+        size_bytes: 0,
+        modified_unix_ms: None,
+        online_only: false,
+        reparse_point: false,
+        child_count: big_children as u32,
+        seen: false,
+    });
+    nodes.push(NodeDto {
+        id: 3,
+        parent_id: Some(1),
+        name: "mid".into(),
+        relative_path: "mid".into(),
+        kind: NodeKind::Directory,
+        depth: 1,
+        size_bytes: 0,
+        modified_unix_ms: None,
+        online_only: false,
+        reparse_point: false,
+        child_count: mid_children as u32,
+        seen: false,
+    });
+    nodes.push(NodeDto {
+        id: 4,
+        parent_id: Some(1),
+        name: "leaf.txt".into(),
+        relative_path: "leaf.txt".into(),
+        kind: NodeKind::File,
+        depth: 1,
+        size_bytes: 0,
+        modified_unix_ms: None,
+        online_only: false,
+        reparse_point: false,
+        child_count: 0,
+        seen: false,
+    });
+    let mut next_id = 5;
+    for i in 0..big_children {
+        nodes.push(NodeDto {
+            id: next_id,
+            parent_id: Some(2),
+            name: format!("big-{i:04}.txt"),
+            relative_path: format!("big/big-{i:04}.txt"),
+            kind: NodeKind::File,
+            depth: 2,
+            size_bytes: 0,
+            modified_unix_ms: None,
+            online_only: false,
+            reparse_point: false,
+            child_count: 0,
+            seen: false,
+        });
+        next_id += 1;
+    }
+    for i in 0..mid_children {
+        nodes.push(NodeDto {
+            id: next_id,
+            parent_id: Some(3),
+            name: format!("mid-{i:04}.txt"),
+            relative_path: format!("mid/mid-{i:04}.txt"),
+            kind: NodeKind::File,
+            depth: 2,
+            size_bytes: 0,
+            modified_unix_ms: None,
+            online_only: false,
+            reparse_point: false,
+            child_count: 0,
+            seen: false,
+        });
+        next_id += 1;
+    }
+    nodes
+}
+
+/// `TASK-0033` product acceptance (`ACTION-0050`'s live WebView2 replay) —
+/// the ordinary view used to keep walking into whichever direct child sorted
+/// first, paginating *its* children too; on a tree where that child had a
+/// large subtree, this consumed nearly the whole 64-block target on one
+/// arbitrary branch, crowding out its true siblings from the root's own
+/// listing. `materialize_view` now stops at the focus's own direct children,
+/// whatever their size, and descending is only ever an explicit navigation.
+#[test]
+fn ordinary_view_never_pulls_in_grandchildren_even_from_a_small_branch() {
+    let (_temp, store) = open_with(&root_with_uneven_branches(100, 5));
+    let view = materialize_view(&store, None, None).unwrap();
+    check_view(&store, &view);
+    // Root plus exactly its three direct children — nothing from inside
+    // `big` or `mid`, regardless of `big` having vastly more descendants.
+    assert_eq!(view.materialized_count, 4);
+    assert!(
+        view.nodes
+            .iter()
+            .all(|n| n.parent_id != Some(2) && n.parent_id != Some(3)),
+        "no grandchild of root should ever appear in its ordinary view"
+    );
+    let big_agg = view.aggregates.iter().find(|a| a.parent_id == 2).unwrap();
+    assert_eq!(big_agg.omitted_direct_children, 100);
+    let mid_agg = view.aggregates.iter().find(|a| a.parent_id == 3).unwrap();
+    assert_eq!(mid_agg.omitted_direct_children, 5);
+    // Explicitly entering `big` — a real navigation, not a side effect of
+    // viewing its parent — does reveal its own children.
+    let inside_big = materialize_view(&store, Some(2), None).unwrap();
+    check_view(&store, &inside_big);
+    assert!(inside_big.nodes.iter().any(|n| n.parent_id == Some(2)));
+}
+
 /// `TASK-0033` §7 (Rust proof 2) — `DEC-0034` B's ordinary target, not the
 /// `VIEW_BUDGET`/`MATERIAL_BUDGET` technical ceilings, which `check_view`
 /// already covers on every call.

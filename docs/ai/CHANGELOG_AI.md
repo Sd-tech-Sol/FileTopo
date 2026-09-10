@@ -4475,3 +4475,72 @@ réseau/cloud/LLM/MCP, aucune donnée personnelle. `X5` inchangé; aucune
 
 **Action unique suivante :** contrôle indépendant de `TASK-0033`, par une
 instance distincte de Claude Code.
+
+---
+
+## 2026-09-10 — TASK-0033 — Passe d'acceptation produit WebView2
+
+**Agent :** exécuteur Claude Code
+**Statut à l'issue :** `IMPLEMENTED`, jamais auto-`VERIFIED`
+
+### Fait
+
+`ACTION-0050` avait contrôlé `TASK-0033` : code cohérent avec `DEC-0034`,
+mais rejeu produit WebView2 obligatoire manquant. Cette passe l'exécute.
+
+- **Rejeu réel** sur une arborescence `REAL_ROOT` synthétique de **5 206
+  éléments** (`scripts/task0033-seed-proof.py`), quatre branches
+  délibérément déséquilibrées (`A` 120 sous-dossiers, `B` 40 dossiers + 90
+  fichiers, `C` 4 356 fichiers plats, `D` chaîne à 15 niveaux), pilotée en
+  WebView2 réel (`scripts/task0033-webview2.mjs`/`.ps1`) à 1366×768 puis
+  1920×1080 dans le même processus.
+- **Défaut A, trouvé et corrigé :** `materialize_view` continuait, après la
+  page des enfants directs du focus, à paginer récursivement les enfants du
+  premier enfant rencontré — un reliquat d'avant `DEC-0034`. Sur l'arbre de
+  preuve, cela engloutissait presque toute la cible de 64 dans la première
+  branche alphabétique, masquant ses branches soeurs de la vue racine.
+  Corrigé : l'expansion automatique s'arrête aux enfants directs du focus;
+  descendre est toujours une navigation explicite. Verrouillé par
+  `ordinary_view_never_pulls_in_grandchildren_even_from_a_small_branch`.
+  Quatre tests préexistants qui lisaient un nœud imbriqué via la vue par
+  défaut (devenue trop étroite pour l'atteindre) ont été corrigés pour
+  naviguer explicitement, sans changer ce qu'ils testent par ailleurs.
+- **Défaut B, trouvé et corrigé :** `.map-view` peut grandir après le
+  premier positionnement (panneau latéral rempli de façon asynchrone), sans
+  que rien ne réapplique les bornes de la caméra à la nouvelle taille — la
+  vue pouvait rester coincée hors du canevas visible. Corrigé par un effet
+  dédié qui réapplique `clampView` (jamais un recentrage) à chaque
+  changement de dimensions du viewport.
+- **Incohérence documentaire signalée par `ACTION-0050` corrigée** : c'est
+  `readableView`, pas `fitView`, qui est utilisé à la première ouverture.
+
+### Preuves
+
+Aux deux résolutions : cible ≤ 64 respectée; dossiers d'abord sur overflow
+pur (120 → 62 dossiers, 58 omis) et mixte (40 dossiers + 90 fichiers → 40
+dossiers + 22 fichiers, aucun fichier avant un dossier); continuation sans
+accumulation; navigation profonde; échelle caméra inchangée sur navigation
+de branche; `Ajuster à l'écran` produit un fit exhaustif mesuré; `Réinitialiser`
+revient à l'échelle lisible (`1`); pastille d'agrégat 150×34; aucun
+vocabulaire interne, aucune fuite de chemin absolu, 0 erreur console
+fatale. Artefact non canonique :
+`docs/performance/runs/TASK-0033-webview2.json`.
+
+Rust **328 PASS** (327 + 1 nouveau), TypeScript **289 PASS** (inchangé),
+`pnpm check`, `pnpm build`, `cargo build --offline`, `git diff --check`
+verts. `cargo fmt --check` propre sur les lignes écrites par cette passe.
+`cargo clippy` strict reste **rouge à 26 erreurs**, même compte qu'avant,
+aucune nouvelle.
+
+### Non fait, et limites
+
+Poste de développement, pas une acceptance laptop modeste. Redimensionnement
+via `Emulation.setDeviceMetricsOverride` (CDP), pas un changement physique
+de moniteur. Tout le reste des limites de la livraison précédente demeure :
+aucun watcher, aucun incrémental, aucun FTS5, palette de relations par
+direction non reprise. Aucune donnée personnelle. `X5` inchangé; aucune
+`TASK-0034`, aucune `DEC-0035`, aucune PR, fusion, étiquette ni release;
+`origin/main` inchangé.
+
+**Action unique suivante :** nouveau contrôle indépendant de `TASK-0033`,
+sur les preuves de cette passe, par une instance distincte de Claude Code.

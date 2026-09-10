@@ -743,6 +743,36 @@ mod tests {
             .collect()
     }
 
+    /// Resolves a node by its full relative path, one segment at a time.
+    ///
+    /// `TASK-0033` narrowed the ordinary projection to a focus's own direct
+    /// children, so a fixture path more than one level deep is no longer
+    /// guaranteed to sit in the root's default view — this walks it exactly
+    /// as the product would, through explicit navigation.
+    fn resolve_by_path(
+        paths: &SandboxPaths,
+        brain: &BrainRecord,
+        relative_path: &str,
+    ) -> crate::map::store::MapNode {
+        let mut current_id = commands::snapshot(paths, brain).expect("snapshot").root_id;
+        for segment in relative_path.split('/') {
+            let view = commands::view(paths, brain, Some(current_id), None).expect("view");
+            current_id = view
+                .nodes
+                .iter()
+                .find(|n| n.parent_id == Some(current_id) && n.name == segment)
+                .unwrap_or_else(|| panic!("missing segment {segment} of {relative_path}"))
+                .id;
+        }
+        commands::detail(
+            paths,
+            brain,
+            &BrainNodeRef::new(&brain.brain_id, current_id),
+        )
+        .expect("detail")
+        .node
+    }
+
     fn sandbox(name: &str) -> SandboxPaths {
         let root = std::env::temp_dir()
             .join("filetopo-task0020")
@@ -926,12 +956,7 @@ mod tests {
             .iter()
             .find(|brain| brain.brain_id == "brain-alpha")
             .expect("alpha");
-        let snapshot = commands::snapshot(&paths, alpha).expect("snapshot");
-        let node = snapshot
-            .nodes
-            .iter()
-            .find(|node| node.relative_path == "dossier-a/note-1.txt")
-            .expect("node");
+        let node = resolve_by_path(&paths, alpha, "dossier-a/note-1.txt");
 
         let relations =
             node_cross_relations(&paths, &brains, &BrainNodeRef::new("brain-alpha", node.id))
@@ -970,12 +995,7 @@ mod tests {
             .iter()
             .find(|brain| brain.brain_id == "brain-alpha")
             .expect("alpha");
-        let snapshot = commands::snapshot(&paths, alpha).expect("snapshot");
-        let source = snapshot
-            .nodes
-            .iter()
-            .find(|node| node.relative_path == "dossier-a/note-2.txt")
-            .expect("node");
+        let source = resolve_by_path(&paths, alpha, "dossier-a/note-2.txt");
         let reference = BrainNodeRef::new("brain-alpha", source.id);
 
         let before = node_cross_relations(&paths, &brains, &reference).expect("relations");
