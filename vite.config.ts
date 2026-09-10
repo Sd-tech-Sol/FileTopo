@@ -26,7 +26,13 @@ export default defineConfig(async () => ({
       : undefined,
     watch: {
       // 3. tell Vite to ignore watching `src-tauri`
-      ignored: ["**/src-tauri/**"],
+      //
+      // `.filetopo-sandbox` is application state, never frontend source. The
+      // watcher held Windows directory handles on it, which both reloaded the
+      // page whenever a proof wrote an index and made a proof's own fixture
+      // directory impossible to rename — `TASK-0031` needs to take a synthetic
+      // source away to show that opening a brain never reads one.
+      ignored: ["**/src-tauri/**", "**/.filetopo-sandbox/**"],
     },
   },
 }));

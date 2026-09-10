@@ -219,18 +219,47 @@ fn real_synthetic_build_above_five_thousand_is_read_only_and_has_no_layout() {
 }
 #[test]
 fn runtime_source_guard_excludes_full_snapshot_and_global_layout() {
-    let projection = include_str!("projection.rs")
-        .split("#[cfg(test)]")
-        .next()
-        .unwrap();
+    // Read as LF: on a CRLF checkout the split below matches nothing, silently
+    // hands the whole file back and turns this guard into an assertion about
+    // the test module it is supposed to exclude.
+    let projection_source = include_str!("projection.rs").replace('\r', "");
+    let projection = projection_source.split("#[cfg(test)]").next().unwrap();
     assert!(!projection.contains("analysis_nodes("));
     assert!(!projection.contains("all_nodes("));
     assert!(!projection.contains("list_nodes("));
-    let commands = include_str!("commands.rs")
+    let commands_source = include_str!("commands.rs").replace('\r', "");
+    let commands = commands_source
         .split("\n#[cfg(test)]\nmod tests")
         .next()
         .unwrap();
-    assert!(commands.contains("pub fn build_map("), "guard must inspect runtime code");
+    // `fixture_summaries` is the last runtime item before the test module, so
+    // the sentinel sits at the very end of the region this guard inspects
+    // rather than a few lines into it.
+    assert!(
+        commands.contains("pub fn fixture_summaries("),
+        "guard must inspect the whole runtime region"
+    );
+    // `TASK-0031`: three named lifecycle intents, and no boolean left anywhere
+    // in the host that could hide a scan behind an opening.
+    for entry in [
+        "pub fn open_map(",
+        "pub fn refresh_map(",
+        "pub fn rebuild_map(",
+    ] {
+        assert!(commands.contains(entry), "missing lifecycle entry: {entry}");
+    }
+    let host = include_str!("../lib.rs").replace('\r', "");
+    for command in [
+        "async fn map_open(",
+        "async fn map_refresh(",
+        "async fn map_rebuild(",
+    ] {
+        assert!(
+            host.contains(command),
+            "missing lifecycle command: {command}"
+        );
+    }
+    assert!(!host.contains("rebuild: bool"));
     assert!(!commands.contains("MapStore"));
     assert!(!commands.contains("all_nodes("));
     assert!(!commands.contains("layout::compute("));
