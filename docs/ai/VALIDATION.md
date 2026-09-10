@@ -1,10 +1,12 @@
 # VALIDATION.md — État de vérification
 
 **Dernière mise à jour :** 2026-09-09
-**Dernière livraison exécutée :** TASK-0030 `IMPLEMENTED`, section AY, contrôle indépendant attendu.
-**Dernière tâche évaluée indépendamment :** TASK-0029 — `VERIFIED` le 2026-09-09 par le
-verdict indépendant enregistré dans `ACTION-0046`, section AX. TASK-0028 —
-`VERIFIED` le 2026-09-07 par le verdict indépendant enregistré dans
+**Dernière livraison exécutée :** TASK-0030, section AY, `VERIFIED` dans sa portée synthétique de convergence V1.
+**Dernière tâche évaluée indépendamment :** TASK-0030 — `VERIFIED` le 2026-09-09 par le
+verdict indépendant enregistré dans `ACTION-0047`, section AZ, **avec six
+réserves `R-T30-1` à `R-T30-6` maintenues**. TASK-0029 — `VERIFIED` le
+2026-09-09 par le verdict indépendant enregistré dans `ACTION-0046`, section AX.
+TASK-0028 — `VERIFIED` le 2026-09-07 par le verdict indépendant enregistré dans
 `ACTION-0045`, section AV.
 **Portée :** TASK-0001 (phase 0) — `VERIFIED` ; TASK-0002 (phase 1) —
 `VERIFIED` le 2026-08-25, sur preuves indépendantes de l'orchestrateur
@@ -4206,3 +4208,51 @@ Les durées de gestes incluent les pauses CDP, **pas des benchmarks de rendu**.
 Non testé : 100k physique, 1M produit, portable modeste, GPU désactivé, hors Windows,
 données personnelles et campagnes historiques ignorées. Les consommateurs
 d'analyse restent en mémoire; aucune optimisation P-08 ou indexation streaming.
+
+---
+
+## AZ. ACTION-0047 — contrôle indépendant de TASK-0030 — 2026-09-09
+
+**Statut : `CLOSED`.** `TASK-0030 = VERIFIED` **dans sa portée synthétique de
+convergence V1** — un seul index canonique par cerveau, projection runtime
+bornée, layout de la vue seulement, MapApp alimenté par cette projection.
+Exécuteur de `TASK-0030` : Codex. Rédacteur de l'enregistrement : Claude Code.
+Autorité du verdict : orchestrateur technique indépendant. Le rédacteur ne rend
+pas le verdict et ne s'attribue pas `VERIFIED`. Fiche :
+[`ACTION-0047`](../reviews/ACTION-0047-independent-control.md).
+
+**Nature de cette action : fermeture documentaire.** Aucun banc, rejeu WebView2
+ni suite lourde n'a été relancé. Les chiffres de la section AY restent des
+**preuves d'exécuteur**, pas une réexécution indépendante.
+
+| Contrôle de fermeture exécuté | Résultat |
+|---|---|
+| `git diff --check` | PASS, aucune erreur d'espaces |
+| Diff de fermeture strictement documentaire | PASS, aucun fichier sous `src/`, `src-tauri/`, `scripts/`, `docs/performance/runs/` |
+| Trois JSON `TASK-0030` | inchangés, non canoniques, non ajoutés à `X5` |
+| `X5` | 36 noms, identiques côté TypeScript (`runArtifacts.ts`) et Rust (`commands.rs`) |
+| `origin/main` | `1a7d652ca48281c1687f6d1404c56a1404df91d8`, inchangé |
+| Chaîne Git | `896e2c3` -> `0255bd1` (gel) -> `ab1d7e2` (code) -> `58862b7` -> commit d'orchestration; aucune divergence |
+| Absence de `TASK-0031` et `DEC-0032` | PASS, avant et après |
+| Liens relatifs des documents créés et modifiés | PASS |
+
+**Points structurels revérifiés sur la source pendant la rédaction**, pour ne
+consigner que des faits opposables : `map::store` réduit aux DTO `MapNode`,
+`MapSnapshot`, `NodeDetail`; `legacy_store` et `MAX_NODES_PER_MAP` déclarés
+`#[cfg(test)]` dans `map/mod.rs`; `VIEW_BUDGET = 512` et
+`MATERIAL_BUDGET = VIEW_BUDGET / 2` dans `map/projection.rs`; layout calculé
+dans `materialize_view` après sélection bornée; `build_map` publiant
+`layout_ms = 0.0`, `layout_invocations = 0`, `node_ceiling = 0`;
+`ViewAggregate` portant `parent_id`, `omitted_direct_children`, `reason` et
+`next_cursor`.
+
+**Six réserves maintenues, non bloquantes :** `R-T30-1` clippy strict en échec
+et baseline non réexécutée par le contrôle; `R-T30-2` `map_open`/`build_map`
+rescanent encore un index compatible, ouverture / actualisation / reconstruction
+à séparer avant toute racine réelle; `R-T30-3` analyses encore en mémoire
+corpus; `R-T30-4` performances produit non acceptées, `R8` ouverte; `R-T30-5`
+périmètre encore synthétique; `R-T30-6` dette test-only de `legacy_store.rs`.
+
+**Non testé par cette action :** tout le reste. Aucune suite Rust ou TypeScript,
+aucun build, aucun clippy, aucun WebView2, aucun banc n'a été exécuté ici.
+`F-050` et `F-051` restent `IMPLEMENTED`, **pas `VERIFIED` globalement**.

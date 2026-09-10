@@ -1,11 +1,39 @@
 # HANDOFF — passage de relais
 
-## Relais actuel — TASK-0030 livré — 2026-09-09
+## Relais actuel — ACTION-0047 close, TASK-0030 VERIFIED — 2026-09-09
 
-- **Statut : `IMPLEMENTED`**, livré par Codex, contrôle indépendant attendu.
+- **Ce qui vient d'être fait :** enregistrement du verdict indépendant sur
+  `TASK-0030`. `ACTION-0047 = CLOSED`; `TASK-0030 = VERIFIED` **dans sa portée
+  synthétique de convergence V1** — un index canonique par cerveau, projection
+  runtime bornée, layout de la vue seulement, MapApp alimenté par cette
+  projection. Exécuteur `TASK-0030` : Codex. Rédacteur de la fermeture :
+  Claude Code. Autorité du verdict : orchestrateur technique indépendant.
+  [Fiche de contrôle](../reviews/ACTION-0047-independent-control.md).
+- **Fermeture documentaire seulement :** aucun fichier sous `src/`,
+  `src-tauri/`, `scripts/` ni `docs/performance/runs/` n'a changé; aucun banc,
+  rejeu WebView2 ou suite lourde n'a été relancé.
+- **Ce que le prochain relais doit savoir :** six réserves restent ouvertes,
+  `R-T30-1` à `R-T30-6`. La plus structurante pour la suite est **`R-T30-2`** :
+  `map_open`/`build_map` rescanent et republient encore un index compatible, et
+  `rebuild = false` ne veut pas encore dire « ouvrir l'index persistant sans
+  rescan ». Ouvrir, actualiser et reconstruire doivent être séparés **avant**
+  d'exposer une vraie racine utilisateur, sinon un cerveau réel serait rescané
+  à chaque chargement et les révisions et curseurs invalidés sans nécessité.
+- **`F-050` et `F-051` restent `IMPLEMENTED`, pas `VERIFIED` globalement.**
+  Ne pas les promouvoir sans acceptance d'échelle et de rendu, puis intégration
+  au vrai flux V1.
+- **Interdits inchangés :** aucune donnée réelle, aucun sélecteur de dossier
+  réel, aucune `TASK-0031`/`DEC-0032` créée, aucune branche suivante, PR,
+  fusion, étiquette ni release. `X5 = 36`;
+  `origin/main = 1a7d652ca48281c1687f6d1404c56a1404df91d8`, inchangé.
+
+## Livraison contrôlée — TASK-0030 — 2026-09-09
+
+- **Statut : `VERIFIED`** dans sa portée synthétique, livré par Codex, contrôlé
+  par `ACTION-0047`.
   [Fiche et audit](../tasks/TASK-0030-v1-pipeline-convergence.md);
   [DEC-0031](../decisions/DEC-0031-one-canonical-brain-index-and-bounded-projection.md)
-  reste `APPROVED`.
+  reste `APPROVED`, implémentation contrôlée.
 - **Branche active :** `build/v0.2-a14-v1-pipeline-convergence`; gel préalable
   `0255bd1`. `Index.nodes` devient canonique par cerveau. `MapStore` est retiré
   du runtime et conservé uniquement comme fixture historique sous `cfg(test)`.
@@ -35,7 +63,7 @@
   F-042/F-046 restent `PROPOSED`, F-047 `DEFERRED`. Graphify `NOT INTEGRATED`;
   aucun renderer nouveau; R8, DEC-0013/F et X10 hors Windows restent ouvertes.
   **X5 = 36**, preuves antérieures intactes; `origin/main = 1a7d652c`, inchangé.
-- **Action unique suivante : contrôle indépendant de TASK-0030.**
+- **Action unique suivante : retour à l'orchestrateur pour décider et ouvrir la prochaine tranche V1** — contrôle indépendant enregistré dans `ACTION-0047`.
 
 Le contrôleur doit porter une attention particulière à `brain_index.rs`,
 `projection.rs`, à la séparation des entrées d'analyse dans les commandes de

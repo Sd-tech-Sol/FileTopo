@@ -1,11 +1,50 @@
 # État courant
 
+## ACTION-0047 — TASK-0030 VERIFIED — 2026-09-09
+
+- **Verdict indépendant enregistré, non rendu par Claude Code :**
+  `ACTION-0047 = CLOSED`; **`TASK-0030 = VERIFIED — PASS dans sa portée exacte
+  de convergence V1 synthétique`** : un seul index canonique par cerveau,
+  projection runtime bornée, layout de la vue seulement, et MapApp alimenté par
+  cette projection. Codex était l'exécuteur de `TASK-0030`; Claude Code est
+  seulement le rédacteur de l'enregistrement, et l'autorité du verdict est
+  l'orchestrateur technique indépendant.
+  [Fiche de contrôle](../reviews/ACTION-0047-independent-control.md).
+- **Fermeture documentaire seulement.** Aucun code produit, aucun manifeste,
+  aucun script, aucun JSON de preuve n'a changé. Aucun banc, rejeu WebView2 ni
+  suite lourde n'a été relancé : cette action consigne un verdict déjà rendu.
+- **Treize points PASS consignés**, dont : le gel `0255bd1` précède le code et
+  descend de `896e2c3`; `map::store` est réduit à des DTO et `legacy_store` est
+  `#[cfg(test)]`; `build_map` déclare `layout_ms = 0.0`, `layout_invocations = 0`
+  et `node_ceiling = 0`; `VIEW_BUDGET = 512` avec `MATERIAL_BUDGET = 256`;
+  les agrégats portent parent, compte exact d'enfants directs absents, raison et
+  curseur; le layout est calculé après la sélection bornée.
+- **Six réserves maintenues, aucune effacée :** `R-T30-1` clippy strict non vert,
+  baseline non réexécutée par le contrôle; `R-T30-2` `map_open`/`build_map`
+  rescanent encore un index compatible — ouvrir, actualiser et reconstruire
+  doivent être séparés **avant toute racine utilisateur réelle**; `R-T30-3`
+  certaines analyses restent en mémoire corpus; `R-T30-4` performances produit
+  non acceptées, `R8` ouverte; `R-T30-5` périmètre encore synthétique, pas
+  d'usage silencieux de données personnelles; `R-T30-6` dette test-only de
+  `legacy_store.rs`.
+- **`F-050` et `F-051` restent `IMPLEMENTED`, pas `VERIFIED` globalement** :
+  leur contrat produit complet exige encore l'acceptance d'échelle et de rendu,
+  puis l'intégration au vrai flux V1. `F-042 = PROPOSED / MVP`,
+  `F-046 = PROPOSED`, `F-047 = DEFERRED`. `DEC-0031` reste `APPROVED`,
+  implémentation contrôlée.
+- **X5 = 36**, les trois JSON `TASK-0030` restent non canoniques et inchangés;
+  aucune `TASK-0031`, `DEC-0032`, branche suivante, PR, fusion, étiquette ni
+  release; `origin/main = 1a7d652ca48281c1687f6d1404c56a1404df91d8`, inchangé.
+- **Action unique suivante : retour à l'orchestrateur pour décider et ouvrir la
+  prochaine tranche V1.**
+
 ## TASK-0030 — convergence V1 livrée — 2026-09-09
 
-- **Statut : `IMPLEMENTED`**, livré par Codex, contrôle indépendant attendu.
+- **Statut : `VERIFIED`** dans sa portée synthétique de convergence, livré par
+  Codex, contrôlé par `ACTION-0047`.
   [Fiche et audit](../tasks/TASK-0030-v1-pipeline-convergence.md);
   [DEC-0031](../decisions/DEC-0031-one-canonical-brain-index-and-bounded-projection.md)
-  reste `APPROVED`.
+  reste `APPROVED`, implémentation contrôlée.
 - **Branche active :** `build/v0.2-a14-v1-pipeline-convergence`; gel préalable
   `0255bd1`. `Index.nodes` devient canonique par cerveau. `MapStore` est retiré
   du runtime et conservé uniquement comme fixture historique sous `cfg(test)`.
@@ -35,7 +74,7 @@
   F-042/F-046 restent `PROPOSED`, F-047 `DEFERRED`. Graphify `NOT INTEGRATED`;
   aucun renderer nouveau; R8, DEC-0013/F et X10 hors Windows restent ouvertes.
   **X5 = 36**, preuves antérieures intactes; `origin/main = 1a7d652c`, inchangé.
-- **Action unique suivante : contrôle indépendant de TASK-0030.**
+- **Action unique suivante : retour à l'orchestrateur pour décider et ouvrir la prochaine tranche V1** — contrôle indépendant enregistré dans `ACTION-0047`.
 
 ## ACTION-0046 — TASK-0029 VERIFIED — 2026-09-09
 

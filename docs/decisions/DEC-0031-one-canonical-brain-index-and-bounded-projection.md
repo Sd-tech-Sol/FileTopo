@@ -2,7 +2,9 @@
 
 - Date : 2026-09-09
 - Statut : `APPROVED` — GO technique de `.orchestrator/NEXT_PROMPT.md`.
-- Exécution : [TASK-0030](../tasks/TASK-0030-v1-pipeline-convergence.md), contrôle indépendant attendu.
+- Exécution : [TASK-0030](../tasks/TASK-0030-v1-pipeline-convergence.md), `VERIFIED`
+  le 2026-09-09 dans sa portée synthétique; implémentation contrôlée par
+  [ACTION-0047](../reviews/ACTION-0047-independent-control.md).
 - Encadrement : DEC-0029 et DEC-0030, sans changement de direction produit.
 
 ## A. Une seule vérité de corpus
@@ -73,8 +75,11 @@ Les performances ne sont pas acceptées produit par cette décision.
 
 ## État d'exécution — 2026-09-09
 
-TASK-0030 est livrée `IMPLEMENTED`; cette décision reste `APPROVED`,
-implémentation en attente de contrôle indépendant. Budget effectivement appliqué :
+TASK-0030 est `VERIFIED` dans sa portée synthétique de convergence V1; cette
+décision reste `APPROVED`, **implémentation contrôlée** par `ACTION-0047`, avec
+les six réserves `R-T30-1` à `R-T30-6` maintenues. Le contrôle valide la
+tranche, pas le contrat produit complet de `F-050`/`F-051`, qui restent
+`IMPLEMENTED`. Budget effectivement appliqué :
 512 entités, avec 256 places matérielles et jusqu'à un agrégat par nœud. Le store
 historique est limité aux tests de migration; le conteneur temporaire `AnalysisInput` ne dérive pas `Serialize`; aucun IPC
 ne renvoie sa collection de métadonnées et aucun corpus concurrent n’est stocké. Voir la fiche

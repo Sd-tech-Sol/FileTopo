@@ -1,44 +1,56 @@
-TASK_ID: TASK-0030 — V1 Pipeline Convergence — Canonical Brain Index and Bounded Runtime Projection
-AGENT: CODEX
+TASK_ID: ACTION-0047 — Independent closure of TASK-0030
+AGENT: CLAUDE
 RESULT: DONE
 BRANCH: build/v0.2-a14-v1-pipeline-convergence
-FINAL_HEAD: ab1d7e2386dd0cf5b935377c867c89617e4e3e56
+FINAL_HEAD: <closure commit>
 
 SUMMARY:
-- TASK-0030 IMPLEMENTED; DEC-0031 APPROVED, independent control pending.
-- Documentary freeze 0255bd1 preceded all product code. F-050/F-051 IMPLEMENTED in this synthetic tranche; F-042/F-046 PROPOSED, F-047 DEFERRED.
-
-CANONICAL_INDEX_RESULT:
-- One Index.nodes per brain; metadata/diagnostics/revision published atomically. Normal rebuild preserves index_id and advances revision.
-- No runtime map_nodes writer, full-corpus layout or 5000-node build ceiling. Historical MapStore exists only in migration/test fixtures.
-
-BOUNDED_RUNTIME_RESULT:
-- map_view -> product materializer -> layered-tree-cards-v1 -> MapApp; map_snapshot is a bounded alias.
-- Budget 512 entities: at most 256 material nodes plus exact direct-child aggregates. Focus, paging, endpoint lookup and off-view relation notices implemented.
-
-REMOVED_OR_RETIRED_DUPLICATION:
-- Retired runtime MapStore and durable rectangles. AnalysisInput remains a temporary metadata adapter, without a second persisted corpus or collection IPC.
+- recorded external independent PASS with explicit reserves
+- TASK-0030 -> VERIFIED in synthetic convergence scope
+- ACTION-0047 -> CLOSED
+- F-050/F-051 remain IMPLEMENTED, not globally VERIFIED
+- verdict authority: independent technical orchestrator; TASK-0030 executor: Codex; recorder: Claude Code
+- documentary closure only; no bench, WebView2 replay or heavy suite rerun
 
 VALIDATIONS:
-- Rust 290 PASS, 5 ignored; TypeScript 264 PASS; typecheck and web/Rust builds PASS; strengthened runtime guard replay PASS; diff check PASS.
-- Clippy FAIL: preexisting debt, 13 lib / 22 lib-test errors; 24 diagnostic source excerpts matched baseline 896e2c3. Baseline clippy not rerun.
-- 100k canonical product DTO and complete child-page traversal PASS; 6001 physical synthetic build/read-only/rebuild PASS. X5 remains 36; prior artifacts unchanged.
+- git diff --check PASS, no whitespace error
+- closure diff strictly documentary: 8 documents modified, 1 review created; nothing under src/, src-tauri/, scripts/, docs/performance/runs/, no package manifest
+- three TASK-0030 JSON artifacts unchanged, still noncanonical, not added to X5
+- X5 exactly 36 names, identical on both guards: runArtifacts.ts array and commands.rs [&str; 36]
+- origin/main = 1a7d652ca48281c1687f6d1404c56a1404df91d8, unchanged
+- git chain confirmed: 896e2c3 -> 0255bd1 (freeze) -> ab1d7e2 (code) -> 58862b7 -> orchestration commit, no divergence
+- no TASK-0031 and no DEC-0032, before and after
+- relative links of created/modified documents resolve
+- source facts re-read before recording: map::store reduced to DTOs; legacy_store and MAX_NODES_PER_MAP under #[cfg(test)]; VIEW_BUDGET=512 with MATERIAL_BUDGET=256; layout computed inside materialize_view after bounded selection; build_map reports layout_ms 0.0, layout_invocations 0, node_ceiling 0; ViewAggregate carries parent_id, omitted_direct_children, reason, next_cursor
+- NOT rerun here: Rust and TypeScript suites, pnpm check, pnpm build, cargo build, clippy, WebView2. Executor figures (Rust 290 PASS/5 ignored, TS 264 PASS) are recorded as executor evidence only.
 
-WEBVIEW2_EVIDENCE:
-- Real WebView2 152.0.4191.66: 12 nodes/11 edges; 6001 indexed -> 256 nodes + 1 aggregate/255 edges. Next page matches product DTO; 24 trusted keydowns; zero fatal errors.
-- Three noncanonical JSON artifacts under docs/performance/runs/TASK-0030-*; first CDP driver attempt timed out, corrected fresh replay passed.
+RESERVES_RECORDED:
+- R-T30-1 through R-T30-6
+- R-T30-1 strict clippy not green, baseline not rerun by the control
+- R-T30-2 map_open/build_map still rescan a compatible index; open / refresh / rebuild must be separated before any real user root
+- R-T30-3 some analyses still materialize corpus metadata in memory
+- R-T30-4 product performance not accepted; R8 still open
+- R-T30-5 scope still synthetic, no real folder picker
+- R-T30-6 test-only legacy_store.rs debt
 
 FILES_CHANGED:
-- 36 substantive files: canonical index/projection and consumers, frontend/navigation/tests, proof scripts/JSON, task/decision/architecture/matrix and five durable session documents. Full list: git show --stat ab1d7e2386dd0cf5b935377c867c89617e4e3e56.
-- This RESULT is a separate following report commit.
+- docs/reviews/ACTION-0047-independent-control.md (created)
+- docs/tasks/TASK-0030-v1-pipeline-convergence.md
+- docs/decisions/DEC-0031-one-canonical-brain-index-and-bounded-projection.md
+- docs/ai/CURRENT_STATE.md
+- docs/ai/NEXT_ACTION.md
+- docs/ai/HANDOFF.md
+- docs/ai/VALIDATION.md (new section AZ)
+- docs/ai/CHANGELOG_AI.md
+- docs/product/FEATURE_MATRIX.md (F-050/F-051 scope wording only, no promotion)
+- .orchestrator/RESULT.md
 
-COMMIT: 0255bd1 (freeze), ab1d7e2386dd0cf5b935377c867c89617e4e3e56 (implementation)
+CODE_OR_EVIDENCE_CHANGED: no
+X5: 36
+MAIN_UNCHANGED: yes
+
+COMMIT: <closure commit>
 PUSHED: yes
 
-LIMITS_OR_BLOCKERS:
-- No blocker. Analysis engines still collect corpus metadata in memory; no P-08/streaming optimization. Clippy is not green.
-- No personal data, physical 100k/1M product acceptance, modest-laptop or GPU-disabled proof. R8, DEC-0013/F and X10 outside Windows remain open.
-- Only the requested work branch was created/published/pushed. No main/PR/tag/release, force push, history rewrite or persistent sandbox deletion; legacy derived indexes and disposable synthetic test indexes were reconstructed. Analysed sources stayed unchanged.
-
 NEXT_ORCHESTRATOR_DECISION:
-- independent control of TASK-0030
+- decide/open next V1 tranche; no real data yet

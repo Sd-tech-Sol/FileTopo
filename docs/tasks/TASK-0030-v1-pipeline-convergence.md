@@ -1,8 +1,12 @@
 # TASK-0030 — V1 Pipeline Convergence — Canonical Brain Index and Bounded Runtime Projection
 
 - Date : 2026-09-09
-- Statut : `IMPLEMENTED` — GO technique dans `.orchestrator/NEXT_PROMPT.md`, exécuté à la demande de Sébastien.
-- Exécuteur : Codex; contrôle indépendant requis, jamais auto-attribué.
+- Statut : `VERIFIED` — le 2026-09-09, dans sa portée synthétique de convergence V1,
+  sur le verdict indépendant enregistré dans
+  [ACTION-0047](../reviews/ACTION-0047-independent-control.md). GO technique
+  initial dans `.orchestrator/NEXT_PROMPT.md`, exécuté à la demande de Sébastien.
+- Exécuteur : Codex; verdict rendu par l'orchestrateur technique indépendant,
+  consigné par Claude Code, jamais auto-attribué.
 - Branche : `build/v0.2-a14-v1-pipeline-convergence`.
 - Base : `896e2c39b955688e6a740427691be62255436a04`, parent `981e5fe262556208f118ebfc299e5c9333600c4e`.
 - Décision : [DEC-0031](../decisions/DEC-0031-one-canonical-brain-index-and-bounded-projection.md).
@@ -148,4 +152,23 @@ La garde source teste explicitement qu'elle a bien lu le corps runtime.
   ou prochaine décision. F-042/F-046 PROPOSED, F-047 DEFERRED; F-050/F-051
   IMPLEMENTED dans cette tranche, pas VERIFIED.
 
-**Action unique suivante : contrôle indépendant de TASK-0030.**
+## Contrôle indépendant — 2026-09-09
+
+`ACTION-0047 = CLOSED`; `TASK-0030 = VERIFIED` **dans sa portée synthétique de
+convergence V1** : un seul index canonique par cerveau, projection runtime
+bornée, layout de la vue seulement, et MapApp alimenté par cette projection.
+Le verdict vient de l'orchestrateur technique indépendant; Claude Code n'a fait
+que le consigner, sans relancer de banc, de rejeu WebView2 ni de suite lourde.
+Détail des treize points PASS dans
+[ACTION-0047](../reviews/ACTION-0047-independent-control.md).
+
+Six réserves non bloquantes sont maintenues : `R-T30-1` clippy strict non vert
+et baseline non réexécutée; `R-T30-2` ouvrir ne réutilise pas encore l'index
+existant, à séparer d'actualiser et de reconstruire avant toute racine réelle;
+`R-T30-3` certaines analyses restent en mémoire corpus; `R-T30-4` performances
+produit non acceptées; `R-T30-5` périmètre encore synthétique; `R-T30-6` dette
+test-only de `legacy_store.rs`. `F-050` et `F-051` restent `IMPLEMENTED`, **pas
+`VERIFIED` globalement**. `X5 = 36`; `origin/main` inchangé.
+
+**Action unique suivante : retour à l'orchestrateur pour décider et ouvrir la
+prochaine tranche V1.**

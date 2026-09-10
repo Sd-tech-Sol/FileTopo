@@ -4021,3 +4021,44 @@ initial du pilote CDP conservé dans les limites de validation. F-050/F-051
 IMPLEMENTED dans la tranche; F-042/F-046 PROPOSED, F-047 DEFERRED. X5 inchangé.
 Branche de travail publiée, aucune action sur main/PR/tag/release; aucun reset,
 clean, force push ni suppression de sandbox persistant. Suite unique : contrôle indépendant.
+
+## 2026-09-09 — ACTION-0047 — TASK-0030 VERIFIED, fermeture indépendante
+
+**Agent :** Claude Code, rédacteur seulement. **Autorité du verdict :**
+orchestrateur technique indépendant. **Exécuteur de TASK-0030 :** Codex.
+Branche `build/v0.2-a14-v1-pipeline-convergence`.
+
+`ACTION-0047 = CLOSED`; `TASK-0030 = VERIFIED` **dans sa portée exacte de
+convergence V1 synthétique** : un seul index canonique par cerveau, projection
+runtime bornée, layout de la vue seulement, MapApp alimenté par cette
+projection. Claude Code ne rend pas le verdict et ne s'attribue pas `VERIFIED`.
+
+Fermeture documentaire uniquement : aucun code produit, aucun manifeste, aucun
+script, aucun JSON de preuve modifié; aucun banc, rejeu WebView2 ou suite lourde
+relancé. Treize points PASS consignés — chaîne Git `896e2c3` -> `0255bd1` ->
+`ab1d7e2`, `map::store` réduit aux DTO, `legacy_store` et `MAX_NODES_PER_MAP`
+sous `#[cfg(test)]`, build sans layout global, `VIEW_BUDGET = 512` avec 256
+places matérielles, agrégats à compte exact, layout calculé sur la projection,
+100k sur le cœur produit, 6001 physiques, WebView2 réel, extrémités hors vue
+résolues contre l'index, aucune dépendance nouvelle, données synthétiques
+seulement. Les validations de l'exécuteur — Rust 290 PASS/5 ignorés, TS 264
+PASS, `pnpm check`, `pnpm build`, `cargo build --offline`, garde de source,
+`git diff --check` — sont enregistrées comme preuves d'exécuteur.
+
+Six réserves maintenues et non effacées : `R-T30-1` clippy strict non vert,
+baseline non réexécutée; `R-T30-2` ouvrir ne réutilise pas encore l'index
+existant, à séparer d'actualiser et de reconstruire avant toute racine réelle;
+`R-T30-3` analyses encore en mémoire corpus; `R-T30-4` performances produit non
+acceptées; `R-T30-5` périmètre encore synthétique; `R-T30-6` dette test-only de
+`legacy_store.rs`.
+
+`DEC-0031` reste `APPROVED`, implémentation contrôlée. `F-050` et `F-051`
+restent `IMPLEMENTED`, **pas `VERIFIED` globalement**; `F-042 = PROPOSED/MVP`,
+`F-046 = PROPOSED`, `F-047 = DEFERRED`. `X5 = 36`, trois JSON `TASK-0030`
+inchangés et non canoniques. Aucune `TASK-0031`, `DEC-0032`, branche suivante,
+PR, fusion, étiquette, release, `reset`, `clean`, `force push` ni donnée réelle.
+`origin/main = 1a7d652c`, non touché.
+
+**Action unique suivante :** retour à l'orchestrateur pour décider et ouvrir la
+prochaine tranche V1, priorité au pipeline `REAL_ROOT` sûr et à la séparation
+ouverture / actualisation / reconstruction.
