@@ -1,8 +1,10 @@
 # VALIDATION.md — État de vérification
 
 **Dernière mise à jour :** 2026-09-10
-**Dernière livraison exécutée :** TASK-0032, sections BB puis **BC** (passe corrective sur deux défauts bloquants trouvés par le contrôle indépendant), `IMPLEMENTED`, **en attente d'une nouvelle vérification indépendante**. TASK-0031, section BA, est `VERIFIED` dans sa portée synthétique V1 par `ACTION-0048`.
-**Dernière tâche évaluée indépendamment :** TASK-0031 — `VERIFIED` le 2026-09-10
+**Dernière livraison exécutée :** TASK-0033, section **BE** (projection topographique progressive), `IMPLEMENTED`, **en attente de vérification indépendante**. TASK-0032, sections BB/BC, est `VERIFIED` dans sa portée par le verdict indépendant enregistré dans `ACTION-0049`, section **BD**.
+**Dernière tâche évaluée indépendamment :** TASK-0032 — `VERIFIED` le
+2026-09-10 par le verdict indépendant enregistré dans `ACTION-0049`, section
+BD, dans sa portée. TASK-0031 — `VERIFIED` le 2026-09-10
 par le verdict indépendant enregistré dans `ACTION-0048`, dans sa portée
 synthétique V1. TASK-0030 — `VERIFIED` le 2026-09-09 par le
 verdict indépendant enregistré dans `ACTION-0047`, section AZ, **avec six
@@ -4603,3 +4605,187 @@ aucune acceptance de performance sur grande racine, dette
 `R-T30-5` traitée uniquement dans la portée `REAL_ROOT` de test. `R-T30-3`,
 `R-T30-4`, `R-T30-6` et `R8` ouvertes. `R-T30-2` levée dans sa portée
 synthétique par `ACTION-0048`. **X5 = 36**, inchangé.
+
+## BD. ACTION-0049 — contrôle indépendant enregistré, TASK-0032 VERIFIED — 2026-09-10
+
+**Verdict indépendant déjà rendu et déjà sur la branche** —
+[`docs/reviews/ACTION-0049-independent-recontrol.md`](../reviews/ACTION-0049-independent-recontrol.md),
+commit `f6a7d06`, fusion `f549f7c` — **enregistré ici seulement maintenant**
+parce que ce commit n'avait mis à jour aucun des cinq documents durables
+(`CURRENT_STATE.md`, `HANDOFF.md`, `VALIDATION.md` — ce fichier —,
+`CHANGELOG_AI.md`, la fiche `TASK-0032`), qui contredisaient donc le verdict
+depuis lors. Cette section ne rend aucun verdict : elle consigne celui déjà
+rendu par l'orchestrateur technique indépendant, comme `BA`, `AZ`, `AX` et les
+autres sections « ACTION » le font pour les tâches précédentes.
+
+**Verdict :** `TASK-0032 = VERIFIED` dans sa portée. Les dix contrôles
+indépendants d'`ACTION-0049` couvrent : la frontière WebView refermée
+(`core:default` seul, aucun `dialog:`/`fs:`/`shell:`/`opener:`/`http:`), la
+porte unique `map_brain_choose_real_root(app)` sans chemin venu du WebView, la
+commande réellement enregistrée dans `generate_handler!`, `open_store` exigeant
+la paire `source_kind` + `source_ref`, `check_publishable` distinct d'`open`,
+la voie legacy étroite (synthétique seulement, jamais `REAL_ROOT`), les
+preuves `B1`-`B5` sur la forme exacte de `TASK-0031`, `RR1`-`RR10` non
+affaiblies selon les preuves d'exécuteur, aucune donnée personnelle dans les
+preuves canoniques, et une portée de changement maîtrisée.
+
+**Limites maintenues, non levées par ce verdict :** modale native non
+automatisée (contrôlée sur les sources installées, pas à l'exécution), aucun
+watcher/incrémental, aucun FTS5/identité physique, aucune acceptance
+laptop/performance sur grande racine, dette `Registry`/`legacy_store`, qualité
+de visualisation d'un grand cerveau hors portée de `TASK-0032` — devenue la
+tranche suivante, `TASK-0033` en section `BE`.
+
+## BE. TASK-0033 — projection topographique progressive — 2026-09-10
+
+**Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche
+`build/v0.2-a17-v1-topographic-ux`. `DEC-0034 = APPROVED`, inchangée.
+Exécuteur : Claude Code. Prérequis `TASK-0032 = VERIFIED` (`BD`) satisfait
+avant tout code.
+
+### BE.1 Le problème visé
+
+Le premier essai sur un vrai cerveau local (rapporté dans `TASK-0033`, section
+« Problème constaté ») montrait une carte techniquement correcte mais
+illisible : jusqu'à 256 vrais blocs plus leurs agrégats, des rectangles
+« N enfants hors vue » de la taille d'un vrai dossier, un `fitView()` global
+qui rétrécissait toute la carte à chaque navigation. La référence historique
+n'affichait qu'une cinquantaine de blocs sémantiques au-dessus d'un index de
+plusieurs milliers d'entrées.
+
+### BE.2 Projection dossier-first, cible ordinaire de 64 blocs
+
+`src-tauri/src/map/projection.rs` introduit `ORDINARY_MATERIAL_TARGET = 64`.
+`VIEW_BUDGET = 512` et `MATERIAL_BUDGET = 256` (la moitié, un créneau
+d'agrégat par nœud matériel) restent les seules bornes dures, inchangées.
+Un nouveau calcul,
+`effective_target = ORDINARY_MATERIAL_TARGET.max(selected.len()).min(MATERIAL_BUDGET)`,
+remplace `MATERIAL_BUDGET` comme cible de remplissage dans les trois appels
+à `children_page` de `materialize_view`, sans toucher au garde-fou
+préexistant (`selected.len() >= MATERIAL_BUDGET` reste l'unique refus
+« ancestry dépasse le budget »).
+
+**Aucun tri n'a été ajouté pour préférer les dossiers.**
+`idx_nodes_child_order` (`parent_id, child_order_rank, name_fold, id`,
+`hierarchy.rs`, en place depuis `DEC-0030`) trie déjà chaque page
+dossiers-avant-fichiers — `child_order_rank` est une colonne **générée**
+valant `0` pour un `directory`, `1` sinon. Remplir une cible plus petite est
+donc la seule chose qui change, et cela suffit : les dossiers occupent les
+premiers rangs de chaque page, les fichiers ne prennent que ce qu'il reste.
+
+| Preuve (`projection_tests.rs`) | Ce qui est établi |
+|---|---|
+| `ordinary_view_targets_at_most_sixty_four_real_blocks` | Sur un arbre de 400 enfants mixtes, la projection ordinaire matérialise **exactement 64** nœuds, jamais plus — la cible est bien la cause de l'arrêt, pas un hasard de petit arbre |
+| `directories_are_retained_over_files_when_the_ordinary_target_cuts_the_page` | Sur 50 dossiers + 100 fichiers, les **50 dossiers** sont tous retenus avant qu'un seul des 100 fichiers ne le soit; les 13 créneaux restants vont aux fichiers; le compte d'omission de l'agrégat racine (`150 - 63 = 87`) reste exact |
+| `deep_ancestry_is_never_dropped_and_a_targeted_file_stays_bounded` | Une chaîne de 100 ancêtres + le fichier focus (101 nœuds) est matérialisée **entièrement**, bien au-delà de la cible de 64; aucun agrégat, aucune lecture hors de l'ancestry — le contexte d'un fichier explicitement ciblé reste borné à sa chaîne, pas au corpus environnant |
+
+### BE.3 Les agrégats restent exacts, mais ne sont plus dessinés comme un faux dossier
+
+Le type `ViewAggregate` (comptage exact d'omissions, curseur de continuation,
+`reason` interne) est **inchangé** en Rust — `DEC-0031` reste respectée à la
+lettre. Seul le rendu change, dans `src/map/MapView.tsx` :
+
+- une pastille compacte (`AGGREGATE_PILL_MIN_WIDTH = 96`, hauteur `34`, au
+  plus `150` de large) centrée dans le créneau que le layout lui réservait
+  déjà (`a.rect`, plein format de carte, pour que rien ne chevauche);
+- le libellé produit vient d'une seule fonction, `aggregateLabel()` — « +N
+  élément(s) — Voir la suite » — jamais `view_budget_or_focus`,
+  `outside_current_projection` ni un compte brut sans phrase;
+- `MapApp.tsx`'s bouton de secours (section « Navigation progressive ») et la
+  pastille SVG partagent la **même** fonction, pour qu'aucune des deux
+  surfaces ne puisse dériver du vocabulaire de l'autre.
+
+| Preuve (`projection.test.tsx`) | Ce qui est établi |
+|---|---|
+| Pastille compacte | `rect.map-aggregate__pill` a une largeur `< 160` et une hauteur `< 40`, très sous les `240 × 64` d'une carte |
+| Aucun vocabulaire interne | Le texte rendu ne contient ni `view_budget_or_focus`, ni `outside_current_projection`, ni `omitted_direct_children`, ni l'ancien libellé `enfants directs hors vue`; il contient `Voir la suite` |
+| Activable au clavier | `Enter` et `Espace` déclenchent `onExpand` sur le nouveau bouton, sans sélection inventée (test retourné, wording mis à jour) |
+
+### BE.4 Caméra lisible avant caméra exhaustive
+
+`src/map/viewState.ts` gagne deux fonctions pures :
+
+- `readableView(focusRect, world, viewport)` — échelle `READABLE_SCALE = 1`
+  ajustée par `clampScale`/`scaleBounds` (une carte minuscule est agrandie
+  jusqu'au plancher des bornes plutôt que laissée flottante; une carte qui
+  déborde garde l'échelle `1` et déborde, ce qui est le but), centrée sur
+  `focusRect`;
+- `recenterOnFocus(focusRect, view, world, viewport)` — un alias explicite
+  d'`ensureRectVisible` à ce site d'appel : pan minimal, **échelle jamais
+  changée**, aucun mouvement si le focus est déjà visible.
+
+Dans `src/map/MapApp.tsx`, l'effet qui suivait `projectionKey` (déclenché par
+toute navigation de branche, dépliage d'agrégat ou actualisation) appelait
+`fitView(world, viewportRef.current)` — un ajustement **global** — à chaque
+déclenchement, écrasant le zoom/pan choisi par la personne. Il appelle
+désormais `recenterOnFocus`. L'effet d'ouverture d'une composition et le
+bouton **Réinitialiser** utilisent `readableView`, centrée sur la sélection ou
+sur la racine du cerveau actif. **Seul le bouton « Ajuster à l'écran »**
+(et son équivalent clavier `f`/`F` sur la sélection) appelle encore
+`fitView(world, …)` — c'est désormais la seule action qui force un
+ajustement global, comme `DEC-0034` E l'exige. Le raccourci `r`/`R` de
+`MapView.tsx` suit la même règle via un ancrage local
+(`resetAnchorRect`, sélection ou racine du territoire actif).
+
+| Preuve (`viewState.test.ts`) | Ce qui est établi |
+|---|---|
+| `readableView` centre à l'échelle lisible | Le focus est centré à l'écran, à l'échelle `READABLE_SCALE` sur un monde qui déborde |
+| `readableView` n'agrandit jamais au-delà du nécessaire, ni ne réduit un grand monde | Sur un monde très grand, l'échelle reste `>= READABLE_SCALE`; sur un monde minuscule, elle monte au plancher des bornes (`scaleBounds().min`) |
+| `recenterOnFocus` conserve l'échelle | L'échelle après recentrage est **identique** à l'échelle avant, y compris quand un pan est nécessaire |
+| `recenterOnFocus` ne bouge rien quand le focus est déjà visible | Même référence d'objet renvoyée (`toBe`), comme `ensureRectVisible` |
+
+### BE.5 Direction graphique amorcée, sans changement de moteur
+
+Fond quadrillé clair référencé par id (`<pattern id="map-grid-pattern">` dans
+`MapView.tsx`, classes `.map-grid-pattern__cell`/`.map-grid-pattern__lines`
+dans `map.css`) appliqué au cadre de territoire — il pose et zoome avec le
+contenu plutôt qu'avec la fenêtre. Racine assombrie (`--root: #203040`).
+Ombre légère sur le cadre (`filter: drop-shadow`). **Non repris dans cette
+tranche :** la palette de relations par direction (sortante verte, entrante
+turquoise, bidirectionnelle violette) que `REFERENCE_UX_OLD_FILETOPO.md`
+documente **comme une direction, pas une dépendance** — laissée à une tranche
+ultérieure, `DEC-0034` G l'autorisant explicitement.
+
+### BE.6 Validations
+
+Rust **327 PASS**, 0 échec, 5 ignorés (`cargo test --offline`, suite
+complète — 324 avant cette tâche, +3 nouveaux tests). TypeScript **289 PASS**,
+18 fichiers (`vitest run`, suite complète — 280 avant, +9 nouveaux tests).
+`tsc --noEmit` (`pnpm check`) et `vite build` (`pnpm build`) verts.
+`cargo build --offline` vert. `git diff --check` vert.
+
+`cargo fmt --check` : propre sur `projection.rs` et `projection_tests.rs`,
+les deux seuls fichiers Rust touchés. La dette préexistante (143 diagnostics
+dans d'autres fichiers du crate, non touchés par cette tâche) est **rapportée
+et laissée intacte** — une reformattage accidentel plus large, produit par un
+appel `rustfmt` direct avec la mauvaise édition, a été détecté et annulé avant
+livraison (`git checkout` sur les fichiers non concernés).
+
+`cargo clippy --all-targets --offline -- -D warnings` : rouge à **26
+erreurs**, réparties sur 12 fichiers préexistants
+(`relation_commands.rs`, `relations.rs`, `rule_engine.rs`,
+`content_signals.rs`, `legacy_store.rs`, `brains.rs`, `lib.rs`, et le module
+`scale_spike`/`scale_query`) — **aucune** dans `projection.rs` ni
+`projection_tests.rs`. Même compte qu'avant cette tâche.
+
+### BE.7 Non testé, et limites
+
+**Non testé, déclaré explicitement : aucun rejeu WebView2** n'a été exécuté
+par cette passe — ni sur `1366×768` ni sur `1920×1080`, ni sur une
+arborescence synthétique de grande taille. La lisibilité perceptuelle (vrais
+noms lisibles, absence de chevauchement, comportement réel de la caméra lors
+d'une navigation de branche) n'est donc prouvée qu'au niveau des tests
+unitaires/composant Vitest, pas au niveau produit dans un vrai processus
+WebView2. C'est une limite de cette livraison, à couvrir avant tout
+`VERIFIED` — pas une affirmation de succès non vérifiée.
+
+**Hors portée, comme prévu par `DEC-0034` G :** aucun watcher, aucun
+changement récent/vu-non-vu, aucun FTS5/recherche avancée, aucune
+« Ouvrir dans l'Explorateur », aucune préférence d'écran/icône, aucun second
+index/catalogue/store, aucun nouveau renderer Canvas/WebGL/Pixi, aucun chemin
+absolu IPC, aucun réseau/cloud/LLM/MCP, aucune donnée personnelle.
+
+**Réserves :** inchangées par rapport à `BC`/`BD` — `R-T30-1` (clippy strict
+rouge), `R-T30-3`, `R-T30-4`, `R-T30-6`, `R8` ouvertes; `R-T30-5` traitée
+uniquement dans la portée `REAL_ROOT` de test. **X5 = 36**, inchangé;
+`origin/main` inchangé.

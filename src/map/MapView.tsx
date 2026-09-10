@@ -15,7 +15,15 @@ import type { Composition, Territory } from "./territories";
 import { headerBox, placeRect, territoryOf } from "./territories";
 import type { BrainNodeRef, BrainRecord, MapNode } from "./types";
 import type { View, Viewport } from "./viewState";
-import { ensureRectVisible, fitToBox, fitView, panBy, sameView, zoomAbout } from "./viewState";
+import {
+  ensureRectVisible,
+  fitToBox,
+  fitView,
+  panBy,
+  readableView,
+  sameView,
+  zoomAbout,
+} from "./viewState";
 
 /**
  * The map itself: **one** accessible `SVG`, holding one territory per brain.
@@ -128,6 +136,22 @@ function arrowHead(x: number, y: number, ux: number, uy: number): string {
   const rightY = y - ux * (size * 0.45);
   return `M ${tipX} ${tipY} L ${leftX} ${leftY} L ${rightX} ${rightY} Z`;
 }
+
+/**
+ * Product vocabulary for an omitted-children indicator — `DEC-0034` D.
+ *
+ * Never the internal reasons the backend attaches to a {@link ViewAggregate}
+ * (`view_budget_or_focus`, `outside_current_projection`): a person reads a
+ * count and an invitation to see more, not a projection mechanism.
+ */
+export function aggregateLabel(omittedDirectChildren: number): string {
+  const count = `+${omittedDirectChildren} élément${omittedDirectChildren > 1 ? "s" : ""}`;
+  return `${count} — Voir la suite`;
+}
+
+/** Below this, the compact pill would be too small to tap or to read. */
+const AGGREGATE_PILL_MIN_WIDTH = 96;
+const AGGREGATE_PILL_HEIGHT = 34;
 
 export function truncateCardLabel(name: string, projectedWidth: number): string {
   const availableCharacters = Math.max(1, Math.floor((projectedWidth - 24) / 7));
@@ -583,6 +607,21 @@ export default function MapView({
     [selected, selectedBrain],
   );
 
+  /**
+   * What **Réinitialiser** recentres on: the selection when there is one,
+   * else the focused territory's root — never the whole composition, which
+   * is `fitView`'s job alone now — `DEC-0034` E.
+   */
+  const resetAnchorRect = useMemo(() => {
+    const brain = selectedBrain ?? brains.find((entry) => entry.brainId === focusedBrainId) ?? null;
+    if (!brain) return null;
+    const territory = territoryOf(composition, brain.brainId);
+    if (!territory) return null;
+    const nodeId = selected && selected.brainId === brain.brainId ? selected.nodeId : brain.hierarchy.rootId;
+    const node = brain.hierarchy.byId.get(nodeId);
+    return node ? placeRect(territory, node.rect) : null;
+  }, [brains, composition, focusedBrainId, selected, selectedBrain]);
+
   useEffect(() => {
     if (!selected || !selectedNode) return;
     const territory = territoryOf(composition, selected.brainId);
@@ -678,7 +717,9 @@ export default function MapView({
         }
         case "r":
         case "R":
-          onViewChange(fitView(world, viewport));
+          onViewChange(
+            resetAnchorRect ? readableView(resetAnchorRect, world, viewport) : fitView(world, viewport),
+          );
           break;
         case "Home":
           if (selectedBrain) {
@@ -709,6 +750,7 @@ export default function MapView({
       composition,
       onSelect,
       onViewChange,
+      resetAnchorRect,
       selected,
       selectedBrain,
       selectedNode,
@@ -739,6 +781,22 @@ export default function MapView({
         onPointerCancel={endDrag}
         onKeyDown={handleKeyDown}
       >
+        <defs>
+          {/*
+            The map's own quadrilled ground — `DEC-0034` F. Referenced by id
+            from `.map-territory__frame` in `map.css` rather than drawn as
+            individual rects, so it tiles for free at any territory size.
+          */}
+          <pattern
+            id="map-grid-pattern"
+            width={28}
+            height={28}
+            patternUnits="userSpaceOnUse"
+          >
+            <rect className="map-grid-pattern__cell" width={28} height={28} />
+            <path className="map-grid-pattern__lines" d="M 28 0 L 0 0 0 28" />
+          </pattern>
+        </defs>
         {/*
           The one transformed group. Pan and zoom change this attribute and
           nothing else — no rectangle below is re-projected, and no layout is
@@ -797,14 +855,58 @@ export default function MapView({
                   {entry.hierarchy}
                 </g>
                 {entry.blocks}
-                {(entry.brain.aggregates ?? []).map(a => <g key={`aggregate:${a.parentId}`}
-                  data-aggregate="true" role="button" tabIndex={0}
-                  aria-label={`${a.omittedDirectChildren} enfants directs hors vue; ${a.nextCursor ? "page suivante" : "première page"}`}
-                  onClick={() => onExpand?.(entry.brain.brainId, a)}
-                  onKeyDown={event => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); event.stopPropagation(); onExpand?.(entry.brain.brainId, a); } }}>
-                  <rect {...{x:a.rect.x,y:a.rect.y,width:a.rect.w,height:a.rect.h}} fill="#e9eef2" stroke="#536570" strokeDasharray="5 3" />
-                  <text x={a.rect.x+12} y={a.rect.y+36} fill="#243843">{a.omittedDirectChildren} enfants hors vue…</text>
-                </g>)}
+                {(entry.brain.aggregates ?? []).map((a) => {
+                  // `DEC-0034` D: a compact indicator attached to the parent's
+                  // slot, never a rectangle sized and placed like a sibling
+                  // folder. The slot itself (`a.rect`) keeps the card-sized
+                  // footprint the layout reserved so siblings never overlap;
+                  // only the drawn pill is small.
+                  const pillWidth = Math.max(
+                    AGGREGATE_PILL_MIN_WIDTH,
+                    Math.min(a.rect.w * 0.7, 150),
+                  );
+                  const pillX = a.rect.x + (a.rect.w - pillWidth) / 2;
+                  const pillY = a.rect.y + (a.rect.h - AGGREGATE_PILL_HEIGHT) / 2;
+                  const label = aggregateLabel(a.omittedDirectChildren);
+                  return (
+                    <g
+                      key={`aggregate:${a.parentId}`}
+                      data-aggregate="true"
+                      data-testid="map-aggregate-indicator"
+                      data-parent-id={a.parentId}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={label}
+                      className="map-aggregate"
+                      onClick={() => onExpand?.(entry.brain.brainId, a)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          onExpand?.(entry.brain.brainId, a);
+                        }
+                      }}
+                    >
+                      <rect
+                        className="map-aggregate__pill"
+                        x={pillX}
+                        y={pillY}
+                        width={pillWidth}
+                        height={AGGREGATE_PILL_HEIGHT}
+                        rx={AGGREGATE_PILL_HEIGHT / 2}
+                        vectorEffect="non-scaling-stroke"
+                      />
+                      <text
+                        className="map-aggregate__label"
+                        x={pillX + pillWidth / 2}
+                        y={pillY + AGGREGATE_PILL_HEIGHT / 2 + 4}
+                        textAnchor="middle"
+                      >
+                        {label}
+                      </text>
+                    </g>
+                  );
+                })}
               </g>
             ) : null,
           )}

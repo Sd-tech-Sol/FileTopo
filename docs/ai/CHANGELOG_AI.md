@@ -4366,3 +4366,112 @@ aucune acceptance de performance sur grande racine, dette
 
 **Action unique suivante :** contrôle indépendant de `TASK-0032` sur la version
 corrigée, par une instance distincte de Claude Code.
+
+---
+
+## 2026-09-10 — ACTION-0049 — Enregistrement tardif du contrôle indépendant, TASK-0032 VERIFIED
+
+**Agent :** exécuteur Claude Code
+**Statut à l'issue :** enregistrement documentaire seulement; aucun verdict
+rendu ici
+
+### Fait
+
+- `docs/reviews/ACTION-0049-independent-recontrol.md` (commit `f6a7d06`,
+  fusion `f549f7c`) rendait déjà `TASK-0032 = VERIFIED` dans sa portée, avant
+  cette session. Ce commit n'avait mis à jour aucun des cinq documents
+  durables (`CURRENT_STATE.md`, `HANDOFF.md`, `VALIDATION.md`, ce journal, la
+  fiche `TASK-0032`), qui continuaient donc d'afficher `IMPLEMENTED, en
+  attente de contrôle` en contradiction avec le verdict déjà sur la branche.
+- Les cinq documents sont corrigés pour refléter le verdict déjà rendu :
+  `VALIDATION.md` section `BD`, `CURRENT_STATE.md`, `HANDOFF.md`, la fiche
+  `TASK-0032` (statut, ligne d'exécuteur), et cette entrée.
+- **Aucun contenu technique n'a changé.** Aucun `VERIFIED` n'est auto-attribué
+  ici : cette entrée consigne un verdict déjà rendu par l'orchestrateur
+  technique indépendant, exactement comme les entrées `ACTION-0043` à
+  `ACTION-0048` consignent des verdicts rendus ailleurs.
+
+### Non fait, volontairement
+
+- Aucun nouveau code, aucune nouvelle preuve, aucun rejeu.
+
+---
+
+## 2026-09-10 — TASK-0033 — Projection topographique progressive
+
+**Agent :** exécuteur Claude Code
+**Statut à l'issue :** `IMPLEMENTED`, jamais auto-`VERIFIED`
+
+### Fait
+
+FileTopo converge vers une carte sémantique lisible au-dessus d'un gros index,
+plutôt que d'afficher jusqu'à 256 blocs et leurs agrégats à chaque projection.
+Branche `build/v0.2-a17-v1-topographic-ux`; `DEC-0034 = APPROVED`, inchangée;
+prérequis `TASK-0032 = VERIFIED` (`ACTION-0049`) satisfait avant tout code.
+
+- **Cible ordinaire de 64 blocs, dossiers d'abord.**
+  `src-tauri/src/map/projection.rs` introduit `ORDINARY_MATERIAL_TARGET = 64`
+  comme cible de remplissage à la place de `MATERIAL_BUDGET` (256) pour un
+  focus ordinaire. `VIEW_BUDGET = 512` et `MATERIAL_BUDGET` restent les
+  seules bornes dures, inchangées. Aucun tri n'a été ajouté : la colonne
+  générée `child_order_rank` (`hierarchy.rs`, depuis `DEC-0030`) classait
+  déjà chaque page dossiers-avant-fichiers; remplir une cible plus petite
+  suffit à faire gagner les dossiers.
+- **Ancestry/focus toujours prioritaires, même au-delà de la cible.**
+  `effective_target = ORDINARY_MATERIAL_TARGET.max(selected.len()).min(MATERIAL_BUDGET)`
+  garantit qu'une chaîne d'ancêtres plus longue que 64 n'est jamais tronquée,
+  et qu'un fichier explicitement ciblé se matérialise avec sa seule ancestry
+  comme contexte, borné plutôt qu'étendu au corpus environnant.
+- **Indicateur compact au lieu d'un faux dossier.** `ViewAggregate` (Rust)
+  est inchangé; `MapView.tsx` dessine désormais une pastille très inférieure
+  à la taille d'une carte, avec le libellé produit `aggregateLabel()`
+  (« +N élément(s) — Voir la suite »), jamais le vocabulaire interne du
+  backend.
+- **Plus de `fitView()` automatique à chaque projection.**
+  `viewState.ts` gagne `readableView()` et `recenterOnFocus()`. Dans
+  `MapApp.tsx`, l'effet suivant `projectionKey` — déclenché par toute
+  navigation, dépliage d'agrégat ou actualisation — appelait
+  `fitView(world, …)` à chaque fois, écrasant le zoom/pan choisi; il appelle
+  désormais `recenterOnFocus`, qui ne déplace la caméra que si besoin et ne
+  change jamais l'échelle. **Seul « Ajuster à l'écran »** force encore un
+  ajustement global, comme `DEC-0034` E l'exige; « Réinitialiser » et la
+  première ouverture utilisent `readableView`.
+- **Direction graphique amorcée :** fond quadrillé référencé par id (pose et
+  zoome avec le contenu), racine assombrie (`--root: #203040`), ombre légère
+  sur le cadre de territoire. Palette de relations par direction **non
+  reprise** — laissée à une tranche ultérieure par `DEC-0034` G.
+
+### Preuves
+
+3 tests Rust ajoutés (`projection_tests.rs`) : cible de 64 exactement sur un
+arbre bien plus grand; 50 dossiers sur 50 conservés avant qu'un seul des 100
+fichiers ne le soit; une chaîne de 100 ancêtres entièrement matérialisée pour
+un focus fichier, sans agrégat. 9 tests TypeScript ajoutés
+(`viewState.test.ts`, `projection.test.tsx`) : échelle lisible, jamais de
+réduction sous elle, recentrage sans changement d'échelle, pastille compacte,
+absence de tout vocabulaire interne dans le texte rendu.
+
+Rust **327 PASS** (324 avant, +3), TypeScript **289 PASS** (280 avant, +9),
+`pnpm check`, `pnpm build`, `cargo build --offline`, `git diff --check` verts.
+`cargo fmt --check` propre sur les deux fichiers Rust touchés; dette
+préexistante (143 diagnostics ailleurs dans le crate) rapportée et laissée
+intacte. `cargo clippy --all-targets --offline -- -D warnings` rouge à **26
+erreurs**, aucune nouvelle, aucune dans un fichier touché par cette tâche.
+
+### Non fait, et limites
+
+**Non testé, déclaré explicitement : aucun rejeu WebView2** dans cette passe
+— ni `1366×768` ni `1920×1080`, ni arborescence synthétique de grande
+échelle. La lisibilité produit sur un vrai volume (vrais noms, absence de
+chevauchement, comportement réel de la caméra) reste à prouver avant tout
+`VERIFIED` — limite déclarée, pas un succès affirmé sans preuve.
+
+Aucun watcher, aucun changement récent/vu-non-vu, aucun FTS5, aucune
+« Ouvrir dans l'Explorateur », aucune préférence d'écran/icône, aucun second
+index/catalogue/store, aucun nouveau renderer, aucun chemin absolu IPC, aucun
+réseau/cloud/LLM/MCP, aucune donnée personnelle. `X5` inchangé; aucune
+`TASK-0034`, aucune `DEC-0035`, aucune PR, fusion, étiquette ni release;
+`origin/main` inchangé.
+
+**Action unique suivante :** contrôle indépendant de `TASK-0033`, par une
+instance distincte de Claude Code.

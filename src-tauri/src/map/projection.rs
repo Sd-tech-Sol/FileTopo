@@ -6,8 +6,17 @@ use std::collections::{HashMap, HashSet};
 
 pub const VIEW_BUDGET: usize = 512;
 // One aggregate slot reserved per material node. Thus even an adversarial tree
-// with omitted children at every level cannot exceed the declared budget.
+// with omitted children at every level cannot exceed the declared budget. This
+// stays the absolute technical ceiling — `DEC-0034` B never reinterprets it as
+// a display target.
 const MATERIAL_BUDGET: usize = VIEW_BUDGET / 2;
+// `DEC-0034` B: an ordinary projection is a small, human-readable map, well
+// under the technical ceiling above. Ancestry and focus are always included
+// even past this target — `MATERIAL_BUDGET` remains the only hard stop — and
+// `idx_nodes_child_order` (`CHILD_ORDER` in `hierarchy.rs`) already orders
+// every page directory-first, so filling up to this smaller target is what
+// keeps directories over files without any extra sorting here.
+const ORDINARY_MATERIAL_TARGET: usize = 64;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ViewAggregate {
@@ -47,6 +56,13 @@ pub fn materialize_view(
     if selected.len() >= MATERIAL_BUDGET {
         return Err(MapError::View("focus ancestry exceeds view budget".into()));
     }
+    // The target this call fills up to. Mandatory ancestry can already exceed
+    // the ordinary product target on a very deep focus; when it does, this
+    // call adds nothing beyond it rather than erroring, and the technical
+    // ceiling above remains the only refusal.
+    let effective_target = ORDINARY_MATERIAL_TARGET
+        .max(selected.len())
+        .min(MATERIAL_BUDGET);
     let cursor = after.map(ChildCursor::decode).transpose()?;
     let mut queue = selected.len() - 1;
     let mut next_by_parent = HashMap::new();
@@ -54,16 +70,17 @@ pub fn materialize_view(
     let first =
         store
             .index
-            .children_page(focus_id, MATERIAL_BUDGET - selected.len(), cursor.as_ref())?;
+            .children_page(focus_id, effective_target - selected.len(), cursor.as_ref())?;
     next_by_parent.insert(focus_id, first.next_cursor.map(|c| c.encode()));
     selected.extend(first.items);
     queue += 1;
-    while queue < selected.len() && selected.len() < MATERIAL_BUDGET {
+    while queue < selected.len() && selected.len() < effective_target {
         let parent = selected[queue].id;
         if selected[queue].child_count > 0 {
-            let page = store
-                .index
-                .children_page(parent, MATERIAL_BUDGET - selected.len(), None)?;
+            let page =
+                store
+                    .index
+                    .children_page(parent, effective_target - selected.len(), None)?;
             next_by_parent.insert(parent, page.next_cursor.map(|c| c.encode()));
             selected.extend(page.items);
         }

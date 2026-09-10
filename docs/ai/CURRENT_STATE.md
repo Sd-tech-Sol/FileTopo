@@ -1,5 +1,125 @@
 # État courant
 
+## TASK-0033 — projection topographique progressive — IMPLEMENTED — 2026-09-10
+
+- **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche
+  `build/v0.2-a17-v1-topographic-ux`. `DEC-0034` reste `APPROVED`, inchangée.
+  Exécuteur : Claude Code. Prérequis `TASK-0032 = VERIFIED` (`ACTION-0049`,
+  ci-dessous) satisfait avant tout code. Détail :
+  [VALIDATION section BE](VALIDATION.md).
+- **Le problème visé :** le premier essai sur un vrai cerveau local montrait
+  une carte techniquement correcte mais illisible — jusqu'à 256 vrais blocs
+  plus leurs agrégats, des rectangles « N enfants hors vue » de la taille d'un
+  vrai dossier, et un `fitView()` global qui rétrécissait toute la carte à
+  chaque navigation. L'ancien prototype de référence n'affichait, lui, qu'une
+  cinquantaine de blocs sémantiques au-dessus d'un index de plusieurs milliers
+  d'entrées.
+- **Projection dossier-first, cible ordinaire de 64 blocs.**
+  `ORDINARY_MATERIAL_TARGET = 64` dans `projection.rs` remplace le
+  plafond de remplissage de 256 pour un focus ordinaire; `VIEW_BUDGET = 512`
+  et `MATERIAL_BUDGET = 256` restent les seules bornes dures inchangées.
+  Aucun tri n'a été ajouté : `idx_nodes_child_order`
+  (`child_order_rank, name_fold, id`, déjà en place depuis `DEC-0030`) classe
+  déjà les dossiers avant les fichiers dans chaque page; remplir jusqu'à une
+  cible plus petite est la seule chose qui change, et c'est ce qui suffit à
+  préférer les dossiers.
+- **Ancestry et focus restent prioritaires au-delà de la cible.** L'ancien
+  garde-fou (`selected.len() >= MATERIAL_BUDGET`) est inchangé; un nouveau
+  `effective_target = ORDINARY_MATERIAL_TARGET.max(selected.len()).min(MATERIAL_BUDGET)`
+  garantit qu'une chaîne d'ancêtres plus longue que 64 n'est jamais tronquée,
+  et qu'un fichier explicitement ciblé est matérialisé avec sa seule ancestry
+  comme contexte borné plutôt qu'avec le corpus environnant.
+- **Les agrégats restent exacts, mais ne sont plus dessinés comme un faux
+  dossier.** Le type technique `ViewAggregate` (comptage exact d'omissions,
+  curseur de continuation) est inchangé. Le rendu change seul : `MapView`
+  dessine une pastille compacte (`AGGREGATE_PILL_MIN_WIDTH = 96`, hauteur
+  `34`, très en-dessous des `240 × 64` d'une vraie carte) centrée dans le
+  créneau que le layout lui réservait déjà, avec le libellé produit
+  `aggregateLabel()` — « +N élément(s) — Voir la suite » — jamais
+  `view_budget_or_focus` ni `outside_current_projection`.
+- **Plus de `fitView()` automatique à chaque projection.** `viewState.ts`
+  gagne `readableView()` (échelle `1`, ajustée par `scaleBounds` pour ne pas
+  laisser flotter une carte minuscule, jamais réduite pour une carte qui
+  déborde) et `recenterOnFocus()` (un alias explicite d'`ensureRectVisible`
+  pour ce site d'appel). Dans `MapApp.tsx`, l'effet qui suivait
+  `projectionKey` appelait `fitView(world, ...)` à chaque changement de
+  projection — branche, agrégat déplié, actualisation — écrasant le zoom/pan
+  choisi par la personne; il appelle désormais `recenterOnFocus`, qui ne bouge
+  la caméra que si le nouveau focus est déjà hors champ, sans jamais changer
+  l'échelle. La première ouverture d'une composition et **Réinitialiser**
+  utilisent `readableView` centrée sur la sélection ou la racine. **Seul
+  « Ajuster à l'écran »** appelle encore `fitView(world, ...)` — c'est
+  désormais la seule action qui force un ajustement global, comme `DEC-0034`
+  E l'exige. Le raccourci clavier `r`/`R` dans `MapView` suit la même règle.
+- **Preuves Rust ajoutées**, dans `projection_tests.rs` :
+  `ordinary_view_targets_at_most_sixty_four_real_blocks` (64 exactement sur un
+  arbre bien plus grand), `directories_are_retained_over_files_when_the_ordinary_target_cuts_the_page`
+  (50 dossiers sur 50 conservés avant qu'un seul des 100 fichiers ne le soit),
+  `deep_ancestry_is_never_dropped_and_a_targeted_file_stays_bounded` (une
+  chaîne de 100 ancêtres entièrement matérialisée pour un focus fichier, sans
+  agrégat ni lecture hors ancestry). Les tests existants (`hundred_thousand_…`,
+  `two_brains_and_focus_are_independent`, etc.) passent inchangés.
+- **Preuves TypeScript ajoutées :** `viewState.test.ts` couvre `readableView`
+  et `recenterOnFocus` (échelle inchangée sur recentrage, mise à l'échelle
+  d'un monde minuscule, jamais de réduction sous l'échelle lisible sur un
+  monde immense, bornes respectées). `projection.test.tsx` vérifie la pastille
+  compacte (largeur/hauteur très sous celles d'une carte) et l'absence de tout
+  vocabulaire interne dans le texte rendu.
+- **Direction graphique amorcée, sans changement de moteur :** fond quadrillé
+  clair (`--map-grid-bg`/`--map-grid-line`, motif SVG référencé par
+  `.map-territory__frame`, pose et zoome avec le contenu), racine assombrie
+  (`--root: #203040`), ombre légère sur le cadre de territoire. Palette de
+  relations par direction (sortante/entrante/bidirectionnelle) **non**
+  reprise dans cette tranche — `REFERENCE_UX_OLD_FILETOPO.md` la documente
+  comme une direction, non une dépendance, et `DEC-0034` G la laisse à une
+  tranche ultérieure.
+- **Validations exécutées :** Rust **327 PASS**, 0 échec, 5 ignorés
+  (`cargo test --offline`, suite complète). TypeScript **289 PASS**, 18
+  fichiers (`vitest run`, suite complète). `tsc --noEmit` (`pnpm check`) et
+  `vite build` (`pnpm build`) verts. `cargo build --offline` vert.
+  `cargo fmt --check` : propre sur `projection.rs`/`projection_tests.rs`;
+  dette préexistante inchangée (143 diagnostics hors fichiers touchés, ailleurs
+  dans le crate, non touchée par cette tâche). `cargo clippy --all-targets
+  --offline -- -D warnings` : rouge à **26 erreurs**, aucune dans un fichier
+  touché par cette tâche — même compte qu'avant. `git diff --check` vert.
+- **Non testé, déclaré explicitement :** **aucun rejeu WebView2** n'a été
+  exécuté par cette passe — ni sur 1366×768 ni sur 1920×1080, ni sur une
+  arborescence synthétique de grande taille. La lisibilité perceptuelle
+  (vrais noms, absence de superposition, comportement de la caméra en usage
+  réel) n'est donc prouvée qu'au niveau des tests unitaires/composant, pas au
+  niveau produit. C'est une limite de cette livraison, pas une affirmation de
+  succès non vérifiée : le contrôle indépendant ou une passe ultérieure doit
+  l'exécuter avant tout `VERIFIED`.
+- **Hors portée, comme prévu par `DEC-0034` G :** aucun watcher, aucun
+  changement récent/vu-non-vu, aucun FTS5/recherche avancée, aucune
+  « Ouvrir dans l'Explorateur », aucune préférence d'écran/icône, aucun
+  second index/catalogue/store, aucun nouveau renderer, aucun chemin absolu
+  IPC, aucun réseau/cloud/LLM/MCP, aucune donnée personnelle.
+- **`X5` inchangé, `origin/main` inchangé.** Aucune `TASK-0034`, aucune
+  `DEC-0035`, aucune PR, fusion, étiquette ni release.
+- **Action unique suivante : contrôle indépendant de `TASK-0033`.**
+
+## ACTION-0049 — TASK-0032 VERIFIED (recontrôle indépendant) — 2026-09-10
+
+- **Verdict indépendant déjà rendu et déjà sur la branche, enregistré ici
+  faute de l'avoir été à l'origine :** `docs/reviews/ACTION-0049-independent-recontrol.md`
+  (commit `f6a7d06`, fusion `f549f7c`) rend `TASK-0032 = VERIFIED` dans sa
+  portée — les deux défauts bloquants trouvés au premier contrôle (permission
+  de dialogue, index legacy irrepubliable) sont corrigés sans élargir la
+  frontière de confidentialité ni affaiblir le cycle de vie de l'index. Ce
+  verdict ne valide pas l'UX finale, le watcher, l'incrémental, FTS5 ni la V1
+  complète — exactement le périmètre que `TASK-0033` attaque ensuite.
+  **Aucun `VERIFIED` n'est auto-attribué ici : ce paragraphe consigne un
+  verdict déjà rendu par l'orchestrateur technique indépendant, il ne le
+  rend pas.**
+- **Écart documentaire corrigé au passage :** ce commit n'avait mis à jour que
+  la fiche de contrôle elle-même, jamais `CURRENT_STATE.md`, `HANDOFF.md`,
+  `VALIDATION.md`, `CHANGELOG_AI.md` ni la fiche `TASK-0032`. Ces cinq
+  documents contredisaient donc le verdict déjà sur la branche. Corrigé ici;
+  aucun contenu technique n'a changé.
+- **Action suivante à cette date-là :** ouvrir la tranche UX suivante sans
+  changer l'architecture — devenue `TASK-0033`, ci-dessus.
+
 ## TASK-0032 — passe corrective, deux défauts bloquants — IMPLEMENTED — 2026-09-10
 
 - **Statut inchangé : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Même branche

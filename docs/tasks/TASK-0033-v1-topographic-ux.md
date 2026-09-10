@@ -1,7 +1,7 @@
 # TASK-0033 — V1 Progressive Topographic UX
 
 - Date : 2026-09-10
-- Statut : `READY`
+- Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`. Exécuteur : Claude Code.
 - Branche : `build/v0.2-a17-v1-topographic-ux`
 - Prérequis : `TASK-0032 = VERIFIED` par `ACTION-0049`
 - Décision : `DEC-0034-progressive-topographic-view.md`, `APPROVED`
@@ -97,3 +97,42 @@ Utiliser uniquement une arborescence synthétique générée, idéalement >= 5 0
 - `docs/ai/CURRENT_STATE.md`, `HANDOFF.md`, `NEXT_ACTION.md`, `VALIDATION.md`, `CHANGELOG_AI.md` mis à jour;
 - aucune TASK-0034 précréée;
 - `NEXT_ACTION` = contrôle indépendant de TASK-0033.
+
+## Livraison — 2026-09-10
+
+Détail complet dans [VALIDATION section BE](../ai/VALIDATION.md) et
+[CURRENT_STATE.md](../ai/CURRENT_STATE.md). Résumé :
+
+- `src-tauri/src/map/projection.rs` : `ORDINARY_MATERIAL_TARGET = 64`
+  remplace le plafond de 256 pour un focus ordinaire; `VIEW_BUDGET`/
+  `MATERIAL_BUDGET` inchangés comme bornes dures. Priorité dossier-first
+  obtenue par la cible plus petite, sans nouveau tri : `idx_nodes_child_order`
+  ordonnait déjà chaque page dossiers-avant-fichiers depuis `DEC-0030`.
+  Ancestry/focus jamais tronqués au-delà de la cible
+  (`effective_target = ORDINARY_MATERIAL_TARGET.max(selected.len()).min(MATERIAL_BUDGET)`).
+- `src/map/MapView.tsx` : l'agrégat se dessine en pastille compacte
+  (`AGGREGATE_PILL_MIN_WIDTH`/`AGGREGATE_PILL_HEIGHT`, très sous les
+  `240 × 64` d'une carte) avec le libellé produit `aggregateLabel()`
+  (« +N élément(s) — Voir la suite »), jamais le vocabulaire interne du
+  backend. Grille de fond ajoutée via `<pattern id="map-grid-pattern">`.
+- `src/map/viewState.ts` : `readableView()` (échelle lisible centrée, jamais
+  un fit exhaustif) et `recenterOnFocus()` (pan minimal, échelle inchangée)
+  remplacent `fitView(world, …)` partout sauf sur l'action explicite
+  « Ajuster à l'écran » et la toute première ouverture.
+- `src/map/MapApp.tsx` : l'effet de changement de projection et le bouton
+  « Réinitialiser » utilisent les deux fonctions ci-dessus au lieu d'un
+  `fitView` global à chaque navigation.
+- Tests ajoutés : 3 tests Rust (`projection_tests.rs`), 9 tests TypeScript
+  (`viewState.test.ts`, `projection.test.tsx`). Suites complètes : Rust
+  **327 PASS**, TypeScript **289 PASS**, `pnpm check`, `pnpm build`,
+  `cargo build --offline`, `git diff --check` verts; `cargo fmt --check`
+  propre sur les fichiers touchés; `cargo clippy --all-targets --offline --
+  -D warnings` rouge à **26 erreurs**, aucune nouvelle.
+- **Non testé, déclaré explicitement : aucun rejeu WebView2** dans cette
+  passe (ni 1366×768 ni 1920×1080, ni arborescence synthétique à grande
+  échelle). La lisibilité produit sur un vrai volume n'est donc prouvée qu'au
+  niveau unitaire/composant, pas au niveau produit — à faire avant tout
+  `VERIFIED`.
+- Palette de relations par direction (sortante/entrante/bidirectionnelle) de
+  `REFERENCE_UX_OLD_FILETOPO.md` **non reprise** : laissée à une tranche
+  ultérieure, comme direction plutôt que dépendance.

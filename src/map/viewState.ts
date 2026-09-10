@@ -96,7 +96,12 @@ export function clampView(view: View, world: Rect, viewport: Viewport): View {
   };
 }
 
-/** The opening view, and the one `reset` must reproduce exactly. */
+/**
+ * Frames the whole composition. `DEC-0034` E reserves this for **Ajuster à
+ * l'écran**, the one explicit action allowed to force a global fit — never an
+ * automatic reaction to a projection change, and never what `reset`
+ * reproduces any more.
+ */
 export function fitView(world: Rect, viewport: Viewport): View {
   const port = usable(viewport);
   const box = usableWorld(world);
@@ -106,6 +111,36 @@ export function fitView(world: Rect, viewport: Viewport): View {
       scale,
       tx: (port.width - box.w * scale) / 2 - box.x * scale,
       ty: (port.height - box.h * scale) / 2 - box.y * scale,
+    },
+    world,
+    viewport,
+  );
+}
+
+/**
+ * A card at its own authored size counts as "readable" — `DEC-0034` E and the
+ * historical reference both describe a map that overflows the viewport and is
+ * panned, never one shrunk to make everything fit at once.
+ */
+export const READABLE_SCALE = 1;
+
+/**
+ * The view a first opening and **Réinitialiser** land on: `focusRect`
+ * centred, at a readable scale — never an exhaustive fit of the whole world.
+ *
+ * A world much smaller than the viewport is still scaled up to
+ * {@link scaleBounds}'s floor rather than left floating at 1:1 in a mostly
+ * empty canvas; a world much larger than the viewport keeps the readable
+ * scale and simply overflows, which is the point.
+ */
+export function readableView(focusRect: Rect, world: Rect, viewport: Viewport): View {
+  const port = usable(viewport);
+  const scale = clampScale(READABLE_SCALE, world, viewport);
+  return clampView(
+    {
+      scale,
+      tx: port.width / 2 - (focusRect.x + focusRect.w / 2) * scale,
+      ty: port.height / 2 - (focusRect.y + focusRect.h / 2) * scale,
     },
     world,
     viewport,
@@ -199,6 +234,25 @@ export function ensureRectVisible(
 
   if (dx === 0 && dy === 0) return view;
   return clampView({ ...view, tx: view.tx + dx, ty: view.ty + dy }, world, viewport);
+}
+
+/**
+ * Recentres on a new focus after a projection change — branch navigation, an
+ * expanded indicator, a refresh — without shrinking the map to fit it.
+ *
+ * `DEC-0034` E: the scale a person chose survives when it still makes the new
+ * focus reachable, so this is exactly {@link ensureRectVisible} under its own
+ * name at this call site, kept separate so a reader does not have to infer
+ * from a selection-visibility helper that it is also the answer to "no
+ * automatic global fit on every projection".
+ */
+export function recenterOnFocus(
+  focusRect: Rect,
+  view: View,
+  world: Rect,
+  viewport: Viewport,
+): View {
+  return ensureRectVisible(focusRect, view, world, viewport);
 }
 
 /** Parameter-by-parameter comparison, as `H4` words it. */

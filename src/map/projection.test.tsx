@@ -35,7 +35,7 @@ it("renders the product 100k projection within its total entity budget, includin
 });
 it("expands an exact aggregate with Enter and Space without inventing a node selection", () => {
   const {expand,select}=mount();
-  const button=screen.getByRole("button",{name:/enfants directs hors vue/});
+  const button=screen.getByRole("button",{name:/Voir la suite/});
   button.focus();
   fireEvent.keyDown(button,{key:"Enter"});
   fireEvent.keyDown(button,{key:" "});
@@ -43,6 +43,32 @@ it("expands an exact aggregate with Enter and Space without inventing a node sel
   expect(expand).toHaveBeenCalledWith(brainId,projection.aggregates[0]);
   expect(select).not.toHaveBeenCalled();
 });
+it("renders the omitted-children indicator as a compact pill, not a card-sized block — DEC-0034 D", () => {
+  mount();
+  const pill = document.querySelector("[data-aggregate] rect.map-aggregate__pill");
+  expect(pill).not.toBeNull();
+  const width = Number(pill!.getAttribute("width"));
+  const height = Number(pill!.getAttribute("height"));
+  // Well under a real card's 240x64 footprint — it must not compete visually
+  // with a directory the way the old full-size rectangle did.
+  expect(width).toBeLessThan(160);
+  expect(height).toBeLessThan(40);
+});
+
+it("never shows the backend's internal aggregate vocabulary", () => {
+  mount();
+  const text = document.body.textContent ?? "";
+  for (const jargon of [
+    "view_budget_or_focus",
+    "outside_current_projection",
+    "omitted_direct_children",
+    "enfants directs hors vue",
+  ]) {
+    expect(text).not.toContain(jargon);
+  }
+  expect(text).toContain("Voir la suite");
+});
+
 it("keeps keyboard selection and pan/zoom available on the real bounded DTO", () => {
   const {select,change}=mount();
   const tree=screen.getByRole("tree"); tree.focus();

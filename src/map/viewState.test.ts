@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Rect } from "./types";
 import {
+  READABLE_SCALE,
   ZOOM_MAX_FACTOR,
   ZOOM_MIN_FACTOR,
   clampView,
@@ -10,6 +11,8 @@ import {
   fitView,
   isWithinBounds,
   panBy,
+  readableView,
+  recenterOnFocus,
   sameView,
   scaleBounds,
   worldToScreen,
@@ -125,6 +128,67 @@ describe("reset — H4", () => {
     );
     expect(sameView(wandered, opening)).toBe(false);
     expect(sameView(fitView(world, viewport), opening)).toBe(true);
+  });
+});
+
+describe("readable camera — DEC-0034 E", () => {
+  it("centres the focus at the readable scale on a world that overflows the viewport", () => {
+    const focus: Rect = { x: 6_000, y: 6_500, w: 240, h: 64 };
+    const view = readableView(focus, world, viewport);
+    expect(view.scale).toBeCloseTo(READABLE_SCALE, 9);
+    const projected = worldToScreen(focus, view);
+    expect(projected.x + projected.w / 2).toBeCloseTo(viewport.width / 2, 6);
+    expect(projected.y + projected.h / 2).toBeCloseTo(viewport.height / 2, 6);
+  });
+
+  it("never shrinks below the readable scale just because the map is large", () => {
+    // A world dozens of times the viewport — the point of the ordinary
+    // 64-block target is that this stays rare, but the camera must not react
+    // to it by miniaturising the map the way the old automatic fit did.
+    const bigWorld: Rect = { x: 0, y: 0, w: 200_000, h: 200_000 };
+    const view = readableView({ x: 0, y: 0, w: 240, h: 64 }, bigWorld, viewport);
+    expect(view.scale).toBeGreaterThanOrEqual(READABLE_SCALE - 1e-9);
+  });
+
+  it("scales a tiny world up rather than leaving it floating at 1:1", () => {
+    const tinyWorld: Rect = { x: 0, y: 0, w: 240, h: 64 };
+    const view = readableView(tinyWorld, tinyWorld, viewport);
+    const bounds = scaleBounds(tinyWorld, viewport);
+    expect(view.scale).toBeCloseTo(bounds.min, 9);
+    expect(view.scale).toBeGreaterThan(READABLE_SCALE);
+  });
+
+  it("stays within the declared bounds", () => {
+    const focus: Rect = { x: 13_800, y: 60, w: 240, h: 64 };
+    const view = readableView(focus, world, viewport);
+    expect(isWithinBounds(view, world, viewport)).toBe(true);
+  });
+});
+
+describe("recentring on a new focus — DEC-0034 E", () => {
+  it("keeps the current scale rather than fitting the whole world", () => {
+    const view = { scale: 3, tx: -500, ty: -200 };
+    const focus: Rect = { x: 9_000, y: 9_000, w: 240, h: 64 };
+    const next = recenterOnFocus(focus, view, world, viewport);
+    expect(next.scale).toBe(view.scale);
+  });
+
+  it("leaves the view untouched when the new focus is already visible", () => {
+    const view = { scale: 1, tx: 20, ty: 20 };
+    const focus: Rect = { x: 100, y: 100, w: 240, h: 64 };
+    expect(recenterOnFocus(focus, view, world, viewport)).toBe(view);
+  });
+
+  it("pans just enough to reveal a focus a branch navigation moved off screen", () => {
+    const view = { scale: 1, tx: 0, ty: 0 };
+    const focus: Rect = { x: 5_000, y: 5_000, w: 240, h: 64 };
+    const next = recenterOnFocus(focus, view, world, viewport);
+    expect(next.scale).toBe(view.scale);
+    const projected = worldToScreen(focus, next);
+    expect(projected.x).toBeGreaterThanOrEqual(0);
+    expect(projected.y).toBeGreaterThanOrEqual(0);
+    expect(projected.x + projected.w).toBeLessThanOrEqual(viewport.width);
+    expect(projected.y + projected.h).toBeLessThanOrEqual(viewport.height);
   });
 });
 

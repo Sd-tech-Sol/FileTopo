@@ -1,6 +1,62 @@
 # HANDOFF — passage de relais
 
-## Relais actuel — TASK-0032 corrigée, en attente d'un nouveau contrôle — 2026-09-10
+## Relais actuel — TASK-0033 livrée, en attente de contrôle — 2026-09-10
+
+- **Ce qui vient d'être fait :** `TASK-0032` était déjà `VERIFIED` dans sa
+  portée par `ACTION-0049` (déjà sur la branche avant cette session, mais dont
+  les documents durables n'avaient jamais été synchronisés — corrigé au
+  passage, aucun contenu technique changé). `TASK-0033 — V1 Progressive
+  Topographic UX` est livrée sur `build/v0.2-a17-v1-topographic-ux` :
+  `IMPLEMENTED`, jamais auto-`VERIFIED`. `DEC-0034` reste `APPROVED`,
+  inchangée.
+- **Le geste central :** une projection ordinaire vise désormais **64 vrais
+  blocs**, dossiers d'abord, au lieu de remplir jusqu'à 256. Aucun nouveau tri
+  n'a été écrit — `idx_nodes_child_order` triait déjà chaque page
+  dossiers-avant-fichiers depuis `DEC-0030`; remplir une cible plus petite
+  suffit à faire gagner les dossiers. `VIEW_BUDGET`/`MATERIAL_BUDGET`
+  restent les seules bornes dures.
+- **Le second geste :** la caméra ne réduit plus toute la carte à chaque
+  changement de projection. `fitView(world, …)` était appelé à chaque
+  navigation de branche, dépliage d'agrégat et actualisation — c'est le défaut
+  que `DEC-0034` E visait. Il ne reste que sur **Ajuster à l'écran** et la
+  toute première ouverture; partout ailleurs, `recenterOnFocus` pan minimal
+  sans jamais changer l'échelle, et **Réinitialiser** utilise `readableView`
+  (échelle `1`, jamais un fit exhaustif) plutôt qu'un fit global.
+- **Qui a fait quoi :** Claude Code a écrit la tranche entière. **Il ne peut
+  pas rendre le verdict.**
+- **Ce que le prochain relais doit savoir :**
+  - **`ORDINARY_MATERIAL_TARGET` (64) n'est pas `VIEW_BUDGET`/`MATERIAL_BUDGET`.**
+    Le premier est une cible produit dans `projection.rs`; les deux autres
+    restent les bornes de sécurité inchangées. Ne pas les confondre en
+    modifiant l'un pour changer l'autre.
+  - **La priorité dossier-first vient de la base, pas de `projection.rs`.**
+    `child_order_rank` (colonne générée, `hierarchy.rs`) classe les dossiers
+    avant les fichiers dans chaque page. `materialize_view` n'a **aucun** tri
+    à faire : il lui suffit de remplir une cible plus petite pour que les
+    dossiers l'emportent. Si un jour la priorité doit changer, c'est là qu'il
+    faut regarder en premier.
+  - **`readableView`/`recenterOnFocus` (`viewState.ts`) sont les deux seules
+    fonctions qui doivent toucher la caméra en dehors d'une action explicite.**
+    Ne pas réintroduire `fitView(world, …)` dans un effet déclenché par un
+    changement de projection : c'est exactement le défaut corrigé ici.
+  - **L'agrégat est un `<g data-aggregate>` avec une pastille
+    `.map-aggregate__pill`, pas un `<rect>` de la taille d'une carte.** Le
+    créneau (`a.rect`) reste plein-carte pour que le layout ne superpose rien;
+    seul le dessin est réduit. `aggregateLabel()` (`MapView.tsx`) est la
+    **seule** source du texte visible — ne jamais réintroduire
+    `omittedDirectChildren` brut ou `reason` dans un libellé produit.
+  - **Aucun rejeu WebView2 n'a été fait dans cette passe.** C'est une limite
+    déclarée, pas un oubli caché : la lisibilité produit sur un vrai volume
+    (vrais noms, absence de chevauchement, comportement de la caméra en usage
+    réel) reste à prouver avant tout `VERIFIED`.
+- **Ce qui reste ouvert :** `cargo clippy` strict rouge à 26 erreurs, dette
+  inchangée. Palette de relations par direction non reprise. Aucun watcher,
+  aucun incrémental, aucun FTS5, aucune identité physique, aucun
+  « Ouvrir dans l'Explorateur », aucune acceptance de performance sur grande
+  racine.
+- **Action unique suivante :** contrôle indépendant de `TASK-0033`.
+
+## Relais précédent — TASK-0032 corrigée, en attente d'un nouveau contrôle — 2026-09-10
 
 - **Ce qui vient d'être fait :** le contrôle indépendant de `TASK-0032` a trouvé
   **deux défauts bloquants**. Les deux étaient réels; les deux sont corrigés sur

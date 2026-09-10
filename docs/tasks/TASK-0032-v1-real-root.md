@@ -1,8 +1,8 @@
 # TASK-0032 — V1 REAL_ROOT — Controlled Local Folder Onboarding
 
 - Date : 2026-09-10
-- Statut : `IMPLEMENTED` le 2026-09-10, sur preuves; **jamais auto-`VERIFIED`**. Gel `c3507bf`, parent direct du premier commit de code; GO technique du NEXT_PROMPT à `05fc371`. **Passe corrective le 2026-09-10** sur deux défauts bloquants trouvés par le contrôle indépendant, GO à `a279ef9`.
-- Exécuteur : Claude Code. Aucun `VERIFIED` auto-attribué.
+- Statut : `VERIFIED` dans sa portée le 2026-09-10, par le contrôle indépendant enregistré dans [`ACTION-0049`](../reviews/ACTION-0049-independent-recontrol.md). Gel `c3507bf`, parent direct du premier commit de code; GO technique du NEXT_PROMPT à `05fc371`. **Passe corrective le 2026-09-10** sur deux défauts bloquants trouvés par le premier contrôle indépendant, GO à `a279ef9`, corrigée à `cc0d46c`.
+- Exécuteur : Claude Code. `VERIFIED` rendu par l'orchestrateur technique indépendant, jamais auto-attribué.
 - Branche : `build/v0.2-a16-v1-real-root`, créée depuis `05fc371`.
 - Décision : [DEC-0033](../decisions/DEC-0033-real-root-privacy-and-source-binding.md).
 

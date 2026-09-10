@@ -4,7 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CompositionBar from "./CompositionBar";
 import DetailsPanel, { type PanelStrings } from "./DetailsPanel";
-import MapView, { type RenderedBrain } from "./MapView";
+import MapView, { aggregateLabel, type RenderedBrain } from "./MapView";
 import CrossRelationsPanel from "./CrossRelationsPanel";
 import RelationsPanel from "./RelationsPanel";
 import ReviewQueuePanel from "./ReviewQueuePanel";
@@ -30,7 +30,7 @@ import {
   type CompositionPositioning,
   type CompositionSessionMemory,
 } from "./compositionSession";
-import { composeTerritories, type Composition } from "./territories";
+import { composeTerritories, placeRect, territoryOf, type Composition } from "./territories";
 import { buildHierarchy, type Hierarchy } from "./hierarchy";
 import { establishedNeighbours, relationSegments } from "./relations";
 import {
@@ -87,13 +87,23 @@ import type {
   NodeCrossRelations,
   NodeDetail,
   NodeRelations,
+  Rect,
   RelationsOverview,
   RelationsSelfCheck,
   RelationEngineReport,
   RelationEngineStatus,
   SuggestionReviewQueue,
 } from "./types";
-import { fitToBox, fitView, panBy, zoomAbout, type View, type Viewport } from "./viewState";
+import {
+  fitToBox,
+  fitView,
+  panBy,
+  readableView,
+  recenterOnFocus,
+  zoomAbout,
+  type View,
+  type Viewport,
+} from "./viewState";
 
 /**
  * The vertical slice of `TASK-0019`, end to end.
@@ -354,6 +364,33 @@ export default function MapApp() {
   }, [composed, loaded]);
 
   const world = composition.world;
+
+  /**
+   * What a camera change anchors on: the selection when there is one and its
+   * brain is loaded, else the focused brain's root — never the whole
+   * composition, which stays `Ajuster à l'écran`'s job alone — `DEC-0034` E.
+   *
+   * Reads through refs rather than `selected`/`composed`/`loaded` directly so
+   * callers can use it from an effect without adding a dependency that would
+   * make the effect refire for reasons that have nothing to do with the
+   * camera — the same reason `viewportRef` exists already, just below.
+   */
+  const focusAnchorRect = useCallback(
+    (compositionAt: Composition): Rect | null => {
+      const brainId = selectedRef.current?.brainId ?? composedRef.current?.focusedBrainId ?? null;
+      if (!brainId) return null;
+      const brain = loadedRef.current.get(brainId);
+      const territory = territoryOf(compositionAt, brainId);
+      if (!brain || !territory) return null;
+      const nodeId =
+        selectedRef.current && selectedRef.current.brainId === brainId
+          ? selectedRef.current.nodeId
+          : brain.snapshot.rootId;
+      const node = brain.hierarchy.byId.get(nodeId);
+      return node ? placeRect(territory, node.rect) : null;
+    },
+    [],
+  );
 
   /**
    * Every displayed brain's rectangles, keyed by brain then by node id.
@@ -886,12 +923,14 @@ export default function MapApp() {
     }
   }, [applyComposition, catalog, order, refuse]);
 
-  // A fresh composition opens fitted, and that view is the one `reset`
-  // reproduces — unless this composition was already visited in this session,
-  // in which case `L9` asks for the view it was left at.
+  // A fresh composition opens at a readable scale centred on root/focus, and
+  // that view is what `reset` reproduces — unless this composition was
+  // already visited in this session, in which case `L9` asks for the view it
+  // was left at. `DEC-0034` E reserves an exhaustive fit of the whole world
+  // for the explicit `Ajuster à l'écran` action alone, never an opening.
   //
-  // The guard is not decoration. Without it the fit runs again when the
-  // viewport settles a frame later, and that second fit erased the view a
+  // The guard is not decoration. Without it the camera moves again when the
+  // viewport settles a frame later, and that second move erased the view a
   // composition had just been given back.
   const compositionId = composed ? compositionKey(composed.displayedBrainIds) : null;
   useEffect(() => {
@@ -913,15 +952,28 @@ export default function MapApp() {
       width: viewport.width,
       height: viewport.height,
     };
-    setView(fitView(world, viewport));
-    // `world` is derived from the composition, so it changes exactly when the
-    // composition does; listing it would refit on every identity change of a
-    // memo without adding a case this does not already cover.
+    const anchor = focusAnchorRect(composition);
+    setView(anchor ? readableView(anchor, world, viewport) : fitView(world, viewport));
+    // `world`/`focusAnchorRect` are derived from the composition, so they
+    // change exactly when the composition does; listing them would reopen on
+    // every identity change of a memo without adding a case this does not
+    // already cover.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [compositionId, composition.territories.length, viewport.width, viewport.height]);
 
   const projectionKey = renderedBrains.map(b => `${b.brainId}:${loaded.get(b.brainId)?.snapshot.focusId}:${loaded.get(b.brainId)?.snapshot.indexRevision}:${b.hierarchy.drawOrder.map(n => n.id).join(",")}`).join("|");
-  useEffect(() => { if (projectionKey) setView(fitView(world, viewportRef.current)); }, [projectionKey]);
+  // A branch navigation, an expanded indicator or a refresh replaces the
+  // projection under the same budget — `DEC-0034` C — and the camera follows
+  // the new focus without shrinking the map to fit it: no `fitView` here any
+  // more, only a pan that keeps the user's own zoom when it is still
+  // spatially coherent — `DEC-0034` E.
+  useEffect(() => {
+    if (!projectionKey) return;
+    const anchor = focusAnchorRect(composition);
+    if (!anchor) return;
+    setView((current) => recenterOnFocus(anchor, current, world, viewportRef.current));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectionKey]);
 
   /**
    * The common inter-brain store, re-read whenever the loaded brains change.
@@ -2220,7 +2272,13 @@ export default function MapApp() {
             >
               {t.fitSelection}
             </button>
-            <button type="button" onClick={() => setView(fitView(world, viewport))}>
+            <button
+              type="button"
+              onClick={() => {
+                const anchor = focusAnchorRect(composition);
+                setView(anchor ? readableView(anchor, world, viewport) : fitView(world, viewport));
+              }}
+            >
               {t.reset}
             </button>
             <button
@@ -2270,7 +2328,7 @@ export default function MapApp() {
               {focusedBrain.snapshot.aggregates.map(a => <button type="button" key={a.parentId}
                 data-testid="expand-aggregate" data-parent-id={a.parentId}
                 onClick={() => void changeProjection(focusedBrain.record.brainId, a.parentId, a.nextCursor)}>
-                {a.omittedDirectChildren} enfants directs hors vue — {a.nextCursor ? "page suivante" : "ouvrir la première page"}
+                {aggregateLabel(a.omittedDirectChildren)}
               </button>)}
             </section>
           ) : null}

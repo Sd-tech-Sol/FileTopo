@@ -20,8 +20,14 @@
   --directory: #b8db82;
   --file: #d8bd7d;
   --skipped: #9aa8a2;
-  --root: #78c9ac;
+  /* Dark and dominant, per the historical reference — `DEC-0034` F. */
+  --root: #203040;
   --radius: 10px;
+  /* The map's own "quadrillage" ground, distinct from the app chrome around
+     it — `REFERENCE_UX_OLD_FILETOPO.md`'s reference palette, as a direction
+     rather than a dependency. */
+  --map-grid-bg: #eef4f8;
+  --map-grid-line: #dbe5ec;
   color-scheme: light dark;
 }
 
@@ -35,6 +41,8 @@
     --accent: #6fd3b4;
     --accent-soft: #1d3730;
     --warn: #e0a26a;
+    --map-grid-bg: #16211e;
+    --map-grid-line: #24322d;
   }
 }
 
@@ -399,6 +407,28 @@ button:disabled {
   stroke-width: 2.5;
 }
 
+/*
+ * `DEC-0034` F — a light, quadrilled ground under each brain's own map, and a
+ * soft shadow lifting it off the app background. The pattern is defined once
+ * in `MapView`'s `<defs>` and referenced here by id so it pans and zooms with
+ * the content instead of the viewport.
+ */
+.map-territory__frame {
+  fill: url(#map-grid-pattern);
+  stroke: var(--line);
+  filter: drop-shadow(0 2px 6px rgb(0 0 0 / 12%));
+}
+
+.map-grid-pattern__cell {
+  fill: var(--map-grid-bg);
+}
+
+.map-grid-pattern__lines {
+  fill: none;
+  stroke: var(--map-grid-line);
+  stroke-width: 1;
+}
+
 .map-territory__hierarchy,
 .map-hierarchy-edge {
   pointer-events: none;
@@ -471,6 +501,36 @@ button:disabled {
 .map-node__label--selected {
   fill-opacity: 1;
   font-weight: 700;
+}
+
+/*
+ * `DEC-0034` D — a compact indicator, not a card-sized sibling of a real
+ * folder. It sits inside the slot the layout reserved for it (so the tree
+ * still has room for it and nothing overlaps), but is drawn far smaller than
+ * a card and never uses a directory's fill colour.
+ */
+.map-aggregate {
+  cursor: pointer;
+}
+
+.map-aggregate__pill {
+  fill: var(--panel);
+  stroke: var(--ink-soft);
+  stroke-width: 1.25;
+  stroke-dasharray: 4 3;
+  fill-opacity: 0.9;
+}
+
+.map-aggregate:hover .map-aggregate__pill,
+.map-aggregate:focus-visible .map-aggregate__pill {
+  stroke: var(--accent);
+}
+
+.map-aggregate__label {
+  font-size: 11px;
+  fill: var(--ink-soft);
+  text-anchor: middle;
+  dominant-baseline: middle;
 }
 
 .toolbar__hint {

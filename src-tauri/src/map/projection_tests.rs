@@ -33,6 +33,113 @@ fn flat(count: usize) -> Vec<NodeDto> {
         })
         .collect()
 }
+/// A root with `dirs` directory children followed by `files` file children —
+/// `child_order_rank` (`hierarchy.rs`) sorts directories first regardless of
+/// this insertion order, so the corpus below deliberately mixes them to prove
+/// the projection never depends on how the scanner happened to emit rows.
+fn root_with_mixed_children(dirs: usize, files: usize) -> Vec<NodeDto> {
+    let total = dirs + files;
+    let mut nodes = vec![NodeDto {
+        id: 1,
+        parent_id: None,
+        name: "root".into(),
+        relative_path: String::new(),
+        kind: NodeKind::Root,
+        depth: 0,
+        size_bytes: 0,
+        modified_unix_ms: None,
+        online_only: false,
+        reparse_point: false,
+        child_count: total as u32,
+        seen: false,
+    }];
+    for i in 0..files {
+        nodes.push(NodeDto {
+            id: i as i64 + 2,
+            parent_id: Some(1),
+            name: format!("file-{i:06}"),
+            relative_path: format!("file-{i:06}"),
+            kind: NodeKind::File,
+            depth: 1,
+            size_bytes: 0,
+            modified_unix_ms: None,
+            online_only: false,
+            reparse_point: false,
+            child_count: 0,
+            seen: false,
+        });
+    }
+    for i in 0..dirs {
+        nodes.push(NodeDto {
+            id: (files + i) as i64 + 2,
+            parent_id: Some(1),
+            name: format!("dir-{i:06}"),
+            relative_path: format!("dir-{i:06}"),
+            kind: NodeKind::Directory,
+            depth: 1,
+            size_bytes: 0,
+            modified_unix_ms: None,
+            online_only: false,
+            reparse_point: false,
+            child_count: 0,
+            seen: false,
+        });
+    }
+    nodes
+}
+
+/// A single-child chain `depth` levels deep, every node a directory except the
+/// deepest, which is a file — so an explicit focus on it exercises `DEC-0034`
+/// B's "focus/ancestry always take priority" clause together with §7's
+/// "explicitly targeted file" clause in the same fixture.
+fn directory_chain(depth: usize) -> Vec<NodeDto> {
+    (0..=depth)
+        .map(|i| NodeDto {
+            id: i as i64 + 1,
+            parent_id: if i == 0 { None } else { Some(i as i64) },
+            name: format!("level-{i:04}"),
+            relative_path: if i == 0 {
+                String::new()
+            } else {
+                format!("level-{i:04}")
+            },
+            kind: if i == 0 {
+                NodeKind::Root
+            } else if i == depth {
+                NodeKind::File
+            } else {
+                NodeKind::Directory
+            },
+            depth: i as u32,
+            size_bytes: 0,
+            modified_unix_ms: None,
+            online_only: false,
+            reparse_point: false,
+            child_count: if i == depth { 0 } else { 1 },
+            seen: false,
+        })
+        .collect()
+}
+
+fn open_with(nodes: &[NodeDto]) -> (tempfile::TempDir, BrainIndex) {
+    let temp = tempfile::tempdir().unwrap();
+    let mut store = BrainIndex::open(&temp.path().join("index.sqlite")).unwrap();
+    store
+        .replace(
+            "synthetic-brain",
+            SourceStamp {
+                kind: SourceKind::SyntheticFixture,
+                source_ref: "scale-runtime",
+                label: "Synthetic",
+            },
+            nodes,
+            &[],
+            0,
+        )
+        .unwrap();
+    (temp, store)
+}
+
 fn check_view(store: &BrainIndex, view: &MapSnapshot) {
     assert!(view.nodes.len() + view.aggregates.len() <= VIEW_BUDGET);
     assert_eq!(
@@ -330,4 +437,73 @@ fn real_relations_remain_resolved_when_endpoints_leave_the_projection() {
         proved,
         "a real relation must be checked across the projection boundary"
     );
+}
+
+/// `TASK-0033` §7 (Rust proof 2) — `DEC-0034` B's ordinary target, not the
+/// `VIEW_BUDGET`/`MATERIAL_BUDGET` technical ceilings, which `check_view`
+/// already covers on every call.
+#[test]
+fn ordinary_view_targets_at_most_sixty_four_real_blocks() {
+    let (_temp, store) = open_with(&root_with_mixed_children(200, 200));
+    let view = materialize_view(&store, None, None).unwrap();
+    check_view(&store, &view);
+    assert!(view.materialized_count <= 64, "{}", view.materialized_count);
+    // The corpus has far more than 64 children, so the target is actually the
+    // reason the projection stopped, not an accident of a thin tree.
+    assert_eq!(view.materialized_count, 64);
+    assert!(view.non_materialized_count > 0);
+}
+
+/// `TASK-0033` §7 (Rust proof 4) — `idx_nodes_child_order` already orders
+/// every page directory-first (`hierarchy.rs`); this proves that ordering
+/// survives all the way through `materialize_view`'s greedy fill: every
+/// directory is retained before a single file crowds one out.
+#[test]
+fn directories_are_retained_over_files_when_the_ordinary_target_cuts_the_page() {
+    let (_temp, store) = open_with(&root_with_mixed_children(50, 100));
+    let view = materialize_view(&store, None, None).unwrap();
+    check_view(&store, &view);
+    let directories = view
+        .nodes
+        .iter()
+        .filter(|n| n.kind == NodeKind::Directory)
+        .count();
+    let files = view
+        .nodes
+        .iter()
+        .filter(|n| n.kind == NodeKind::File)
+        .count();
+    // All 50 directories fit before a single one of the 100 files is admitted;
+    // the remaining slots (root + 50 dirs leaves 13 of the 64) go to files.
+    assert_eq!(directories, 50);
+    assert_eq!(files, 13);
+    assert_eq!(view.materialized_count, 1 + directories + files);
+    let root_aggregate = view.aggregates.iter().find(|a| a.parent_id == 1).unwrap();
+    assert_eq!(root_aggregate.omitted_direct_children, 150 - 63);
+}
+
+/// `TASK-0033` §7 (Rust proofs 3 and 7) — ancestry/focus stay prioritised even
+/// past the 64-block ordinary target, and an explicitly targeted file is
+/// materialized with a small, bounded context rather than pulled corpus-wide.
+#[test]
+fn deep_ancestry_is_never_dropped_and_a_targeted_file_stays_bounded() {
+    let (_temp, store) = open_with(&directory_chain(100));
+    let file_id = 101; // the deepest node, a `File`, per `directory_chain`.
+    let view = materialize_view(&store, Some(file_id), None).unwrap();
+    check_view(&store, &view);
+    // Every one of the 100 ancestor directories plus the file itself — 101
+    // nodes — is present, well past the 64-block ordinary target, because
+    // ancestry is never trimmed to fit it.
+    assert_eq!(view.materialized_count, 101);
+    assert!(view.nodes.iter().any(|n| n.id == file_id));
+    for ancestor in 1..=100 {
+        assert!(
+            view.nodes.iter().any(|n| n.id == ancestor),
+            "ancestor {ancestor} missing from a focus meant to keep its whole chain"
+        );
+    }
+    // "Bounded context": the file has no children of its own, so nothing is
+    // pulled in beyond the ancestry chain that already explains where it is.
+    assert!(view.aggregates.is_empty());
+    assert!(view.non_materialized_count == 0);
 }
