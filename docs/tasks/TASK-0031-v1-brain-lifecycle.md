@@ -1,7 +1,7 @@
 # TASK-0031 — V1 Brain Lifecycle — Open / Refresh / Rebuild Separation
 
 - Date : 2026-09-10
-- Statut : `IMPLEMENTED` le 2026-09-10, sur preuves; gel APPROVED `3ac6cbf`; GO technique du NEXT_PROMPT à `2ad4a0f`, exécuté à la demande explicite de Sébastien.
+- Statut : `VERIFIED` dans sa portée synthétique V1, le 2026-09-10, par [ACTION-0048](../reviews/ACTION-0048-independent-control.md), contrôle indépendant de l'orchestrateur technique. Livré `IMPLEMENTED` sur preuves; gel APPROVED `3ac6cbf`; GO technique du NEXT_PROMPT à `2ad4a0f`, exécuté à la demande explicite de Sébastien.
 - Exécuteurs : Codex (implémentation initiale), puis Claude Code (reprise, correction, preuves et clôture). Aucun VERIFIED auto-attribué.
 - Branche : `build/v0.2-a15-v1-brain-lifecycle`.
 - Décision : [DEC-0032](../decisions/DEC-0032-persistent-brain-lifecycle-contract.md).
@@ -199,5 +199,5 @@ Aucun watcher ni mise à jour incrémentale : `F-027`, `F-030` et `F-031` resten
 migré ni remplacé : cette tranche ne porte pas de contrat de staging. Les
 mesures WebView2 viennent d'un poste de développement et incluent des attentes
 de stabilisation CDP; ce ne sont pas des latences de rendu. `R-T30-3`,
-`R-T30-4`, `R-T30-6` et `R8` restent ouvertes. `R-T30-2` est **traitée dans sa
-portée synthétique** et attend le contrôle indépendant.
+`R-T30-4`, `R-T30-6` et `R8` restent ouvertes. `R-T30-2` est **levée dans sa
+portée synthétique** par `ACTION-0048`.

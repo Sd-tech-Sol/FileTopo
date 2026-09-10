@@ -1,8 +1,10 @@
 # État courant
 
-## TASK-0031 — cycle de vie du cerveau séparé — IMPLEMENTED — 2026-09-10
+## TASK-0031 — cycle de vie du cerveau séparé — VERIFIED — 2026-09-10
 
-- **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Livré sur
+- **Statut : `VERIFIED` dans sa portée synthétique V1**, par
+  [ACTION-0048](../reviews/ACTION-0048-independent-control.md), `CLOSED` —
+  contrôle indépendant, jamais auto-attribué. Livré `IMPLEMENTED` sur
   `build/v0.2-a15-v1-brain-lifecycle`, gel documentaire `3ac6cbf` parent direct
   du premier commit de code. Exécuteurs : Codex pour l'implémentation initiale,
   Claude Code pour la reprise, les corrections, les preuves et la clôture.
@@ -40,8 +42,7 @@
   Sans cela le rejeu WebView2 était impossible — poignées de répertoire Windows
   retenues, `EPERM` au renommage, rechargement de page en pleine mesure. Réglage
   `server.watch` seulement, sans effet sur le produit construit.
-- **`R-T30-2` est traitée dans sa portée synthétique** et attend le contrôle
-  indépendant. `R-T30-3`, `R-T30-4`, `R-T30-6` et `R8` restent ouvertes.
+- **`R-T30-2` est levée dans sa portée synthétique** par `ACTION-0048`. `R-T30-3`, `R-T30-4`, `R-T30-6` et `R8` restent ouvertes.
   `R-T30-5` inchangée : tout reste synthétique. Aucun watcher, aucune mise à
   jour incrémentale : `F-027`, `F-030`, `F-031` restent `PROPOSED` et hors
   portée. Un schéma incompatible est refusé, jamais migré : pas de contrat de
@@ -52,7 +53,7 @@
   hors sceau. Aucune `TASK-0032`, aucune `DEC-0033`, aucune PR, fusion,
   étiquette ni release; `origin/main = 1a7d652ca48281c1687f6d1404c56a1404df91d8`,
   inchangé.
-- **Action unique suivante : contrôle indépendant de TASK-0031.**
+- **Contrôle indépendant rendu : `ACTION-0048`, verdict PASS.**
 
 
 ## ACTION-0047 — TASK-0030 VERIFIED — 2026-09-09
