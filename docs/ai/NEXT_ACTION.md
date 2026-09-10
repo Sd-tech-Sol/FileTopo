@@ -1,10 +1,12 @@
 # Action suivante
 
-## Retour à l'orchestrateur — prochaine tranche V1
+## Contrôle indépendant de TASK-0031
 
-Décider et ouvrir la prochaine tranche V1 après la convergence
-[TASK-0030](../tasks/TASK-0030-v1-pipeline-convergence.md), `VERIFIED` dans sa
-portée synthétique par [ACTION-0047](../reviews/ACTION-0047-independent-control.md).
-Priorité à la préparation sûre du vrai pipeline `REAL_ROOT` et à la séparation
-ouverture / actualisation / reconstruction — réserve `R-T30-2` — **avant toute
-donnée réelle**.
+Contrôler indépendamment, sur preuves,
+[TASK-0031](../tasks/TASK-0031-v1-brain-lifecycle.md), livrée `IMPLEMENTED` le
+2026-09-10 sur la branche `build/v0.2-a15-v1-brain-lifecycle`, et statuer sur la
+réserve `R-T30-2` : ouvrir un cerveau lit désormais l'index persistant sans
+scanner la source, actualiser et reconstruire sont des intentions explicites, et
+un échec de publication laisse le dernier index fiable ouvrable. L'instance de
+contrôle doit être distincte des exécuteurs, Codex et Claude Code, dont aucun ne
+s'est attribué `VERIFIED`.

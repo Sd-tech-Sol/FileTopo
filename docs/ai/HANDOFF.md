@@ -1,5 +1,49 @@
 # HANDOFF — passage de relais
 
+## Relais actuel — TASK-0031 IMPLEMENTED, en attente de contrôle — 2026-09-10
+
+- **Ce qui vient d'être fait :** la réserve `R-T30-2` est devenue une frontière
+  produit. Ouvrir un cerveau lit l'index persistant et **ne scanne plus la
+  source**; actualiser et reconstruire sont deux intentions explicites et
+  nommées; un échec de publication laisse le dernier index fiable ouvrable.
+  `TASK-0031 = IMPLEMENTED`, **jamais auto-`VERIFIED`**;
+  [DEC-0032](../decisions/DEC-0032-persistent-brain-lifecycle-contract.md)
+  reste `APPROVED`. Branche `build/v0.2-a15-v1-brain-lifecycle`, gel `3ac6cbf`
+  parent direct du premier commit de code.
+- **Qui a fait quoi :** Codex a produit l'implémentation initiale; Claude Code a
+  repris le worktree en l'état, corrigé, prouvé et clôturé. **Aucun des deux ne
+  peut rendre le verdict.** Le contrôle doit venir d'une instance distincte.
+- **Ce que le prochain relais doit savoir :**
+  - Le contrat vit dans `DEC-0032` et se lit dans le code à trois endroits :
+    `BrainIndex::open_existing` pour la lecture seule, `publish_map` pour
+    l'ordre refus / scan / contrôles / publication transactionnelle, et
+    `src/map/lifecycle.ts` pour les trois intentions côté interface.
+  - `build_map(paths, brain, rebuild)` **existe encore, mais seulement sous
+    `#[cfg(test)]`**. Ne pas le rappeler dans le runtime : c'est exactement le
+    scan caché que cette tranche a retiré.
+  - `prepare_synthetic_source` est une commande **séparée**. Les scénarios de
+    preuve préparent leur fixture eux-mêmes; aucun test ne doit être « réparé »
+    en remettant une préparation ou un scan dans `open`.
+  - La garde structurale `runtime_source_guard_excludes_full_snapshot_and_global_layout`
+    compare désormais en **LF**. Un fichier réécrit en CRLF cassait le découpage
+    et lui faisait inspecter le module de tests. Respecter `* text=auto eol=lf`.
+  - `vite.config.ts` n'observe plus `.filetopo-sandbox/`. Ne pas le remettre :
+    la surveillance retenait des poignées de répertoire Windows, empêchait un
+    rejeu de retirer sa propre source et rechargeait la page en pleine mesure.
+- **Ce qui n'est pas fait, et ne doit pas être supposé fait :** aucun watcher,
+  aucune mise à jour incrémentale — `F-027`, `F-030`, `F-031` restent
+  `PROPOSED`. Un index de schéma incompatible est **refusé, jamais migré** :
+  écrire un contrat de staging avant d'en avoir besoin. `cargo clippy` strict
+  reste rouge, `R-T30-1` inchangée. `R-T30-3`, `R-T30-4`, `R-T30-6` et `R8`
+  restent ouvertes.
+- **`F-050` et `F-051` restent `IMPLEMENTED`, pas `VERIFIED` globalement.**
+- **Interdits inchangés :** aucune donnée réelle, aucun `REAL_ROOT`, aucun
+  sélecteur de dossier réel, aucune `TASK-0032`/`DEC-0033`, aucune branche
+  suivante, PR, fusion, étiquette ni release. **X5 = 36**, l'artefact
+  `TASK-0031-webview2.json` reste non canonique;
+  `origin/main = 1a7d652ca48281c1687f6d1404c56a1404df91d8`, inchangé.
+
+
 ## Relais actuel — ACTION-0047 close, TASK-0030 VERIFIED — 2026-09-09
 
 - **Ce qui vient d'être fait :** enregistrement du verdict indépendant sur

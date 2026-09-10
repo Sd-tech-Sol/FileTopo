@@ -1,7 +1,7 @@
 # VALIDATION.md — État de vérification
 
-**Dernière mise à jour :** 2026-09-09
-**Dernière livraison exécutée :** TASK-0030, section AY, `VERIFIED` dans sa portée synthétique de convergence V1.
+**Dernière mise à jour :** 2026-09-10
+**Dernière livraison exécutée :** TASK-0031, section BA, `IMPLEMENTED`, **en attente de vérification indépendante**. TASK-0030, section AY, reste `VERIFIED` dans sa portée synthétique de convergence V1.
 **Dernière tâche évaluée indépendamment :** TASK-0030 — `VERIFIED` le 2026-09-09 par le
 verdict indépendant enregistré dans `ACTION-0047`, section AZ, **avec six
 réserves `R-T30-1` à `R-T30-6` maintenues**. TASK-0029 — `VERIFIED` le
@@ -4256,3 +4256,83 @@ périmètre encore synthétique; `R-T30-6` dette test-only de `legacy_store.rs`.
 **Non testé par cette action :** tout le reste. Aucune suite Rust ou TypeScript,
 aucun build, aucun clippy, aucun WebView2, aucun banc n'a été exécuté ici.
 `F-050` et `F-051` restent `IMPLEMENTED`, **pas `VERIFIED` globalement**.
+
+---
+
+## BA. TASK-0031 — séparation ouvrir / actualiser / reconstruire — 2026-09-10
+
+**Statut : `IMPLEMENTED`**, livré sur `build/v0.2-a15-v1-brain-lifecycle`,
+**en attente de vérification indépendante**. Exécuteurs : Codex pour
+l'implémentation initiale, Claude Code pour la reprise, les corrections, les
+preuves et la clôture. **Aucun des deux ne s'attribue `VERIFIED`.**
+
+### BA.1 Vérifié par exécution — suites réelles
+
+| Élément | Preuve |
+|---|---|
+| Suite Rust complète | `cargo test --offline` — **295 PASS**, 0 échec, 5 ignorés |
+| Suite TypeScript complète | `pnpm test` — **269 PASS**, 17 fichiers |
+| Typage | `pnpm check` — `tsc --noEmit`, aucune erreur |
+| Build frontend | `pnpm build` — `tsc && vite build`, 62 modules, succès |
+| Build Rust | `cargo build --offline` — succès, 1 avertissement préexistant (`SUGGESTION_STATES`, `relations.rs`, non touché) |
+| Espaces et fins de ligne | `git diff --check` — aucune erreur |
+| Forme Rust | `cargo fmt --check` — **propre sur tous les fichiers touchés par cette tâche**; dette de forme restante sur dix-sept fichiers non touchés |
+| Clippy strict | `cargo clippy --all-targets --offline -- -D warnings` — **rouge, 26 erreurs**. Jeu de diagnostics **identique avant et après** la tâche : `relation_commands` 6, `scale_spike::profile` 3, `relations` 3, `scale_spike::bounded` 2, `rule_engine` 2, `content_signals` 2, `scale_spike::report` 1, `scale_query::mod` 1, `scale_query::campaigns` 1, `legacy_store` 1, `brains` 1, `lib.rs` 1. **Aucun ne provient d'une ligne écrite par cette tâche** : le seul diagnostic de `lib.rs` porte sur un `if` `unattended` non modifié. Réserve `R-T30-1` inchangée |
+
+### BA.2 Vérifié par preuves de contrat — `L1` à `L9`
+
+Tests dans `src-tauri/src/map/lifecycle_tests.rs`, avec **scanner et SQLite
+réels**, jamais des doublures.
+
+| Critère | Preuve |
+|---|---|
+| `L1` — ouvrir n'accède pas à la source | Index construit, source renommée sous garde `Drop` restaurant même en cas d'échec : `map_open` et `map_view` réussissent; `indexId`, `revision`, compte de nœuds et digest reconstructible **identiques** avant et pendant l'indisponibilité; `sourceRead = false`, `freshness = UNKNOWN` |
+| `L2` — index absent | `map_open` rend `NotBuilt`; après l'appel, **ni `paths.fixtures` ni `paths.brains` n'existent** : aucune source matérialisée, aucun index partiel |
+| `L3` — actualiser explicite | Fichier ajouté à la fixture **par le test**; `map_refresh` le voit, `indexId` conservé, `revision` +1, compte +1, empreintes avant/après **identiques**, `map_view` rend le nouveau corpus borné |
+| `L4` — actualisation échouée | Source indisponible : `map_refresh` échoue explicitement, l'ancien index reste ouvrable et son état est inchangé au champ près |
+| `L5` — reconstruire fail-safe | Réussi : `indexId` conservé, révision avancée, digest cohérent. Échoué : annulation, `ABORT` SQL injecté par **déclencheur réel** après `DELETE` et insertion partielle, et validation refusée — dans les trois cas l'ancien état reste lisible et identique |
+| `L6` — pas de scan caché côté interface | `src/map/lifecycle.test.ts` : Ouvrir n'émet que `map_open`, Actualiser `map_refresh` puis `map_open`, Reconstruire `map_rebuild` puis `map_open`; un refus d'ouverture n'entraîne **ni scan ni préparation**; les trois `data-testid="lifecycle-*"` sont câblés sur leur action; **aucun booléen `rebuild`** dans `MapApp` |
+| `L7` — projection bornée intacte | Garde structurale : région runtime de `commands.rs` sans `MapStore`, `all_nodes(` ni `layout::compute(`; les trois entrées de cycle de vie présentes dans `commands.rs` et `lib.rs`; **aucun `rebuild: bool`** dans `lib.rs`; `map_view` reste le seul chemin de rendu |
+| `L8` — isolation | Deux cerveaux sur **la même fixture** : deux fichiers d'index, deux `indexId`, deux révisions; publier sur l'un laisse l'autre strictement inchangé |
+| `L9` — lecture seule | Empreinte de source **identique avant et après** refresh et rebuild; `open` n'en calcule aucune, conformément au contrat; catalogue, relations et content-signals jamais créés par ces opérations |
+
+### BA.3 Vérifié en hôte réel — rejeu WebView2
+
+`scripts/task0031-webview2.ps1` sur catalogue synthétique neuf. WebView2
+**152.0.4191.66**, Tauri **2.11.5**, SQLite **3.53.2**. **31 frappes réelles,
+toutes `isTrusted`**, aucune erreur console fatale. Artefact
+`docs/performance/runs/TASK-0031-webview2.json`, **non canonique**, hors X5.
+
+| Élément | Preuve |
+|---|---|
+| Index absent | `map_open` rend `map_not_built`; aucun `index.sqlite`, aucune source `quasi-empty` créés |
+| Trois intentions | Ouvrir : révision 1 → 1. Actualiser : 1 → 2. Reconstruire : 2 → 3. `indexId` **inchangé** aux trois étapes, chaque bouton activé par frappe réelle |
+| Source retirée du disque | Ouvrir réussit; `map_open` et `map_view` rendent **exactement** les mêmes valeurs qu'avant le retrait; `map_refresh` échoue en annonçant que le dernier index enregistré reste disponible; la source est restaurée en `finally` |
+| Projection bornée | 12/11 nœuds/arêtes sur petite fixture; **6 001 nœuds indexés rendus par 256 nœuds et 1 agrégat**, budget 512 respecté, DOM égal à la page produit; pagination sans doublon |
+| Lecture seule | `map_integrity` final : **aucun artefact FileTopo** dans la source |
+
+### BA.4 Corrections apportées pendant la reprise
+
+| Défaut | Effet | Correction |
+|---|---|---|
+| Fichiers réécrits en CRLF contre `* text=auto eol=lf` | La garde `L7` lit `commands.rs` par `include_str!` et découpe sur un motif en LF. En CRLF le découpage échouait, la garde inspectait **le module de tests** et y voyait `MapStore` : **échec réel de la suite Rust** | Fichiers normalisés en LF; la garde compare désormais en LF |
+| Sentinelle de la garde `L7` devenue creuse | `build_map` est passé sous `#[cfg(test)]` : la sentinelle ne prouvait plus qu'on inspectait la région runtime | Sentinelle déplacée sur `fixture_summaries`, dernier élément runtime avant le module de tests |
+| Rejeu WebView2 impossible | Le serveur de développement Vite surveillait `.filetopo-sandbox/`, retenait des poignées de répertoire Windows — `EPERM` au renommage — et rechargeait la page à chaque écriture d'index | `vite.config.ts` exclut ce dossier de `server.watch`, comme `src-tauri` l'était déjà. **Extension de périmètre déclarée**, sans effet sur le produit construit |
+
+### BA.5 Non testé, et limites
+
+**Non testé :** toute racine réelle, tout dossier utilisateur, tout sélecteur de
+dossier — hors portée et interdits. Aucun watcher, aucune mise à jour
+incrémentale : `F-027`, `F-030` et `F-031` restent `PROPOSED`, non abordées. La
+migration d'un index de schéma incompatible n'est **pas** implémentée : elle est
+refusée explicitement, et son contrat de staging reste à écrire. Aucune
+acceptance de performance produit : les mesures WebView2 viennent d'un poste de
+développement et incluent des attentes de stabilisation CDP; ce ne sont pas des
+latences de rendu. Aucun banc `TASK-0028`/`TASK-0029` rejoué ici.
+
+**Réserves :** `R-T30-1` clippy strict rouge, inchangée. `R-T30-2` **traitée
+dans sa portée synthétique**, en attente du contrôle indépendant. `R-T30-3`,
+`R-T30-4`, `R-T30-6` et `R8` ouvertes. `R-T30-5` inchangée : tout reste
+synthétique. `F-050` et `F-051` restent `IMPLEMENTED`, **pas `VERIFIED`
+globalement**; `F-042` reste `PROPOSED / MVP`, `F-046` `PROPOSED`, `F-047`
+`DIFFÉRÉ`. **X5 = 36.**

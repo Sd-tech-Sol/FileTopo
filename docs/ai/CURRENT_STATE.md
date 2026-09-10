@@ -1,5 +1,60 @@
 # État courant
 
+## TASK-0031 — cycle de vie du cerveau séparé — IMPLEMENTED — 2026-09-10
+
+- **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Livré sur
+  `build/v0.2-a15-v1-brain-lifecycle`, gel documentaire `3ac6cbf` parent direct
+  du premier commit de code. Exécuteurs : Codex pour l'implémentation initiale,
+  Claude Code pour la reprise, les corrections, les preuves et la clôture.
+  [Fiche](../tasks/TASK-0031-v1-brain-lifecycle.md);
+  [DEC-0032](../decisions/DEC-0032-persistent-brain-lifecycle-contract.md)
+  reste `APPROVED`.
+- **Ouvrir n'est plus scanner.** `map_open` lit un index existant par
+  `BrainIndex::open_existing` en `SQLITE_OPEN_READ_ONLY`, sans `CREATE`, sans
+  migration, sans toucher la source, sans empreinte et sans avancer la révision.
+  Schéma différent : `IndexIncompatible`. Cerveau étranger : `BrainMismatch`.
+  Index absent : `NotBuilt`. **Aucun rebuild automatique, aucune suppression.**
+- **`MapOpenReport` ne dit que des faits d'ouverture :** `OPENED_EXISTING`,
+  `indexId`, `revision`, `nodeCount`, `schemaVersion`, `sourceRead = false`,
+  `indexReused = true`, `freshness = UNKNOWN`. Aucune fraîcheur inventée.
+- **Actualiser et reconstruire sont explicites et sûrs.** `publish_map` refuse
+  un index incompatible **avant** de lire la source, refuse un scan
+  diagnostiqué, une source modifiée pendant le scan ou une annulation, puis
+  publie corpus, métadonnées et révision dans **une seule** transaction. Aucun
+  index n'est supprimé avant d'avoir un remplaçant valide; `remove_index_files`
+  a quitté le runtime. Le booléen `rebuild` a disparu de l'API.
+- **Preuves réelles, pas des simulacres :** scanner et SQLite réels dans
+  `lifecycle_tests.rs`, source retirée sous garde `Drop`, `ABORT` SQL injecté
+  par déclencheur après `DELETE` et insertion partielle. Rejeu **WebView2
+  152.0.4191.66** : ouvrir laisse la révision à 1, actualiser la porte à 2,
+  reconstruire à 3, `indexId` inchangé; source retirée du disque, l'ouverture
+  réussit et rend exactement les mêmes valeurs; 6 001 nœuds indexés rendus par
+  256 nœuds et 1 agrégat sous le budget de 512.
+- **Validations :** Rust **295 PASS**, TypeScript **269 PASS**, `pnpm check`,
+  `pnpm build`, `cargo build --offline`, `git diff --check` verts.
+  `cargo clippy` strict reste **rouge à 26 erreurs**, jeu de diagnostics
+  **identique avant et après** la tâche : `R-T30-1` inchangée, aucune dette
+  nouvelle. `cargo fmt --check` propre sur les fichiers touchés.
+- **Une extension de périmètre est déclarée, pas dissimulée :** `vite.config.ts`
+  exclut `.filetopo-sandbox/` de la surveillance du serveur de développement.
+  Sans cela le rejeu WebView2 était impossible — poignées de répertoire Windows
+  retenues, `EPERM` au renommage, rechargement de page en pleine mesure. Réglage
+  `server.watch` seulement, sans effet sur le produit construit.
+- **`R-T30-2` est traitée dans sa portée synthétique** et attend le contrôle
+  indépendant. `R-T30-3`, `R-T30-4`, `R-T30-6` et `R8` restent ouvertes.
+  `R-T30-5` inchangée : tout reste synthétique. Aucun watcher, aucune mise à
+  jour incrémentale : `F-027`, `F-030`, `F-031` restent `PROPOSED` et hors
+  portée. Un schéma incompatible est refusé, jamais migré : pas de contrat de
+  staging dans cette tranche.
+- **`F-042` reste `PROPOSED / MVP`, `F-046` `PROPOSED`, `F-047` `DIFFÉRÉ`;
+  `F-050` et `F-051` restent `IMPLEMENTED`**, pas `VERIFIED` globalement.
+  **X5 = 36**, l'artefact `TASK-0031-webview2.json` reste **non canonique** et
+  hors sceau. Aucune `TASK-0032`, aucune `DEC-0033`, aucune PR, fusion,
+  étiquette ni release; `origin/main = 1a7d652ca48281c1687f6d1404c56a1404df91d8`,
+  inchangé.
+- **Action unique suivante : contrôle indépendant de TASK-0031.**
+
+
 ## ACTION-0047 — TASK-0030 VERIFIED — 2026-09-09
 
 - **Verdict indépendant enregistré, non rendu par Claude Code :**

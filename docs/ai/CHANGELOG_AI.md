@@ -4062,3 +4062,102 @@ PR, fusion, étiquette, release, `reset`, `clean`, `force push` ni donnée réel
 **Action unique suivante :** retour à l'orchestrateur pour décider et ouvrir la
 prochaine tranche V1, priorité au pipeline `REAL_ROOT` sûr et à la séparation
 ouverture / actualisation / reconstruction.
+
+---
+
+## 2026-09-10 — TASK-0031 — Cycle de vie du cerveau : ouvrir, actualiser, reconstruire
+
+**Agents :** Codex (implémentation initiale), puis Claude Code (reprise du
+worktree en l'état, corrections, preuves, clôture)
+**Statut à l'issue :** `IMPLEMENTED`, **jamais auto-`VERIFIED`**
+**Branche :** `build/v0.2-a15-v1-brain-lifecycle`; gel documentaire `3ac6cbf`,
+parent direct du premier commit de code
+
+### Fait
+
+Transformation de la réserve `R-T30-2` en frontière produit, **avant** toute
+racine utilisateur réelle. Ouvrir un cerveau déjà indexé ne scanne plus sa
+source.
+
+- **`map_open`** lit un index existant et rien d'autre. `open_store` passe par
+  `BrainIndex::open_existing`, qui ouvre en `SQLITE_OPEN_READ_ONLY`, sans
+  `CREATE` ni migration, refuse un schéma différent de `MAP_SCHEMA_VERSION` par
+  `IndexIncompatible`, refuse un cerveau étranger par `BrainMismatch`, ne touche
+  pas la source, ne calcule aucune empreinte et n'avance pas la révision. Index
+  absent : `NotBuilt`. **Aucun rebuild automatique, aucune suppression.**
+- **`MapOpenReport`** remplace `MapBuildReport` à l'ouverture et ne porte que
+  des faits d'ouverture : `OPENED_EXISTING`, `indexId`, `revision`, `nodeCount`,
+  `schemaVersion`, `sourceRead = false`, `indexReused = true`,
+  `freshness = UNKNOWN`. Aucune fraîcheur inventée.
+- **`map_refresh` et `map_rebuild`** passent par `publish_map`, sous verrou de
+  publication : refus d'un index incompatible **avant** toute lecture de source,
+  scan, refus si le scan porte un diagnostic, si l'empreinte a bougé pendant le
+  scan ou si l'appelant a annulé, puis publication du corpus, des métadonnées et
+  de la révision dans **une seule** transaction. Aucun index n'est supprimé
+  avant d'avoir un remplaçant valide; `remove_index_files` a quitté le runtime.
+- **`prepare_synthetic_source`** devient une commande distincte, appelée
+  explicitement par un geste ou un scénario. `build_map(paths, brain, rebuild)`
+  survit **uniquement** sous `#[cfg(test)]` : le booléen a disparu de l'API.
+- **Interface :** `src/map/lifecycle.ts` porte les trois intentions; `loadBrain`
+  n'appelle plus `map_integrity`, qui lit la source; une ouverture sans index
+  demande une construction explicite au lieu de scanner; un cerveau dont la
+  source est absente s'ouvre depuis son dernier index enregistré, annoncé comme
+  tel et jamais comme frais.
+
+### Corrigé pendant la reprise
+
+- **Fins de ligne.** Des fichiers réécrits en CRLF contre `* text=auto eol=lf`
+  cassaient la garde structurale `L7` : elle lit `commands.rs` par
+  `include_str!` et découpe sur un motif en LF; le découpage échouait, la garde
+  inspectait le module de tests, y voyait `MapStore` et **la suite Rust
+  échouait**. Fichiers normalisés; la garde compare désormais en LF.
+- **Sentinelle creuse.** `build_map` étant passé sous `#[cfg(test)]`, la
+  sentinelle de la garde ne prouvait plus qu'on inspectait la région runtime.
+  Elle porte maintenant sur `fixture_summaries`, dernier élément runtime.
+- **Rejeu WebView2 impossible.** Le serveur de développement Vite surveillait
+  `.filetopo-sandbox/`, retenait des poignées de répertoire Windows — `EPERM` au
+  renommage — et rechargeait la page à chaque écriture d'index. `vite.config.ts`
+  l'exclut de `server.watch`, comme `src-tauri` l'était déjà. **Extension de
+  périmètre déclarée**, réglage du serveur de développement seulement.
+
+### Prouvé
+
+`L1` à `L9` dans `src-tauri/src/map/lifecycle_tests.rs` et
+`src/map/lifecycle.test.ts`, avec **scanner et SQLite réels** : source retirée
+sous garde `Drop`, `ABORT` SQL injecté par déclencheur après `DELETE` et
+insertion partielle, deux cerveaux sur une même fixture restant isolés.
+
+Rejeu **WebView2 152.0.4191.66**, Tauri 2.11.5, SQLite 3.53.2, 31 frappes
+réelles toutes `isTrusted`, aucune erreur console fatale : ouvrir laisse la
+révision à 1, actualiser la porte à 2, reconstruire à 3, `indexId` inchangé;
+source retirée du disque, l'ouverture réussit et rend exactement les mêmes
+valeurs; 6 001 nœuds indexés rendus par 256 nœuds et 1 agrégat sous le budget de
+512; `map_integrity` final sans aucun artefact FileTopo dans la source.
+
+Validations : Rust **295 PASS**/5 ignorés, TypeScript **269 PASS**,
+`pnpm check`, `pnpm build`, `cargo build --offline`, `git diff --check` verts;
+`cargo fmt --check` propre sur les fichiers touchés. `cargo clippy` strict reste
+**rouge à 26 erreurs**, jeu de diagnostics **identique avant et après** :
+`R-T30-1` inchangée, **aucune dette nouvelle**.
+
+### Non fait, et limites
+
+Aucune racine réelle, aucun `REAL_ROOT`, aucun sélecteur de dossier, aucune
+donnée personnelle. Aucun watcher ni mise à jour incrémentale : `F-027`,
+`F-030`, `F-031` restent `PROPOSED`. Un index de schéma incompatible est
+**refusé, jamais migré** : le contrat de staging reste à écrire. Les mesures
+WebView2 viennent d'un poste de développement et incluent des attentes de
+stabilisation CDP.
+
+`DEC-0032` reste `APPROVED`. `R-T30-2` est **traitée dans sa portée
+synthétique** et attend le contrôle indépendant; `R-T30-1`, `R-T30-3`,
+`R-T30-4`, `R-T30-5`, `R-T30-6` et `R8` restent ouvertes. `F-050` et `F-051`
+restent `IMPLEMENTED`, **pas `VERIFIED` globalement**; `F-042 = PROPOSED/MVP`,
+`F-046 = PROPOSED`, `F-047 = DEFERRED`. **`X5 = 36`**, l'artefact
+`TASK-0031-webview2.json` reste non canonique et hors sceau. Aucune
+`TASK-0032`, `DEC-0033`, branche suivante, PR, fusion, étiquette, release,
+`reset`, `clean`, `force push` ni donnée réelle.
+`origin/main = 1a7d652c`, non touché.
+
+**Action unique suivante :** contrôle indépendant de `TASK-0031`, par une
+instance distincte de Codex et de Claude Code.

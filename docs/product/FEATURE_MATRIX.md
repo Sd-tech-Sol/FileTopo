@@ -144,6 +144,33 @@ Les preuves et constats ci-dessous sont inchangés.
 > sont `PROPOSED`, et ce sont des **cibles à falsifier**. **Aucune mesure de
 > performance n'existe** à 10 000, 100 000 ni 1 000 000 d'éléments.
 
+> **Note du 2026-09-10 — `TASK-0031`, décision
+> [DEC-0032](../decisions/DEC-0032-persistent-brain-lifecycle-contract.md).**
+>
+> **Aucune ligne n'est ajoutée, aucune classification ne change, aucune
+> fonction ne monte ni ne descend.** La matrice reste à **51 lignes**,
+> `F-001` à `F-051`.
+>
+> `TASK-0031` sépare **ouvrir**, **actualiser** et **reconstruire** un cerveau :
+> ouvrir lit désormais l'index persistant **sans scanner la source**, et les
+> deux autres sont des intentions explicites dont l'échec laisse le dernier
+> index fiable ouvrable. C'est une **frontière de cycle de vie**, pas une
+> fonction du produit : elle ne satisfait à elle seule aucun critère
+> d'acceptation de ce tableau.
+>
+> **Ce qu'elle change pour les lignes existantes, honnêtement :** `F-027`
+> journal de changements, `F-030` surveillance automatique et `F-031` mise à
+> jour incrémentale restent **`PROPOSED`** et **hors portée** — aucun watcher,
+> aucun incrémental n'est écrit. Leur précondition est simplement posée :
+> tant qu'ouvrir signifiait rescanner, « observer sans rescanner inutilement »
+> n'avait pas de socle. `F-050` et `F-051` restent **`IMPLEMENTED`**, pas
+> `VERIFIED` globalement : la projection bornée est inchangée et reste le seul
+> chemin de rendu après les trois opérations. `F-001` choix de racine reste
+> **`IMPLEMENTED` sur synthétique seulement** : aucun `REAL_ROOT`, aucun
+> sélecteur de dossier réel n'est ajouté ni réactivé.
+>
+> **`TASK-0031` est `IMPLEMENTED`, en attente de contrôle indépendant.**
+
 | Identifiant | Fonction | Comportement cible | Prototype actuel | Preuve dans le dépôt | Écart | Priorité | Phase | État | Critères d'acceptation | Baseline TASK-0011 |
 |---|---|---|---|---|---|---|---|---|---|---|
 | F-001 | Choix de racine | Sélecteur Windows guidé | Présent | src-tauri/src/lib.rs:136 | Flux cerveau incomplet | P0 | 2 | IMPLEMENTED | Sélection synthétique testée, annulation sûre | `MVP` |
