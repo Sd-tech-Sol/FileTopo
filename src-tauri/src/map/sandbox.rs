@@ -149,6 +149,16 @@ impl SandboxPaths {
         self.label.clone()
     }
 
+    /// The root of everything FileTopo writes.
+    ///
+    /// Exposed for **one** purpose — `DEC-0033` G, the containment rule that
+    /// refuses a real root which would swallow the index, or sit inside it. It
+    /// is a `&Path` rather than a `String` because it is compared, never
+    /// published: [`display_root`](Self::display_root) is what a reader sees.
+    pub fn state_root(&self) -> &Path {
+        &self.root
+    }
+
     /// A path as it may be **published**: relative to the sandbox root, with
     /// forward slashes.
     ///

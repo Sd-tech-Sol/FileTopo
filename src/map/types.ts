@@ -2,8 +2,14 @@
 
 /* --- TASK-0018 — cerveaux ------------------------------------------------- */
 
-/** The only source kind this slice resolves. */
-export type SourceKind = "SYNTHETIC_FIXTURE";
+/**
+ * Where a brain's content comes from — `DEC-0033` A.
+ *
+ * `REAL_ROOT` is a folder the person chose through the **native** picker. Its
+ * absolute path never reaches this side: the interface works with `brainId`,
+ * the opaque `sourceRef` and the displayable `sourceLabel`, and nothing else.
+ */
+export type SourceKind = "SYNTHETIC_FIXTURE" | "REAL_ROOT";
 
 /**
  * A brain, as the catalogue holds it.
@@ -17,8 +23,16 @@ export interface BrainRecord {
   color: string;
   icon: string;
   sourceKind: SourceKind;
-  /** What the brain reads. A developer diagnostic, never its identity. */
+  /**
+   * An **opaque** handle on the source — a fixture name, or a UUID for a real
+   * root. Never a path, and never the brain's identity.
+   */
   sourceRef: string;
+  /**
+   * What to show for the source: a fixture name, or a chosen folder's terminal
+   * name. Never a path — `DEC-0033` B.
+   */
+  sourceLabel: string;
   position: number;
 }
 
@@ -144,7 +158,12 @@ export interface MapBuildReport {
   sourceRead: true;
   indexReused: boolean;
   brainId: string;
-  fixtureId: string;
+  /** What kind of tree was read — `DEC-0033` D. */
+  sourceKind: SourceKind;
+  /** The opaque handle on it. Never a path. */
+  sourceRef: string;
+  /** What to show for it. Never a path. */
+  sourceLabel: string;
   /** Where the index landed, relative to the sandbox — `K3`. */
   indexPath: string;
   nodeCount: number;
@@ -158,8 +177,17 @@ export interface MapBuildReport {
   indexMs: number;
   totalMs: number;
   layoutInvocations: number;
-  fingerprintBefore: string;
-  fingerprintAfter: string;
+  /**
+   * The source fingerprint before and after the scan — **`null` on a real
+   * root**, where none is taken at all (`DEC-0033` F). Nullable rather than
+   * empty so "not measured" cannot read as "measured and empty".
+   */
+  fingerprintBefore: string | null;
+  fingerprintAfter: string | null;
+  /**
+   * True only when two fingerprints were taken and matched. `false` on a real
+   * root because nothing was fingerprinted — never because something changed.
+   */
   readOnlyConfirmed: boolean;
   reconstructibleDigest: string;
   nonReconstructible: string[];

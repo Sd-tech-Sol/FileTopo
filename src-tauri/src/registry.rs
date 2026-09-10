@@ -219,50 +219,10 @@ fn now_ms() -> i64 {
         .min(i64::MAX as u128) as i64
 }
 
-#[cfg(windows)]
-fn is_reparse_point(metadata: &fs::Metadata) -> bool {
-    use std::os::windows::fs::MetadataExt;
-    metadata.file_attributes() & 0x0000_0400 != 0
-}
-
-#[cfg(not(windows))]
-fn is_reparse_point(_metadata: &fs::Metadata) -> bool {
-    false
-}
-
-#[cfg(windows)]
-fn encode_path(path: &Path) -> Vec<u8> {
-    use std::os::windows::ffi::OsStrExt;
-    path.as_os_str()
-        .encode_wide()
-        .flat_map(u16::to_le_bytes)
-        .collect()
-}
-
-#[cfg(windows)]
-fn decode_path(blob: &[u8]) -> Option<PathBuf> {
-    use std::ffi::OsString;
-    use std::os::windows::ffi::OsStringExt;
-    let (pairs, remainder) = blob.as_chunks::<2>();
-    if !remainder.is_empty() {
-        return None;
-    }
-    let words = pairs
-        .iter()
-        .map(|pair| u16::from_le_bytes(*pair))
-        .collect::<Vec<_>>();
-    Some(PathBuf::from(OsString::from_wide(&words)))
-}
-
-#[cfg(not(windows))]
-fn encode_path(path: &Path) -> Vec<u8> {
-    path.to_string_lossy().as_bytes().to_vec()
-}
-
-#[cfg(not(windows))]
-fn decode_path(blob: &[u8]) -> Option<PathBuf> {
-    String::from_utf8(blob.to_vec()).ok().map(PathBuf::from)
-}
+// The path codec and the reparse-point test now live in `crate::path_codec`,
+// shared with the brain catalogue rather than copied into it — `DEC-0033` C.
+// Nothing else of the 0.1 registry moved: retiring it is a separate slice.
+use crate::path_codec::{decode_path, encode_path, is_reparse_point};
 
 #[cfg(test)]
 mod tests {

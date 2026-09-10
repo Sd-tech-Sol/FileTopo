@@ -51,6 +51,7 @@ const record: BrainRecord = {
   icon: "▲",
   sourceKind: "SYNTHETIC_FIXTURE",
   sourceRef: "task0028-synthetic",
+  sourceLabel: "task0028-synthetic",
   position: 1,
 };
 

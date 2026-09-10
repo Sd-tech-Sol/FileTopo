@@ -74,6 +74,7 @@ function record(brainId: string, displayName: string, icon: string): BrainRecord
     icon,
     sourceKind: "SYNTHETIC_FIXTURE",
     sourceRef: "quasi-empty",
+    sourceLabel: "quasi-empty",
     position: brainId === ALPHA ? 1 : 3,
   };
 }

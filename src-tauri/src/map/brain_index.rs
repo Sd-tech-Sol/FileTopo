@@ -1,4 +1,5 @@
 //! Brain metadata and operations over the one canonical Index. No node table or layout cache.
+use super::brains::SourceKind;
 use super::layout::{LAYOUT_ALGORITHM, Rect};
 use super::store::{MapNode, MapSnapshot, NodeDetail};
 use super::{MapError, fnv1a64};
@@ -6,6 +7,24 @@ use crate::domain::{NodeDto, ScanDiagnostic};
 use crate::index::Index;
 use rusqlite::OptionalExtension;
 use std::path::Path;
+
+/// **What an index was built from**, travelling as one value — `DEC-0033` D.
+///
+/// The three facts are meaningless apart: a `source_ref` without its `kind` is
+/// a string of unknown provenance, and a label without either is decoration.
+/// Grouping them also keeps [`BrainIndex::replace`] inside the argument budget
+/// that a reader — and Clippy — can hold at once.
+///
+/// **No path.** An index file is a derived artefact that could be copied
+/// between machines; a path written into it would be a personal path travelling
+/// inside a database. The opaque handle is enough to prove the index matches
+/// the brain the catalogue holds, which is the only question `open_store` asks.
+#[derive(Debug, Clone, Copy)]
+pub struct SourceStamp<'a> {
+    pub kind: SourceKind,
+    pub source_ref: &'a str,
+    pub label: &'a str,
+}
 
 pub struct BrainIndex {
     pub index: Index,
@@ -55,6 +74,16 @@ impl BrainIndex {
             })
             .optional()?)
     }
+    /// The opaque source handle this index was built from, if it carries one.
+    ///
+    /// `None` means an index published before `DEC-0033` existed. `open_store`
+    /// treats that as a mismatch rather than as permission: an index whose
+    /// source cannot be confirmed is exactly the case the contract refuses to
+    /// serve silently. Nothing is deleted — an explicit refresh republishes it.
+    pub fn source_binding(&self) -> Result<Option<String>, MapError> {
+        self.meta("source_ref")
+    }
+
     pub fn built_for_brain(&self) -> Result<Option<String>, MapError> {
         self.meta("brain_id")
     }
@@ -71,8 +100,7 @@ impl BrainIndex {
     pub fn replace(
         &mut self,
         brain: &str,
-        fixture: &str,
-        label: &str,
+        source: SourceStamp<'_>,
         nodes: &[NodeDto],
         diagnostics: &[ScanDiagnostic],
         built: i64,
@@ -88,8 +116,20 @@ impl BrainIndex {
             nodes,
             &[
                 ("brain_id", brain.into()),
-                ("fixture_id", fixture.into()),
-                ("label", label.into()),
+                ("source_kind", source.kind.as_str().into()),
+                ("source_ref", source.source_ref.into()),
+                // Kept under its historical key for a synthetic build so the
+                // `TASK-0016`..`TASK-0026` evidence keeps reading; **empty**
+                // for a real root rather than filled with something that is
+                // not a fixture — `DEC-0033` D.
+                (
+                    "fixture_id",
+                    match source.kind {
+                        SourceKind::SyntheticFixture => source.source_ref.to_string(),
+                        SourceKind::RealRoot => String::new(),
+                    },
+                ),
+                ("label", source.label.into()),
                 ("node_count", nodes.len().to_string()),
                 ("root_id", root.id.to_string()),
                 ("built_unix_ms", built.to_string()),
@@ -101,6 +141,7 @@ impl BrainIndex {
         )?;
         Ok(())
     }
+
     pub fn count(&self) -> Result<usize, MapError> {
         self.meta("node_count")?
             .and_then(|s| s.parse().ok())

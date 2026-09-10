@@ -964,8 +964,14 @@ pub fn prepare_task0026_ed15(
     let mut map_store = super::brain_index::BrainIndex::open(&database)?;
     map_store.replace(
         &brain.brain_id,
-        TASK0026_ED15_SOURCE_ID,
-        "Source synthétique ED15",
+        // The binding is the **brain's**, not this harness's: the product then
+        // opens the prepared index through the ordinary door — `DEC-0033` D.
+        // What the harness contributes is the label below.
+        super::brain_index::SourceStamp {
+            kind: brain.source_kind,
+            source_ref: &brain.source_ref,
+            label: "Source synthétique ED15",
+        },
         &nodes,
         &[],
         now_ms(),

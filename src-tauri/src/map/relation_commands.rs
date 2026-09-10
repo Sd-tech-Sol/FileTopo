@@ -970,6 +970,7 @@ mod tests {
             icon: "*".to_string(),
             source_kind: super::super::brains::SourceKind::SyntheticFixture,
             source_ref: fixture_id.to_string(),
+            source_label: fixture_id.to_string(),
             position: 1,
         }
     }

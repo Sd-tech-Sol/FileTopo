@@ -1,7 +1,8 @@
 use super::*;
 use crate::domain::{NodeDto, NodeKind};
 use crate::map::{
-    brains::{BrainNodeRef, BrainRecord},
+    brain_index::SourceStamp,
+    brains::{BrainNodeRef, BrainRecord, SourceKind},
     commands, content_signals, relation_commands,
     sandbox::SandboxPaths,
 };
@@ -78,8 +79,11 @@ fn hundred_thousand_uses_product_projection_and_visits_every_child_once() {
     store
         .replace(
             "synthetic-brain",
-            "scale-runtime",
-            "Synthetic",
+            SourceStamp {
+                kind: SourceKind::SyntheticFixture,
+                source_ref: "scale-runtime",
+                label: "Synthetic",
+            },
             &corpus,
             &[],
             0,
@@ -124,8 +128,11 @@ fn hundred_thousand_uses_product_projection_and_visits_every_child_once() {
     store
         .replace(
             "synthetic-brain",
-            "scale-runtime",
-            "Synthetic",
+            SourceStamp {
+                kind: SourceKind::SyntheticFixture,
+                source_ref: "scale-runtime",
+                label: "Synthetic",
+            },
             &corpus,
             &[],
             1,
@@ -145,10 +152,30 @@ fn two_brains_and_focus_are_independent() {
     let temp = tempfile::tempdir().unwrap();
     let mut a = BrainIndex::open(&temp.path().join("a.sqlite")).unwrap();
     let mut b = BrainIndex::open(&temp.path().join("b.sqlite")).unwrap();
-    a.replace("a", "scale-runtime", "a", &flat(900), &[], 0)
-        .unwrap();
-    b.replace("b", "scale-runtime", "b", &flat(900), &[], 0)
-        .unwrap();
+    a.replace(
+        "a",
+        SourceStamp {
+            kind: SourceKind::SyntheticFixture,
+            source_ref: "scale-runtime",
+            label: "a",
+        },
+        &flat(900),
+        &[],
+        0,
+    )
+    .unwrap();
+    b.replace(
+        "b",
+        SourceStamp {
+            kind: SourceKind::SyntheticFixture,
+            source_ref: "scale-runtime",
+            label: "b",
+        },
+        &flat(900),
+        &[],
+        0,
+    )
+    .unwrap();
     let av = a.snapshot().unwrap();
     assert_ne!(
         a.index.identity().unwrap().index_id,
@@ -211,7 +238,7 @@ fn real_synthetic_build_above_five_thousand_is_read_only_and_has_no_layout() {
     let observation = content_signals::observe_content(&paths, &brain).unwrap();
     assert_eq!(observation.indexed_file_count, 6_000);
     let before = commands::integrity(&paths, &brain).unwrap();
-    assert_eq!(before.fingerprint, built.fingerprint_before);
+    assert_eq!(Some(before.fingerprint), built.fingerprint_before);
     assert!(before.filetopo_artifacts.is_empty());
     let rebuilt = commands::build_map(&paths, &brain, true).unwrap();
     assert_eq!(rebuilt.fingerprint_after, built.fingerprint_before);

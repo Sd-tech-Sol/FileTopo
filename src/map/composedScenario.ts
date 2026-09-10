@@ -260,7 +260,7 @@ async function firstPass(
     alphaIndexPath: alphaReport.indexPath,
     gammaIndexPath: gammaReport.indexPath,
     indexPathsDistinct: alphaReport.indexPath !== gammaReport.indexPath,
-    sameSource: alphaReport.fixtureId === gammaReport.fixtureId,
+    sameSource: alphaReport.sourceRef === gammaReport.sourceRef,
     // `L5` — composing translates a territory; it never relays out a brain.
     alphaOffsetComposed: territoryOffset("brain-alpha"),
     gammaOffsetComposed: territoryOffset("brain-gamma"),

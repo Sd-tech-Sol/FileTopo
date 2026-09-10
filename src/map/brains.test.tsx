@@ -55,6 +55,7 @@ const brains: BrainRecord[] = [
     icon: "▲",
     sourceKind: "SYNTHETIC_FIXTURE",
     sourceRef: "quasi-empty",
+    sourceLabel: "quasi-empty",
     position: 1,
   },
   {
@@ -64,6 +65,7 @@ const brains: BrainRecord[] = [
     icon: "■",
     sourceKind: "SYNTHETIC_FIXTURE",
     sourceRef: "deep",
+    sourceLabel: "deep",
     position: 2,
   },
   {
@@ -73,6 +75,7 @@ const brains: BrainRecord[] = [
     icon: "◆",
     sourceKind: "SYNTHETIC_FIXTURE",
     sourceRef: "quasi-empty",
+    sourceLabel: "quasi-empty",
     position: 3,
   },
 ];

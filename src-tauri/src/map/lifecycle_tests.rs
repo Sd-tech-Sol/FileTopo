@@ -99,8 +99,8 @@ fn l3_l5_l7_l8_l9_explicit_publications_are_read_only_bounded_and_isolated() {
     assert_eq!(refreshed.index_id, first.index_id);
     assert_eq!(refreshed.revision, first.revision + 1);
     assert_eq!(refreshed.node_count, first.node_count + 1);
-    assert_eq!(refreshed.fingerprint_before, fingerprint);
-    assert_eq!(refreshed.fingerprint_after, fingerprint);
+    assert_eq!(refreshed.fingerprint_before, Some(fingerprint.clone()));
+    assert_eq!(refreshed.fingerprint_after, Some(fingerprint.clone()));
     assert_eq!(refreshed.layout_invocations, 0);
     assert!(
         view(&paths, &brain, None, None)
@@ -118,8 +118,8 @@ fn l3_l5_l7_l8_l9_explicit_publications_are_read_only_bounded_and_isolated() {
         rebuilt.reconstructible_digest,
         refreshed.reconstructible_digest
     );
-    assert_eq!(rebuilt.fingerprint_before, fingerprint);
-    assert_eq!(rebuilt.fingerprint_after, fingerprint);
+    assert_eq!(rebuilt.fingerprint_before, Some(fingerprint.clone()));
+    assert_eq!(rebuilt.fingerprint_after, Some(fingerprint.clone()));
     assert_eq!(fixtures::fingerprint(&root).unwrap(), fingerprint);
     assert_eq!(state(&paths, &gamma), gamma_before);
     state(&paths, &brain);
@@ -158,7 +158,17 @@ fn l4_l5_cancel_and_sql_failure_roll_back_corpus_metadata_and_revision() {
     // Validation failure before any publication must also keep the last good state.
     assert!(
         store
-            .replace(&brain.brain_id, "quasi-empty", "synthetic", &[], &[], 0)
+            .replace(
+                &brain.brain_id,
+                super::super::brain_index::SourceStamp {
+                    kind: brain.source_kind,
+                    source_ref: &brain.source_ref,
+                    label: "synthetic",
+                },
+                &[],
+                &[],
+                0,
+            )
             .is_err()
     );
     drop(store);

@@ -122,6 +122,13 @@ const strings = {
     compositionRemoveRefused: "Impossible de retirer le dernier cerveau affiché",
     compositionSource: "source",
     compositionBusy: "Chargement…",
+    addRealRoot: "Ajouter un dossier",
+    addRealRootBusy: "Sélection…",
+    addRealRootCancelled: "Aucun dossier choisi. Rien n'a été créé.",
+    indexBrain: "Indexer",
+    notBuilt:
+      "Ce cerveau n'est pas encore indexé. Choisissez Indexer pour lire le dossier " +
+      "une première fois; FileTopo ne lit jamais la source sans cette action.",
     brainsDiagnostic: "Diagnostic développeur · sources synthétiques",
     fixtures: "Fixtures synthétiques",
     open: "Ouvrir",
@@ -316,6 +323,16 @@ export default function MapApp() {
   const runExactDuplicateScenarioRef = useRef<(() => Promise<void>) | null>(null);
 
   const order = useMemo(() => catalogueOrder(catalog?.brains ?? []), [catalog]);
+
+  /**
+   * Whether the focused brain has no index yet — `DEC-0033` E.
+   *
+   * Read from what the composition **managed to load**, not from a guess: a
+   * brain whose `map_open` answered `map_not_built` is absent from `loaded`,
+   * and that absence is the fact. Nothing here probes the source to find out.
+   */
+  const focusedNeedsIndex =
+    composed !== null && !loaded.has(composed.focusedBrainId);
 
   /** The territories of the current composition — `§4.3`. */
   const composition: Composition = useMemo(() => {
@@ -718,6 +735,45 @@ export default function MapApp() {
     },
     [applyComposition, order, refuse],
   );
+
+  /**
+   * **Ajouter un dossier** — `DEC-0033` A, the whole gesture in one place.
+   *
+   * The command takes no argument: the page cannot name a folder, only ask for
+   * the native dialogue. Cancelling returns `null` and nothing is created, so
+   * that branch says so and stops.
+   *
+   * Registering **scans nothing**. The new brain is brought into the view and
+   * its `map_open` answers `map_not_built`, which the composition reports as
+   * the "not indexed yet" state — the person then presses **Indexer**.
+   */
+  const onAddRealRoot = useCallback(async () => {
+    setBusy(true);
+    setStatus(null);
+    try {
+      const record = await invoke<BrainRecord | null>("map_brain_choose_real_root");
+      if (!record) {
+        setStatus(t.addRealRootCancelled);
+        return;
+      }
+      hostLog("info", `cerveau REAL_ROOT enregistré: ${record.brainId}, aucun scan`);
+      const catalogue = await invoke<BrainCatalogView>("map_brains");
+      setCatalog(catalogue);
+      const nextOrder = catalogueOrder(catalogue.brains);
+      const current = composedRef.current;
+      await applyComposition(
+        current
+          ? addBrain(current, nextOrder, record.brainId)
+          : singleBrainView(nextOrder, record.brainId),
+      );
+      setStatus(t.notBuilt);
+    } catch (error) {
+      setStatus(`Ajout refusé : ${String(error)}`);
+      hostLog("info", `ajout de dossier refusé: ${String(error)}`);
+    } finally {
+      setBusy(false);
+    }
+  }, [applyComposition]);
 
   const onRemoveBrain = useCallback(
     (brainId: string) => {
@@ -1402,7 +1458,7 @@ export default function MapApp() {
         const entry = {
           brainId: brain.brainId,
           indexPath: first.indexPath,
-          fixtureId: first.fixtureId,
+          fixtureId: first.sourceRef,
           declaredCeiling: fixture?.maxNodes ?? first.nodeCeiling,
           nodeCount: first.nodeCount,
           plannedNodes: first.plannedNodes,
@@ -1429,9 +1485,14 @@ export default function MapApp() {
           h3_hierarchyMismatches: check.hierarchyMismatches,
           h5_detailMismatches: check.detailMismatches,
           h6_readOnlyConfirmed: first.readOnlyConfirmed && rebuilt.readOnlyConfirmed,
-          h6_fingerprintBefore: first.fingerprintBefore,
-          h6_fingerprintAfterRebuild: rebuilt.fingerprintAfter,
-          h6_fingerprintUnchanged: first.fingerprintBefore === rebuilt.fingerprintAfter,
+          // These four brains are synthetic, so a fingerprint is always taken
+          // and is never null; `??` states the fallback rather than asserting
+          // it away, and `h6_readOnlyConfirmed` above is false if it ever were.
+          h6_fingerprintBefore: first.fingerprintBefore ?? "",
+          h6_fingerprintAfterRebuild: rebuilt.fingerprintAfter ?? "",
+          h6_fingerprintUnchanged:
+            first.fingerprintBefore !== null &&
+            first.fingerprintBefore === rebuilt.fingerprintAfter,
           h6_filetopoArtifactsInRoot: after.filetopoArtifacts,
           h7_digestBefore: first.reconstructibleDigest,
           h7_digestAfterRebuild: rebuilt.reconstructibleDigest,
@@ -1912,10 +1973,25 @@ export default function MapApp() {
           />
         ) : null}
         <div className="app__actions">
+          {/* `DEC-0033` A — the only way a real folder enters FileTopo, and it
+              creates a brain without reading a single byte of it. */}
+          <button
+            type="button"
+            data-testid="brain-add-real-root"
+            disabled={busy || measuring}
+            onClick={() => void onAddRealRoot()}
+          >
+            {busy ? t.addRealRootBusy : t.addRealRoot}
+          </button>
           <button type="button" data-testid="lifecycle-open" disabled={!composed || busy || measuring}
             onClick={() => composed && void applyComposition(composed, { action: "open" })}>Ouvrir</button>
+          {/* One action, two names for one honest reason: on a brain that has
+              never been indexed this **is** the first indexing, and calling it
+              "Actualiser" there would describe something that never happened. */}
           <button type="button" data-testid="lifecycle-refresh" disabled={!composed || busy || measuring}
-            onClick={() => composed && void applyComposition(composed, { action: "refresh" })}>Actualiser</button>
+            onClick={() => composed && void applyComposition(composed, { action: "refresh" })}>
+            {focusedNeedsIndex ? t.indexBrain : "Actualiser"}
+          </button>
           <button type="button" data-testid="lifecycle-prepare" disabled={!composed || busy || measuring}
             onClick={async () => {
               if (!composed) return;

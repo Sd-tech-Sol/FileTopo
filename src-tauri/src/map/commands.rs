@@ -8,10 +8,11 @@
 
 #[cfg(test)]
 use super::MAX_NODES_PER_MAP;
-use super::brain_index::BrainIndex;
-use super::brains::{BrainNodeRef, BrainRecord};
+use super::brain_index::{BrainIndex, SourceStamp};
+use super::brains::{BrainNodeRef, BrainRecord, SourceKind};
 use super::layout::{self, LAYOUT_ALGORITHM};
 use super::sandbox::{self, SandboxPaths};
+use super::source::BrainSource;
 use super::store::{MapSnapshot, NON_RECONSTRUCTIBLE_KEYS, NodeDetail};
 use super::{MAX_FIXTURE_DEPTH, MapError, fixtures};
 use crate::domain::ScanDiagnostic;
@@ -40,9 +41,15 @@ pub struct MapBuildReport {
     /// **Whose map was built.** The identity comes first, because everything
     /// below it is only meaningful inside one brain.
     pub brain_id: String,
-    /// The synthetic source that brain reads — a developer diagnostic, never
-    /// the brain's identity (`TASK-0018` §4.6).
-    pub fixture_id: String,
+    /// What kind of tree was read. `TASK-0018` §4.6 called this `fixtureId`
+    /// because a source could only be a fixture; since `TASK-0032` it can be a
+    /// folder the person chose, and a report that still said "fixture" would be
+    /// stating something false — `DEC-0033` D.
+    pub source_kind: SourceKind,
+    /// The **opaque** handle on that source. Never a path.
+    pub source_ref: String,
+    /// What to show for it: a fixture name, or a chosen folder's terminal name.
+    pub source_label: String,
     pub state: String,
     pub index_id: String,
     pub revision: u64,
@@ -63,8 +70,15 @@ pub struct MapBuildReport {
     pub index_ms: f64,
     pub total_ms: f64,
     pub layout_invocations: u32,
-    pub fingerprint_before: String,
-    pub fingerprint_after: String,
+    /// The source fingerprint before and after the scan — **`None` on a real
+    /// root**, where no fingerprint is taken at all (`DEC-0033` F). Nullable
+    /// rather than empty so a reader cannot mistake "not measured" for
+    /// "measured and empty".
+    pub fingerprint_before: Option<String>,
+    pub fingerprint_after: Option<String>,
+    /// True only when two fingerprints were actually taken and matched. On a
+    /// real root it is `false` because nothing was fingerprinted — never
+    /// because something changed.
     pub read_only_confirmed: bool,
     pub reconstructible_digest: String,
     pub non_reconstructible: Vec<String>,
@@ -104,6 +118,27 @@ pub fn open_map(paths: &SandboxPaths, brain: &BrainRecord) -> Result<MapOpenRepo
         index_reused: true,
         freshness: "UNKNOWN".into(),
     })
+}
+
+/// Registers a folder the person chose as a new `REAL_ROOT` brain — and
+/// **scans nothing** (`DEC-0033` A and E).
+///
+/// The single door between a candidate path and the catalogue. It validates,
+/// canonicalises, then writes one row; no index is created, no fixture is
+/// materialised, no source is read. A brand-new `REAL_ROOT` therefore answers
+/// `map_not_built` on `map_open` until somebody presses **Indexer**.
+///
+/// The `candidate` comes from the native picker in the Tauri layer, never from
+/// the WebView: no exposed command takes a path, so there is no way for a page
+/// to reach this function with a path of its own choosing.
+pub fn register_real_root(
+    paths: &SandboxPaths,
+    candidate: &std::path::Path,
+) -> Result<BrainRecord, MapError> {
+    let canonical = super::source::validate_real_root(candidate, paths.state_root())?;
+    let mut catalog = super::brains::BrainCatalog::open(&paths.catalog_database())?;
+    catalog.seed_frozen()?;
+    catalog.register_real_root(&canonical)
 }
 
 /// Explicit developer fixture preparation, separate from all lifecycle operations.
@@ -265,7 +300,9 @@ fn publish_map(
     let _publication = PUBLICATION_LOCK
         .lock()
         .map_err(|_| MapError::View("publication lock".into()))?;
-    let spec = brain.source_fixture()?;
+    // Resolving the source is what separates refresh and rebuild from open:
+    // this is the line `map_open` does not have — `DEC-0032` A, `DEC-0033` E.
+    let source = BrainSource::resolve(paths, brain)?;
     let started = Instant::now();
     let database = paths.brain_map_database(&brain.brain_id);
     let reused = database.try_exists()?;
@@ -273,9 +310,15 @@ fn publish_map(
     if reused {
         open_store(paths, brain)?;
     }
-    let plan = fixtures::plan(spec);
-    let root = fixtures::fixture_root(&paths.fixtures, spec.id);
-    let fingerprint_before = fixtures::fingerprint(&root)?;
+    let root = source.root(paths);
+    // Fingerprinting is a **second full traversal**. It stays where it earns
+    // its cost — on a frozen fixture whose size is known — and a real root is
+    // reported as unfingerprinted rather than pretending: `DEC-0033` F.
+    let fingerprint_before = if source.is_fingerprintable() {
+        Some(fixtures::fingerprint(&root)?)
+    } else {
+        None
+    };
 
     let scan_started = Instant::now();
     let scan = scan_tree_controlled(&root, &cancelled, |_| {})
@@ -287,8 +330,12 @@ fn publish_map(
             "incomplete scan; previous index retained".into(),
         ));
     }
-    let fingerprint_after = fixtures::fingerprint(&root)?;
-    if fingerprint_before != fingerprint_after {
+    let fingerprint_after = if source.is_fingerprintable() {
+        Some(fixtures::fingerprint(&root)?)
+    } else {
+        None
+    };
+    if fingerprint_before.is_some() && fingerprint_before != fingerprint_after {
         return Err(MapError::Scan(
             "source changed during scan; previous index retained".into(),
         ));
@@ -304,8 +351,11 @@ fn publish_map(
     };
     store.replace(
         &brain.brain_id,
-        spec.id,
-        spec.label_fr,
+        SourceStamp {
+            kind: brain.source_kind,
+            source_ref: &brain.source_ref,
+            label: &brain.source_label,
+        },
         &scan.nodes,
         &scan.diagnostics,
         now_ms(),
@@ -317,7 +367,9 @@ fn publish_map(
 
     Ok(MapBuildReport {
         brain_id: brain.brain_id.clone(),
-        fixture_id: spec.id.to_string(),
+        source_kind: brain.source_kind,
+        source_ref: brain.source_ref.clone(),
+        source_label: brain.source_label.clone(),
         state: state.into(),
         index_id: identity.index_id,
         revision: identity.revision,
@@ -325,7 +377,13 @@ fn publish_map(
         index_reused: reused,
         index_path: paths.relative_name(&database),
         node_count: scan.nodes.len(),
-        planned_nodes: plan.node_count(),
+        planned_nodes: match &source {
+            // A real tree has no plan: nobody wrote down in advance what it
+            // should contain, and reporting the observed count as "planned"
+            // would turn a measurement into a tautology.
+            BrainSource::RealRoot(_) => 0,
+            BrainSource::SyntheticFixture(spec) => fixtures::plan(spec).node_count(),
+        },
         max_depth,
         node_ceiling: 0, // No corpus ceiling on the converged runtime.
         depth_ceiling: MAX_FIXTURE_DEPTH,
@@ -335,7 +393,8 @@ fn publish_map(
         index_ms,
         total_ms: elapsed_ms(started),
         layout_invocations: 0,
-        read_only_confirmed: fingerprint_before == fingerprint_after,
+        read_only_confirmed: fingerprint_before.is_some()
+            && fingerprint_before == fingerprint_after,
         fingerprint_before,
         fingerprint_after,
         reconstructible_digest: store.reconstructible_digest()?,
@@ -387,17 +446,33 @@ pub fn open_store(paths: &SandboxPaths, brain: &BrainRecord) -> Result<BrainInde
     }
     let store = BrainIndex::open_existing(&database, false)?;
     match store.built_for_brain()? {
-        Some(found) if found == brain.brain_id => Ok(store),
-        Some(found) => Err(MapError::BrainMismatch {
-            expected: brain.brain_id.clone(),
-            found,
-        }),
+        Some(found) if found == brain.brain_id => {}
+        Some(found) => {
+            return Err(MapError::BrainMismatch {
+                expected: brain.brain_id.clone(),
+                found,
+            });
+        }
         // A version-1 index names no brain at all, so it is not this one's.
-        None => Err(MapError::BrainMismatch {
-            expected: brain.brain_id.clone(),
-            found: "index sans cerveau (schema v1)".to_string(),
-        }),
+        None => {
+            return Err(MapError::BrainMismatch {
+                expected: brain.brain_id.clone(),
+                found: "index sans cerveau (schema v1)".to_string(),
+            });
+        }
     }
+    // `DEC-0033` D — the index must also prove it was built from the source the
+    // catalogue still binds this brain to. Same brain, different source, is
+    // exactly the shape a silent substitution takes; so is an index published
+    // before this contract, which carries no binding at all. Both are refused,
+    // and **nothing is deleted**: the file stays, and an explicit refresh
+    // republishes it under the current binding.
+    if store.source_binding()?.as_deref() != Some(brain.source_ref.as_str()) {
+        return Err(MapError::SourceMismatch {
+            brain_id: brain.brain_id.clone(),
+        });
+    }
+    Ok(store)
 }
 
 /// Temporary metadata input for existing analysis consumers; never an IPC response.
@@ -1283,6 +1358,7 @@ mod tests {
             icon: "*".to_string(),
             source_kind: SourceKind::SyntheticFixture,
             source_ref: fixture_id.to_string(),
+            source_label: fixture_id.to_string(),
             position: 1,
         }
     }
@@ -1299,7 +1375,8 @@ mod tests {
             let brain = brain_reading(spec.id);
             let report = build_map(&paths, &brain, false).expect("build");
             assert_eq!(report.brain_id, brain.brain_id);
-            assert_eq!(report.fixture_id, spec.id);
+            assert_eq!(report.source_ref, spec.id);
+            assert_eq!(report.source_kind, SourceKind::SyntheticFixture);
 
             // H11 — the frozen ceilings hold.
             assert!(
@@ -1473,7 +1550,10 @@ mod tests {
         }
         assert_eq!(std::fs::read(&database).unwrap(), before);
         assert_eq!(
-            fixtures::fingerprint(&fixtures::fixture_root(&paths.fixtures, "quasi-empty")).unwrap(),
+            Some(
+                fixtures::fingerprint(&fixtures::fixture_root(&paths.fixtures, "quasi-empty"))
+                    .unwrap()
+            ),
             first.fingerprint_before
         );
     }
@@ -1668,3 +1748,7 @@ mod tests {
 #[cfg(test)]
 #[path = "lifecycle_tests.rs"]
 mod lifecycle_tests;
+
+#[cfg(test)]
+#[path = "real_root_tests.rs"]
+mod real_root_tests;

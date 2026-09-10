@@ -2,6 +2,9 @@ mod domain;
 mod hierarchy;
 mod index;
 mod map;
+/// Storing a filesystem path exactly, shared by the catalogue and the 0.1
+/// registry — `DEC-0033` C.
+mod path_codec;
 mod registry;
 /// `TASK-0029` scale query bench. Compiled by `cargo test` only: it is absent
 /// from every product binary and exposes no command.
@@ -618,6 +621,45 @@ fn map_brain_update(
         .map_err(String::from)
 }
 
+/// **Ajouter un dossier** — the only way a real root enters FileTopo.
+///
+/// Takes **no argument**, deliberately. `DEC-0033` A forbids an exposed
+/// command that accepts a path: a page that could name a folder could name any
+/// folder, and the person's explicit gesture would stop being what decides.
+/// The path is produced here, by the native picker, and never crosses the IPC
+/// in the other direction.
+///
+/// Cancelling returns `Ok(None)` and leaves the catalogue untouched — no brain,
+/// no index, no half-written row. Registering scans nothing: the new brain is
+/// created unindexed, and `map_open` answers `map_not_built` until the person
+/// presses **Indexer**.
+///
+/// The returned `BrainRecord` carries no path — see `map::brains::BrainRecord`.
+#[tauri::command]
+async fn map_brain_choose_real_root(
+    app: tauri::AppHandle,
+) -> Result<Option<map::brains::BrainRecord>, String> {
+    let paths = map_sandbox(&app)?;
+    let picked = app
+        .dialog()
+        .file()
+        .set_title("Choisir un dossier à cartographier")
+        .blocking_pick_folder();
+    let Some(picked) = picked else {
+        return Ok(None);
+    };
+    let candidate = picked
+        .into_path()
+        .map_err(|_| "map_root_rejected: chemin sélectionné invalide".to_string())?;
+    tauri::async_runtime::spawn_blocking(move || {
+        map::commands::register_real_root(&paths, &candidate)
+            .map(Some)
+            .map_err(String::from)
+    })
+    .await
+    .map_err(|_| "map_worker_failed".to_string())?
+}
+
 #[tauri::command]
 async fn map_open(
     app: tauri::AppHandle,
@@ -1211,6 +1253,13 @@ fn map_write_run_artifact(_name: String, _contents: String) -> Result<String, St
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        // `DEC-0033` H and I — the native folder picker, and the only change of
+        // stack in this slice. The plugin has been declared in `Cargo.toml`
+        // since the 0.1 prototype and was deliberately left uninitialised while
+        // reserve `X2` stood; `TASK-0032` is the task that lifts it. What
+        // replaces `X2` is narrower and tested: no exposed command accepts a
+        // path, and the capability grants `dialog:allow-open` and nothing else.
+        .plugin(tauri_plugin_dialog::init())
         .setup(|app| {
             // An unattended H9 run needs frames, and Chromium stops delivering
             // them to a window it treats as occluded. Keeping the window on top
@@ -1251,6 +1300,7 @@ pub fn run() {
             map_brains,
             map_brain_activate,
             map_brain_update,
+            map_brain_choose_real_root,
             map_open,
             map_refresh,
             map_rebuild,
@@ -1428,31 +1478,85 @@ mod integration_tests {
         }
     }
 
-    /// The dialogue plugin is what makes a real folder picker possible at all.
+    /// Reserve `X2`, **lifted and replaced** — `DEC-0033` I.
+    ///
+    /// `X2` forbade the runtime to initialise the dialogue plugin, because no
+    /// task then had the right to open a real folder. `TASK-0032` is that task,
+    /// so the plugin is now initialised on purpose. What replaces the old
+    /// prohibition is narrower and, unlike it, still meaningful once a picker
+    /// exists: **no exposed command accepts a path**, so the WebView cannot
+    /// name a folder — only the person, through the native dialogue, can.
     #[test]
-    fn no_exposed_command_can_open_a_folder_picker() {
+    fn the_picker_exists_and_no_exposed_command_accepts_a_path() {
         let start = THIS_SOURCE
             .find("pub fn run() {")
             .expect("runtime entry point");
-        // Bounded at the end of `run`, or this test would read itself: its own
-        // body mentions the plugin it is asserting the absence of.
         let length = THIS_SOURCE[start..]
             .find(".run(tauri::generate_context!())")
             .expect("runtime must end by running");
         let runtime = &THIS_SOURCE[start..start + length];
         assert!(
-            !runtime.contains("tauri_plugin_dialog::init()"),
-            "X2: the current runtime must not initialise the dialogue plugin"
+            runtime.contains("tauri_plugin_dialog::init()"),
+            "TASK-0032 needs the dialogue plugin initialised"
         );
-        // `choose_collection` is the only caller of the picker, and it is kept
-        // as history rather than deleted — so the guarantee has to be that it
-        // is unreachable, not that it is gone.
+
+        let exposed = registered_commands();
         assert!(
-            !registered_commands()
+            exposed
                 .iter()
-                .any(|name| name == "choose_collection"),
+                .any(|name| name == "map_brain_choose_real_root"),
+            "the picker command must be reachable from the WebView"
         );
+        // The 0.1 prototype's picker wrote into the old `Registry`. It stays
+        // unregistered: `DEC-0033` I keeps the historical audit as history and
+        // does not resurrect it as product truth.
+        assert!(!exposed.iter().any(|name| name == "choose_collection"));
+
+        // The guarantee itself, read off the signatures the handler registers.
+        //
+        // What is forbidden is a parameter that could name a place **on the
+        // disk**: a `Path`/`PathBuf` type, or a name denoting a root, a folder
+        // or an absolute path. `map_resolve_node`'s `relative_path` is none of
+        // those — it is a path **inside one brain's index**, scoped by the
+        // `brain_id` beside it, resolved by an SQL lookup that never touches
+        // the filesystem. Forbidding it would be forbidding the wrong thing;
+        // what `DEC-0033` A rules out is the WebView choosing a **root**.
+        for command in &exposed {
+            let Some(at) = THIS_SOURCE.find(&format!("fn {command}(")) else {
+                continue;
+            };
+            let signature = &THIS_SOURCE[at..at + THIS_SOURCE[at..].find(')').unwrap_or(0)];
+            for parameter in signature.split(',').skip(1) {
+                let (name, kind) = parameter.split_once(':').unwrap_or((parameter, ""));
+                let name = name.trim();
+                assert!(
+                    !kind.contains("Path"),
+                    "`{command}` takes a filesystem path type: {parameter}"
+                );
+                assert!(
+                    !matches!(
+                        name,
+                        "path" | "root" | "folder" | "directory" | "absolute_path"
+                    ),
+                    "`{command}` would let the WebView name a place on disk: {parameter}"
+                );
+            }
+        }
     }
+
+    /// `DEC-0033` H — the WebView gets the picker and nothing else.
+    #[test]
+    fn the_capability_grants_the_dialogue_and_no_filesystem_access() {
+        let capability = include_str!("../capabilities/default.json");
+        assert!(capability.contains("\"dialog:allow-open\""));
+        for forbidden in ["fs:", "dialog:allow-save", "dialog:default", "shell:"] {
+            assert!(
+                !capability.contains(forbidden),
+                "the main window must not be granted `{forbidden}`"
+            );
+        }
+    }
+
     use std::path::Path;
 
     fn fixture_fingerprint(root: &Path) -> u64 {

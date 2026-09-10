@@ -10,7 +10,7 @@ import type { BrainRecord, MapProjection } from "./types";
 // Produced by the Rust 100k test through the actual product boundary, not a TS harness.
 const projection = productProjection as MapProjection;
 const brainId = projection.brainId;
-const record: BrainRecord = {brainId,displayName:"Synthetic",color:"#1F6F5C",icon:"▲",sourceKind:"SYNTHETIC_FIXTURE",sourceRef:"scale-runtime",position:1};
+const record: BrainRecord = {brainId,displayName:"Synthetic",color:"#1F6F5C",icon:"▲",sourceKind:"SYNTHETIC_FIXTURE",sourceRef:"scale-runtime",sourceLabel:"scale-runtime",position:1};
 const hierarchy = buildHierarchy(projection.nodes,projection.rootId);
 const composition = composeTerritories([{brainId,layoutWidth:projection.layoutWidth,layoutHeight:projection.layoutHeight}]);
 const viewport={width:1200,height:800};

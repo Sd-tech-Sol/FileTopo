@@ -20,12 +20,18 @@
 //! space per brain**, which is what [`super::sandbox::SandboxPaths`] lays out.
 
 use super::{MapError, fixtures};
+use crate::path_codec::{decode_path, encode_path};
 use rusqlite::{Connection, OptionalExtension, params};
 use serde::{Deserialize, Serialize};
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use uuid::Uuid;
 
 /// Bump only together with a migration.
-pub const CATALOG_SCHEMA_VERSION: i64 = 1;
+///
+/// `2` — `TASK-0032`: `REAL_ROOT` joins `SYNTHETIC_FIXTURE`, a brain carries a
+/// displayable `source_label`, and a real root's absolute path is persisted in
+/// a `BLOB` column that no DTO ever reads.
+pub const CATALOG_SCHEMA_VERSION: i64 = 2;
 
 /// Key under which the catalogue remembers which brain is active.
 ///
@@ -35,19 +41,22 @@ const ACTIVE_BRAIN_KEY: &str = "active_brain_id";
 
 /// Where a brain's content comes from.
 ///
-/// One variant in this slice, deliberately. A real user root is a stop point
-/// reserved to Sébastien, and an enumeration with a single arm is what keeps
-/// the resolution honest: nothing can silently mean "some folder".
+/// Two variants since `TASK-0032`, and no third one that could mean "some
+/// folder, somewhere": a `RealRoot` is a folder **the person chose through the
+/// native picker**, whose absolute path lives in this catalogue's `BLOB` column
+/// and nowhere else — `DEC-0033` A and B.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum SourceKind {
     SyntheticFixture,
+    RealRoot,
 }
 
 impl SourceKind {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::SyntheticFixture => "SYNTHETIC_FIXTURE",
+            Self::RealRoot => "REAL_ROOT",
         }
     }
 
@@ -56,10 +65,22 @@ impl SourceKind {
     pub fn parse(value: &str) -> Result<Self, MapError> {
         match value {
             "SYNTHETIC_FIXTURE" => Ok(Self::SyntheticFixture),
+            "REAL_ROOT" => Ok(Self::RealRoot),
             other => Err(MapError::UnsupportedSourceKind(other.to_string())),
         }
     }
 }
+
+/// Colours and shapes a newly registered brain is given, in order.
+///
+/// Distinct **shapes**, not only distinct colours — `DEC-0017` point 12. The
+/// two lists have different lengths on purpose, so the pair repeats far later
+/// than either list does. Choosing a brain's own colour and icon is interface
+/// finish, and belongs to the redesign rather than to this slice.
+const NEW_BRAIN_COLORS: [&str; 6] = [
+    "#2F6DA8", "#7A3E9D", "#1F6F5C", "#9A5A18", "#A83247", "#3E6B2A",
+];
+const NEW_BRAIN_ICONS: [&str; 5] = ["●", "◆", "▲", "■", "★"];
 
 /// One of the three brains `TASK-0018` §4.2 freezes.
 #[derive(Debug, Clone, Copy)]
@@ -125,11 +146,34 @@ pub struct BrainRecord {
     pub color: String,
     pub icon: String,
     pub source_kind: SourceKind,
-    /// What the source *is*. **Not** the brain's identity: two brains may
-    /// legitimately carry the same value here.
+    /// An **opaque** handle on the source. **Not** the brain's identity: two
+    /// brains may legitimately carry the same value here.
+    ///
+    /// For a synthetic brain it is the fixture identifier, which is a frozen
+    /// name in this repository. For a `REAL_ROOT` it is a UUID v4 drawn at
+    /// registration — never the path, never derived from the path, so that a
+    /// value which does reach the interface reveals nothing about the disk.
     pub source_ref: String,
+    /// What to write on screen for the source. Lossy conversion is allowed
+    /// **here** and only here — this is a label, never a value handed back to
+    /// the filesystem.
+    ///
+    /// For a `REAL_ROOT` it is the chosen folder's **terminal name**, never its
+    /// path: the person just picked that folder and already sees its name, and
+    /// an absolute path would add their account name and private tree on top —
+    /// `DEC-0033` B.
+    pub source_label: String,
     pub position: i64,
 }
+
+/// There is deliberately **no path field above**.
+///
+/// A `BrainRecord` is serialized straight to the WebView, and a `PathBuf` in it
+/// would reach the interface the first time somebody added the field and
+/// nobody looked at the JSON. The absolute path of a `REAL_ROOT` is reachable
+/// only through [`BrainCatalog::real_root_path`], which returns an owned
+/// `PathBuf` that implements no `Serialize` at all — `DEC-0033` B.
+const _: () = ();
 
 impl BrainRecord {
     /// A brain built straight from the frozen table, without a catalogue.
@@ -145,6 +189,9 @@ impl BrainRecord {
             icon: frozen.icon.to_string(),
             source_kind: frozen.source_kind,
             source_ref: frozen.source_ref.to_string(),
+            // A frozen brain reads a fixture, and the fixture's name is both
+            // its handle and what the developer diagnostic shows.
+            source_label: frozen.source_ref.to_string(),
             position: frozen.position,
         }
     }
@@ -171,7 +218,18 @@ impl BrainRecord {
     pub fn source_fixture(&self) -> Result<&'static fixtures::FixtureSpec, MapError> {
         match self.source_kind {
             SourceKind::SyntheticFixture => fixtures::spec(&self.source_ref),
+            // Refused by name rather than resolved to something plausible.
+            // The synthetic-only features — the fixture plan, `H1`'s planned
+            // paths, the integrity report — have no meaning on a real folder,
+            // and answering them with an invented fixture would be worse than
+            // answering with an error.
+            SourceKind::RealRoot => Err(MapError::SourceNotSynthetic(self.brain_id.clone())),
         }
+    }
+
+    /// Whether this brain reads a folder the person chose.
+    pub fn is_real_root(&self) -> bool {
+        matches!(self.source_kind, SourceKind::RealRoot)
     }
 }
 
@@ -267,7 +325,7 @@ impl BrainCatalog {
              PRAGMA synchronous=NORMAL;
              PRAGMA foreign_keys=ON;",
         )?;
-        let catalog = Self { connection };
+        let mut catalog = Self { connection };
         catalog.initialize()?;
         Ok(catalog)
     }
@@ -276,35 +334,92 @@ impl BrainCatalog {
     pub fn in_memory() -> Result<Self, MapError> {
         let connection = Connection::open_in_memory()?;
         connection.execute_batch("PRAGMA foreign_keys=ON;")?;
-        let catalog = Self { connection };
+        let mut catalog = Self { connection };
         catalog.initialize()?;
         Ok(catalog)
     }
 
-    /// Two tables, and one deliberate omission.
+    /// Two tables, one deliberate omission, and one deliberate `CHECK`.
     ///
-    /// **`source_ref` carries no `UNIQUE` constraint**, and that is the whole
-    /// point: two brains sharing a source is a supported, tested case, not an
-    /// accident to be prevented. `brain_id` is the primary key, so the
-    /// *identity* is unique while the *source* is free to repeat.
-    fn initialize(&self) -> Result<(), MapError> {
-        self.connection.execute_batch(&format!(
-            "CREATE TABLE IF NOT EXISTS brains (
-                 brain_id TEXT PRIMARY KEY CHECK(length(brain_id) > 0),
-                 display_name TEXT NOT NULL CHECK(length(trim(display_name)) > 0),
-                 color TEXT NOT NULL CHECK(length(color) = 7 AND substr(color, 1, 1) = '#'),
-                 icon TEXT NOT NULL CHECK(length(icon) > 0),
-                 source_kind TEXT NOT NULL CHECK(source_kind IN ('SYNTHETIC_FIXTURE')),
-                 source_ref TEXT NOT NULL CHECK(length(source_ref) > 0),
-                 position INTEGER NOT NULL
-             );
-             CREATE TABLE IF NOT EXISTS catalog_meta (
+    /// **`source_ref` carries no `UNIQUE` constraint**, and neither does
+    /// `source_path`. That is the whole point: two brains sharing a source is a
+    /// supported, tested case, not an accident to be prevented — `DEC-0033` D.
+    /// `brain_id` is the primary key, so the *identity* is unique while the
+    /// *source* is free to repeat.
+    ///
+    /// The last `CHECK` is the one that keeps `source_kind` honest: a
+    /// `REAL_ROOT` has a path and a `SYNTHETIC_FIXTURE` has none. Written as a
+    /// constraint rather than as a convention because the alternative is a row
+    /// that claims to read a folder and names none.
+    const SCHEMA_V2: &'static str = "CREATE TABLE IF NOT EXISTS brains (
+             brain_id TEXT PRIMARY KEY CHECK(length(brain_id) > 0),
+             display_name TEXT NOT NULL CHECK(length(trim(display_name)) > 0),
+             color TEXT NOT NULL CHECK(length(color) = 7 AND substr(color, 1, 1) = '#'),
+             icon TEXT NOT NULL CHECK(length(icon) > 0),
+             source_kind TEXT NOT NULL CHECK(source_kind IN ('SYNTHETIC_FIXTURE', 'REAL_ROOT')),
+             source_ref TEXT NOT NULL CHECK(length(source_ref) > 0),
+             source_label TEXT NOT NULL CHECK(length(source_label) > 0),
+             source_path BLOB,
+             position INTEGER NOT NULL,
+             CHECK ((source_kind = 'REAL_ROOT') = (source_path IS NOT NULL))
+         )";
+
+    fn initialize(&mut self) -> Result<(), MapError> {
+        self.connection.execute_batch(
+            "CREATE TABLE IF NOT EXISTS catalog_meta (
                  key TEXT PRIMARY KEY,
                  value TEXT NOT NULL
-             );
-             PRAGMA user_version={CATALOG_SCHEMA_VERSION};"
-        ))?;
+             );",
+        )?;
+        let stored: i64 = self
+            .connection
+            .query_row("PRAGMA user_version", [], |row| row.get(0))?;
+        let brains_exists = self.connection.query_row(
+            "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'brains'",
+            [],
+            |row| row.get::<_, i64>(0),
+        )? > 0;
+        if brains_exists && stored < CATALOG_SCHEMA_VERSION {
+            self.migrate_to_v2()?;
+        } else if !brains_exists {
+            self.connection.execute_batch(Self::SCHEMA_V2)?;
+            self.connection
+                .pragma_update(None, "user_version", CATALOG_SCHEMA_VERSION)?;
+        }
         self.put_meta("schema_version", &CATALOG_SCHEMA_VERSION.to_string())?;
+        Ok(())
+    }
+
+    /// Schema 1 to schema 2, in **one** transaction — `TASK-0032` `RR1`.
+    ///
+    /// SQLite cannot alter a `CHECK` constraint in place, and schema 1 pinned
+    /// `source_kind IN ('SYNTHETIC_FIXTURE')`, so the table has to be rebuilt.
+    /// Rebuilt, copied and swapped inside a single transaction: a failure
+    /// anywhere rolls the whole thing back and leaves schema 1 exactly as it
+    /// was, brains, names, colours and icons included. Nothing is deleted
+    /// before its replacement is populated.
+    ///
+    /// `catalog_meta` is **not touched**, so `active_brain_id` survives by
+    /// construction rather than by being copied carefully.
+    ///
+    /// Idempotent through `user_version`, which SQLite rolls back with the rest
+    /// of the transaction: a second open reads 2 and does nothing.
+    fn migrate_to_v2(&mut self) -> Result<(), MapError> {
+        let transaction = self.connection.transaction()?;
+        transaction.execute_batch(&format!(
+            "{};
+             INSERT INTO brains_next
+                 (brain_id, display_name, color, icon,
+                  source_kind, source_ref, source_label, source_path, position)
+             SELECT brain_id, display_name, color, icon,
+                    source_kind, source_ref, source_ref, NULL, position
+               FROM brains;
+             DROP TABLE brains;
+             ALTER TABLE brains_next RENAME TO brains;",
+            Self::SCHEMA_V2.replace("IF NOT EXISTS brains", "brains_next")
+        ))?;
+        transaction.pragma_update(None, "user_version", CATALOG_SCHEMA_VERSION)?;
+        transaction.commit()?;
         Ok(())
     }
 
@@ -343,8 +458,9 @@ impl BrainCatalog {
         for frozen in FROZEN_BRAINS.iter().map(BrainRecord::frozen) {
             let inserted = transaction.execute(
                 "INSERT INTO brains
-                     (brain_id, display_name, color, icon, source_kind, source_ref, position)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)
+                     (brain_id, display_name, color, icon,
+                      source_kind, source_ref, source_label, source_path, position)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, NULL, ?8)
                  ON CONFLICT(brain_id) DO NOTHING",
                 params![
                     frozen.brain_id,
@@ -353,6 +469,7 @@ impl BrainCatalog {
                     frozen.icon,
                     frozen.source_kind.as_str(),
                     frozen.source_ref,
+                    frozen.source_label,
                     frozen.position,
                 ],
             )?;
@@ -367,8 +484,12 @@ impl BrainCatalog {
     }
 
     pub fn list(&self) -> Result<Vec<BrainRecord>, MapError> {
+        // `source_path` is **not** selected here, and that is the point: the
+        // query that feeds every `BrainRecord` the interface ever sees cannot
+        // leak a column it never reads — `DEC-0033` B.
         let mut statement = self.connection.prepare(
-            "SELECT brain_id, display_name, color, icon, source_kind, source_ref, position
+            "SELECT brain_id, display_name, color, icon,
+                    source_kind, source_ref, source_label, position
                FROM brains
               ORDER BY position, brain_id",
         )?;
@@ -381,22 +502,35 @@ impl BrainCatalog {
                     row.get::<_, String>(3)?,
                     row.get::<_, String>(4)?,
                     row.get::<_, String>(5)?,
-                    row.get::<_, i64>(6)?,
+                    row.get::<_, String>(6)?,
+                    row.get::<_, i64>(7)?,
                 ))
             })?
             .collect::<Result<Vec<_>, _>>()?;
         rows.into_iter()
-            .map(|(brain_id, display_name, color, icon, source_kind, source_ref, position)| {
-                Ok(BrainRecord {
+            .map(
+                |(
                     brain_id,
                     display_name,
                     color,
                     icon,
-                    source_kind: SourceKind::parse(&source_kind)?,
+                    source_kind,
                     source_ref,
+                    source_label,
                     position,
-                })
-            })
+                )| {
+                    Ok(BrainRecord {
+                        brain_id,
+                        display_name,
+                        color,
+                        icon,
+                        source_kind: SourceKind::parse(&source_kind)?,
+                        source_ref,
+                        source_label,
+                        position,
+                    })
+                },
+            )
             .collect()
     }
 
@@ -437,6 +571,101 @@ impl BrainCatalog {
     pub fn set_active(&mut self, brain_id: &str) -> Result<BrainRecord, MapError> {
         let record = self.require(brain_id)?;
         self.put_meta(ACTIVE_BRAIN_KEY, &record.brain_id)?;
+        Ok(record)
+    }
+
+    /// The absolute path of a `REAL_ROOT`, decoded from its `BLOB`.
+    ///
+    /// **The only door to a real path in the whole program.** It returns an
+    /// owned `PathBuf`, which is not `Serialize`, so what comes out of here
+    /// cannot travel to the WebView by accident — it has to be handed to the
+    /// scanner deliberately, which is exactly what `map_refresh` does and what
+    /// `map_open` does not.
+    ///
+    /// `None` for a synthetic brain, which has no path and never had one. A
+    /// `REAL_ROOT` whose blob is missing or undecodable is an **error**: a
+    /// repaired path names a different folder, and scanning a folder the person
+    /// did not choose is the failure this whole contract exists to prevent.
+    pub fn real_root_path(&self, brain_id: &str) -> Result<Option<PathBuf>, MapError> {
+        let record = self.require(brain_id)?;
+        if !record.is_real_root() {
+            return Ok(None);
+        }
+        let blob: Option<Vec<u8>> = self.connection.query_row(
+            "SELECT source_path FROM brains WHERE brain_id = ?1",
+            params![brain_id],
+            |row| row.get(0),
+        )?;
+        let blob = blob.ok_or_else(|| {
+            MapError::SourceUnresolved(format!("{brain_id}: aucune racine enregistrée"))
+        })?;
+        decode_path(&blob)
+            .map(Some)
+            .ok_or_else(|| MapError::SourceUnresolved(format!("{brain_id}: racine illisible")))
+    }
+
+    /// Records a folder the person chose, and **scans nothing**.
+    ///
+    /// The path arriving here is already canonical and already validated —
+    /// `super::source::validate_real_root` is the single door, and it is a
+    /// separate function because validation needs the sandbox and storage does
+    /// not. This one draws the identities and writes the row.
+    ///
+    /// Both identities are drawn fresh and are **opaque**: `brain_id` is
+    /// `real-<uuid>` and `source_ref` is a bare UUID. Neither is derived from
+    /// the path, so registering the same folder twice gives two independent
+    /// brains — `DEC-0033` D — and neither value tells a reader anything about
+    /// the disk.
+    pub fn register_real_root(&mut self, canonical: &Path) -> Result<BrainRecord, MapError> {
+        // Lossy is correct **here**: this is the name on a chip, and the value
+        // that will be handed back to the filesystem is the blob, not this.
+        let label = canonical
+            .file_name()
+            .map(|name| name.to_string_lossy().into_owned())
+            .filter(|name| !name.trim().is_empty())
+            .unwrap_or_else(|| "Racine".to_string());
+        let mut display_name = label.trim().to_string();
+        if display_name.chars().count() > MAX_DISPLAY_NAME {
+            display_name = display_name.chars().take(MAX_DISPLAY_NAME).collect();
+        }
+
+        let next_position: i64 = self.connection.query_row(
+            "SELECT COALESCE(MAX(position), 0) + 1 FROM brains",
+            [],
+            |row| row.get(0),
+        )?;
+        let slot = (next_position.max(1) - 1) as usize;
+        let color = NEW_BRAIN_COLORS[slot % NEW_BRAIN_COLORS.len()].to_string();
+        let icon = NEW_BRAIN_ICONS[slot % NEW_BRAIN_ICONS.len()].to_string();
+        validate_metadata(&display_name, &color, &icon)?;
+
+        let record = BrainRecord {
+            brain_id: format!("real-{}", Uuid::new_v4()),
+            display_name,
+            color,
+            icon,
+            source_kind: SourceKind::RealRoot,
+            source_ref: Uuid::new_v4().to_string(),
+            source_label: label,
+            position: next_position,
+        };
+        self.connection.execute(
+            "INSERT INTO brains
+                 (brain_id, display_name, color, icon,
+                  source_kind, source_ref, source_label, source_path, position)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
+            params![
+                record.brain_id,
+                record.display_name,
+                record.color,
+                record.icon,
+                record.source_kind.as_str(),
+                record.source_ref,
+                record.source_label,
+                encode_path(canonical),
+                record.position,
+            ],
+        )?;
         Ok(record)
     }
 
@@ -536,7 +765,10 @@ mod tests {
         let brains = catalog.list().expect("list");
         assert_eq!(brains.len(), 3);
         assert_eq!(
-            brains.iter().map(|b| b.brain_id.as_str()).collect::<Vec<_>>(),
+            brains
+                .iter()
+                .map(|b| b.brain_id.as_str())
+                .collect::<Vec<_>>(),
             vec!["brain-alpha", "brain-beta", "brain-gamma"]
         );
         assert_eq!(catalog.active().expect("active").brain_id, "brain-alpha");

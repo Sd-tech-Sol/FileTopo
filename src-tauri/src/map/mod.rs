@@ -20,6 +20,8 @@ pub mod relation_commands;
 pub mod relations;
 pub mod rule_engine;
 pub mod sandbox;
+/// Resolving a brain to the tree it actually reads — `DEC-0033` D and G.
+pub mod source;
 pub mod store;
 
 use thiserror::Error;
@@ -87,6 +89,27 @@ pub enum MapError {
     IndexIncompatible(String),
     #[error("map_not_built: {0}")]
     NotBuilt(String),
+    /// A synthetic-only operation was asked of a `REAL_ROOT` brain — the
+    /// fixture plan, `H1`'s planned paths, the integrity report. Named rather
+    /// than answered with an invented fixture — `DEC-0033` D.
+    #[error("map_source_not_synthetic: {0}")]
+    SourceNotSynthetic(String),
+    /// A real root the catalogue holds but cannot hand back: no blob, or a blob
+    /// this build cannot decode. Never repaired — a repaired path names a
+    /// different folder — `DEC-0033` C.
+    #[error("map_source_unresolved: {0}")]
+    SourceUnresolved(String),
+    /// The candidate root a person chose is refused, and the message says why
+    /// **without** naming the path — `DEC-0033` B, F and G.
+    #[error("map_root_rejected: {0}")]
+    RootRejected(String),
+    /// `DEC-0033` D — the index read for this brain was built from another
+    /// source. Refused rather than served: this is the shape a silent source
+    /// substitution would take.
+    #[error(
+        "map_source_mismatch: the index for `{brain_id}` was built from another source binding"
+    )]
+    SourceMismatch { brain_id: String },
     #[error("map_artifact_rejected: {0}")]
     ArtifactRejected(String),
     #[error("content_observation_failed: {0}")]
