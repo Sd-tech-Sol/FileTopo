@@ -1,56 +1,77 @@
-TASK_ID: ACTION-0047 — Independent closure of TASK-0030
-AGENT: CLAUDE
+TASK_ID: TASK-0031 — V1 Brain Lifecycle — Open / Refresh / Rebuild Separation
+AGENT: CODEX (initial implementation), then CLAUDE (resume, fixes, proofs, closure)
 RESULT: DONE
-BRANCH: build/v0.2-a14-v1-pipeline-convergence
-FINAL_HEAD: 50d76511e79163aeb4cbe329c3b2d28a18ba0e07
+BRANCH: build/v0.2-a15-v1-brain-lifecycle
+FINAL_HEAD: 003a567
 
 SUMMARY:
-- recorded external independent PASS with explicit reserves
-- TASK-0030 -> VERIFIED in synthetic convergence scope
-- ACTION-0047 -> CLOSED
-- F-050/F-051 remain IMPLEMENTED, not globally VERIFIED
-- verdict authority: independent technical orchestrator; TASK-0030 executor: Codex; recorder: Claude Code
-- documentary closure only; no bench, WebView2 replay or heavy suite rerun
+- R-T30-2 turned into a product boundary: opening a brain reads its persistent index and never scans the source
+- map_open reads through BrainIndex::open_existing — SQLITE_OPEN_READ_ONLY, no CREATE, no migration, no source access, no fingerprint, revision unchanged
+- missing index -> NotBuilt; foreign schema -> IndexIncompatible; foreign brain -> BrainMismatch; never an automatic rebuild, never a deletion
+- MapOpenReport carries opening facts only: OPENED_EXISTING, indexId, revision, nodeCount, schemaVersion, sourceRead=false, indexReused=true, freshness=UNKNOWN
+- refresh and rebuild share publish_map under a publication lock: incompatible index refused BEFORE reading source, then scan, then refusal on diagnosed scan / source moved during scan / cancellation, then one transaction publishing corpus, metadata and revision
+- prepare_synthetic_source is a separate explicit command; build_map's rebuild boolean survives only as a #[cfg(test)] helper
+- frontend runLifecycle is the only path; loadBrain no longer calls map_integrity, which reads the source
+- resumed Codex's worktree without reset, deletion or history rewrite; all valid work preserved
+
+LIFECYCLE_CONTRACT:
+- open: existing canonical index only, read-only connection, no source access, identity and revision unchanged, map_view immediately available
+- refresh: explicit, read-only scan of the synthetic source, publication only after a clean scan, index_id kept, revision advanced inside the publishing transaction
+- rebuild: explicit and distinct, replaces derived data in the same transactional primitive, keeps index_id, advances revision, never deletes before a valid replacement exists
+
+LAST_KNOWN_GOOD_PROOF:
+- three real failure modes, no mocked return values: cancellation, SQL ABORT injected by a real trigger after DELETE and a partial INSERT, and refused validation
+- after each, index_id, revision, node count and reconstructible digest are unchanged and the index is still openable
+- source renamed away under an RAII Drop guard that restores it even on failure; open and map_view keep working and return identical values
+- remove_index_files left the runtime; an incompatible index is refused, never deleted, never silently migrated
 
 VALIDATIONS:
-- git diff --check PASS, no whitespace error
-- closure diff strictly documentary: 8 documents modified, 1 review created; nothing under src/, src-tauri/, scripts/, docs/performance/runs/, no package manifest
-- three TASK-0030 JSON artifacts unchanged, still noncanonical, not added to X5
-- X5 exactly 36 names, identical on both guards: runArtifacts.ts array and commands.rs [&str; 36]
-- origin/main = 1a7d652ca48281c1687f6d1404c56a1404df91d8, unchanged
-- git chain confirmed: 896e2c3 -> 0255bd1 (freeze) -> ab1d7e2 (code) -> 58862b7 -> orchestration commit, no divergence
-- no TASK-0031 and no DEC-0032, before and after
-- relative links of created/modified documents resolve
-- source facts re-read before recording: map::store reduced to DTOs; legacy_store and MAX_NODES_PER_MAP under #[cfg(test)]; VIEW_BUDGET=512 with MATERIAL_BUDGET=256; layout computed inside materialize_view after bounded selection; build_map reports layout_ms 0.0, layout_invocations 0, node_ceiling 0; ViewAggregate carries parent_id, omitted_direct_children, reason, next_cursor
-- NOT rerun here: Rust and TypeScript suites, pnpm check, pnpm build, cargo build, clippy, WebView2. Executor figures (Rust 290 PASS/5 ignored, TS 264 PASS) are recorded as executor evidence only.
+- cargo test --offline: 295 PASS, 0 failed, 5 ignored
+- pnpm test: 269 PASS, 17 files
+- pnpm check, pnpm build, cargo build --offline: green
+- git diff --check: clean
+- cargo fmt --check: clean on every file this task touched; pre-existing form debt on seventeen untouched files
+- cargo clippy --all-targets --offline -- -D warnings: RED, 26 errors. Diagnostic set IDENTICAL before and after this task; none comes from a line written here — the single lib.rs hit is an untouched `unattended` if. R-T30-1 unchanged
+- L1 source-absent open, L2 NotBuilt, L3 explicit refresh, L4 failed refresh, L5 rebuild both ways, L6 frontend intents, L7 structural guard, L8 two-brain isolation, L9 read-only fingerprints — all proven with the real scanner and real SQLite
 
-RESERVES_RECORDED:
-- R-T30-1 through R-T30-6
-- R-T30-1 strict clippy not green, baseline not rerun by the control
-- R-T30-2 map_open/build_map still rescan a compatible index; open / refresh / rebuild must be separated before any real user root
-- R-T30-3 some analyses still materialize corpus metadata in memory
-- R-T30-4 product performance not accepted; R8 still open
-- R-T30-5 scope still synthetic, no real folder picker
-- R-T30-6 test-only legacy_store.rs debt
+WEBVIEW2:
+- real pass executed: WebView2 152.0.4191.66, Tauri 2.11.5, SQLite 3.53.2, fresh synthetic catalogue, 31 real keystrokes all isTrusted, 0 fatal console errors
+- map_open before any build: map_not_built, no index and no source created
+- Open 1 -> 1, Refresh 1 -> 2, Rebuild 2 -> 3, index_id unchanged at every step, each button activated by a real keystroke
+- source renamed away: Open succeeds, map_open and map_view return exactly the pre-removal values, explicit Refresh fails and states the last recorded index remains available, source restored in finally
+- bounded projection intact: 6001 indexed nodes rendered as 256 nodes + 1 aggregate under the 512 budget, DOM equal to the product page
+- map_integrity final: no FileTopo artifact in the source
+- artifact docs/performance/runs/TASK-0031-webview2.json — NONCANONICAL, outside X5
 
 FILES_CHANGED:
-- docs/reviews/ACTION-0047-independent-control.md (created)
-- docs/tasks/TASK-0030-v1-pipeline-convergence.md
-- docs/decisions/DEC-0031-one-canonical-brain-index-and-bounded-projection.md
-- docs/ai/CURRENT_STATE.md
-- docs/ai/NEXT_ACTION.md
-- docs/ai/HANDOFF.md
-- docs/ai/VALIDATION.md (new section AZ)
-- docs/ai/CHANGELOG_AI.md
-- docs/product/FEATURE_MATRIX.md (F-050/F-051 scope wording only, no promotion)
+- src-tauri/src/lib.rs, src-tauri/src/map/{brain_index.rs,commands.rs,mod.rs}
+- src-tauri/src/map/lifecycle_tests.rs (created), src-tauri/src/map/projection_tests.rs
+- src/map/{lifecycle.ts,lifecycle.test.ts} (created), src/map/{MapApp.tsx,types.ts} and seven *Scenario.ts
+- vite.config.ts (declared scope extension, see below)
+- scripts/task0031-{seed-proof.py,webview2.mjs,webview2.ps1} (created)
+- docs/performance/runs/TASK-0031-webview2.json (created, noncanonical)
+- docs/tasks/TASK-0031-v1-brain-lifecycle.md, docs/decisions/DEC-0032 unchanged since freeze
+- docs/ai/{CURRENT_STATE,NEXT_ACTION,HANDOFF,VALIDATION,CHANGELOG_AI}.md, docs/product/FEATURE_MATRIX.md
 - .orchestrator/RESULT.md
 
-CODE_OR_EVIDENCE_CHANGED: no
+DEFECTS_FIXED_ON_RESUME:
+- CRLF written against `* text=auto eol=lf` broke the L7 guard: it splits commands.rs on an LF pattern, matched nothing, inspected the test module, saw MapStore and FAILED the Rust suite. Files normalised; the guard now compares as LF
+- the guard's sentinel had gone hollow once build_map moved under #[cfg(test)]; it now sits on fixture_summaries, the last runtime item, and also checks the three lifecycle entries and the absence of any rebuild: bool
+- SCOPE EXTENSION, DECLARED: vite.config.ts excludes .filetopo-sandbox/ from server.watch. The dev-server watcher held Windows directory handles on the sandbox, so the proof could not take its own source away (EPERM on rename) and every index write reloaded the page mid-measurement. Dev-server setting only, no effect on the built product. Declared in the task sheet, CURRENT_STATE, VALIDATION BA.4 and CHANGELOG
+
+LIMITS_OR_BLOCKERS:
+- real roots still disabled: no REAL_ROOT, no folder picker, no personal data, everything synthetic
+- no watcher and no incremental update: F-027, F-030, F-031 remain PROPOSED and out of scope
+- an incompatible-schema index is refused, never migrated: no staging contract in this slice
+- WebView2 figures come from a development workstation and include deliberate CDP settling waits; they are not render latencies
+- R-T30-1 strict clippy still red, unchanged. R-T30-3 corpus-memory analyses, R-T30-4 product performance with R8 open, R-T30-6 test-only legacy_store debt: all still open. R-T30-5 unchanged
+- R-T30-2 addressed within its synthetic scope only, awaiting independent control
+
 X5: 36
 MAIN_UNCHANGED: yes
+TASK_STATUS: IMPLEMENTED
+DECISION_STATUS: APPROVED
 
-COMMIT: 50d7651 (closure); this RESULT is a separate following report commit
+COMMIT: de60ef1 (code), ee778df (guard, proof harness, WebView2 artifact), 003a567 (docs closure); this RESULT is a separate following commit
 PUSHED: yes
-
-NEXT_ORCHESTRATOR_DECISION:
-- decide/open next V1 tranche; no real data yet
+NEXT: independent control only
