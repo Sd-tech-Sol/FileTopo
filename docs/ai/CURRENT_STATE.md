@@ -1,5 +1,52 @@
 # État courant
 
+## TASK-0034 — passe corrective 2, invalidation tardive et normalisation de requête — IMPLEMENTED — 2026-09-11
+
+- **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Même branche
+  `build/v0.2-a18-v1-find-open`, mêmes `DEC-0031`/`DEC-0033`/`DEC-0034`.
+  Déclenchée par les deux verrous restants trouvés au recontrôle
+  indépendant [`ACTION-0053`](../reviews/ACTION-0053-independent-recontrol.md).
+  Détail : [VALIDATION section BJ](VALIDATION.md).
+- **Verrou 1 :** l'`onChange` du champ de recherche n'invalidait le ticket
+  qu'indirectement, via le `useEffect` suivant qui lance `runSearch()` — une
+  réponse déjà en vol pouvait se résoudre dans la fenêtre entre l'événement
+  et cet effet, et publier sous le nouveau texte saisi. **Correction :**
+  invalidation synchrone, dans la même pile d'appel que l'action qui change
+  l'intention — nouveau `updateSearchQuery()` câblé à l'`onChange`, et le
+  même principe appliqué à `onFocusBrain`, `selectNode` et à la branche de
+  `changeProjection` qui change réellement le cerveau focalisé.
+- **Verrou 2 :** le backend normalise la requête (`trim()` + 200 caractères)
+  avant de remplir `SearchPage.query`; le coordinateur comparait la réponse
+  à la chaîne brute du champ, rejetant à tort une requête légitime avec
+  espaces de bord ou dépassant la borne. **Correction :** nouvelle fonction
+  pure `canonicalizeSearchQuery()` (même sémantique trim + 200 points de
+  code Unicode que le backend), appliquée avant l'IPC/le coordinateur;
+  l'affichage du champ reste la valeur brute.
+- **Identité complète :** `offset` ajouté aux champs vérifiés par
+  `runCoordinatedSearch`, en plus de `brainId`/`query`/révision.
+- **Preuves :** 10 tests déterministes ajoutés (18 au total dans
+  `searchCoordinator.test.ts`) — invalidation avant lancement de la
+  recherche suivante (requête et cerveau), rejet d'offset incorrect,
+  câblage des quatre points d'invalidation synchrone et de la
+  canonicalisation, `canonicalizeSearchQuery` (espaces de bord, troncature
+  à 200, points de code hors plan de base). Rejeu WebView2 complet sans
+  régression sur un nouvel arbre `REAL_ROOT` de 5 206 éléments, artefact
+  identique octet pour octet au précédent.
+- **Validations :** TypeScript **312 PASS** (302 + 10); Rust **344 PASS**,
+  inchangé (aucun fichier Rust touché par cette passe); `pnpm check`,
+  `pnpm build`, `cargo build --offline`, `git diff --check` verts. Clippy/fmt
+  Rust non rejoués : aucune ligne Rust modifiée, état antérieur (rouge à 26
+  erreurs préexistantes) inchangé par construction.
+- **Non testé / limite assumée :** portée volontairement étroite, ni IPC
+  Rust ni `Index::query_nodes()` ni frontière Explorer touchés. Le rejeu
+  WebView2 reste une vérification de non-régression en conditions réelles,
+  pas une preuve adversariale — cette autorité reste la suite TypeScript
+  déterministe.
+- **Aucune donnée personnelle**, comme toujours. **X5 inchangé**,
+  `origin/main` inchangé. Aucune `TASK-0035`, aucune nouvelle DEC, aucune
+  PR, fusion, étiquette ni release.
+- **Action unique suivante : nouveau contrôle indépendant de `TASK-0034`.**
+
 ## TASK-0034 — passe corrective, réponse de recherche obsolète — IMPLEMENTED — 2026-09-10
 
 - **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Même branche

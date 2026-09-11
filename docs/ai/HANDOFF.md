@@ -1,6 +1,80 @@
 # HANDOFF — passage de relais
 
-## Relais actuel — TASK-0034, passe corrective livrée, en attente de contrôle — 2026-09-10
+## Relais actuel — TASK-0034, passe corrective 2 livrée, en attente de contrôle — 2026-09-11
+
+- **Ce qui vient d'être fait :** le recontrôle indépendant
+  [`ACTION-0053`](../reviews/ACTION-0053-independent-recontrol.md) a
+  confirmé que `SearchCoordinator` (passe précédente) fermait bien la
+  course une fois qu'une nouvelle recherche avait effectivement commencé,
+  mais a trouvé deux verrous plus fins dans son câblage : l'invalidation
+  n'arrivait qu'au prochain `useEffect`, pas au moment de l'événement; et
+  la comparaison d'identité utilisait la requête brute, pas la forme que le
+  backend normalise. Cette passe corrige les deux, sur la même branche
+  `build/v0.2-a18-v1-find-open`. `TASK-0034` reste `IMPLEMENTED`, jamais
+  auto-`VERIFIED`. Aucune nouvelle DEC.
+- **Le geste central :** appeler `searchCoordinator.invalidate()`
+  **synchrone, dans la même pile d'appel que l'action qui change
+  l'intention** — jamais seulement depuis l'effet React qui en réagit sur
+  un rendu ultérieur. Concrètement : un nouveau `updateSearchQuery(value)`
+  câblé à l'`onChange` du champ (invalide puis `setSearchQuery`, dans cet
+  ordre), et la même invalidation ajoutée à `onFocusBrain`, `selectNode` et
+  à la branche de `changeProjection` qui change réellement le cerveau
+  focalisé (conditionnelle là, pour ne pas annuler une recherche sans
+  rapport quand cette fonction ne fait que réafficher le cerveau déjà
+  focalisé — le cas d'une activation de résultat de recherche).
+- **Le second geste :** `canonicalizeSearchQuery()`, nouvelle fonction pure
+  dans `searchCoordinator.ts`, applique exactement la même normalisation
+  que le backend (`trim()` + 200 points de code Unicode, via `Array.from`
+  pour ne jamais couper une paire de substituts en deux) à la requête
+  **avant** qu'elle devienne l'identité vérifiée — le champ affiché à
+  l'écran reste la valeur brute telle que tapée.
+- **Qui a fait quoi :** Claude Code a écrit la correction et les preuves.
+  **Il ne peut pas rendre le verdict.**
+- **Ce que le prochain relais doit savoir :**
+  - **`searchCoordinator.invalidate()` doit toujours être appelé de façon
+    synchrone, dans le même gestionnaire d'événement ou la même
+    continuation que l'action qui change l'intention de recherche — jamais
+    seulement depuis un `useEffect` qui réagit à l'état résultant.** C'est
+    exactement le verrou 1 qu'`ACTION-0053` a trouvé : un `useEffect`
+    s'exécute sur un rendu ultérieur, après que l'événement soit retourné;
+    une promesse déjà en vol peut se résoudre dans cette fenêtre et tenir
+    encore le ticket le plus récent.
+  - **`searchCoordinator` est déclaré avec les autres refs, près du haut du
+    composant** — pas près de `runSearch` où il vivait avant — précisément
+    pour être utilisable par `onFocusBrain`/`selectNode`/`changeProjection`,
+    définies plus tôt dans le fichier.
+  - **`changeProjection` n'invalide que si le cerveau change réellement**
+    (`current.focusedBrainId !== brainId`). Cette branche est aussi
+    empruntée par l'activation d'un résultat de recherche dans le cerveau
+    déjà focalisé (le cas courant) : y invalider sans condition annulerait
+    une recherche sans rapport avec la navigation en cours.
+  - **Toute requête envoyée au coordinateur/à l'IPC doit passer par
+    `canonicalizeSearchQuery()` d'abord.** Le champ affiché, lui, ne l'est
+    jamais — ne pas confondre les deux valeurs.
+  - `src/map/searchCoordinator.test.ts` porte maintenant 18 tests : les 8
+    de la passe précédente, inchangés, plus 10 nouveaux — invalidation
+    avant lancement de la recherche suivante (requête et cerveau), rejet
+    d'un offset de réponse incorrect, câblage des quatre points
+    d'invalidation synchrone et de la canonicalisation, et
+    `canonicalizeSearchQuery` elle-même (espaces de bord, idempotence,
+    troncature à 200, points de code hors plan de base).
+  - Le rejeu WebView2 (`scripts/task0034-webview2.mjs`/`.ps1`) n'a pas
+    changé et a été rejoué à l'identique — non adversarial, comme la passe
+    précédente : SQLite y est trop rapide pour fiablement fabriquer la
+    course sans ralentir le produit lui-même. Un premier appel via le
+    script `.ps1` d'enveloppe a rendu un code de sortie 1 pour une raison
+    non liée à la preuve; l'exécution directe des deux commandes internes
+    (`python`, puis `node`) a confirmé séparément un code 0 pour chacune et
+    une preuve complète et identique.
+- **Ce qui reste ouvert :** identique à la livraison précédente — `cargo
+  clippy` strict rouge à 26 erreurs, dette inchangée (aucun fichier Rust
+  touché par cette passe). Aucun watcher, aucun incrémental, aucun FTS5,
+  aucune acceptance laptop modeste, aucune copie de chemin absolu, aucune
+  préférence d'écran/icône.
+- **Action unique suivante :** nouveau contrôle indépendant de `TASK-0034`,
+  sur les preuves de cette passe.
+
+## Relais précédent — TASK-0034, passe corrective livrée, en attente de contrôle — 2026-09-10
 
 - **Ce qui vient d'être fait :** le contrôle indépendant
   [`ACTION-0052`](../reviews/ACTION-0052-independent-control.md) a trouvé un

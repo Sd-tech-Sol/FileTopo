@@ -1,6 +1,6 @@
 import { runLifecycle, type LifecycleAction } from "./lifecycle";
 import { prepareScenarioIndex } from "./lifecycle";
-import { runCoordinatedSearch, SearchCoordinator } from "./searchCoordinator";
+import { canonicalizeSearchQuery, runCoordinatedSearch, SearchCoordinator } from "./searchCoordinator";
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CompositionBar from "./CompositionBar";
@@ -322,6 +322,13 @@ export default function MapApp() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchPage, setSearchPage] = useState<SearchPage | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
+  // Declared here — with the other refs, not down by `runSearch` where it
+  // used to live — so `onFocusBrain`, `selectNode` and `changeProjection`
+  // can invalidate a search still in flight the instant focus changes, in
+  // the exact same call stack as that change, rather than waiting on a
+  // `useEffect` reacting to the resulting state on a later render —
+  // `ACTION-0053`.
+  const searchCoordinator = useRef(new SearchCoordinator()).current;
   const [revealBusy, setRevealBusy] = useState(false);
   const [revealError, setRevealError] = useState<string | null>(null);
 
@@ -859,6 +866,11 @@ export default function MapApp() {
     (brainId: string) => {
       const current = composedRef.current;
       if (!current || current.focusedBrainId === brainId) return;
+      // A brain switch changes what "the current search" means — invalidate
+      // synchronously, here, so a response still in flight for the brain
+      // being left can never publish under the newly focused one —
+      // `ACTION-0053`.
+      searchCoordinator.invalidate();
       try {
         const next = focusBrain(current, order, brainId);
         setComposed(next);
@@ -900,6 +912,11 @@ export default function MapApp() {
       });
       const current = composedRef.current;
       if (current?.displayedBrainIds.includes(brainId)) {
+        // Same guard/reason as `onFocusBrain` — only an actual brain switch
+        // invalidates; re-focusing the already-focused brain (e.g. a search
+        // hit activated within it) must not cancel a search that has
+        // nothing to do with this navigation.
+        if (current.focusedBrainId !== brainId) searchCoordinator.invalidate();
         setComposed(focusBrain(current, order, brainId));
         await activate(brainId);
       }
@@ -921,6 +938,9 @@ export default function MapApp() {
       const current = composedRef.current;
       if (!current || current.focusedBrainId === reference.brainId) return;
       if (!current.displayedBrainIds.includes(reference.brainId)) return;
+      // Same reason as `onFocusBrain` — invalidate synchronously here, the
+      // instant this selection moves focus to another brain.
+      searchCoordinator.invalidate();
       setComposed(focusBrain(current, order, reference.brainId));
       void activate(reference.brainId).catch((error) =>
         setStatus(`Cerveau actif non enregistré : ${String(error)}`),
@@ -2003,14 +2023,20 @@ export default function MapApp() {
   const focusedBrainRevision = focusedBrain?.snapshot.indexRevision ?? null;
 
   // `TASK-0034` A — bounded local search, behind the current runtime only.
-  // Corrective pass (`ACTION-0052`): a stale response could otherwise
-  // replace the current one — see `searchCoordinator.ts`. `searchCoordinator`
-  // is the single source of truth for which request is still current; a new
-  // launch here always supersedes whatever was in flight before it.
-  const searchCoordinator = useRef(new SearchCoordinator()).current;
+  // Corrective pass (`ACTION-0052`/`ACTION-0053`): a stale response could
+  // otherwise replace the current one, or a legitimate one be silently
+  // rejected for carrying the backend's own normalized query — see
+  // `searchCoordinator.ts`. `searchCoordinator` (declared above, with the
+  // other refs) is the single source of truth for which request is still
+  // current; a new launch here always supersedes whatever was in flight
+  // before it. The query is canonicalized with the exact same semantics the
+  // backend applies (`trim()` + a 200-codepoint bound) before it becomes the
+  // identity the response is checked against — a query with leading/trailing
+  // spaces, or over that bound, is otherwise indistinguishable from a stale
+  // one once Rust normalizes it back.
   const runSearch = useCallback(
     (brainId: string, query: string, offset: number) =>
-      runCoordinatedSearch<SearchPage>(searchCoordinator, { brainId, query, offset }, {
+      runCoordinatedSearch<SearchPage>(searchCoordinator, { brainId, query: canonicalizeSearchQuery(query), offset }, {
         fetch: (params) => invoke<SearchPage>("map_search_nodes", { ...params, limit: 50 }),
         onLoadingChange: setSearchLoading,
         onPage: setSearchPage,
@@ -2020,6 +2046,20 @@ export default function MapApp() {
         },
         currentRevision: (id) => loadedRef.current.get(id)?.snapshot.indexRevision,
       }),
+    [searchCoordinator],
+  );
+
+  // The field itself changes intent the instant the user types — invalidate
+  // synchronously, in this same event handler, rather than only in the
+  // `useEffect` below that reacts to `searchQuery`. Waiting for that effect
+  // leaves a window, between this event and React's next render, where a
+  // response already in flight for the previous query can still settle and
+  // publish under the new one — `ACTION-0053`'s remaining lock.
+  const updateSearchQuery = useCallback(
+    (value: string) => {
+      searchCoordinator.invalidate();
+      setSearchQuery(value);
+    },
     [searchCoordinator],
   );
 
@@ -2472,7 +2512,7 @@ export default function MapApp() {
                 data-testid="search-input"
                 value={searchQuery}
                 placeholder={t.searchPlaceholder}
-                onChange={(event) => setSearchQuery(event.target.value)}
+                onChange={(event) => updateSearchQuery(event.target.value)}
               />
               <button
                 type="button"

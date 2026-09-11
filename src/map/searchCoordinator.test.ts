@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
 import app from "./MapApp.tsx?raw";
-import { runCoordinatedSearch, SearchCoordinator } from "./searchCoordinator";
+import {
+  canonicalizeSearchQuery,
+  runCoordinatedSearch,
+  SearchCoordinator,
+} from "./searchCoordinator";
 
 interface FakePage {
   brainId: string;
   query: string;
+  offset: number;
   indexRevision: number;
   marker: string;
 }
@@ -38,12 +43,12 @@ describe("TASK-0034 corrective pass (ACTION-0052) — SearchCoordinator", () => 
     const runAB = runCoordinatedSearch(coordinator, { brainId: "brain-a", query: "AB", offset: 0 }, callbacks(second.promise));
 
     // Settle out of order: request 2 (AB) lands before the stale request 1 (A).
-    second.resolve({ brainId: "brain-a", query: "AB", indexRevision: 1, marker: "AB" });
+    second.resolve({ brainId: "brain-a", query: "AB", offset: 0, indexRevision: 1, marker: "AB" });
     await runAB;
-    first.resolve({ brainId: "brain-a", query: "A", indexRevision: 1, marker: "A" });
+    first.resolve({ brainId: "brain-a", query: "A", offset: 0, indexRevision: 1, marker: "A" });
     await runA;
 
-    expect(pages).toEqual([{ brainId: "brain-a", query: "AB", indexRevision: 1, marker: "AB" }]);
+    expect(pages).toEqual([{ brainId: "brain-a", query: "AB", offset: 0, indexRevision: 1, marker: "AB" }]);
   });
 
   it("drops a late response from the previous brain after switching brains mid-search", async () => {
@@ -61,7 +66,7 @@ describe("TASK-0034 corrective pass (ACTION-0052) — SearchCoordinator", () => 
 
     // Brain B becomes focused while brain A's search is still in flight.
     const runOnB = runCoordinatedSearch(coordinator, { brainId: "brain-b", query: "x", offset: 0 }, {
-      fetch: async () => ({ brainId: "brain-b", query: "x", indexRevision: 1, marker: "B" }),
+      fetch: async () => ({ brainId: "brain-b", query: "x", offset: 0, indexRevision: 1, marker: "B" }),
       onLoadingChange: () => {},
       onPage: (page) => pages.push(page),
       onError: () => {},
@@ -69,10 +74,10 @@ describe("TASK-0034 corrective pass (ACTION-0052) — SearchCoordinator", () => 
     });
     await runOnB;
 
-    brainAResponse.resolve({ brainId: "brain-a", query: "x", indexRevision: 1, marker: "A" });
+    brainAResponse.resolve({ brainId: "brain-a", query: "x", offset: 0, indexRevision: 1, marker: "A" });
     await runOnA;
 
-    expect(pages).toEqual([{ brainId: "brain-b", query: "x", indexRevision: 1, marker: "B" }]);
+    expect(pages).toEqual([{ brainId: "brain-b", query: "x", offset: 0, indexRevision: 1, marker: "B" }]);
   });
 
   it("ignores a response that arrives after Clear invalidated its request", async () => {
@@ -90,7 +95,7 @@ describe("TASK-0034 corrective pass (ACTION-0052) — SearchCoordinator", () => 
     });
 
     coordinator.invalidate(); // Clear, fired while the request is still outstanding.
-    response.resolve({ brainId: "brain-a", query: "x", indexRevision: 1, marker: "late" });
+    response.resolve({ brainId: "brain-a", query: "x", offset: 0, indexRevision: 1, marker: "late" });
     await run;
 
     expect(pages).toEqual([]);
@@ -114,11 +119,11 @@ describe("TASK-0034 corrective pass (ACTION-0052) — SearchCoordinator", () => 
     const runFirst = runCoordinatedSearch(coordinator, { brainId: "brain-a", query: "A", offset: 0 }, callbacks(first.promise));
     const runSecond = runCoordinatedSearch(coordinator, { brainId: "brain-a", query: "AB", offset: 0 }, callbacks(second.promise));
 
-    first.resolve({ brainId: "brain-a", query: "A", indexRevision: 1, marker: "A" });
+    first.resolve({ brainId: "brain-a", query: "A", offset: 0, indexRevision: 1, marker: "A" });
     await runFirst;
     expect(loadingStates).toEqual([true, true]); // the stale request never publishes `false`
 
-    second.resolve({ brainId: "brain-a", query: "AB", indexRevision: 1, marker: "AB" });
+    second.resolve({ brainId: "brain-a", query: "AB", offset: 0, indexRevision: 1, marker: "AB" });
     await runSecond;
     expect(loadingStates).toEqual([true, true, false]);
   });
@@ -131,7 +136,7 @@ describe("TASK-0034 corrective pass (ACTION-0052) — SearchCoordinator", () => 
     await runCoordinatedSearch(coordinator, { brainId: "brain-a", query: "x", offset: 0 }, {
       fetch: async () => {
         liveRevision = 2; // a refresh/rebuild advances the revision while the request is in flight
-        return { brainId: "brain-a", query: "x", indexRevision: 1, marker: "stale-revision" };
+        return { brainId: "brain-a", query: "x", offset: 0, indexRevision: 1, marker: "stale-revision" };
       },
       onLoadingChange: () => {},
       onPage: (page) => pages.push(page),
@@ -147,7 +152,22 @@ describe("TASK-0034 corrective pass (ACTION-0052) — SearchCoordinator", () => 
     const pages: FakePage[] = [];
 
     await runCoordinatedSearch(coordinator, { brainId: "brain-a", query: "x", offset: 0 }, {
-      fetch: async () => ({ brainId: "brain-b", query: "x", indexRevision: 1, marker: "wrong-brain" }),
+      fetch: async () => ({ brainId: "brain-b", query: "x", offset: 0, indexRevision: 1, marker: "wrong-brain" }),
+      onLoadingChange: () => {},
+      onPage: (page) => pages.push(page),
+      onError: () => {},
+      currentRevision: () => undefined,
+    });
+
+    expect(pages).toEqual([]);
+  });
+
+  it("drops a response whose offset doesn't match the request it was asked for", async () => {
+    const coordinator = new SearchCoordinator();
+    const pages: FakePage[] = [];
+
+    await runCoordinatedSearch(coordinator, { brainId: "brain-a", query: "x", offset: 50 }, {
+      fetch: async () => ({ brainId: "brain-a", query: "x", offset: 0, indexRevision: 1, marker: "wrong-offset" }),
       onLoadingChange: () => {},
       onPage: (page) => pages.push(page),
       onError: () => {},
@@ -177,9 +197,69 @@ describe("TASK-0034 corrective pass (ACTION-0052) — SearchCoordinator", () => 
     expect(errors).toEqual([]);
   });
 
+  it("invalidates the in-flight request the instant intent changes to a new query, before that query's own search begins", async () => {
+    const coordinator = new SearchCoordinator();
+    const pages: FakePage[] = [];
+    const responseA = deferred<FakePage>();
+
+    const runA = runCoordinatedSearch(coordinator, { brainId: "brain-a", query: "A", offset: 0 }, {
+      fetch: () => responseA.promise,
+      onLoadingChange: () => {},
+      onPage: (page) => pages.push(page),
+      onError: () => {},
+      currentRevision: () => undefined,
+    });
+
+    // The user's keystroke changes intent to "AB" — invalidated right here,
+    // exactly as `MapApp.tsx`'s `updateSearchQuery` does synchronously inside
+    // the `onChange` handler. "AB"'s own search has not been launched yet:
+    // that only happens once the resulting `useEffect` runs, on a later
+    // render.
+    coordinator.invalidate();
+
+    // A's stale response arrives inside that window, before "AB" launches.
+    responseA.resolve({ brainId: "brain-a", query: "A", offset: 0, indexRevision: 1, marker: "A" });
+    await runA;
+    expect(pages).toEqual([]);
+
+    // "AB" now launches, as the effect would, and settles normally.
+    await runCoordinatedSearch(coordinator, { brainId: "brain-a", query: "AB", offset: 0 }, {
+      fetch: async () => ({ brainId: "brain-a", query: "AB", offset: 0, indexRevision: 1, marker: "AB" }),
+      onLoadingChange: () => {},
+      onPage: (page) => pages.push(page),
+      onError: () => {},
+      currentRevision: () => undefined,
+    });
+    expect(pages).toEqual([{ brainId: "brain-a", query: "AB", offset: 0, indexRevision: 1, marker: "AB" }]);
+  });
+
+  it("invalidates the in-flight request the instant focus moves to another brain, before that brain's own search begins", async () => {
+    const coordinator = new SearchCoordinator();
+    const pages: FakePage[] = [];
+    const responseA = deferred<FakePage>();
+
+    const runOnA = runCoordinatedSearch(coordinator, { brainId: "brain-a", query: "x", offset: 0 }, {
+      fetch: () => responseA.promise,
+      onLoadingChange: () => {},
+      onPage: (page) => pages.push(page),
+      onError: () => {},
+      currentRevision: () => undefined,
+    });
+
+    // Focus moves to brain B — invalidated synchronously in `onFocusBrain`
+    // (or `selectNode`/`changeProjection`), before brain B's own search is
+    // launched by the effect reacting to the resulting state change.
+    coordinator.invalidate();
+
+    responseA.resolve({ brainId: "brain-a", query: "x", offset: 0, indexRevision: 1, marker: "A" });
+    await runOnA;
+    expect(pages).toEqual([]);
+  });
+
   it("wires MapApp's search cycle through the coordinator instead of applying responses directly", () => {
     const block = app.slice(app.indexOf("// `TASK-0034` A — bounded local search"), app.indexOf("const goToSearchPage ="));
     expect(block).toContain("runCoordinatedSearch<SearchPage>(searchCoordinator");
+    expect(block).toContain("canonicalizeSearchQuery(query)");
     expect(block).toContain("searchCoordinator.invalidate()");
     expect(block).not.toMatch(/setSearchPage\(page\)/);
 
@@ -188,5 +268,68 @@ describe("TASK-0034 corrective pass (ACTION-0052) — SearchCoordinator", () => 
 
     // The activation-time revision guard stays as a defensive backstop.
     expect(app).toContain("currentRevision !== searchPage.indexRevision");
+  });
+
+  it("invalidates synchronously in the onChange handler, before the query state changes — not only in the effect that reacts to it", () => {
+    const updateSearchQueryBlock = app.slice(
+      app.indexOf("const updateSearchQuery = useCallback("),
+      app.indexOf("// The query text is scoped to whichever brain is focused"),
+    );
+    const invalidateIdx = updateSearchQueryBlock.indexOf("searchCoordinator.invalidate()");
+    const setIdx = updateSearchQueryBlock.indexOf("setSearchQuery(value)");
+    expect(invalidateIdx).toBeGreaterThan(-1);
+    expect(setIdx).toBeGreaterThan(invalidateIdx);
+
+    expect(app).toContain("onChange={(event) => updateSearchQuery(event.target.value)}");
+    expect(app).not.toMatch(/onChange=\{\(event\) => setSearchQuery\(event\.target\.value\)\}/);
+  });
+
+  it("invalidates synchronously wherever focus moves to another brain — onFocusBrain, selectNode, and changeProjection", () => {
+    const onFocusBrainBlock = app.slice(
+      app.indexOf("const onFocusBrain = useCallback("),
+      app.indexOf("const changeProjection = useCallback("),
+    );
+    expect(onFocusBrainBlock).toContain("searchCoordinator.invalidate()");
+
+    const changeProjectionBlock = app.slice(
+      app.indexOf("const changeProjection = useCallback("),
+      app.indexOf("const selectNode = useCallback("),
+    );
+    expect(changeProjectionBlock).toContain("searchCoordinator.invalidate()");
+
+    const selectNodeBlock = app.slice(
+      app.indexOf("const selectNode = useCallback("),
+      app.indexOf("const selectInSelectedBrain = useCallback("),
+    );
+    expect(selectNodeBlock).toContain("searchCoordinator.invalidate()");
+  });
+});
+
+describe("TASK-0034 corrective pass (ACTION-0053) — canonicalizeSearchQuery", () => {
+  it("trims leading and trailing whitespace, matching the backend's trim()", () => {
+    expect(canonicalizeSearchQuery(" rapport ")).toBe("rapport");
+  });
+
+  it("leaves an already-canonical query untouched", () => {
+    expect(canonicalizeSearchQuery("rapport")).toBe("rapport");
+  });
+
+  it("truncates to 200 Unicode codepoints, matching the backend's SEARCH_QUERY_MAX_CHARS bound", () => {
+    const long = "a".repeat(250);
+    const canonical = canonicalizeSearchQuery(long);
+    expect(canonical).toHaveLength(200);
+    expect(canonical).toBe("a".repeat(200));
+  });
+
+  it("counts codepoints, not UTF-16 code units, so an astral character is never split in half", () => {
+    const query = "\u{1F9ED}".repeat(201); // each is a surrogate pair — 402 UTF-16 units
+    const canonical = canonicalizeSearchQuery(query);
+    expect(Array.from(canonical)).toHaveLength(200);
+    expect(canonical).toBe("\u{1F9ED}".repeat(200));
+  });
+
+  it("trims before bounding, same order as the backend", () => {
+    const padded = ` ${"b".repeat(205)} `;
+    expect(canonicalizeSearchQuery(padded)).toBe("b".repeat(200));
   });
 });

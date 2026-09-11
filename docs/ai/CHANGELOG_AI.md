@@ -4741,3 +4741,97 @@ inchangé.
 
 **Action unique suivante :** nouveau contrôle indépendant de `TASK-0034`,
 par une instance distincte de Claude Code, sur les preuves de cette passe.
+
+## 2026-09-11 — TASK-0034 — passe corrective 2, invalidation tardive et normalisation de requête
+
+**Agent :** Claude Code, exécuteur
+**Statut à l'issue :** `IMPLEMENTED`, jamais auto-`VERIFIED`
+
+### Motif
+
+Le recontrôle indépendant `ACTION-0053` a confirmé que `SearchCoordinator`
+fermait la course une fois qu'une nouvelle recherche avait effectivement
+commencé, mais a trouvé deux verrous plus fins dans son câblage :
+
+1. l'`onChange` du champ de recherche n'invalidait le ticket courant
+   qu'indirectement, via le `useEffect` suivant qui lance `runSearch()` —
+   une réponse déjà en vol pouvait se résoudre dans la fenêtre entre
+   l'événement et cet effet, et publier sous le nouveau texte saisi;
+2. le backend normalise la requête (`trim()` + 200 caractères) avant de
+   remplir `SearchPage.query`, alors que le coordinateur comparait cette
+   valeur à la chaîne brute du champ, rejetant à tort une requête légitime
+   avec espaces de bord ou dépassant la borne.
+
+### Fait
+
+**Verrou 1 — invalidation synchrone, au point même du changement
+d'intention.** `searchCoordinator` (le ref) est déplacé plus haut dans
+`MapApp.tsx`, avec les autres refs, pour être disponible à `onFocusBrain`,
+`selectNode` et `changeProjection`. Nouveau `updateSearchQuery(value)` —
+`searchCoordinator.invalidate()` puis `setSearchQuery(value)`, dans cet
+ordre, synchrone dans le même gestionnaire — câblé à l'`onChange` du champ
+à la place de `setSearchQuery` direct. Même invalidation ajoutée à
+`onFocusBrain` (après le garde « même cerveau, ne rien faire ») et à la
+branche de `selectNode` qui change le focus vers un autre cerveau affiché.
+`changeProjection` gagne une invalidation **conditionnelle** —
+`if (current.focusedBrainId !== brainId) searchCoordinator.invalidate();`
+— parce que sa branche `setComposed(focusBrain(...))` est aussi empruntée
+par l'activation d'un résultat de recherche dans le cerveau **déjà**
+focalisé, où invalider sans condition aurait annulé une recherche sans
+rapport avec cette navigation.
+
+**Verrou 2 — canonicalisation de la requête avant l'identité.** Nouvelle
+fonction pure `canonicalizeSearchQuery(query)` dans
+`searchCoordinator.ts` : `Array.from(query.trim()).slice(0,
+SEARCH_QUERY_MAX_CHARS).join("")`, avec `SEARCH_QUERY_MAX_CHARS = 200`
+exporté et documenté comme lié à la constante Rust homonyme dans
+`commands.rs`. `Array.from` plutôt qu'un `.slice` sur la chaîne brute :
+itère par point de code Unicode comme le `.chars()` Rust, pour qu'un
+caractère hors plan de base ne soit jamais coupé en deux. `runSearch`
+applique cette fonction à la requête avant de construire `params.query`;
+le champ affiché à l'écran reste la valeur brute telle que tapée.
+
+**Identité complète.** `offset` ajouté à `SearchResponseIdentity` et
+vérifié par `runCoordinatedSearch`, en plus de `brainId`/`query`/révision —
+défense en profondeur sur un champ que `SearchPage` publiait déjà.
+
+**Preuves déterministes :** 10 tests ajoutés (18 au total dans
+`searchCoordinator.test.ts`) — invalidation avant lancement de la
+recherche suivante pour un changement de requête et pour un changement de
+cerveau, rejet d'un offset de réponse incorrect, câblage des quatre
+points d'invalidation synchrone et de la canonicalisation dans
+`MapApp.tsx`, et `canonicalizeSearchQuery` elle-même (espaces de bord,
+idempotence, troncature à 200, points de code hors plan de base jamais
+coupés, ordre trim-puis-troncature). Les huit preuves de la passe
+précédente restent inchangées et vertes.
+
+Rejeu **WebView2 réel** complet, sans régression, sur un nouvel arbre
+`REAL_ROOT` de 5 206 éléments (`task0034-seed-proof.py`, inchangé),
+confirmé par exécution directe des deux commandes internes (`python` puis
+`node`) avec capture séparée de leurs codes de sortie — `PYTHON_EXIT=0`,
+`NODE_EXIT=0` — après qu'un premier appel via le script `.ps1` d'enveloppe
+a rendu un code de sortie 1 pour une raison non liée à la preuve elle-même.
+Artefact `docs/performance/runs/TASK-0034-webview2.json` réécrit,
+identique octet pour octet au fichier déjà commité.
+
+TypeScript **312 PASS** (302 + 10). Rust **344 PASS**, inchangé — aucun
+fichier Rust touché. `pnpm check`, `pnpm build`, `cargo build --offline`,
+`git diff --check` verts. Clippy/fmt Rust non rejoués : aucune ligne Rust
+modifiée, état antérieur (rouge à 26 erreurs préexistantes) inchangé par
+construction.
+
+### Non fait, et limites
+
+Portée volontairement étroite : ni la surface IPC Rust, ni
+`Index::query_nodes()`, ni la frontière Explorer n'ont été touchés — aucun
+défaut n'y a été démontré par cette passe. Le rejeu WebView2 reste une
+vérification de non-régression en conditions réelles, pas une preuve
+adversariale — cette autorité reste la suite déterministe TypeScript.
+Aucune donnée personnelle. `X5` inchangé; aucune `TASK-0035`, aucune
+nouvelle DEC, aucune PR, fusion, étiquette ni release; `origin/main`
+inchangé.
+
+### Suite
+
+**Action unique suivante :** nouveau contrôle indépendant de `TASK-0034`,
+par une instance distincte de Claude Code, sur les preuves de cette passe.

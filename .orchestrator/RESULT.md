@@ -1,101 +1,110 @@
-TASK_ID: TASK-0034 — V1 Find & Open — passe corrective (stale search responses)
+TASK_ID: TASK-0034 — V1 Find & Open — passe corrective 2 (late invalidation, query normalization)
 AGENT: CLAUDE
 RESULT: DONE
 BRANCH: build/v0.2-a18-v1-find-open
-GO: .orchestrator/NEXT_PROMPT.md, on top of e873008 (which carries ACTION-0052)
+GO: .orchestrator/NEXT_PROMPT.md, on top of 6781666 (which carries ACTION-0053)
 
 SUMMARY:
-- Fixed the one blocking defect ACTION-0052 found: `MapApp.tsx::runSearch()`
-  applied any async search response as soon as it returned, with no ticket
-  and no identity check. A stale response (rapid typing, a brain switch, a
-  Clear, or a revision change) could replace the current search or clear
-  `searchLoading` behind a newer, still in-flight request. The revision
-  guard at activation only protected against a stale *revision*, not two
-  different requests/brains sharing the same one.
-- Fix is a pure, monotone-ticket coordinator, on the same principle as the
-  existing `projectionRequest` ref. No IPC surface, `Index::query_nodes()`,
-  or Explorer boundary touched — no defect was found there, so none was
-  changed.
+- ACTION-0053 confirmed `SearchCoordinator` closes the race once a new
+  search has actually begun, but found two finer locks in its wiring:
+  (1) invalidation only happened from the `useEffect` reacting to state,
+  never synchronously in the event that changed intent; (2) the coordinator
+  compared the raw field value to the backend's normalized `SearchPage.query`
+  (`trim()` + 200 chars), silently dropping legitimate queries with
+  leading/trailing spaces or over that bound.
+- Both closed without touching Rust IPC, `Index::query_nodes()`, or the
+  Explorer boundary — no defect was demonstrated there.
 
-STALENESS MECHANISM:
-- New file `src/map/searchCoordinator.ts` (no React/Tauri import — a pure,
-  independently testable primitive):
-  - `SearchCoordinator`: a private ticket counter. `begin()` takes the next
-    ticket and immediately supersedes whatever was outstanding; `invalidate()`
-    supersedes without starting a new request (the empty-query branch and
-    Clear, neither of which ever calls `runSearch`); `isCurrent(ticket)`
-    reports whether that ticket is still the latest.
-  - `runCoordinatedSearch(coordinator, params, callbacks)`: begins a ticket,
-    calls `callbacks.fetch(params)`, and on settlement only calls `onPage`
-    if (a) the ticket is still current, (b) the response's `brainId`/`query`
-    match what was asked, and (c) its `indexRevision` matches
-    `callbacks.currentRevision(brainId)` when that's known. `onLoadingChange
-    (false)` in `finally` is gated on (a) alone, so a superseded request can
-    never re-open the loading flag a newer one already closed. Errors are
-    dropped the same way as a stale page (no `onError` from a superseded
-    request).
-- `MapApp.tsx::runSearch` now delegates entirely to
-  `runCoordinatedSearch<SearchPage>(searchCoordinator, {...}, {...})`; the
-  fetch callback is the same `invoke("map_search_nodes", ...)` as before,
-  `currentRevision` reads `loadedRef.current.get(id)?.snapshot.indexRevision`.
-  The empty-query branch of the search effect and `clearSearch()` both now
-  call `searchCoordinator.invalidate()` before clearing state, since neither
-  ever calls `runSearch` and so nothing else would supersede a request still
-  in flight when the field empties. `activateSearchHit()`'s existing revision
-  guard is UNCHANGED — kept as the defensive backstop it already was, never
-  the primary guard (that's now inside `runCoordinatedSearch`, before any
-  publish).
-- No new DTO, no new store, no new dependency: `SearchPage` already carried
-  `brainId`/`query`/`indexRevision`, which is all three checks need.
+LOCK 1 — SYNCHRONOUS INVALIDATION AT THE POINT INTENT CHANGES:
+- `searchCoordinator` (the ref) moved up in `MapApp.tsx`, next to the other
+  refs, so it's in scope for `onFocusBrain`/`selectNode`/`changeProjection`,
+  defined earlier in the file than its old declaration site allowed.
+- New `updateSearchQuery(value)`: calls `searchCoordinator.invalidate()`
+  then `setSearchQuery(value)`, synchronously, in the same call stack as the
+  `onChange` event — not the `useEffect` that reacts to `searchQuery`
+  afterward. The input's `onChange` now calls this instead of
+  `setSearchQuery` directly.
+- `onFocusBrain`: `searchCoordinator.invalidate()` right after the
+  "same brain, no-op" guard, before any state change.
+- `selectNode`: same invalidation in its branch that moves focus to another
+  already-displayed brain.
+- `changeProjection`: **conditional** invalidation —
+  `if (current.focusedBrainId !== brainId) searchCoordinator.invalidate();`
+  — right before `setComposed(focusBrain(...))`. Unconditional would have
+  been wrong: this same branch also runs when `activateSearchHit()`
+  activates a hit inside the brain that's already focused (the common case,
+  search being scoped to the focused brain); invalidating there would
+  cancel an unrelated in-flight search on every hit activation.
+- `clearSearch()` and the empty-query branch of the search effect already
+  invalidated synchronously (prior pass) — unchanged.
+- Principle: `invalidate()` is a plain JS counter, independent of React's
+  render/effect scheduling. Calling it directly, in the same call stack as
+  the user action, closes the window regardless of how React happens to
+  schedule what follows — waiting for an effect reopens exactly that race.
 
-PROOFS — deterministic (src/map/searchCoordinator.test.ts, 8 tests, no
-WebView, no SQLite, promises resolved by hand via a `deferred<T>()` helper):
-- reversed-order settlement: request "A" then "AB", "AB"'s promise resolved
-  BEFORE "A"'s — only "AB" is published.
-- brain switch mid-search: brain A's search still pending when brain B's
-  search begins and resolves; A's late response never publishes under B.
-- Clear mid-search: `invalidate()` called while a request is outstanding;
-  its late response publishes neither a page nor turns loading off.
-- loading ownership: the stale request's settlement never republishes
-  `loading=false`; only the latest request's settlement does.
-- revision change mid-flight: `currentRevision` advances between the fetch
-  starting and resolving; the page carrying the old revision is dropped.
-- identity mismatch: a response naming a different brainId/query than asked
-  is dropped (defense in depth beyond the ticket alone).
-- error from a superseded request never reaches `onError`.
-- wiring check (same convention as `lifecycle.test.ts`, `MapApp.tsx` read via
-  `?raw`): `runSearch`'s body contains `runCoordinatedSearch<SearchPage>
-  (searchCoordinator`; the empty-query branch and `clearSearch` both contain
-  `searchCoordinator.invalidate()`; no direct `setSearchPage(page)` remains;
-  the activation-time revision guard text is still present unchanged.
+LOCK 2 — QUERY CANONICALIZATION MATCHING THE BACKEND:
+- New pure `canonicalizeSearchQuery(query)` in `searchCoordinator.ts`:
+  `Array.from(query.trim()).slice(0, SEARCH_QUERY_MAX_CHARS).join("")`,
+  `SEARCH_QUERY_MAX_CHARS = 200` exported and documented as tied to the
+  identically-named Rust constant in `commands.rs::search_nodes`.
+  `Array.from` (not a raw `.slice`) counts Unicode codepoints the same way
+  Rust's `.chars()` does, so a surrogate pair is never split.
+- `runSearch` applies this before building `params.query` — the coordinator
+  and the IPC call now speak the same canonical form the backend echoes
+  back. The visible input field state stays the raw, as-typed value; only
+  the identity sent onward is canonicalized.
 
-PROOFS — WebView2 replay (scripts/task0034-webview2.mjs, same REAL_ROOT
-5,206-entry tree from task0034-seed-proof.py, unchanged):
-- Full non-regression replay of every TASK-0034 assertion: 5,206 nodes
-  indexed; needle confirmed outside the ordinary projection; real-typed
-  search exact and bounded (DOM and a direct invoke agree); empty query
-  shows no results panel; activation loads a new projection with correct
-  selection; a real refresh advances the revision (1→2) and the UI
-  auto-reloads rather than keeping a stale page; `map_reveal_node` spawn
-  succeeds on a synthetic target; no absolute-path leak; 0 fatal console
-  errors.
-- Two SHORT scenarios added, non-adversarial (real SQLite here is far too
-  fast to reliably outrun without slowing the product itself, which this
-  corrective pass was told not to do just to fabricate a race — the
-  deterministic TS suite above is the authority for the reversed-order
-  case):
-  - rapid typing (half the needle name, then the rest with no wait in
-    between) settles on the FULL query's result, never the partial one.
-  - clicking "Effacer" immediately after typing, before waiting on any
-    response, wins even once that in-flight response later arrives — field
-    stays empty, no results panel reappears.
-- Artifact updated: docs/performance/runs/TASK-0034-webview2.json.
+IDENTITY COMPLETENESS:
+- `offset` added to `SearchResponseIdentity`; `runCoordinatedSearch` now
+  also rejects a response whose `offset` doesn't match the request's,
+  alongside `brainId`/`query`/revision. `SearchPage.offset` already existed
+  in the product DTO — no new IPC field.
+
+PROOFS — deterministic (src/map/searchCoordinator.test.ts, 18 tests total,
+10 new; no WebView, no SQLite):
+- Invalidates the in-flight request the instant intent changes to a new
+  query, before that query's own search begins (mirrors `updateSearchQuery`
+  calling `invalidate()` synchronously ahead of the effect-launched search).
+- Same for a brain switch, before that brain's own search begins.
+- Drops a response whose offset doesn't match the request.
+- Wiring test extended: `runSearch`'s block also contains
+  `canonicalizeSearchQuery(query)`.
+- New wiring test: `updateSearchQuery`'s body calls `invalidate()` before
+  `setSearchQuery(value)` (textual order), the JSX calls `updateSearchQuery`
+  not raw `setSearchQuery`, and `onFocusBrain`/`changeProjection`/
+  `selectNode` each contain `searchCoordinator.invalidate()`.
+- `canonicalizeSearchQuery`: trims leading/trailing whitespace; idempotent
+  on an already-canonical query; truncates 250 ASCII chars to exactly 200;
+  a 201x-repeated astral emoji (surrogate pair) truncates to exactly 200
+  codepoints, never split; trims before bounding (same order as Rust).
+- The 8 prior-pass tests are unchanged and still pass — the
+  `SearchCoordinator` primitive's own behavior didn't change, only its
+  MapApp wiring and the identity it's checked against.
+
+PROOFS — WebView2 replay (scripts/task0034-webview2.mjs, unchanged, same
+REAL_ROOT 5,206-entry tree from task0034-seed-proof.py):
+- Full non-regression replay, unchanged assertions from the prior pass, all
+  green: 5,206 nodes indexed; needle outside ordinary projection; exact
+  bounded search; rapid typing settles on the full query; Clear right after
+  typing wins over an in-flight response; activation loads a new projection
+  with correct selection; a real refresh advances the revision (1→2) and
+  the UI auto-reloads; `map_reveal_node` spawn succeeds; no absolute-path
+  leak; 0 fatal console errors.
+- Verified by running the two internal commands (`python` seed step, then
+  `node` replay) directly with separately captured exit codes —
+  `PYTHON_EXIT=0`, `NODE_EXIT=0` — after a first invocation through the
+  `.ps1` wrapper script returned exit code 1 for a reason unrelated to the
+  proof itself (the JSON artifact it printed was already the full green
+  result). Artifact `docs/performance/runs/TASK-0034-webview2.json`
+  rewritten, byte-identical to the already-committed file (`git diff`
+  empty) — same exact product behavior, no observable regression in this
+  non-adversarial replay.
 
 VALIDATIONS:
-- TypeScript: vitest run — 302 PASS, 20 files (294 before this pass; +8
+- TypeScript: vitest run — 312 PASS, 20 files (302 before this pass; +10 in
   searchCoordinator.test.ts).
-- Rust: cargo test --offline — 344 PASS, 0 failed, 5 ignored — UNCHANGED,
-  no Rust file touched by this pass.
+- Rust: cargo test --offline — 344 PASS, 0 failed, 5 ignored — UNCHANGED, no
+  Rust file touched by this pass.
 - pnpm check (tsc --noEmit): clean.
 - pnpm build (tsc && vite build): clean.
 - cargo build --offline: clean, same single pre-existing warning as before
@@ -109,15 +118,21 @@ VALIDATIONS:
 CONFIDENTIALITY: no personal brain, no absolute path returned, logged, or
 committed. The REAL_ROOT tree used by the replay is generated fresh by the
 existing seed script and dies with the proof root, as before. No new IPC
-surface, no new frontend capability, no new store.
+surface, no new frontend capability, no new store, no new DTO field beyond
+`offset` (already present on `SearchPage`).
 
 LIMITS / REMAINING DEBT:
-- Scope deliberately narrow: neither the Rust IPC surface, `Index::
-  query_nodes()`, nor the Explorer boundary was touched — no defect was
-  demonstrated there by this pass.
-- The two added WebView2 scenarios are real-conditions non-regression
-  checks, not an adversarial reversed-order proof — that authority stays
-  the deterministic TypeScript suite.
+- Scope deliberately narrow, same as the prior pass: neither the Rust IPC
+  surface, `Index::query_nodes()`, nor the Explorer boundary was touched —
+  no defect was demonstrated there by this pass.
+- `changeProjection` gains a conditional invalidation rather than being left
+  untouched — the only other synchronous site in the file that changes the
+  focused brain; leaving it unguarded would have reopened lock 1 through a
+  path ACTION-0053 didn't name individually but that its general principle
+  covers.
+- The WebView2 replay remains a real-conditions non-regression check, not
+  an adversarial reversed-order proof — that authority stays the
+  deterministic TypeScript suite.
 - Same debt as before this pass: cargo clippy strict red at 26 (pre-
   existing, untouched); no watcher/incremental, no FTS5, no absolute-path
   copy, no screen/icon preferences — all out of TASK-0034's scope, unchanged.

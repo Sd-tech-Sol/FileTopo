@@ -313,3 +313,57 @@ inchangé (aucun fichier Rust touché); `pnpm check`, `pnpm build`,
 Détail complet dans [VALIDATION section BI](../ai/VALIDATION.md).
 `TASK-0034` reste `IMPLEMENTED`, jamais auto-`VERIFIED`; aucune `TASK-0035`;
 action unique suivante : nouveau contrôle indépendant de `TASK-0034`.
+
+## Passe corrective 2 — 2026-09-11 — invalidation tardive et normalisation de requête
+
+Déclenchée par les deux verrous restants du recontrôle indépendant
+[`ACTION-0053`](../reviews/ACTION-0053-independent-recontrol.md) :
+`SearchCoordinator` fermait bien la course une fois qu'une nouvelle
+recherche avait effectivement commencé, mais deux trous plus fins
+subsistaient dans son câblage.
+
+**Verrou 1 — invalidation trop tardive.** L'`onChange` du champ appelait
+seulement `setSearchQuery(...)`; le nouveau ticket n'était pris que dans le
+`useEffect` suivant, qui lance `runSearch()`. Une réponse déjà en vol
+pouvait se résoudre dans cette fenêtre et publier sous le nouveau texte
+saisi. **Correction :** invalider `searchCoordinator` de façon synchrone,
+dans la même pile d'appel que l'événement qui change l'intention — jamais
+seulement dans l'effet qui en réagit. Nouveau `updateSearchQuery(value)`
+(invalide puis met à jour l'état, dans cet ordre) câblé à l'`onChange`; même
+principe appliqué à `onFocusBrain`, `selectNode` et à la branche de
+`changeProjection` qui change réellement le cerveau focalisé (invalidation
+conditionnelle là où le déclencheur peut aussi être une activation dans le
+cerveau déjà focalisé, pour ne pas annuler une recherche sans rapport).
+
+**Verrou 2 — requête brute comparée à la réponse normalisée.** Le backend
+normalise avec `trim()` + 200 caractères avant de remplir `SearchPage.query`;
+le coordinateur comparait la réponse à la chaîne brute du champ, rejetant à
+tort une requête légitime avec espaces de bord ou dépassant la borne.
+**Correction :** nouvelle fonction pure `canonicalizeSearchQuery()` dans
+`searchCoordinator.ts` (trim, puis troncature à 200 points de code Unicode
+via `Array.from`, documentée comme liée à `SEARCH_QUERY_MAX_CHARS` côté
+Rust), appliquée à la requête avant qu'elle devienne `params.query` — le
+champ affiché à l'écran reste la valeur brute telle que tapée.
+
+**Identité complète :** `offset` ajouté à `SearchResponseIdentity` et vérifié
+par `runCoordinatedSearch`, en plus de `brainId`/`query`/révision — défense
+en profondeur sur un champ que `SearchPage` publiait déjà.
+
+**Preuves :** 10 tests déterministes ajoutés (18 au total dans
+`searchCoordinator.test.ts`) — invalidation avant lancement de la recherche
+suivante pour un changement de requête et pour un changement de cerveau,
+rejet d'un offset de réponse incorrect, câblage de `updateSearchQuery`/
+`onFocusBrain`/`selectNode`/`changeProjection`/`runSearch`, et
+`canonicalizeSearchQuery` (espaces de bord, idempotence, troncature à 200,
+points de code hors plan de base jamais coupés, ordre trim-puis-troncature).
+Rejeu WebView2 complet rejoué sans régression sur un nouvel arbre
+`REAL_ROOT` de 5 206 éléments, artefact identique octet pour octet au
+précédent.
+
+**Validations :** TypeScript **312 PASS** (302 + 10); Rust **344 PASS**,
+inchangé (aucun fichier Rust touché); `pnpm check`, `pnpm build`,
+`cargo build --offline`, `git diff --check` verts.
+
+Détail complet dans [VALIDATION section BJ](../ai/VALIDATION.md).
+`TASK-0034` reste `IMPLEMENTED`, jamais auto-`VERIFIED`; aucune `TASK-0035`;
+action unique suivante : nouveau contrôle indépendant de `TASK-0034`.

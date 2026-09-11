@@ -5277,3 +5277,192 @@ fusion, étiquette ni release.
 
 **Action unique suivante :** nouveau contrôle indépendant de `TASK-0034`,
 sur les preuves de cette passe.
+
+## BJ. TASK-0034 — passe corrective 2, invalidation tardive et normalisation de requête — 2026-09-11
+
+**Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Même branche
+`build/v0.2-a18-v1-find-open`, mêmes `DEC-0031`/`DEC-0033`/`DEC-0034`,
+inchangées. Exécuteur : Claude Code. Déclenchée par les deux verrous
+restants trouvés au recontrôle indépendant
+[`ACTION-0053`](../reviews/ACTION-0053-independent-recontrol.md) : `BI`
+avait fermé la course centrale une fois qu'une nouvelle recherche avait
+effectivement commencé, mais pas le câblage qui décide **quand** elle
+commence.
+
+### BJ.1 Verrou 1 — invalidation trop tardive au changement d'intention
+
+`SearchCoordinator` (`BI.2`) est correct : le seul défaut restant était que
+`MapApp.tsx` n'appelait `searchCoordinator.invalidate()`/`begin()` que
+depuis un `useEffect` réagissant à `searchQuery`/`focusedBrainId`, jamais
+depuis l'événement lui-même. Un `useEffect` s'exécute après le rendu suivant
+de React — sur un rendu ultérieur, pas dans la même pile d'appel que
+l'événement. Une promesse déjà en vol peut se résoudre dans cette fenêtre et
+tenir encore le ticket le plus récent au moment où elle le fait, exactement
+le scénario qu'`ACTION-0053` a démontré pour la saisie, et par le même
+principe pour un changement de cerveau.
+
+**Correction : invalider de façon synchrone, dans la même pile d'appel que
+l'action qui change l'intention — jamais seulement dans l'effet qui en
+réagit.**
+
+- `searchCoordinator` (le ref `useRef(new SearchCoordinator()).current`) est
+  déplacé plus haut dans `MapApp.tsx`, avec les autres refs, pour être
+  disponible à `onFocusBrain`, `selectNode` et `changeProjection` — définies
+  plus tôt dans le corps du composant que l'ancien site de déclaration ne le
+  permettait pas syntaxiquement pour un appel direct sans fermeture tardive.
+- Nouveau `updateSearchQuery(value)` : appelle
+  `searchCoordinator.invalidate()` **puis** `setSearchQuery(value)`,
+  synchrone, dans le même appel que l'événement. L'`onChange` du champ
+  appelle désormais `updateSearchQuery(event.target.value)` au lieu de
+  `setSearchQuery(event.target.value)` directement.
+- `onFocusBrain` : `searchCoordinator.invalidate()` juste après le garde
+  « même cerveau, ne rien faire », avant tout changement d'état — un
+  changement de focus réel invalide toujours une recherche en vol sur le
+  cerveau quitté.
+- `selectNode` : même invalidation, au même point relatif, dans sa branche
+  qui change le focus vers un autre cerveau déjà affiché.
+- `changeProjection` : invalidation **conditionnelle** —
+  `if (current.focusedBrainId !== brainId) searchCoordinator.invalidate();`
+  juste avant `setComposed(focusBrain(...))`. La condition est nécessaire :
+  cette branche est aussi empruntée quand `activateSearchHit()` active un
+  résultat **dans le cerveau déjà focalisé** (le cas courant, la recherche
+  étant scopée au cerveau focalisé) — y invalider sans condition aurait
+  annulé une navigation sans rapport avec un changement d'intention de
+  recherche, une régression que rien dans `ACTION-0053` ne demandait.
+- `clearSearch()` et la branche requête-vide de l'effet de recherche
+  invalidaient déjà de façon synchrone (`BI.2`) — inchangés.
+
+Le principe retenu : `SearchCoordinator.invalidate()` est un compteur JS
+simple, indépendant de l'ordonnancement de rendu/effet de React. L'appeler
+directement, dans la pile d'appel de l'événement qui change l'intention,
+ferme la fenêtre quelle que soit la façon dont React planifie la suite —
+alors qu'attendre un effet réintroduit exactement la course.
+
+### BJ.2 Verrou 2 — requête brute comparée à la réponse normalisée
+
+`search_nodes()` (`commands.rs`) normalise avec
+`query.trim().chars().take(SEARCH_QUERY_MAX_CHARS)` (200) avant de remplir
+`SearchPage.query`. Le coordinateur comparait `page.query` à `params.query`
+**brut**, venu tel quel du champ : une requête légitime avec espaces de bord
+ou dépassant 200 caractères était donc rejetée comme périmée, alors que Rust
+l'avait correctement traitée.
+
+**Correction : canoniser la requête avant qu'elle devienne `params.query`**
+(option retenue plutôt que comparer après coup contre une forme calculée
+séparément — un seul endroit décide de la forme canonique).
+
+- `canonicalizeSearchQuery(query)`, nouvelle fonction pure dans
+  `searchCoordinator.ts` : `Array.from(query.trim()).slice(0,
+  SEARCH_QUERY_MAX_CHARS).join("")`. `Array.from` plutôt que `.slice` sur la
+  chaîne brute : il itère par point de code Unicode, comme le `.chars()`
+  Rust, plutôt que par unité UTF-16 — un caractère hors plan de base
+  (paire de substituts) n'est donc jamais coupé en deux, contrairement à ce
+  qu'un `.slice(0, 200)` naïf aurait pu faire.
+- `SEARCH_QUERY_MAX_CHARS = 200` exporté, avec un commentaire documentant
+  explicitement le lien vers la constante Rust homonyme dans
+  `commands.rs` — exigé par `NEXT_PROMPT.md` §2.
+- `runSearch` (`MapApp.tsx`) appelle
+  `canonicalizeSearchQuery(query)` avant de construire `params.query`; le
+  reste de `runCoordinatedSearch` (comparaison stricte à `page.query`) est
+  inchangé — les deux côtés parlent maintenant de la même forme.
+- Le champ de saisie affiché (`searchQuery`, état React) reste la valeur
+  **brute** telle que tapée : seule la requête envoyée à l'IPC/au
+  coordinateur est canonisée, jamais ce que la personne voit dans le champ.
+
+### BJ.3 Identité complète — offset ajouté
+
+`SearchResponseIdentity` gagne `offset: number`; `runCoordinatedSearch`
+rejette désormais aussi une réponse dont `page.offset !== params.offset`,
+en plus de `brainId`/`query`/révision. `SearchPage.offset` existait déjà
+dans le DTO produit (`BH.A`) — aucun nouveau champ IPC. Défense en
+profondeur plutôt que redondance déjà couverte par le ticket seul : le
+ticket protège contre une réponse **temporellement** périmée, ce contrôle
+protège en plus contre une réponse qui, à ticket égal, porterait une page
+d'un autre offset que celui demandé (deux clics de pagination rapprochés,
+par exemple).
+
+### BJ.4 Preuves déterministes ajoutées — `searchCoordinator.test.ts`
+
+Dix nouveaux tests (18 au total, contre 8 en `BI.3`), toujours sans WebView
+ni SQLite :
+
+| Preuve | Ce qui est établi |
+|---|---|
+| `invalidates the in-flight request the instant intent changes to a new query, before that query's own search begins` | `invalidate()` appelé directement (simulant `updateSearchQuery`) **avant** que la recherche « AB » ne soit lancée; « A » se résout ensuite : rien n'est publié; « AB », lancée après, publie normalement — `NEXT_PROMPT.md` §4.1 |
+| `invalidates the in-flight request the instant focus moves to another brain, before that brain's own search begins` | Même schéma pour un changement de cerveau — §4.2/4.5 |
+| `drops a response whose offset doesn't match the request it was asked for` | Nouveau contrôle d'offset, isolé des autres champs d'identité |
+| `wires MapApp's search cycle...` (étendu) | Vérifie en plus `canonicalizeSearchQuery(query)` dans le bloc de `runSearch` |
+| `invalidates synchronously in the onChange handler, before the query state changes...` | Câblage : dans `updateSearchQuery`, `invalidate()` précède textuellement `setSearchQuery(value)`; le JSX appelle `updateSearchQuery`, plus `setSearchQuery` directement |
+| `invalidates synchronously wherever focus moves to another brain...` | Câblage : `onFocusBrain`, `changeProjection` et `selectNode` contiennent chacun `searchCoordinator.invalidate()` |
+| `trims leading and trailing whitespace...` | `canonicalizeSearchQuery(" rapport ") === "rapport"` |
+| `leaves an already-canonical query untouched` | Idempotence sur une requête déjà propre |
+| `truncates to 200 Unicode codepoints...` | 250 caractères ASCII → exactement 200 |
+| `counts codepoints, not UTF-16 code units...` | 201 répétitions d'un émoji (paire de substituts) → exactement 200 points de code, jamais coupé en deux |
+| `trims before bounding, same order as the backend` | Ordre trim-puis-troncature identique à Rust, avec espaces au-delà de la 200ᵉ position |
+
+Les huit preuves de `BI.3` restent inchangées et vertes (résolution
+inversée, changement de cerveau en vol au niveau primitif, `Effacer` en
+vol, révision en vol, identité brain/query, erreur supersédée — la primitive
+`SearchCoordinator` elle-même n'a pas changé de comportement, seul son
+câblage dans `MapApp.tsx` et l'identité vérifiée se sont étendus).
+
+### BJ.5 Rejeu WebView2 — non-régression
+
+`scripts/task0034-webview2.mjs`/`.ps1` rejoués sans modification sur un
+nouvel arbre `REAL_ROOT` de 5 206 éléments (même générateur
+`task0034-seed-proof.py`). Vérifié explicitement par exécution directe des
+deux commandes internes (`python`/`node`) avec capture séparée de leurs
+codes de sortie — `PYTHON_EXIT=0`, `NODE_EXIT=0` — après qu'un premier appel
+via le script `.ps1` d'enveloppe s'est terminé en code 1 pour une raison
+non liée à la preuve elle-même (à investiguer si elle se reproduit; le
+contenu de la preuve, lui, est identique et complet dans les deux cas).
+Artefact `docs/performance/runs/TASK-0034-webview2.json` réécrit,
+**identique octet pour octet** au fichier déjà commité (`git diff` vide) :
+même comportement produit exact, aucune régression perceptible dans ce
+rejeu non adversarial.
+
+Résultat complet, inchangé par rapport à `BI.4`/`BH.5` : 5 206 nœuds
+indexés, cible confirmée hors projection ordinaire, recherche exacte et
+bornée (DOM et DTO concordants), frappe rapide résolue sur la requête
+complète, `Effacer` juste après une frappe gagnant sur une réponse encore
+en vol, activation vers une nouvelle projection avec sélection correcte,
+refresh réel faisant avancer la révision (1 → 2) republiée automatiquement,
+`map_reveal_node` sur cible synthétique avec spawn réussi, aucune fuite de
+chemin absolu, **0 erreur console fatale**.
+
+Ce rejeu reste, comme en `BI.4`, une vérification de non-régression en
+conditions réelles — SQLite y est trop rapide pour fiablement fabriquer la
+course adversariale sans ralentir le produit lui-même, ce que cette passe
+s'interdit de faire. L'autorité de l'ordre inversé et de l'invalidation
+avant lancement reste `BJ.4`, en TypeScript déterministe.
+
+### BJ.6 Validations
+
+TypeScript **312 PASS** (302 avant, +10 dans `searchCoordinator.test.ts`).
+Rust **344 PASS**, inchangé — aucun fichier Rust touché par cette passe.
+`pnpm check`, `pnpm build`, `git diff --check` verts. `cargo build
+--offline` vert, même avertissement préexistant unique
+(`SUGGESTION_STATES` mort dans `relations.rs`), inchangé. `cargo fmt`/Clippy
+Rust non rejoués : aucune ligne Rust modifiée; l'état `BH.6` (rouge à 26
+erreurs préexistantes) est inchangé par construction.
+
+### BJ.7 Non fait, et limites
+
+Portée volontairement étroite, comme `BI` : ni la surface IPC Rust, ni
+`Index::query_nodes()`, ni la frontière Explorer n'ont été touchés — aucun
+défaut n'y a été démontré par cette passe. `changeProjection` gagne une
+invalidation conditionnelle (`BJ.1`) plutôt que la retirer entièrement de
+la portée « frontend/coordination seulement » du prompt : c'est le seul
+autre point synchrone du fichier qui change le cerveau focalisé, et le
+laisser sans garde aurait rouvert exactement le verrou 1 par un chemin que
+`ACTION-0053` n'énumérait pas nommément mais que son principe général
+couvre.
+
+**Réserves :** inchangées par rapport à `BI`/`BH` — `R-T30-1` (clippy
+strict rouge), `R-T30-3`, `R-T30-4`, `R-T30-6`, `R8` ouvertes; `R-T30-5`
+traitée uniquement dans la portée `REAL_ROOT` de test. **X5 inchangé**;
+`origin/main` inchangé. Aucune `TASK-0035`, aucune nouvelle DEC, aucune PR,
+fusion, étiquette ni release.
+
+**Action unique suivante :** nouveau contrôle indépendant de `TASK-0034`,
+sur les preuves de cette passe.

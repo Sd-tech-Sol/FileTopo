@@ -1,14 +1,25 @@
 # Action suivante
 
-## TASK-0034 — seconde passe corrective ciblée
+## Contrôle indépendant de TASK-0034 (passe corrective 2)
 
 `TASK-0034 — V1 Find & Open` reste `IMPLEMENTED`, **pas encore `VERIFIED`**.
 
-Le premier correctif d'`ACTION-0052` a bien ajouté un coordinateur à ticket monotone et fermé la majorité des courses asynchrones. Le recontrôle indépendant `ACTION-0053` conserve toutefois deux verrous précis :
+La passe corrective 2, écrite dans `.orchestrator/NEXT_PROMPT.md` et livrée
+le 2026-09-11, ferme les deux verrous restants trouvés par
+[`ACTION-0053`](../reviews/ACTION-0053-independent-recontrol.md) :
+l'invalidation de `searchCoordinator` est désormais synchrone, dans la même
+pile d'appel que l'action qui change l'intention de recherche (saisie,
+`Effacer`, changement de cerveau), au lieu de dépendre du `useEffect`
+suivant; et la requête envoyée au coordinateur/à l'IPC est canonicalisée
+(`trim()` + 200 points de code Unicode) avec exactement la même sémantique
+que le backend avant d'être comparée à la réponse. `offset` est ajouté à
+l'identité vérifiée. Détail complet dans
+[VALIDATION section BJ](VALIDATION.md).
 
-1. pour une requête non vide, l'invalidation actuelle n'arrive qu'au prochain `useEffect` qui lance `runSearch()`. L'`onChange` du champ fait d'abord seulement `setSearchQuery(...)`; une ancienne réponse peut donc encore se résoudre dans cette courte fenêtre et publier une page avant que le nouveau ticket existe;
-2. le backend normalise la requête (`trim()` + maximum 200 caractères) avant de remplir `SearchPage.query`, alors que le coordinateur compare cette valeur à la chaîne frontend brute. Une requête légitime avec espaces de bord ou >200 caractères peut donc être rejetée par le garde d'identité alors que Rust l'a correctement traitée.
-
-Action unique suivante : exécuter la seconde passe corrective écrite dans `.orchestrator/NEXT_PROMPT.md` sur `build/v0.2-a18-v1-find-open`.
-
-La passe doit rester strictement frontend/coordination sauf nécessité démontrée : invalidation dès le changement d'intention, normalisation compatible avec le backend, identité de page complète (incluant l'offset si possible), tests déterministes puis rejeu WebView2 de non-régression. Aucune `TASK-0035` avant fermeture de ce verrou.
+Action unique suivante : nouveau contrôle indépendant de `TASK-0034`, par
+une instance distincte de l'exécuteur, sur les preuves de cette passe —
+notamment que l'invalidation synchrone couvre bien les points nommés par
+`ACTION-0053` (saisie et changement de cerveau) sans avoir réintroduit de
+régression sur une navigation sans rapport avec la recherche (le garde
+conditionnel de `changeProjection`). Aucune `TASK-0035` avant fermeture de
+ce verrou.
