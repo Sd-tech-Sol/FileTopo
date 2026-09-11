@@ -87,12 +87,7 @@ impl Index {
             )?;
         }
         self.migrate_to_bounded_hierarchy()?;
-        self.migrate_to_stable_identity()?;
-        self.connection.execute_batch(&format!(
-            "PRAGMA user_version={SCHEMA_VERSION};
-             INSERT OR REPLACE INTO schema_meta(key, value)
-             VALUES ('schema_version', '{SCHEMA_VERSION}');",
-        ))
+        self.migrate_to_stable_identity()
     }
 
     /// Schema `2 → 3` — `DEC-0030 §E`. Idempotent, and safe on a populated
@@ -158,7 +153,56 @@ impl Index {
         Ok(())
     }
 
-    /// Schema `3 → 4` — `TASK-0036`, `DEC-0009` I-E.
+    /// Schema `3 → 4` — `TASK-0036`, `DEC-0009` I-E. Called unconditionally by
+    /// [`initialize`](Self::initialize) (idempotent: a no-op the instant the
+    /// file is already at [`SCHEMA_VERSION`]).
+    ///
+    /// Corrected by `ACTION-0057` D2: the first delivery ran the two
+    /// `ALTER TABLE`s, the unique index and `next_node_id`'s bootstrap as
+    /// separate autocommit statements, then let `initialize` write
+    /// `PRAGMA user_version`/`schema_version` in a **later, separate**
+    /// statement — so a crash between any two of those steps could leave a
+    /// half-widened `nodes` table still claiming `user_version = 3`. The
+    /// whole transition now runs inside one transaction and commits once, via
+    /// [`Self::run_stable_identity_migration`]: any failure rolls the
+    /// connection back to the exact v3 file it started from, verified by
+    /// `migration_v3_to_v4_rolls_back_completely_on_injected_failure`.
+    fn migrate_to_stable_identity(&self) -> Result<()> {
+        let version: i64 = self
+            .connection
+            .query_row("PRAGMA user_version", [], |row| row.get(0))?;
+        if version >= SCHEMA_VERSION {
+            return Ok(());
+        }
+        self.run_stable_identity_migration()
+    }
+
+    /// The product-reachable `v3 → v4` upgrade — `ACTION-0057` D1.
+    ///
+    /// Unlike [`migrate_to_stable_identity`](Self::migrate_to_stable_identity),
+    /// which [`initialize`](Self::initialize) runs unconditionally and which
+    /// therefore has to tolerate a fresh, empty or already-current file, this
+    /// entry point is reached only through `BrainIndex::open_existing_migrating`
+    /// — after the caller has already verified the file's `brain_id` and
+    /// source binding against the catalogue — and refuses anything that is
+    /// not **exactly** [`SCHEMA_VERSION`] `- 1`: no chain of intermediate
+    /// versions, no guess for an older or newer schema, never a migration run
+    /// backward. The migration itself is the same atomic transaction either
+    /// way; see [`Self::run_stable_identity_migration`].
+    pub(crate) fn migrate_previous_schema(&self) -> MigrationResult<()> {
+        let version: i64 = self
+            .connection
+            .query_row("PRAGMA user_version", [], |row| row.get(0))?;
+        if version != SCHEMA_VERSION - 1 {
+            return Err(MigrationError::UnsupportedVersion {
+                actual: version,
+                expected: SCHEMA_VERSION - 1,
+            });
+        }
+        Ok(self.run_stable_identity_migration()?)
+    }
+
+    /// The atomic body of the `3 → 4` transition — `ACTION-0057` D2.
     ///
     /// Two ordinary (non-generated) nullable columns, so an existing row is
     /// never rewritten and never loses a field: the migration only widens the
@@ -171,33 +215,45 @@ impl Index {
     /// `next_node_id` is bootstrapped from the current maximum `id` — `0` on
     /// an empty table — so the durable counter [`read_next_node_id`] reads
     /// can never collide with an id a pre-migration row still holds.
-    fn migrate_to_stable_identity(&self) -> Result<()> {
-        let mut missing = self
-            .connection
-            .prepare("SELECT COUNT(*) FROM pragma_table_info('nodes') WHERE name = ?1")?;
-        for column in ["stable_key", "identity_provenance"] {
-            let present: i64 = missing.query_row([column], |row| row.get(0))?;
-            if present == 0 {
-                self.connection
-                    .execute(&format!("ALTER TABLE nodes ADD COLUMN {column} TEXT"), [])?;
+    ///
+    /// `PRAGMA user_version`/`schema_meta.schema_version` are written **last,
+    /// inside this same transaction**: on any earlier failure the connection
+    /// rolls back to `unchecked_transaction`'s default (rollback on drop
+    /// without an explicit commit), so the file is never left claiming a
+    /// version it has not actually reached.
+    fn run_stable_identity_migration(&self) -> Result<()> {
+        let transaction = self.connection.unchecked_transaction()?;
+        {
+            let mut missing = transaction
+                .prepare("SELECT COUNT(*) FROM pragma_table_info('nodes') WHERE name = ?1")?;
+            for column in ["stable_key", "identity_provenance"] {
+                let present: i64 = missing.query_row([column], |row| row.get(0))?;
+                if present == 0 {
+                    transaction
+                        .execute(&format!("ALTER TABLE nodes ADD COLUMN {column} TEXT"), [])?;
+                }
             }
         }
-        drop(missing);
 
         // Defence in depth: even if the application-level collision check in
         // `publish` were ever bypassed, two active rows cannot silently share
         // a stable key. `WHERE stable_key IS NOT NULL` keeps a still-NULL
         // pre-migration row (or a brand-new empty table) from ever tripping it.
-        self.connection.execute_batch(
+        transaction.execute_batch(
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_nodes_stable_key
                  ON nodes(stable_key) WHERE stable_key IS NOT NULL;",
         )?;
-        self.connection.execute(
+        transaction.execute(
             "INSERT OR IGNORE INTO schema_meta(key, value)
                  SELECT 'next_node_id', CAST(COALESCE(MAX(id), 0) + 1 AS TEXT) FROM nodes",
             [],
         )?;
-        Ok(())
+        transaction.execute_batch(&format!(
+            "PRAGMA user_version={SCHEMA_VERSION};
+             INSERT OR REPLACE INTO schema_meta(key, value)
+             VALUES ('schema_version', '{SCHEMA_VERSION}');",
+        ))?;
+        transaction.commit()
     }
 
     pub fn replace_nodes(&mut self, nodes: &[NodeDto]) -> Result<()> {
@@ -219,8 +275,11 @@ impl Index {
         match self.publish(nodes, None, metadata, diagnostics) {
             Ok(_) => Ok(()),
             Err(PublishError::Sqlite(error)) => Err(error),
-            Err(PublishError::IdentityCollision) => {
-                unreachable!("a collision can only be detected when identities are supplied")
+            Err(PublishError::IdentityCollision | PublishError::IdentityNotBijective) => {
+                unreachable!(
+                    "identities are only checked for a collision or a bijection \
+                     when identities are supplied"
+                )
             }
         }
     }
@@ -308,12 +367,14 @@ impl Index {
         match identities {
             None => {
                 for node in nodes {
-                    let key = identity::path_fallback_key(&node.relative_path, node.kind);
+                    let key =
+                        identity::path_fallback_key(Path::new(&node.relative_path), node.kind);
                     row_identity.insert(node.id, (key, IdentityProvenance::PathFallback.as_str()));
                 }
             }
             Some(list) => {
                 let mut seen_in_scan = HashMap::<&str, i64>::with_capacity(list.len());
+                let mut identity_node_ids = HashSet::<i64>::with_capacity(list.len());
                 for candidate in list {
                     if seen_in_scan
                         .insert(candidate.stable_key.as_str(), candidate.node_id)
@@ -321,6 +382,26 @@ impl Index {
                     {
                         return Err(PublishError::IdentityCollision);
                     }
+                    // `ACTION-0057` §4 — a duplicate `node_id` within
+                    // `identities` is refused explicitly here, before it
+                    // could otherwise silently overwrite an earlier remap
+                    // entry a few lines below.
+                    if !identity_node_ids.insert(candidate.node_id) {
+                        return Err(PublishError::IdentityNotBijective);
+                    }
+                }
+                // The public precondition documented on
+                // `publish_with_identity` — "every `identities` entry must
+                // name the `node_id` of some node in `nodes`, one to one" —
+                // was unverified: a missing or unknown `node_id` could reach
+                // the `row_identity.get(&canonical_id).expect(...)` below,
+                // a real, input-reachable panic rather than a refusal. The
+                // real scanner pipeline always produces a bijection, but
+                // this function is `pub(crate)` and must not trust a future
+                // caller to preserve that by construction.
+                let node_ids = nodes.iter().map(|node| node.id).collect::<HashSet<_>>();
+                if node_ids.len() != nodes.len() || identity_node_ids != node_ids {
+                    return Err(PublishError::IdentityNotBijective);
                 }
                 let mut next_id = read_next_node_id(&self.connection)?;
                 for candidate in list {
@@ -440,16 +521,38 @@ impl Index {
 /// defence-in-depth backstop and would surface here too, as an ordinary
 /// constraint violation, if the application-level check below it were ever
 /// bypassed); `IdentityCollision` is the explicit, pre-transaction refusal
-/// `TASK-0036` C requires.
+/// `TASK-0036` C requires. `IdentityNotBijective` — `ACTION-0057` §4 — is the
+/// explicit, pre-transaction refusal of a caller that violated
+/// `publish_with_identity`'s documented precondition: an `identities` entry
+/// missing for some node, naming an unknown `node_id`, or repeating a
+/// `node_id`. The real scanner pipeline never produces this; the check exists
+/// so a future caller's bug becomes a named refusal instead of a panic.
 #[derive(Debug, thiserror::Error)]
 pub(crate) enum PublishError {
     #[error(transparent)]
     Sqlite(#[from] rusqlite::Error),
     #[error("identity_collision: duplicate stable key refused")]
     IdentityCollision,
+    #[error("identity_not_bijective: identities must name each published node exactly once")]
+    IdentityNotBijective,
 }
 
 pub(crate) type PublishResult<T> = std::result::Result<T, PublishError>;
+
+/// A refusal from [`Index::migrate_previous_schema`] — `ACTION-0057` D1. The
+/// guard exists because [`Index::run_stable_identity_migration`] stamps
+/// `user_version = SCHEMA_VERSION` unconditionally at the end of its
+/// transaction: calling it on anything but exactly the migratable previous
+/// version would silently relabel an unrelated schema as current.
+#[derive(Debug, thiserror::Error)]
+pub(crate) enum MigrationError {
+    #[error("schema {actual} is not the migratable previous version {expected}")]
+    UnsupportedVersion { actual: i64, expected: i64 },
+    #[error(transparent)]
+    Sqlite(#[from] rusqlite::Error),
+}
+
+pub(crate) type MigrationResult<T> = std::result::Result<T, MigrationError>;
 
 /// How many published nodes reused a previous canonical id versus received a
 /// fresh one — diagnostic only, never serialized to the frontend.
@@ -949,6 +1052,136 @@ mod tests {
             .expect("publish after migration");
     }
 
+    /// `ACTION-0057` D2 — the `3 → 4` transition commits once or not at all.
+    ///
+    /// The obstruction is a real schema object, not a test-only hook: a
+    /// `TABLE` named `idx_nodes_stable_key` blocks
+    /// `CREATE UNIQUE INDEX IF NOT EXISTS idx_nodes_stable_key ...`, because
+    /// `IF NOT EXISTS` only tolerates an existing *index* of that name, never
+    /// an object of a different kind. Both `ALTER TABLE`s run and succeed
+    /// **before** that statement, so this proves a failure genuinely **after**
+    /// schema mutation has begun rolls back completely — not merely a refusal
+    /// before anything happened.
+    #[test]
+    fn migration_v3_to_v4_rolls_back_completely_on_injected_failure() {
+        use rusqlite::OptionalExtension;
+        let temp = tempfile::tempdir().expect("tempdir");
+        let path = temp.path().join("legacy-v3-obstructed.sqlite");
+        {
+            let legacy = Connection::open(&path).expect("legacy");
+            legacy.execute_batch(SCHEMA_V3).expect("v3 schema");
+            legacy
+                .execute_batch("CREATE TABLE idx_nodes_stable_key (blocker INTEGER);")
+                .expect("obstruction");
+        }
+
+        let open_error = Index::open(&path)
+            .err()
+            .expect("the obstructed migration must fail");
+        assert!(
+            matches!(open_error, rusqlite::Error::SqliteFailure(_, _)),
+            "expected a genuine SQL failure from the collision, got {open_error:?}"
+        );
+
+        // The whole transaction rolled back: version, schema shape, data,
+        // `seen`, `index_id` and `index_revision` are all exactly the v3
+        // fixture, byte for byte in every column that matters.
+        let reopened = Connection::open(&path).expect("reopen the untouched v3 file");
+        let version: i64 = reopened
+            .query_row("PRAGMA user_version", [], |row| row.get(0))
+            .expect("version");
+        assert_eq!(
+            version, 3,
+            "a failed migration must leave user_version at 3"
+        );
+
+        for column in ["stable_key", "identity_provenance"] {
+            let present: i64 = reopened
+                .query_row(
+                    "SELECT COUNT(*) FROM pragma_table_info('nodes') WHERE name = ?1",
+                    [column],
+                    |row| row.get(0),
+                )
+                .expect("column probe");
+            assert_eq!(
+                present, 0,
+                "the {column} column must not exist after a rolled-back migration"
+            );
+        }
+        let next_node_id: Option<String> = reopened
+            .query_row(
+                "SELECT value FROM schema_meta WHERE key = 'next_node_id'",
+                [],
+                |row| row.get(0),
+            )
+            .optional()
+            .expect("next_node_id probe");
+        assert_eq!(
+            next_node_id, None,
+            "next_node_id must not have been bootstrapped by a rolled-back migration"
+        );
+        let schema_version_meta: String = reopened
+            .query_row(
+                "SELECT value FROM schema_meta WHERE key = 'schema_version'",
+                [],
+                |row| row.get(0),
+            )
+            .expect("schema_version meta");
+        assert_eq!(schema_version_meta, "3");
+
+        let node_count: i64 = reopened
+            .query_row("SELECT COUNT(*) FROM nodes", [], |row| row.get(0))
+            .expect("node count");
+        assert_eq!(
+            node_count, 3,
+            "no node may be lost by a rolled-back migration"
+        );
+        let alpha_seen: bool = reopened
+            .query_row("SELECT seen FROM nodes WHERE id = 2", [], |row| row.get(0))
+            .expect("alpha seen");
+        assert!(
+            alpha_seen,
+            "seen must survive a rolled-back migration verbatim"
+        );
+        let index_id: String = reopened
+            .query_row(
+                "SELECT value FROM schema_meta WHERE key = 'index_id'",
+                [],
+                |row| row.get(0),
+            )
+            .expect("index_id");
+        assert_eq!(index_id, "11111111-1111-1111-1111-111111111111");
+        let index_revision: String = reopened
+            .query_row(
+                "SELECT value FROM schema_meta WHERE key = 'index_revision'",
+                [],
+                |row| row.get(0),
+            )
+            .expect("index_revision");
+        assert_eq!(index_revision, "5");
+        drop(reopened);
+
+        // Remove the obstruction: the same file migrates correctly afterwards,
+        // exactly as `migrating_from_schema_three_...` proves for a clean v3
+        // file — the rollback did not leave the file permanently stuck.
+        {
+            let unblock = Connection::open(&path).expect("unblock");
+            unblock
+                .execute_batch("DROP TABLE idx_nodes_stable_key;")
+                .expect("remove obstruction");
+        }
+        let migrated = Index::open(&path).expect("migration now succeeds");
+        let version: i64 = migrated
+            .connection
+            .query_row("PRAGMA user_version", [], |row| row.get(0))
+            .expect("version");
+        assert_eq!(version, SCHEMA_VERSION);
+        assert_eq!(migrated.list_nodes(100, 0).expect("nodes").len(), 3);
+        let identity = migrated.identity().expect("identity");
+        assert_eq!(identity.index_id, "11111111-1111-1111-1111-111111111111");
+        assert_eq!(identity.revision, 5);
+    }
+
     fn node(
         id: i64,
         parent: Option<i64>,
@@ -1222,6 +1455,65 @@ mod tests {
         );
     }
 
+    /// `ACTION-0057` §4 — the caller-side bijection `publish_with_identity`
+    /// documents as a precondition is now checked, not merely assumed.
+    /// Before this, a missing entry could reach an internal `.expect()` and
+    /// panic rather than return a refusal.
+    #[test]
+    fn publish_with_identity_refuses_a_missing_identity_instead_of_panicking() {
+        let mut index = Index::in_memory().expect("index");
+        let scan = vec![
+            node(1, None, "root", "", NodeKind::Root, 1),
+            node(2, Some(1), "a.txt", "a.txt", NodeKind::File, 0),
+        ];
+        // Only the root has an identity; `a.txt` (node 2) has none.
+        let identities = vec![identity_input(1, "SYS1:root", IdentityProvenance::System)];
+        let error = index
+            .publish_with_identity(&scan, &identities, &[], &[])
+            .expect_err("a missing identity must be refused, not panic");
+        assert!(matches!(error, PublishError::IdentityNotBijective));
+        // Nothing was published: the in-memory index still has no rows.
+        assert_eq!(index.list_nodes(10, 0).expect("nodes").len(), 0);
+    }
+
+    #[test]
+    fn publish_with_identity_refuses_an_identity_for_an_unknown_node_id() {
+        let mut index = Index::in_memory().expect("index");
+        let scan = vec![node(1, None, "root", "", NodeKind::Root, 0)];
+        let identities = vec![
+            identity_input(1, "SYS1:root", IdentityProvenance::System),
+            // Node 99 does not exist in `scan` at all.
+            identity_input(99, "SYS1:phantom", IdentityProvenance::System),
+        ];
+        let error = index
+            .publish_with_identity(&scan, &identities, &[], &[])
+            .expect_err("an identity for an unknown node_id must be refused");
+        assert!(matches!(error, PublishError::IdentityNotBijective));
+        assert_eq!(index.list_nodes(10, 0).expect("nodes").len(), 0);
+    }
+
+    #[test]
+    fn publish_with_identity_refuses_a_duplicated_node_id_in_the_identity_list() {
+        let mut index = Index::in_memory().expect("index");
+        let scan = vec![
+            node(1, None, "root", "", NodeKind::Root, 1),
+            node(2, Some(1), "a.txt", "a.txt", NodeKind::File, 0),
+        ];
+        // Node 2 is named twice, under two DIFFERENT stable keys — a
+        // duplicate `node_id`, not a duplicate stable key, so the earlier
+        // collision check alone would not have caught it.
+        let identities = vec![
+            identity_input(1, "SYS1:root", IdentityProvenance::System),
+            identity_input(2, "SYS1:a-first", IdentityProvenance::System),
+            identity_input(2, "SYS1:a-second", IdentityProvenance::System),
+        ];
+        let error = index
+            .publish_with_identity(&scan, &identities, &[], &[])
+            .expect_err("a duplicated node_id must be refused");
+        assert!(matches!(error, PublishError::IdentityNotBijective));
+        assert_eq!(index.list_nodes(10, 0).expect("nodes").len(), 0);
+    }
+
     #[test]
     fn publish_with_identity_carries_seen_by_matched_id_even_when_the_path_changes() {
         let mut index = Index::in_memory().expect("index");
@@ -1276,7 +1568,7 @@ mod tests {
             identity_input(1, "PFv1:root", IdentityProvenance::PathFallback),
             identity_input(
                 2,
-                &identity::path_fallback_key("avant.txt", NodeKind::File),
+                &identity::path_fallback_key(Path::new("avant.txt"), NodeKind::File),
                 IdentityProvenance::PathFallback,
             ),
         ];
@@ -1293,7 +1585,7 @@ mod tests {
             identity_input(1, "PFv1:root", IdentityProvenance::PathFallback),
             identity_input(
                 9,
-                &identity::path_fallback_key("apres.txt", NodeKind::File),
+                &identity::path_fallback_key(Path::new("apres.txt"), NodeKind::File),
                 IdentityProvenance::PathFallback,
             ),
         ];
@@ -1335,7 +1627,7 @@ mod tests {
         assert_eq!(
             index.identity_of(2).expect("meta"),
             Some((
-                identity::path_fallback_key("a.txt", NodeKind::File),
+                identity::path_fallback_key(Path::new("a.txt"), NodeKind::File),
                 IdentityProvenance::PathFallback
             ))
         );

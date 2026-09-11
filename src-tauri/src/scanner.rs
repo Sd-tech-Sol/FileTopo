@@ -84,7 +84,7 @@ pub fn scan_tree_controlled(
     }];
     let (root_stable_key, root_provenance) = identity::compute_identity(
         root,
-        "",
+        Path::new(""),
         NodeKind::Root,
         root_reparse_point,
         root_online_only,
@@ -150,13 +150,12 @@ pub fn scan_tree_controlled(
             next_id += 1;
             let relative_display = display_relative(&relative);
             let online_only = is_online_only(&metadata);
-            let (stable_key, provenance) = identity::compute_identity(
-                &entry.path(),
-                &relative_display,
-                kind,
-                reparse,
-                online_only,
-            );
+            // `ACTION-0057` D3: the identity is computed from the raw `Path`
+            // the scanner just walked, never from `relative_display` — that
+            // string has already been through `to_string_lossy()` and can
+            // fold two distinct raw paths onto the same text.
+            let (stable_key, provenance) =
+                identity::compute_identity(&entry.path(), &relative, kind, reparse, online_only);
             identities.push(NodeIdentity {
                 node_id: id,
                 stable_key,

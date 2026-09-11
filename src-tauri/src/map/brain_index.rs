@@ -1,5 +1,5 @@
 //! Brain metadata and operations over the one canonical Index. No node table or layout cache.
-use super::brains::SourceKind;
+use super::brains::{BrainRecord, SourceKind};
 use super::layout::{LAYOUT_ALGORITHM, Rect};
 use super::store::{MapNode, MapSnapshot, NodeDetail};
 use super::{MapError, fnv1a64};
@@ -56,6 +56,13 @@ impl BrainIndex {
         })
     }
     /// Opens only an existing canonical schema. No CREATE, migration or source access.
+    ///
+    /// Strictly `MAP_SCHEMA_VERSION`-only, deliberately never widened by
+    /// `ACTION-0057` D1: the product's one migratable path is
+    /// [`Self::open_existing_migrating`], reached through
+    /// `map::commands::open_for_brain`. `DEC-0011` — "une version de schéma
+    /// inconnue et plus récente doit provoquer un refus" — applies here
+    /// unconditionally.
     pub fn open_existing(path: &Path, writable: bool) -> Result<Self, MapError> {
         let flags = if writable {
             rusqlite::OpenFlags::SQLITE_OPEN_READ_WRITE
@@ -68,6 +75,108 @@ impl BrainIndex {
         if version != super::store::MAP_SCHEMA_VERSION {
             return Err(MapError::IndexIncompatible(format!("schema {version}")));
         }
+        Self::finish_open_existing(connection)
+    }
+
+    /// The schema version stamped in a file's header, read without any other
+    /// check or side effect — `ACTION-0057` D1's cheap first look, so a
+    /// caller can decide whether [`Self::open_existing_migrating`] might
+    /// apply before opening the file a second time for real. Never resolves,
+    /// scans or reads a source; the connection this opens is closed again
+    /// immediately.
+    pub fn peek_schema_version(path: &Path) -> Result<i64, MapError> {
+        let connection = rusqlite::Connection::open_with_flags(
+            path,
+            rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
+        )?;
+        Ok(connection.query_row("PRAGMA user_version", [], |r| r.get(0))?)
+    }
+
+    /// Opens an existing canonical index for `brain`, migrating it from the
+    /// immediately previous schema first — but only when that is provably
+    /// safe — `ACTION-0057` D1.
+    ///
+    /// Three schema shapes, and only the narrow middle one does any writing:
+    ///
+    /// * **Current** (`MAP_SCHEMA_VERSION`) — opened exactly as
+    ///   [`Self::open_existing`] always has; nothing below this branch runs.
+    /// * **Immediately previous** (`MAP_PREVIOUS_SCHEMA_VERSION`) — this
+    ///   file's own `brain_id` and [`Self::binding_matches`] are checked
+    ///   against `brain` **first**, before a single schema-altering statement
+    ///   runs and before the source is resolved or read. A mismatch on
+    ///   either is refused — [`MapError::BrainMismatch`] or
+    ///   [`MapError::SourceMismatch`] — and the file is left exactly as it
+    ///   was: not migrated, not deleted, not read for its source. Only once
+    ///   both agree does [`crate::index::Index::migrate_previous_schema`]
+    ///   run, atomically and in application space alone; the now-current
+    ///   connection is then opened exactly like the first case.
+    /// * **Anything else** — older, unknown or newer — refused as
+    ///   [`MapError::IndexIncompatible`], never migrated: `DEC-0011` forbids
+    ///   a backward migration or a migration run on a guess.
+    ///
+    /// `writable` must be `true` for the previous-schema branch to have any
+    /// chance of succeeding — a migration cannot write through a read-only
+    /// connection — so a read-only caller refusing there is not a special
+    /// case, it is simply the schema mismatch it would have hit anyway.
+    pub fn open_existing_migrating(
+        path: &Path,
+        writable: bool,
+        brain: &BrainRecord,
+    ) -> Result<Self, MapError> {
+        let flags = if writable {
+            rusqlite::OpenFlags::SQLITE_OPEN_READ_WRITE
+        } else {
+            rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY
+        };
+        let connection = rusqlite::Connection::open_with_flags(path, flags)?;
+        connection.execute_batch("PRAGMA foreign_keys=ON;")?;
+        let version: i64 = connection.query_row("PRAGMA user_version", [], |r| r.get(0))?;
+        if version == super::store::MAP_SCHEMA_VERSION {
+            return Self::finish_open_existing(connection);
+        }
+        if !writable || version != super::store::MAP_PREVIOUS_SCHEMA_VERSION {
+            return Err(MapError::IndexIncompatible(format!("schema {version}")));
+        }
+
+        let probe = Self {
+            index: Index { connection },
+        };
+        match probe.built_for_brain()? {
+            Some(found) if found == brain.brain_id => {}
+            Some(found) => {
+                return Err(MapError::BrainMismatch {
+                    expected: brain.brain_id.clone(),
+                    found,
+                });
+            }
+            None => {
+                return Err(MapError::BrainMismatch {
+                    expected: brain.brain_id.clone(),
+                    found: format!("index sans cerveau (schema v{version})"),
+                });
+            }
+        }
+        probe.binding_matches(brain)?;
+
+        // Both checks passed: neither `brain_id` nor the source binding
+        // disagrees, and nothing above this line has altered a byte of the
+        // file. Only now does the atomic, source-blind schema migration run.
+        probe.index.migrate_previous_schema().map_err(|error| {
+            use crate::index::MigrationError;
+            match error {
+                MigrationError::Sqlite(sqlite) => MapError::from(sqlite),
+                MigrationError::UnsupportedVersion { actual, .. } => {
+                    MapError::IndexIncompatible(format!("schema {actual}"))
+                }
+            }
+        })?;
+        Self::finish_open_existing(probe.index.connection)
+    }
+
+    /// The tail shared by [`Self::open_existing`] and
+    /// [`Self::open_existing_migrating`] once a connection is known to be at
+    /// `MAP_SCHEMA_VERSION`: the same canonical-contract checks either way.
+    fn finish_open_existing(connection: rusqlite::Connection) -> Result<Self, MapError> {
         let store = Self {
             index: Index { connection },
         };
@@ -81,6 +190,35 @@ impl BrainIndex {
         store.count()?;
         store.root_id()?;
         Ok(store)
+    }
+
+    /// Whether this index's binding — `DEC-0033` D — matches `brain`'s
+    /// current catalogue record; refused otherwise. Shared by
+    /// `commands::check_publishable` (accepting a current-schema legacy
+    /// binding on republish) and [`Self::open_existing_migrating`] (accepting
+    /// the same legacy shape on a previous-schema file before migrating it):
+    /// one rule, written once, so the two callers can never quietly diverge.
+    pub fn binding_matches(&self, brain: &BrainRecord) -> Result<(), MapError> {
+        let refused = || MapError::SourceMismatch {
+            brain_id: brain.brain_id.clone(),
+        };
+        match self.binding()? {
+            IndexBinding::Bound { kind, source_ref } => {
+                if kind != brain.source_kind || source_ref != brain.source_ref {
+                    return Err(refused());
+                }
+            }
+            IndexBinding::Legacy { fixture_id } => {
+                if brain.source_kind != SourceKind::SyntheticFixture {
+                    return Err(refused());
+                }
+                if fixture_id.as_deref() != Some(brain.source_ref.as_str()) {
+                    return Err(refused());
+                }
+            }
+            IndexBinding::Incoherent => return Err(refused()),
+        }
+        Ok(())
     }
     pub fn meta(&self, key: &str) -> Result<Option<String>, MapError> {
         Ok(self
@@ -179,6 +317,7 @@ impl BrainIndex {
             .map_err(|error| match error {
                 crate::index::PublishError::Sqlite(sqlite) => MapError::from(sqlite),
                 crate::index::PublishError::IdentityCollision => MapError::IdentityCollision,
+                crate::index::PublishError::IdentityNotBijective => MapError::IdentityNotBijective,
             })?;
         Ok(())
     }

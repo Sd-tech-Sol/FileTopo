@@ -556,7 +556,19 @@ fn open_for_brain(paths: &SandboxPaths, brain: &BrainRecord) -> Result<BrainInde
     if !database.is_file() {
         return Err(MapError::NotBuilt(brain.brain_id.clone()));
     }
-    let store = BrainIndex::open_existing(&database, false)?;
+    // `ACTION-0057` D1 — a cheap, read-only peek decides whether the file is
+    // the one schema the product ever migrates automatically. Ordinary opens
+    // (the overwhelmingly common case) still go through the unchanged,
+    // strictly-current `open_existing`, read-only exactly as before; only a
+    // file at `MAP_PREVIOUS_SCHEMA_VERSION` takes the writable, checked
+    // migration path.
+    let store = if BrainIndex::peek_schema_version(&database)?
+        == super::store::MAP_PREVIOUS_SCHEMA_VERSION
+    {
+        BrainIndex::open_existing_migrating(&database, true, brain)?
+    } else {
+        BrainIndex::open_existing(&database, false)?
+    };
     match store.built_for_brain()? {
         Some(found) if found == brain.brain_id => Ok(store),
         Some(found) => Err(MapError::BrainMismatch {
@@ -599,27 +611,7 @@ fn open_for_brain(paths: &SandboxPaths, brain: &BrainRecord) -> Result<BrainInde
 /// the source and replaces the corpus wholesale. What it decides is only
 /// whether this file is allowed to become this brain's index again.
 fn check_publishable(paths: &SandboxPaths, brain: &BrainRecord) -> Result<(), MapError> {
-    let store = open_for_brain(paths, brain)?;
-    let refused = || MapError::SourceMismatch {
-        brain_id: brain.brain_id.clone(),
-    };
-    match store.binding()? {
-        IndexBinding::Bound { kind, source_ref } => {
-            if kind != brain.source_kind || source_ref != brain.source_ref {
-                return Err(refused());
-            }
-        }
-        IndexBinding::Legacy { fixture_id } => {
-            if brain.source_kind != SourceKind::SyntheticFixture {
-                return Err(refused());
-            }
-            if fixture_id.as_deref() != Some(brain.source_ref.as_str()) {
-                return Err(refused());
-            }
-        }
-        IndexBinding::Incoherent => return Err(refused()),
-    }
-    Ok(())
+    open_for_brain(paths, brain)?.binding_matches(brain)
 }
 
 /// Temporary metadata input for existing analysis consumers; never an IPC response.

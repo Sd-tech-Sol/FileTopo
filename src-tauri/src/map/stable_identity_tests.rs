@@ -280,3 +280,276 @@ fn store_has_path(paths: &SandboxPaths, brain: &BrainRecord, relative_path: &str
         .expect("resolve")
         .is_some()
 }
+
+// -- `ACTION-0057` D1: the v3 canonical index the product actually upgrades --
+
+/// Reduces a real, product-built **v4** canonical index (however it was
+/// produced — `refresh_map`, `rebuild_map`, does not matter) to exactly the
+/// **v3** shape `TASK-0029` shipped: the two `TASK-0036` columns and their
+/// unique index removed, `next_node_id` forgotten, `schema_version` and
+/// `PRAGMA user_version` rolled back to `3`. Every other row and every other
+/// piece of metadata — `brain_id`, `source_kind`, `source_ref`,
+/// `build_complete`, `projection_contract`, `root_id`, `node_count`,
+/// `index_id`, `index_revision`, every node and its `seen` flag — is left
+/// exactly as the real product wrote it, because it is real product output,
+/// never hand-written SQL pretending to be a schema this program never
+/// produced.
+fn downgrade_to_schema_v3(database: &Path) {
+    let connection = rusqlite::Connection::open(database).expect("open for downgrade");
+    connection
+        .execute_batch(
+            "DROP INDEX IF EXISTS idx_nodes_stable_key;
+             ALTER TABLE nodes DROP COLUMN identity_provenance;
+             ALTER TABLE nodes DROP COLUMN stable_key;
+             DELETE FROM schema_meta WHERE key = 'next_node_id';
+             UPDATE schema_meta SET value = '3' WHERE key = 'schema_version';
+             PRAGMA user_version = 3;",
+        )
+        .expect("downgrade to the v3 shape");
+}
+
+fn raw_schema_version(database: &Path) -> i64 {
+    rusqlite::Connection::open(database)
+        .expect("open for version probe")
+        .query_row("PRAGMA user_version", [], |row| row.get(0))
+        .expect("version")
+}
+
+fn raw_bytes(database: &Path) -> Vec<u8> {
+    fs::read(database).expect("read database bytes")
+}
+
+/// The D1 product-pipeline proof `ACTION-0057` demands in full: a v3
+/// canonical `REAL_ROOT` index, built by the real pipeline and reduced to
+/// exactly the previous schema, becomes usable again through an ordinary
+/// `map_open` — with the migration reaching neither the filesystem source
+/// nor the brain's identity/binding, `index_id`/`index_revision` unchanged by
+/// the migration itself, every node and `seen` intact, a cursor issued
+/// before the downgrade still valid immediately after migration (the
+/// revision has not moved), and a genuine republish afterwards advancing the
+/// revision normally and invalidating that same cursor.
+#[test]
+fn a_real_v3_index_upgrades_through_map_open_without_reading_the_source() {
+    let (temp, paths) = sandbox();
+    let root = temp.path().join("racine-v3");
+    fs::create_dir_all(&root).unwrap();
+    fs::write(root.join("avant.txt"), b"synthetique").unwrap();
+    fs::write(root.join("second.txt"), b"synthetique-2").unwrap();
+
+    let brain = register(&paths, &root);
+    refresh_map(&paths, &brain).expect("first refresh builds a real v4 index");
+    let file_id = id_of(&paths, &brain, "avant.txt");
+    {
+        let store = BrainIndex::open_existing(&paths.brain_map_database(&brain.brain_id), true)
+            .expect("writable store");
+        assert!(store.index.mark_seen(file_id).expect("mark seen"));
+    }
+
+    let database = paths.brain_map_database(&brain.brain_id);
+    let (index_id_before, revision_before, root_id) = {
+        let store = BrainIndex::open_existing(&database, false).expect("read v4 state");
+        let identity = store.index.identity().expect("identity");
+        (
+            identity.index_id,
+            identity.revision,
+            store.root_id().unwrap(),
+        )
+    };
+    // A cursor issued against the real v4 index, before the downgrade — used
+    // below to prove migration alone (revision unchanged) does not
+    // invalidate it, and that only a genuine republication does.
+    let cursor_before_downgrade = {
+        let store = BrainIndex::open_existing(&database, false).expect("read for cursor");
+        store
+            .index
+            .children_page(root_id, 1, None)
+            .expect("first page")
+            .next_cursor
+            .expect("two children under one page of size one must yield a cursor")
+    };
+
+    downgrade_to_schema_v3(&database);
+    assert_eq!(
+        raw_schema_version(&database),
+        3,
+        "the fixture must really be v3"
+    );
+
+    // The product-path migration, triggered by an ordinary open — never a
+    // rebuild, never a manual repair.
+    let report = open_map(&paths, &brain).expect("map_open migrates a compatible v3 index");
+    assert!(
+        !report.source_read,
+        "DEC-0032 A: map_open must never read the source, migration included"
+    );
+    assert_eq!(
+        report.index_id, index_id_before,
+        "the migration must not change index_id"
+    );
+    assert_eq!(
+        report.revision, revision_before,
+        "the migration alone must not advance the revision"
+    );
+    assert_eq!(report.schema_version, crate::map::store::MAP_SCHEMA_VERSION);
+    assert_eq!(
+        raw_schema_version(&database),
+        crate::map::store::MAP_SCHEMA_VERSION
+    );
+
+    // Data and `seen` survived the migration.
+    let store = open_store(&paths, &brain).expect("open after migration");
+    assert_eq!(store.count().unwrap(), 3, "root + two files");
+    let node = store.index.node(file_id).unwrap().unwrap();
+    assert!(node.seen, "seen must survive the schema migration");
+    drop(store);
+
+    // The cursor issued before the downgrade is still valid immediately
+    // after migration: the revision it was bound to has not moved.
+    {
+        let store = open_store(&paths, &brain).expect("open for cursor replay");
+        store
+            .index
+            .children_page(root_id, 1, Some(&cursor_before_downgrade))
+            .expect("a cursor from before an untouched-revision migration must still resolve");
+    }
+
+    // A genuine republish afterwards works normally: it advances the
+    // revision by exactly one, and only now is the old cursor stale.
+    fs::write(root.join("troisieme.txt"), b"synthetique-3").unwrap();
+    let refreshed = refresh_map(&paths, &brain).expect("republish after migration");
+    assert_eq!(
+        refreshed.revision,
+        revision_before + 1,
+        "a real republication advances the revision exactly once"
+    );
+    let stale = open_store(&paths, &brain)
+        .expect("store")
+        .index
+        .children_page(root_id, 1, Some(&cursor_before_downgrade));
+    assert!(
+        stale.is_err(),
+        "the pre-downgrade cursor must become stale only once the revision actually moves"
+    );
+}
+
+/// Refusal 1 — a v3 index whose internal `brain_id` disagrees with the file's
+/// own catalogue slot is refused without migrating, without touching the
+/// source, and without deleting anything. Built the same way
+/// `commands::tests::an_index_built_for_another_brain_is_refused_rather_than_served`
+/// proves the v4 case: a real index copied into a different brain's file
+/// path, not a hand-edited `brain_id`.
+#[test]
+fn a_v3_index_naming_another_brain_is_refused_without_migrating() {
+    let (temp, paths) = sandbox();
+    let root_a = temp.path().join("racine-v3-a");
+    fs::create_dir_all(&root_a).unwrap();
+    fs::write(root_a.join("fichier.txt"), b"synthetique").unwrap();
+    let brain_a = register(&paths, &root_a);
+    refresh_map(&paths, &brain_a).expect("refresh a");
+    let database_a = paths.brain_map_database(&brain_a.brain_id);
+    downgrade_to_schema_v3(&database_a);
+
+    let root_b = temp.path().join("racine-v3-b");
+    fs::create_dir_all(&root_b).unwrap();
+    fs::write(root_b.join("autre.txt"), b"synthetique-b").unwrap();
+    let brain_b = register(&paths, &root_b);
+
+    // Brain A's v3 index, dropped into Brain B's place — the file's own
+    // `brain_id` metadata still names A.
+    let database_b = paths.brain_map_database(&brain_b.brain_id);
+    std::fs::create_dir_all(database_b.parent().expect("map dir")).unwrap();
+    std::fs::copy(&database_a, &database_b).unwrap();
+    let before = raw_bytes(&database_b);
+
+    for outcome in [
+        open_map(&paths, &brain_b).map(|_| ()),
+        refresh_map(&paths, &brain_b).map(|_| ()),
+        rebuild_map(&paths, &brain_b).map(|_| ()),
+    ] {
+        let error = outcome.expect_err("a brain_id mismatch on a v3 file must be refused");
+        assert!(
+            matches!(error, MapError::BrainMismatch { .. }),
+            "expected a brain mismatch, got {error:?}"
+        );
+    }
+    assert_eq!(
+        raw_bytes(&database_b),
+        before,
+        "a refused brain_id must never trigger a migration write"
+    );
+    assert_eq!(raw_schema_version(&database_b), 3);
+}
+
+/// Refusal 2 — a v3 index whose source binding disagrees with the catalogue
+/// is refused without migrating, exactly as the current-schema legacy case
+/// already is.
+#[test]
+fn a_v3_index_with_a_disagreeing_binding_is_refused_without_migrating() {
+    let (temp, paths) = sandbox();
+    let root = temp.path().join("racine-v3-mismatch");
+    fs::create_dir_all(&root).unwrap();
+    fs::write(root.join("fichier.txt"), b"synthetique").unwrap();
+
+    let brain = register(&paths, &root);
+    refresh_map(&paths, &brain).expect("refresh");
+    let database = paths.brain_map_database(&brain.brain_id);
+    downgrade_to_schema_v3(&database);
+    let before = raw_bytes(&database);
+
+    let other_source = BrainRecord {
+        source_ref: uuid::Uuid::new_v4().to_string(),
+        ..brain.clone()
+    };
+    for outcome in [
+        open_map(&paths, &other_source).map(|_| ()),
+        refresh_map(&paths, &other_source).map(|_| ()),
+    ] {
+        outcome.expect_err("a disagreeing source binding on a v3 file must be refused");
+    }
+    assert_eq!(
+        raw_bytes(&database),
+        before,
+        "a refused binding must never trigger a migration write"
+    );
+    assert_eq!(raw_schema_version(&database), 3);
+}
+
+/// Refusal 3 — a schema newer than this build knows is refused, never
+/// migrated backward and never guessed at, whether or not the brain/binding
+/// would otherwise have matched.
+#[test]
+fn a_future_schema_is_refused_and_never_migrated_backward() {
+    let (temp, paths) = sandbox();
+    let root = temp.path().join("racine-futur");
+    fs::create_dir_all(&root).unwrap();
+    fs::write(root.join("fichier.txt"), b"synthetique").unwrap();
+
+    let brain = register(&paths, &root);
+    refresh_map(&paths, &brain).expect("refresh");
+    let database = paths.brain_map_database(&brain.brain_id);
+    {
+        let connection = rusqlite::Connection::open(&database).unwrap();
+        connection
+            .execute_batch("PRAGMA user_version = 5;")
+            .unwrap();
+    }
+    let before = raw_bytes(&database);
+
+    for outcome in [
+        open_map(&paths, &brain).map(|_| ()),
+        refresh_map(&paths, &brain).map(|_| ()),
+        rebuild_map(&paths, &brain).map(|_| ()),
+    ] {
+        let error = outcome.expect_err("an unknown future schema must be refused");
+        assert!(
+            error.to_string().starts_with("map_index_incompatible"),
+            "unexpected motif: {error}"
+        );
+    }
+    assert_eq!(
+        raw_bytes(&database),
+        before,
+        "a refused future schema must never be touched, let alone migrated backward"
+    );
+    assert_eq!(raw_schema_version(&database), 5);
+}

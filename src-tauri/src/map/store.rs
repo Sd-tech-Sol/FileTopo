@@ -7,6 +7,11 @@ use serde::{Deserialize, Serialize};
 /// `Index`'s side and one from `BrainIndex::open_existing`'s compatibility
 /// check. `4` since `TASK-0036` — the durable stable-identity columns.
 pub const MAP_SCHEMA_VERSION: i64 = 4;
+/// The one schema version the product will ever migrate automatically —
+/// `ACTION-0057` D1. `BrainIndex::open_existing_migrating` upgrades exactly
+/// this version in place, after checking the file's `brain_id` and source
+/// binding; anything older, unknown or newer is refused, never guessed at.
+pub const MAP_PREVIOUS_SCHEMA_VERSION: i64 = MAP_SCHEMA_VERSION - 1;
 pub const NON_RECONSTRUCTIBLE_KEYS: [&str; 1] = ["built_unix_ms"];
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

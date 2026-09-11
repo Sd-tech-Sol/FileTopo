@@ -133,6 +133,11 @@ pub enum MapError {
     /// touched and stays exactly as it was, still openable.
     #[error("map_identity_collision: duplicate stable key refused")]
     IdentityCollision,
+    /// `ACTION-0057` §4 — `publish_with_identity`'s documented precondition
+    /// (identities name each published node exactly once) was violated:
+    /// refused before a write transaction opened, never a panic.
+    #[error("map_identity_not_bijective: identities must name each published node exactly once")]
+    IdentityNotBijective,
 }
 
 impl From<MapError> for String {

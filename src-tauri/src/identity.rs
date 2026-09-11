@@ -26,6 +26,7 @@
 //! `crate::index::Index::publish_with_identity`.
 
 use crate::domain::NodeKind;
+use crate::path_codec;
 use std::path::Path;
 
 /// Version tag of the path-fallback algorithm. Bumping it is a migration —
@@ -95,9 +96,27 @@ fn fnv1a64(bytes: &[u8]) -> u64 {
 /// The deterministic, versioned repli of `DEC-0009`: a fingerprint of the raw
 /// relative path and node kind, nothing else. No size, no date, no
 /// resemblance score can ever enter it — and no content is read.
-pub fn path_fallback_key(relative_path: &str, kind: NodeKind) -> String {
-    let mut bytes = Vec::with_capacity(relative_path.len() + 16);
-    bytes.extend_from_slice(relative_path.as_bytes());
+///
+/// Hashed from the **raw OS representation** of `relative` —
+/// [`crate::path_codec::encode_path`], the same lossless codec `DEC-0033` C
+/// already requires for persisting a source path — never from a
+/// `to_string_lossy()` projection. `ACTION-0057` D3: two distinct raw paths
+/// that `to_string_lossy()` would fold to the same `U+FFFD`-repaired string
+/// (an unpaired UTF-16 surrogate on Windows, a non-UTF-8 byte elsewhere) must
+/// not collide here, where the display projection never does.
+///
+/// The encoded path is **length-prefixed** before the node kind is appended,
+/// and the version tag is folded into the hashed material itself, not only
+/// into the returned key's prefix: without an explicit boundary, a raw path
+/// whose trailing bytes happened to read as a kind tag could hash identically
+/// to a shorter path followed by that tag.
+pub fn path_fallback_key(relative: &Path, kind: NodeKind) -> String {
+    let encoded = path_codec::encode_path(relative);
+    let mut bytes = Vec::with_capacity(encoded.len() + 32);
+    bytes.extend_from_slice(PATH_FALLBACK_VERSION.as_bytes());
+    bytes.push(0);
+    bytes.extend_from_slice(&(encoded.len() as u64).to_le_bytes());
+    bytes.extend_from_slice(&encoded);
     bytes.push(0);
     bytes.extend_from_slice(kind.as_str().as_bytes());
     format!("{PATH_FALLBACK_VERSION}:{:016x}", fnv1a64(&bytes))
@@ -117,7 +136,7 @@ fn eligible_for_system_identity(kind: NodeKind, reparse_point: bool, online_only
 /// allows, and always exactly one of them.
 pub fn compute_identity(
     absolute_path: &Path,
-    relative_path: &str,
+    relative: &Path,
     kind: NodeKind,
     reparse_point: bool,
     online_only: bool,
@@ -128,7 +147,7 @@ pub fn compute_identity(
         return (key, IdentityProvenance::System);
     }
     (
-        path_fallback_key(relative_path, kind),
+        path_fallback_key(relative, kind),
         IdentityProvenance::PathFallback,
     )
 }
@@ -201,11 +220,12 @@ fn system_identity_key(_path: &Path) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::path::PathBuf;
 
     #[test]
     fn the_fallback_key_is_deterministic_and_versioned() {
-        let a = path_fallback_key("dossier/fichier.txt", NodeKind::File);
-        let b = path_fallback_key("dossier/fichier.txt", NodeKind::File);
+        let a = path_fallback_key(Path::new("dossier/fichier.txt"), NodeKind::File);
+        let b = path_fallback_key(Path::new("dossier/fichier.txt"), NodeKind::File);
         assert_eq!(
             a, b,
             "the same path and kind must always fold to the same key"
@@ -218,8 +238,8 @@ mod tests {
 
     #[test]
     fn the_fallback_key_changes_with_the_path() {
-        let before = path_fallback_key("dossier/avant.txt", NodeKind::File);
-        let after = path_fallback_key("dossier/apres.txt", NodeKind::File);
+        let before = path_fallback_key(Path::new("dossier/avant.txt"), NodeKind::File);
+        let after = path_fallback_key(Path::new("dossier/apres.txt"), NodeKind::File);
         assert_ne!(
             before, after,
             "a renamed path must not keep the old fallback key"
@@ -228,11 +248,25 @@ mod tests {
 
     #[test]
     fn the_fallback_key_changes_with_the_kind() {
-        let as_file = path_fallback_key("un-nom", NodeKind::File);
-        let as_directory = path_fallback_key("un-nom", NodeKind::Directory);
+        let as_file = path_fallback_key(Path::new("un-nom"), NodeKind::File);
+        let as_directory = path_fallback_key(Path::new("un-nom"), NodeKind::Directory);
         assert_ne!(
             as_file, as_directory,
             "the same relative path must not collide across kinds"
+        );
+    }
+
+    /// `ACTION-0057` D3 — the length-prefix rules out a concatenation
+    /// ambiguity between a raw path and the kind tag appended after it: a
+    /// path ending in bytes that happen to read as `"file"` must not collide
+    /// with a shorter path genuinely followed by that tag.
+    #[test]
+    fn the_fallback_key_has_no_concatenation_ambiguity_between_path_and_kind() {
+        let crafted = path_fallback_key(Path::new("dossier/xfile"), NodeKind::Directory);
+        let shorter = path_fallback_key(Path::new("dossier/x"), NodeKind::File);
+        assert_ne!(
+            crafted, shorter,
+            "a path/kind boundary must never be guessable from concatenated bytes"
         );
     }
 
@@ -242,9 +276,13 @@ mod tests {
         let file = temp.path().join("reel.txt");
         std::fs::write(&file, b"synthetique").expect("write");
 
-        let (key, provenance) = compute_identity(&file, "reel.txt", NodeKind::File, true, false);
+        let (key, provenance) =
+            compute_identity(&file, Path::new("reel.txt"), NodeKind::File, true, false);
         assert_eq!(provenance, IdentityProvenance::PathFallback);
-        assert_eq!(key, path_fallback_key("reel.txt", NodeKind::File));
+        assert_eq!(
+            key,
+            path_fallback_key(Path::new("reel.txt"), NodeKind::File)
+        );
     }
 
     #[test]
@@ -253,9 +291,13 @@ mod tests {
         let file = temp.path().join("nuage.txt");
         std::fs::write(&file, b"synthetique").expect("write");
 
-        let (key, provenance) = compute_identity(&file, "nuage.txt", NodeKind::File, false, true);
+        let (key, provenance) =
+            compute_identity(&file, Path::new("nuage.txt"), NodeKind::File, false, true);
         assert_eq!(provenance, IdentityProvenance::PathFallback);
-        assert_eq!(key, path_fallback_key("nuage.txt", NodeKind::File));
+        assert_eq!(
+            key,
+            path_fallback_key(Path::new("nuage.txt"), NodeKind::File)
+        );
     }
 
     #[test]
@@ -264,10 +306,86 @@ mod tests {
         let file = temp.path().join("ignore.txt");
         std::fs::write(&file, b"synthetique").expect("write");
 
-        let (key, provenance) =
-            compute_identity(&file, "ignore.txt", NodeKind::Skipped, false, false);
+        let (key, provenance) = compute_identity(
+            &file,
+            Path::new("ignore.txt"),
+            NodeKind::Skipped,
+            false,
+            false,
+        );
         assert_eq!(provenance, IdentityProvenance::PathFallback);
-        assert_eq!(key, path_fallback_key("ignore.txt", NodeKind::Skipped));
+        assert_eq!(
+            key,
+            path_fallback_key(Path::new("ignore.txt"), NodeKind::Skipped)
+        );
+    }
+
+    /// `ACTION-0057` D3 — the whole point of this correction: two distinct
+    /// raw paths that `to_string_lossy()` would fold onto the same
+    /// `U+FFFD`-repaired projection must still produce different fallback
+    /// keys, because the hashed material is the raw OS encoding, never the
+    /// lossy display string.
+    #[test]
+    #[cfg(windows)]
+    fn two_distinct_raw_paths_with_unpaired_surrogates_never_collide_under_lossy_projection() {
+        use std::ffi::OsString;
+        use std::os::windows::ffi::OsStringExt;
+
+        // Two different lone high surrogates (0xD800 and 0xD801), each
+        // followed by an ordinary character. Both are legal in a Windows
+        // filename and both are illegal in UTF-8, so `to_string_lossy()`
+        // repairs each lone surrogate to the same U+FFFD and the two
+        // projections collide as text — exactly the ambiguity `ACTION-0057`
+        // D3 exists to close.
+        let a = OsString::from_wide(&[0x0064, 0xD800, 0x0061]); // "d" + lone high surrogate + "a"
+        let b = OsString::from_wide(&[0x0064, 0xD801, 0x0061]); // "d" + a DIFFERENT lone surrogate + "a"
+        let path_a = PathBuf::from(&a);
+        let path_b = PathBuf::from(&b);
+
+        assert_eq!(
+            path_a.to_string_lossy(),
+            path_b.to_string_lossy(),
+            "this test is only meaningful if the lossy projections actually collide"
+        );
+        assert_ne!(path_a, path_b, "the raw paths themselves must differ");
+
+        let key_a = path_fallback_key(&path_a, NodeKind::File);
+        let key_b = path_fallback_key(&path_b, NodeKind::File);
+        assert_ne!(
+            key_a, key_b,
+            "two distinct raw paths must not fold to the same fallback key, \
+             even when their lossy projection is identical"
+        );
+    }
+
+    /// Non-Windows equivalent of the surrogate test above: two distinct raw
+    /// byte sequences that are not valid UTF-8 and that `to_string_lossy()`
+    /// would repair to the same replacement-character string.
+    #[test]
+    #[cfg(not(windows))]
+    fn two_distinct_raw_paths_with_invalid_utf8_bytes_never_collide_under_lossy_projection() {
+        use std::ffi::OsString;
+        use std::os::unix::ffi::OsStringExt;
+
+        let a = OsString::from_vec(vec![b'd', 0x80, b'a']);
+        let b = OsString::from_vec(vec![b'd', 0x81, b'a']);
+        let path_a = PathBuf::from(&a);
+        let path_b = PathBuf::from(&b);
+
+        assert_eq!(
+            path_a.to_string_lossy(),
+            path_b.to_string_lossy(),
+            "this test is only meaningful if the lossy projections actually collide"
+        );
+        assert_ne!(path_a, path_b, "the raw paths themselves must differ");
+
+        let key_a = path_fallback_key(&path_a, NodeKind::File);
+        let key_b = path_fallback_key(&path_b, NodeKind::File);
+        assert_ne!(
+            key_a, key_b,
+            "two distinct raw paths must not fold to the same fallback key, \
+             even when their lossy projection is identical"
+        );
     }
 
     #[cfg(windows)]
@@ -281,7 +399,7 @@ mod tests {
             std::fs::write(&file, b"synthetique").expect("write");
 
             let (key, provenance) =
-                compute_identity(&file, "sonde.txt", NodeKind::File, false, false);
+                compute_identity(&file, Path::new("sonde.txt"), NodeKind::File, false, false);
             assert_eq!(provenance, IdentityProvenance::System);
             // `SYS1:<volume 16 hex>:<file id 32 hex>` — the couple, never
             // `FileId` alone.
@@ -305,13 +423,18 @@ mod tests {
             let temp = tempfile::tempdir().expect("tempdir");
             let before = temp.path().join("avant.dat");
             std::fs::write(&before, b"synthetique").expect("write");
-            let (before_key, _) =
-                compute_identity(&before, "avant.dat", NodeKind::File, false, false);
+            let (before_key, _) = compute_identity(
+                &before,
+                Path::new("avant.dat"),
+                NodeKind::File,
+                false,
+                false,
+            );
 
             let after = temp.path().join("apres.dat");
             std::fs::rename(&before, &after).expect("rename");
             let (after_key, provenance) =
-                compute_identity(&after, "apres.dat", NodeKind::File, false, false);
+                compute_identity(&after, Path::new("apres.dat"), NodeKind::File, false, false);
 
             assert_eq!(provenance, IdentityProvenance::System);
             assert_eq!(
@@ -325,8 +448,13 @@ mod tests {
             let temp = tempfile::tempdir().expect("tempdir");
             let before = temp.path().join("depart.dat");
             std::fs::write(&before, b"synthetique").expect("write");
-            let (before_key, _) =
-                compute_identity(&before, "depart.dat", NodeKind::File, false, false);
+            let (before_key, _) = compute_identity(
+                &before,
+                Path::new("depart.dat"),
+                NodeKind::File,
+                false,
+                false,
+            );
 
             let sub = temp.path().join("sous-dossier");
             std::fs::create_dir(&sub).expect("mkdir");
@@ -334,7 +462,7 @@ mod tests {
             std::fs::rename(&before, &after).expect("move");
             let (after_key, provenance) = compute_identity(
                 &after,
-                "sous-dossier/depart.dat",
+                Path::new("sous-dossier/depart.dat"),
                 NodeKind::File,
                 false,
                 false,
@@ -352,13 +480,23 @@ mod tests {
             let temp = tempfile::tempdir().expect("tempdir");
             let before = temp.path().join("dossier-avant");
             std::fs::create_dir(&before).expect("mkdir");
-            let (before_key, _) =
-                compute_identity(&before, "dossier-avant", NodeKind::Directory, false, false);
+            let (before_key, _) = compute_identity(
+                &before,
+                Path::new("dossier-avant"),
+                NodeKind::Directory,
+                false,
+                false,
+            );
 
             let after = temp.path().join("dossier-apres");
             std::fs::rename(&before, &after).expect("rename");
-            let (after_key, provenance) =
-                compute_identity(&after, "dossier-apres", NodeKind::Directory, false, false);
+            let (after_key, provenance) = compute_identity(
+                &after,
+                Path::new("dossier-apres"),
+                NodeKind::Directory,
+                false,
+                false,
+            );
 
             assert_eq!(provenance, IdentityProvenance::System);
             assert_eq!(
@@ -375,8 +513,8 @@ mod tests {
             std::fs::write(&a, b"synthetique").expect("write a");
             std::fs::write(&b, b"synthetique").expect("write b");
 
-            let (key_a, _) = compute_identity(&a, "a.dat", NodeKind::File, false, false);
-            let (key_b, _) = compute_identity(&b, "b.dat", NodeKind::File, false, false);
+            let (key_a, _) = compute_identity(&a, Path::new("a.dat"), NodeKind::File, false, false);
+            let (key_b, _) = compute_identity(&b, Path::new("b.dat"), NodeKind::File, false, false);
             assert_ne!(key_a, key_b);
         }
 
@@ -390,11 +528,16 @@ mod tests {
             let destination = temp.path().join("destination.dat");
             std::fs::copy(&source, &destination).expect("copy");
 
-            let (source_key, _) =
-                compute_identity(&source, "source.dat", NodeKind::File, false, false);
+            let (source_key, _) = compute_identity(
+                &source,
+                Path::new("source.dat"),
+                NodeKind::File,
+                false,
+                false,
+            );
             let (destination_key, _) = compute_identity(
                 &destination,
-                "destination.dat",
+                Path::new("destination.dat"),
                 NodeKind::File,
                 false,
                 false,
