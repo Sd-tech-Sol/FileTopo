@@ -1,91 +1,94 @@
-# NEXT_PROMPT — TASK-0034 corrective pass 3 — central focus-change invalidation
+# NEXT_PROMPT — TASK-0035 — V1 Context Panel, Direct Children & Safe Copy
 
 **TARGET_AGENT:** CLAUDE CODE  
 **RECOMMENDED_MODEL:** Sonnet 5, high effort  
 **STATUS:** READY  
 **OWNER:** orchestrateur ChatGPT  
-**MODE:** correction ciblée + preuves  
-**TASK:** `TASK-0034 — V1 Find & Open`  
-**BRANCHE:** `build/v0.2-a18-v1-find-open`
+**TASK:** `TASK-0035 — V1 Context Panel, Direct Children & Safe Copy`  
+**BRANCHE:** `build/v0.2-a19-v1-context-panel`
 
 ## /goal
 
-Fermer uniquement le dernier verrou relevé par `ACTION-0054` : les invalidations synchrones ajoutées par la passe précédente couvrent `onFocusBrain`, `selectNode` et `changeProjection`, mais certaines transitions de composition peuvent encore changer `focusedBrainId` via `applyComposition()` sans invalider une recherche en vol au point d'intention.
-
-La correction doit être centrale et minimale : toute transition passant par `applyComposition(next, ...)` qui change réellement de cerveau focalisé doit invalider immédiatement `SearchCoordinator`, avant tout `await` et avant toute mutation de composition. Une transition qui conserve le même cerveau focalisé ne doit pas invalider inutilement.
-
-Ne crée aucune nouvelle fonctionnalité. Ne change ni l'IPC Rust, ni `Index::query_nodes()`, ni la logique Explorer. `TASK-0034` reste `IMPLEMENTED`, jamais auto-`VERIFIED`.
+Implémenter intégralement `docs/tasks/TASK-0035-v1-context-panel.md`. `TASK-0034` est `VERIFIED` par `ACTION-0055`. Ne rouvrir ni recherche, ni projection progressive, ni frontière Explorer sans régression prouvée. Finir `IMPLEMENTED`, jamais auto-`VERIFIED`.
 
 ## 0 — Préconditions
 
-1. Lire `AGENTS.md`, `CLAUDE.md`, `docs/reviews/ACTION-0052-independent-control.md`, `docs/reviews/ACTION-0053-independent-recontrol.md`, `docs/reviews/ACTION-0054-independent-recontrol.md`, `docs/tasks/TASK-0034-v1-find-open.md`, `docs/ai/NEXT_ACTION.md`, `.orchestrator/RESULT.md`.
-2. Basculer explicitement sur `build/v0.2-a18-v1-find-open`.
-3. `git fetch origin`, fast-forward uniquement; arbre propre avant écriture.
-4. HEAD doit contenir `ACTION-0054`. Divergence inexpliquée => `BLOCKED`.
-5. Réutiliser `SearchCoordinator`; aucun second mécanisme de staleness.
+- Appliquer `AGENTS.md` et `CLAUDE.md`.
+- Basculer explicitement sur `build/v0.2-a19-v1-context-panel`, `git fetch origin`, fast-forward uniquement, arbre propre.
+- HEAD doit contenir `ACTION-0055` et TASK-0035.
+- Lire ACTION-0055, TASK-0035, DEC-0031/0033/0034, `brains.rs`, `index.rs`, `brain_index.rs`, `commands.rs`, `lib.rs`, `capabilities/default.json`, `MapApp.tsx`, `DetailsPanel.tsx`, `types.ts` et les tests/harness WebView2.
+- Avant code, consigner dans `RESULT.md` : réutiliser / adapter / ne pas réactiver.
 
-## 1 — Correction centrale
+## 1 — Panneau masquable persistant
 
-Auditer les chemins qui changent `ComposedView.focusedBrainId`, notamment :
+Réutiliser `BrainCatalog::meta()/put_meta()` et `catalog_meta`; pas de nouveau store/fichier/localStorage.
 
-- `onFocusBrain`;
-- `selectNode`;
-- `changeProjection`;
-- `removeBrain()` lorsqu'on retire le cerveau focalisé;
-- `navigateCross` lorsqu'une relation amène vers un cerveau non affiché;
-- tout autre appel à `applyComposition(next, ...)` pouvant fournir un focus différent.
+- préférence globale `details_panel_visible`, défaut `true`;
+- petite surface IPC non sensible;
+- bouton « Masquer les détails » / « Afficher les détails », clavier + souris;
+- masquer ne modifie ni sélection, recherche, projection, relations ou composition;
+- réafficher conserve le contexte;
+- préférence prouvée après vrai redémarrage Tauri.
 
-Ajouter à la frontière commune `applyComposition(next, ...)` un garde équivalent à :
+Pas de migration du catalogue si `catalog_meta` suffit.
 
-- lire la composition courante depuis la ref déjà utilisée par cette fonction;
-- si elle existe et `current.focusedBrainId !== next.focusedBrainId`, appeler `searchCoordinator.invalidate()` immédiatement;
-- ce garde doit s'exécuter avant le premier `await`, avant `setComposed`, et avant toute attente de chargement de cerveau;
-- ne rien invalider si le focus reste identique.
+## 2 — Enfants directs exacts et paginés
 
-Les invalidations déjà présentes dans les handlers directs peuvent rester si elles conservent un comportement clair et idempotent. Évite un refactor général.
+`detail.children` vient de la projection bornée et n’est pas une liste exhaustive. Créer une commande dédiée, p. ex. `map_node_children`, qui :
 
-## 2 — Preuves obligatoires
+- reçoit `BrainNodeRef` + pagination/cursor + limite;
+- passe par `resolve_brain` + `open_store`;
+- réutilise `Index::children_page()`; pas de SQL parallèle;
+- page <= 50;
+- uniquement enfants directs, jamais petits-enfants;
+- cursor/révision cohérents avec l’Index courant;
+- aucun chemin absolu.
 
-Étendre les preuves TypeScript de manière déterministe :
+`DetailsPanel` doit utiliser cette page dédiée, afficher le total exact, permettre page suivante/précédente (ou historique de cursors borné), ne jamais accumuler des milliers de lignes, et sélectionner un enfant via la navigation existante.
 
-1. une recherche du cerveau A est en vol;
-2. une transition de composition retire A alors qu'il est focalisé, donc `removeBrain()` choisit B comme nouveau focus;
-3. l'invalidation centrale se produit avant tout prochain effet/recherche;
-4. A se résout ensuite et ne publie ni page, ni erreur, ni `loading=false` appartenant à la nouvelle intention;
-5. une transition `applyComposition` qui conserve le même focus ne doit pas annuler une recherche courante sans raison;
-6. ajouter un verrou structurel raisonnable montrant que le garde de changement de focus est bien dans `applyComposition` avant son premier `await`;
-7. si simple, couvrir aussi le chemin `navigateCross` vers un cerveau non affiché; sinon démontrer que ce chemin passe bien par le garde central.
+## 3 — Copier le chemin côté hôte seulement
 
-Conserver et rejouer les preuves acquises : ordre inversé, saisie avant effet, changement direct de cerveau, Clear, loading, révision, normalisation `trim` + 200 points de code, Unicode et offset.
+Ajouter « Copier le chemin ».
 
-## 3 — WebView2 / non-régression
+- React envoie uniquement `BrainNodeRef`;
+- Rust lit le `relative_path` depuis l’Index, résout la racine en interne et réutilise la logique de confinement de `map_reveal_node`;
+- chemin complet écrit au presse-papiers côté Rust;
+- retour frontend = succès/erreur générique seulement;
+- aucun chemin absolu dans DTO/DOM/log/erreur/artefact.
 
-Rejouer le scénario TASK-0034 existant sur le `REAL_ROOT` synthétique de 5 206 éléments : recherche hors projection, activation, refresh/révision, reveal Explorer, aucune fuite de chemin absolu, 0 erreur console fatale.
+Auditer d’abord `tauri-plugin-clipboard-manager`. Si compatible : dépendance Rust épinglée, API Rust uniquement, aucun package JS et **aucune permission `clipboard-manager:*` frontend**; `capabilities/default.json` doit rester `core:default` uniquement. Si cette voie sûre est impossible, ne contourner ni par PowerShell/cmd/shell ni par permission large : rapporter cette sous-partie `BLOCKED`.
 
-Aucune nécessité de fabriquer artificiellement une course dans WebView2 : la preuve adversariale déterministe TypeScript est l'autorité pour ce verrou.
+## 4 — Preuves
 
-## 4 — Validation
+### Rust
+- préférence absente => visible; persiste après réouverture du catalogue;
+- enfants >50 : pages <=50, ensemble complet exact, aucun doublon/perte/petit-enfant, ordre déterministe;
+- mauvais cerveau / vieux cursor-révision refusé;
+- copie : commande reçoit seulement `BrainNodeRef`, Unicode/noms longs exacts, reparse/skipped/disparu refusé sans fuite;
+- aucune permission frontend sensible ni commande 0.1 réactivée.
 
-Exécuter au minimum :
+### TypeScript
+- masquer/réafficher conserve sélection/contexte;
+- liste d’enfants vient de la commande paginée, reste bornée et clavier utilisable;
+- sélection enfant réutilise la navigation existante;
+- copie envoie seulement `{reference:{brainId,nodeId}}`;
+- aucun chemin absolu dans l’état/frontend.
 
-- tests TypeScript ciblés puis suite complète;
-- `pnpm check`;
-- `pnpm build`;
-- `git diff --check`;
-- `cargo test --offline` et `cargo build --offline` pour non-régression si le workflow courant le permet;
-- fmt/clippy seulement selon les fichiers réellement touchés, en distinguant la dette historique.
+### WebView2 réel
+Réutiliser les harness existants sur données synthétiques uniquement :
+1. panneau visible par défaut;
+2. masquer -> vrai redémarrage -> toujours masqué; réafficher -> redémarrage -> visible;
+3. dossier >50 enfants : total exact, page suivante, aucun petit-enfant;
+4. enfant hors projection : carte/détails synchronisés;
+5. copie sur cible synthétique : le harness compare le presse-papiers en mémoire, mais l’artefact ne conserve que `match: true/false`, jamais le chemin;
+6. aucune fuite de chemin absolu; 0 erreur console fatale.
 
-Aucune donnée personnelle.
+## 5 — Hors portée
 
-## 5 — Documentation / sortie
+Pas de watcher, journal de changements, nouveaux/non vus, filtres, FTS5, extraction de contenu, préférence moniteur/icône, nouveau renderer, réseau/cloud/IA.
 
-Mettre à jour `docs/tasks/TASK-0034-v1-find-open.md`, `docs/ai/CURRENT_STATE.md`, `HANDOFF.md`, `NEXT_ACTION.md`, `VALIDATION.md`, `CHANGELOG_AI.md` et `.orchestrator/RESULT.md`.
+## 6 — Validation et sortie
 
-À la fin :
+Exécuter tests Rust/TS ciblés + suites complètes, `pnpm check`, `pnpm build`, `cargo build --offline`, fmt Rust touché, Clippy strict avec dette préexistante distinguée, `git diff --check`, WebView2.
 
-- `TASK-0034 = IMPLEMENTED`, jamais auto-`VERIFIED`;
-- aucun `TASK-0035` précréé;
-- `NEXT_ACTION = contrôle indépendant de TASK-0034`;
-- commit + push uniquement sur `build/v0.2-a18-v1-find-open`;
-- aucun PR/merge/tag/release;
-- le rapport doit expliquer le garde central de `applyComposition`, ses preuves et les validations.
+Mettre à jour TASK-0035, CURRENT_STATE, HANDOFF, NEXT_ACTION, VALIDATION, CHANGELOG_AI et `RESULT.md`. À la fin : TASK-0035 `IMPLEMENTED`, aucun TASK-0036, `NEXT_ACTION = contrôle indépendant`, commit/push seulement sur cette branche, aucun PR/merge/tag/release.
