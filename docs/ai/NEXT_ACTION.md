@@ -1,16 +1,14 @@
 # Action suivante
 
-## Nouveau contrôle indépendant de TASK-0036
+## TASK-0036 — dernière passe corrective avant vérification
 
 `TASK-0036 — V1 Stable Identity Foundation` reste **IMPLEMENTED, pas VERIFIED** sur `build/v0.2-a20-v1-stable-identity`.
 
-La passe corrective exigée par [`ACTION-0057`](../reviews/ACTION-0057-independent-control.md) est livrée. Les trois défauts bloquants et la réserve sont fermés :
+Le recontrôle [`ACTION-0058`](../reviews/ACTION-0058-independent-recontrol.md) accepte les corrections D1/D2/D3/R1 d’`ACTION-0057` : migration atteignable par le cycle produit, transition SQL atomique, fallback basé sur le chemin OS brut, et rejeu WebView2 avec Copier le chemin vert.
 
-1. **D1** — la migration `3 → 4` est maintenant atteignable par le cycle produit : `BrainIndex::open_existing_migrating` vérifie `brain_id` et le binding source avant toute mutation, refuse sans migrer sur tout désaccord, et `open_for_brain` y bascule seulement pour un fichier exactement en schéma `3`. `BrainIndex::open_existing` reste strictement v4-only, inchangée. `map_open` déclare toujours `sourceRead=false`.
-2. **D2** — la migration `3 → 4` est maintenant une seule transaction (`Index::run_stable_identity_migration`), commise une fois; un échec injecté après mutation de schéma prouve un rollback complet vers le v3 original.
-3. **D3** — `PATH_FALLBACK` est calculé depuis `path_codec::encode_path()` sur le chemin `Path` brut, jamais depuis `to_string_lossy()`; un test Windows prouve que deux chemins avec des surrogates isolés distincts, dont la projection lossy est identique, produisent des clés fallback distinctes.
-4. **R1** — le rejeu WebView2 complet donne `copyStillSucceeds: true` avec preuve fraîche, pas seulement une citation de `TASK-0035 VERIFIED`.
+Le contrôle des décisions applicables a toutefois retrouvé une omission de la spécification orchestrée : [`DEC-0013`](../decisions/DEC-0013-post-risk-gate-technical-arbitration.md) restait normative et n’était pas citée par TASK-0036. Deux points doivent encore être fermés :
 
-Détail complet, preuves et validations : [VALIDATION.md section BN](VALIDATION.md), [HANDOFF.md](HANDOFF.md), [`.orchestrator/RESULT.md`](../../.orchestrator/RESULT.md).
+1. **D4 — migration M-B.** La migration transactionnelle actuelle doit être précédée d’une quiescence et d’une copie de sûreté de fichier en espace applicatif, avec restauration sur échec, conformément à la baseline M-B de DEC-0013.
+2. **D5 — Cloud Files.** [`DEC-0035`](../decisions/DEC-0035-cloud-files-stable-identity-boundary.md) ferme la porte de DEC-0013 F : tout placeholder Cloud Files reconnu reste `PATH_FALLBACK`, hydraté ou déshydraté; `CfGetPlaceholderInfo` sert uniquement à une détection métadonnée non destructive, jamais à hydrater ni à lire du contenu.
 
-Action unique : un contrôle indépendant de `TASK-0036`, par une instance distincte de l'exécuteur, sur les preuves de cette passe corrective. Ne créer aucune TASK-0037 et ne commencer ni journal, ni watcher, ni incrémental avant `TASK-0036 = VERIFIED`.
+Action unique : exécuter la passe corrective décrite dans `.orchestrator/NEXT_PROMPT.md`, sur la **même branche**. Aucun `TASK-0037`, journal, watcher ou incrémental avant un nouveau contrôle indépendant et `TASK-0036 = VERIFIED`.
