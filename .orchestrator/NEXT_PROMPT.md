@@ -1,4 +1,4 @@
-# NEXT_PROMPT — TASK-0036 — V1 Stable Identity Foundation
+# NEXT_PROMPT — TASK-0036 — corrective pass after ACTION-0057
 
 **TARGET_AGENT:** CLAUDE CODE  
 **RECOMMENDED_MODEL:** Sonnet 5, high effort  
@@ -9,91 +9,155 @@
 
 ## /goal
 
-Implémenter intégralement `docs/tasks/TASK-0036-v1-stable-identity.md`. `TASK-0035` est `VERIFIED` par `ACTION-0056`. Cette tranche productionnalise la stratégie d'identité **I-E déjà approuvée par DEC-0009** et déjà éprouvée par le spike B3 : identité Windows prouvée quand disponible, empreinte déterministe/versionnée du chemin relatif + type sinon, jamais d'heuristique comme identité.
+Corriger uniquement les défauts D1, D2 et D3 de [`docs/reviews/ACTION-0057-independent-control.md`](../docs/reviews/ACTION-0057-independent-control.md), puis rejouer les preuves de TASK-0036. La tâche reste `IMPLEMENTED`, jamais auto-`VERIFIED`.
 
-Le but est de préserver le même `nodes.id` pour le même objet lors d'un renommage/déplacement intra-volume prouvé, afin de préparer le futur journal/incrémental. **Ne pas implémenter watcher, journal ni mise à jour incrémentale dans cette tâche.** Finir `IMPLEMENTED`, jamais auto-`VERIFIED`.
+Ne créer aucune TASK-0037. Ne commencer ni journal de changements, ni watcher, ni application incrémentale, ni nouvelle UI.
 
-## 0 — Préconditions et audit de réutilisation
+## 0 — Préconditions
 
 1. Appliquer `AGENTS.md` et `CLAUDE.md`.
 2. Basculer explicitement sur `build/v0.2-a20-v1-stable-identity`, `git fetch origin`, fast-forward uniquement, arbre propre.
-3. HEAD doit contenir `ACTION-0056` et `TASK-0036`.
-4. Lire `DEC-0009`, `DEC-0010`, `DEC-0011`, `DEC-0030/31/33/34`, `TASK-0012` B3, `PERF-0003`, `spikes/b3-windows-identity/{Cargo.toml,LICENCE.md,src/main.rs}`, puis scanner/domain/index/hierarchy/BrainIndex/commands.
-5. Auditer avant de coder. Réutiliser le B3; ne pas refaire la recherche Windows.
+3. Le HEAD doit être `15f3d63` ou un descendant contenant `ACTION-0057` et ce prompt.
+4. Lire avant tout changement : `ACTION-0057`, `TASK-0036`, `DEC-0009`, `DEC-0011`, `DEC-0032`, `DEC-0033`, `src-tauri/src/path_codec.rs`, `identity.rs`, `scanner.rs`, `index.rs`, `map/brain_index.rs`, `map/commands.rs`, les tests stable identity et les harness TASK-0036.
+5. Ne pas refaire le spike B3 et ne pas changer la stratégie I-E.
 
-## 1 — Contrat à construire
+## 1 — D1 : rendre l'upgrade v3 → v4 réellement atteignable par le produit
 
-- `nodes.id` reste l'identité FileTopo monotone, locale à un cerveau.
-- chaque nœud indexé porte une clé stable interne + provenance `SYSTEM` ou `PATH_FALLBACK`;
-- aucune clé stable/VolumeSerialNumber/FileId/empreinte n'est sérialisée vers React, loguée ou mise dans un artefact;
-- Windows REAL_ROOT : adapter le B3 `GetFileInformationByHandleEx(FileIdInfo)` sur Rust stable; si dépendance requise, préférer `windows-sys = 0.61.2` épinglé/ciblé Windows avec features minimales et licence déjà vérifiée par B3;
-- fallback : hash versionné du chemin relatif brut + type, déterministe, sans taille/mtime/heuristique;
-- reparse/skipped/cloud : ne jamais ouvrir dangereusement ni hydrater pour obtenir une identité; appliquer I-E honnêtement.
+Le défaut à fermer est exact : `Index::open()` sait migrer, mais le cycle produit d'une base existante passe d'abord par `BrainIndex::open_existing()`, qui exige déjà `MAP_SCHEMA_VERSION == 4`. Le test actuel ne couvre donc pas le vrai chemin produit.
 
-## 2 — Même Index, migration sûre
+### Contrat exigé
 
-Faire évoluer le **BrainIndex canonique** uniquement. Aucun registry/store parallèle.
+Un cerveau possédant un **index canonique v3 valide de la version précédente** doit pouvoir être utilisé après mise à jour de FileTopo sans suppression manuelle de l'index et sans scanner la source pour effectuer la migration elle-même.
 
-- schéma versionné et migration transactionnelle depuis le schéma courant;
-- persister clé stable/provenance de façon interne;
-- préserver `index_id`; une republication avance toujours `index_revision` atomiquement;
-- prévoir un compteur/mécanisme monotone empêchant la réutilisation silencieuse d'un ID supprimé;
-- collision de clé stable => refus explicite, index précédent toujours crédible/ouvrable;
-- si une migration sûre exige d'enfreindre DEC-0011 ou de faire confiance silencieusement à un ancien index, `BLOCKED` au lieu d'improviser.
+Conserver les frontières existantes :
 
-## 3 — Remap des IDs à la publication
+- vérifier l'identité du cerveau et le binding de source à partir de la base/index et du catalogue **avant** toute migration qui modifierait une base qui ne leur appartient pas;
+- un mismatch `brain_id`, `source_kind` ou `source_ref` doit être refusé **sans migrer la base et sans lire la source**;
+- le cas legacy synthétique déjà autorisé par `DEC-0033` doit rester explicitement géré, pas élargi à REAL_ROOT;
+- un schéma futur/inconnu doit être refusé; aucune migration à rebours;
+- la migration d'index est une opération dans l'espace applicatif : elle ne doit ni résoudre, ni scanner, ni fingerprint la racine;
+- `map_open` doit continuer à déclarer `sourceRead=false`. Une migration connue d'index lors de l'ouverture est acceptable si elle ne touche pas la source et si les contrôles ci-dessus sont respectés;
+- après migration, le chemin strict `BrainIndex::open_existing()` peut rester v4-only. Préférer un chemin de migration étroit plutôt que d'affaiblir toutes les ouvertures.
 
-Le scanner peut conserver ses IDs temporaires. Avant publication :
+Ne contourne pas en supprimant/recréant l'index. `index_id`, `index_revision`, nœuds et `seen` doivent survivre à la migration elle-même.
 
-- même clé stable existante => reprendre le même ID canonique;
-- nouveau nœud => ID neuf;
-- remapper tous les `parent_id` vers les IDs canoniques;
-- rename/move intra-volume `SYSTEM` => même ID, nouveau chemin/nom/parent;
-- rename/move `PATH_FALLBACK` => nouvelle clé/nouvel ID, conformément à I-E;
-- aucune heuristique ne rapproche automatiquement deux clés différentes.
+### Preuve produit obligatoire
 
-La conservation actuelle de `seen` par chemin doit être adaptée : pour une identité reconnue, `seen` suit le même nœud; le fallback renommé ne récupère pas automatiquement l'ancien état.
+Ajouter un test de pipeline qui construit littéralement un index canonique **v3** avec les métadonnées réelles nécessaires (`brain_id`, binding/source, `build_complete`, `projection_contract`, root/node count, index identity/revision), puis passe par les mêmes fonctions que le produit (`open_map` et/ou le chemin lifecycle réellement utilisé) et démontre :
 
-## 4 — Compatibilité obligatoire
+- migration vers v4 réellement déclenchée;
+- `map_open` fonctionne ensuite sans lecture de source;
+- `index_id` et `index_revision` inchangés par la migration;
+- données et `seen` intacts;
+- une republication suivante fonctionne et avance la révision normalement;
+- ancien curseur invalide seulement après republication, pas à cause de la migration si la révision n'a pas bougé.
 
-Ne pas modifier fonctionnellement : projection progressive, recherche TASK-0034, pagination/copie TASK-0035, relations, Explorer, capacités WebView. `BrainNodeRef` reste `brainId + nodeId` et la seule identité frontend. Aucune permission frontend nouvelle.
+Ajouter aussi les refus : v3 d'un autre cerveau/source et schéma >4 restent non modifiés et la source n'est jamais lue.
 
-## 5 — Preuves obligatoires
+## 2 — D2 : migration 3 → 4 atomique
 
-Exécuter toutes les preuves de `TASK-0036`, notamment :
+`migrate_to_stable_identity()` ne peut plus laisser les deux `ALTER TABLE`, l'index unique, `next_node_id`, `schema_version` et `PRAGMA user_version` se committer séparément.
 
-- migration depuis le schéma précédent;
-- fallback déterministe/versionné;
-- Windows SYSTEM pour fichier + dossier;
-- fichier renommé puis déplacé intra-volume : même clé SYSTEM et même nodeId après refresh;
-- dossier déplacé avec enfant : hiérarchie/parent IDs cohérents;
-- `seen` survit au rename/move SYSTEM;
-- nouvel objet => ID neuf; pas de recyclage silencieux;
-- deux cerveaux sur même source restent isolés;
-- collision artificielle => publication refusée sans perdre l'index précédent;
-- ancien cursor refusé après nouvelle revision;
-- aucune clé stable dans les DTO exposés.
+### Contrat exigé
 
-## 6 — WebView2 Windows réel
+La transition v3 → v4 est une **transaction unique** :
 
-Réutiliser le harnais existant avec un REAL_ROOT **entièrement synthétique**. Le script de preuve peut renommer/déplacer ses propres fichiers entre deux actions `Actualiser` du produit.
+- ajouter `stable_key` et `identity_provenance`;
+- créer l'index unique partiel;
+- initialiser `next_node_id` depuis `MAX(id)+1`;
+- écrire la version logique et `PRAGMA user_version=4`;
+- commit une seule fois.
 
-Prouver : nodeId identique après rename puis move intra-volume quand SYSTEM est disponible; chemin relatif/parent actualisés; recherche/détails/enfants/projection/Explorer-Copie sans régression; aucune fuite de chemin absolu ou de clé stable; 0 erreur console fatale. L'artefact conserve seulement booléens, IDs synthétiques et provenance générale, jamais clé stable brute ni chemin absolu.
+Si une étape échoue : rollback complet vers le v3 original. Aucun demi-schéma considéré crédible.
 
-## 7 — Validation / sortie
+### Preuve d'échec obligatoire
 
-- Rust ciblé + `cargo test --offline`;
-- TypeScript complet pour non-régression;
-- `pnpm check`, `pnpm build`, `cargo build --offline`, `cargo fmt --check`, Clippy strict avec comparaison de la dette existante, `git diff --check`;
-- nouvelle dépendance uniquement si justifiée par B3 et présente au lock.
+Injecter de façon synthétique et déterministe un échec **après au moins une modification DDL dans la transaction** (par exemple obstruction contrôlée d'un objet de schéma, ou hook test-only étroit si nécessaire). Après l'échec, prouver :
 
-Mettre à jour `docs/tasks/TASK-0036-v1-stable-identity.md`, `docs/ai/CURRENT_STATE.md`, `HANDOFF.md`, `NEXT_ACTION.md`, `VALIDATION.md`, `CHANGELOG_AI.md`, `FEATURE_MATRIX.md` pour F-004, et `.orchestrator/RESULT.md`.
+- `user_version == 3`;
+- les colonnes v4 ne sont pas partiellement présentes;
+- données/`seen`/`index_id`/`index_revision` inchangés;
+- la base v3 reste lisible selon son contrat précédent et peut être migrée correctement après retrait de l'obstruction.
+
+Ne pas inventer une migration M-C complète ou un nouveau fichier d'index dans cette passe : fermer le contrat atomique explicitement demandé par TASK-0036, sans élargir la portée.
+
+## 3 — D3 : PATH_FALLBACK doit utiliser le chemin OS brut
+
+Le fallback actuel passe `scanner::display_relative()` (`to_string_lossy`) à `path_fallback_key()`. Ce n'est pas le chemin brut exigé par TASK-0036 / DEC-0009.
+
+### Correction exigée
+
+- faire calculer `PATH_FALLBACK` depuis le `Path` relatif brut, pas depuis la `String` d'affichage;
+- **réutiliser `crate::path_codec::encode_path()`**, déjà approuvé pour représenter exactement un chemin OS : UTF-16LE sous Windows, bytes OS sous Unix;
+- ajouter un séparateur/version/type non ambigu au matériau hashé;
+- aucune taille, mtime, contenu ou heuristique;
+- conserver `NodeDto.relative_path`/`name` tels quels pour l'affichage : ne pas transformer cette correction en refonte du modèle DTO;
+- aucune représentation brute ne doit traverser IPC/log/artefact.
+
+Le mode interne/synthétique `identities: None` peut dériver sa clé depuis `Path::new(node.relative_path)` puisque ses chemins de fixture sont déjà des chaînes contrôlées; le pipeline scanner REAL_ROOT doit impérativement utiliser le `PathBuf relative` brut avant projection lossy.
+
+### Tests obligatoires
+
+- même chemin brut + type => même PFv1;
+- renommage brut => clé différente;
+- type différent => clé différente;
+- Windows : construire au moins deux `PathBuf` distincts avec unités UTF-16 non Unicode (dont un surrogate non apparié) qui produiraient une projection lossy ambiguë et prouver que leurs clés fallback restent différentes;
+- non-Windows : si supporté par la suite, équivalent avec bytes non UTF-8;
+- démontrer que le scanner continue d'exposer uniquement la projection d'affichage dans ses DTO, jamais le matériau brut de la clé.
+
+## 4 — Invariants TASK-0036 à rejouer
+
+Après correction, rejouer et conserver verts :
+
+- SYSTEM = `VolumeSerialNumber + FileId`, jamais FileId seul;
+- reparse/skipped/online-only : aucune ouverture SYSTEM supplémentaire;
+- rename/move intra-volume : même `nodes.id`;
+- déplacement de sous-arbre : IDs et parentage cohérents;
+- `seen` survit au match SYSTEM;
+- nouveau nœud : ID monotone jamais recyclé;
+- collision artificielle : refus, index précédent intact;
+- deux cerveaux sur la même racine restent isolés;
+- `index_revision` avance atomiquement à chaque republication;
+- recherche, détails, enfants directs, projection, Explorer restent sans régression;
+- aucune clé stable, volume id, FileId ou chemin absolu dans DTO/DOM/log/artefact;
+- aucune permission frontend, aucune nouvelle commande 0.1.
+
+### Validation de la liste d'identités
+
+Pendant l'audit, vérifie aussi que `publish_with_identity(nodes, identities, ...)` refuse proprement une liste non bijective (identité manquante, identité pour node_id inconnu, node_id dupliqué) plutôt que de pouvoir atteindre un `expect()`/panic. Si le scanner garantit déjà la bijection mais que la fonction publique interne la documente comme précondition non vérifiée, ferme cette frontière avec une validation bornée et des tests dans cette passe; ne crée pas une nouvelle architecture.
+
+## 5 — WebView2
+
+Réutiliser le harness TASK-0036, jamais une donnée personnelle. Rejouer au minimum rename, move, moved subtree, no-recycle, search, children, projection, reveal et confidentialité.
+
+Ajouter un scénario **upgrade produit v3 → v4** si le harness peut le semer proprement dans son sandbox : lancer l'application sur un index v3 synthétique préconstruit et démontrer qu'il devient utilisable/migré sans lecture de la source pour la migration. Si cette preuve est plus fiable en Rust pipeline qu'en WebView2, la preuve Rust est obligatoire et le harness peut rester centré sur le comportement produit post-migration; expliquer précisément la séparation.
+
+`Copier le chemin` : l'artefact courant a `copyStillSucceeds=false` parce que la fenêtre automatisée était cachée. Ne déclare pas ce sous-critère vert sans preuve. Soit exécuter la passe dans une fenêtre où le clipboard est disponible et obtenir succès, soit citer explicitement la preuve TASK-0035 déjà VERIFIED et démontrer que le chemin de copie n'a pas été modifié par cette correction.
+
+0 erreur console fatale.
+
+## 6 — Validation générale
+
+Exécuter :
+
+- tests Rust ciblés puis `cargo test --offline`;
+- tests Windows réels de l'identité et migration produit;
+- TypeScript complet;
+- `pnpm check`;
+- `pnpm build`;
+- `cargo build --offline`;
+- `cargo fmt --check` / formatage limité aux fichiers touchés;
+- `cargo clippy --all-targets --offline -- -D warnings`, en séparant dette historique et nouveau diagnostic;
+- `git diff --check`.
+
+Aucune donnée personnelle. Aucun PR/merge/tag/release. `origin/main` inchangé.
+
+## 7 — Livrables
 
 À la fin :
 
-- `TASK-0036 = IMPLEMENTED`, jamais auto-`VERIFIED`;
-- aucune TASK-0037;
-- `NEXT_ACTION = contrôle indépendant de TASK-0036`;
-- commit + push uniquement sur `build/v0.2-a20-v1-stable-identity`;
-- aucun PR/merge/tag/release;
-- `RESULT.md` doit détailler HEAD/commits, réutilisation B3, migration, modèle/provenance, remap IDs, preuves rename/move/seen, WebView2, tests, confidentialité et limites.
+- `TASK-0036` reste `IMPLEMENTED`, jamais auto-`VERIFIED`;
+- mettre à jour la fiche TASK-0036 et la mémoire durable (`CURRENT_STATE`, `HANDOFF`, `NEXT_ACTION`, `VALIDATION`, `CHANGELOG_AI`, `RESULT.md`);
+- `RESULT.md` doit nommer explicitement D1/D2/D3 et comment chacun a été fermé, avec tests et limites;
+- `NEXT_ACTION = nouveau contrôle indépendant de TASK-0036`;
+- aucune TASK-0037 précréée.
