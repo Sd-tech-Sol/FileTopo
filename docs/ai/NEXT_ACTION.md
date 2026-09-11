@@ -1,9 +1,11 @@
 # Action suivante
 
-## TASK-0034 fermée — préparer la prochaine tranche MVP
+## TASK-0035 — V1 Context Panel, Direct Children & Safe Copy — READY
 
-`TASK-0034 — V1 Find & Open` est **VERIFIED dans sa portée** par [`ACTION-0055`](../reviews/ACTION-0055-independent-recontrol.md), après les recontrôles `ACTION-0052` à `ACTION-0054` et la passe corrective finale `521fee1`.
+`TASK-0034 — V1 Find & Open` est **VERIFIED** dans sa portée par [`ACTION-0055`](../reviews/ACTION-0055-independent-recontrol.md).
 
-Le prochain travail ne doit pas rouvrir la recherche, la projection progressive ni la frontière Explorer. La priorité reste l’étape A — **parité fonctionnelle MVP** — avant la surveillance automatique et avant la finition visuelle générale.
+La branche courante est `build/v0.2-a19-v1-context-panel`. `TASK-0035` est définie dans [`docs/tasks/TASK-0035-v1-context-panel.md`](../tasks/TASK-0035-v1-context-panel.md) et le prompt exécutable est `.orchestrator/NEXT_PROMPT.md`.
 
-Action unique suivante : démarrer `TASK-0035` sur une branche dédiée à partir de cette fermeture. La tranche choisie doit compléter le contexte utilisateur autour de la sélection en réutilisant `DetailsPanel` et l’Index canonique : panneau masquable/persistant, contenu direct de dossier exact et paginé, puis copie sûre du chemin réel sans l’exposer au WebView. Les filtres et le journal/watchers restent des tranches suivantes.
+Action unique suivante : **Claude Code exécute intégralement `.orchestrator/NEXT_PROMPT.md` sur cette branche**, puis écrit/pousse `.orchestrator/RESULT.md`. La tranche complète le panneau contextuel, la pagination exacte des enfants directs et la copie sûre du chemin côté hôte; elle ne démarre ni filtres, ni watcher, ni journal de changements.
+
+Après exécution : contrôle indépendant de TASK-0035. Aucun TASK-0036 avant ce contrôle.
