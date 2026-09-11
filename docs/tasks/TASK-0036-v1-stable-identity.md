@@ -1,7 +1,8 @@
 # TASK-0036 — V1 Stable Identity Foundation
 
 - Date : 2026-09-11
-- Statut : `READY`
+- Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`. Détail :
+  [`VALIDATION.md` section BM](../ai/VALIDATION.md).
 - Branche : `build/v0.2-a20-v1-stable-identity`
 - Prérequis : `TASK-0035 = VERIFIED` par `ACTION-0056`
 - Décisions applicables : `DEC-0009` I-E, `DEC-0010` U-B, `DEC-0011`, `DEC-0030`, `DEC-0031`, `DEC-0033`, `DEC-0034`

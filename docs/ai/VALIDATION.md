@@ -5890,4 +5890,246 @@ graphique, moteur de relations, cloud/réseau/IA.
 `origin/main` inchangé. Aucune `TASK-0036`, aucune nouvelle DEC, aucune PR,
 fusion, étiquette ni release.
 
+## BM. TASK-0036 — V1 Stable Identity Foundation — 2026-09-11
+
+**Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche
+`build/v0.2-a20-v1-stable-identity`. Prérequis `TASK-0035 = VERIFIED` par
+`ACTION-0056` satisfait avant tout code. Aucune nouvelle DEC — `DEC-0009` I-E
+était déjà `APPROVED`; cette tâche la productionise, sans en changer le
+contrat.
+
+### BM.1 Audit avant code — réutiliser, adapter, ne pas reconstruire
+
+Lu avant toute modification : `spikes/b3-windows-identity/src/main.rs` (B3,
+`VERIFIED` par `PERF-0003`/`TASK-0012`), son `Cargo.toml`/`LICENCE.md`,
+`DEC-0009`, `DEC-0010`, `DEC-0011`, `DEC-0030`, `DEC-0031`, `DEC-0033`,
+`DEC-0034`, `scanner.rs`, `domain.rs`, `index.rs`, `hierarchy.rs`,
+`map/brain_index.rs`, `map/commands.rs`, `map/source.rs`.
+
+**Verdict : réutiliser la technique B3 telle quelle, adapter son point
+d'intégration, ne rien reconstruire.** `GetFileInformationByHandleEx(FileIdInfo)`
+sur un handle ouvert en métadonnées seules (`dwDesiredAccess = 0`,
+`FILE_FLAG_BACKUP_SEMANTICS`) est repris verbatim dans la technique;
+`windows-sys = 0.61.2` (mêmes quatre fonctionnalités, licence déjà
+inventoriée par B3) est la seule dépendance ajoutée, **confinée à
+`src-tauri/src/identity.rs`** via `[target.'cfg(windows)'.dependencies]` —
+jamais dans `spikes/`, jamais hors cible Windows. Le point d'intégration lui
+est propre : B3 mesurait un coût isolé sur une arborescence jetable; cette
+tâche doit calculer une identité **par nœud pendant le parcours existant**
+(`scanner.rs::scan_tree_controlled`) puis la faire survivre à une
+republication (`index.rs`), ce que B3 ne faisait pas et n'avait pas à faire.
+
+### BM.2 B — Modèle d'identité interne
+
+Nouveau module `identity.rs`, sans dépendance vers `map/` (`scanner.rs` et
+`index.rs` en dépendent, pas l'inverse) :
+
+- `IdentityProvenance` : `System` ou `PathFallback`, **les deux seules**
+  valeurs I-E autorise — jamais une troisième.
+- `compute_identity(absolute_path, relative_path, kind, reparse_point,
+  online_only)` : `SYSTEM` (clé `SYS1:<volume 16 hex>:<file id 32 hex>` — le
+  **couple**, jamais `FileId` seul, l'invariant de l'amendement `DEC-0009`)
+  quand le nœud est éligible **et** que l'appel Windows réussit;
+  `PATH_FALLBACK` (`PFv1:<fnv1a64 du chemin relatif + type>`) sinon.
+- **Éligibilité au `SYSTEM` :** ni `reparse_point`, ni `online_only`, ni
+  `NodeKind::Skipped`. Aucune tentative d'ouverture de handle n'est même
+  faite pour ces trois cas — `TASK-0036` B l'exige explicitement, pour
+  respecter les exclusions déjà en place et ne jamais risquer d'hydrater un
+  espace réservé cloud. C'est la façon dont cette tâche répond, sans la
+  rouvrir, à la question laissée ouverte par l'amendement `DEC-0009`
+  (« identité après hydratation ») : en ne touchant jamais ce cas par la voie
+  système.
+- Aucun identifiant système, clé stable ou empreinte n'existe dans
+  `domain::NodeDto` ni dans aucun DTO : un `NodeIdentity` voyage **à côté**
+  du corpus scanné (`ScanResult.identities`, aligné par l'id temporaire du
+  scanner), jamais dedans — c'est ce qui a permis de ne toucher **aucun** des
+  34 sites existants qui construisent un `NodeDto` littéralement.
+
+### BM.3 C — Schéma canonique et migration
+
+Même `Index` SQLite, aucun registre parallèle. `SCHEMA_VERSION` (`index.rs`)
+et `MAP_SCHEMA_VERSION` (`map/store.rs`) passent **ensemble** de `3` à `4` —
+ce sont deux constantes indépendantes qui décrivent le même
+`PRAGMA user_version`, et les désynchroniser aurait fait refuser tout index
+existant comme `IndexIncompatible` (découvert par la suite de tests : 68
+échecs avant correction).
+
+`migrate_to_stable_identity()`, chaînée après `migrate_to_bounded_hierarchy()`
+dans `initialize()` : deux colonnes ordinaires nullables (`stable_key`,
+`identity_provenance` — pas `VIRTUAL`, elles ne dérivent de rien), un index
+`UNIQUE` partiel (`WHERE stable_key IS NOT NULL`, défense en profondeur sous
+le refus applicatif) et le compteur durable `next_node_id`, amorcé à
+`MAX(id) + 1` (`0` sur une table vide). Idempotente, ne réécrit aucune ligne
+existante : une base migrée garde tous ses nœuds et son `seen`.
+
+**Limite déclarée, pas cachée :** une ligne publiée avant cette migration a
+`stable_key = NULL` jusqu'à la prochaine republication de son cerveau — rien
+à quoi la faire correspondre à ce moment-là, donc ses ids sont réassignés
+une seule fois lors de cette première republication post-migration, puis se
+stabilisent à partir de la republication suivante. Aucune donnée n'est
+perdue; seule la continuité d'id ne peut pas remonter avant l'existence de
+la clé stable elle-même.
+
+### BM.4 D et E — Remap des IDs et conservation de `seen`
+
+`Index::publish` (interne, partagée) remplace l'ancien
+`replace_nodes_with_metadata` en un point unique à deux modes :
+
+- **`identities: None`** — comportement **strictement identique** à avant
+  cette tâche : les lignes gardent l'id/`parent_id` fourni, aucun remap.
+  Seule addition : une clé `PATH_FALLBACK` est quand même calculée et
+  stockée pour chaque ligne, pour que les colonnes ne soient jamais à moitié
+  écrites. C'est le chemin de **tous** les appelants synthétiques existants
+  (34 sites `NodeDto { .. }`, `replace_nodes()`, les bancs `scale_spike`/
+  `scale_query`) — **aucun n'a été modifié**.
+- **`identities: Some(list)`** — le seul appelant est le pipeline réel
+  (`map::commands::publish_map`, via `BrainIndex::replace_with_identity`,
+  nouvelle méthode). Collision de clé stable **dans le nouveau scan** ⇒
+  `PublishError::IdentityCollision`, retourné **avant** toute transaction
+  d'écriture — l'index précédent n'est jamais touché. Sinon : clé déjà connue
+  ⇒ même id canonique (`previous_by_key`, lu en tête de fonction); clé neuve
+  ⇒ id frais du compteur `next_node_id`, qui n'avance **que** vers l'avant.
+  `parent_id` de chaque nœud est remappé vers l'id canonique correspondant
+  avant l'`INSERT`. `root_id`/`node_count` dans `schema_meta` sont réécrits
+  **en dernier**, après le remap, jamais avant — un appelant peut fournir un
+  id de racine non remappé sans conséquence, la valeur finale est toujours
+  la vraie.
+- **`seen`** reste porté par chemin (mécanisme historique, inchangé pour le
+  mode `None`) **et**, uniquement en mode identité, par l'id canonique
+  précédent d'une clé reconnue — union des deux, jamais un remplacement. Un
+  renommage `SYSTEM` conserve donc `seen` même si le chemin change; un
+  renommage `PATH_FALLBACK` ne le récupère pas — la limite honnête que
+  `DEC-0009` attend explicitement de ce repli.
+- `read_next_node_id` s'amorce lui-même depuis `MAX(id) + 1` si la clé
+  `next_node_id` est absente — découvert nécessaire par
+  `legacy_binding_tests.rs`, dont la republication d'un index simulé « avant
+  `TASK-0036` » passe par `BrainIndex::open_existing`, qui ne migre jamais.
+
+### BM.5 F — Compatibilité produit
+
+`BrainNodeRef = brainId + nodeId` inchangé. `NODE_COLUMNS`/`node_from_row`
+inchangés — aucune colonne d'identité n'y a été ajoutée, par construction du
+modèle (BM.2). Projection 512/64, recherche `TASK-0034`, enfants directs
+`TASK-0035`, Explorer/Copier confinés côté Rust : tous relus, aucun modifié.
+Aucune permission frontend nouvelle. Revalidé par la suite TypeScript
+complète (**339 PASS**, inchangée) et `pnpm check`/`pnpm build`.
+
+### BM.6 Preuves Rust — 392 PASS (365 + 27), 5 ignorés
+
+- **`identity.rs`, 12 tests** : clé de repli déterministe et versionnée,
+  change avec le chemin et avec le type; reparse/online-only/skipped ne
+  tentent jamais `SYSTEM`; **7 `#[cfg(windows)]`, exécutés sur Windows réel**
+  — identité `SYSTEM` obtenue et de la forme du couple exact (16 + 32 hex);
+  fichier renommé même volume; fichier déplacé en sous-dossier même volume;
+  dossier renommé; deux fichiers distincts jamais la même identité; une
+  copie reçoit une identité différente de sa source (ce qu'un déplacement
+  inter-volume ferait).
+- **`index.rs`, 8 tests nouveaux** : migration schéma 3→4 (littéral
+  `SCHEMA_V3`, même convention que `SCHEMA_V2` déjà présent) — tout nœud et
+  `seen` survivent, `index_id`/`index_revision` intacts, immédiatement
+  publiable après migration; même clé stable ⇒ même id à travers un
+  renommage; sous-arbre déplacé ⇒ dossier et enfant gardent leurs ids,
+  `parent_id` remappé correctement; objet neuf après suppression ⇒ id
+  jamais recyclé, y compris sur trois publications successives; collision
+  artificielle ⇒ refusée, index précédent intact à la même révision; `seen`
+  porté par id apparié même si le chemin change (`SYSTEM`); `seen` **non**
+  porté à travers un renommage `PATH_FALLBACK`; mode legacy sans identité
+  peuple quand même une clé de repli.
+- **`map/stable_identity_tests.rs`, 7 tests nouveaux, pipeline réel
+  complet** (`register_real_root` → `refresh_map`/`rebuild_map`, comme
+  `real_root_tests.rs`) : renommage d'un vrai fichier Windows entre deux
+  `refresh_map` conserve `nodeId` et `seen`; déplacement en sous-dossier
+  conserve `nodeId` et met à jour `parentId`; dossier déplacé avec enfant
+  conserve les deux ids et la cohérence parent/enfant; suppression puis
+  création d'un objet différent ne recycle jamais l'id; deux cerveaux sur la
+  même vraie racine restent isolés (`seen` de l'un n'affecte jamais
+  l'autre); une reconstruction d'un arbre réel inchangé garde tous les ids;
+  aucune clé stable/chemin absolu dans `MapSnapshot`/`NodeDetail` sérialisés.
+
+`365 → 392` (+27, aucune régression sur les 365 précédents).
+
+### BM.7 Rejeu WebView2 — un seul lancement réel, zéro redémarrage
+
+Contrairement à `TASK-0035` A, l'identité de nœud n'a pas besoin de survivre
+à un redémarrage réel : elle doit survivre à une republication. Un seul
+lancement suffit. `scripts/task0036-seed-proof.py` enregistre un cerveau
+`REAL_ROOT` sur un petit arbre réel (11 entrées : un fichier à renommer, un
+dossier destination non vide, un sous-arbre à déplacer avec un enfant, un
+fichier à supprimer, trois fichiers de remplissage).
+`scripts/task0036-webview2.mjs`, piloté par CDP sur l'exécutable réel :
+indexe (`Actualiser`), résout `avant.txt`, **renomme le fichier sur disque
+avec `node:fs`** (hors du processus produit), `Actualiser` de nouveau,
+résout `apres.txt` — puis répète pour un déplacement en sous-dossier, un
+déplacement de sous-arbre avec enfant, et une suppression suivie d'une
+création différente.
+
+Résultat complet, artefact
+[`TASK-0036-webview2.json`](../performance/runs/TASK-0036-webview2.json) :
+`nodeIdIdenticalAfterRename`, `nodeIdIdenticalAfterMove`,
+`movedParentIsDestinationFolder`, `movedFolderKeepsItsOwnId`,
+`movedFoldersChildKeepsItsId`, `movedChildParentIsMovedFolder`,
+`newObjectNeverRecyclesADeletedId`, `searchStillFinds`, `childrenStillPage`,
+`projectionStillRenders`, `revealStillSucceeds`,
+`noAbsolutePathOrStableKeyLeak` — **tous `true`**. **0 erreur console
+fatale.**
+
+**Un point à `false`, documenté, sans lien avec l'identité :**
+`copyStillSucceeds` — `map_copy_node_path` échoue avec
+`clipboard_write_failed` dans cette fenêtre automatisée cachée
+(`-WindowStyle Hidden`), un défaut d'accès presse-papiers hors focus déjà
+possible avant cette tâche et hors de son périmètre (`TASK-0035` C reste
+l'autorité sur la copie elle-même). La tentative est faite dans un
+`try`/`catch` qui consigne la raison plutôt que d'interrompre le rejeu.
+
+**Non rejoué dans WebView2, par choix déclaré :** la conservation de `seen`
+à travers un renommage `SYSTEM` réel **est** prouvée (BM.6, dernier item de
+`stable_identity_tests.rs`, sur Windows réel) mais pas rejouée par ce
+script : le produit n'expose aucune commande/UI `seen` à actionner depuis la
+page, et réactiver l'ancienne commande 0.1 était explicitement interdit par
+la tâche.
+
+### BM.8 Validations
+
+Rust **392 PASS, 5 ignorés** (bancs 100k/1M, ignorés par défaut, inchangé).
+TypeScript **339 PASS**, inchangée. `pnpm check`, `pnpm build`,
+`cargo build --offline`, `git diff --check` verts. `cargo fmt` propre sur
+les 11 fichiers touchés (vérifié fichier par fichier : `rustfmt` sur un
+fichier qui `mod`-déclare le reste de l'arbre reformate en réalité tout le
+crate atteignable, donc `cargo fmt --check` du premier essai a effectivement
+reformaté 14 fichiers hors de cette tâche — **annulés** avant commit; seuls
+les 11 fichiers réellement modifiés par `TASK-0036` restent reformattés).
+`cargo clippy --all-targets --offline -- -D warnings` rouge à **26
+erreurs, même compte et mêmes diagnostics qu'avant cette tâche** — vérifié
+par liste de fichiers : zéro diagnostic dans un fichier touché par
+`TASK-0036` (un `collapsible_if` introduit dans `identity.rs` a été corrigé
+dans cette même passe, avant le compte final).
+
+### BM.9 Confidentialité
+
+Aucune clé stable, `VolumeSerialNumber`, `FileId` ou empreinte n'existe dans
+`NodeDto`, `MapNode`, `MapSnapshot`, `NodeDetail` ni aucun DTO sérialisé —
+vérifié par test (`stable_identity_tests.rs`) et par le rejeu WebView2 réel
+(recherche textuelle de `SYS1:`/`PFv1:`/`stableKey`/`identityProvenance`
+dans le DOM et dans chaque payload `invoke`). Aucun identifiant global entre
+cerveaux : deux cerveaux sur la même vraie racine ne partagent ni id ni
+`seen` (BM.6). Aucune donnée réelle utilisée; tous les arbres sont générés
+par les preuves et meurent avec elles.
+
+### BM.10 Non fait, et limites
+
+Hors portée comme prévu par la fiche : journal de changements (`F-027`),
+watcher (`F-030`), application incrémentale (`F-031`/U-B), suggestions
+heuristiques de déplacement, déplacement inter-volume comme identité
+conservée, filtres, FTS5, refonte graphique, nouvelle source/second Index,
+réseau/cloud/LLM/MCP. Le comportement après hydratation d'un espace réservé
+cloud reste, comme avant cette tâche, une question non testée — contournée
+en excluant `online_only` de la voie `SYSTEM` plutôt que résolue par la
+mesure. Le premier renommage/déplacement après la migration d'un index
+pré-existant n'est pas conservé (BM.3) : limite déclarée d'un remap qui n'a
+rien à quoi se raccrocher avant que la clé stable existe.
+
+**Aucune donnée personnelle**, comme toujours. **X5 inchangé**,
+`origin/main` inchangé. Aucune `TASK-0037`, aucune nouvelle DEC, aucune PR,
+fusion, étiquette ni release.
+
 **Action unique suivante :** contrôle indépendant de `TASK-0035`.

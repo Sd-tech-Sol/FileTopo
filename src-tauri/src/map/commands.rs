@@ -430,7 +430,7 @@ fn publish_map(
     } else {
         BrainIndex::open(&database)?
     };
-    store.replace(
+    store.replace_with_identity(
         &brain.brain_id,
         SourceStamp {
             kind: brain.source_kind,
@@ -438,6 +438,7 @@ fn publish_map(
             label: &brain.source_label,
         },
         &scan.nodes,
+        &scan.identities,
         &scan.diagnostics,
         now_ms(),
     )?;
@@ -2170,3 +2171,7 @@ mod find_open_tests;
 #[cfg(test)]
 #[path = "context_panel_tests.rs"]
 mod context_panel_tests;
+
+#[cfg(test)]
+#[path = "stable_identity_tests.rs"]
+mod stable_identity_tests;

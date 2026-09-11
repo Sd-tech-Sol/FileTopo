@@ -1,11 +1,20 @@
 # Action suivante
 
-## TASK-0036 — V1 Stable Identity Foundation — READY
+## Contrôle indépendant de TASK-0036 — READY
 
-`TASK-0035` est **VERIFIED** par `ACTION-0056`. La branche courante dédiée est `build/v0.2-a20-v1-stable-identity`.
+`TASK-0036 — V1 Stable Identity Foundation` est livrée `IMPLEMENTED`,
+**jamais auto-`VERIFIED`**, sur `build/v0.2-a20-v1-stable-identity`. Détail
+complet : [`VALIDATION.md` section BM](VALIDATION.md).
 
-Action unique : exécuter `TASK-0036-v1-stable-identity.md` via `.orchestrator/NEXT_PROMPT.md`.
+Action unique : un contrôle indépendant, par une instance distincte de
+l'exécuteur et sur preuves, de la productionisation de `DEC-0009` I-E —
+identité Windows `SYSTEM` (`VolumeSerialNumber + FileId`) quand disponible,
+repli déterministe/versionné du chemin relatif + type sinon, remap des
+`nodes.id` à la publication, compteur monotone sans recyclage, migration de
+schéma `3 → 4`. Preuves : Rust 392 PASS (365 + 27, dont 7 tests Windows
+réels et 7 tests de pipeline réel complet), TypeScript 339 PASS inchangée,
+rejeu WebView2 réel (`docs/performance/runs/TASK-0036-webview2.json`).
 
-Cette tranche traite **F-004 — identifiants stables** avant le journal/watchers. Elle productionnalise `DEC-0009` I-E en réutilisant le spike B3 déjà vérifié : identité Windows `VolumeSerialNumber + FileId` lorsque disponible, fallback déterministe/versionné du chemin relatif + type sinon, heuristique jamais utilisée comme identité. Le même objet doit conserver son `nodes.id` lors d'un renommage/déplacement intra-volume prouvé.
-
-Hors portée : journal de changements, watcher, mise à jour incrémentale, filtres, FTS5 et refonte graphique. Aucun TASK-0037 avant contrôle indépendant de TASK-0036.
+Hors portée, comme prévu par la fiche : journal de changements, watcher,
+mise à jour incrémentale, filtres, FTS5, refonte graphique. Aucun
+`TASK-0037` avant ce contrôle.

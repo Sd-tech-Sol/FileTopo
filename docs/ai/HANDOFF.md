@@ -1,6 +1,96 @@
 # HANDOFF — passage de relais
 
-## Relais actuel — TASK-0035, V1 Context Panel livrée, en attente de contrôle — 2026-09-11
+## Relais actuel — TASK-0036, V1 Stable Identity Foundation livrée, en attente de contrôle — 2026-09-11
+
+- **Ce qui vient d'être fait :** `TASK-0035` était déjà `VERIFIED` par
+  `ACTION-0056` (déjà sur la branche précédente, documents durables déjà
+  synchronisés). `TASK-0036 — V1 Stable Identity Foundation` est livrée sur
+  `build/v0.2-a20-v1-stable-identity` : `IMPLEMENTED`, jamais
+  auto-`VERIFIED`. Aucune nouvelle DEC — productionise `DEC-0009` I-E, déjà
+  `APPROVED` depuis la porte P2.
+- **Le geste central :** `identity.rs`, nouveau module sans dépendance vers
+  `map/`, calcule une identité par nœud pendant le parcours existant du
+  scanner — `SYSTEM` (`VolumeSerialNumber + FileId`, la technique B3 déjà
+  `VERIFIED`, adaptée sur Rust stable) quand le nœud y est éligible, repli
+  déterministe/versionné du chemin relatif + type sinon. À la publication,
+  `Index::publish` (fonction interne unifiée qui remplace l'ancienne
+  `replace_nodes_with_metadata`) remappe le scan vers les `nodes.id`
+  canoniques : une clé stable reconnue garde son id; un objet neuf reçoit un
+  id d'un compteur durable (`next_node_id`) qui n'avance jamais à rebours.
+- **Le choix de conception qui a tout simplifié :** `Index::publish` a DEUX
+  modes, `identities: None` et `identities: Some(list)`. Le mode `None` est
+  **exactement** le comportement d'avant cette tâche — id/`parent_id`
+  gardés verbatim — et c'est le mode que prennent **tous** les appelants
+  synthétiques existants (`replace_nodes()`, les 34 sites `NodeDto { .. }`
+  littéraux du dépôt, les bancs `scale_spike`/`scale_query`). **Aucun d'eux
+  n'a été touché.** Seul `map::commands::publish_map` (le pipeline réel)
+  appelle `identities: Some(...)`, via une nouvelle méthode
+  `BrainIndex::replace_with_identity`. C'est ce qui a permis de livrer sans
+  toucher un seul test synthétique préexistant.
+- **Qui a fait quoi :** Claude Code a écrit la tranche entière. **Il ne
+  peut pas rendre le verdict.**
+- **Ce que le prochain relais doit savoir :**
+  - **`SCHEMA_VERSION` (`index.rs`) et `MAP_SCHEMA_VERSION` (`map/store.rs`)
+    sont deux constantes indépendantes qui doivent toujours être bumpées
+    ensemble.** Elles décrivent le même `PRAGMA user_version`, comparé dans
+    `BrainIndex::open_existing`. Les désynchroniser fait refuser **tout**
+    index comme `IndexIncompatible` — découvert par 68 tests rouges avant
+    correction. Si un futur schéma bump se prépare, chercher les deux.
+  - **`identity.rs` a délibérément sa propre copie de `fnv1a64`** plutôt que
+    d'importer celle de `map::fnv1a64` : `scanner.rs`/`index.rs` sont des
+    modules cœur dont `map/` dépend, jamais l'inverse. Ne pas « déduplicer »
+    en important dans le mauvais sens.
+  - **Un `NodeIdentity` ne voyage jamais dans `NodeDto`.** C'est le choix
+    qui a évité de toucher les 34 sites `NodeDto { .. }` existants :
+    `ScanResult.identities` est un `Vec` parallèle, aligné par l'id
+    temporaire du scanner, consommé seulement par `publish_with_identity`.
+    Ne pas ajouter `stable_key`/`identity_provenance` à `NodeDto` pour une
+    future tâche sans relire pourquoi ce choix a été fait ici.
+  - **`read_next_node_id` s'auto-amorce depuis `MAX(id) + 1` si la clé
+    `next_node_id` est absente.** Nécessaire parce qu'une republication peut
+    passer par `BrainIndex::open_existing`, qui ne migre jamais (contrairement
+    à `Index::open`) — `legacy_binding_tests.rs` l'exerçait déjà sans le
+    savoir avant cette tâche.
+  - **`seen` est maintenant porté par DEUX mécanismes, jamais un seul :** par
+    `relative_path` (historique, inchangé) **et**, seulement en mode
+    identité, par l'id canonique précédent d'une clé reconnue — union, jamais
+    remplacement. Un renommage `SYSTEM` conserve `seen`; un renommage
+    `PATH_FALLBACK` ne le récupère pas — la limite honnête que `DEC-0009`
+    attend explicitement du repli. Ne pas « corriger » ce cas en cherchant à
+    faire porter `seen` par chemin pour le mode identité aussi : ce serait
+    exactement l'heuristique par ressemblance que `DEC-0009` interdit.
+  - **Piège découvert en écrivant `cargo fmt --check` :** invoquer `rustfmt`
+    directement sur un fichier qui `mod`-déclare le reste de l'arbre (par
+    exemple `lib.rs`) reformate en réalité **tout le crate atteignable**, pas
+    seulement ce fichier. Un premier passage a ainsi reformaté 14 fichiers
+    hors du périmètre de cette tâche (débit de formatage historique) — annulé
+    avant commit avec `git restore --source=HEAD`. Pour formater seulement ce
+    qu'une tâche touche : passer les fichiers réellement modifiés à `rustfmt`
+    directement, puis vérifier par `git status` qu'aucun autre fichier n'a
+    bougé avant de committer.
+  - `scripts/task0036-seed-proof.py` + `task0036-webview2.mjs`/`.ps1` sont
+    un nouveau harnais, plus léger que `TASK-0034`/`0035` : **un seul
+    lancement réel, zéro redémarrage** — l'identité de nœud doit survivre à
+    une republication, pas à un redémarrage de processus. Le script Node
+    renomme/déplace/supprime des fichiers réels **directement avec
+    `node:fs`**, entre deux clics réels sur `Actualiser` de la même session.
+  - **`map_copy_node_path` a échoué en environnement automatisé** (fenêtre
+    cachée, `clipboard_write_failed`) — sans lien avec l'identité, un défaut
+    d'accès presse-papiers hors focus déjà possible avant cette tâche. Le
+    rejeu l'encaisse dans un `try`/`catch` et le consigne plutôt que
+    d'échouer tout le script; `copyStillSucceeds: false` est visible dans
+    l'artefact, documenté comme limite, pas caché.
+- **Ce qui reste ouvert :** `cargo clippy` strict rouge à 26 erreurs, même
+  compte qu'avant cette tâche (zéro nouveau diagnostic dans les fichiers
+  touchés). Aucun watcher, aucun incrémental, aucun FTS5, aucun filtre,
+  déplacement inter-volume non testé (écrire hors dépôt requis), identité
+  après hydratation cloud contournée plutôt que mesurée, `seen` non rejoué
+  en WebView2 (aucune UI/commande `seen` exposée par le produit — prouvé au
+  niveau Rust sur Windows réel à la place).
+- **Action unique suivante :** contrôle indépendant de `TASK-0036`, sur les
+  preuves de cette tranche.
+
+## Relais précédent — TASK-0035, V1 Context Panel livrée, en attente de contrôle — 2026-09-11
 
 - **Ce qui vient d'être fait :** `TASK-0034` était déjà `VERIFIED` dans sa
   portée par `ACTION-0055` (déjà sur la branche précédente, mais dont les

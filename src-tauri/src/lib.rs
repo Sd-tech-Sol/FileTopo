@@ -1,5 +1,7 @@
 mod domain;
 mod hierarchy;
+/// Stable node identity — `DEC-0009` I-E, `TASK-0036`.
+mod identity;
 mod index;
 mod map;
 /// Storing a filesystem path exactly, shared by the catalogue and the 0.1
@@ -1797,7 +1799,9 @@ mod integration_tests {
             .map(|value| value.as_str().expect("permission string").to_string())
             .collect::<Vec<_>>();
         assert!(
-            !granted.iter().any(|name| name.starts_with("clipboard-manager:")),
+            !granted
+                .iter()
+                .any(|name| name.starts_with("clipboard-manager:")),
             "the main window must not be granted `clipboard-manager:*`"
         );
     }
@@ -1831,7 +1835,14 @@ mod integration_tests {
             vec!["core:default"],
             "the main window gets the core defaults and nothing else"
         );
-        for forbidden in ["dialog:", "fs:", "shell:", "opener:", "http:", "clipboard-manager:"] {
+        for forbidden in [
+            "dialog:",
+            "fs:",
+            "shell:",
+            "opener:",
+            "http:",
+            "clipboard-manager:",
+        ] {
             assert!(
                 !granted.iter().any(|name| name.starts_with(forbidden)),
                 "the main window must not be granted `{forbidden}*`"

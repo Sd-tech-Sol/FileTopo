@@ -201,7 +201,7 @@ fn incompatible_future_schema_and_foreign_brain_are_never_repaired_silently() {
     }
     assert_eq!(std::fs::read(&database).unwrap(), bytes);
     let connection = rusqlite::Connection::open(&database).unwrap();
-    connection.execute_batch("PRAGMA user_version=3; UPDATE schema_meta SET value='brain-gamma' WHERE key='brain_id';").unwrap();
+    connection.execute_batch("PRAGMA user_version=4; UPDATE schema_meta SET value='brain-gamma' WHERE key='brain_id';").unwrap();
     drop(connection);
     let bytes = std::fs::read(&database).unwrap();
     assert!(matches!(

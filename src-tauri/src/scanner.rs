@@ -1,4 +1,5 @@
 use crate::domain::{NodeDto, NodeKind, ScanDiagnostic};
+use crate::identity::{self, NodeIdentity};
 use std::collections::{HashMap, VecDeque};
 use std::fs;
 use std::io;
@@ -26,6 +27,11 @@ pub enum ScanError {
 pub struct ScanResult {
     pub nodes: Vec<NodeDto>,
     pub diagnostics: Vec<ScanDiagnostic>,
+    /// One entry per node in [`ScanResult::nodes`], same temporary `id`,
+    /// computed by the same traversal that read its metadata — `TASK-0036`.
+    /// Never serialized: publication consumes this and remaps to canonical
+    /// ids before anything reaches an Index row a DTO could be built from.
+    pub identities: Vec<NodeIdentity>,
 }
 
 #[derive(Debug)]
@@ -60,6 +66,8 @@ pub fn scan_tree_controlled(
         .file_name()
         .map(|name| name.to_string_lossy().into_owned())
         .unwrap_or_else(|| "root".to_string());
+    let root_reparse_point = is_reparse_point(&root_meta);
+    let root_online_only = is_online_only(&root_meta);
     let mut nodes = vec![NodeDto {
         id: 1,
         parent_id: None,
@@ -69,10 +77,22 @@ pub fn scan_tree_controlled(
         depth: 0,
         size_bytes: 0,
         modified_unix_ms: modified_ms(&root_meta),
-        online_only: is_online_only(&root_meta),
-        reparse_point: is_reparse_point(&root_meta),
+        online_only: root_online_only,
+        reparse_point: root_reparse_point,
         child_count: 0,
         seen: false,
+    }];
+    let (root_stable_key, root_provenance) = identity::compute_identity(
+        root,
+        "",
+        NodeKind::Root,
+        root_reparse_point,
+        root_online_only,
+    );
+    let mut identities = vec![NodeIdentity {
+        node_id: 1,
+        stable_key: root_stable_key,
+        provenance: root_provenance,
     }];
     let mut diagnostics = Vec::new();
     let mut queue = VecDeque::from([PendingDirectory {
@@ -128,11 +148,25 @@ pub fn scan_tree_controlled(
             };
             let id = next_id;
             next_id += 1;
+            let relative_display = display_relative(&relative);
+            let online_only = is_online_only(&metadata);
+            let (stable_key, provenance) = identity::compute_identity(
+                &entry.path(),
+                &relative_display,
+                kind,
+                reparse,
+                online_only,
+            );
+            identities.push(NodeIdentity {
+                node_id: id,
+                stable_key,
+                provenance,
+            });
             nodes.push(NodeDto {
                 id,
                 parent_id: Some(directory.node_id),
                 name: entry.file_name().to_string_lossy().into_owned(),
-                relative_path: display_relative(&relative),
+                relative_path: relative_display,
                 kind,
                 depth: directory.depth + 1,
                 size_bytes: if metadata.is_file() {
@@ -141,7 +175,7 @@ pub fn scan_tree_controlled(
                     0
                 },
                 modified_unix_ms: modified_ms(&metadata),
-                online_only: is_online_only(&metadata),
+                online_only,
                 reparse_point: reparse,
                 child_count: 0,
                 seen: false,
@@ -173,7 +207,11 @@ pub fn scan_tree_controlled(
 
     report_progress(nodes.len());
 
-    Ok(ScanResult { nodes, diagnostics })
+    Ok(ScanResult {
+        nodes,
+        diagnostics,
+        identities,
+    })
 }
 
 fn display_relative(path: &Path) -> String {

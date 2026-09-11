@@ -2,7 +2,11 @@
 use super::layout::Rect;
 use crate::domain::{NodeKind, ScanDiagnostic};
 use serde::{Deserialize, Serialize};
-pub const MAP_SCHEMA_VERSION: i64 = 3;
+/// Kept in lockstep with `crate::index::SCHEMA_VERSION` by hand: the two
+/// constants describe the same `PRAGMA user_version`, one from the canonical
+/// `Index`'s side and one from `BrainIndex::open_existing`'s compatibility
+/// check. `4` since `TASK-0036` — the durable stable-identity columns.
+pub const MAP_SCHEMA_VERSION: i64 = 4;
 pub const NON_RECONSTRUCTIBLE_KEYS: [&str; 1] = ["built_unix_ms"];
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

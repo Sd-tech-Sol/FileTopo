@@ -74,7 +74,13 @@ fn legacy_index(paths: &SandboxPaths, brain: &BrainRecord) {
     let connection = rusqlite::Connection::open(paths.brain_map_database(&brain.brain_id)).unwrap();
     connection
         .execute(
-            "DELETE FROM schema_meta WHERE key IN ('source_kind', 'source_ref')",
+            // `source_kind`/`source_ref` are `DEC-0033`; `next_node_id` is
+            // `TASK-0036` — both postdate `TASK-0031`, so a file simulating
+            // that era carries neither. A republish of an already-existing
+            // file goes through `BrainIndex::open_existing`, which never
+            // re-migrates — so this also exercises `read_next_node_id`'s own
+            // bootstrap, the fallback that covers exactly this path.
+            "DELETE FROM schema_meta WHERE key IN ('source_kind', 'source_ref', 'next_node_id')",
             [],
         )
         .unwrap();

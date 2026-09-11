@@ -4,6 +4,7 @@ use super::layout::{LAYOUT_ALGORITHM, Rect};
 use super::store::{MapNode, MapSnapshot, NodeDetail};
 use super::{MapError, fnv1a64};
 use crate::domain::{NodeDto, ScanDiagnostic};
+use crate::identity::NodeIdentity;
 use crate::index::Index;
 use rusqlite::OptionalExtension;
 use std::path::Path;
@@ -138,41 +139,84 @@ impl BrainIndex {
         diagnostics: &[ScanDiagnostic],
         built: i64,
     ) -> Result<(), MapError> {
-        let root = nodes
-            .iter()
-            .find(|n| n.parent_id.is_none())
-            .ok_or_else(|| MapError::View("missing root".into()))?;
-        if nodes.iter().filter(|n| n.parent_id.is_none()).count() != 1 {
-            return Err(MapError::View("multiple roots".into()));
-        }
+        Self::validate_single_root(nodes)?;
         self.index.replace_nodes_with_metadata(
             nodes,
-            &[
-                ("brain_id", brain.into()),
-                ("source_kind", source.kind.as_str().into()),
-                ("source_ref", source.source_ref.into()),
-                // Kept under its historical key for a synthetic build so the
-                // `TASK-0016`..`TASK-0026` evidence keeps reading; **empty**
-                // for a real root rather than filled with something that is
-                // not a fixture — `DEC-0033` D.
-                (
-                    "fixture_id",
-                    match source.kind {
-                        SourceKind::SyntheticFixture => source.source_ref.to_string(),
-                        SourceKind::RealRoot => String::new(),
-                    },
-                ),
-                ("label", source.label.into()),
-                ("node_count", nodes.len().to_string()),
-                ("root_id", root.id.to_string()),
-                ("built_unix_ms", built.to_string()),
-                ("layout_algorithm", LAYOUT_ALGORITHM.into()),
-                ("build_complete", "1".into()),
-                ("projection_contract", "DEC-0031".into()),
-            ],
+            &Self::build_metadata(brain, source, built),
             diagnostics,
         )?;
         Ok(())
+    }
+
+    /// Identity-aware publication — `TASK-0036`, `DEC-0009` I-E. The only
+    /// caller is the real scanner pipeline
+    /// (`map::commands::publish_map`): `identities` must be the
+    /// [`NodeIdentity`] list the same scan produced alongside `nodes`.
+    ///
+    /// `root_id` and `node_count` in [`build_metadata`](Self::build_metadata)
+    /// are computed from the **pre-remap** `nodes` slice and are therefore
+    /// placeholders here — `Index::publish_with_identity` overwrites both
+    /// with the canonical, post-remap truth as the authoritative last write
+    /// of its own transaction, so nothing downstream ever reads the
+    /// placeholder.
+    pub fn replace_with_identity(
+        &mut self,
+        brain: &str,
+        source: SourceStamp<'_>,
+        nodes: &[NodeDto],
+        identities: &[NodeIdentity],
+        diagnostics: &[ScanDiagnostic],
+        built: i64,
+    ) -> Result<(), MapError> {
+        Self::validate_single_root(nodes)?;
+        self.index
+            .publish_with_identity(
+                nodes,
+                identities,
+                &Self::build_metadata(brain, source, built),
+                diagnostics,
+            )
+            .map_err(|error| match error {
+                crate::index::PublishError::Sqlite(sqlite) => MapError::from(sqlite),
+                crate::index::PublishError::IdentityCollision => MapError::IdentityCollision,
+            })?;
+        Ok(())
+    }
+
+    fn validate_single_root(nodes: &[NodeDto]) -> Result<(), MapError> {
+        match nodes.iter().filter(|n| n.parent_id.is_none()).count() {
+            0 => Err(MapError::View("missing root".into())),
+            1 => Ok(()),
+            _ => Err(MapError::View("multiple roots".into())),
+        }
+    }
+
+    fn build_metadata<'a>(
+        brain: &'a str,
+        source: SourceStamp<'a>,
+        built: i64,
+    ) -> Vec<(&'a str, String)> {
+        vec![
+            ("brain_id", brain.into()),
+            ("source_kind", source.kind.as_str().into()),
+            ("source_ref", source.source_ref.into()),
+            // Kept under its historical key for a synthetic build so the
+            // `TASK-0016`..`TASK-0026` evidence keeps reading; **empty** for
+            // a real root rather than filled with something that is not a
+            // fixture — `DEC-0033` D.
+            (
+                "fixture_id",
+                match source.kind {
+                    SourceKind::SyntheticFixture => source.source_ref.to_string(),
+                    SourceKind::RealRoot => String::new(),
+                },
+            ),
+            ("label", source.label.into()),
+            ("built_unix_ms", built.to_string()),
+            ("layout_algorithm", LAYOUT_ALGORITHM.into()),
+            ("build_complete", "1".into()),
+            ("projection_contract", "DEC-0031".into()),
+        ]
     }
 
     pub fn count(&self) -> Result<usize, MapError> {

@@ -128,6 +128,11 @@ pub enum MapError {
     ContentObservation(String),
     #[error("relation_engine_failed: {0}")]
     RuleEngine(String),
+    /// `TASK-0036` C — a stable-key collision was detected before
+    /// publication opened a write transaction; the previous index was never
+    /// touched and stays exactly as it was, still openable.
+    #[error("map_identity_collision: duplicate stable key refused")]
+    IdentityCollision,
 }
 
 impl From<MapError> for String {

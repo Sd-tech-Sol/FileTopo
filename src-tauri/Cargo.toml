@@ -32,6 +32,18 @@ tauri-plugin-clipboard-manager = "=2.3.3"
 [dev-dependencies]
 tempfile = "3"
 
+# `TASK-0036` — `DEC-0009` I-E, Windows `SYSTEM` identity. Same candidate B3
+# already audited (`spikes/b3-windows-identity/LICENCE.md`): `MIT OR
+# Apache-2.0`, pinned exactly, Windows-only, minimal features. Confined to
+# `src/identity.rs`; no other file references `windows_sys`.
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "=0.61.2", features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_Storage_FileSystem",
+    "Win32_System_IO",
+] }
+
 # Publication hygiene: strip build-machine paths from the shipped binary.
 #
 # Cargo's `trim-paths` profile option would be the natural place for this, but

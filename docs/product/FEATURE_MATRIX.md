@@ -198,12 +198,45 @@ Les preuves et constats ci-dessous sont inchangés.
 >
 > **`TASK-0032` est `IMPLEMENTED`, en attente de contrôle indépendant.**
 
+### Note du 2026-09-11 — `TASK-0036`, fondation d'identité stable
+
+> **Aucune ligne n'est ajoutée, aucune classification ne change au-delà de
+> `F-004`, et aucune donnée personnelle n'est utilisée.**
+>
+> **Une seule ligne change de constat : `F-004` identifiants stables.**
+> `DEC-0009` I-E est productionisée : identité système Windows
+> (`VolumeSerialNumber + FileId`, jamais `FileId` seul) quand disponible,
+> repli déterministe et versionné du chemin relatif + type sinon, provenance
+> toujours l'une des deux — jamais une heuristique. La publication remappe
+> le scan vers les `nodes.id` canoniques : un objet reconnu par sa clé
+> stable garde son id à travers un renommage ou un déplacement intra-volume
+> prouvé; un objet neuf reçoit un id d'un compteur durable qui n'avance
+> jamais à rebours, donc ne recycle jamais silencieusement un id supprimé.
+>
+> **`F-004` passe de `PROPOSED` à `IMPLEMENTED`, pas `VERIFIED`.** Prouvé sur
+> arborescences synthétiques et, pour la voie `SYSTEM`, sur de vrais fichiers
+> Windows — y compris un rejeu produit réel en WebView2 qui renomme puis
+> déplace des fichiers réels entre deux `Actualiser`. Le déplacement
+> **inter-volume** reste, honnêtement, hors de ce qui est prouvable sans
+> écrire hors du dépôt : il continue de se comporter comme une création plus
+> une suppression, exactement le compromis assumé par `DEC-0009`.
+>
+> **Ce qui ne change pas :** cette tâche est une fondation, pas le journal de
+> changements. `F-027` journal, `F-030` surveillance et `F-031` mise à jour
+> incrémentale restent `PROPOSED` et hors portée — aucun watcher, aucun
+> incrémental n'est écrit. `F-050`/`F-051` restent `IMPLEMENTED`, pas
+> `VERIFIED` globalement. `BrainNodeRef = brainId + nodeId` reste la seule
+> identité frontend; aucune clé stable, empreinte ou donnée machine n'est
+> jamais sérialisée vers le WebView.
+>
+> **`TASK-0036` est `IMPLEMENTED`, en attente de contrôle indépendant.**
+
 | Identifiant | Fonction | Comportement cible | Prototype actuel | Preuve dans le dépôt | Écart | Priorité | Phase | État | Critères d'acceptation | Baseline TASK-0011 |
 |---|---|---|---|---|---|---|---|---|---|---|
 | F-001 | Choix de racine | Sélecteur Windows guidé | **Sélecteur natif réel** : `map_brain_choose_real_root`, sans argument, crée un cerveau `REAL_ROOT` **sans rien scanner**; annuler ne crée rien | `TASK-0032` `IMPLEMENTED`, en attente de contrôle; `DEC-0033`; `map/source.rs::validate_real_root`; preuves `RR2`, `RR3`, `RR8` et rejeu WebView2 | Prouvé **sur des arborescences créées par les preuves seulement**. Aucune racine personnelle : point d'arrêt réservé à Sébastien. Flux cerveau encore incomplet — préférences et reprise, voir `F-002` | P0 | 2 | IMPLEMENTED | Sélection réelle et synthétique testées, annulation sûre, racine invalide ou englobant l'état FileTopo refusée, **chemin absolu jamais exposé** | `MVP` |
 | F-002 | Cerveau indépendant | Racine, index et état isolés | Présent mais incomplet | registry.rs:60; lib.rs:229 | Préférences et reprise manquent | P0 | 3 | PROPOSED | Deux cerveaux ne partagent aucun état | `MVP` |
 | F-003 | Scan hiérarchique | Dossiers, fichiers, noms, métadonnées | Présent | scanner.rs:46 | Robustesse à étendre | P0 | 2 | IMPLEMENTED | Arbre synthétique exact, sources inchangées | `MVP` |
-| F-004 | Identifiants stables | Survivre aux changements raisonnables | IDs recréés par parcours | scanner.rs:68; index.rs:85 | Instables au déplacement | P0 | 2 | PROPOSED | Renommage/déplacement corrélé sans faux positif | `MVP` |
+| F-004 | Identifiants stables | Survivre aux changements raisonnables | **`DEC-0009` I-E productionisée** : identité Windows `VolumeSerialNumber + FileId` quand disponible (`SYSTEM`), repli déterministe/versionné du chemin relatif + type sinon (`PATH_FALLBACK`); remap à la publication préserve `nodes.id` pour une clé stable reconnue, compteur monotone pour un objet neuf | `TASK-0036` `IMPLEMENTED`, en attente de contrôle; `identity.rs`; `index.rs::publish_with_identity`; `scanner.rs`; preuves Rust (27 tests, dont 7 `#[cfg(windows)]`) et rejeu WebView2 réel (`TASK-0036-webview2.json`) : renommage et déplacement intra-volume réels conservent le même `nodeId` | Déplacement **inter-volume** non prouvable reste création + suppression, honnêtement (`DEC-0009`, non testé — écrire hors dépôt requis). Aucun watcher, journal ni application incrémentale : fondation seulement, `F-027`/`F-031` restent `PROPOSED`. Identité après hydratation cloud : question ouverte, contournée en excluant `online_only`/reparse de `SYSTEM` plutôt que résolue | P0 | 2 | IMPLEMENTED | Renommage/déplacement intra-volume prouvé conserve `nodeId`; provenance jamais une heuristique; collision refusée sans perte de l'index précédent | `MVP` |
 | F-005 | Exclusions | Règles sûres, visibles et configurables | Reparse points ignorés | scanner.rs:121 | Pas de politique complète | P0 | 2 | PROPOSED | Exclusions testées et explicables | `MVP` |
 | F-006 | Index reconstructible | Refaire depuis la source sans perte | Schéma versionné, remplacement complet | index.rs:70,75 | Migration/reprise à préciser | P0 | 3 | PROPOSED | Reconstruction déterministe et atomique | `MVP` |
 | F-007 | Carte topographique à nœuds reliés | **Nœuds/cartes identifiables** issus de la hiérarchie réelle, reliés par des **connexions explicites** — *cible modifiée le 2026-09-02 par `DEC-0020`; classification inchangée* | `layered-tree-cards-v1`, cartes indépendantes et arêtes parent/enfant | `src-tauri/src/map/layout.rs`; `src/map/MapView.tsx` | Contrôle indépendant attendu | P0 | 4 | IMPLEMENTED | Parent/enfants lisibles sur arbres variés, **sans arête inventée ni nœud dans la mauvaise branche** — `P-02` corrigée par `P02-R1` | `MVP` |

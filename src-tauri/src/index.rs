@@ -1,14 +1,18 @@
 use crate::domain::{NodeDto, NodeKind, ScanDiagnostic};
 use crate::hierarchy::{self, ChildCursor, ChildrenPage, HierarchyError, IndexIdentity};
+use crate::identity::{self, IdentityProvenance, NodeIdentity};
 use rusqlite::{Connection, Result, params};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 
 /// Current schema version of the node index.
 ///
-/// `3` since `TASK-0029`: the two generated sort columns and the child-order
-/// index of [`DEC-0030`](../../docs/decisions/DEC-0030-bounded-hierarchy-query-contract.md).
-const SCHEMA_VERSION: i64 = 3;
+/// `4` since `TASK-0036`: the durable stable-identity columns and the
+/// monotone id counter of
+/// [`DEC-0009`](../../docs/decisions/DEC-0009-data-model-and-relations.md) I-E.
+/// `3` was `TASK-0029`'s two generated sort columns and child-order index
+/// ([`DEC-0030`](../../docs/decisions/DEC-0030-bounded-hierarchy-query-contract.md)).
+const SCHEMA_VERSION: i64 = 4;
 
 /// The node columns, in the exact order [`node_from_row`] reads them.
 ///
@@ -83,6 +87,7 @@ impl Index {
             )?;
         }
         self.migrate_to_bounded_hierarchy()?;
+        self.migrate_to_stable_identity()?;
         self.connection.execute_batch(&format!(
             "PRAGMA user_version={SCHEMA_VERSION};
              INSERT OR REPLACE INTO schema_meta(key, value)
@@ -111,20 +116,25 @@ impl Index {
     fn migrate_to_bounded_hierarchy(&self) -> Result<()> {
         // `pragma_table_info` hides generated columns; `pragma_table_xinfo`
         // lists them. Asking the wrong one would re-run the migration forever.
-        let mut missing = self.connection.prepare(
-            "SELECT COUNT(*) FROM pragma_table_xinfo('nodes') WHERE name = ?1",
-        )?;
+        let mut missing = self
+            .connection
+            .prepare("SELECT COUNT(*) FROM pragma_table_xinfo('nodes') WHERE name = ?1")?;
         for (column, definition) in [
             (
                 "child_order_rank",
                 "INTEGER GENERATED ALWAYS AS (CASE WHEN kind = 'directory' THEN 0 ELSE 1 END) VIRTUAL",
             ),
-            ("name_fold", "TEXT GENERATED ALWAYS AS (lower(name)) VIRTUAL"),
+            (
+                "name_fold",
+                "TEXT GENERATED ALWAYS AS (lower(name)) VIRTUAL",
+            ),
         ] {
             let present: i64 = missing.query_row([column], |row| row.get(0))?;
             if present == 0 {
-                self.connection
-                    .execute(&format!("ALTER TABLE nodes ADD COLUMN {column} {definition}"), [])?;
+                self.connection.execute(
+                    &format!("ALTER TABLE nodes ADD COLUMN {column} {definition}"),
+                    [],
+                )?;
             }
         }
         drop(missing);
@@ -148,38 +158,226 @@ impl Index {
         Ok(())
     }
 
+    /// Schema `3 → 4` — `TASK-0036`, `DEC-0009` I-E.
+    ///
+    /// Two ordinary (non-generated) nullable columns, so an existing row is
+    /// never rewritten and never loses a field: the migration only widens the
+    /// table. A row published before this migration has `stable_key = NULL`
+    /// until its brain's next republish — remap has nothing to match against
+    /// on that one republish, so ids are reassigned fresh exactly once, and
+    /// stabilise from the republish after that onward. Declared, not hidden;
+    /// see `RESULT.md`.
+    ///
+    /// `next_node_id` is bootstrapped from the current maximum `id` — `0` on
+    /// an empty table — so the durable counter [`read_next_node_id`] reads
+    /// can never collide with an id a pre-migration row still holds.
+    fn migrate_to_stable_identity(&self) -> Result<()> {
+        let mut missing = self
+            .connection
+            .prepare("SELECT COUNT(*) FROM pragma_table_info('nodes') WHERE name = ?1")?;
+        for column in ["stable_key", "identity_provenance"] {
+            let present: i64 = missing.query_row([column], |row| row.get(0))?;
+            if present == 0 {
+                self.connection
+                    .execute(&format!("ALTER TABLE nodes ADD COLUMN {column} TEXT"), [])?;
+            }
+        }
+        drop(missing);
+
+        // Defence in depth: even if the application-level collision check in
+        // `publish` were ever bypassed, two active rows cannot silently share
+        // a stable key. `WHERE stable_key IS NOT NULL` keeps a still-NULL
+        // pre-migration row (or a brand-new empty table) from ever tripping it.
+        self.connection.execute_batch(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_nodes_stable_key
+                 ON nodes(stable_key) WHERE stable_key IS NOT NULL;",
+        )?;
+        self.connection.execute(
+            "INSERT OR IGNORE INTO schema_meta(key, value)
+                 SELECT 'next_node_id', CAST(COALESCE(MAX(id), 0) + 1 AS TEXT) FROM nodes",
+            [],
+        )?;
+        Ok(())
+    }
+
     pub fn replace_nodes(&mut self, nodes: &[NodeDto]) -> Result<()> {
         self.replace_nodes_with_metadata(nodes, &[], &[])
     }
 
     /// Atomically publishes corpus, diagnostics, brain metadata and revision.
+    ///
+    /// No identity remap: every node keeps the `id`/`parent_id` its caller
+    /// supplied, exactly as before `TASK-0036`. Used by every synthetic/test
+    /// corpus builder in this codebase, and unaffected by the identity work —
+    /// see [`publish`](Self::publish) for why that split is safe.
     pub(crate) fn replace_nodes_with_metadata(
         &mut self,
         nodes: &[NodeDto],
         metadata: &[(&str, String)],
         diagnostics: &[ScanDiagnostic],
     ) -> Result<()> {
-        let seen_paths = {
+        match self.publish(nodes, None, metadata, diagnostics) {
+            Ok(_) => Ok(()),
+            Err(PublishError::Sqlite(error)) => Err(error),
+            Err(PublishError::IdentityCollision) => {
+                unreachable!("a collision can only be detected when identities are supplied")
+            }
+        }
+    }
+
+    /// Atomically publishes corpus, diagnostics, brain metadata and revision,
+    /// **remapping** the scanner's temporary ids to the durable canonical ids
+    /// of `DEC-0009` I-E — `TASK-0036` D.
+    ///
+    /// The only caller is the real scanner pipeline
+    /// (`map::commands::publish_map`): every `identities` entry must name the
+    /// `node_id` of some node in `nodes`, one to one, or the two slices
+    /// disagree about what was scanned.
+    pub(crate) fn publish_with_identity(
+        &mut self,
+        nodes: &[NodeDto],
+        identities: &[NodeIdentity],
+        metadata: &[(&str, String)],
+        diagnostics: &[ScanDiagnostic],
+    ) -> PublishResult<PublishOutcome> {
+        self.publish(nodes, Some(identities), metadata, diagnostics)
+    }
+
+    /// The one publication path, shared by both modes above.
+    ///
+    /// `identities: None` is the pre-`TASK-0036` behaviour verbatim: rows are
+    /// inserted with the `id`/`parent_id` their caller already chose, and a
+    /// `PATH_FALLBACK` key is still computed and stored for every row (so the
+    /// stable-identity columns are always populated, never half-written) —
+    /// but nothing is remapped and no collision can be detected, because a
+    /// synthetic corpus is free to reuse a path/kind pair across unrelated
+    /// test brains with no meaning attached.
+    ///
+    /// `identities: Some(list)` is `DEC-0009` I-E in full: a node whose
+    /// stable key matches a key already stored keeps that node's canonical
+    /// `id` — surviving an intra-volume rename or move; an unmatched node
+    /// gets a fresh id from the durable, monotone `next_node_id` counter,
+    /// which never rewinds and therefore never recycles a deleted id. A
+    /// duplicate stable key **within the new scan** is refused before this
+    /// function opens a write transaction, so a collision never leaves a
+    /// half-published or corrupted index — `TASK-0036` C and D.
+    ///
+    /// `seen` is carried two ways, unconditionally OR'd together: by
+    /// `relative_path`, exactly as before `TASK-0036` (the only mechanism
+    /// `identities: None` ever had, and still the only one it gets); and,
+    /// only when an identity remap ran, by the previous canonical id a
+    /// matched node's stable key resolved to. A `PATH_FALLBACK` node whose
+    /// path changes therefore does **not** recover the old node's `seen` —
+    /// `TASK-0036` E, the honest limitation `DEC-0009` accepts for the
+    /// fallback provenance.
+    fn publish(
+        &mut self,
+        nodes: &[NodeDto],
+        identities: Option<&[NodeIdentity]>,
+        metadata: &[(&str, String)],
+        diagnostics: &[ScanDiagnostic],
+    ) -> PublishResult<PublishOutcome> {
+        let mut seen_paths = HashSet::<String>::new();
+        let mut seen_ids = HashSet::<i64>::new();
+        let mut previous_by_key = HashMap::<String, i64>::new();
+        {
             let mut statement = self
                 .connection
-                .prepare("SELECT relative_path FROM nodes WHERE seen = 1")?;
-            statement
-                .query_map([], |row| row.get::<_, String>(0))?
-                .collect::<Result<HashSet<_>>>()?
-        };
+                .prepare("SELECT id, relative_path, stable_key, seen FROM nodes")?;
+            let mut rows = statement.query([])?;
+            while let Some(row) = rows.next()? {
+                let id: i64 = row.get(0)?;
+                let relative_path: String = row.get(1)?;
+                let stable_key: Option<String> = row.get(2)?;
+                let seen: bool = row.get(3)?;
+                if seen {
+                    seen_paths.insert(relative_path);
+                    seen_ids.insert(id);
+                }
+                if let Some(key) = stable_key {
+                    previous_by_key.insert(key, id);
+                }
+            }
+        }
+
+        let mut remap = HashMap::<i64, i64>::new();
+        let mut row_identity = HashMap::<i64, (String, &'static str)>::new();
+        let mut next_node_id_to_persist: Option<i64> = None;
+        let mut outcome = PublishOutcome::default();
+
+        match identities {
+            None => {
+                for node in nodes {
+                    let key = identity::path_fallback_key(&node.relative_path, node.kind);
+                    row_identity.insert(node.id, (key, IdentityProvenance::PathFallback.as_str()));
+                }
+            }
+            Some(list) => {
+                let mut seen_in_scan = HashMap::<&str, i64>::with_capacity(list.len());
+                for candidate in list {
+                    if seen_in_scan
+                        .insert(candidate.stable_key.as_str(), candidate.node_id)
+                        .is_some()
+                    {
+                        return Err(PublishError::IdentityCollision);
+                    }
+                }
+                let mut next_id = read_next_node_id(&self.connection)?;
+                for candidate in list {
+                    let canonical =
+                        if let Some(&previous_id) = previous_by_key.get(&candidate.stable_key) {
+                            outcome.matched += 1;
+                            previous_id
+                        } else {
+                            outcome.created += 1;
+                            let assigned = next_id;
+                            next_id += 1;
+                            assigned
+                        };
+                    remap.insert(candidate.node_id, canonical);
+                    row_identity.insert(
+                        canonical,
+                        (candidate.stable_key.clone(), candidate.provenance.as_str()),
+                    );
+                }
+                next_node_id_to_persist = Some(next_id);
+            }
+        }
+
+        let canonical_root_id = nodes
+            .iter()
+            .find(|node| node.parent_id.is_none())
+            .map(|root| remap.get(&root.id).copied().unwrap_or(root.id));
+
         let transaction = self.connection.transaction()?;
         transaction.execute("DELETE FROM nodes", [])?;
         {
             let mut statement = transaction.prepare(
                 "INSERT INTO nodes (
                     id, parent_id, name, relative_path, kind, depth, size_bytes,
-                    modified_unix_ms, online_only, reparse_point, child_count, seen
-                 ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)",
+                    modified_unix_ms, online_only, reparse_point, child_count, seen,
+                    stable_key, identity_provenance
+                 ) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)",
             )?;
             for node in nodes {
+                let canonical_id = remap.get(&node.id).copied().unwrap_or(node.id);
+                let canonical_parent = node
+                    .parent_id
+                    .map(|parent| remap.get(&parent).copied().unwrap_or(parent));
+                let (stable_key, provenance) = row_identity
+                    .get(&canonical_id)
+                    .expect("an identity was computed for every published node");
+                let seen = match identities {
+                    None => node.seen || seen_paths.contains(&node.relative_path),
+                    Some(_) => {
+                        node.seen
+                            || seen_paths.contains(&node.relative_path)
+                            || seen_ids.contains(&canonical_id)
+                    }
+                };
                 statement.execute(params![
-                    node.id,
-                    node.parent_id,
+                    canonical_id,
+                    canonical_parent,
                     node.name,
                     node.relative_path,
                     node.kind.as_str(),
@@ -189,7 +387,9 @@ impl Index {
                     node.online_only,
                     node.reparse_point,
                     i64::from(node.child_count),
-                    node.seen || seen_paths.contains(&node.relative_path),
+                    seen,
+                    stable_key,
+                    provenance,
                 ])?;
             }
         }
@@ -210,8 +410,77 @@ impl Index {
                 params![key, value],
             )?;
         }
+        // Authoritative, and therefore written last: whatever placeholder the
+        // caller's metadata carried for these two keys (if any) is not the
+        // post-remap truth, so it is never allowed to be the final write.
+        transaction.execute(
+            "INSERT OR REPLACE INTO schema_meta VALUES ('node_count', ?1)",
+            params![nodes.len().to_string()],
+        )?;
+        if let Some(root_id) = canonical_root_id {
+            transaction.execute(
+                "INSERT OR REPLACE INTO schema_meta VALUES ('root_id', ?1)",
+                params![root_id.to_string()],
+            )?;
+        }
+        if let Some(next_id) = next_node_id_to_persist {
+            transaction.execute(
+                "INSERT OR REPLACE INTO schema_meta VALUES ('next_node_id', ?1)",
+                params![next_id.to_string()],
+            )?;
+        }
         hierarchy::advance_revision(&transaction)?;
-        transaction.commit()
+        transaction.commit()?;
+        Ok(outcome)
+    }
+}
+
+/// A refusal from [`Index::publish`]. `Sqlite` covers every I/O and
+/// constraint failure (the `idx_nodes_stable_key` partial unique index is a
+/// defence-in-depth backstop and would surface here too, as an ordinary
+/// constraint violation, if the application-level check below it were ever
+/// bypassed); `IdentityCollision` is the explicit, pre-transaction refusal
+/// `TASK-0036` C requires.
+#[derive(Debug, thiserror::Error)]
+pub(crate) enum PublishError {
+    #[error(transparent)]
+    Sqlite(#[from] rusqlite::Error),
+    #[error("identity_collision: duplicate stable key refused")]
+    IdentityCollision,
+}
+
+pub(crate) type PublishResult<T> = std::result::Result<T, PublishError>;
+
+/// How many published nodes reused a previous canonical id versus received a
+/// fresh one — diagnostic only, never serialized to the frontend.
+#[derive(Debug, Clone, Copy, Default)]
+pub(crate) struct PublishOutcome {
+    pub matched: usize,
+    pub created: usize,
+}
+
+/// Reads the durable id counter, bootstrapping it from `MAX(id) + 1` if it is
+/// absent rather than failing.
+///
+/// The migration normally guarantees this key exists — but a republish can
+/// reach here through `BrainIndex::open_existing`, which never re-runs a
+/// migration (`Index::open`'s `initialize()` is not on that path by design:
+/// re-opening an already-compatible file must not re-migrate it). This is
+/// the same bootstrap `migrate_to_stable_identity` performs, kept available
+/// here too so the counter is never the reason a republish fails.
+fn read_next_node_id(connection: &Connection) -> rusqlite::Result<i64> {
+    match connection.query_row(
+        "SELECT value FROM schema_meta WHERE key = 'next_node_id'",
+        [],
+        |row| row.get::<_, String>(0),
+    ) {
+        Ok(raw) => Ok(raw.parse::<i64>().unwrap_or(1)),
+        Err(rusqlite::Error::QueryReturnedNoRows) => {
+            connection.query_row("SELECT COALESCE(MAX(id), 0) + 1 FROM nodes", [], |row| {
+                row.get(0)
+            })
+        }
+        Err(other) => Err(other),
     }
 }
 
@@ -259,11 +528,9 @@ impl Index {
     pub fn list_nodes(&self, limit: usize, offset: usize) -> Result<Vec<NodeDto>> {
         let bounded_limit = limit.clamp(1, 50_000) as i64;
         let bounded_offset = offset as i64;
-        let mut statement = self.connection.prepare(
-            &format!(
+        let mut statement = self.connection.prepare(&format!(
             "SELECT {NODE_COLUMNS} FROM nodes ORDER BY id LIMIT ?1 OFFSET ?2"
-        ),
-        )?;
+        ))?;
         let rows = statement.query_map(params![bounded_limit, bounded_offset], node_from_row)?;
         rows.collect()
     }
@@ -342,6 +609,33 @@ impl Index {
             .prepare(&format!("SELECT {NODE_COLUMNS} FROM nodes WHERE id = ?1"))?;
         let mut rows = statement.query_map([node_id], node_from_row)?;
         rows.next().transpose()
+    }
+
+    /// Test-only window on the two stable-identity columns — `TASK-0036`.
+    /// Never used by product code: no command or DTO reads these columns.
+    #[cfg(test)]
+    pub(crate) fn identity_of(&self, node_id: i64) -> Result<Option<(String, IdentityProvenance)>> {
+        use rusqlite::OptionalExtension;
+        self.connection
+            .query_row(
+                "SELECT stable_key, identity_provenance FROM nodes WHERE id = ?1",
+                [node_id],
+                |row| {
+                    let key: Option<String> = row.get(0)?;
+                    let provenance: Option<String> = row.get(1)?;
+                    Ok(key.zip(provenance))
+                },
+            )
+            .optional()
+            .map(|outer| {
+                outer.flatten().map(|(key, provenance)| {
+                    (
+                        key,
+                        IdentityProvenance::from_db(&provenance)
+                            .expect("only the two I-E provenances are ever written"),
+                    )
+                })
+            })
     }
 }
 
@@ -559,5 +853,491 @@ mod tests {
                 "PERF nodes={count} generation_ms={generation_ms} indexing_ms={indexing_ms} query_ms={query_ms} filtered_ms={filtered_ms}"
             );
         }
+    }
+
+    // -- TASK-0036: schema 3 → 4 migration and identity-aware publication ---
+
+    /// The schema exactly as `TASK-0029` left it, at `user_version = 3` —
+    /// written out in full, like `SCHEMA_V2` above, rather than derived from
+    /// the current code.
+    const SCHEMA_V3: &str = "
+        CREATE TABLE schema_meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+        CREATE TABLE node_diagnostics (relative_path TEXT PRIMARY KEY, code TEXT NOT NULL);
+        CREATE TABLE nodes (
+            id INTEGER PRIMARY KEY,
+            parent_id INTEGER REFERENCES nodes(id) ON DELETE CASCADE,
+            name TEXT NOT NULL,
+            relative_path TEXT NOT NULL,
+            kind TEXT NOT NULL,
+            depth INTEGER NOT NULL,
+            size_bytes INTEGER NOT NULL,
+            modified_unix_ms INTEGER,
+            online_only INTEGER NOT NULL,
+            reparse_point INTEGER NOT NULL,
+            child_count INTEGER NOT NULL,
+            seen INTEGER NOT NULL DEFAULT 0,
+            child_order_rank INTEGER GENERATED ALWAYS AS
+                (CASE WHEN kind = 'directory' THEN 0 ELSE 1 END) VIRTUAL,
+            name_fold TEXT GENERATED ALWAYS AS (lower(name)) VIRTUAL
+        );
+        CREATE INDEX idx_nodes_parent ON nodes(parent_id, name);
+        CREATE INDEX idx_nodes_relative_path ON nodes(relative_path);
+        CREATE INDEX idx_nodes_child_order ON nodes(parent_id, child_order_rank, name_fold, id);
+        INSERT INTO nodes
+            (id, parent_id, name, relative_path, kind, depth, size_bytes,
+             modified_unix_ms, online_only, reparse_point, child_count, seen)
+        VALUES
+            (1, NULL, 'root',     '',          'root',      0, 0, NULL, 0, 0, 2, 0),
+            (2, 1,    'Alpha',    'Alpha',     'directory', 1, 0, NULL, 0, 0, 0, 1),
+            (3, 1,    'beta.txt', 'beta.txt',  'file',      1, 7, NULL, 0, 0, 0, 0);
+        INSERT INTO schema_meta(key, value) VALUES
+            ('schema_version', '3'),
+            ('index_id', '11111111-1111-1111-1111-111111111111'),
+            ('index_revision', '5');
+        PRAGMA user_version=3;
+    ";
+
+    #[test]
+    fn migrating_from_schema_three_keeps_every_node_the_identity_and_the_revision() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let path = temp.path().join("legacy-v3.sqlite");
+        {
+            let legacy = Connection::open(&path).expect("legacy");
+            legacy.execute_batch(SCHEMA_V3).expect("v3 schema");
+        }
+
+        let index = Index::open(&path).expect("migrate");
+        let version: i64 = index
+            .connection
+            .query_row("PRAGMA user_version", [], |row| row.get(0))
+            .expect("version");
+        assert_eq!(version, SCHEMA_VERSION);
+
+        let nodes = index.list_nodes(100, 0).expect("nodes");
+        assert_eq!(nodes.len(), 3, "no node may be lost by the migration");
+        assert!(
+            nodes.iter().find(|node| node.id == 2).expect("alpha").seen,
+            "seen must survive verbatim"
+        );
+
+        let identity = index.identity().expect("identity");
+        assert_eq!(
+            identity.index_id, "11111111-1111-1111-1111-111111111111",
+            "index_id must never be rewritten by a migration"
+        );
+        assert_eq!(
+            identity.revision, 5,
+            "a migration is not a rebuild and must not move the revision"
+        );
+
+        // Every pre-migration row starts with no stable key: nothing to
+        // remap against yet, honestly — see `migrate_to_stable_identity`.
+        assert_eq!(index.identity_of(1).expect("meta"), None);
+        assert_eq!(index.identity_of(2).expect("meta"), None);
+
+        // The migrated database is immediately writable through the new
+        // identity-aware path — no `BLOCKED` state left behind.
+        let corpus = vec![node(1, None, "root", "", NodeKind::Root, 0)];
+        let identities = vec![identity_input(
+            1,
+            "PFv1:migrated",
+            IdentityProvenance::PathFallback,
+        )];
+        let mut writable = index;
+        writable
+            .publish_with_identity(&corpus, &identities, &[], &[])
+            .expect("publish after migration");
+    }
+
+    fn node(
+        id: i64,
+        parent: Option<i64>,
+        name: &str,
+        relative_path: &str,
+        kind: NodeKind,
+        child_count: u32,
+    ) -> NodeDto {
+        NodeDto {
+            id,
+            parent_id: parent,
+            name: name.to_string(),
+            relative_path: relative_path.to_string(),
+            kind,
+            depth: u32::from(parent.is_some()),
+            size_bytes: 0,
+            modified_unix_ms: None,
+            online_only: false,
+            reparse_point: false,
+            child_count,
+            seen: false,
+        }
+    }
+
+    fn identity_input(
+        node_id: i64,
+        stable_key: &str,
+        provenance: IdentityProvenance,
+    ) -> NodeIdentity {
+        NodeIdentity {
+            node_id,
+            stable_key: stable_key.to_string(),
+            provenance,
+        }
+    }
+
+    #[test]
+    fn publish_with_identity_keeps_the_canonical_id_across_a_rename() {
+        let mut index = Index::in_memory().expect("index");
+        let first_scan = vec![
+            node(1, None, "root", "", NodeKind::Root, 1),
+            node(2, Some(1), "avant.txt", "avant.txt", NodeKind::File, 0),
+        ];
+        let first_identities = vec![
+            identity_input(1, "SYS1:root", IdentityProvenance::System),
+            identity_input(2, "SYS1:file-a", IdentityProvenance::System),
+        ];
+        index
+            .publish_with_identity(&first_scan, &first_identities, &[], &[])
+            .expect("first publish");
+        let canonical_before = 2; // no previous state to match against yet.
+        assert!(index.node(canonical_before).expect("row").is_some());
+
+        // A fresh scan of the SAME tree after a rename: a new scanner
+        // temporary id (7, not 2), but the SAME stable key.
+        let second_scan = vec![
+            node(1, None, "root", "", NodeKind::Root, 1),
+            node(7, Some(1), "apres.txt", "apres.txt", NodeKind::File, 0),
+        ];
+        let second_identities = vec![
+            identity_input(1, "SYS1:root", IdentityProvenance::System),
+            identity_input(7, "SYS1:file-a", IdentityProvenance::System),
+        ];
+        let outcome = index
+            .publish_with_identity(&second_scan, &second_identities, &[], &[])
+            .expect("second publish");
+        assert_eq!(outcome.matched, 2, "both root and the renamed file matched");
+        assert_eq!(outcome.created, 0);
+
+        let renamed = index
+            .list_nodes(10, 0)
+            .expect("nodes")
+            .into_iter()
+            .find(|n| n.relative_path == "apres.txt")
+            .expect("renamed node");
+        assert_eq!(
+            renamed.id, canonical_before,
+            "the same stable key must keep the same canonical id across a rename"
+        );
+        assert_eq!(
+            index.identity_of(canonical_before).expect("meta"),
+            Some(("SYS1:file-a".to_string(), IdentityProvenance::System))
+        );
+    }
+
+    #[test]
+    fn publish_with_identity_remaps_parent_ids_for_a_moved_subtree() {
+        let mut index = Index::in_memory().expect("index");
+        let first_scan = vec![
+            node(1, None, "root", "", NodeKind::Root, 1),
+            node(2, Some(1), "dossier", "dossier", NodeKind::Directory, 1),
+            node(
+                3,
+                Some(2),
+                "enfant.txt",
+                "dossier/enfant.txt",
+                NodeKind::File,
+                0,
+            ),
+        ];
+        let first_identities = vec![
+            identity_input(1, "SYS1:root", IdentityProvenance::System),
+            identity_input(2, "SYS1:dossier", IdentityProvenance::System),
+            identity_input(3, "SYS1:enfant", IdentityProvenance::System),
+        ];
+        index
+            .publish_with_identity(&first_scan, &first_identities, &[], &[])
+            .expect("first publish");
+        let (folder_id_before, child_id_before) = (2, 3);
+
+        // The directory moved under a new sibling, one level deeper — new
+        // scanner temp ids throughout, same stable keys.
+        let second_scan = vec![
+            node(10, None, "root", "", NodeKind::Root, 1),
+            node(11, Some(10), "ailleurs", "ailleurs", NodeKind::Directory, 1),
+            node(
+                12,
+                Some(11),
+                "dossier",
+                "ailleurs/dossier",
+                NodeKind::Directory,
+                1,
+            ),
+            node(
+                13,
+                Some(12),
+                "enfant.txt",
+                "ailleurs/dossier/enfant.txt",
+                NodeKind::File,
+                0,
+            ),
+        ];
+        let second_identities = vec![
+            identity_input(10, "SYS1:root", IdentityProvenance::System),
+            identity_input(11, "SYS1:ailleurs", IdentityProvenance::System),
+            identity_input(12, "SYS1:dossier", IdentityProvenance::System),
+            identity_input(13, "SYS1:enfant", IdentityProvenance::System),
+        ];
+        let outcome = index
+            .publish_with_identity(&second_scan, &second_identities, &[], &[])
+            .expect("second publish");
+        assert_eq!(outcome.matched, 3, "root, dossier and enfant all matched");
+        assert_eq!(outcome.created, 1, "only ailleurs is new");
+
+        let nodes = index.list_nodes(10, 0).expect("nodes");
+        let folder = nodes
+            .iter()
+            .find(|n| n.relative_path == "ailleurs/dossier")
+            .expect("moved folder");
+        let child = nodes
+            .iter()
+            .find(|n| n.relative_path == "ailleurs/dossier/enfant.txt")
+            .expect("moved child");
+        assert_eq!(folder.id, folder_id_before);
+        assert_eq!(child.id, child_id_before);
+        assert_eq!(
+            child.parent_id,
+            Some(folder_id_before),
+            "the child's parent_id must point at the folder's own canonical id"
+        );
+    }
+
+    #[test]
+    fn publish_with_identity_gives_a_new_object_a_fresh_id_never_recycled() {
+        let mut index = Index::in_memory().expect("index");
+        let first_scan = vec![
+            node(1, None, "root", "", NodeKind::Root, 1),
+            node(2, Some(1), "a.txt", "a.txt", NodeKind::File, 0),
+        ];
+        let first_identities = vec![
+            identity_input(1, "SYS1:root", IdentityProvenance::System),
+            identity_input(2, "SYS1:a", IdentityProvenance::System),
+        ];
+        index
+            .publish_with_identity(&first_scan, &first_identities, &[], &[])
+            .expect("first publish");
+        let deleted_id = 2;
+
+        // `a.txt` is deleted; an unrelated `b.txt` is created instead.
+        let second_scan = vec![
+            node(1, None, "root", "", NodeKind::Root, 1),
+            node(5, Some(1), "b.txt", "b.txt", NodeKind::File, 0),
+        ];
+        let second_identities = vec![
+            identity_input(1, "SYS1:root", IdentityProvenance::System),
+            identity_input(5, "SYS1:b", IdentityProvenance::System),
+        ];
+        let outcome = index
+            .publish_with_identity(&second_scan, &second_identities, &[], &[])
+            .expect("second publish");
+        assert_eq!(outcome.created, 1);
+
+        let created = index
+            .list_nodes(10, 0)
+            .expect("nodes")
+            .into_iter()
+            .find(|n| n.relative_path == "b.txt")
+            .expect("b.txt");
+        assert_ne!(
+            created.id, deleted_id,
+            "a deleted object's id must never be handed to an unrelated new object"
+        );
+        assert!(
+            created.id > deleted_id,
+            "the durable counter only ever increases"
+        );
+
+        // A THIRD object, after the deleted id has had a chance to be
+        // reused by coincidence, still never collides with it.
+        let third_scan = vec![
+            node(1, None, "root", "", NodeKind::Root, 1),
+            node(5, Some(1), "b.txt", "b.txt", NodeKind::File, 0),
+            node(6, Some(1), "c.txt", "c.txt", NodeKind::File, 0),
+        ];
+        let third_identities = vec![
+            identity_input(1, "SYS1:root", IdentityProvenance::System),
+            identity_input(5, "SYS1:b", IdentityProvenance::System),
+            identity_input(6, "SYS1:c", IdentityProvenance::System),
+        ];
+        index
+            .publish_with_identity(&third_scan, &third_identities, &[], &[])
+            .expect("third publish");
+        let all_ids: Vec<i64> = index
+            .list_nodes(10, 0)
+            .expect("nodes")
+            .into_iter()
+            .map(|n| n.id)
+            .collect();
+        assert_eq!(
+            all_ids.len(),
+            all_ids.iter().collect::<HashSet<_>>().len(),
+            "no two live rows may ever share an id: {all_ids:?}"
+        );
+        assert!(!all_ids.contains(&deleted_id));
+    }
+
+    #[test]
+    fn publish_with_identity_refuses_a_duplicate_stable_key_and_keeps_the_previous_index_intact() {
+        let mut index = Index::in_memory().expect("index");
+        let first_scan = vec![node(1, None, "root", "", NodeKind::Root, 0)];
+        let first_identities = vec![identity_input(1, "SYS1:root", IdentityProvenance::System)];
+        index
+            .publish_with_identity(&first_scan, &first_identities, &[], &[])
+            .expect("first publish");
+        let revision_before = index.identity().expect("identity").revision;
+
+        let colliding_scan = vec![
+            node(1, None, "root", "", NodeKind::Root, 2),
+            node(2, Some(1), "a.txt", "a.txt", NodeKind::File, 0),
+            node(3, Some(1), "b.txt", "b.txt", NodeKind::File, 0),
+        ];
+        let colliding_identities = vec![
+            identity_input(1, "SYS1:root", IdentityProvenance::System),
+            // Two DIFFERENT files claiming the SAME stable key — an
+            // artificial collision, refused explicitly.
+            identity_input(2, "SYS1:duplicated", IdentityProvenance::System),
+            identity_input(3, "SYS1:duplicated", IdentityProvenance::System),
+        ];
+        let error = index
+            .publish_with_identity(&colliding_scan, &colliding_identities, &[], &[])
+            .expect_err("a duplicate stable key must be refused");
+        assert!(matches!(error, PublishError::IdentityCollision));
+
+        // The previous index is untouched: still exactly one node, still
+        // openable, still at the same revision.
+        let nodes = index.list_nodes(10, 0).expect("nodes after refusal");
+        assert_eq!(nodes.len(), 1);
+        assert_eq!(
+            index.identity().expect("identity").revision,
+            revision_before
+        );
+    }
+
+    #[test]
+    fn publish_with_identity_carries_seen_by_matched_id_even_when_the_path_changes() {
+        let mut index = Index::in_memory().expect("index");
+        let first_scan = vec![
+            node(1, None, "root", "", NodeKind::Root, 1),
+            node(2, Some(1), "avant.txt", "avant.txt", NodeKind::File, 0),
+        ];
+        let first_identities = vec![
+            identity_input(1, "SYS1:root", IdentityProvenance::System),
+            identity_input(2, "SYS1:file-a", IdentityProvenance::System),
+        ];
+        index
+            .publish_with_identity(&first_scan, &first_identities, &[], &[])
+            .expect("first publish");
+        assert!(index.mark_seen(2).expect("mark seen"));
+
+        let renamed_scan = vec![
+            node(1, None, "root", "", NodeKind::Root, 1),
+            node(9, Some(1), "apres.txt", "apres.txt", NodeKind::File, 0),
+        ];
+        let renamed_identities = vec![
+            identity_input(1, "SYS1:root", IdentityProvenance::System),
+            identity_input(9, "SYS1:file-a", IdentityProvenance::System),
+        ];
+        index
+            .publish_with_identity(&renamed_scan, &renamed_identities, &[], &[])
+            .expect("second publish");
+
+        let renamed = index
+            .list_nodes(10, 0)
+            .expect("nodes")
+            .into_iter()
+            .find(|n| n.relative_path == "apres.txt")
+            .expect("renamed node");
+        assert_eq!(renamed.id, 2, "a SYSTEM rename keeps the canonical id");
+        assert!(
+            renamed.seen,
+            "seen must survive a SYSTEM rename via the matched canonical id, not the path"
+        );
+    }
+
+    #[test]
+    fn publish_with_identity_does_not_carry_seen_across_a_path_fallback_rename() {
+        // I-E's declared, honest limitation: a PATH_FALLBACK object's
+        // identity IS its path, so a rename is, provably, a new object.
+        let mut index = Index::in_memory().expect("index");
+        let first_scan = vec![
+            node(1, None, "root", "", NodeKind::Root, 1),
+            node(2, Some(1), "avant.txt", "avant.txt", NodeKind::File, 0),
+        ];
+        let first_identities = vec![
+            identity_input(1, "PFv1:root", IdentityProvenance::PathFallback),
+            identity_input(
+                2,
+                &identity::path_fallback_key("avant.txt", NodeKind::File),
+                IdentityProvenance::PathFallback,
+            ),
+        ];
+        index
+            .publish_with_identity(&first_scan, &first_identities, &[], &[])
+            .expect("first publish");
+        assert!(index.mark_seen(2).expect("mark seen"));
+
+        let renamed_scan = vec![
+            node(1, None, "root", "", NodeKind::Root, 1),
+            node(9, Some(1), "apres.txt", "apres.txt", NodeKind::File, 0),
+        ];
+        let renamed_identities = vec![
+            identity_input(1, "PFv1:root", IdentityProvenance::PathFallback),
+            identity_input(
+                9,
+                &identity::path_fallback_key("apres.txt", NodeKind::File),
+                IdentityProvenance::PathFallback,
+            ),
+        ];
+        let outcome = index
+            .publish_with_identity(&renamed_scan, &renamed_identities, &[], &[])
+            .expect("second publish");
+        assert_eq!(
+            outcome.created, 1,
+            "the renamed fallback node is a new object"
+        );
+
+        let renamed = index
+            .list_nodes(10, 0)
+            .expect("nodes")
+            .into_iter()
+            .find(|n| n.relative_path == "apres.txt")
+            .expect("renamed node");
+        assert_ne!(
+            renamed.id, 2,
+            "a PATH_FALLBACK rename must not keep the old id"
+        );
+        assert!(
+            !renamed.seen,
+            "a PATH_FALLBACK rename must not silently inherit the old node's seen state"
+        );
+    }
+
+    #[test]
+    fn replace_nodes_without_identity_still_populates_a_fallback_stable_key() {
+        // The legacy/synthetic path (`identities: None`) is never remapped,
+        // but every row still carries a real stable key and provenance —
+        // the columns are never half-written.
+        let mut index = Index::in_memory().expect("index");
+        let nodes = vec![
+            node(1, None, "root", "", NodeKind::Root, 1),
+            node(2, Some(1), "a.txt", "a.txt", NodeKind::File, 0),
+        ];
+        index.replace_nodes(&nodes).expect("replace");
+        assert_eq!(
+            index.identity_of(2).expect("meta"),
+            Some((
+                identity::path_fallback_key("a.txt", NodeKind::File),
+                IdentityProvenance::PathFallback
+            ))
+        );
     }
 }

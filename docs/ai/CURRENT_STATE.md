@@ -1,5 +1,51 @@
 # État courant
 
+## TASK-0036 — V1 Stable Identity Foundation — IMPLEMENTED — 2026-09-11
+
+- **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche
+  `build/v0.2-a20-v1-stable-identity`. Prérequis `TASK-0035 = VERIFIED` par
+  `ACTION-0056` satisfait avant tout code. Aucune nouvelle DEC —
+  productionise `DEC-0009` I-E, déjà `APPROVED`. Détail :
+  [VALIDATION section BM](VALIDATION.md).
+- **Le geste central :** `identity.rs` (nouveau module, aucune dépendance
+  vers `map/`) calcule, pendant le parcours existant du scanner, une
+  identité `SYSTEM` (`VolumeSerialNumber + FileId`, réutilisant la technique
+  B3 déjà `VERIFIED`) quand le nœud y est éligible, sinon un repli
+  déterministe et versionné du chemin relatif + type. À la publication,
+  `Index::publish` remappe le scan vers les `nodes.id` canoniques : une clé
+  stable reconnue garde son id à travers un renommage/déplacement
+  intra-volume; un objet neuf reçoit un id d'un compteur durable qui
+  n'avance jamais à rebours.
+- **Rien n'a changé pour les 34 sites synthétiques existants.** Le mode
+  `identities: None` (appelé par `replace_nodes()`, tous les bancs et
+  fixtures de test) garde le comportement id-verbatim exact d'avant cette
+  tâche. Seul `map::commands::publish_map` — le pipeline réel — appelle le
+  nouveau mode `identities: Some(...)`.
+- **Preuves :** Rust **392 PASS** (365 + 27 : 12 `identity.rs` dont 7
+  `#[cfg(windows)]` sur Windows réel, 8 `index.rs`, 7 pipeline réel complet
+  `map/stable_identity_tests.rs`). TypeScript **339 PASS**, inchangée.
+  Rejeu WebView2 (un seul lancement, zéro redémarrage — l'identité doit
+  survivre à une republication, pas à un redémarrage) : renommage puis
+  déplacement d'un vrai fichier, déplacement d'un sous-arbre avec enfant,
+  suppression + création d'un objet différent — tous les `nodeId` se
+  comportent exactement comme prévu, 0 erreur console fatale, aucune fuite
+  de clé stable ou de chemin absolu.
+- **Validations :** `pnpm check`, `pnpm build`, `cargo build --offline`,
+  `git diff --check` verts; `cargo fmt` propre sur les 11 fichiers touchés;
+  `cargo clippy --all-targets --offline -- -D warnings` rouge à **26
+  erreurs, même compte et mêmes diagnostics qu'avant**, aucun nouveau.
+- **Non testé / limite assumée :** déplacement inter-volume non prouvable
+  (`DEC-0009`, écrire hors dépôt requis pour le tester); identité après
+  hydratation cloud contournée (exclue de la voie `SYSTEM`) plutôt que
+  mesurée; le premier renommage après une migration d'index pré-existant
+  réassigne les ids une seule fois, faute de clé stable antérieure à
+  laquelle se raccrocher. Aucun watcher, journal ni incrémental — fondation
+  seulement.
+- **Aucune donnée personnelle**, comme toujours. **X5 inchangé**,
+  `origin/main` inchangé. Aucune `TASK-0037`, aucune PR, fusion, étiquette
+  ni release.
+- **Action unique suivante : contrôle indépendant de `TASK-0036`.**
+
 ## TASK-0035 — V1 Context Panel, Direct Children & Safe Copy — IMPLEMENTED — 2026-09-11
 
 - **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche
