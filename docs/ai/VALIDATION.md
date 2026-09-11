@@ -5158,3 +5158,122 @@ toujours non reprise.
 rouge), `R-T30-3`, `R-T30-4`, `R-T30-6`, `R8` ouvertes; `R-T30-5` traitée
 uniquement dans la portée `REAL_ROOT` de test. **X5 inchangé**;
 `origin/main` inchangé.
+
+## BI. TASK-0034 — passe corrective, réponse de recherche obsolète — 2026-09-10
+
+**Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Même branche
+`build/v0.2-a18-v1-find-open`, mêmes `DEC-0031`/`DEC-0033`/`DEC-0034`,
+inchangées. Exécuteur : Claude Code. Déclenchée par le défaut bloquant
+trouvé au contrôle indépendant
+[`ACTION-0052`](../reviews/ACTION-0052-independent-control.md) : `BH`
+affirmait le contraire sur ce point précis; corrigé ici plutôt que laissé à
+le contredire.
+
+### BI.1 Le défaut
+
+`MapApp.tsx::runSearch()` lançait `invoke("map_search_nodes", ...)` puis
+appliquait directement `setSearchPage(page)`/`setSearchLoading(false)` sans
+ticket de requête, sans annulation et sans vérifier que la réponse
+correspondait encore au cerveau/requête/révision attendus. Le garde de
+révision d'`activateSearchHit()` (`BH.4`) protège une ancienne **révision**,
+mais deux pages de recherche différentes peuvent partager la même révision :
+il ne protège donc pas contre une réponse tardive d'un ancien cerveau, d'une
+ancienne requête (frappe rapide), ou contre une ancienne réponse qui remet
+`searchLoading=false` pendant qu'une recherche plus récente est encore en
+vol.
+
+### BI.2 Correction — `SearchCoordinator`, un ticket monotone
+
+Nouveau module pur `src/map/searchCoordinator.ts`, sur le même principe que
+`projectionRequest` déjà présent dans `MapApp.tsx` :
+
+- `SearchCoordinator` porte un compteur de ticket. `begin()` en prend un
+  nouveau et supersède immédiatement celui d'avant; `invalidate()` supersède
+  sans lancer de requête (cas « Effacer » et requête vide); `isCurrent(ticket)`
+  dit si ce ticket est toujours le plus récent.
+- `runCoordinatedSearch(coordinator, params, callbacks)` exécute une requête
+  sous ce ticket : à la résolution, elle vérifie `isCurrent(ticket)`, puis que
+  la page répond au `brainId`/`query` demandés, puis que `indexRevision`
+  correspond à la révision courante connue de l'appelant (quand disponible)
+  — trois vérifications indépendantes avant de publier `onPage`; le rejet à
+  n'importe laquelle empêche aussi `onLoadingChange(false)` de s'exécuter,
+  pour que seule la requête la plus récente puisse clore l'état de
+  chargement.
+- `MapApp.tsx::runSearch` délègue entièrement à cette primitive. L'effet dont
+  la branche requête-vide ne lance jamais `runSearch` appelle désormais
+  `searchCoordinator.invalidate()` lui-même — sinon une requête déjà en vol
+  sur une requête non vide pourrait encore atterrir après que le champ ait
+  été vidé. `clearSearch()` fait de même avant de vider l'état.
+- Le garde de révision existant d'`activateSearchHit()` (`BH.4`) est
+  **conservé sans modification**, comme défense supplémentaire à
+  l'activation — jamais le garde principal.
+- Aucun nouveau DTO, aucun nouveau store, aucune dépendance : `SearchPage`
+  porte déjà `brainId`/`query`/`indexRevision`, suffisants pour les trois
+  vérifications.
+
+### BI.3 Preuves déterministes — `searchCoordinator.test.ts`
+
+Huit tests, sans WebView, sans SQLite, contrôlant l'ordre de résolution des
+promesses par des `deferred<T>()` résolus explicitement :
+
+| Preuve | Ce qui est établi |
+|---|---|
+| `publishes only the most recent request when two responses settle in reverse order` | Requête « A » puis « AB »; « AB » résolue puis « A » (résolution inversée) : seule « AB » est publiée |
+| `drops a late response from the previous brain after switching brains mid-search` | Cerveau A puis B avant que la réponse de A n'arrive : seule la réponse de B est publiée |
+| `ignores a response that arrives after Clear invalidated its request` | `invalidate()` (Effacer) pendant que la requête est en vol : sa réponse tardive n'est jamais publiée |
+| `lets only the latest request's settlement clear the loading flag` | La requête périmée qui se résout ne republie jamais `loading=false`; seule la requête la plus récente le fait |
+| `drops a response whose revision no longer matches the caller's live revision` | La révision avance pendant que la requête est en vol : la page reçue à l'ancienne révision est rejetée |
+| `drops a response naming a different brain or query than the one it was asked for` | Vérification directe des champs d'identité de la réponse |
+| `does not surface an error from a request already superseded by Clear` | Un rejet tardif après `invalidate()` n'atteint jamais `onError` |
+| `wires MapApp's search cycle through the coordinator instead of applying responses directly` | Vérification de câblage sur le texte source de `MapApp.tsx` (`?raw`, même convention que `lifecycle.test.ts`) : `runSearch` délègue à `runCoordinatedSearch`, la branche requête-vide et `clearSearch` appellent `invalidate()`, plus aucun `setSearchPage(page)` direct, garde de révision d'activation intact |
+
+### BI.4 Rejeu WebView2 — non-régression, plus deux scénarios ajoutés
+
+`scripts/task0034-webview2.mjs` rejoué en entier sur l'arbre `REAL_ROOT` de
+5 206 éléments de `TASK-0033`/`TASK-0034` (`task0034-seed-proof.py`,
+inchangé) : mêmes preuves qu'en `BH.5`, plus deux scénarios courts ajoutés à
+la demande de la passe corrective — non adversariaux (SQLite réelle est trop
+rapide pour être fiablement dépassée sans ralentir le produit lui-même, ce
+que cette passe interdit de faire juste pour fabriquer une course; l'autorité
+de la résolution inversée reste `BI.3`) :
+
+| Scénario ajouté | Résultat |
+|---|---|
+| Frappe rapide (moitié du nom, puis le reste sans attendre) | Résultat final correspond au nom complet, jamais à la requête partielle |
+| Effacer juste après avoir tapé, avant toute réponse observée | Champ vide, aucun panneau de résultats, même une fois la réponse en vol arrivée |
+
+Non-régression confirmée : indexation 5 206 nœuds, cible confirmée hors
+projection ordinaire, recherche exacte et bornée (DOM et DTO concordants),
+requête vide sans panneau de résultats, activation vers une nouvelle
+projection avec sélection correcte, refresh réel faisant avancer la révision
+(1 → 2) republiée automatiquement, `map_reveal_node` sur cible synthétique
+avec spawn réussi, aucune fuite de chemin absolu, **0 erreur console
+fatale**. Artefact non canonique mis à jour :
+[`TASK-0034-webview2.json`](../performance/runs/TASK-0034-webview2.json).
+
+### BI.5 Validations
+
+TypeScript **302 PASS** (294 avant, +8 `searchCoordinator.test.ts`). Rust
+**344 PASS**, inchangé — aucun fichier Rust touché par cette passe.
+`pnpm check`, `pnpm build`, `cargo build --offline`, `git diff --check`
+verts. `cargo fmt`/Clippy Rust non rejoués : aucune ligne Rust modifiée;
+l'état `BH.6` (rouge à 26 erreurs préexistantes) est inchangé par
+construction.
+
+### BI.6 Non fait, et limites
+
+Portée volontairement étroite : ni la surface IPC Rust, ni
+`Index::query_nodes()`, ni la frontière Explorer n'ont été touchés — aucun
+défaut n'y a été démontré par cette passe. Les deux scénarios WebView2
+ajoutés sont des vérifications de non-régression en conditions réelles, pas
+une preuve de résolution inversée adversariale : cette preuve reste
+`BI.3`, en TypeScript déterministe.
+
+**Réserves :** inchangées par rapport à `BH` — `R-T30-1` (clippy strict
+rouge), `R-T30-3`, `R-T30-4`, `R-T30-6`, `R8` ouvertes; `R-T30-5` traitée
+uniquement dans la portée `REAL_ROOT` de test. **X5 inchangé**;
+`origin/main` inchangé. Aucune `TASK-0035`, aucune nouvelle DEC, aucune PR,
+fusion, étiquette ni release.
+
+**Action unique suivante :** nouveau contrôle indépendant de `TASK-0034`,
+sur les preuves de cette passe.

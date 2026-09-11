@@ -271,3 +271,45 @@ clic UI en plus, pour éviter un second spawn `explorer.exe` visible pour le
 même fait — le câblage du bouton est prouvé par `DetailsPanel.test.tsx`. Une
 fenêtre Explorer réelle peut rester ouverte après le rejeu; `explorer.exe`
 n'est jamais tué globalement, conformément à la consigne.
+
+## Passe corrective — 2026-09-10 — réponse de recherche obsolète
+
+Déclenchée par le défaut bloquant trouvé au contrôle indépendant
+[`ACTION-0052`](../reviews/ACTION-0052-independent-control.md) :
+`runSearch()` acceptait toute réponse asynchrone dès qu'elle revenait, sans
+ticket ni vérification d'identité — une ancienne requête (frappe rapide),
+un ancien cerveau, ou une réponse arrivée après « Effacer » pouvait encore
+remplacer la recherche courante ou remettre `searchLoading=false` à sa
+place. Le garde de révision d'`activateSearchHit()` protège une ancienne
+révision, pas deux requêtes différentes à la même révision.
+
+**Correction, étroite comme demandé :** nouveau module pur
+`src/map/searchCoordinator.ts` — `SearchCoordinator` (ticket monotone,
+`begin()`/`invalidate()`/`isCurrent()`) et `runCoordinatedSearch()`, qui
+vérifie à la résolution que la requête est toujours la plus récente, que la
+page répond au `brainId`/`query` demandés, et que sa révision correspond à
+celle que l'appelant connaît. `MapApp.tsx::runSearch` délègue entièrement à
+cette primitive; la branche requête-vide et `clearSearch()` appellent
+`searchCoordinator.invalidate()` puisqu'elles ne relancent jamais
+`runSearch`. Le garde de révision existant à l'activation est conservé sans
+modification, comme défense supplémentaire. Aucune surface IPC Rust,
+`Index::query_nodes()` ni frontière Explorer touchée — aucun défaut n'y a
+été démontré.
+
+**Preuves :** 8 tests déterministes
+(`src/map/searchCoordinator.test.ts`) sur des promesses résolues
+explicitement, dont une résolution volontairement inversée (requête 2 avant
+requête 1), un changement de cerveau en vol, un `Effacer` en vol, et un
+changement de révision en vol — plus un test de câblage sur le texte source
+de `MapApp.tsx`. Rejeu WebView2 complet rejoué sans régression sur le même
+arbre `REAL_ROOT` de 5 206 éléments, avec deux scénarios courts ajoutés
+(frappe rapide en deux temps; Effacer juste après une frappe) — non
+adversariaux, l'autorité de l'ordre inversé restant la preuve TypeScript.
+
+**Validations :** TypeScript **302 PASS** (294 + 8); Rust **344 PASS**,
+inchangé (aucun fichier Rust touché); `pnpm check`, `pnpm build`,
+`cargo build --offline`, `git diff --check` verts.
+
+Détail complet dans [VALIDATION section BI](../ai/VALIDATION.md).
+`TASK-0034` reste `IMPLEMENTED`, jamais auto-`VERIFIED`; aucune `TASK-0035`;
+action unique suivante : nouveau contrôle indépendant de `TASK-0034`.

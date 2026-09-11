@@ -1,6 +1,58 @@
 # HANDOFF — passage de relais
 
-## Relais actuel — TASK-0034 livrée, en attente de contrôle — 2026-09-10
+## Relais actuel — TASK-0034, passe corrective livrée, en attente de contrôle — 2026-09-10
+
+- **Ce qui vient d'être fait :** le contrôle indépendant
+  [`ACTION-0052`](../reviews/ACTION-0052-independent-control.md) a trouvé un
+  défaut bloquant dans la livraison précédente de `TASK-0034` : une réponse
+  de recherche asynchrone devenue obsolète pouvait remplacer la recherche
+  courante. Cette passe le corrige, sur la même branche
+  `build/v0.2-a18-v1-find-open`. `TASK-0034` reste `IMPLEMENTED`, jamais
+  auto-`VERIFIED`. Aucune nouvelle DEC.
+- **Le geste central :** un ticket monotone. `src/map/searchCoordinator.ts`
+  (`SearchCoordinator` + `runCoordinatedSearch()`) est une primitive pure,
+  sans React ni Tauri, que `MapApp.tsx::runSearch` appelle plutôt que
+  d'appliquer une réponse `invoke()` directement. Seule la requête encore la
+  plus récente au moment où elle se résout peut publier une page, une
+  erreur ou `loading=false` — et elle doit en plus nommer le bon
+  `brainId`/`query` et la bonne révision.
+- **Qui a fait quoi :** Claude Code a écrit la correction et les preuves.
+  **Il ne peut pas rendre le verdict.**
+- **Ce que le prochain relais doit savoir :**
+  - **`searchCoordinator.ts` est la seule porte pour appliquer une réponse
+    de recherche.** Ne jamais réintroduire un `setSearchPage(page)` direct
+    dans `MapApp.tsx` après un `invoke("map_search_nodes", ...)` — c'est
+    exactement le défaut qu'`ACTION-0052` a trouvé.
+  - **La branche requête-vide de l'effet de recherche et `clearSearch()`
+    doivent toutes deux appeler `searchCoordinator.invalidate()`** — ni
+    l'une ni l'autre ne relance jamais `runSearch`, donc rien d'autre
+    n'invaliderait une requête déjà en vol au moment où le champ se vide.
+  - **Le garde de révision d'`activateSearchHit()` reste une défense
+    supplémentaire, jamais le garde principal.** Le garde principal est
+    maintenant dans `runCoordinatedSearch` lui-même, avant toute
+    publication.
+  - `src/map/searchCoordinator.test.ts` prouve l'ordre inversé (deux
+    requêtes, réponses résolues 2 puis 1), un changement de cerveau en vol,
+    un `Effacer` en vol et un changement de révision en vol — tous avec des
+    promesses résolues à la main (`deferred<T>()`), sans dépendre de la
+    vitesse réelle de SQLite. Un test de câblage (même convention que
+    `lifecycle.test.ts`, texte source de `MapApp.tsx` via `?raw`) vérifie
+    que `runSearch` délègue bien à `runCoordinatedSearch`.
+  - `scripts/task0034-webview2.mjs` porte maintenant deux scénarios courts
+    supplémentaires (frappe rapide en deux temps; Effacer juste après une
+    frappe) — des vérifications de non-régression en conditions réelles,
+    **pas** une preuve adversariale : ne pas ralentir artificiellement le
+    backend produit pour en fabriquer une, l'autorité de l'ordre inversé
+    reste la suite déterministe TypeScript.
+- **Ce qui reste ouvert :** identique à la livraison précédente — `cargo
+  clippy` strict rouge à 26 erreurs, dette inchangée (aucun fichier Rust
+  touché par cette passe). Aucun watcher, aucun incrémental, aucun FTS5,
+  aucune acceptance laptop modeste, aucune copie de chemin absolu, aucune
+  préférence d'écran/icône.
+- **Action unique suivante :** nouveau contrôle indépendant de `TASK-0034`,
+  sur les preuves de cette passe.
+
+## Relais précédent — TASK-0034 livrée, en attente de contrôle — 2026-09-10
 
 - **Ce qui vient d'être fait :** `TASK-0033` était déjà `VERIFIED` dans sa
   portée par `ACTION-0051` (déjà sur la branche précédente, mais dont les

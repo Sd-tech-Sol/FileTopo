@@ -4656,3 +4656,88 @@ inchangé; aucune `TASK-0035`, aucune nouvelle DEC, aucune PR, fusion,
 
 **Action unique suivante :** contrôle indépendant de `TASK-0034`, par une
 instance distincte de Claude Code.
+
+---
+
+## 2026-09-10 — TASK-0034 — passe corrective, réponse de recherche obsolète
+
+**Agent :** Claude Code, exécuteur
+**Statut à l'issue :** `IMPLEMENTED`, jamais auto-`VERIFIED`
+
+### Motif
+
+Le contrôle indépendant `ACTION-0052` a trouvé un défaut bloquant :
+`MapApp.tsx::runSearch()` acceptait toute réponse asynchrone dès qu'elle
+revenait, sans ticket ni vérification d'identité. Une ancienne requête
+(frappe rapide), un ancien cerveau ou une réponse arrivée après « Effacer »
+pouvait remplacer la recherche courante, ou remettre `searchLoading=false`
+à sa place pendant qu'une recherche plus récente était encore en vol. Le
+garde de révision existant à l'activation protège une ancienne révision,
+pas deux requêtes différentes à la même révision.
+
+### Fait
+
+- Nouveau module pur `src/map/searchCoordinator.ts` : `SearchCoordinator`
+  (ticket monotone — `begin()`/`invalidate()`/`isCurrent()`) et
+  `runCoordinatedSearch()`, qui à la résolution vérifie que la requête est
+  toujours la plus récente, que la page répond au `brainId`/`query`
+  demandés, et que sa révision correspond à celle connue de l'appelant —
+  trois vérifications indépendantes avant toute publication, y compris
+  `loading=false`.
+- `MapApp.tsx::runSearch` délègue entièrement à cette primitive. La branche
+  requête-vide de l'effet de recherche et `clearSearch()` appellent
+  désormais `searchCoordinator.invalidate()`, puisqu'aucune des deux ne
+  relance `runSearch`. Le garde de révision existant à l'activation
+  (`activateSearchHit()`) est conservé sans modification, comme défense
+  supplémentaire.
+- Aucun nouveau DTO, aucun nouveau store, aucune dépendance : `SearchPage`
+  portait déjà `brainId`/`query`/`indexRevision`.
+- Aucune surface IPC Rust, `Index::query_nodes()` ni frontière Explorer
+  touchée — aucun défaut n'y a été démontré par cette passe.
+- `scripts/task0034-webview2.mjs` : deux scénarios courts ajoutés (frappe
+  rapide en deux temps; Effacer juste après une frappe) — vérifications de
+  non-régression en conditions réelles, pas une preuve adversariale.
+
+### Preuves
+
+8 tests déterministes (`src/map/searchCoordinator.test.ts`) sur des
+promesses résolues explicitement (`deferred<T>()`), sans dépendre de la
+vitesse réelle de SQLite : résolution volontairement inversée (requête 2
+résolue avant requête 1, seule 2 publiée), changement de cerveau en vol
+(réponse tardive de l'ancien cerveau jamais publiée sous le nouveau),
+`Effacer` en vol (réponse tardive ignorée, aucune erreur surfacée), la
+requête périmée qui se résout ne republie jamais `loading=false`,
+changement de révision en vol (page reçue à l'ancienne révision rejetée),
+réponse nommant un autre cerveau/requête rejetée. Un test de câblage (même
+convention que `lifecycle.test.ts`, texte source de `MapApp.tsx` via
+`?raw`) vérifie que `runSearch` délègue à `runCoordinatedSearch`, que la
+branche requête-vide et `clearSearch()` invalident, et qu'aucun
+`setSearchPage(page)` direct ne subsiste.
+
+Rejeu **WebView2 réel** complet, sans régression, sur le même arbre
+`REAL_ROOT` de 5 206 éléments (`task0034-seed-proof.py`, inchangé) : mêmes
+preuves qu'à la livraison précédente (recherche exacte et bornée,
+activation, invalidation de révision, ouverture Explorer, aucune fuite de
+chemin absolu, 0 erreur console fatale), plus les deux scénarios ajoutés.
+Artefact non canonique mis à jour :
+`docs/performance/runs/TASK-0034-webview2.json`.
+
+TypeScript **302 PASS** (294 + 8). Rust **344 PASS**, inchangé — aucun
+fichier Rust touché. `pnpm check`, `pnpm build`, `cargo build --offline`,
+`git diff --check` verts. Clippy/fmt Rust non rejoués : aucune ligne Rust
+modifiée, état antérieur (rouge à 26 erreurs préexistantes) inchangé par
+construction.
+
+### Non fait, et limites
+
+Les deux scénarios WebView2 ajoutés sont des vérifications de
+non-régression en conditions réelles, pas une preuve adversariale de
+résolution inversée — cette preuve reste la suite déterministe
+TypeScript. Aucune donnée personnelle. `X5` inchangé; aucune `TASK-0035`,
+aucune nouvelle DEC, aucune PR, fusion, étiquette ni release; `origin/main`
+inchangé.
+
+### Suite
+
+**Action unique suivante :** nouveau contrôle indépendant de `TASK-0034`,
+par une instance distincte de Claude Code, sur les preuves de cette passe.

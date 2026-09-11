@@ -1,5 +1,6 @@
 import { runLifecycle, type LifecycleAction } from "./lifecycle";
 import { prepareScenarioIndex } from "./lifecycle";
+import { runCoordinatedSearch, SearchCoordinator } from "./searchCoordinator";
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CompositionBar from "./CompositionBar";
@@ -2002,23 +2003,25 @@ export default function MapApp() {
   const focusedBrainRevision = focusedBrain?.snapshot.indexRevision ?? null;
 
   // `TASK-0034` A — bounded local search, behind the current runtime only.
-  const runSearch = useCallback(async (brainId: string, query: string, offset: number) => {
-    setSearchLoading(true);
-    try {
-      const page = await invoke<SearchPage>("map_search_nodes", {
-        brainId,
-        query,
-        offset,
-        limit: 50,
-      });
-      setSearchPage(page);
-    } catch (error) {
-      hostLog("error", `recherche refusée: ${String(error)}`);
-      setSearchPage(null);
-    } finally {
-      setSearchLoading(false);
-    }
-  }, []);
+  // Corrective pass (`ACTION-0052`): a stale response could otherwise
+  // replace the current one — see `searchCoordinator.ts`. `searchCoordinator`
+  // is the single source of truth for which request is still current; a new
+  // launch here always supersedes whatever was in flight before it.
+  const searchCoordinator = useRef(new SearchCoordinator()).current;
+  const runSearch = useCallback(
+    (brainId: string, query: string, offset: number) =>
+      runCoordinatedSearch<SearchPage>(searchCoordinator, { brainId, query, offset }, {
+        fetch: (params) => invoke<SearchPage>("map_search_nodes", { ...params, limit: 50 }),
+        onLoadingChange: setSearchLoading,
+        onPage: setSearchPage,
+        onError: (error) => {
+          hostLog("error", `recherche refusée: ${String(error)}`);
+          setSearchPage(null);
+        },
+        currentRevision: (id) => loadedRef.current.get(id)?.snapshot.indexRevision,
+      }),
+    [searchCoordinator],
+  );
 
   // The query text is scoped to whichever brain is focused — switching
   // brains starts a fresh search rather than carrying one over.
@@ -2029,13 +2032,18 @@ export default function MapApp() {
   // Re-issued on every keystroke and on every revision change: a
   // refresh/rebuild re-runs the same query against the new index instead of
   // leaving a page read from a superseded revision on screen — `TASK-0034` E.
+  // The empty-query branch never calls `runSearch`, so it must invalidate the
+  // coordinator itself — otherwise a request already in flight from a
+  // non-empty query could still land after the field was emptied.
   useEffect(() => {
     if (!focusedBrainId || searchQuery.trim().length === 0) {
+      searchCoordinator.invalidate();
       setSearchPage(null);
+      setSearchLoading(false);
       return;
     }
     void runSearch(focusedBrainId, searchQuery, 0);
-  }, [focusedBrainId, focusedBrainRevision, searchQuery, runSearch]);
+  }, [focusedBrainId, focusedBrainRevision, searchQuery, runSearch, searchCoordinator]);
 
   const goToSearchPage = useCallback(
     (offset: number) => {
@@ -2046,9 +2054,11 @@ export default function MapApp() {
   );
 
   const clearSearch = useCallback(() => {
+    searchCoordinator.invalidate();
     setSearchQuery("");
     setSearchPage(null);
-  }, []);
+    setSearchLoading(false);
+  }, [searchCoordinator]);
 
   // Activation replaces the projection and selects the result — `TASK-0034`
   // B — but only after re-checking the revision the page was read against:

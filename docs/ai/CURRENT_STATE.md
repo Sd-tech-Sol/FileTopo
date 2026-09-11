@@ -1,5 +1,50 @@
 # État courant
 
+## TASK-0034 — passe corrective, réponse de recherche obsolète — IMPLEMENTED — 2026-09-10
+
+- **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Même branche
+  `build/v0.2-a18-v1-find-open`, mêmes `DEC-0031`/`DEC-0033`/`DEC-0034`.
+  Déclenchée par le défaut bloquant trouvé au contrôle indépendant
+  [`ACTION-0052`](../reviews/ACTION-0052-independent-control.md). Détail :
+  [VALIDATION section BI](VALIDATION.md).
+- **Le défaut :** `MapApp.tsx::runSearch()` appliquait toute réponse
+  asynchrone dès qu'elle revenait, sans ticket ni vérification d'identité.
+  Une ancienne requête (frappe rapide), un ancien cerveau ou une réponse
+  arrivée après « Effacer » pouvait remplacer la recherche courante ou
+  remettre `searchLoading=false` à sa place. Le garde de révision
+  d'`activateSearchHit()` protège une ancienne révision, pas deux requêtes
+  différentes à la même révision.
+- **Correction :** nouveau module pur `src/map/searchCoordinator.ts` —
+  `SearchCoordinator` (ticket monotone) et `runCoordinatedSearch()`, qui à
+  la résolution vérifie que la requête est toujours la plus récente, que la
+  page répond au `brainId`/`query` demandés, et que sa révision correspond à
+  celle connue de l'appelant. `runSearch` délègue entièrement; la branche
+  requête-vide et `clearSearch()` invalident explicitement puisqu'elles ne
+  relancent jamais `runSearch`. Le garde de révision existant à l'activation
+  est conservé sans modification, comme défense supplémentaire. Aucune
+  surface IPC Rust, `Index::query_nodes()` ni frontière Explorer touchée.
+- **Preuves :** 8 tests déterministes (`searchCoordinator.test.ts`) sur des
+  promesses résolues explicitement — résolution volontairement inversée,
+  changement de cerveau en vol, `Effacer` en vol, changement de révision en
+  vol, plus un test de câblage sur le texte source de `MapApp.tsx`. Rejeu
+  WebView2 complet rejoué sans régression sur le même arbre `REAL_ROOT` de
+  5 206 éléments, avec deux scénarios courts ajoutés (frappe rapide en deux
+  temps; Effacer juste après une frappe) — non adversariaux, l'autorité de
+  l'ordre inversé restant la preuve TypeScript déterministe.
+- **Validations :** TypeScript **302 PASS** (294 + 8); Rust **344 PASS**,
+  inchangé (aucun fichier Rust touché par cette passe); `pnpm check`,
+  `pnpm build`, `cargo build --offline`, `git diff --check` verts. Clippy/fmt
+  Rust non rejoués : aucune ligne Rust modifiée, état antérieur (rouge à 26
+  erreurs préexistantes) inchangé par construction.
+- **Non testé / limite assumée :** les deux scénarios WebView2 ajoutés sont
+  des vérifications de non-régression en conditions réelles, pas une preuve
+  adversariale de résolution inversée — cette preuve reste la suite
+  déterministe TypeScript.
+- **Aucune donnée personnelle**, comme toujours. **X5 inchangé**,
+  `origin/main` inchangé. Aucune `TASK-0035`, aucune nouvelle DEC, aucune
+  PR, fusion, étiquette ni release.
+- **Action unique suivante : nouveau contrôle indépendant de `TASK-0034`.**
+
 ## TASK-0034 — V1 Find & Open — IMPLEMENTED — 2026-09-10
 
 - **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche

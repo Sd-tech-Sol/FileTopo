@@ -177,6 +177,27 @@ results.search = {
   boundedToProductLimit: searchPage.limit <= 50,
 };
 
+// --- 3b. typing quickly (a partial query, then more before it settles) must
+// resolve to the full query's result, never a page read for the partial one.
+// Not an adversarial interleaving over the real backend — SQLite here is far
+// too fast to reliably outrun without slowing the product itself, which
+// `TASK-0034`'s corrective pass forbids doing just to fabricate a race. The
+// deterministic reversed-order proof lives in `searchCoordinator.test.ts`;
+// this is only a live smoke check that ordinary fast typing still lands on
+// the right query.
+await activate('[data-testid="search-clear"]');
+await pause(150);
+const half = Math.max(1, Math.floor(needleName.length / 2));
+await evaluate(`document.getElementById("map-search-input").focus()`);
+await send("Input.insertText", { text: needleName.slice(0, half) });
+await send("Input.insertText", { text: needleName.slice(half) }); // no wait in between
+await until(`document.querySelector('[data-testid="search-total"]')?.getAttribute('data-total') === "1"`, 20000);
+const rapidValue = await evaluate(`document.getElementById("map-search-input").value`);
+assert.equal(rapidValue, needleName, "fast successive typing must land on the full query text");
+const rapidHitPath = await evaluate(`document.querySelector('[data-testid="search-hit"]')?.textContent ?? ''`);
+assert(rapidHitPath.includes(needleRelativePath), "the settled page must match the full query, not the partial one typed first");
+results.rapidTypingResolvedToFullQuery = true;
+
 // --- 4. an empty query must not dump the corpus -----------------------------
 // The dedicated "Effacer" affordance, activated by a real keystroke — also
 // the product's own answer to "effacement simple".
@@ -186,6 +207,17 @@ const clearedValue = await evaluate(`document.getElementById("map-search-input")
 assert.equal(clearedValue, "", "Effacer must empty the search field");
 const emptyResults = await evaluate(`!!document.querySelector('[data-testid="search-results"]')`);
 assert.equal(emptyResults, false, "an empty query must show no results panel at all");
+
+// --- 4b. Effacer right after typing, before waiting on any response, must
+// win over a search launched just before it — even once that response lands.
+await typeInto("#map-search-input", needleName);
+await activate('[data-testid="search-clear"]');
+await pause(500); // give any in-flight response time to arrive and be (correctly) ignored
+const valueAfterRapidClear = await evaluate(`document.getElementById("map-search-input").value`);
+assert.equal(valueAfterRapidClear, "", "Effacer must empty the field even right after typing");
+const resultsAfterRapidClear = await evaluate(`!!document.querySelector('[data-testid="search-results"]')`);
+assert.equal(resultsAfterRapidClear, false, "no results panel may (re)appear after Effacer, even once the in-flight response lands");
+results.clearDuringSearchWinsOverInFlightResponse = true;
 
 // --- 5. activate the result: new projection, correct selection -------------
 await typeInto("#map-search-input", needleName);

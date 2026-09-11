@@ -19,6 +19,8 @@
     "indexRevision": 1,
     "boundedToProductLimit": true
   },
+  "rapidTypingResolvedToFullQuery": true,
+  "clearDuringSearchWinsOverInFlightResponse": true,
   "activationLoadedNewProjectionAndSelected": true,
   "revisionInvalidation": {
     "before": 1,
