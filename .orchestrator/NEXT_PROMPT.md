@@ -1,94 +1,99 @@
-# NEXT_PROMPT — TASK-0035 — V1 Context Panel, Direct Children & Safe Copy
+# NEXT_PROMPT — TASK-0036 — V1 Stable Identity Foundation
 
 **TARGET_AGENT:** CLAUDE CODE  
 **RECOMMENDED_MODEL:** Sonnet 5, high effort  
 **STATUS:** READY  
 **OWNER:** orchestrateur ChatGPT  
-**TASK:** `TASK-0035 — V1 Context Panel, Direct Children & Safe Copy`  
-**BRANCHE:** `build/v0.2-a19-v1-context-panel`
+**TASK:** `TASK-0036 — V1 Stable Identity Foundation`  
+**BRANCHE:** `build/v0.2-a20-v1-stable-identity`
 
 ## /goal
 
-Implémenter intégralement `docs/tasks/TASK-0035-v1-context-panel.md`. `TASK-0034` est `VERIFIED` par `ACTION-0055`. Ne rouvrir ni recherche, ni projection progressive, ni frontière Explorer sans régression prouvée. Finir `IMPLEMENTED`, jamais auto-`VERIFIED`.
+Implémenter intégralement `docs/tasks/TASK-0036-v1-stable-identity.md`. `TASK-0035` est `VERIFIED` par `ACTION-0056`. Cette tranche productionnalise la stratégie d'identité **I-E déjà approuvée par DEC-0009** et déjà éprouvée par le spike B3 : identité Windows prouvée quand disponible, empreinte déterministe/versionnée du chemin relatif + type sinon, jamais d'heuristique comme identité.
 
-## 0 — Préconditions
+Le but est de préserver le même `nodes.id` pour le même objet lors d'un renommage/déplacement intra-volume prouvé, afin de préparer le futur journal/incrémental. **Ne pas implémenter watcher, journal ni mise à jour incrémentale dans cette tâche.** Finir `IMPLEMENTED`, jamais auto-`VERIFIED`.
 
-- Appliquer `AGENTS.md` et `CLAUDE.md`.
-- Basculer explicitement sur `build/v0.2-a19-v1-context-panel`, `git fetch origin`, fast-forward uniquement, arbre propre.
-- HEAD doit contenir `ACTION-0055` et TASK-0035.
-- Lire ACTION-0055, TASK-0035, DEC-0031/0033/0034, `brains.rs`, `index.rs`, `brain_index.rs`, `commands.rs`, `lib.rs`, `capabilities/default.json`, `MapApp.tsx`, `DetailsPanel.tsx`, `types.ts` et les tests/harness WebView2.
-- Avant code, consigner dans `RESULT.md` : réutiliser / adapter / ne pas réactiver.
+## 0 — Préconditions et audit de réutilisation
 
-## 1 — Panneau masquable persistant
+1. Appliquer `AGENTS.md` et `CLAUDE.md`.
+2. Basculer explicitement sur `build/v0.2-a20-v1-stable-identity`, `git fetch origin`, fast-forward uniquement, arbre propre.
+3. HEAD doit contenir `ACTION-0056` et `TASK-0036`.
+4. Lire `DEC-0009`, `DEC-0010`, `DEC-0011`, `DEC-0030/31/33/34`, `TASK-0012` B3, `PERF-0003`, `spikes/b3-windows-identity/{Cargo.toml,LICENCE.md,src/main.rs}`, puis scanner/domain/index/hierarchy/BrainIndex/commands.
+5. Auditer avant de coder. Réutiliser le B3; ne pas refaire la recherche Windows.
 
-Réutiliser `BrainCatalog::meta()/put_meta()` et `catalog_meta`; pas de nouveau store/fichier/localStorage.
+## 1 — Contrat à construire
 
-- préférence globale `details_panel_visible`, défaut `true`;
-- petite surface IPC non sensible;
-- bouton « Masquer les détails » / « Afficher les détails », clavier + souris;
-- masquer ne modifie ni sélection, recherche, projection, relations ou composition;
-- réafficher conserve le contexte;
-- préférence prouvée après vrai redémarrage Tauri.
+- `nodes.id` reste l'identité FileTopo monotone, locale à un cerveau.
+- chaque nœud indexé porte une clé stable interne + provenance `SYSTEM` ou `PATH_FALLBACK`;
+- aucune clé stable/VolumeSerialNumber/FileId/empreinte n'est sérialisée vers React, loguée ou mise dans un artefact;
+- Windows REAL_ROOT : adapter le B3 `GetFileInformationByHandleEx(FileIdInfo)` sur Rust stable; si dépendance requise, préférer `windows-sys = 0.61.2` épinglé/ciblé Windows avec features minimales et licence déjà vérifiée par B3;
+- fallback : hash versionné du chemin relatif brut + type, déterministe, sans taille/mtime/heuristique;
+- reparse/skipped/cloud : ne jamais ouvrir dangereusement ni hydrater pour obtenir une identité; appliquer I-E honnêtement.
 
-Pas de migration du catalogue si `catalog_meta` suffit.
+## 2 — Même Index, migration sûre
 
-## 2 — Enfants directs exacts et paginés
+Faire évoluer le **BrainIndex canonique** uniquement. Aucun registry/store parallèle.
 
-`detail.children` vient de la projection bornée et n’est pas une liste exhaustive. Créer une commande dédiée, p. ex. `map_node_children`, qui :
+- schéma versionné et migration transactionnelle depuis le schéma courant;
+- persister clé stable/provenance de façon interne;
+- préserver `index_id`; une republication avance toujours `index_revision` atomiquement;
+- prévoir un compteur/mécanisme monotone empêchant la réutilisation silencieuse d'un ID supprimé;
+- collision de clé stable => refus explicite, index précédent toujours crédible/ouvrable;
+- si une migration sûre exige d'enfreindre DEC-0011 ou de faire confiance silencieusement à un ancien index, `BLOCKED` au lieu d'improviser.
 
-- reçoit `BrainNodeRef` + pagination/cursor + limite;
-- passe par `resolve_brain` + `open_store`;
-- réutilise `Index::children_page()`; pas de SQL parallèle;
-- page <= 50;
-- uniquement enfants directs, jamais petits-enfants;
-- cursor/révision cohérents avec l’Index courant;
-- aucun chemin absolu.
+## 3 — Remap des IDs à la publication
 
-`DetailsPanel` doit utiliser cette page dédiée, afficher le total exact, permettre page suivante/précédente (ou historique de cursors borné), ne jamais accumuler des milliers de lignes, et sélectionner un enfant via la navigation existante.
+Le scanner peut conserver ses IDs temporaires. Avant publication :
 
-## 3 — Copier le chemin côté hôte seulement
+- même clé stable existante => reprendre le même ID canonique;
+- nouveau nœud => ID neuf;
+- remapper tous les `parent_id` vers les IDs canoniques;
+- rename/move intra-volume `SYSTEM` => même ID, nouveau chemin/nom/parent;
+- rename/move `PATH_FALLBACK` => nouvelle clé/nouvel ID, conformément à I-E;
+- aucune heuristique ne rapproche automatiquement deux clés différentes.
 
-Ajouter « Copier le chemin ».
+La conservation actuelle de `seen` par chemin doit être adaptée : pour une identité reconnue, `seen` suit le même nœud; le fallback renommé ne récupère pas automatiquement l'ancien état.
 
-- React envoie uniquement `BrainNodeRef`;
-- Rust lit le `relative_path` depuis l’Index, résout la racine en interne et réutilise la logique de confinement de `map_reveal_node`;
-- chemin complet écrit au presse-papiers côté Rust;
-- retour frontend = succès/erreur générique seulement;
-- aucun chemin absolu dans DTO/DOM/log/erreur/artefact.
+## 4 — Compatibilité obligatoire
 
-Auditer d’abord `tauri-plugin-clipboard-manager`. Si compatible : dépendance Rust épinglée, API Rust uniquement, aucun package JS et **aucune permission `clipboard-manager:*` frontend**; `capabilities/default.json` doit rester `core:default` uniquement. Si cette voie sûre est impossible, ne contourner ni par PowerShell/cmd/shell ni par permission large : rapporter cette sous-partie `BLOCKED`.
+Ne pas modifier fonctionnellement : projection progressive, recherche TASK-0034, pagination/copie TASK-0035, relations, Explorer, capacités WebView. `BrainNodeRef` reste `brainId + nodeId` et la seule identité frontend. Aucune permission frontend nouvelle.
 
-## 4 — Preuves
+## 5 — Preuves obligatoires
 
-### Rust
-- préférence absente => visible; persiste après réouverture du catalogue;
-- enfants >50 : pages <=50, ensemble complet exact, aucun doublon/perte/petit-enfant, ordre déterministe;
-- mauvais cerveau / vieux cursor-révision refusé;
-- copie : commande reçoit seulement `BrainNodeRef`, Unicode/noms longs exacts, reparse/skipped/disparu refusé sans fuite;
-- aucune permission frontend sensible ni commande 0.1 réactivée.
+Exécuter toutes les preuves de `TASK-0036`, notamment :
 
-### TypeScript
-- masquer/réafficher conserve sélection/contexte;
-- liste d’enfants vient de la commande paginée, reste bornée et clavier utilisable;
-- sélection enfant réutilise la navigation existante;
-- copie envoie seulement `{reference:{brainId,nodeId}}`;
-- aucun chemin absolu dans l’état/frontend.
+- migration depuis le schéma précédent;
+- fallback déterministe/versionné;
+- Windows SYSTEM pour fichier + dossier;
+- fichier renommé puis déplacé intra-volume : même clé SYSTEM et même nodeId après refresh;
+- dossier déplacé avec enfant : hiérarchie/parent IDs cohérents;
+- `seen` survit au rename/move SYSTEM;
+- nouvel objet => ID neuf; pas de recyclage silencieux;
+- deux cerveaux sur même source restent isolés;
+- collision artificielle => publication refusée sans perdre l'index précédent;
+- ancien cursor refusé après nouvelle revision;
+- aucune clé stable dans les DTO exposés.
 
-### WebView2 réel
-Réutiliser les harness existants sur données synthétiques uniquement :
-1. panneau visible par défaut;
-2. masquer -> vrai redémarrage -> toujours masqué; réafficher -> redémarrage -> visible;
-3. dossier >50 enfants : total exact, page suivante, aucun petit-enfant;
-4. enfant hors projection : carte/détails synchronisés;
-5. copie sur cible synthétique : le harness compare le presse-papiers en mémoire, mais l’artefact ne conserve que `match: true/false`, jamais le chemin;
-6. aucune fuite de chemin absolu; 0 erreur console fatale.
+## 6 — WebView2 Windows réel
 
-## 5 — Hors portée
+Réutiliser le harnais existant avec un REAL_ROOT **entièrement synthétique**. Le script de preuve peut renommer/déplacer ses propres fichiers entre deux actions `Actualiser` du produit.
 
-Pas de watcher, journal de changements, nouveaux/non vus, filtres, FTS5, extraction de contenu, préférence moniteur/icône, nouveau renderer, réseau/cloud/IA.
+Prouver : nodeId identique après rename puis move intra-volume quand SYSTEM est disponible; chemin relatif/parent actualisés; recherche/détails/enfants/projection/Explorer-Copie sans régression; aucune fuite de chemin absolu ou de clé stable; 0 erreur console fatale. L'artefact conserve seulement booléens, IDs synthétiques et provenance générale, jamais clé stable brute ni chemin absolu.
 
-## 6 — Validation et sortie
+## 7 — Validation / sortie
 
-Exécuter tests Rust/TS ciblés + suites complètes, `pnpm check`, `pnpm build`, `cargo build --offline`, fmt Rust touché, Clippy strict avec dette préexistante distinguée, `git diff --check`, WebView2.
+- Rust ciblé + `cargo test --offline`;
+- TypeScript complet pour non-régression;
+- `pnpm check`, `pnpm build`, `cargo build --offline`, `cargo fmt --check`, Clippy strict avec comparaison de la dette existante, `git diff --check`;
+- nouvelle dépendance uniquement si justifiée par B3 et présente au lock.
 
-Mettre à jour TASK-0035, CURRENT_STATE, HANDOFF, NEXT_ACTION, VALIDATION, CHANGELOG_AI et `RESULT.md`. À la fin : TASK-0035 `IMPLEMENTED`, aucun TASK-0036, `NEXT_ACTION = contrôle indépendant`, commit/push seulement sur cette branche, aucun PR/merge/tag/release.
+Mettre à jour `docs/tasks/TASK-0036-v1-stable-identity.md`, `docs/ai/CURRENT_STATE.md`, `HANDOFF.md`, `NEXT_ACTION.md`, `VALIDATION.md`, `CHANGELOG_AI.md`, `FEATURE_MATRIX.md` pour F-004, et `.orchestrator/RESULT.md`.
+
+À la fin :
+
+- `TASK-0036 = IMPLEMENTED`, jamais auto-`VERIFIED`;
+- aucune TASK-0037;
+- `NEXT_ACTION = contrôle indépendant de TASK-0036`;
+- commit + push uniquement sur `build/v0.2-a20-v1-stable-identity`;
+- aucun PR/merge/tag/release;
+- `RESULT.md` doit détailler HEAD/commits, réutilisation B3, migration, modèle/provenance, remap IDs, preuves rename/move/seen, WebView2, tests, confidentialité et limites.
