@@ -1,20 +1,13 @@
 # Action suivante
 
-## Contrôle indépendant de TASK-0036 — READY
+## TASK-0036 — passe corrective exigée par ACTION-0057
 
-`TASK-0036 — V1 Stable Identity Foundation` est livrée `IMPLEMENTED`,
-**jamais auto-`VERIFIED`**, sur `build/v0.2-a20-v1-stable-identity`. Détail
-complet : [`VALIDATION.md` section BM](VALIDATION.md).
+`TASK-0036 — V1 Stable Identity Foundation` reste **IMPLEMENTED, pas VERIFIED** sur `build/v0.2-a20-v1-stable-identity`.
 
-Action unique : un contrôle indépendant, par une instance distincte de
-l'exécuteur et sur preuves, de la productionisation de `DEC-0009` I-E —
-identité Windows `SYSTEM` (`VolumeSerialNumber + FileId`) quand disponible,
-repli déterministe/versionné du chemin relatif + type sinon, remap des
-`nodes.id` à la publication, compteur monotone sans recyclage, migration de
-schéma `3 → 4`. Preuves : Rust 392 PASS (365 + 27, dont 7 tests Windows
-réels et 7 tests de pipeline réel complet), TypeScript 339 PASS inchangée,
-rejeu WebView2 réel (`docs/performance/runs/TASK-0036-webview2.json`).
+Le contrôle indépendant [`ACTION-0057`](../reviews/ACTION-0057-independent-control.md) confirme le cœur I-E sur une base fraîche, mais bloque la fermeture sur trois défauts précis :
 
-Hors portée, comme prévu par la fiche : journal de changements, watcher,
-mise à jour incrémentale, filtres, FTS5, refonte graphique. Aucun
-`TASK-0037` avant ce contrôle.
+1. la migration `3 → 4` n'est pas atteignable par le cycle produit d'un cerveau déjà indexé, parce que `open_existing()` exige déjà le schéma 4 avant que le chemin de migration puisse être appelé;
+2. la migration `3 → 4` n'est pas enveloppée dans une transaction atomique;
+3. `PATH_FALLBACK` est calculé depuis `to_string_lossy()` plutôt que depuis le chemin relatif OS brut, malgré la primitive exacte `path_codec::encode_path()` déjà présente.
+
+Action unique : exécuter la passe corrective décrite dans `.orchestrator/NEXT_PROMPT.md` **sur la même branche**, puis refaire un contrôle indépendant de TASK-0036. Ne créer aucune TASK-0037 et ne commencer ni journal, ni watcher, ni incrémental avant `TASK-0036 = VERIFIED`.
