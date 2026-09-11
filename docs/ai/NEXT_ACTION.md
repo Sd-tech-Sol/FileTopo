@@ -1,26 +1,9 @@
 # Action suivante
 
-## Contrôle indépendant de TASK-0034 (passe corrective 3)
+## TASK-0034 fermée — préparer la prochaine tranche MVP
 
-`TASK-0034 — V1 Find & Open` reste `IMPLEMENTED`, **pas encore `VERIFIED`**.
+`TASK-0034 — V1 Find & Open` est **VERIFIED dans sa portée** par [`ACTION-0055`](../reviews/ACTION-0055-independent-recontrol.md), après les recontrôles `ACTION-0052` à `ACTION-0054` et la passe corrective finale `521fee1`.
 
-La passe corrective 3, écrite dans `.orchestrator/NEXT_PROMPT.md` et livrée
-le 2026-09-11, ferme le dernier verrou trouvé par
-[`ACTION-0054`](../reviews/ACTION-0054-independent-recontrol.md) :
-`removeBrain()` (transfert de focus quand le cerveau focalisé est retiré)
-et `navigateCross` (composition focalisée sur un cerveau pas encore
-affiché) passaient par la porte commune `applyComposition(next, ...)` sans
-jamais passer par les trois handlers (`onFocusBrain`, `selectNode`,
-`changeProjection`) que la passe précédente avait protégés. Un garde
-unique, à la frontière commune d'`applyComposition` — invalidation
-synchrone dès que `current.focusedBrainId !== next.focusedBrainId`, avant
-le premier `await` — couvre désormais toute transition de composition,
-présente ou future, qui change réellement le focus. Détail complet dans
-[VALIDATION section BK](VALIDATION.md).
+Le prochain travail ne doit pas rouvrir la recherche, la projection progressive ni la frontière Explorer. La priorité reste l’étape A — **parité fonctionnelle MVP** — avant la surveillance automatique et avant la finition visuelle générale.
 
-Action unique suivante : nouveau contrôle indépendant de `TASK-0034`, par
-une instance distincte de l'exécuteur, sur les preuves de cette passe —
-notamment que le garde central d'`applyComposition` couvre bien
-`removeBrain`/`navigateCross` sans avoir réintroduit de régression sur une
-transition à focus identique (Ouvrir/Actualiser/Reconstruire, ajout d'un
-cerveau). Aucune `TASK-0035` avant fermeture de ce verrou.
+Action unique suivante : démarrer `TASK-0035` sur une branche dédiée à partir de cette fermeture. La tranche choisie doit compléter le contexte utilisateur autour de la sélection en réutilisant `DetailsPanel` et l’Index canonique : panneau masquable/persistant, contenu direct de dossier exact et paginé, puis copie sûre du chemin réel sans l’exposer au WebView. Les filtres et le journal/watchers restent des tranches suivantes.
