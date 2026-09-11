@@ -1,5 +1,77 @@
 # État courant
 
+## TASK-0035 — V1 Context Panel, Direct Children & Safe Copy — IMPLEMENTED — 2026-09-11
+
+- **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche
+  `build/v0.2-a19-v1-context-panel`. Prérequis `TASK-0034 = VERIFIED` par
+  `ACTION-0055` (ci-dessous) satisfait avant tout code. Aucune nouvelle DEC.
+  Détail : [VALIDATION section BL](VALIDATION.md).
+- **A — panneau masquable persistant :** `catalog_meta` porte une clé de
+  plus, `details_panel_visible` (visible par défaut si absente), aucune
+  migration. Deux commandes minimales, `map_ui_preferences`/
+  `map_ui_preferences_update`. `toggleDetailsPanel()` côté React ne touche
+  rien d'autre — ni sélection, ni recherche, ni projection, ni composition;
+  masquer retire seulement `<DetailsPanel>` du rendu, jamais l'état qui
+  l'alimente.
+- **B — enfants directs exacts et paginés :** `map_node_children` réutilise
+  `Index::children_page()` (déjà porté par `TASK-0029`/`DEC-0030`) sans SQL
+  parallèle, borné à 50, curseur keyset refusant un index étranger, une
+  révision périmée ou un autre parent. `DetailsPanel` lit désormais cette
+  page dédiée pour « Enfants directs », plus jamais `detail.children` (la
+  vue bornée de la projection, non exhaustive).
+- **C — Copier le chemin :** `tauri-plugin-clipboard-manager` audité puis
+  ajouté, épinglé en version exacte (`= 2.3.3`), permission par défaut vide
+  et aucune permission `clipboard-manager:*` accordée — la capacité reste
+  `core:default` seul. `map_copy_node_path` partage la résolution/
+  confinement de `map_reveal_node` (`resolve_confined_target()`, extraite
+  des deux) et convertit avec `Path::to_str()`, jamais `to_string_lossy()`,
+  pour rester exact sur un nom Unicode.
+- **Preuves :** Rust **365 PASS** (344 + 21 : préférence, pagination/copie);
+  TypeScript **339 PASS** (317 + 22). Rejeu WebView2 avec **trois lancements
+  réels** du même exécutable et **deux redémarrages réels** du processus
+  (masquer → redémarrage → toujours masqué; réafficher → redémarrage →
+  toujours visible), pagination d'un dossier à 4 356 enfants directs sans
+  chevauchement ni perte, sélection d'un enfant hors projection synchronisant
+  carte et détails, copie comparée au presse-papiers OS par le script
+  lui-même (jamais le chemin conservé), 0 erreur console fatale.
+- **Validations :** `pnpm check`, `pnpm build`, `cargo build --offline`,
+  `git diff --check` verts; `cargo fmt` propre sur les lignes ajoutées;
+  `cargo clippy --all-targets --offline -- -D warnings` rouge à **26
+  erreurs**, même compte et mêmes diagnostics qu'avant, aucun nouveau.
+- **Non testé / limite assumée :** `map_copy_node_path` réutilise le
+  préfixe de fil `map_reveal_refused:` plutôt qu'un préfixe distinct — choix
+  de réutilisation documenté. Ni l'IPC de recherche/révélation ni
+  `Index::query_nodes()`/`materialize_view()` n'ont été touchés au-delà de
+  l'extraction partagée. Poste de développement, pas une acceptance laptop
+  modeste.
+- **Aucune donnée personnelle**, comme toujours. **X5 inchangé**,
+  `origin/main` inchangé. Aucune `TASK-0036`, aucune nouvelle DEC, aucune
+  PR, fusion, étiquette ni release.
+- **Action unique suivante : contrôle indépendant de `TASK-0035`.**
+
+## ACTION-0055 — TASK-0034 VERIFIED (recontrôle final) — 2026-09-11
+
+- **Verdict indépendant déjà rendu et déjà sur la branche précédente,
+  enregistré ici pour que les documents durables cessent de contredire ce
+  qui est déjà arrivé :**
+  [`docs/reviews/ACTION-0055-independent-recontrol.md`](../reviews/ACTION-0055-independent-recontrol.md)
+  rend `TASK-0034 = VERIFIED` dans sa portée V1 Find & Open, sur la
+  livraison corrective finale `521fee1`. Les trois verrous successifs
+  trouvés par `ACTION-0052`/`0053`/`0054` sont fermés sans régression
+  architecturale. **Aucun `VERIFIED` n'est auto-attribué ici : ce
+  paragraphe consigne un verdict déjà rendu par l'orchestrateur technique
+  indépendant.** Écart documentaire corrigé au passage : le commit de
+  clôture (`c7a475f`) n'avait mis à jour que `NEXT_ACTION.md`, jamais
+  `CURRENT_STATE.md`, `HANDOFF.md`, `VALIDATION.md` ni `CHANGELOG_AI.md` —
+  ces quatre documents contredisaient donc le verdict déjà sur la branche;
+  corrigé ici, aucun contenu technique n'a changé.
+- **Ce verdict ne valide pas :** watcher/incrémental, journal de
+  changements, FTS5, copie du chemin réel, préférences écran/icône,
+  acceptance de performance sur laptop modeste ni la dette Clippy
+  historique.
+- **Action suivante à cette date-là :** continuer la parité fonctionnelle
+  MVP sans rouvrir l'architecture — devenue `TASK-0035`, ci-dessus.
+
 ## TASK-0034 — passe corrective 3, garde central d'`applyComposition` — IMPLEMENTED — 2026-09-11
 
 - **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Même branche

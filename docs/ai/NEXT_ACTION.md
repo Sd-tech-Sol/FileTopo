@@ -1,11 +1,25 @@
 # Action suivante
 
-## TASK-0035 — V1 Context Panel, Direct Children & Safe Copy — READY
+## Contrôle indépendant de TASK-0035
 
-`TASK-0034 — V1 Find & Open` est **VERIFIED** dans sa portée par [`ACTION-0055`](../reviews/ACTION-0055-independent-recontrol.md).
+`TASK-0035 — V1 Context Panel, Direct Children & Safe Copy` est livrée sur
+`build/v0.2-a19-v1-context-panel` : `IMPLEMENTED`, **pas encore
+`VERIFIED`**. `TASK-0034` reste `VERIFIED` (`ACTION-0055`), inchangé.
 
-La branche courante est `build/v0.2-a19-v1-context-panel`. `TASK-0035` est définie dans [`docs/tasks/TASK-0035-v1-context-panel.md`](../tasks/TASK-0035-v1-context-panel.md) et le prompt exécutable est `.orchestrator/NEXT_PROMPT.md`.
+Trois compléments MVP indépendants du moteur topographique : un panneau de
+détails masquable dont la préférence survit un vrai redémarrage
+(`catalog_meta`, sans nouveau store); une page dédiée, exacte et paginée
+des enfants directs (`map_node_children`, réutilisant
+`Index::children_page()`) qui remplace `detail.children` comme source de
+la section « Enfants directs »; « Copier le chemin »
+(`map_copy_node_path`), qui partage sa résolution/confinement avec
+`map_reveal_node` et n'expose au WebView que succès/erreur générique.
+Détail complet dans [VALIDATION section BL](VALIDATION.md).
 
-Action unique suivante : **Claude Code exécute intégralement `.orchestrator/NEXT_PROMPT.md` sur cette branche**, puis écrit/pousse `.orchestrator/RESULT.md`. La tranche complète le panneau contextuel, la pagination exacte des enfants directs et la copie sûre du chemin côté hôte; elle ne démarre ni filtres, ni watcher, ni journal de changements.
-
-Après exécution : contrôle indépendant de TASK-0035. Aucun TASK-0036 avant ce contrôle.
+Action unique suivante : nouveau contrôle indépendant de `TASK-0035`, par
+une instance distincte de l'exécuteur, sur les preuves de cette tranche —
+notamment le rejeu WebView2 à trois lancements réels avec deux
+redémarrages réels du processus (préférence persistée), la pagination
+exacte d'un dossier à plusieurs milliers d'enfants directs et la
+comparaison du presse-papiers faite hors du processus applicatif. Aucune
+`TASK-0036` avant ce contrôle.

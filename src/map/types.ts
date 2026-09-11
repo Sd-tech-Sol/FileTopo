@@ -160,6 +160,46 @@ export interface SearchPage {
   items: SearchHit[];
 }
 
+/* --- TASK-0035 — panneau contextuel, enfants directs, copie sûre -------- */
+
+/**
+ * Non-sensitive, persisted UI preferences — stored in the catalogue's
+ * `catalog_meta` table, never a new store. Global, not per-brain: which
+ * brain is shown is composition state, but whether the details panel is
+ * shown at all is a preference about the interface itself.
+ */
+export interface UiPreferences {
+  detailsPanelVisible: boolean;
+}
+
+/**
+ * One direct child — identity, a name and a **relative** path only, exactly
+ * {@link SearchHit}'s shape: never an absolute path, a root or a source
+ * handle — `DEC-0033` B applies here too.
+ */
+export interface ChildNode {
+  brainId: string;
+  nodeId: number;
+  name: string;
+  relativePath: string;
+  kind: MapNodeKind;
+}
+
+/**
+ * A bounded, exact page of one node's **direct** children — independent of
+ * {@link NodeDetail.children}, which comes from the bounded map projection
+ * and is not an exhaustive or paginated list of a folder's contents.
+ */
+export interface NodeChildrenPage {
+  brainId: string;
+  parentNodeId: number;
+  items: ChildNode[];
+  total: number;
+  nextCursor: string | null;
+  indexRevision: number;
+  limit: number;
+}
+
 export interface FixtureSummary {
   id: string;
   labelFr: string;

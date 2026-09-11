@@ -5617,3 +5617,277 @@ fusion, étiquette ni release.
 
 **Action unique suivante :** nouveau contrôle indépendant de `TASK-0034`,
 sur les preuves de cette passe.
+
+## BL. TASK-0035 — V1 Context Panel, Direct Children & Safe Copy — 2026-09-11
+
+**Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche
+`build/v0.2-a19-v1-context-panel`. Prérequis `TASK-0034 = VERIFIED` par
+`ACTION-0055` satisfait avant tout code. Aucune nouvelle DEC — l'implémentation
+n'a exigé ni d'affaiblir la frontière de confidentialité ni d'ajouter une
+seconde source de vérité.
+
+### BL.1 But et réutilisation
+
+Trois compléments de parité MVP autour de la sélection courante, sans toucher
+au moteur topographique : masquer/réafficher le panneau de détails
+(persisté); le contenu direct **exact et paginé** d'un dossier, indépendant
+de la projection visuelle bornée; « Copier le chemin », le chemin absolu
+restant hors du WebView.
+
+Réutilisé tel quel : `BrainCatalog::meta()`/`put_meta()` et `catalog_meta`
+(aucun nouveau store); `Index::children_page()` (`DEC-0030`, déjà porté par
+`TASK-0029`); `map_view`/`selectNode`/`changeProjection` pour la
+focalisation d'un enfant hors projection; la résolution/confinement de
+`map_reveal_node` (`TASK-0034` C), extraite dans `resolve_confined_target()`
+et partagée avec la nouvelle commande de copie plutôt que dupliquée.
+
+### BL.2 A — Panneau masquable et persistant
+
+`DETAILS_PANEL_VISIBLE_KEY = "details_panel_visible"`, une clé de plus dans
+`catalog_meta`, au même niveau que `ACTIVE_BRAIN_KEY`. Aucune migration de
+schéma : la table existe déjà. `BrainCatalog::ui_preferences()` rend
+`{ detailsPanelVisible: true }` quand la clé est absente — visible par
+défaut, y compris pour un catalogue antérieur à cette tâche.
+`set_details_panel_visible(bool)` persiste puis relit, même aller-retour que
+`set_active`.
+
+Deux commandes IPC minimales, `map_ui_preferences`/
+`map_ui_preferences_update(details_panel_visible: bool)`, ne transportant
+que ce booléen. Côté React (`MapApp.tsx`), la préférence est lue **une
+seule fois**, dans le même `Promise.all` que fixtures/hôte/catalogue au
+démarrage — pas un second effet séparé qui pourrait courir devant ou
+derrière le premier. `toggleDetailsPanel()` inverse l'état local et
+persiste en tâche de fond (`invoke(...).catch(...)`, motif déjà établi pour
+`activate`) : sa portée est délibérément étroite — invalidée
+structurellement par un test qui vérifie que son corps ne référence ni
+`setSelected`, `setSearchQuery`, `setSearchPage`, `setComposed`,
+`setDetail`, `setChildrenPage` ni `setLoaded`. Masquer retire
+`<DetailsPanel>` du JSX (`{detailsPanelVisible ? (<DetailsPanel .../>) : null}`);
+tout l'état qui l'alimente (sélection, enfants, recherche, relations) vit
+dans `MapApp`, jamais dans `DetailsPanel` lui-même, donc rien n'est perdu à
+masquer et rien ne doit être reconstruit à réafficher.
+
+### BL.3 B — Enfants directs exacts et paginés
+
+`map_node_children(reference, after?, limit?)` (`commands.rs::node_children`) :
+vérifie `reference.belongs_to`, passe par `open_store`, décode un curseur
+opaque via `crate::hierarchy::ChildCursor::decode` puis délègue à
+`Index::children_page()` — jamais une seconde requête SQL. Borné à
+`CHILDREN_LIMIT_MAX = 50` (même esprit que `SEARCH_LIMIT_MAX`, une borne
+produit distincte de la borne défensive `MAX_CHILDREN_PAGE_SIZE = 500` de
+la couche `hierarchy`). Le DTO `NodeChildrenPage` porte `total` (colonne
+durable `child_count`, jamais un `COUNT(*)`), `nextCursor` (keyset, lié à
+l'index et à la révision), `indexRevision` et `limit` — aucun champ de
+chemin.
+
+`children_page()` refusait déjà, avant cette tâche, un curseur d'un autre
+index (`ForeignCursor`), d'une révision périmée (`StaleCursor`) ou d'un
+autre parent (`ParentMismatch`) — cette tâche n'a eu qu'à les exposer
+fidèlement à travers `map_node_children`, sans réimplémenter cette
+validation.
+
+Dans `DetailsPanel.tsx`, la section « Enfants directs » lit désormais
+`childrenPage`, plus jamais `detail.children` (qui reste la vue bornée par
+la projection, non exhaustive — **retirée de cet usage**, l'ancien message
+« N enfants supplémentaires » disparaît, remplacé par la vraie pagination).
+Total exact affiché; navigation page suivante/précédente par une pile de
+curseurs (`childrenCursorStack` dans `MapApp.tsx`) permettant un retour
+exact à la page précédente; sélectionner un enfant appelle `onSelect(nodeId)`
+— **exactement** la fonction `selectInSelectedBrain` déjà utilisée pour la
+navigation parent/enfant historique, aucun chemin de sélection nouveau.
+Bornage à 50 lignes DOM par page, jamais d'accumulation.
+
+### BL.4 C — Copier le chemin
+
+Audit préalable de `tauri-plugin-clipboard-manager` avant ajout de
+dépendance : version `2.3.3` (dernière stable au moment de l'audit),
+licence double MIT/Apache-2.0 (identique aux autres dépendances Tauri du
+projet), API Rust `ClipboardExt::clipboard().write_text(text)` — synchrone,
+aucun `await` requis côté hôte. Son propre fichier `permissions/default.toml`
+déclare `permissions = []` : le plugin n'accorde **aucune** commande
+frontend par défaut, et cette tâche n'en accorde aucune non plus.
+Dépendance **épinglée en version exacte** (`= 2.3.3`) dans `Cargo.toml`,
+conformément à l'exigence de ne pas laisser une version implicite.
+
+`.plugin(tauri_plugin_clipboard_manager::init())` ajouté dans `lib.rs`,
+juste après le plugin de dialogue, avec le même commentaire de garantie que
+`DEC-0033` H établissait pour lui : le plugin est disponible **côté Rust
+seulement** (`app.clipboard()`), et la capacité `default` reste
+`core:default` seul — un test structurel étend la liste des préfixes
+interdits (`dialog:`, `fs:`, `shell:`, `opener:`, `http:`) avec
+`clipboard-manager:`, et un second test lit le texte du runtime pour
+confirmer que le plugin est bien initialisé.
+
+`resolve_confined_target()` — extraite de `reveal_node()`, qui l'appelle
+maintenant elle aussi — est le **seul** endroit qui résout un
+`BrainNodeRef` vers un chemin réel confiné : vérifie l'appartenance au
+cerveau, lit le nœud dans l'Index, refuse un `reparse_point`/`Skipped`,
+résout la racine via `BrainSource::resolve(...).root(...)`, puis confine
+composant par composant via `confine_indexed_target()`, inchangée.
+`copy_target_path()` appelle cette même fonction puis convertit le
+`PathBuf` avec **`Path::to_str()`, jamais `to_string_lossy()`** —
+`DEC-0033` C interdit la conversion avec perte pour *résoudre* une source,
+et une conversion silencieusement lossy aurait aussi violé l'exigence
+`TASK-0035` C d'un chemin copié **exact** pour un nom Unicode : un composant
+non représentable est refusé explicitement (`indexed_target_not_representable`)
+plutôt que remplacé par des caractères de substitution.
+
+`map_copy_node_path(reference)` (`lib.rs`) est le **seul** appelant qui
+détient le texte résolu : il l'obtient de `copy_target_path`, l'écrit via
+`app.clipboard().write_text(text)`, et ne rend que succès/erreur générique
+— le texte n'existe jamais ailleurs, n'est jamais journalisé, jamais
+sérialisé. L'échec d'écriture réutilise `MapError::RevealRefused
+("clipboard_write_failed")` : même variante, même préfixe de fil
+`map_reveal_refused:` que les refus de résolution/confinement — un choix de
+réutilisation assumé (documenté dans le commentaire de la variante) plutôt
+qu'une nouvelle taxonomie d'erreur pour une action qui partage déjà tout le
+reste de son chemin avec `reveal_node`. Côté frontend, `t.copyError` porte
+un libellé propre à « copier » pour chaque code, distinct de `t.revealError`
+qui dit « ouvrir » — la mécanique de fil est partagée, le texte affiché ne
+l'est pas.
+
+### BL.5 Preuves Rust
+
+- **5 tests de préférence** (`brains.rs::tests`) : absente ⇒ visible;
+  persistance à la réouverture (aller **et** retour, visible → masqué →
+  visible); sérialisation ne portant que le seul booléen documenté.
+- **16 tests** dans le nouveau fichier `context_panel_tests.rs`
+  (`#[path]`, même convention que `find_open_tests.rs`) :
+  - pagination bornée à 50 même si plus est demandé; ordre dossier-avant-fichier;
+    couverture complète sans doublon/perte à travers toute la pagination
+    (corpus de 131 enfants directs, plus un petit-enfant délibérément placé
+    sous l'un d'eux pour prouver qu'il ne fuit jamais dans la page du
+    parent); total exact depuis la colonne durable; refus cerveau étranger,
+    curseur d'un autre index, révision périmée après republication, parent
+    différent; DTO sans chemin absolu; fonctionne sans source sur le disque;
+  - copie : refus cerveau étranger, refus reparse/skipped avant tout accès
+    disque, refus id inconnu, refus cible disparue après indexation (sur un
+    vrai dossier réel, comme `TASK-0034`), **exactitude Unicode et nom
+    long** (un nom avec émoji en paire de substituts et accents, un nom de
+    120 caractères, écrits par le test lui-même sous la racine synthétique
+    réellement résolue — comparaison stricte du texte rendu contre le
+    chemin attendu), partage prouvé de la marche de confinement avec
+    `reveal_node`.
+- **Structurels** (`lib.rs`) : les quatre commandes (`map_node_children`,
+  `map_copy_node_path`, `map_ui_preferences`, `map_ui_preferences_update`)
+  sont exposées; `map_copy_node_path` ne prend que `reference:
+  map::brains::BrainNodeRef`; le test générique existant
+  (`the_picker_exists_and_no_exposed_command_accepts_a_path`) couvre
+  automatiquement les nouvelles commandes puisqu'il itère **tout** ce qui
+  est exposé; plugin clipboard initialisé; aucune permission
+  `clipboard-manager:*` dans la capacité.
+
+### BL.6 Preuves TypeScript
+
+- **14 tests** ajoutés à `DetailsPanel.test.tsx` : bouton copier
+  masqué/actif selon `reference`/`onCopyPath`, appelle `onCopyPath` avec
+  **exactement** la référence (comme `onReveal`), busy/erreur, reveal et
+  copie coexistent; total exact depuis `childrenPage` (jamais
+  `detail.children`, délibérément laissé vide dans ces tests pour le
+  prouver); état de chargement distinct de l'état vide; sélectionner un
+  enfant appelle `onSelect(nodeId)`; pagination bornée, boutons ordinaires
+  clavier-opérables, désactivés au bon bord (première/dernière page),
+  absentes quand tout tient sur une page; aucun texte en forme de chemin
+  absolu dans la liste rendue.
+- **8 tests structurels** dans le nouveau `contextPanel.test.ts` (même
+  convention `?raw` que `lifecycle.test.ts`/`searchCoordinator.test.ts` —
+  aucun test de ce dépôt ne monte `MapApp` en entier, celui-ci n'étant
+  importé que par `src/main.tsx`) : préférence chargée une fois au
+  démarrage; bascule isolée de tout autre état; bouton et rendu
+  conditionnel branchés sur la même préférence; `map_node_children` invoqué
+  sans jamais assembler de chemin; l'effet d'enfants ne réagit qu'à
+  `[selected, fetchChildrenPage]`, même principe que l'effet `detail`
+  voisin; sélection d'enfant réutilisant `onSelect`; `map_copy_node_path`
+  invoqué avec exactement `{ reference }`; l'erreur de copie s'efface au
+  changement de sélection, même garde que reveal.
+- **Migration d'un test existant** : `mapView.test.tsx`
+  (« offers the parent and the direct children as reachable controls »)
+  supposait `detail.children` comme source des boutons; corrigé pour
+  fournir un `childrenPage` explicite, `detail.children` restant vide à
+  dessein — la preuve que la section lit maintenant la bonne source, pas
+  seulement que les boutons apparaissent.
+
+**312 → 339 TASK-0034/0035** : 302 → 312 (passe 3) → 339 ici (+22 net —
+14 + 8, aucune régression sur les 317 précédents).
+
+### BL.7 Rejeu WebView2 — trois lancements réels
+
+`scripts/task0035-seed-proof.py` (dérivé de `task0034-seed-proof.py`, même
+arbre `REAL_ROOT` de 5 206 éléments, même branche plate `C` à 4 356 enfants
+directs, même needle `cible-recherche-unique.txt`) enregistré dans un
+nouveau bac à sable; `scripts/task0035-webview2.mjs` prend un argument de
+**phase** (1, 2 ou 3), et `scripts/task0035-webview2.ps1` orchestre **trois
+lancements réels** du même exécutable, avec une **fermeture et un
+redémarrage réels du processus** entre chacun — jamais simulés — sur le
+**même** bac à sable (même `catalog.sqlite`, donc la préférence persiste
+réellement) :
+
+| Phase | Preuve |
+|---|---|
+| 1 (profil neuf) | panneau visible par défaut; sélection de `C` via la navigation clavier de la liste d'enfants (pas un clic SVG par coordonnées — voir note ci-dessous); pagination de `C` : total exact (4 356) contre le DTO direct, page suivante sans chevauchement avec la page 1, page précédente restaurant exactement la page 1; sélection du needle (premier enfant de `C`, jamais matérialisé comme sa propre carte) synchronisant carte (`aria-activedescendant`) et détails; `map_reveal_node` invoqué directement (cible synthétique, spawn réussi); « Copier le chemin » cliqué réellement; **Masquer les détails** par une vraie touche |
+| (fermeture + redémarrage réels) | |
+| 2 | panneau **toujours masqué** après le redémarrage réel; **Afficher les détails** par une vraie touche |
+| (fermeture + redémarrage réels) | |
+| 3 | panneau **toujours visible** après le second redémarrage réel |
+
+Le presse-papiers OS est lu **par `task0035-webview2.ps1` lui-même**,
+juste après la fermeture réelle du processus de la phase 1 — le même
+presse-papiers que `tauri-plugin-clipboard-manager` vient d'écrire depuis
+l'intérieur de l'application — et comparé **au caractère près** (`-ceq`,
+sensible à la casse) au chemin attendu, reconstruit depuis les champs du
+germe. Ni ce script ni `task0035-webview2.mjs` n'impriment jamais le
+chemin : l'artefact ne garde que `copyClipboardMatchesExpectedPath: true`.
+
+**Note de mise au point :** la première tentative sélectionnait `C` par un
+clic à coordonnées SVG (`Input.dispatchMouseEvent` sur le centre de la
+carte de la carte composée), exactement le mécanisme que `task0033-webview2.mjs`
+utilise ailleurs avec succès — mais celui-ci n'a pas déclenché la sélection
+ici (`aria-selected` restait `false`, la sélection restait sur la racine).
+Remplacé par une navigation par clavier réel dans la liste d'enfants dédiée
+de la racine elle-même (le nœud racine est auto-sélectionné au démarrage et
+liste déjà `A`/`B`/`C`/`D` comme enfants directs) — plus robuste, et
+accessoirement une preuve supplémentaire que la liste d'enfants est
+elle-même clavier-opérable. La cause exacte de l'échec du clic SVG n'a pas
+été investiguée plus avant, cette tâche ne portant pas sur le rendu de la
+carte; à surveiller si un futur rejeu a spécifiquement besoin de cliquer
+une carte.
+
+Résultat complet, artefact
+[`TASK-0035-webview2.json`](../performance/runs/TASK-0035-webview2.json) :
+5 206 nœuds indexés, 4 356 enfants directs de `C`, toutes les preuves du
+tableau à `true`, aucune fuite de chemin absolu, **0 erreur console
+fatale** cumulée sur les trois phases.
+
+### BL.8 Validations
+
+Rust **365 PASS** (344 + 21 : 5 préférence + 16 pagination/copie), TypeScript
+**339 PASS** (317 + 22), `pnpm check`, `pnpm build`, `cargo build --offline`,
+`git diff --check` verts. `cargo fmt` propre sur chaque ligne ajoutée par
+cette tâche (vérifié fichier par fichier, dette préexistante ailleurs dans
+les mêmes fichiers laissée intacte). `cargo clippy --all-targets --offline
+-- -D warnings` rouge à **26 erreurs**, même compte et mêmes diagnostics
+qu'avant cette tâche (deux d'entre eux, dans `brains.rs`/`lib.rs`, décalés
+de quelques lignes par l'insertion de code, jamais dans une ligne
+elle-même ajoutée par cette tâche) — vérifié diagnostic par diagnostic,
+aucun nouveau.
+
+### BL.9 Non fait, et limites
+
+Portée volontairement étroite, comme les tâches précédentes : ni la
+surface IPC Rust existante (`map_view`, `map_search_nodes`,
+`map_reveal_node`), ni `Index::query_nodes()`/`materialize_view()`, ni la
+frontière Explorer n'ont été touchés au-delà de l'extraction partagée
+`resolve_confined_target()`. `map_copy_node_path` réutilise le préfixe de
+fil `map_reveal_refused:` plutôt qu'un préfixe `map_copy_refused:` distinct
+— un choix de réutilisation assumé, documenté, pas un oubli. Le rejeu
+WebView2 reste une vérification de non-régression/acceptation en
+conditions réelles sur poste de développement, jamais une acceptance
+laptop modeste. Hors portée comme prévu par la fiche : filtres, watcher,
+journal de changements, FTS5, préférences moniteur/icône, refonte
+graphique, moteur de relations, cloud/réseau/IA.
+
+**Aucune donnée personnelle**, comme toujours. **X5 inchangé**,
+`origin/main` inchangé. Aucune `TASK-0036`, aucune nouvelle DEC, aucune PR,
+fusion, étiquette ni release.
+
+**Action unique suivante :** contrôle indépendant de `TASK-0035`.

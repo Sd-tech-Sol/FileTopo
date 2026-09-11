@@ -4925,3 +4925,132 @@ déterministe TypeScript. Aucune donnée personnelle. `X5` inchangé; aucune
 
 **Action unique suivante :** nouveau contrôle indépendant de `TASK-0034`,
 par une instance distincte de Claude Code, sur les preuves de cette passe.
+
+## 2026-09-11 — ACTION-0055 — Enregistrement tardif du contrôle indépendant final, TASK-0034 VERIFIED
+
+**Agent :** Claude Code, rédacteur de l'enregistrement (verdict rendu par
+l'orchestrateur technique indépendant, non auto-attribué)
+**Statut à l'issue :** `TASK-0034 = VERIFIED` dans sa portée V1 Find & Open
+
+### Fait
+
+Enregistrement dans `CURRENT_STATE.md` et `HANDOFF.md` du verdict déjà rendu
+par `docs/reviews/ACTION-0055-independent-recontrol.md` sur la livraison
+corrective finale `521fee1` : les trois verrous successifs trouvés par
+`ACTION-0052`, `ACTION-0053` et `ACTION-0054` sont fermés sans régression
+architecturale. Le commit de clôture (`c7a475f`) n'avait mis à jour que
+`docs/ai/NEXT_ACTION.md`; `CURRENT_STATE.md`, `HANDOFF.md` et
+`CHANGELOG_AI.md` contredisaient donc encore le verdict déjà sur la
+branche. Corrigé ici, en préparant `TASK-0035` — aucun contenu technique
+n'a changé.
+
+### Suite
+
+**Action unique suivante :** exécuter `TASK-0035`, déjà définie et prête.
+
+## 2026-09-11 — TASK-0035 — V1 Context Panel, Direct Children & Safe Copy
+
+**Agent :** Claude Code, exécuteur
+**Statut à l'issue :** `IMPLEMENTED`, jamais auto-`VERIFIED`
+
+### Motif
+
+Compléter une tranche immédiatement utile de la parité MVP autour de la
+sélection courante, sans toucher au moteur topographique : masquer/
+réafficher le panneau de détails avec persistance au redémarrage; afficher
+le contenu direct **exact et paginé** du dossier sélectionné, indépendant
+de la projection visuelle bornée; permettre « Copier le chemin » comme
+geste explicite, en gardant le chemin absolu hors du WebView.
+
+### Fait
+
+**A — panneau masquable persistant.** `catalog_meta` porte une clé de
+plus, `details_panel_visible` (`brains.rs`), visible par défaut si absente
+— aucune migration de schéma. `BrainCatalog::ui_preferences()`/
+`set_details_panel_visible()`, deux commandes minimales
+`map_ui_preferences`/`map_ui_preferences_update`. Côté React, la
+préférence est lue une seule fois au démarrage, dans le même `Promise.all`
+que fixtures/hôte/catalogue; `toggleDetailsPanel()` ne touche rien d'autre
+— un test structurel vérifie que son corps ne référence aucun autre setter
+d'état. Masquer retire `<DetailsPanel>` du rendu; tout l'état qui
+l'alimente reste dans `MapApp`, donc réafficher restitue exactement le
+même contexte.
+
+**B — enfants directs exacts et paginés.** `map_node_children(reference,
+after?, limit?)` réutilise `Index::children_page()` (`DEC-0030`,
+`TASK-0029`) sans SQL parallèle, borné à `CHILDREN_LIMIT_MAX = 50`. Le
+curseur keyset refuse un index étranger, une révision périmée ou un autre
+parent — validation déjà présente dans `crate::hierarchy`, simplement
+exposée fidèlement. `DetailsPanel` lit désormais cette page dédiée pour
+« Enfants directs », plus jamais `detail.children` (la vue bornée de la
+projection, non exhaustive) : total exact, pagination par pile de curseurs
+côté `MapApp.tsx`, sélection d'un enfant réutilisant `onSelect(nodeId)`
+tel quel.
+
+**C — Copier le chemin.** `tauri-plugin-clipboard-manager` audité avant
+ajout (version `2.3.3`, licence MIT/Apache-2.0, permissions par défaut
+**vides**), épinglé en version exacte. Initialisé côté Rust seulement,
+même garantie que le plugin de dialogue (`DEC-0033` H) : aucune permission
+`clipboard-manager:*` dans la capacité, vérifié par un test structurel.
+`resolve_confined_target()`, extraite de `reveal_node()` et partagée par
+`copy_target_path()`, est l'unique endroit qui résout un `BrainNodeRef`
+vers un chemin réel confiné. Conversion avec `Path::to_str()`, jamais
+`to_string_lossy()` — un composant non représentable est refusé
+explicitement plutôt que silencieusement corrompu, pour rester exact sur
+un nom Unicode. `map_copy_node_path` écrit le texte au presse-papiers côté
+hôte et ne rend que succès/erreur générique.
+
+**Preuves déterministes :** 5 tests de préférence (`brains.rs`), 16 tests
+de pagination/copie (`context_panel_tests.rs`, nouveau fichier) — bornage
+à 50, couverture exacte sans doublon/perte/petit-enfant à travers toute la
+pagination, refus cerveau/curseur étranger/révision périmée/parent
+différent, copie exacte sur noms Unicode et longs, refus reparse/skipped/
+disparu. Côté TypeScript : 14 tests `DetailsPanel.test.tsx` (copie,
+pagination bornée et clavier-opérable, sélection d'enfant, total exact,
+absence de chemin absolu), 8 tests structurels `contextPanel.test.ts`
+(câblage `MapApp.tsx`), plus la migration d'un test préexistant
+(`mapView.test.tsx`) qui supposait `detail.children` comme source
+exhaustive.
+
+Rejeu **WebView2 réel** avec **trois lancements réels** du même exécutable
+et **deux fermetures/redémarrages réels du processus** entre eux, sur le
+même bac à sable (`task0035-seed-proof.py`, arbre `REAL_ROOT` de 5 206
+éléments dérivé de `TASK-0034`, dossier `C` à 4 356 enfants directs) :
+panneau visible par défaut; masquer puis redémarrage réel confirme masqué;
+réafficher puis second redémarrage réel confirme visible; pagination sans
+chevauchement ni perte aller-retour; sélection d'un enfant hors projection
+synchronisant carte et détails; `map_reveal_node` sur cible synthétique;
+« Copier le chemin » cliqué réellement, presse-papiers comparé **par le
+script d'orchestration lui-même**, hors du processus applicatif,
+correspondance exacte confirmée sans que le chemin ne soit jamais
+journalisé; 0 erreur console fatale cumulée sur les trois phases.
+
+**Piège de harnais :** sélectionner un nœud par clic à coordonnées SVG sur
+sa carte (mécanisme déjà utilisé avec succès par `task0033-webview2.mjs`)
+n'a pas fonctionné pour cette tâche; remplacé par une navigation clavier
+réelle dans la liste d'enfants dédiée du nœud déjà sélectionné, plus
+robuste et elle-même une preuve de navigabilité au clavier.
+
+TypeScript **339 PASS** (317 + 22). Rust **365 PASS** (344 + 21). `pnpm
+check`, `pnpm build`, `cargo build --offline`, `git diff --check` verts.
+`cargo fmt` propre sur chaque ligne ajoutée; `cargo clippy --all-targets
+--offline -- -D warnings` rouge à **26 erreurs**, même compte et mêmes
+diagnostics qu'avant (deux décalés de quelques lignes par l'insertion),
+aucun nouveau.
+
+### Non fait, et limites
+
+`map_copy_node_path` réutilise le préfixe de fil `map_reveal_refused:`
+plutôt qu'un préfixe distinct — choix de réutilisation assumé et
+documenté. Ni l'IPC de recherche/révélation existante, ni
+`Index::query_nodes()`/`materialize_view()`, ni la frontière Explorer
+n'ont été touchés au-delà de l'extraction partagée
+`resolve_confined_target()`. Poste de développement, pas une acceptance
+laptop modeste. Aucune donnée personnelle. `X5` inchangé; aucune
+`TASK-0036`, aucune nouvelle DEC, aucune PR, fusion, étiquette ni release;
+`origin/main` inchangé.
+
+### Suite
+
+**Action unique suivante :** contrôle indépendant de `TASK-0035`, par une
+instance distincte de Claude Code, sur les preuves de cette tranche.

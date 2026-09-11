@@ -138,6 +138,45 @@ pub const SEARCH_LIMIT_MAX: usize = 50;
 /// parameter.
 const SEARCH_QUERY_MAX_CHARS: usize = 200;
 
+/// One direct child — `TASK-0035` B. Identity, a name and a **relative**
+/// path only, exactly [`SearchHit`]'s shape: never an absolute path, a root
+/// or a source handle.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChildNode {
+    pub brain_id: String,
+    pub node_id: i64,
+    pub name: String,
+    pub relative_path: String,
+    pub kind: crate::domain::NodeKind,
+}
+
+/// A bounded, exact page of one node's **direct** children — `TASK-0035` B.
+///
+/// Deliberately independent of `NodeDetail.children`, which comes from the
+/// bounded map projection and is not an exhaustive or paginated list of a
+/// folder's contents. `total` and `nextCursor` come straight from
+/// [`crate::hierarchy::ChildrenPage`]: exact count from the durable
+/// `child_count` column, and a keyset cursor tied to this index and
+/// revision, never an `OFFSET`.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NodeChildrenPage {
+    pub brain_id: String,
+    pub parent_node_id: i64,
+    pub items: Vec<ChildNode>,
+    pub total: u64,
+    pub next_cursor: Option<String>,
+    pub index_revision: u64,
+    pub limit: usize,
+}
+
+/// Server-side ceiling on a children page — `TASK-0035` B. Kept apart from
+/// [`crate::hierarchy::MAX_CHILDREN_PAGE_SIZE`] (that layer's own, much
+/// larger, defensive ceiling): this is the product's own bound, the same
+/// spirit as [`SEARCH_LIMIT_MAX`] for search.
+pub const CHILDREN_LIMIT_MAX: usize = 50;
+
 pub fn open_map(paths: &SandboxPaths, brain: &BrainRecord) -> Result<MapOpenReport, MapError> {
     let store = open_store(paths, brain)?;
     let _read = store.index.connection.unchecked_transaction()?;
@@ -692,6 +731,62 @@ pub fn search_nodes(
     })
 }
 
+/// One bounded, exact page of a node's direct children — `TASK-0035` B.
+///
+/// Reuses [`crate::index::Index::children_page`] rather than a parallel
+/// query: the canonical order, the exact `total_direct_children` and the
+/// keyset cursor (bound to one index and one revision, refusing a foreign
+/// or stale one) all come from the one place that already owns them —
+/// `open_store` is the only door, exactly as for search and reveal.
+///
+/// `after`, when given, must be a cursor this same command previously
+/// returned as `nextCursor`: it is decoded, then validated by
+/// `children_page` itself against the live index (foreign index, stale
+/// revision or a different parent are each refused explicitly, never
+/// reinterpreted).
+pub fn node_children(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+    reference: &BrainNodeRef,
+    after: Option<&str>,
+    limit: usize,
+) -> Result<NodeChildrenPage, MapError> {
+    if !reference.belongs_to(&brain.brain_id) {
+        return Err(MapError::BrainMismatch {
+            expected: brain.brain_id.clone(),
+            found: reference.brain_id.clone(),
+        });
+    }
+    let store = open_store(paths, brain)?;
+    let bounded_limit = limit.clamp(1, CHILDREN_LIMIT_MAX);
+    let cursor = after
+        .map(crate::hierarchy::ChildCursor::decode)
+        .transpose()?;
+    let page = store
+        .index
+        .children_page(reference.node_id, bounded_limit, cursor.as_ref())?;
+    let items = page
+        .items
+        .into_iter()
+        .map(|node| ChildNode {
+            brain_id: brain.brain_id.clone(),
+            node_id: node.id,
+            name: node.name,
+            relative_path: node.relative_path,
+            kind: node.kind,
+        })
+        .collect();
+    Ok(NodeChildrenPage {
+        brain_id: brain.brain_id.clone(),
+        parent_node_id: reference.node_id,
+        items,
+        total: page.total_direct_children,
+        next_cursor: page.next_cursor.map(|cursor| cursor.encode()),
+        index_revision: page.identity.revision,
+        limit: page.page_size,
+    })
+}
+
 /// Walks an indexed relative path onto a resolved root, one component at a
 /// time, refusing anywhere a symlink, a reparse point or a missing entry
 /// appears — `TASK-0034` C. Adapted from the 0.1 prototype's
@@ -735,24 +830,21 @@ fn explorer_argument(target: &Path) -> std::ffi::OsString {
     }
 }
 
-/// "Ouvrir dans l'Explorateur Windows" — `TASK-0034` C.
+/// Resolves and confines the real filesystem path behind a [`BrainNodeRef`]
+/// — the shared boundary behind "Ouvrir dans l'Explorateur" (`TASK-0034` C)
+/// and "Copier le chemin" (`TASK-0035` C). Everything up to and including
+/// confinement is identical between the two actions; only what happens to
+/// the resulting path afterwards differs, in each action's own function.
 ///
 /// The **only** input is a [`BrainNodeRef`]; every path used here is read
 /// from the Index and resolved against the brain's real root **inside**
-/// this function. Nothing that reaches this far ever received a path,
-/// a root or a folder name from the WebView, and nothing it returns ever
-/// carries one back.
-///
-/// `explorer.exe` is launched directly via [`std::process::Command`] — never
-/// through a shell — with `/select,<path>` for a file and the bare directory
-/// path for a folder, exactly as the 0.1 prototype's `reveal_indexed_node`
-/// did against the old `Registry`. That command is not re-registered; this
-/// is the same primitive adapted to `BrainRecord`/`BrainIndex`.
-pub fn reveal_node(
+/// this function. Nothing that reaches this far ever received a path, a
+/// root or a folder name from the WebView.
+fn resolve_confined_target(
     paths: &SandboxPaths,
     brain: &BrainRecord,
     reference: &BrainNodeRef,
-) -> Result<(), MapError> {
+) -> Result<PathBuf, MapError> {
     if !reference.belongs_to(&brain.brain_id) {
         return Err(MapError::BrainMismatch {
             expected: brain.brain_id.clone(),
@@ -770,7 +862,22 @@ pub fn reveal_node(
         ));
     }
     let root = BrainSource::resolve(paths, brain)?.root(paths);
-    let target = confine_indexed_target(&root, &node.relative_path)?;
+    confine_indexed_target(&root, &node.relative_path)
+}
+
+/// "Ouvrir dans l'Explorateur Windows" — `TASK-0034` C.
+///
+/// `explorer.exe` is launched directly via [`std::process::Command`] — never
+/// through a shell — with `/select,<path>` for a file and the bare directory
+/// path for a folder, exactly as the 0.1 prototype's `reveal_indexed_node`
+/// did against the old `Registry`. That command is not re-registered; this
+/// is the same primitive adapted to `BrainRecord`/`BrainIndex`.
+pub fn reveal_node(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+    reference: &BrainNodeRef,
+) -> Result<(), MapError> {
+    let target = resolve_confined_target(paths, brain, reference)?;
 
     #[cfg(windows)]
     {
@@ -786,6 +893,30 @@ pub fn reveal_node(
         let _ = target;
         Err(MapError::RevealRefused("platform_not_supported".into()))
     }
+}
+
+/// The exact text "Copier le chemin" writes to the clipboard — `TASK-0035`
+/// C. Resolved and confined exactly like [`reveal_node`]; the caller in
+/// `lib.rs` hands the returned `String` to `tauri-plugin-clipboard-manager`
+/// and nothing else — never logged, never returned across the IPC boundary,
+/// never written to an artefact.
+///
+/// Converted to `String` here with [`Path::to_str`], **not**
+/// `to_string_lossy()`: `DEC-0033` C forbids the lossy conversion for
+/// *resolving* a source, and silently replacing an unrepresentable
+/// component with `U+FFFD` would also break "exact for Unicode names" —
+/// `TASK-0035` C's own requirement. A path that is not valid Unicode is
+/// refused explicitly instead.
+pub fn copy_target_path(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+    reference: &BrainNodeRef,
+) -> Result<String, MapError> {
+    let target = resolve_confined_target(paths, brain, reference)?;
+    target
+        .to_str()
+        .map(str::to_string)
+        .ok_or_else(|| MapError::RevealRefused("indexed_target_not_representable".into()))
 }
 
 pub fn integrity(paths: &SandboxPaths, brain: &BrainRecord) -> Result<FixtureIntegrity, MapError> {
@@ -2035,3 +2166,7 @@ mod legacy_binding_tests;
 #[cfg(test)]
 #[path = "find_open_tests.rs"]
 mod find_open_tests;
+
+#[cfg(test)]
+#[path = "context_panel_tests.rs"]
+mod context_panel_tests;

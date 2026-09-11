@@ -86,6 +86,7 @@ import type {
   ContentObservationSummary,
   CrossRelationsSelfCheck,
   NodeCrossRelations,
+  NodeChildrenPage,
   NodeDetail,
   NodeRelations,
   Rect,
@@ -96,6 +97,7 @@ import type {
   SearchHit,
   SearchPage,
   SuggestionReviewQueue,
+  UiPreferences,
 } from "./types";
 import {
   clampView,
@@ -197,6 +199,25 @@ const strings = {
       platform_not_supported: "Cette action n'est disponible que sous Windows.",
     } as Record<string, string>,
     revealErrorGeneric: "Impossible d'ouvrir cet élément.",
+    // `TASK-0035` C. Same wire codes and the same underlying resolution as
+    // `revealError` above (both actions share `map_reveal_refused: <code>`,
+    // reusing one confinement walk rather than two) — only the wording
+    // differs, since "ouvrir" and "copier" are different verbs for the
+    // person reading the message.
+    copyAction: "Copier le chemin",
+    copyBusy: "Copie…",
+    copyError: {
+      indexed_target_unavailable: "Cet élément est introuvable ou inaccessible.",
+      indexed_target_reparse_point: "Cet élément est un lien et son chemin ne peut pas être copié.",
+      indexed_target_not_openable: "Le chemin de cet élément ne peut pas être copié.",
+      indexed_target_not_representable: "Le nom de cet élément ne peut pas être copié tel quel.",
+      clipboard_write_failed: "Impossible de copier dans le presse-papiers.",
+      platform_not_supported: "Cette action n'est disponible que sous Windows.",
+    } as Record<string, string>,
+    copyErrorGeneric: "Impossible de copier le chemin.",
+    // `TASK-0035` A.
+    detailsPanelHide: "Masquer les détails",
+    detailsPanelShow: "Afficher les détails",
     panel: {
       title: "Détails de la sélection",
       empty: "Sélectionnez un bloc sur la carte, ou appuyez sur Origine.",
@@ -212,6 +233,8 @@ const strings = {
       noDiagnostic: "aucun",
       noParent: "Ce nœud est la racine.",
       noChildren: "Aucun enfant direct.",
+      childrenPrevious: "Page précédente",
+      childrenNext: "Page suivante",
       rootPath: "(racine)",
       kinds: {
         root: "racine",
@@ -331,6 +354,21 @@ export default function MapApp() {
   const searchCoordinator = useRef(new SearchCoordinator()).current;
   const [revealBusy, setRevealBusy] = useState(false);
   const [revealError, setRevealError] = useState<string | null>(null);
+  // `TASK-0035` A — visible by default until the real preference loads, so a
+  // fresh profile never flashes hidden before the bootstrap effect answers.
+  const [detailsPanelVisible, setDetailsPanelVisible] = useState(true);
+  // `TASK-0035` B — the dedicated, exact and paginated page of the current
+  // selection's direct children; independent of `detail.children`, which
+  // comes from the bounded map projection. `childrenCursorStack` is the
+  // sequence of `after` cursors used to reach the current page — its last
+  // entry is the current page's own `after` (`null` for the first page) —
+  // so `Page précédente` can pop back to the one before it.
+  const [childrenPage, setChildrenPage] = useState<NodeChildrenPage | null>(null);
+  const [childrenLoading, setChildrenLoading] = useState(false);
+  const [childrenCursorStack, setChildrenCursorStack] = useState<(string | null)[]>([null]);
+  const childrenRequestTicket = useRef(0);
+  const [copyBusy, setCopyBusy] = useState(false);
+  const [copyError, setCopyError] = useState<string | null>(null);
 
   // The measurement loop drives the same state the interface does, so what it
   // times is what a person would experience — not a parallel code path.
@@ -507,11 +545,13 @@ export default function MapApp() {
       invoke<FixtureSummary[]>("map_fixtures"),
       invoke<HostInfo>("map_host_info"),
       invoke<BrainCatalogView>("map_brains"),
+      invoke<UiPreferences>("map_ui_preferences"),
     ])
-      .then(([nextFixtures, nextHost, nextCatalog]) => {
+      .then(([nextFixtures, nextHost, nextCatalog, nextPreferences]) => {
         setFixtures(nextFixtures);
         setHost(nextHost);
         setCatalog(nextCatalog);
+        setDetailsPanelVisible(nextPreferences.detailsPanelVisible);
         hostLog(
           "info",
           `hôte prêt: ${nextCatalog.brains.length} cerveaux, cerveau actif ` +
@@ -2151,6 +2191,100 @@ export default function MapApp() {
     setRevealError(null);
   }, [selected]);
 
+  // `TASK-0035` C — "Copier le chemin", from the details panel. Same
+  // BrainNodeRef-only boundary and the same error-code table as reveal:
+  // both actions share `map_reveal_refused: <code>` on the wire, since the
+  // Rust side shares one confinement walk for both — see `copyError`'s
+  // definition above for why the displayed wording still differs.
+  const copyNodePath = useCallback(async (reference: BrainNodeRef) => {
+    setCopyBusy(true);
+    setCopyError(null);
+    try {
+      await invoke("map_copy_node_path", { reference });
+    } catch (error) {
+      const code = String(error).replace(/^map_reveal_refused:\s*/, "").trim();
+      setCopyError(t.copyError[code] ?? t.copyErrorGeneric);
+    } finally {
+      setCopyBusy(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    setCopyError(null);
+  }, [selected]);
+
+  // `TASK-0035` B — the dedicated, exact and paginated page of the current
+  // selection's direct children. A ticket, on the same principle as
+  // `projectionRequest`: only the still-current request may publish a page,
+  // so a page fetched for a selection already left behind can never
+  // overwrite the one for the selection now current.
+  const fetchChildrenPage = useCallback((reference: BrainNodeRef, after: string | null) => {
+    const ticket = ++childrenRequestTicket.current;
+    setChildrenLoading(true);
+    invoke<NodeChildrenPage>("map_node_children", { reference, after, limit: 50 })
+      .then((page) => {
+        if (childrenRequestTicket.current !== ticket) return;
+        setChildrenPage(page);
+      })
+      .catch((error) => {
+        if (childrenRequestTicket.current !== ticket) return;
+        setStatus(`Enfants indisponibles : ${String(error)}`);
+        setChildrenPage(null);
+      })
+      .finally(() => {
+        if (childrenRequestTicket.current === ticket) setChildrenLoading(false);
+      });
+  }, []);
+
+  // Re-issued whenever the selection changes — mirrors the sibling `detail`
+  // effect just above it exactly: always the first page, `after: null`.
+  // Pagination beyond that is `goToChildrenPage`'s job, never this effect's.
+  useEffect(() => {
+    setChildrenCursorStack([null]);
+    if (!selected) {
+      childrenRequestTicket.current += 1;
+      setChildrenPage(null);
+      setChildrenLoading(false);
+      return;
+    }
+    fetchChildrenPage(selected, null);
+  }, [selected, fetchChildrenPage]);
+
+  const goToChildrenPage = useCallback(
+    (direction: "next" | "previous") => {
+      if (!selected) return;
+      if (direction === "next") {
+        const after = childrenPage?.nextCursor ?? null;
+        if (!after) return;
+        setChildrenCursorStack((stack) => [...stack, after]);
+        fetchChildrenPage(selected, after);
+      } else {
+        setChildrenCursorStack((stack) => {
+          if (stack.length <= 1) return stack;
+          const next = stack.slice(0, -1);
+          fetchChildrenPage(selected, next[next.length - 1]);
+          return next;
+        });
+      }
+    },
+    [selected, childrenPage, fetchChildrenPage],
+  );
+
+  const hasPreviousChildrenPage = childrenCursorStack.length > 1;
+
+  // `TASK-0035` A — masking/showing never touches selection, search,
+  // projection, relations or composition: this handler reaches nothing but
+  // the one preference, both in state and on the wire.
+  const toggleDetailsPanel = useCallback(() => {
+    setDetailsPanelVisible((current) => {
+      const next = !current;
+      void invoke("map_ui_preferences_update", { detailsPanelVisible: next }).catch((error) =>
+        setStatus(`Préférence non enregistrée : ${String(error)}`),
+      );
+      return next;
+    });
+  }, []);
+
   const labelFor = useCallback(
     (node: MapNode, brain: BrainRecord) =>
       // The brain's name is part of every node's accessible name: in a composed
@@ -2647,26 +2781,46 @@ export default function MapApp() {
             onSelect={selectNode}
           />
 
-          <DetailsPanel
-            detail={detail}
-            loading={detailLoading}
-            onSelect={selectInSelectedBrain}
-            locale="fr"
-            strings={t.panel}
-            contentObservation={contentObservation}
-            contentSummary={contentSummary}
-            identicalContentMemberCount={identicalContentMemberCount}
-            contentLoading={contentLoading}
-            contentObservedThisSession={
-              selected ? contentObservedBrains.has(selected.brainId) : false
-            }
-            reference={selected}
-            onReveal={revealInExplorer}
-            revealBusy={revealBusy}
-            revealError={revealError}
-            revealActionLabel={t.revealAction}
-            revealBusyLabel={t.revealBusy}
-          />
+          <button
+            type="button"
+            data-testid="details-panel-toggle"
+            onClick={toggleDetailsPanel}
+          >
+            {detailsPanelVisible ? t.detailsPanelHide : t.detailsPanelShow}
+          </button>
+
+          {detailsPanelVisible ? (
+            <DetailsPanel
+              detail={detail}
+              loading={detailLoading}
+              onSelect={selectInSelectedBrain}
+              locale="fr"
+              strings={t.panel}
+              contentObservation={contentObservation}
+              contentSummary={contentSummary}
+              identicalContentMemberCount={identicalContentMemberCount}
+              contentLoading={contentLoading}
+              contentObservedThisSession={
+                selected ? contentObservedBrains.has(selected.brainId) : false
+              }
+              reference={selected}
+              onReveal={revealInExplorer}
+              revealBusy={revealBusy}
+              revealError={revealError}
+              revealActionLabel={t.revealAction}
+              revealBusyLabel={t.revealBusy}
+              childrenPage={childrenPage}
+              childrenLoading={childrenLoading}
+              onNextChildrenPage={() => goToChildrenPage("next")}
+              onPreviousChildrenPage={() => goToChildrenPage("previous")}
+              hasPreviousChildrenPage={hasPreviousChildrenPage}
+              onCopyPath={copyNodePath}
+              copyBusy={copyBusy}
+              copyError={copyError}
+              copyActionLabel={t.copyAction}
+              copyBusyLabel={t.copyBusy}
+            />
+          ) : null}
 
           <section aria-label="Extrémités hors de la vue courante">
             {renderedBrains.flatMap(b => (loaded.get(b.brainId)?.relations?.established ?? []).flatMap(edge =>

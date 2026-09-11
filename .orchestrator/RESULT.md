@@ -1,121 +1,224 @@
-TASK_ID: TASK-0034 — V1 Find & Open — passe corrective 3 (central applyComposition focus-change gate)
+TASK_ID: TASK-0035 — V1 Context Panel, Direct Children & Safe Copy
 AGENT: CLAUDE
 RESULT: DONE
-BRANCH: build/v0.2-a18-v1-find-open
-GO: .orchestrator/NEXT_PROMPT.md, on top of 40e05f4 (which carries ACTION-0054)
+BRANCH: build/v0.2-a19-v1-context-panel
+GO: .orchestrator/NEXT_PROMPT.md, on top of 4b39555 (which carries
+ACTION-0055 / TASK-0034 VERIFIED and the TASK-0035 spec)
 
 SUMMARY:
-- ACTION-0054 confirmed the prior pass's synchronous invalidations correctly
-  cover `onFocusBrain`, `selectNode` and `changeProjection` — the three
-  places that mutate `composed` directly via `setComposed(...)`. But it
-  found one more path: `removeBrain()` transfers focus to the first
-  remaining brain when the focused brain is removed, and `navigateCross`
-  builds a composition focused on a brain not yet displayed — both reach
-  `applyComposition(next, ...)`, the common gate, without ever going
-  through those three handlers, reopening the same event -> render/effect
-  window ACTION-0053 closed for the search field.
-- Closed with a single central gate in `applyComposition` rather than one
-  more per-caller guard — no Rust IPC, `Index::query_nodes()`, or Explorer
-  boundary touched.
+- Three MVP-parity additions around the current selection, none touching
+  the topographic engine: a hideable, restart-persistent details panel; an
+  exact, paginated page of a folder's direct children, independent of the
+  bounded map projection; "Copier le chemin", sharing its resolution/
+  confinement with the existing "Ouvrir dans l'Explorateur".
+- Also fixed a documentation gap this session found on arrival: TASK-0034's
+  closure commit (c7a475f) had only updated NEXT_ACTION.md, never
+  CURRENT_STATE.md/HANDOFF.md/CHANGELOG_AI.md, which still contradicted
+  ACTION-0055's already-rendered TASK-0034=VERIFIED verdict. Corrected
+  alongside this task's own entries — no technical content changed.
 
-CENTRAL GATE:
-- `applyComposition`, right after `const current = composedRef.current;`,
-  before `nextKey`, before any composition state mutation
-  (`setSessions`/`setLoaded`/`setComposed`), and before the function's
-  first `await` (`await loadBrain(...)` in the per-brain load loop):
-  `if (current && current.focusedBrainId !== next.focusedBrainId)
-  searchCoordinator.invalidate();`
-- A transition that keeps the same focused brain — Open/Refresh/Rebuild on
-  the currently displayed composition, or adding a brain via `onAddBrain`
-  (`addBrain()` never moves focus, by contract) — invalidates nothing.
-- The prior pass's direct invalidations in `onFocusBrain`/`selectNode`/
-  `changeProjection` are unchanged: they protect a distinct set of paths
-  (direct `setComposed` mutation, never through `applyComposition`), so
-  this new gate doesn't make them redundant.
-- Any future caller of `applyComposition` that changes focus is covered
-  automatically — the point of a central gate over enumerating callers.
+REUSE / ADAPT / NOT REACTIVATED (recorded before code, per NEXT_PROMPT §0):
+- Reused as-is: BrainCatalog::meta()/put_meta() and catalog_meta (no new
+  store); Index::children_page() (DEC-0030, already ported by TASK-0029);
+  map_view/selectNode/changeProjection for focusing a child outside the
+  ordinary projection; confine_indexed_target() (TASK-0034 C), unchanged.
+- Adapted: reveal_node()'s resolution/confinement walk extracted into a
+  shared resolve_confined_target(), called by both reveal_node and the new
+  copy_target_path — one walk, two callers, not a duplicate.
+- Not reactivated: no 0.1-era command; no second SQL query path for
+  children (the whole point of B); no clipboard-manager frontend command
+  (its own default permission set is empty, and this task grants none).
 
-PROOFS — deterministic (src/map/searchCoordinator.test.ts, 23 tests total,
-5 new; no WebView, no SQLite, no MapApp render — this repo has no test that
-mounts MapApp with a mocked invoke; MapApp is only imported by
-src/main.tsx, so the established convention since lifecycle.test.ts is
-`?raw` source-text wiring checks, used here too):
-- Invalidates the in-flight request the instant a composition transition
-  moves focus off it, before that transition's own follow-up search begins
-  — mirrors the removeBrain(A focused, removed) -> B focused scenario at
-  the coordinator level (`invalidate()` called directly, standing in for
-  the gate), then A's stale response settles and publishes nothing.
-- Does not invalidate a composition transition that keeps the same focused
-  brain — an unrelated in-flight search resolves and publishes normally.
-- Structural: within applyComposition's source block,
-  `current.focusedBrainId !== next.focusedBrainId` precedes
-  `searchCoordinator.invalidate()`, which precedes the block's first
-  `await`.
-- Structural: `onRemoveBrain` calls
-  `applyComposition(removeBrain(current, order, brainId))`.
-- Structural: `navigateCross` builds
-  `focusBrain(addBrain(current, order, brainId), order, brainId)` (a focus
-  necessarily different from current, since brainId isn't yet displayed)
-  and hands it to `applyComposition(next, ...)`.
-- The 18 prior-pass tests are unchanged and still pass — SearchCoordinator/
-  runCoordinatedSearch didn't change behavior, only MapApp's wiring
-  extended.
+A — HIDEABLE, PERSISTENT DETAILS PANEL:
+- New catalog_meta key `details_panel_visible` (brains.rs), defaulting to
+  visible when absent — no schema migration. `BrainCatalog::
+  ui_preferences()`/`set_details_panel_visible()`, same round-trip shape as
+  `active()`/`set_active()`.
+- Two minimal commands: `map_ui_preferences`, `map_ui_preferences_update`
+  (bool only).
+- MapApp.tsx: preference loaded once, in the same bootstrap `Promise.all`
+  as fixtures/host/catalog. `toggleDetailsPanel()` touches nothing else —
+  a structural test (contextPanel.test.ts) asserts its body never
+  references setSelected/setSearchQuery/setComposed/setDetail/
+  setChildrenPage/setLoaded. Hiding removes `<DetailsPanel>` from the
+  render only; all the state feeding it lives in MapApp, so showing it
+  again restores the exact same context.
 
-PROOFS — WebView2 replay (scripts/task0034-webview2.mjs, unchanged, new
-REAL_ROOT 5,206-entry tree from task0034-seed-proof.py):
-- Full non-regression replay, unchanged assertions, all green — same as
-  the prior two passes. NEXT_PROMPT.md §3 explicitly waives fabricating an
-  adversarial race in WebView2 for this lock; the deterministic TypeScript
-  suite is the authority.
-- Verified by running the two internal commands (`python` seed step, then
-  `node` replay) directly with separately captured exit codes —
-  `PYTHON_EXIT=0`, `NODE_EXIT=0`. Artifact
-  `docs/performance/runs/TASK-0034-webview2.json` rewritten, byte-identical
-  to the already-committed file (`git diff` empty).
+B — EXACT, PAGINATED DIRECT CHILDREN:
+- `map_node_children(reference, after?, limit?)` (commands.rs::
+  node_children): belongs_to check, open_store, ChildCursor::decode, then
+  Index::children_page() — no parallel SQL. Bounded to
+  `CHILDREN_LIMIT_MAX = 50` (own product ceiling, distinct from
+  hierarchy's own defensive MAX_CHILDREN_PAGE_SIZE=500 — same relationship
+  SEARCH_LIMIT_MAX has to query_nodes). DTO `NodeChildrenPage`: total
+  (durable child_count column), nextCursor (keyset, index+revision bound),
+  indexRevision, limit — no path field.
+- children_page() already refused a foreign-index, stale-revision or
+  wrong-parent cursor before this task; this task only had to expose that
+  faithfully through the new command.
+- DetailsPanel.tsx's "Enfants directs" now reads `childrenPage`, never
+  `detail.children` (the bounded projection's own non-exhaustive list —
+  the old "N more children" message is gone, replaced by real pagination).
+  Selecting a child calls `onSelect(nodeId)` — the exact same callback the
+  existing parent/child navigation already used, no new selection path.
+
+C — COPIER LE CHEMIN:
+- Audited `tauri-plugin-clipboard-manager` before adding it: pinned to an
+  exact version (`= 2.3.3`), MIT/Apache-2.0 dual license (same as this
+  project's other Tauri plugins), Rust API `ClipboardExt::clipboard()
+  .write_text()` (synchronous). Its own `permissions/default.toml` declares
+  `permissions = []` — no frontend command granted by default, and this
+  task grants none either.
+- `.plugin(tauri_plugin_clipboard_manager::init())` added in lib.rs, same
+  DEC-0033 H-style guarantee as the dialogue plugin: Rust-side only, no
+  `clipboard-manager:*` in capabilities/default.json.
+- `copy_target_path()` calls the shared `resolve_confined_target()` then
+  converts with `Path::to_str()` — never `to_string_lossy()`: DEC-0033 C
+  forbids the lossy conversion for resolving a source, and a silent
+  replacement-character corruption would also break TASK-0035 C's own
+  "exact for Unicode names" requirement. An unrepresentable component is
+  refused explicitly (`indexed_target_not_representable`) instead.
+  `map_copy_node_path` (lib.rs) is the only holder of the resolved text: it
+  writes it via `app.clipboard().write_text(text)` and returns only
+  success/generic-error. The clipboard-write failure reuses
+  `MapError::RevealRefused("clipboard_write_failed")` — same variant, same
+  `map_reveal_refused:` wire prefix as reveal's own confinement refusals; a
+  deliberate, documented reuse rather than a second error taxonomy for an
+  action that already shares the rest of its path with reveal.
+
+PROOFS — Rust (365 total, +21 this task):
+- 5 preference tests (brains.rs): absent => visible; persists across a
+  reopen in both directions (visible->hidden->visible); serializes to
+  nothing but the one documented boolean.
+- 16 tests in new context_panel_tests.rs (#[path], same convention as
+  find_open_tests.rs): pagination bounded to 50 even if more is asked;
+  directories-before-files order; full coverage with no duplicate/loss
+  across the whole pagination (131-child corpus, plus a grandchild placed
+  under one of them on purpose, proven to never leak into the parent's own
+  page); exact total from the durable column; refuses foreign brain,
+  foreign-index cursor, stale-revision cursor after a republish, wrong-
+  parent cursor; DTO carries no absolute path; works without a source on
+  disk. Copy: refuses foreign brain, refuses reparse/skipped before any
+  disk access, refuses unknown id, refuses a target that disappeared after
+  indexing (on a real folder, same pattern as TASK-0034); exact Unicode
+  and long-name copy (a name with a surrogate-pair emoji plus accents, a
+  120-character name, both written by the test itself under the resolved
+  synthetic-fixture root — strict string comparison against the expected
+  path); proven to share reveal's own confinement walk.
+- Structural (lib.rs): all four new commands exposed; map_copy_node_path
+  takes only `reference: map::brains::BrainNodeRef`; the existing generic
+  "no exposed command accepts a path" test automatically covers the new
+  commands too since it iterates everything exposed; clipboard plugin
+  initialised; no clipboard-manager:* permission in the capability.
+
+PROOFS — TypeScript (339 total, +22 this task):
+- 14 tests added to DetailsPanel.test.tsx: copy button hidden/active per
+  reference/onCopyPath, calls onCopyPath with exactly the reference (like
+  onReveal), busy/error states, reveal and copy coexist; exact total from
+  childrenPage (never detail.children, deliberately left empty in these
+  tests to prove which source is used); loading state distinct from empty;
+  selecting a child calls onSelect(nodeId); pagination bounded, ordinary
+  keyboard-operable buttons, disabled at the right edge (first/last page),
+  absent when everything fits on one page; no absolute-path-shaped string
+  rendered.
+- 8 structural tests in new contextPanel.test.ts (same `?raw` convention as
+  lifecycle.test.ts/searchCoordinator.test.ts — no test in this repo mounts
+  MapApp itself, it's only imported by src/main.tsx): preference loaded
+  once at boot; toggle isolated from all other state; toggle button and
+  conditional render wired to the same preference; map_node_children
+  invoked without ever assembling a path; the children effect depends only
+  on [selected, fetchChildrenPage], same principle as the sibling `detail`
+  effect; child selection reuses onSelect; map_copy_node_path invoked with
+  exactly { reference }; copy error clears on selection change, same guard
+  as reveal.
+- Migrated one existing test (mapView.test.tsx) that assumed
+  detail.children was the exhaustive source; now supplies an explicit
+  childrenPage with detail.children left empty on purpose — proof the
+  section reads the right source, not just that buttons appear.
+
+PROOFS — WebView2 replay, THREE REAL LAUNCHES with TWO REAL PROCESS
+RESTARTS (scripts/task0035-seed-proof.py, derived from task0034's; same
+REAL_ROOT 5,206-entry tree, same flat branch C with 4,356 direct children;
+scripts/task0035-webview2.mjs takes a phase argument; scripts/
+task0035-webview2.ps1 orchestrates the three launches on the SAME sandbox
+variant so the preference genuinely persists):
+- Phase 1 (fresh profile): panel visible by default; C selected via real
+  keyboard navigation in the root's own already-shown children list (see
+  harness note below, not an SVG-coordinate click); C's pagination: exact
+  total (4,356) cross-checked against a direct invoke, page-forward with
+  no overlap against page 1, page-back exactly restoring page 1; selecting
+  the needle (C's first child, never itself a materialised map card)
+  syncs both the map (aria-activedescendant) and the details panel;
+  map_reveal_node invoked directly on a synthetic target (spawn
+  succeeded); Copier le chemin clicked for real; Masquer les détails by a
+  real keystroke.
+- (real close, real restart)
+- Phase 2: panel still hidden after the real restart; Afficher les
+  détails by a real keystroke.
+- (real close, real restart)
+- Phase 3: panel still visible after the second real restart.
+- The OS clipboard is read by task0035-webview2.ps1 itself, right after
+  phase 1's process really closes — the same clipboard
+  tauri-plugin-clipboard-manager just wrote to from inside the app —
+  compared case-sensitively to the expected path. Neither this script nor
+  the Node/CDP script ever prints the path; the artifact keeps only
+  `copyClipboardMatchesExpectedPath: true`.
+- Result: docs/performance/runs/TASK-0035-webview2.json — all listed
+  proofs true, 0 fatal console errors across all three phases, no
+  absolute-path leak.
+- Harness pitfall found and fixed: selecting a node by an SVG-coordinate
+  click on its map card (Input.dispatchMouseEvent at the card's
+  getBoundingClientRect center) — the same mechanism task0033-webview2.mjs
+  uses successfully elsewhere — did not register the selection here
+  (aria-selected stayed false, selection stayed on root). Replaced with
+  real keyboard navigation in the already-focused node's own children
+  list (the root auto-selects on boot and already lists its own direct
+  children) — more robust, and itself extra proof that list is keyboard-
+  operable. The exact cause of the missed SVG click was not investigated
+  further; this task's scope is not map rendering.
 
 VALIDATIONS:
-- TypeScript: vitest run — 317 PASS, 20 files (312 before this pass; +5 in
-  searchCoordinator.test.ts).
-- Rust: cargo test --offline — 344 PASS, 0 failed, 5 ignored — UNCHANGED, no
-  Rust file touched by this pass.
+- TypeScript: vitest run — 339 PASS, 21 files (317 before this task; +22).
+- Rust: cargo test --offline — 365 PASS, 0 failed, 5 ignored (344 before;
+  +21).
 - pnpm check (tsc --noEmit): clean.
 - pnpm build (tsc && vite build): clean.
 - cargo build --offline: clean, same single pre-existing warning as before
-  (relations.rs::SUGGESTION_STATES dead_code) — no Rust file touched.
+  (relations.rs::SUGGESTION_STATES dead_code).
 - git diff --check: clean.
-- cargo fmt / cargo clippy NOT re-run: no Rust line changed by this pass, so
-  the prior state (fmt clean on touched files, clippy strict red at 26
-  pre-existing errors, none in a file this pass touches) is unchanged by
-  construction.
+- cargo fmt: clean on every line this task added (verified file by file);
+  pre-existing debt elsewhere in the same files left untouched.
+- cargo clippy --all-targets --offline -- -D warnings: red at 26 errors,
+  same count and same diagnostics as before this task (two of them, in
+  brains.rs and lib.rs, shifted by a few lines from this task's insertions
+  — verified diagnostic by diagnostic, neither is in a line this task
+  added).
 
 CONFIDENTIALITY: no personal brain, no absolute path returned, logged, or
 committed. The REAL_ROOT tree used by the replay is generated fresh by the
-existing seed script and dies with the proof root, as before. No new IPC
-surface, no new frontend capability, no new store, no new DTO field.
+seed script and dies with the proof root. The clipboard comparison never
+prints the path anywhere. No new frontend capability beyond the four new
+commands, each auditable by name and each taking only BrainNodeRef/bool/
+opaque-cursor arguments.
 
 LIMITS / REMAINING DEBT:
-- Scope deliberately narrow, same as the prior two passes: neither the Rust
-  IPC surface, `Index::query_nodes()`, nor the Explorer boundary was
-  touched — no defect was demonstrated there by this pass.
-- The prior pass's direct invalidations (onFocusBrain/selectNode/
-  changeProjection) were kept rather than removed in favor of the sole
-  central gate — the prompt explicitly allows leaving them if they stay
-  clear and idempotent, and they cover a path (direct `composed` mutation)
-  the new gate does not.
-- No caller of `applyComposition` beyond `onRemoveBrain`/`navigateCross`
-  was individually audited — the guarantee holds because the gate sits at
-  the common boundary, not because every caller was enumerated.
-- The WebView2 replay remains a real-conditions non-regression check, not
-  an adversarial reversed-order proof — that authority stays the
-  deterministic TypeScript suite.
-- Same debt as before this pass: cargo clippy strict red at 26 (pre-
-  existing, untouched); no watcher/incremental, no FTS5, no absolute-path
-  copy, no screen/icon preferences — all out of TASK-0034's scope, unchanged.
+- map_copy_node_path reuses reveal's `map_reveal_refused:` wire prefix
+  rather than a distinct one — a deliberate, documented reuse of the
+  shared confinement error, not an oversight.
+- Neither the existing search/reveal IPC surface, Index::query_nodes(),
+  materialize_view(), nor the Explorer boundary was touched beyond the
+  shared resolve_confined_target() extraction — no defect was demonstrated
+  there.
+- Same debt as before this task: cargo clippy strict red at 26 (pre-
+  existing, untouched); no watcher/incremental, no FTS5, no filters, no
+  screen/icon preferences — all out of TASK-0035's scope, unchanged.
+- Development workstation; not a modest-laptop acceptance test.
 
 X5: unchanged
 MAIN_UNCHANGED: yes
 TASK_STATUS: IMPLEMENTED
-DECISION_STATUS: DEC-0031/0033/0034 unchanged; no new decision required
-PUSHED: yes — build/v0.2-a18-v1-find-open only, no PR, no merge, no tag,
-no release, no history rewrite
-NEXT: independent control only, on this pass's proofs
+DECISION_STATUS: no new DEC required; DEC-0031/0033/0034 unchanged
+PUSHED: yes — build/v0.2-a19-v1-context-panel only, no PR, no merge, no
+tag, no release, no history rewrite
+NEXT: independent control of TASK-0035 only, on this task's proofs. No
+TASK-0036 created.

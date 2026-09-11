@@ -155,3 +155,99 @@ Exécuter tests ciblés puis suites complètes pertinentes : Rust, TypeScript, `
 - commit/push uniquement sur `build/v0.2-a19-v1-context-panel`;
 - aucun PR/merge/tag/release;
 - aucune donnée personnelle dans tests, captures, logs ou artefacts.
+
+## Livraison — 2026-09-11
+
+Détail complet dans [VALIDATION section BL](../ai/VALIDATION.md). Résumé :
+
+### A — Panneau masquable et persistant
+
+`catalog_meta` porte une clé de plus, `details_panel_visible`, exactement
+comme `active_brain_id` : `BrainCatalog::ui_preferences()`/
+`set_details_panel_visible()` (`brains.rs`), aucune migration de schéma.
+Deux commandes minimales, `map_ui_preferences`/`map_ui_preferences_update`,
+ne transportant que ce booléen. Côté React, `detailsPanelVisible` est lu une
+fois au démarrage (même `Promise.all` que fixtures/hôte/catalogue) et
+persisté par `toggleDetailsPanel()`, qui ne touche rien d'autre — ni
+sélection, ni recherche, ni projection, ni composition. Masquer retire
+`<DetailsPanel>` du rendu (jamais son état, qui vit dans `MapApp`) : la
+réafficher restitue exactement le même contexte.
+
+### B — Enfants directs exacts et paginés
+
+`map_node_children(reference, after?, limit?)` réutilise
+`Index::children_page()` sans SQL parallèle, borné à 50
+(`CHILDREN_LIMIT_MAX`), curseur keyset opaque refusant explicitement un
+index étranger, une révision périmée ou un parent différent —
+`crate::hierarchy` faisait déjà tout ce travail pour `DEC-0030`. La section
+« Enfants directs » de `DetailsPanel` lit désormais cette page dédiée,
+jamais `detail.children` (qui reste la vue bornée de la projection, non
+exhaustive) : total exact, navigation page suivante/précédente par pile de
+curseurs, sélection d'un enfant réutilisant `onSelect` tel quel.
+
+### C — Copier le chemin
+
+`tauri-plugin-clipboard-manager` épinglé en version exacte
+(`= 2.3.3`, licence MIT/Apache-2.0, API Rust `ClipboardExt::clipboard()
+.write_text()`) — audité avant ajout : son propre jeu de permissions par
+défaut est **vide** (`permissions = []`), et aucune n'est accordée à la
+capacité `default`, qui reste `core:default` seul. `map_copy_node_path`
+partage la résolution/confinement de `map_reveal_node`
+(`resolve_confined_target`, extrait des deux) et convertit le chemin avec
+`Path::to_str` — jamais `to_string_lossy()` — pour rester exact sur un nom
+Unicode plutôt que de corrompre silencieusement un composant non
+représentable. Le texte n'existe que le temps de l'écrire au
+presse-papiers côté hôte; le frontend ne reçoit que succès/erreur générique.
+
+### Preuves
+
+**Rust** — 5 tests de préférence (`brains.rs`), 16 tests de pagination/copie
+(`context_panel_tests.rs`) : bornage à 50, couverture exacte sans
+doublon/perte/petit-enfant à travers la pagination complète, refus
+cerveau/curseur étranger/révision périmée/parent différent, copie exacte
+sur noms Unicode et longs (écrits par le test lui-même sous la racine
+synthétique résolue), refus reparse/skipped/disparu, DTO sans chemin
+absolu. Structurels dans `lib.rs` : les quatre commandes exposées et rien
+de plus, `map_copy_node_path` ne prend que `BrainNodeRef`, plugin clipboard
+initialisé et aucune permission `clipboard-manager:*` dans la capacité.
+
+**TypeScript** — 14 tests `DetailsPanel.test.tsx` (copie, pagination bornée
+et navigable, sélection d'enfant, total exact, absence de chemin absolu),
+8 tests `contextPanel.test.ts` (câblage `MapApp.tsx` : chargement de la
+préférence au démarrage, bascule isolée de tout autre état, invoke exact de
+`map_copy_node_path`/`map_node_children`), plus la migration du test
+préexistant qui supposait `detail.children` comme source exhaustive.
+**317 → 339 PASS.**
+
+**WebView2 réel**, trois lancements réels du même exécutable sur le même
+bac à sable (`task0035-seed-proof.py`, arbre `REAL_ROOT` de 5 206 éléments
+réutilisé de `TASK-0034`, dossier `C` à 4 356 enfants directs) :
+panneau visible par défaut; masquer puis **fermeture et redémarrage réels
+du processus** confirme masqué; réafficher puis **second redémarrage réel**
+confirme visible; pagination de `C` sans chevauchement ni perte
+aller-retour; sélection d'un enfant hors projection synchronisant carte et
+détails; `map_reveal_node` sur cible synthétique; `Copier le chemin` cliqué
+réellement, presse-papiers comparé **par ce script, hors du processus
+applicatif**, correspondance exacte confirmée (`copyClipboardMatchesExpectedPath:
+true`) sans que le chemin ne soit jamais journalisé; aucune fuite de chemin
+absolu; **0 erreur console fatale** cumulée sur les trois passes.
+
+### Validations
+
+Rust **365 PASS** (344 + 21), TypeScript **339 PASS** (317 + 22), `pnpm
+check`, `pnpm build`, `cargo build --offline`, `git diff --check` verts;
+`cargo fmt` propre sur les lignes ajoutées; `cargo clippy --all-targets
+--offline -- -D warnings` rouge à **26 erreurs**, même compte et mêmes
+diagnostics qu'avant (décalés de quelques lignes par l'insertion), aucun
+nouveau.
+
+### Non testé, limites
+
+Poste de développement, pas une acceptance laptop modeste. Le rejeu
+WebView2 clique réellement sur « Copier le chemin » (sans risque de fenêtre
+visible) mais invoque `map_reveal_node` directement, comme `TASK-0034`,
+pour éviter un second `explorer.exe`. `map_copy_node_path` réutilise le mot
+d'erreur `map_reveal_refused: <code>` de `map_reveal_node` plutôt qu'un
+préfixe distinct — un choix de réutilisation délibéré, documenté dans
+`MapError::RevealRefused`. Hors portée comme prévu : filtres, watcher,
+FTS5, préférences moniteur/icône.

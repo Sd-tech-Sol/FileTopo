@@ -1,6 +1,89 @@
 # HANDOFF — passage de relais
 
-## Relais actuel — TASK-0034, passe corrective 3 livrée, en attente de contrôle — 2026-09-11
+## Relais actuel — TASK-0035, V1 Context Panel livrée, en attente de contrôle — 2026-09-11
+
+- **Ce qui vient d'être fait :** `TASK-0034` était déjà `VERIFIED` dans sa
+  portée par `ACTION-0055` (déjà sur la branche précédente, mais dont les
+  documents durables n'avaient jamais été synchronisés — corrigé au
+  passage, aucun contenu technique changé). `TASK-0035 — V1 Context Panel,
+  Direct Children & Safe Copy` est livrée sur
+  `build/v0.2-a19-v1-context-panel` : `IMPLEMENTED`, jamais
+  auto-`VERIFIED`. Aucune nouvelle DEC.
+- **Le geste central :** trois compléments MVP indépendants du moteur
+  topographique. Une préférence persistée (`details_panel_visible`) dans
+  `catalog_meta`, exactement comme `active_brain_id`. Une commande dédiée,
+  `map_node_children`, qui donne au panneau de détails une page **exacte et
+  paginée** des enfants directs — indépendante de la projection visuelle
+  bornée que `detail.children` porte depuis toujours. Une nouvelle
+  dépendance auditée avant ajout, `tauri-plugin-clipboard-manager`, pour
+  « Copier le chemin », qui partage sa résolution/confinement avec
+  `map_reveal_node` plutôt que de la dupliquer.
+- **Qui a fait quoi :** Claude Code a écrit la tranche entière. **Il ne
+  peut pas rendre le verdict.**
+- **Ce que le prochain relais doit savoir :**
+  - **`resolve_confined_target()` (`commands.rs`) est maintenant le seul
+    endroit qui résout un `BrainNodeRef` vers un chemin réel confiné** —
+    extraite de `reveal_node()`, qui l'appelle elle-même désormais, et
+    partagée par `copy_target_path()`. Ne pas réintroduire une seconde
+    marche de résolution/confinement pour une future action sur un
+    `BrainNodeRef` : étendre celle-ci ou en discuter d'abord.
+  - **`copy_target_path()` convertit le chemin confiné avec `Path::to_str()`,
+    jamais `to_string_lossy()`.** `DEC-0033` C interdit la conversion avec
+    perte pour résoudre une source, et une conversion silencieusement
+    lossy aurait aussi trahi l'exigence `TASK-0035` C d'un chemin copié
+    exact pour un nom Unicode. Un composant non représentable est refusé
+    explicitement, jamais substitué.
+  - **`tauri-plugin-clipboard-manager` est initialisé côté Rust seulement,
+    exactement comme le plugin de dialogue (`DEC-0033` H).** Son propre
+    fichier `permissions/default.toml` déclare `permissions = []` : aucune
+    de ses commandes frontend n'est jamais accordée. Ne jamais ajouter
+    `clipboard-manager:*` à `capabilities/default.json` — un test
+    structurel dans `lib.rs` le vérifie.
+  - **`map_node_children` a une borne produit (`CHILDREN_LIMIT_MAX = 50`)
+    distincte de la borne défensive de la couche `hierarchy`
+    (`MAX_CHILDREN_PAGE_SIZE = 500`).** Ne pas les confondre en modifiant
+    l'une pour changer l'autre — même relation que `SEARCH_LIMIT_MAX` avec
+    la couche `Index::query_nodes()`.
+  - **`DetailsPanel`'s « Enfants directs » ne lit plus jamais
+    `detail.children` comme liste exhaustive** — seulement `childrenPage`.
+    `detail.children` reste dans le DTO (la projection bornée en a encore
+    besoin ailleurs) mais n'alimente plus cette section : ne pas revenir en
+    arrière en cas de refactor futur du panneau.
+  - **`toggleDetailsPanel()` doit rester étroit.** Un test structurel
+    (`contextPanel.test.ts`) vérifie que son corps ne référence aucun autre
+    setter d'état (`setSelected`, `setSearchQuery`, `setComposed`, etc.) —
+    masquer/réafficher ne doit jamais acquérir d'effet de bord sur un autre
+    concern.
+  - `scripts/task0035-seed-proof.py` réutilise l'arbre `REAL_ROOT` de
+    `TASK-0034` (dérivé, pas partagé littéralement — la tâche précédente
+    est déjà `VERIFIED`, on ne rouvre pas son script). La branche plate `C`
+    à 4 356 enfants directs, déjà présente pour la recherche, sert
+    maintenant aussi la pagination des enfants.
+  - **Piège de harnais découvert en écrivant le rejeu :** sélectionner un
+    nœud par un clic à coordonnées SVG sur sa carte de la carte composée
+    (`Input.dispatchMouseEvent` au centre de `getBoundingClientRect()`) —
+    le mécanisme que `task0033-webview2.mjs` utilise ailleurs avec succès —
+    n'a pas fonctionné ici pour sélectionner `C` (la sélection restait sur
+    la racine). Remplacé par une navigation clavier réelle dans la liste
+    d'enfants dédiée du nœud déjà sélectionné (la racine liste déjà ses
+    propres enfants directs au démarrage) : plus robuste, et une preuve
+    supplémentaire que cette liste est elle-même clavier-opérable. La cause
+    exacte du clic SVG manqué n'a pas été investiguée davantage.
+  - `scripts/task0035-webview2.ps1` orchestre **trois lancements réels**
+    du même exécutable avec **deux fermetures/redémarrages réels** entre
+    eux, sur le **même** bac à sable (même `catalog.sqlite`) — nécessaire
+    puisque `TASK-0035` A exige une préférence qui survit un vrai
+    redémarrage, ce qu'aucune page ne peut simuler de l'intérieur. Le
+    presse-papiers OS est comparé **par ce script**, juste après la
+    fermeture réelle de la phase 1, jamais par le script Node piloté par
+    CDP — l'artefact ne garde que le booléen de correspondance.
+- **Ce qui reste ouvert :** `cargo clippy` strict rouge à 26 erreurs, dette
+  inchangée. Aucun watcher, aucun incrémental, aucun FTS5, aucun filtre,
+  aucune préférence d'écran/icône, aucune acceptance laptop modeste.
+- **Action unique suivante :** contrôle indépendant de `TASK-0035`, sur les
+  preuves de cette tranche.
+
+## Relais précédent — TASK-0034, passe corrective 3 livrée, en attente de contrôle — 2026-09-11
 
 - **Ce qui vient d'être fait :** le recontrôle indépendant
   [`ACTION-0054`](../reviews/ACTION-0054-independent-recontrol.md) a

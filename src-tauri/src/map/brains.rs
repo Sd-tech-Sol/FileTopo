@@ -39,6 +39,11 @@ pub const CATALOG_SCHEMA_VERSION: i64 = 2;
 /// relations store could tell you which brain a person was last looking at.
 const ACTIVE_BRAIN_KEY: &str = "active_brain_id";
 
+/// Key under which the catalogue remembers whether the details panel is
+/// shown — `TASK-0035` A. Same `catalog_meta` table as [`ACTIVE_BRAIN_KEY`];
+/// no new store, no new file, no schema change.
+const DETAILS_PANEL_VISIBLE_KEY: &str = "details_panel_visible";
+
 /// Where a brain's content comes from.
 ///
 /// Two variants since `TASK-0032`, and no third one that could mean "some
@@ -276,6 +281,19 @@ pub struct BrainCatalogView {
     pub catalog_path: String,
     /// Brains created by this open. Zero on every open but the first.
     pub seeded: usize,
+}
+
+/// Non-sensitive, persisted UI preferences — `TASK-0035` A.
+///
+/// Global, not per-brain: which brain is shown is composition state, but
+/// whether the details panel is shown at all is a preference about the
+/// interface itself. Stored in `catalog_meta`, the same table
+/// [`ACTIVE_BRAIN_KEY`] already uses — no new store, no new file, and
+/// nothing here may ever carry a path, a file name or brain content.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct UiPreferences {
+    pub details_panel_visible: bool,
 }
 
 /// Longest name a brain may carry. A synthetic bound, not a product one.
@@ -574,6 +592,30 @@ impl BrainCatalog {
         Ok(record)
     }
 
+    /// Non-sensitive UI preferences — `TASK-0035` A. **Visible by default**
+    /// when no value has ever been written, so a fresh catalogue and one that
+    /// simply predates this preference behave identically.
+    pub fn ui_preferences(&self) -> Result<UiPreferences, MapError> {
+        let details_panel_visible = match self.meta(DETAILS_PANEL_VISIBLE_KEY)? {
+            Some(value) => value == "true",
+            None => true,
+        };
+        Ok(UiPreferences {
+            details_panel_visible,
+        })
+    }
+
+    /// Persists the details-panel visibility and returns the preferences as
+    /// they now stand — the same round trip `set_active` makes, so a caller
+    /// never has to re-read what it just wrote.
+    pub fn set_details_panel_visible(&self, visible: bool) -> Result<UiPreferences, MapError> {
+        self.put_meta(
+            DETAILS_PANEL_VISIBLE_KEY,
+            if visible { "true" } else { "false" },
+        )?;
+        self.ui_preferences()
+    }
+
     /// The absolute path of a `REAL_ROOT`, decoded from its `BLOB`.
     ///
     /// **The only door to a real path in the whole program.** It returns an
@@ -843,6 +885,77 @@ mod tests {
             assert_eq!(catalog.seed_frozen().expect("re-seed"), 0);
             assert_eq!(catalog.active().expect("active").brain_id, "brain-gamma");
         }
+    }
+
+    /// `TASK-0035` A: absent preference reads as visible, the stated default.
+    #[test]
+    fn the_details_panel_preference_defaults_to_visible_when_absent() {
+        let catalog = BrainCatalog::in_memory().expect("catalog");
+        assert_eq!(
+            catalog.ui_preferences().expect("preferences"),
+            UiPreferences {
+                details_panel_visible: true
+            }
+        );
+    }
+
+    /// `TASK-0035` A, at the storage layer: the preference is persisted state,
+    /// exactly like the active brain above — same table, same guarantee.
+    #[test]
+    fn the_details_panel_preference_survives_reopening_the_catalogue() {
+        let temp = tempfile::tempdir().expect("temp");
+        let path = temp.path().join("catalog.sqlite");
+        {
+            let catalog = BrainCatalog::open(&path).expect("open");
+            assert_eq!(
+                catalog
+                    .set_details_panel_visible(false)
+                    .expect("persist hidden"),
+                UiPreferences {
+                    details_panel_visible: false
+                }
+            );
+        }
+        {
+            let catalog = BrainCatalog::open(&path).expect("reopen");
+            assert_eq!(
+                catalog.ui_preferences().expect("preferences"),
+                UiPreferences {
+                    details_panel_visible: false
+                }
+            );
+        }
+        // Re-showing round-trips just as well — this is not a one-way latch.
+        {
+            let catalog = BrainCatalog::open(&path).expect("reopen again");
+            catalog
+                .set_details_panel_visible(true)
+                .expect("persist visible");
+        }
+        {
+            let catalog = BrainCatalog::open(&path).expect("reopen a third time");
+            assert_eq!(
+                catalog.ui_preferences().expect("preferences"),
+                UiPreferences {
+                    details_panel_visible: true
+                }
+            );
+        }
+    }
+
+    /// `TASK-0035` A: the preference is a lone boolean under a fixed key —
+    /// nothing that could carry a path, a file name or brain content.
+    #[test]
+    fn the_details_panel_preference_serializes_to_nothing_but_the_one_boolean() {
+        let catalog = BrainCatalog::in_memory().expect("catalog");
+        catalog.set_details_panel_visible(false).expect("persist");
+        let json = serde_json::to_value(catalog.ui_preferences().expect("preferences"))
+            .expect("serialize");
+        assert_eq!(
+            json,
+            serde_json::json!({ "detailsPanelVisible": false }),
+            "the DTO must carry nothing beyond the one documented field"
+        );
     }
 
     /// `K7`: metadata survives a reopen, edits included.

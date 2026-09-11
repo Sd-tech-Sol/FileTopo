@@ -7,7 +7,7 @@ import type { RelationSegment } from "./relations";
 import { buildHierarchy, hierarchicalNeighbourhood, move } from "./hierarchy";
 import { aggregate, selectionTargets, summarize } from "./measure";
 import { composeTerritories } from "./territories";
-import type { BrainNodeRef, BrainRecord, MapNode, NodeDetail, Rect } from "./types";
+import type { BrainNodeRef, BrainRecord, MapNode, NodeChildrenPage, NodeDetail, Rect } from "./types";
 import { fitView, type View } from "./viewState";
 
 // This project does not enable Vitest globals, so Testing Library's automatic
@@ -90,6 +90,8 @@ const panelStrings = {
   noDiagnostic: "aucun",
   noParent: "racine",
   noChildren: "aucun enfant",
+  childrenPrevious: "page précédente",
+  childrenNext: "page suivante",
   rootPath: "(racine)",
   kinds: { root: "racine", directory: "dossier", file: "fichier", skipped: "ignoré" },
 };
@@ -292,13 +294,33 @@ describe("details panel — P-12, H5", () => {
   });
 
   it("offers the parent and the direct children as reachable controls", () => {
+    // `TASK-0035` B — the children list comes from the dedicated
+    // `childrenPage` prop, not from `detail.children` (the bounded map
+    // projection's own, non-exhaustive list) — `detail.children` stays
+    // empty here on purpose, to prove which source the panel actually uses.
+    const childrenPage: NodeChildrenPage = {
+      brainId: BRAIN,
+      parentNodeId: nodes[1].id,
+      items: [nodes[3], nodes[4]].map((node) => ({
+        brainId: BRAIN,
+        nodeId: node.id,
+        name: node.name,
+        relativePath: node.relativePath,
+        kind: node.kind,
+      })),
+      total: 2,
+      nextCursor: null,
+      indexRevision: 1,
+      limit: 50,
+    };
     render(
       <DetailsPanel
-        detail={{ node: nodes[1], parent: nodes[0], children: [nodes[3], nodes[4]] }}
+        detail={{ node: nodes[1], parent: nodes[0], children: [] }}
         loading={false}
         onSelect={() => {}}
         locale="fr"
         strings={panelStrings}
+        childrenPage={childrenPage}
       />,
     );
     expect(screen.getByRole("button", { name: /racine/ })).toBeInTheDocument();

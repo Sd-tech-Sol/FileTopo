@@ -33,6 +33,7 @@ use std::process::Command;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use tauri::Manager;
+use tauri_plugin_clipboard_manager::ClipboardExt;
 use tauri_plugin_dialog::DialogExt;
 
 /// Retained from the 0.1 alpha prototype, and deliberately **not exposed**
@@ -790,6 +791,64 @@ fn map_reveal_node(
     map::commands::reveal_node(&paths, &brain, &reference).map_err(String::from)
 }
 
+/// `TASK-0035` B — one bounded, exact page of a node's direct children,
+/// independent of the map projection's own bounded `NodeDetail.children`.
+#[tauri::command]
+fn map_node_children(
+    app: tauri::AppHandle,
+    reference: map::brains::BrainNodeRef,
+    after: Option<String>,
+    limit: Option<usize>,
+) -> Result<map::commands::NodeChildrenPage, String> {
+    let (paths, brain) = resolve_brain(&app, &reference.brain_id)?;
+    map::commands::node_children(
+        &paths,
+        &brain,
+        &reference,
+        after.as_deref(),
+        limit.unwrap_or(map::commands::CHILDREN_LIMIT_MAX),
+    )
+    .map_err(String::from)
+}
+
+/// `TASK-0035` C — "Copier le chemin". The **only** input is a
+/// [`map::brains::BrainNodeRef`], exactly like [`map_reveal_node`]; the
+/// resolved text is held only long enough to hand it to the clipboard and
+/// is never returned, logged or serialized.
+#[tauri::command]
+fn map_copy_node_path(
+    app: tauri::AppHandle,
+    reference: map::brains::BrainNodeRef,
+) -> Result<(), String> {
+    let (paths, brain) = resolve_brain(&app, &reference.brain_id)?;
+    let text = map::commands::copy_target_path(&paths, &brain, &reference).map_err(String::from)?;
+    app.clipboard().write_text(text).map_err(|_| {
+        String::from(map::MapError::RevealRefused(
+            "clipboard_write_failed".into(),
+        ))
+    })
+}
+
+/// `TASK-0035` A — a non-sensitive, persisted UI preference. Same
+/// `catalog_meta` table `map_brain_activate` already writes to; no new
+/// store.
+#[tauri::command]
+fn map_ui_preferences(app: tauri::AppHandle) -> Result<map::brains::UiPreferences, String> {
+    let catalog = map_catalog(&app)?;
+    catalog.ui_preferences().map_err(String::from)
+}
+
+#[tauri::command]
+fn map_ui_preferences_update(
+    app: tauri::AppHandle,
+    details_panel_visible: bool,
+) -> Result<map::brains::UiPreferences, String> {
+    let catalog = map_catalog(&app)?;
+    catalog
+        .set_details_panel_visible(details_panel_visible)
+        .map_err(String::from)
+}
+
 #[tauri::command]
 fn map_integrity(
     app: tauri::AppHandle,
@@ -1300,6 +1359,16 @@ pub fn run() {
         // exactly what `DEC-0033` A and B forbid. The page's only door is
         // `map_brain_choose_real_root`, below, which takes no argument.
         .plugin(tauri_plugin_dialog::init())
+        // `TASK-0035` C — "Copier le chemin", the same shape of guarantee as
+        // the dialogue plugin just above: initialising it makes
+        // `app.clipboard()` available **to this file**, and grants the
+        // WebView nothing at all. The plugin's own frontend commands
+        // (`write_text`/`read_text`/…) need a `clipboard-manager:*`
+        // permission this capability never grants — `capabilities/
+        // default.json` stays `core:default` only. The page's only door is
+        // `map_copy_node_path`, below, which takes a `BrainNodeRef` and
+        // returns success/failure, never the text it wrote.
+        .plugin(tauri_plugin_clipboard_manager::init())
         .setup(|app| {
             // An unattended H9 run needs frames, and Chromium stops delivering
             // them to a window it treats as occluded. Keeping the window on top
@@ -1351,6 +1420,10 @@ pub fn run() {
             map_node_detail,
             map_search_nodes,
             map_reveal_node,
+            map_node_children,
+            map_copy_node_path,
+            map_ui_preferences,
+            map_ui_preferences_update,
             map_integrity,
             map_self_check,
             map_content_observe,
@@ -1635,6 +1708,100 @@ mod integration_tests {
         }
     }
 
+    /// `TASK-0035` — the context-panel commands are reachable, `map_copy_
+    /// node_path`'s **only** parameter is the `BrainNodeRef` pair (exactly
+    /// like `map_reveal_node`, which it shares its confinement walk with),
+    /// and `map_node_children` never accepts a path either.
+    #[test]
+    fn context_panel_commands_are_exposed_and_copy_takes_only_a_brain_node_ref() {
+        let exposed = registered_commands();
+        for required in [
+            "map_node_children",
+            "map_copy_node_path",
+            "map_ui_preferences",
+            "map_ui_preferences_update",
+        ] {
+            assert!(
+                exposed.iter().any(|name| name == required),
+                "TASK-0035 needs `{required}` reachable from the WebView"
+            );
+        }
+        // The 0.1 prototype had no notion of either concern; only the search/
+        // reveal-era commands are forbidden, and those are already covered by
+        // `exposed_commands_stay_within_the_slice` above.
+
+        let fn_header = "fn map_copy_node_path(";
+        let start = THIS_SOURCE
+            .find(fn_header)
+            .expect("map_copy_node_path must be defined in this file");
+        // The **parameter list only** — starting after the function's own
+        // name, which itself contains the substring `path` and would
+        // otherwise defeat the very check below.
+        let params_start = start + fn_header.len();
+        let end = THIS_SOURCE[params_start..]
+            .find(") -> Result<(), String> {")
+            .expect("map_copy_node_path's signature must end where expected");
+        let signature = &THIS_SOURCE[params_start..params_start + end];
+        assert!(
+            signature.contains("reference: map::brains::BrainNodeRef"),
+            "map_copy_node_path must take a BrainNodeRef: {signature}"
+        );
+        for forbidden in ["path", "root", "folder", "directory", "target: String"] {
+            assert!(
+                !signature.contains(forbidden),
+                "map_copy_node_path's signature must not accept `{forbidden}` from the WebView: {signature}"
+            );
+        }
+
+        let children_start = THIS_SOURCE
+            .find("fn map_node_children(")
+            .expect("map_node_children must be defined in this file");
+        let children_end = THIS_SOURCE[children_start..]
+            .find(") -> Result<map::commands::NodeChildrenPage, String> {")
+            .expect("map_node_children's signature must end where expected");
+        let children_signature = &THIS_SOURCE[children_start..children_start + children_end];
+        for forbidden in ["absolute", "root:", "folder", "directory", "path:"] {
+            assert!(
+                !children_signature.contains(forbidden),
+                "map_node_children's signature must not accept `{forbidden}`: {children_signature}"
+            );
+        }
+    }
+
+    /// `TASK-0035` C, the same shape of guarantee `DEC-0033` H proved for the
+    /// dialogue plugin: the clipboard plugin is initialised on the Rust
+    /// side, but no `clipboard-manager:*` permission reaches the capability,
+    /// so its own frontend commands (`write_text`, `read_text`, …) stay out
+    /// of the WebView's reach. `map_copy_node_path` is the only door.
+    #[test]
+    fn the_clipboard_plugin_is_initialised_and_no_permission_reaches_the_webview() {
+        let start = THIS_SOURCE
+            .find("pub fn run() {")
+            .expect("runtime entry point");
+        let length = THIS_SOURCE[start..]
+            .find(".run(tauri::generate_context!())")
+            .expect("runtime must end by running");
+        let runtime = &THIS_SOURCE[start..start + length];
+        assert!(
+            runtime.contains("tauri_plugin_clipboard_manager::init()"),
+            "TASK-0035 needs the clipboard plugin initialised"
+        );
+
+        let capability = include_str!("../capabilities/default.json");
+        let parsed: serde_json::Value =
+            serde_json::from_str(capability).expect("the capability must be valid JSON");
+        let granted = parsed["permissions"]
+            .as_array()
+            .expect("permissions array")
+            .iter()
+            .map(|value| value.as_str().expect("permission string").to_string())
+            .collect::<Vec<_>>();
+        assert!(
+            !granted.iter().any(|name| name.starts_with("clipboard-manager:")),
+            "the main window must not be granted `clipboard-manager:*`"
+        );
+    }
+
     /// `DEC-0033` H — the WebView gets **nothing**, the picker included.
     ///
     /// This test asserted the opposite until the independent control of
@@ -1664,7 +1831,7 @@ mod integration_tests {
             vec!["core:default"],
             "the main window gets the core defaults and nothing else"
         );
-        for forbidden in ["dialog:", "fs:", "shell:", "opener:", "http:"] {
+        for forbidden in ["dialog:", "fs:", "shell:", "opener:", "http:", "clipboard-manager:"] {
             assert!(
                 !granted.iter().any(|name| name.starts_with(forbidden)),
                 "the main window must not be granted `{forbidden}*`"

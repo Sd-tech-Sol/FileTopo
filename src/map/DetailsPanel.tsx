@@ -1,4 +1,4 @@
-import type { BrainNodeRef, MapNode, NodeDetail } from "./types";
+import type { BrainNodeRef, MapNode, NodeChildrenPage, NodeDetail } from "./types";
 import ContentObservationsPanel from "./ContentObservationsPanel";
 import type { ContentObservation, ContentObservationSummary } from "./types";
 
@@ -34,6 +34,28 @@ interface DetailsPanelProps {
   revealError?: string | null;
   revealActionLabel?: string;
   revealBusyLabel?: string;
+  /**
+   * `TASK-0035` B — the dedicated, exact and paginated page of the
+   * selection's direct children, independent of `detail.children` (which
+   * comes from the bounded map projection and is not an exhaustive list).
+   * `null` while none has been read yet.
+   */
+  childrenPage?: NodeChildrenPage | null;
+  childrenLoading?: boolean;
+  onNextChildrenPage?: () => void;
+  onPreviousChildrenPage?: () => void;
+  hasPreviousChildrenPage?: boolean;
+  /**
+   * `TASK-0035` C — "Copier le chemin", the same `BrainNodeRef`-only
+   * boundary as `onReveal`: the panel never assembles a path, it only asks
+   * the backend to act on an identity it already has.
+   */
+  onCopyPath?: (reference: BrainNodeRef) => void | Promise<void>;
+  copyBusy?: boolean;
+  /** Already a short, user-facing message — never an absolute path. */
+  copyError?: string | null;
+  copyActionLabel?: string;
+  copyBusyLabel?: string;
 }
 
 export interface PanelStrings {
@@ -51,6 +73,8 @@ export interface PanelStrings {
   noDiagnostic: string;
   noParent: string;
   noChildren: string;
+  childrenPrevious: string;
+  childrenNext: string;
   rootPath: string;
   kinds: Record<MapNode["kind"], string>;
 }
@@ -90,6 +114,16 @@ export default function DetailsPanel({
   revealError = null,
   revealActionLabel = "Ouvrir dans l'Explorateur",
   revealBusyLabel = "Ouverture…",
+  childrenPage = null,
+  childrenLoading = false,
+  onNextChildrenPage,
+  onPreviousChildrenPage,
+  hasPreviousChildrenPage = false,
+  onCopyPath,
+  copyBusy = false,
+  copyError = null,
+  copyActionLabel = "Copier le chemin",
+  copyBusyLabel = "Copie…",
 }: DetailsPanelProps) {
   if (loading) {
     return (
@@ -106,7 +140,7 @@ export default function DetailsPanel({
     );
   }
 
-  const { node, parent, children } = detail;
+  const { node, parent } = detail;
   return (
     <section className="details" aria-label={strings.title}>
       <h2 className="details__name">{node.name}</h2>
@@ -124,6 +158,24 @@ export default function DetailsPanel({
           {revealError ? (
             <span className="details__reveal-error" data-testid="reveal-error" role="alert">
               {revealError}
+            </span>
+          ) : null}
+        </p>
+      ) : null}
+
+      {reference && onCopyPath ? (
+        <p className="details__copy">
+          <button
+            type="button"
+            data-testid="copy-path"
+            disabled={copyBusy}
+            onClick={() => void onCopyPath(reference)}
+          >
+            {copyBusy ? copyBusyLabel : copyActionLabel}
+          </button>
+          {copyError ? (
+            <span className="details__copy-error" data-testid="copy-error" role="alert">
+              {copyError}
             </span>
           ) : null}
         </p>
@@ -164,25 +216,64 @@ export default function DetailsPanel({
       )}
 
       <h3 className="details__subtitle">
-        {strings.children} <span className="details__count">{children.length}</span>
+        {strings.children}{" "}
+        <span
+          className="details__count"
+          data-testid="children-total"
+          data-total={childrenPage?.total ?? 0}
+          data-next-cursor={childrenPage?.nextCursor ?? ""}
+          data-index-revision={childrenPage?.indexRevision ?? ""}
+          data-limit={childrenPage?.limit ?? ""}
+        >
+          {childrenPage ? childrenPage.total : 0}
+        </span>
       </h3>
-      {(detail.omittedChildren ?? 0) > 0 ? <p>{detail.omittedChildren} enfants directs supplémentaires — utiliser la navigation progressive.</p> : null}
-      {children.length === 0 ? (
+      {childrenLoading ? (
+        <p className="details__empty">{strings.loading}</p>
+      ) : !childrenPage || childrenPage.items.length === 0 ? (
         <p className="details__empty">{strings.noChildren}</p>
       ) : (
-        <ul className="details__children">
-          {children.map((child) => (
-            <li key={child.id}>
-              <button type="button" className="details__link" onClick={() => onSelect(child.id)}>
-                <span className="details__child-kind" aria-hidden="true">
-                  {child.kind === "directory" ? "▸" : child.kind === "skipped" ? "⃠" : "·"}
-                </span>
-                {child.name}
-                <span className="details__child-meta">{strings.kinds[child.kind]}</span>
+        <>
+          <ul className="details__children" data-testid="children-list">
+            {childrenPage.items.map((child) => (
+              <li key={child.nodeId}>
+                <button
+                  type="button"
+                  className="details__link"
+                  data-testid="child-node"
+                  data-node-id={child.nodeId}
+                  onClick={() => onSelect(child.nodeId)}
+                >
+                  <span className="details__child-kind" aria-hidden="true">
+                    {child.kind === "directory" ? "▸" : child.kind === "skipped" ? "⃠" : "·"}
+                  </span>
+                  {child.name}
+                  <span className="details__child-meta">{strings.kinds[child.kind]}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          {hasPreviousChildrenPage || childrenPage.nextCursor ? (
+            <p className="details__children-pagination">
+              <button
+                type="button"
+                data-testid="children-previous"
+                disabled={!hasPreviousChildrenPage}
+                onClick={onPreviousChildrenPage}
+              >
+                {strings.childrenPrevious}
               </button>
-            </li>
-          ))}
-        </ul>
+              <button
+                type="button"
+                data-testid="children-next"
+                disabled={!childrenPage.nextCursor}
+                onClick={onNextChildrenPage}
+              >
+                {strings.childrenNext}
+              </button>
+            </p>
+          ) : null}
+        </>
       )}
 
       {node.kind === "file" ? (

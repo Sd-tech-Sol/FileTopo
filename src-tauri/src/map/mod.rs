@@ -113,9 +113,14 @@ pub enum MapError {
     #[error("map_artifact_rejected: {0}")]
     ArtifactRejected(String),
     /// `TASK-0034` C — the confinement/openability refusal for "Ouvrir dans
-    /// l'Explorateur". The inner code is a fixed word (never a path):
-    /// `indexed_target_unavailable`, `indexed_target_reparse_point`,
-    /// `indexed_target_not_openable`, `explorer_launch_failed` or
+    /// l'Explorateur", reused as-is by "Copier le chemin" (`TASK-0035` C):
+    /// both actions share the exact same resolution/confinement walk, so
+    /// they share its refusal too. The inner code is a fixed word (never a
+    /// path): `indexed_target_unavailable`, `indexed_target_reparse_point`,
+    /// `indexed_target_not_openable`, `indexed_target_not_representable`
+    /// (copy only — the path is not valid Unicode), `explorer_launch_failed`
+    /// (reveal only), `clipboard_write_failed` (copy only, raised by the
+    /// `#[tauri::command]` wrapper once it holds the resolved text) or
     /// `platform_not_supported`.
     #[error("map_reveal_refused: {0}")]
     RevealRefused(String),
