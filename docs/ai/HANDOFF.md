@@ -1,6 +1,72 @@
 # HANDOFF — passage de relais
 
-## Relais actuel — TASK-0034, passe corrective 2 livrée, en attente de contrôle — 2026-09-11
+## Relais actuel — TASK-0034, passe corrective 3 livrée, en attente de contrôle — 2026-09-11
+
+- **Ce qui vient d'être fait :** le recontrôle indépendant
+  [`ACTION-0054`](../reviews/ACTION-0054-independent-recontrol.md) a
+  confirmé que la passe précédente fermait bien la saisie et le changement
+  de cerveau pour `onFocusBrain`, `selectNode` et `changeProjection`, mais a
+  trouvé un dernier chemin non couvert : `removeBrain()` (transfert de
+  focus quand le cerveau focalisé est retiré) et `navigateCross`
+  (composition focalisée sur un cerveau pas encore affiché) passent par la
+  porte commune `applyComposition(next, ...)` sans jamais passer par ces
+  trois handlers. Cette passe ferme ce dernier verrou, sur la même branche
+  `build/v0.2-a18-v1-find-open`. `TASK-0034` reste `IMPLEMENTED`, jamais
+  auto-`VERIFIED`. Aucune nouvelle DEC.
+- **Le geste central :** un garde unique, à la frontière commune, plutôt
+  qu'une invalidation ajoutée à chaque nouvel appelant trouvé. Au tout
+  début d'`applyComposition`, juste après `const current =
+  composedRef.current;`, avant `nextKey`, avant toute mutation de
+  composition et avant le premier `await` :
+  `if (current && current.focusedBrainId !== next.focusedBrainId)
+  searchCoordinator.invalidate();`. Une transition à focus identique
+  (Ouvrir/Actualiser/Reconstruire sur la composition affichée, ajout d'un
+  cerveau qui ne déplace jamais le focus) n'invalide rien.
+- **Qui a fait quoi :** Claude Code a écrit la correction et les preuves.
+  **Il ne peut pas rendre le verdict.**
+- **Ce que le prochain relais doit savoir :**
+  - **Le garde central d'`applyComposition` et les invalidations directes
+    de la passe précédente (`onFocusBrain`/`selectNode`/`changeProjection`)
+    couvrent deux ensembles de chemins DIFFÉRENTS, pas le même deux fois.**
+    Les trois handlers mutent `composed` via `setComposed(...)` directement
+    — ils ne passent jamais par `applyComposition`. Le nouveau garde
+    couvre tout ce qui passe par `applyComposition` — `onAddBrain`,
+    `onRemoveBrain`, `navigateCross`, Ouvrir/Actualiser/Reconstruire,
+    `singleBrainView`. **Ne retirer ni l'un ni l'autre** : chacun est la
+    seule protection de son propre ensemble de chemins.
+  - **Tout nouvel appelant d'`applyComposition` est protégé automatiquement,
+    sans rien ajouter.** C'est le point de la correction centrale plutôt
+    que par appelant : une future transition de composition qui change de
+    focus n'a besoin d'aucun code d'invalidation supplémentaire, tant
+    qu'elle passe par `applyComposition(next, ...)`.
+  - **Le garde doit rester avant le premier `await` de la fonction.** Il
+    est actuellement juste après la lecture de `current`, avant `nextKey`.
+    Le déplacer après un `await` (par exemple après la boucle de
+    chargement des cerveaux) réintroduirait exactement la fenêtre
+    événement → async qu'`ACTION-0053`/`ACTION-0054` ont fait fermer.
+  - `src/map/searchCoordinator.test.ts` porte maintenant 23 tests : les 18
+    des passes précédentes, inchangés, plus 5 nouveaux — invalidation avant
+    effet suivant pour une transition à focus changeant (cas `removeBrain`,
+    simulé au niveau du coordinateur puisqu'aucun test de ce dépôt ne monte
+    `MapApp` en entier), absence d'invalidation pour une transition à focus
+    identique, verrou structurel sur la position du garde avant le premier
+    `await`, et deux vérifications structurelles que `onRemoveBrain`/
+    `navigateCross` acheminent bien leurs transitions par cette porte.
+  - Le rejeu WebView2 n'a pas changé et a été rejoué à l'identique — non
+    adversarial : le prompt de cette passe dispense explicitement de
+    fabriquer une course dans WebView2 pour ce verrou, l'autorité restant
+    la suite TypeScript déterministe. Vérifié par exécution directe des
+    deux commandes internes (`python`, puis `node`) avec codes de sortie
+    capturés séparément, tous deux à 0.
+- **Ce qui reste ouvert :** identique à la livraison précédente — `cargo
+  clippy` strict rouge à 26 erreurs, dette inchangée (aucun fichier Rust
+  touché par cette passe). Aucun watcher, aucun incrémental, aucun FTS5,
+  aucune acceptance laptop modeste, aucune copie de chemin absolu, aucune
+  préférence d'écran/icône.
+- **Action unique suivante :** nouveau contrôle indépendant de `TASK-0034`,
+  sur les preuves de cette passe.
+
+## Relais précédent — TASK-0034, passe corrective 2 livrée, en attente de contrôle — 2026-09-11
 
 - **Ce qui vient d'être fait :** le recontrôle indépendant
   [`ACTION-0053`](../reviews/ACTION-0053-independent-recontrol.md) a

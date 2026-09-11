@@ -5466,3 +5466,154 @@ fusion, étiquette ni release.
 
 **Action unique suivante :** nouveau contrôle indépendant de `TASK-0034`,
 sur les preuves de cette passe.
+
+## BK. TASK-0034 — passe corrective 3, garde central d'`applyComposition` — 2026-09-11
+
+**Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Même branche
+`build/v0.2-a18-v1-find-open`, mêmes `DEC-0031`/`DEC-0033`/`DEC-0034`,
+inchangées. Exécuteur : Claude Code. Déclenchée par le dernier verrou
+trouvé au recontrôle indépendant
+[`ACTION-0054`](../reviews/ACTION-0054-independent-recontrol.md) : `BJ`
+avait fermé la saisie et le changement de cerveau pour les trois handlers
+qui mutent `composed` directement, mais pas la porte commune que d'autres
+transitions empruntent.
+
+### BK.1 Le verrou restant — toutes les transitions ne passent pas par les trois handlers protégés
+
+`BJ.1` a ajouté une invalidation synchrone dans `onFocusBrain`, dans la
+branche de changement de cerveau de `selectNode`, et dans celle de
+`changeProjection` — les trois seuls endroits qui appellent
+`setComposed(...)` **directement**. Mais le modèle de composition change
+aussi `focusedBrainId` par une autre voie : `applyComposition(next, ...)`,
+la porte commune utilisée par `onAddBrain`, `onRemoveBrain`,
+`navigateCross`, l'ouverture/actualisation/reconstruction de la
+composition affichée, et toute vue à un seul cerveau (`singleBrainView`).
+
+Deux chemins concrets par cette porte changent réellement le focus sans
+passer par les trois handlers protégés :
+
+- `removeBrain()` (`composedView.ts`) transfère le focus au premier
+  cerveau restant quand le cerveau retiré est celui qui était focalisé —
+  `onRemoveBrain()` appelle `applyComposition(removeBrain(...))` sans
+  invalider;
+- `navigateCross()` construit
+  `focusBrain(addBrain(current, order, brainId), order, brainId)` pour un
+  cerveau **pas encore affiché** — et puisque le focus doit toujours
+  pointer vers un cerveau affiché, ce nouveau focus diffère nécessairement
+  du focus courant — puis le transmet à `applyComposition(next, ...)` sans
+  invalider non plus.
+
+Le même principe que `BJ` s'applique : attendre le `useEffect` qui vide la
+recherche pour le nouveau cerveau focalisé rouvre la fenêtre
+événement → render/effect qu'`ACTION-0053` interdit précisément.
+
+### BK.2 Correction — un garde central dans `applyComposition`, avant son premier `await`
+
+Plutôt que d'ajouter une invalidation à chaque nouvel appelant trouvé (une
+liste qui ne finirait jamais), le garde est placé une fois, à la frontière
+commune :
+
+```ts
+const current = composedRef.current;
+if (current && current.focusedBrainId !== next.focusedBrainId) {
+  searchCoordinator.invalidate();
+}
+const nextKey = compositionKey(next.displayedBrainIds);
+```
+
+Placé immédiatement après la lecture de `current` (`composedRef.current`),
+avant `nextKey`, avant `setSessions`/`setLoaded`/`setComposed` et avant le
+premier `await` de la fonction (`await loadBrain(...)`, dans la boucle de
+chargement des cerveaux affichés). Une transition qui conserve le même
+`focusedBrainId` — Ouvrir/Actualiser/Reconstruire sur la composition déjà
+affichée, ou l'ajout d'un cerveau par `onAddBrain` (`addBrain()` ne déplace
+jamais le focus, par contrat documenté dans `composedView.ts`) —
+n'invalide rien.
+
+Les invalidations de `BJ.1` dans `onFocusBrain`/`selectNode`/
+`changeProjection` restent **inchangées** : elles ne passent pas par
+`applyComposition` (elles appellent `setComposed` directement), donc ce
+nouveau garde ne les rend redondantes qu'en apparence — en réalité elles
+protègent un chemin distinct. Aucun refactor général : un seul bloc de
+quatre lignes ajouté à un seul endroit.
+
+### BK.3 Preuves déterministes ajoutées — `searchCoordinator.test.ts`
+
+Cinq nouveaux tests (23 au total, contre 18 en `BJ.4`) :
+
+| Preuve | Ce qui est établi |
+|---|---|
+| `invalidates the in-flight request the instant a composition transition moves focus off it — before that transition's own follow-up search begins` | Simule le garde central : recherche A en vol, `invalidate()` appelé directement (représentant ce que le garde ferait au moment où `removeBrain()` transfère le focus vers B), A se résout ensuite : rien n'est publié |
+| `does not invalidate a composition transition that keeps the same focused brain` | Sans `invalidate()` (transition à focus identique, p. ex. un « Actualiser »), la recherche en vol se résout et publie normalement |
+| `guards applyComposition centrally, before its first \`await\`, rather than duplicating the check per caller` | Verrou structurel : dans le bloc source d'`applyComposition`, `current.focusedBrainId !== next.focusedBrainId` précède `searchCoordinator.invalidate()`, qui précède lui-même le premier `await` du bloc |
+| `routes removeBrain's focus-transferring transition through the central gate` | Verrou structurel : `onRemoveBrain` appelle bien `applyComposition(removeBrain(current, order, brainId))` |
+| `routes navigateCross's not-yet-displayed-brain transition through the central gate` | Verrou structurel : `navigateCross` construit `focusBrain(addBrain(current, order, brainId), order, brainId)` (nécessairement un focus différent, puisque `brainId` n'est pas encore affiché) et le transmet à `applyComposition(next, ...)` |
+
+Les preuves des passes précédentes (8 en `BI.3`, 10 en `BJ.4`) restent
+inchangées et vertes — ni `SearchCoordinator` ni `runCoordinatedSearch`
+n'ont changé de comportement dans cette passe, seul le câblage de
+`MapApp.tsx` s'est étendu.
+
+**Sur la méthode de preuve — pourquoi structurelle plutôt qu'un rendu
+complet :** aucun test existant dans ce dépôt ne monte `MapApp` en entier
+avec un `invoke` simulé (`MapApp` n'est importé que par `src/main.tsx`) —
+la convention établie depuis `TASK-0030`/`lifecycle.test.ts` pour ce genre
+de câblage est la lecture du texte source via `?raw`, déjà utilisée par
+tous les tests de câblage de `BI`/`BJ`. Construire un harnais de rendu
+complet aurait été le refactor général que le prompt demande d'éviter;
+combiner un verrou structurel (le garde existe, au bon endroit, avant le
+premier `await`) avec une preuve comportementale de la primitive
+(`SearchCoordinator` n'oublie jamais une invalidation) est la preuve
+équivalente que `NEXT_PROMPT.md` §2.7 autorise explicitement en alternative
+à un test de bout en bout du chemin `navigateCross`.
+
+### BK.4 Rejeu WebView2 — non-régression
+
+`scripts/task0034-webview2.mjs`/`.ps1` rejoués sans modification sur un
+nouvel arbre `REAL_ROOT` de 5 206 éléments. Vérifié par exécution directe
+des deux commandes internes avec capture séparée des codes de sortie —
+`PYTHON_EXIT=0`, `NODE_EXIT=0`. Artefact
+`docs/performance/runs/TASK-0034-webview2.json` réécrit, **identique
+octet pour octet** au fichier déjà commité (`git diff` vide). Résultat
+complet inchangé par rapport à `BJ.5`/`BI.4`/`BH.5` : 5 206 nœuds indexés,
+recherche exacte et bornée, activation correcte, refresh faisant avancer
+la révision (1 → 2) republiée automatiquement, `map_reveal_node` avec
+spawn réussi, aucune fuite de chemin absolu, **0 erreur console fatale**.
+
+Comme en `BJ.5`, ce rejeu reste une vérification de non-régression en
+conditions réelles — le prompt lui-même dispense explicitement de fabriquer
+artificiellement une course adversariale dans WebView2 pour ce verrou :
+l'autorité de cette preuve reste `BK.3`, en TypeScript déterministe.
+
+### BK.5 Validations
+
+TypeScript **317 PASS** (312 avant, +5 dans `searchCoordinator.test.ts`).
+Rust **344 PASS**, inchangé — aucun fichier Rust touché par cette passe.
+`pnpm check`, `pnpm build`, `git diff --check` verts. `cargo build
+--offline` vert, même avertissement préexistant unique
+(`SUGGESTION_STATES` mort dans `relations.rs`), inchangé. `cargo fmt`/
+Clippy Rust non rejoués : aucune ligne Rust modifiée; l'état `BH.6` (rouge
+à 26 erreurs préexistantes) est inchangé par construction.
+
+### BK.6 Non fait, et limites
+
+Portée volontairement étroite, comme `BJ`/`BI` : ni la surface IPC Rust, ni
+`Index::query_nodes()`, ni la frontière Explorer n'ont été touchés — aucun
+défaut n'y a été démontré par cette passe. Les invalidations directes de
+`BJ.1` (`onFocusBrain`/`selectNode`/`changeProjection`) n'ont pas été
+retirées au profit du seul garde central : le prompt autorise
+explicitement à les laisser si elles restent claires et idempotentes, et
+elles couvrent un chemin (mutation directe de `composed`) que le nouveau
+garde ne couvre pas. Aucun autre appelant d'`applyComposition` n'a été
+audité individuellement au-delà de `onRemoveBrain`/`navigateCross` — la
+garantie tient parce que le garde est à la frontière commune, pas parce
+que chaque appelant a été énuméré.
+
+**Réserves :** inchangées par rapport à `BJ`/`BI`/`BH` — `R-T30-1` (clippy
+strict rouge), `R-T30-3`, `R-T30-4`, `R-T30-6`, `R8` ouvertes; `R-T30-5`
+traitée uniquement dans la portée `REAL_ROOT` de test. **X5 inchangé**;
+`origin/main` inchangé. Aucune `TASK-0035`, aucune nouvelle DEC, aucune PR,
+fusion, étiquette ni release.
+
+**Action unique suivante :** nouveau contrôle indépendant de `TASK-0034`,
+sur les preuves de cette passe.

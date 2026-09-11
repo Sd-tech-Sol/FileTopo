@@ -305,6 +305,97 @@ describe("TASK-0034 corrective pass (ACTION-0052) — SearchCoordinator", () => 
   });
 });
 
+describe("TASK-0034 corrective pass 3 (ACTION-0054) — central applyComposition focus-change gate", () => {
+  it("invalidates the in-flight request the instant a composition transition moves focus off it — before that transition's own follow-up search begins", async () => {
+    // Mirrors what MapApp.tsx's applyComposition gate does the moment
+    // `removeBrain()` transfers focus off the brain being removed (or any
+    // other composition transition that lands on a different focused
+    // brain): invalidate the coordinator synchronously, before the
+    // transition's own async work (loading the new brain, activating it)
+    // and long before the `useEffect` that would otherwise clear the empty
+    // search field for the newly focused brain.
+    const coordinator = new SearchCoordinator();
+    const pages: FakePage[] = [];
+    const responseA = deferred<FakePage>();
+
+    const runOnA = runCoordinatedSearch(coordinator, { brainId: "brain-a", query: "x", offset: 0 }, {
+      fetch: () => responseA.promise,
+      onLoadingChange: () => {},
+      onPage: (page) => pages.push(page),
+      onError: () => {},
+      currentRevision: () => undefined,
+    });
+
+    // Brain A (focused, searched) is removed; removeBrain() transfers focus
+    // to brain B. applyComposition's central gate invalidates right here,
+    // before it awaits loading brain B or activating it.
+    coordinator.invalidate();
+
+    responseA.resolve({ brainId: "brain-a", query: "x", offset: 0, indexRevision: 1, marker: "A" });
+    await runOnA;
+    expect(pages).toEqual([]);
+  });
+
+  it("does not invalidate a composition transition that keeps the same focused brain", async () => {
+    // The gate's other half: refresh/rebuild/open on the same composition,
+    // or adding a brain without moving focus, must not cancel a search that
+    // has nothing to do with the transition.
+    const coordinator = new SearchCoordinator();
+    const pages: FakePage[] = [];
+
+    const run = runCoordinatedSearch(coordinator, { brainId: "brain-a", query: "x", offset: 0 }, {
+      fetch: async () => ({ brainId: "brain-a", query: "x", offset: 0, indexRevision: 1, marker: "unrelated-refresh" }),
+      onLoadingChange: () => {},
+      onPage: (page) => pages.push(page),
+      onError: () => {},
+      currentRevision: () => undefined,
+    });
+    // No `coordinator.invalidate()` here — a same-focus transition (e.g. a
+    // toolbar "Actualiser" on the composition already displayed) must let
+    // this search resolve normally.
+    await run;
+
+    expect(pages).toEqual([{ brainId: "brain-a", query: "x", offset: 0, indexRevision: 1, marker: "unrelated-refresh" }]);
+  });
+
+  it("guards applyComposition centrally, before its first `await`, rather than duplicating the check per caller", () => {
+    const applyCompositionBlock = app.slice(
+      app.indexOf("const applyComposition = useCallback("),
+      app.indexOf("const refuse = useCallback("),
+    );
+    const guardIdx = applyCompositionBlock.indexOf("current.focusedBrainId !== next.focusedBrainId");
+    const invalidateIdx = applyCompositionBlock.indexOf("searchCoordinator.invalidate()");
+    const firstAwaitIdx = applyCompositionBlock.indexOf("await ");
+
+    expect(guardIdx).toBeGreaterThan(-1);
+    expect(invalidateIdx).toBeGreaterThan(guardIdx);
+    expect(firstAwaitIdx).toBeGreaterThan(-1);
+    expect(invalidateIdx).toBeLessThan(firstAwaitIdx);
+  });
+
+  it("routes removeBrain's focus-transferring transition through the central gate", () => {
+    const onRemoveBrainBlock = app.slice(
+      app.indexOf("const onRemoveBrain = useCallback("),
+      app.indexOf("const onFocusBrain = useCallback("),
+    );
+    expect(onRemoveBrainBlock).toContain("applyComposition(removeBrain(current, order, brainId))");
+  });
+
+  it("routes navigateCross's not-yet-displayed-brain transition through the central gate", () => {
+    const navigateCrossBlock = app.slice(
+      app.indexOf("const navigateCross = useCallback("),
+      app.indexOf("const runCrossCheck = useCallback("),
+    );
+    // `focusBrain(addBrain(current, order, brainId), order, brainId)` only
+    // runs once `brainId` has just been established as NOT in
+    // `current.displayedBrainIds` (see the early return above it in the
+    // same callback) — so this composition's focus always differs from the
+    // one applyComposition's gate reads as `current`.
+    expect(navigateCrossBlock).toContain("focusBrain(addBrain(current, order, brainId), order, brainId)");
+    expect(navigateCrossBlock).toContain("applyComposition(next,");
+  });
+});
+
 describe("TASK-0034 corrective pass (ACTION-0053) — canonicalizeSearchQuery", () => {
   it("trims leading and trailing whitespace, matching the backend's trim()", () => {
     expect(canonicalizeSearchQuery(" rapport ")).toBe("rapport");

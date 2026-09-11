@@ -698,6 +698,21 @@ export default function MapApp() {
         // `L9` — remember where the composition being left was, before
         // anything changes.
         const current = composedRef.current;
+        // `ACTION-0054` — the common gate: every transition that reaches
+        // this function and actually changes the focused brain invalidates
+        // the search coordinator right here, before the first `await` below
+        // and before any composition state changes. `onFocusBrain`,
+        // `selectNode` and `changeProjection` (`ACTION-0053`) each guard
+        // their own direct focus change, but `removeBrain()` (focus
+        // transferred off a removed brain), `navigateCross` (a composition
+        // focused on a brain not yet displayed) and any other caller of
+        // `applyComposition` reach a changed focus through here instead —
+        // catching it centrally, once, is safer than adding one more
+        // handler-specific guard each time a new transition is found. A
+        // transition that keeps the same focused brain invalidates nothing.
+        if (current && current.focusedBrainId !== next.focusedBrainId) {
+          searchCoordinator.invalidate();
+        }
         const nextKey = compositionKey(next.displayedBrainIds);
         if (current) {
           const currentKey = compositionKey(current.displayedBrainIds);

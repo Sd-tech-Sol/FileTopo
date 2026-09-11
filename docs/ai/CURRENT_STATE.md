@@ -1,5 +1,55 @@
 # État courant
 
+## TASK-0034 — passe corrective 3, garde central d'`applyComposition` — IMPLEMENTED — 2026-09-11
+
+- **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Même branche
+  `build/v0.2-a18-v1-find-open`, mêmes `DEC-0031`/`DEC-0033`/`DEC-0034`.
+  Déclenchée par le dernier verrou trouvé au recontrôle indépendant
+  [`ACTION-0054`](../reviews/ACTION-0054-independent-recontrol.md). Détail :
+  [VALIDATION section BK](VALIDATION.md).
+- **Le verrou :** la passe précédente invalidait `SearchCoordinator` de
+  façon synchrone dans `onFocusBrain`, `selectNode` et `changeProjection` —
+  les trois seuls endroits qui mutent `composed` directement. Mais
+  `removeBrain()` (transfert de focus quand le cerveau focalisé est retiré)
+  et `navigateCross` (composition focalisée sur un cerveau pas encore
+  affiché) passent par la porte commune `applyComposition(next, ...)` sans
+  jamais passer par ces trois handlers — laissant une fenêtre du même genre
+  que celle qu'`ACTION-0053` avait fait fermer sur la saisie.
+- **Correction :** un garde unique, à la frontière commune, plutôt qu'une
+  invalidation par appelant. Au tout début d'`applyComposition`, juste
+  après la lecture de `current` et avant le premier `await` :
+  `if (current && current.focusedBrainId !== next.focusedBrainId)
+  searchCoordinator.invalidate();`. Une transition qui garde le même focus
+  (Ouvrir/Actualiser/Reconstruire, ajout d'un cerveau) n'invalide rien. Les
+  invalidations directes de la passe précédente restent, inchangées : elles
+  couvrent un chemin distinct (mutation directe de `composed`).
+- **Preuves :** 5 tests déterministes ajoutés (23 au total dans
+  `searchCoordinator.test.ts`) — invalidation avant tout effet suivant pour
+  une transition à focus changeant (cas `removeBrain`, simulé au niveau du
+  coordinateur), absence d'invalidation pour une transition à focus
+  identique, verrou structurel confirmant l'ordre du garde avant le premier
+  `await` dans `applyComposition`, et deux vérifications structurelles que
+  `onRemoveBrain`/`navigateCross` acheminent bien leurs transitions par
+  cette porte. Rejeu WebView2 complet sans régression sur un nouvel arbre
+  `REAL_ROOT` de 5 206 éléments, artefact identique octet pour octet au
+  précédent.
+- **Validations :** TypeScript **317 PASS** (312 + 5); Rust **344 PASS**,
+  inchangé (aucun fichier Rust touché par cette passe); `pnpm check`,
+  `pnpm build`, `cargo build --offline`, `git diff --check` verts. Clippy/fmt
+  Rust non rejoués : aucune ligne Rust modifiée, état antérieur (rouge à 26
+  erreurs préexistantes) inchangé par construction.
+- **Non testé / limite assumée :** portée volontairement étroite, ni IPC
+  Rust ni `Index::query_nodes()` ni frontière Explorer touchés. Aucun autre
+  appelant d'`applyComposition` n'a été audité individuellement au-delà de
+  `onRemoveBrain`/`navigateCross` — la garantie tient parce que le garde est
+  central, pas parce que chaque appelant a été énuméré. Le rejeu WebView2
+  reste une vérification de non-régression en conditions réelles, pas une
+  preuve adversariale.
+- **Aucune donnée personnelle**, comme toujours. **X5 inchangé**,
+  `origin/main` inchangé. Aucune `TASK-0035`, aucune nouvelle DEC, aucune
+  PR, fusion, étiquette ni release.
+- **Action unique suivante : nouveau contrôle indépendant de `TASK-0034`.**
+
 ## TASK-0034 — passe corrective 2, invalidation tardive et normalisation de requête — IMPLEMENTED — 2026-09-11
 
 - **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Même branche

@@ -367,3 +367,52 @@ inchangé (aucun fichier Rust touché); `pnpm check`, `pnpm build`,
 Détail complet dans [VALIDATION section BJ](../ai/VALIDATION.md).
 `TASK-0034` reste `IMPLEMENTED`, jamais auto-`VERIFIED`; aucune `TASK-0035`;
 action unique suivante : nouveau contrôle indépendant de `TASK-0034`.
+
+## Passe corrective 3 — 2026-09-11 — garde central d'`applyComposition`
+
+Déclenchée par le dernier verrou du recontrôle indépendant
+[`ACTION-0054`](../reviews/ACTION-0054-independent-recontrol.md) : les
+invalidations synchrones de la passe 2 couvrent `onFocusBrain`,
+`selectNode` et `changeProjection`, qui mutent `composed` directement — mais
+`removeBrain()` (transfert de focus quand le cerveau focalisé est retiré)
+et `navigateCross` (composition focalisée sur un cerveau pas encore
+affiché) passent par la porte commune `applyComposition(next, ...)` sans
+jamais passer par ces trois handlers, laissant une fenêtre du même genre
+que celle qu'`ACTION-0053` a fermée sur la saisie.
+
+**Correction, centrale plutôt que multipliée par appelant :** au tout début
+d'`applyComposition`, juste après avoir lu `current` depuis
+`composedRef.current` — avant `nextKey`, avant toute mutation de
+composition et avant le premier `await` (chargement d'un cerveau) —
+`if (current && current.focusedBrainId !== next.focusedBrainId)
+searchCoordinator.invalidate();`. Une transition qui conserve le même
+cerveau focalisé (Ouvrir/Actualiser/Reconstruire sur la composition
+affichée, ajout d'un cerveau sans déplacer le focus — `addBrain()` ne
+déplace jamais le focus) n'invalide rien. Les invalidations déjà présentes
+dans `onFocusBrain`/`selectNode`/`changeProjection` restent, inchangées et
+redondantes mais inoffensives (idempotentes) avec ce nouveau garde
+puisqu'elles ne passent pas par `applyComposition`.
+
+**Preuves :** 5 tests ajoutés (23 au total dans `searchCoordinator.test.ts`)
+— invalidation avant tout effet suivant pour une transition qui change de
+focus (le cas `removeBrain` transférant le focus de A vers B, simulé au
+niveau du coordinateur), absence d'invalidation pour une transition qui
+garde le même focus, verrou structurel confirmant que le garde
+(`current.focusedBrainId !== next.focusedBrainId` puis
+`searchCoordinator.invalidate()`) se trouve dans `applyComposition` avant
+son premier `await`, et deux vérifications structurelles que
+`onRemoveBrain` et `navigateCross` acheminent bien leurs transitions à
+focus changeant par cette porte commune. Les 18 preuves des passes
+précédentes restent inchangées et vertes.
+
+Rejeu WebView2 complet rejoué sans régression sur un nouvel arbre
+`REAL_ROOT` de 5 206 éléments, artefact identique octet pour octet au
+précédent.
+
+**Validations :** TypeScript **317 PASS** (312 + 5); Rust **344 PASS**,
+inchangé (aucun fichier Rust touché); `pnpm check`, `pnpm build`,
+`cargo build --offline`, `git diff --check` verts.
+
+Détail complet dans [VALIDATION section BK](../ai/VALIDATION.md).
+`TASK-0034` reste `IMPLEMENTED`, jamais auto-`VERIFIED`; aucune `TASK-0035`;
+action unique suivante : nouveau contrôle indépendant de `TASK-0034`.
