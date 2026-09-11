@@ -2,7 +2,10 @@
 
 - Date : 2026-09-11
 - Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`. Détail :
-  [`VALIDATION.md` section BM](../ai/VALIDATION.md).
+  [`VALIDATION.md` section BM](../ai/VALIDATION.md). **Passe corrective**
+  exigée par [`ACTION-0057`](../reviews/ACTION-0057-independent-control.md)
+  (D1/D2/D3 + réserve R1), livrée le 2026-09-11 : détail
+  [`VALIDATION.md` section BN](../ai/VALIDATION.md).
 - Branche : `build/v0.2-a20-v1-stable-identity`
 - Prérequis : `TASK-0035 = VERIFIED` par `ACTION-0056`
 - Décisions applicables : `DEC-0009` I-E, `DEC-0010` U-B, `DEC-0011`, `DEC-0030`, `DEC-0031`, `DEC-0033`, `DEC-0034`

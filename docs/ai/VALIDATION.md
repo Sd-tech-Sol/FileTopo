@@ -1,7 +1,7 @@
 # VALIDATION.md — État de vérification
 
-**Dernière mise à jour :** 2026-09-10
-**Dernière livraison exécutée :** TASK-0034, section **BH** (recherche bornée et « Ouvrir dans l'Explorateur »), `IMPLEMENTED`, **en attente de vérification indépendante**. TASK-0033, sections BE/BF, est `VERIFIED` dans sa portée par le verdict indépendant enregistré dans `ACTION-0051`, section BG.
+**Dernière mise à jour :** 2026-09-11
+**Dernière livraison exécutée :** TASK-0036, section **BN** (passe corrective D1/D2/D3, `ACTION-0057`), `IMPLEMENTED`, **en attente de vérification indépendante**. TASK-0035, section BL, est `VERIFIED` par `ACTION-0056`. TASK-0034, section **BH** (recherche bornée et « Ouvrir dans l'Explorateur »), `IMPLEMENTED`, **en attente de vérification indépendante**. TASK-0033, sections BE/BF, est `VERIFIED` dans sa portée par le verdict indépendant enregistré dans `ACTION-0051`, section BG.
 **Dernière tâche évaluée indépendamment :** TASK-0033 — `VERIFIED` le
 2026-09-10 par le verdict indépendant enregistré dans `ACTION-0051`, section
 BG, dans sa portée. TASK-0032 — `VERIFIED` le 2026-09-10 par le verdict
@@ -6133,3 +6133,272 @@ rien à quoi se raccrocher avant que la clé stable existe.
 fusion, étiquette ni release.
 
 **Action unique suivante :** contrôle indépendant de `TASK-0035`.
+
+## BN. TASK-0036 — passe corrective D1/D2/D3 (`ACTION-0057`) — 2026-09-11
+
+**Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Même branche
+`build/v0.2-a20-v1-stable-identity`, même `DEC-0009` I-E, inchangée.
+Déclenchée par le contrôle indépendant
+[`ACTION-0057`](../reviews/ACTION-0057-independent-control.md), qui confirme
+le cœur I-E de BM mais bloque la fermeture sur trois défauts bloquants
+(D1, D2, D3) et une réserve (R1).
+
+### BN.1 D1 — migration `3 → 4` atteignable par le cycle produit
+
+**Le défaut, exact.** `Index::open()` sait migrer `3 → 4`, et le test
+`migrating_from_schema_three_…` (BM) le prouve — mais un cerveau **déjà
+indexé** ne passe jamais par ce constructeur. Le cycle produit passe par
+`publish_map` → `check_publishable` → `open_for_brain` →
+`BrainIndex::open_existing()`, qui refusait tout `PRAGMA user_version !=
+MAP_SCHEMA_VERSION` avant que la migration ait la moindre chance de
+s'exécuter. `map_open`, `refresh_map` et `rebuild_map` n'offraient donc
+aucun chemin produit transformant un v3 en v4.
+
+**Correction, écrite pour rester étroite.** `BrainIndex::open_existing`
+n'est **pas modifiée** : elle reste strictement `MAP_SCHEMA_VERSION`-only,
+exactement comme `ACTION-0057` le permettait explicitement
+(« le chemin strict `BrainIndex::open_existing()` peut rester v4-only »).
+Une nouvelle méthode, `BrainIndex::open_existing_migrating(path, writable,
+brain)`, est le seul point d'entrée migrant :
+
+1. `PRAGMA user_version == MAP_SCHEMA_VERSION` → chemin inchangé, identique
+   à `open_existing`.
+2. `writable && PRAGMA user_version == MAP_PREVIOUS_SCHEMA_VERSION` (3, la
+   seule marche que le produit migre jamais — `map/store.rs` définit la
+   constante comme `MAP_SCHEMA_VERSION - 1`, jamais une chaîne générique) :
+   - `built_for_brain()` doit nommer exactement `brain.brain_id`, sinon
+     `MapError::BrainMismatch` — **avant** toute mutation, avant toute
+     résolution de source;
+   - `binding_matches(brain)` — nouvelle méthode partagée, extraite du
+     `match` que `commands::check_publishable` appliquait déjà : `Bound`
+     doit accorder `source_kind` **et** `source_ref`; `Legacy` n'est
+     accepté que si `brain.source_kind == SyntheticFixture` **et** que
+     `fixture_id` égale `source_ref` — un `REAL_ROOT` n'y a jamais droit,
+     exactement la règle déjà établie par `TASK-0032`/`DEC-0033` D, jamais
+     élargie; `Incoherent` est toujours refusé;
+   - les deux checks passés seulement, `Index::migrate_previous_schema()`
+     tourne — schéma seulement, aucune résolution ni lecture de source.
+3. Toute autre version (plus ancienne, inconnue, plus récente) →
+   `MapError::IndexIncompatible`, jamais de migration tentée.
+
+`open_for_brain` — le seul goulot que `open_store` (lecture) et
+`check_publishable` (republication) partagent déjà — appelle d'abord
+`BrainIndex::peek_schema_version(path)`, une ouverture lecture-seule bon
+marché qui lit seulement `PRAGMA user_version` sans autre effet, et ne
+bascule sur `open_existing_migrating(path, true, brain)` que si elle vaut
+exactement 3; sinon `open_existing(path, false)`, en lecture seule,
+strictement inchangé. `map_open` continue donc de déclarer
+`sourceRead=false` (`DEC-0032` A), et l'écrasante majorité des ouvertures
+(fichier déjà v4) ne change ni de mode ni de coût.
+
+**Preuve produit obligatoire (`ACTION-0057` exigeait explicitement).**
+`stable_identity_tests::a_real_v3_index_upgrades_through_map_open_without_reading_the_source` :
+construit un **vrai** index v4 `REAL_ROOT` via `refresh_map` (métadonnées
+réelles — `brain_id`, `source_kind`, `source_ref`, `build_complete`,
+`projection_contract`, `root_id`, `node_count`, `index_id`,
+`index_revision`, `seen`), le réduit à la forme v3 exacte (`DROP INDEX
+idx_nodes_stable_key`; `ALTER TABLE nodes DROP COLUMN
+identity_provenance/stable_key`; `next_node_id` oublié;
+`schema_version`/`user_version` ramenés à 3 — jamais de la SQL inventée,
+un vrai fichier produit dégradé), puis :
+
+- `map_open` migre réellement (`raw_schema_version` passe de 3 à 4);
+- `sourceRead=false` dans le rapport;
+- `index_id` et `index_revision` **inchangés** par la migration elle-même;
+- corpus et `seen` intacts après migration;
+- un curseur émis **avant** la dégradation reste valide juste après la
+  migration (révision inchangée), puis devient explicitement périmé
+  seulement après une vraie republication qui avance la révision;
+- une republication normale avance la révision d'exactement un.
+
+Trois refus dédiés, chacun prouvant qu'aucune mutation n'a eu lieu (bytes du
+fichier comparés avant/après) :
+`a_v3_index_naming_another_brain_is_refused_without_migrating` (brain_id
+interne, fichier v3 réel copié dans l'emplacement d'un autre cerveau, sur
+les trois portes open/refresh/rebuild),
+`a_v3_index_with_a_disagreeing_binding_is_refused_without_migrating`
+(`source_ref` différent), `a_future_schema_is_refused_and_never_migrated_backward`
+(`user_version = 5`, refusé `map_index_incompatible` sur les trois portes,
+jamais migré à rebours).
+
+### BN.2 D2 — migration `3 → 4` atomique
+
+**Le défaut, exact.** `migrate_to_stable_identity()` exécutait les deux
+`ALTER TABLE`, la création de l'index unique et l'amorçage de
+`next_node_id` en instructions autocommit séparées; `initialize()` écrivait
+ensuite `PRAGMA user_version=4`/`schema_version=4` dans un `execute_batch`
+**distinct**. Aucune transaction n'enveloppait la transition entière — une
+erreur entre deux étapes pouvait laisser une base élargie mais toujours en
+`user_version=3`.
+
+**Correction.** Toute la transition — les deux `ALTER TABLE`, l'index
+unique, l'amorçage de `next_node_id` et l'écriture finale de
+`PRAGMA user_version`/`schema_meta.schema_version` — vit maintenant dans
+`Index::run_stable_identity_migration()`, une seule
+`connection.unchecked_transaction()` commise une seule fois à la toute fin.
+`migrate_to_stable_identity()` (appelée par `initialize()`, le chemin
+dev/test) lit d'abord la version et ne fait rien si elle est déjà
+`>= SCHEMA_VERSION`, sinon délègue à cette même transaction. Le nouveau
+chemin produit strict, `Index::migrate_previous_schema()`, vérifie en plus
+`PRAGMA user_version == SCHEMA_VERSION - 1` **avant** de déléguer — sans ce
+garde, la transaction stamperait `user_version=4` sur n'importe quel schéma
+qu'on lui présenterait, y compris un schéma futur inconnu.
+
+**Preuve d'échec obligatoire, par obstruction de schéma réelle, pas un hook
+test-only.** `index::tests::migration_v3_to_v4_rolls_back_completely_on_injected_failure` :
+sur un fichier v3 littéral, une `TABLE` nommée `idx_nodes_stable_key` est
+créée **avant** la migration. Les deux `ALTER TABLE` de la transaction
+réussissent (ils ne voient que les colonnes de `nodes`); `CREATE UNIQUE
+INDEX IF NOT EXISTS idx_nodes_stable_key` échoue ensuite parce que
+`IF NOT EXISTS` ne tolère qu'un **index** homonyme préexistant, jamais une
+table — une vraie erreur SQL, après une vraie mutation de schéma déjà
+appliquée dans la transaction. Après l'échec : `user_version` toujours à 3,
+les deux colonnes `stable_key`/`identity_provenance` absentes (`ALTER
+TABLE` annulé lui aussi), `next_node_id` toujours absent,
+`schema_meta.schema_version` toujours `'3'`, 3 nœuds intacts, `seen`
+intact, `index_id`/`index_revision` intacts. L'obstruction retirée
+(`DROP TABLE`), le même fichier migre correctement.
+
+### BN.3 D3 — `PATH_FALLBACK` sur le chemin OS brut
+
+**Le défaut, exact.** Le scanner construisait `relative_display =
+display_relative(&relative)` (`to_string_lossy().replace('\\', "/")`), puis
+passait cette **chaîne d'affichage** à `compute_identity()` →
+`path_fallback_key()`. `path_codec::encode_path()` existait déjà
+précisément pour éviter cette perte (`DEC-0033` C), mais n'était pas
+réutilisé ici.
+
+**Correction.** `identity::path_fallback_key` prend maintenant `relative:
+&Path` (plus `relative_path: &str`) et hache
+`path_codec::encode_path(relative)` — UTF-16LE sous Windows, octets bruts
+d'`OsStr` ailleurs — jamais la projection lossy. Le matériau haché est :
+tag de version, séparateur, **longueur explicite** du chemin encodé (8
+octets little-endian), les octets encodés eux-mêmes, séparateur, tag de
+type — la longueur explicite ferme l'ambiguïté de concaténation qu'un
+simple octet séparateur laisserait ouverte (`ACTION-0057`: « ajouter un
+séparateur/version/type non ambigu »). `compute_identity` prend maintenant
+`relative: &Path` en cohérence. `scanner.rs::scan_tree_controlled` passe le
+`PathBuf` relatif **brut** du parcours (`&relative`, avant toute conversion
+lossy) — `relative_display` reste calculée et stockée dans `NodeDto`
+seulement pour l'affichage, exactement comme avant. Le mode interne/legacy
+`identities: None` (`index.rs::publish`) dérive sa clé depuis
+`Path::new(&node.relative_path)`, comme la fiche corrective l'autorisait
+explicitement pour ce cas synthétique.
+
+**Tests obligatoires :**
+
+- `the_fallback_key_is_deterministic_and_versioned`/`_changes_with_the_path`/
+  `_changes_with_the_kind` (inchangés dans leur intention, adaptés à `&Path`);
+- `the_fallback_key_has_no_concatenation_ambiguity_between_path_and_kind` —
+  un chemin dont la fin ressemble à un tag de type ne collisionne pas avec
+  un chemin plus court suivi de ce tag;
+- `two_distinct_raw_paths_with_unpaired_surrogates_never_collide_under_lossy_projection`
+  (`#[cfg(windows)]`, exécuté sur Windows réel) — deux `PathBuf` construits
+  avec des surrogates isolés **différents** (0xD800 puis 0xD801), dont
+  `to_string_lossy()` produit le **même** texte (`U+FFFD` dans les deux
+  cas — assertion qui vérifie que le test est réellement significatif),
+  produisent des clés fallback **différentes**;
+- `two_distinct_raw_paths_with_invalid_utf8_bytes_never_collide_under_lossy_projection`
+  (`#[cfg(not(windows))]`, non exécuté sur cette plateforme mais présent et
+  compilable) — équivalent non-Windows, octets non-UTF-8;
+- `no_stable_key_or_absolute_path_ever_appears_in_a_serialized_dto` (BM,
+  rejoué inchangé) continue de prouver que le scanner n'expose au frontend
+  que la projection d'affichage, jamais le matériau brut de la clé.
+
+### BN.4 R1 — « Copier le chemin », preuve fraîche plutôt que citée
+
+**La réserve.** L'artefact BM notait `copyStillSucceeds: false`
+(`clipboard_write_failed`) sur une fenêtre d'automatisation cachée. Aucune
+ligne de `resolve_confined_target`/`copy_target_path`/`reveal_node`
+(`map/commands.rs`) n'a été touchée par D1/D2/D3.
+
+**Fermeture.** Le harnais existant (`scripts/task0036-webview2.ps1`/`.mjs`,
+inchangé) a été **rejoué en entier** par cette passe plutôt que de citer
+seulement `TASK-0035` `VERIFIED`. Résultat, dans le nouvel artefact :
+`copyStillSucceeds: true`, `copyFailureReason: null` — le presse-papiers a
+fonctionné cette fois-ci, sans qu'aucun code de copie n'ait changé.
+
+### BN.5 Bonus — bijection de `publish_with_identity` vérifiée
+
+Pendant l'audit de D1/D2, `Index::publish` s'est révélé pouvoir atteindre
+`row_identity.get(&canonical_id).expect("an identity was computed for
+every published node")` si l'appelant violait la précondition documentée
+(« chaque entrée `identities` doit nommer le `node_id` d'un nœud de `nodes`,
+un pour un ») — un panique **atteignable en entrée**, jamais exercé par le
+vrai pipeline scanner (qui garantit déjà la bijection) mais jamais vérifié
+non plus par la fonction `pub(crate)` elle-même. Fermé par une validation
+bornée avant toute écriture : `PublishError::IdentityNotBijective` (+
+`MapError::IdentityNotBijective` côté `map`), refusant explicitement
+`node_id` dupliqué dans `identities`, puis un désaccord entre l'ensemble des
+`node_id` de `nodes` et celui de `identities` (couvre à la fois une identité
+manquante et une identité pour un `node_id` inconnu). Trois tests :
+`publish_with_identity_refuses_a_missing_identity_instead_of_panicking`,
+`_refuses_an_identity_for_an_unknown_node_id`,
+`_refuses_a_duplicated_node_id_in_the_identity_list`.
+
+### BN.6 Invariants `TASK-0036` rejoués sans régression
+
+Les 402 tests Rust passent (392 BM + 10 cette passe), y compris **tous**
+les tests `stable_identity_tests.rs`/`identity.rs`/`index.rs` de BM,
+inchangés dans leur intention : `SYSTEM = VolumeSerialNumber + FileId`;
+reparse/skipped/online-only sans ouverture supplémentaire; rename/move
+intra-volume même `nodes.id`; sous-arbre déplacé cohérent; `seen` survit au
+match `SYSTEM`; nouvel id monotone jamais recyclé; collision refusée, index
+précédent intact; deux cerveaux isolés; `index_revision` atomique;
+recherche/détails/enfants/projection/Explorer sans régression; aucune fuite
+de clé stable/chemin absolu.
+
+### BN.7 Rejeu WebView2
+
+Un seul lancement réel, zéro redémarrage (même harnais que BM) :
+`nodeIdIdenticalAfterRename`, `nodeIdIdenticalAfterMove`,
+`movedFolderKeepsItsOwnId`, `movedFoldersChildKeepsItsId`,
+`newObjectNeverRecyclesADeletedId`, `searchStillFinds`, `childrenStillPage`,
+`projectionStillRenders`, `revealStillSucceeds`, `copyStillSucceeds` (R1,
+fermée) tous `true`; `noAbsolutePathOrStableKeyLeak: true`;
+`fatalConsoleErrors: 0`. Artefact :
+[`TASK-0036-webview2.json`](../performance/runs/TASK-0036-webview2.json).
+
+**Scénario `v3 → v4` non ajouté au harnais WebView2, séparation
+explicite.** La preuve produit de la migration est en Rust
+(BN.1, `a_real_v3_index_upgrades_through_map_open_without_reading_the_source`)
+sur un index v4 réel réduit exactement à la forme v3, jugée plus fiable
+qu'un scénario WebView2 qui devrait fabriquer le même fichier par un autre
+moyen sans le bénéfice de l'assertion fine sur `index_id`/`index_revision`/
+cursor qu'un test Rust permet directement. Le harnais WebView2 reste centré
+sur le comportement produit post-migration — déjà démontré par le rejeu
+complet de BN.7 sur un index qui, comme tout index construit par ce
+harnais, est déjà en v4.
+
+### BN.8 Validations générales
+
+`cargo test --offline` : **402 PASS**, 0 échec, 5 ignorés. `pnpm check`,
+`pnpm build`, `pnpm test` (**339 PASS**, inchangé — aucun fichier
+TypeScript touché), `cargo build --offline`, `git diff --check` verts.
+`cargo fmt` propre sur les 8 fichiers Rust touchés
+(`identity.rs`, `index.rs`, `map/brain_index.rs`, `map/commands.rs`,
+`map/mod.rs`, `map/stable_identity_tests.rs`, `map/store.rs`,
+`scanner.rs`) — vérifié avec `--config style_edition=2024` explicite,
+l'installation locale de `rustfmt` (1.9.0-stable) ne l'appliquant pas par
+défaut avec `--edition` seul, ce qui produirait un style plus ancien
+contredisant ce qui est déjà committé (reproduit sur `hierarchy.rs`, jamais
+touché, à `HEAD`, avant toute modification — voir `HANDOFF.md`).
+`cargo clippy --all-targets --offline -- -D warnings` reste rouge à **26
+erreurs** (24 diagnostics uniques, doublons lib/test) — **confirmées
+identiques à `HEAD` par `git stash`** avant cette passe (mêmes fichiers,
+mêmes lignes, même compte), aucune dans les 8 fichiers touchés, aucun
+nouveau diagnostic.
+
+### BN.9 Non fait, et limites
+
+Le scénario `v3 → v4` reste une preuve Rust, pas WebView2 (BN.7,
+séparation expliquée). Le reste des limites de BM est inchangé :
+déplacement inter-volume non testé, identité après hydratation cloud
+contournée, `seen` non rejoué en WebView2 (prouvé côté Rust sur Windows
+réel), aucun journal/watcher/incrémental. Aucune `TASK-0037`.
+
+**Aucune donnée personnelle**, comme toujours. **X5 inchangé**,
+`origin/main` inchangé. Aucune nouvelle DEC, aucune PR, fusion, étiquette ni
+release.
+
+**Action unique suivante :** nouveau contrôle indépendant de `TASK-0036`.

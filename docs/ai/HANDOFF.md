@@ -1,6 +1,116 @@
 # HANDOFF — passage de relais
 
-## Relais actuel — TASK-0036, V1 Stable Identity Foundation livrée, en attente de contrôle — 2026-09-11
+## Relais actuel — TASK-0036, passe corrective D1/D2/D3 (`ACTION-0057`) livrée — 2026-09-11
+
+- **Ce qui vient d'être fait :** le contrôle indépendant
+  [`ACTION-0057`](../reviews/ACTION-0057-independent-control.md) a confirmé
+  le cœur I-E de `TASK-0036` mais bloqué la fermeture sur trois défauts
+  précis (D1, D2, D3) plus une réserve (R1). La passe corrective décrite par
+  `.orchestrator/NEXT_PROMPT.md` les ferme tous les quatre, sur la même
+  branche `build/v0.2-a20-v1-stable-identity`. `TASK-0036` reste
+  `IMPLEMENTED`, jamais auto-`VERIFIED`. Aucune nouvelle DEC, aucune
+  `TASK-0037`, aucun watcher/journal/incrémental commencé.
+- **D1 — la migration `3 → 4` est maintenant atteignable par le cycle
+  produit.** `BrainIndex::open_existing` reste strictement v4-only, comme
+  demandé — rien n'y a changé. La nouvelle méthode
+  `BrainIndex::open_existing_migrating(path, writable, brain)` est le seul
+  endroit qui migre : elle ouvre le fichier, et seulement si son
+  `PRAGMA user_version` est **exactement** `MAP_PREVIOUS_SCHEMA_VERSION`
+  (3), vérifie `brain_id` puis `binding_matches(brain)` (logique désormais
+  partagée avec `commands::check_publishable`, qui a été simplifié pour
+  l'appeler plutôt que de dupliquer le `match`) **avant** de toucher un seul
+  octet du fichier. Un mismatch refuse sans migrer et sans lire la source.
+  Seuls les deux checks passés, `Index::migrate_previous_schema()` tourne
+  (schéma seulement, jamais la source). `open_for_brain` — le seul goulot
+  que `map_open`/`refresh_map`/`rebuild_map` partagent déjà — fait d'abord
+  un `peek_schema_version` en lecture seule bon marché et ne bascule sur le
+  chemin migrant, réouvert en écriture, que si le fichier est exactement en
+  v3; le chemin ordinaire (déjà v4, l'écrasante majorité) reste identique à
+  avant, en lecture seule. `map_open` continue donc de déclarer
+  `sourceRead=false`.
+- **D2 — la transition `3 → 4` est maintenant une seule transaction.** Les
+  deux `ALTER TABLE`, l'index unique, l'amorçage de `next_node_id` **et**
+  l'écriture finale de `PRAGMA user_version`/`schema_meta.schema_version`
+  sont tous dans la même `unchecked_transaction()`
+  (`Index::run_stable_identity_migration`), qui ne committe qu'une fois, à
+  la toute fin. Toute erreur avant ce commit fait rollback automatiquement
+  (comportement par défaut de `Transaction` au `Drop`) vers le fichier v3
+  original, octet pour octet. Testé avec une **obstruction de schéma réelle**
+  (une `TABLE` nommée `idx_nodes_stable_key`, qui bloque le
+  `CREATE UNIQUE INDEX IF NOT EXISTS` du même nom après que les deux
+  `ALTER TABLE` ont déjà réussi) plutôt qu'un hook test-only : preuve qu'un
+  échec **après** mutation de schéma fait un rollback complet, pas seulement
+  un refus avant que quoi que ce soit n'ait commencé.
+- **D3 — `PATH_FALLBACK` hache maintenant le chemin OS brut.**
+  `identity::path_fallback_key` prend désormais un `&Path` et hache
+  `path_codec::encode_path(relative)` (UTF-16LE sous Windows, octets bruts
+  ailleurs) — jamais la chaîne d'affichage `to_string_lossy()`. Le matériau
+  haché porte le tag de version, une longueur explicite du chemin encodé,
+  puis le tag de type — un préfixe de longueur, pas seulement un octet
+  séparateur, pour qu'aucune concaténation ambiguë ne soit possible.
+  `scanner.rs` passe maintenant le `PathBuf` relatif brut du parcours
+  (`relative`), plus `&relative_display`. Un nouveau test Windows construit
+  deux chemins avec des **surrogates isolés différents** (0xD800 vs 0xD801)
+  dont la projection `to_string_lossy()` est **identique** (les deux
+  deviennent `U+FFFD`) et prouve que leurs clés fallback restent
+  différentes — exactement l'ambiguïté que D3 devait fermer.
+- **R1 — « Copier le chemin » a réussi au rejeu, avec preuve fraîche, pas
+  seulement citée.** Le rejeu WebView2 complet de cette passe
+  (`scripts/task0036-webview2.ps1`) donne `copyStillSucceeds: true`,
+  `copyFailureReason: null` — l'échec précédent (`clipboard_write_failed`,
+  fenêtre cachée) ne s'est pas reproduit. Aucune ligne de
+  `resolve_confined_target`/`copy_target_path`/`reveal_node` n'a été
+  modifiée par cette passe; le nouvel artefact remplace l'ancien dans
+  `docs/performance/runs/TASK-0036-webview2.json`.
+- **Bonus hors défaut nommé, trouvé en lisant `publish()` pour D1/D2 :**
+  `publish_with_identity` documentait une précondition de bijection
+  (« chaque `identities` doit nommer chaque nœud de `nodes`, une fois »)
+  **jamais vérifiée** — une identité manquante pouvait atteindre
+  `row_identity.get(&canonical_id).expect(...)` et **paniquer**. Fermé avec
+  une validation bornée (`PublishError::IdentityNotBijective`, nouveau) sur
+  trois cas : identité manquante, identité pour un `node_id` inconnu,
+  `node_id` dupliqué dans la liste — trois tests dédiés, aucun panique
+  possible désormais. Le scanner réel garantissait déjà la bijection; c'est
+  la fonction `pub(crate)` elle-même qui ne la vérifiait pas.
+- **Ce que le prochain relais doit savoir :**
+  - `MAP_PREVIOUS_SCHEMA_VERSION` (`map/store.rs`) = `MAP_SCHEMA_VERSION - 1`
+    = 3, exactement le seul saut que le produit migre automatiquement. Un
+    futur bump de schéma (`5`) n'active **aucune** migration produit tant
+    que cette constante et la nouvelle méthode `open_existing_migrating`
+    n'ont pas été étendues délibérément — ce n'est pas une chaîne générique.
+  - `BrainIndex::binding_matches(brain)` est maintenant la seule
+    implémentation de la règle Bound/Legacy/Incoherent de `DEC-0033` D;
+    `check_publishable` et `open_existing_migrating` l'appellent tous les
+    deux. Ne pas réécrire cette logique une troisième fois ailleurs.
+  - Le même piège `rustfmt`/module-tree documenté dans le relais précédent
+    (ci-dessous) s'est reproduit à l'identique cette fois-ci : `cargo fmt`
+    et même `rustfmt --edition 2024` bruts reformatent tout le crate
+    atteignable dès qu'on leur passe un fichier qui `mod`-déclare le reste.
+    En plus : cette installation locale de `rustfmt` (1.9.0-stable)
+    n'applique **pas** le style 2024 par défaut avec `--edition 2024` seul
+    — il faut `--config style_edition=2024` explicitement, sinon il
+    réécrit vers un style plus ancien qui **contredit** ce qui est déjà
+    committé. Vérifié en reproduisant la même dérive sur `hierarchy.rs`
+    (jamais touché par cette passe) à `HEAD`, avant toute modification.
+  - `cargo clippy --all-targets --offline -- -D warnings` reste rouge à 26
+    erreurs uniques (24 diagnostics + doublons lib/test), **confirmées
+    identiques à `HEAD` par `git stash`** avant cette passe : aucun fichier
+    touché par D1/D2/D3 n'y figure.
+- **Ce qui reste ouvert :** exactement ce que le relais précédent listait —
+  aucun watcher, incrémental, FTS5, filtre; déplacement inter-volume non
+  testé; identité après hydratation cloud contournée; `seen` non rejoué en
+  WebView2 (prouvé côté Rust sur Windows réel). Le scénario de mise à niveau
+  `v3 → v4` en WebView2 n'a **pas** été ajouté au harnais : la preuve produit
+  du chemin de migration est en Rust (`stable_identity_tests.rs`, sur un
+  index v4 réel réduit exactement à la forme v3 puis migré via `map_open`),
+  jugée plus fiable qu'un scénario WebView2 qui devrait fabriquer le même
+  fichier par un autre moyen; le harnais WebView2 reste centré sur le
+  comportement produit (rename/move/search/children/projection/reveal/copy/
+  confidentialité), rejoué sans régression.
+- **Action unique suivante :** nouveau contrôle indépendant de `TASK-0036`,
+  sur cette passe corrective.
+
+## Relais précédent — TASK-0036, V1 Stable Identity Foundation livrée, en attente de contrôle — 2026-09-11
 
 - **Ce qui vient d'être fait :** `TASK-0035` était déjà `VERIFIED` par
   `ACTION-0056` (déjà sur la branche précédente, documents durables déjà

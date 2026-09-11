@@ -5194,3 +5194,102 @@ aucune PR, fusion, étiquette ni release; `origin/main` inchangé.
 
 **Action unique suivante :** contrôle indépendant de `TASK-0036`, par une
 instance distincte de Claude Code, sur les preuves de cette tranche.
+
+## 2026-09-11 — TASK-0036 — passe corrective D1/D2/D3 (`ACTION-0057`)
+
+**Agent :** Claude Code, exécuteur, sous GO technique de l'orchestrateur
+(délégation décrite par `AGENTS.md`, section « Délégation d'orchestration
+technique »)
+**Statut à l'issue :** `IMPLEMENTED`, jamais auto-`VERIFIED`
+
+### Motif
+
+Le contrôle indépendant
+[`ACTION-0057`](../reviews/ACTION-0057-independent-control.md) a confirmé le
+cœur I-E de `TASK-0036` sur une base fraîche, mais bloqué `VERIFIED` sur
+trois défauts précis (D1 : migration `3 → 4` inaccessible par le cycle
+produit; D2 : migration `3 → 4` non transactionnelle; D3 : `PATH_FALLBACK`
+hashé depuis une projection lossy) et une réserve (R1 : « Copier le chemin »
+non prouvé sous fenêtre automatisée). Cette passe ferme les quatre, sur la
+même branche.
+
+### Fait
+
+- **D1.** `BrainIndex::open_existing_migrating(path, writable, brain)`,
+  nouvelle méthode — seul point du produit qui migre un index existant.
+  Vérifie `brain_id` puis le binding (`binding_matches`, désormais partagée
+  avec `commands::check_publishable`) **avant** toute mutation, refuse sans
+  migrer et sans lire la source sur tout désaccord, n'accepte le cas legacy
+  synthétique que pour `SYNTHETIC_FIXTURE` (jamais `REAL_ROOT`), refuse tout
+  schéma qui n'est pas exactement `MAP_PREVIOUS_SCHEMA_VERSION` (3).
+  `open_for_brain` y bascule seulement après un `peek_schema_version` bon
+  marché en lecture seule; le chemin ordinaire (fichier déjà v4) est
+  inchangé, toujours en lecture seule. `BrainIndex::open_existing` reste
+  strictement v4-only, non modifiée. `map_open` continue de déclarer
+  `sourceRead=false`.
+- **D2.** Toute la transition `3 → 4` — deux `ALTER TABLE`, index unique,
+  amorçage `next_node_id`, écriture finale
+  `PRAGMA user_version`/`schema_version` — dans une seule
+  `unchecked_transaction()` (`Index::run_stable_identity_migration`),
+  commise une fois. Prouvé par une obstruction de schéma réelle (une table
+  homonyme de l'index à créer, après que les deux `ALTER TABLE` ont déjà
+  réussi) : rollback complet vers le v3 original, puis migration réussie
+  une fois l'obstruction retirée.
+- **D3.** `identity::path_fallback_key` prend maintenant `&Path` et hache
+  `path_codec::encode_path()` (UTF-16LE Windows, octets bruts ailleurs),
+  avec une longueur explicite du chemin encodé dans le matériau haché,
+  jamais `to_string_lossy()`. `scanner.rs` passe le `PathBuf` relatif brut
+  du parcours. Nouveau test Windows : deux surrogates isolés différents
+  produisant la même projection lossy (`U+FFFD`) donnent des clés fallback
+  différentes.
+- **R1.** Rejeu WebView2 complet (`scripts/task0036-webview2.ps1`, harnais
+  inchangé) : `copyStillSucceeds: true`, `copyFailureReason: null` — preuve
+  fraîche, pas seulement une citation de `TASK-0035 VERIFIED`. Aucune ligne
+  de copie/reveal modifiée par cette passe.
+- **Bonus trouvé en auditant D1/D2 :** `publish_with_identity` documentait
+  une précondition de bijection jamais vérifiée, atteignable jusqu'à un
+  `.expect()` (panique possible en entrée). Fermé par
+  `PublishError::IdentityNotBijective`, bornée, trois tests dédiés
+  (identité manquante, identité pour un `node_id` inconnu, `node_id`
+  dupliqué).
+
+### Preuves
+
+Rust **402 PASS** (392 + 10 nouveaux : 2 `identity.rs`, 4
+`stable_identity_tests.rs` pipeline réel v3→v4, 1 rollback atomique, 3
+bijection). TypeScript **339 PASS**, inchangée. Rejeu WebView2 : toutes les
+invariants `TASK-0036` rejouées sans régression, `copyStillSucceeds` passé
+de `false` à `true`, `fatalConsoleErrors: 0`. Artefact remplacé :
+[`TASK-0036-webview2.json`](../performance/runs/TASK-0036-webview2.json).
+
+`pnpm check`, `pnpm build`, `pnpm test`, `cargo build --offline`,
+`git diff --check` verts. `cargo fmt` propre sur les 8 fichiers touchés,
+vérifié explicitement avec `--config style_edition=2024` (l'installation
+locale de `rustfmt` ne l'applique pas par défaut avec `--edition` seul —
+piège déjà documenté par la livraison précédente pour le reformatage
+d'arbre entier, reconfirmé et évité de la même façon : fichiers touchés
+formatés directement, tout fichier hors périmètre restauré par
+`git checkout` avant commit). `cargo clippy --all-targets --offline --
+-D warnings` rouge à **26 erreurs**, confirmées identiques à `HEAD` par
+`git stash` avant cette passe (même compte, mêmes fichiers, mêmes lignes),
+aucune dans un fichier touché, aucun nouveau diagnostic.
+
+### Non fait, et limites
+
+Le scénario de mise à niveau `v3 → v4` n'a pas été ajouté au harnais
+WebView2 : la preuve produit reste en Rust
+(`a_real_v3_index_upgrades_through_map_open_without_reading_the_source`, sur
+un index v4 réel réduit exactement à la forme v3), jugée plus fiable et
+plus précise (assertions directes sur `index_id`/`index_revision`/cursor)
+qu'un scénario WebView2 séparé; le harnais reste centré sur le comportement
+produit post-migration, rejoué sans régression. Le reste des limites de la
+livraison précédente est inchangé : déplacement inter-volume non testé,
+identité après hydratation cloud contournée, `seen` non rejoué en WebView2.
+Aucune donnée personnelle. `X5` inchangé; aucune `TASK-0037`, aucune
+nouvelle DEC, aucune PR, fusion, étiquette ni release; `origin/main`
+inchangé.
+
+### Suite
+
+**Action unique suivante :** nouveau contrôle indépendant de `TASK-0036`,
+par une instance distincte, sur les preuves de cette passe corrective.
