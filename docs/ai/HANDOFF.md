@@ -1,6 +1,92 @@
 # HANDOFF — passage de relais
 
-## Relais actuel — TASK-0036, passe corrective D4/D5 (`ACTION-0058`) livrée — 2026-09-12
+## Relais actuel — TASK-0036, passe corrective D6 (`ACTION-0059`) livrée — 2026-09-12
+
+- **Ce qui vient d'être fait :** le recontrôle indépendant
+  [`ACTION-0059`](../reviews/ACTION-0059-independent-recontrol.md) a accepté
+  D1/D2/D3/R1 (relais d'avant-hier) et D5 (relais précédent) sans réserve, et
+  a confirmé que D4 était **largement** corrigé — mais a trouvé un dernier
+  défaut bloquant, D6, dans la même zone de code. `TASK-0036` reste
+  `IMPLEMENTED`, jamais auto-`VERIFIED`. Aucune `TASK-0037`, aucun
+  watcher/journal/incrémental.
+- **D6 — la copie de sûreté M-B était supprimée un cran trop tôt.** Le flux
+  de la livraison précédente (`0daf342f`) faisait : `migrate_previous_schema()`
+  réussit → supprimer `safety_copy` → **puis** appeler
+  `finish_open_existing(connection)`. Le contrat `ACTION-0058` D4 exigeait
+  pourtant explicitement que la restauration couvre un échec de **migration
+  OU de validation** — et `finish_open_existing()` (contrat canonique v4 :
+  `is_built()`, identité, compte, `root_id`) peut encore refuser un fichier
+  que le DDL SQL a pourtant migré correctement. Dans ce cas précis, l'ancien
+  flux retournait une erreur en laissant le fichier **déjà en v4**, sans
+  aucune copie v3 pour s'en remettre — exactement l'écart que `M-B` de
+  `DEC-0013` B existe pour empêcher.
+- **Correction, sans dupliquer ni affaiblir `finish_open_existing()`.** La
+  copie reste maintenant en vie jusqu'à ce que `finish_open_existing()`
+  **elle-même** ait réussi :
+  ```
+  migrate_previous_schema() OK
+  match finish_open_existing(connection) {
+      Ok(store)  => supprimer la copie, retourner store
+      Err(erreur) => restaurer la copie (connexion déjà fermée par le Drop
+                     interne de finish_open_existing sur son propre chemin
+                     d'erreur), supprimer la copie, retourner erreur
+  }
+  ```
+  Aucune fermeture de connexion manuelle n'était nécessaire sur la branche
+  de validation : `finish_open_existing(connection)` possède la connexion
+  localement et la relâche par simple `Drop` de Rust quand elle retourne
+  `Err` sans l'avoir rendue — le fichier est donc déjà libre d'écriture au
+  moment où la restauration s'exécute. Si la restauration elle-même échoue,
+  son erreur remonte **avant** toute suppression de la copie — elle reste
+  disponible pour une récupération manuelle, exactement comme le chemin
+  d'échec de migration (D4) le faisait déjà.
+- **Preuve, et confirmée fausse sur le code d'avant** (exigence explicite du
+  prompt correctif) : `d6_a_post_migration_validation_failure_restores_the_v3_index_in_full`
+  corrompt `build_complete` — une métadonnée canonique que
+  `migrate_previous_schema()` ne touche ni ne lit jamais — de sorte que le
+  DDL `v3 → v4` réussisse réellement et que seule la validation échoue
+  ensuite. Rejoué contre `0daf342f` (via `git stash` temporaire sur
+  `brain_index.rs` seul), le test échoue bien : `user_version` reste à `4`
+  au lieu d'être restauré à `3`. Avec la correction, il prouve la
+  restauration complète (schéma, nœuds, `seen`, `index_id`,
+  `index_revision`, binding `source_kind`/`source_ref`), la suppression de
+  la copie transitoire après restauration réussie, puis qu'une nouvelle
+  tentative après réparation de l'invariant migre proprement vers v4 sans
+  laisser de copie derrière elle.
+- **Rejeu WebView2 non refait, justifié plutôt qu'omis.** Le changement ne
+  touche que l'ordre relatif de deux étapes et un chemin de restauration
+  qui ne s'exerce que si `finish_open_existing()` refuse un fichier après
+  une migration SQL par ailleurs réussie — un cas que le harnais WebView2
+  (des arbres synthétiques valides, jamais volontairement corrompus) n'a
+  jamais exercé et n'exerce toujours pas. Le chemin heureux — migration
+  réussie, validation réussie, copie supprimée, store retourné — est
+  **identique** avant et après cette passe. Le rejeu déjà publié sous
+  `0daf342f` (`docs/performance/runs/TASK-0036-webview2.json`, inchangé par
+  cette passe) reste donc pleinement applicable; en refaire un aurait été
+  fabriquer une preuve que rien dans ce changement ne justifie.
+- **Ce que le prochain relais doit savoir :**
+  - Le motif du bug lui-même est un piège général à retenir : **une
+    ressource de secours (backup, verrou, copie) ne doit jamais être
+    libérée avant que *toute* la chaîne de validation qui suit l'opération
+    protégée ait fini de se prononcer** — pas seulement l'opération SQL/IO
+    elle-même. `finish_open_existing()` est une validation à part entière,
+    pas un simple accessoire après la migration.
+  - Le même piège `rustfmt`/module-tree s'est reproduit une quatrième fois,
+    identique aux relais précédents; évité de la même façon. Cette fois,
+    seuls deux fichiers étaient touchés (`brain_index.rs`,
+    `stable_identity_tests.rs`), et `brain_index.rs` s'est révélé déjà
+    propre — seul le fichier de tests avait deux lignes héritées du relais
+    précédent que `rustfmt` préfère maintenant recomposer sur une seule
+    ligne (sous la limite de largeur), sans rapport avec cette passe.
+- **Ce qui reste ouvert :** exactement ce que les relais précédents
+  listaient — aucun watcher, incrémental, FTS5, filtre; déplacement
+  inter-volume non testé; `seen` non rejoué en WebView2; aucune fixture
+  Cloud Files réelle; vrai crash/coupure de courant pendant la migration non
+  reproduit.
+- **Action unique suivante :** contrôle indépendant final de `TASK-0036`,
+  sur cette passe corrective.
+
+## Relais précédent — TASK-0036, passe corrective D4/D5 (`ACTION-0058`) livrée — 2026-09-12
 
 - **Ce qui vient d'être fait :** le recontrôle indépendant
   [`ACTION-0058`](../reviews/ACTION-0058-independent-recontrol.md) a accepté

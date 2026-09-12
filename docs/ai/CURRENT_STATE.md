@@ -1,5 +1,60 @@
 # État courant
 
+## TASK-0036 — passe corrective D6 (`ACTION-0059`) — IMPLEMENTED — 2026-09-12
+
+- **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Même branche
+  `build/v0.2-a20-v1-stable-identity`, même `DEC-0009` I-E. Déclenchée par
+  le recontrôle indépendant
+  [`ACTION-0059`](../reviews/ACTION-0059-independent-recontrol.md), qui
+  accepte D1/D2/D3/R1/D5 sans réserve et confirme D4 largement corrigé,
+  mais trouve un dernier défaut dans la même zone. Détail :
+  [VALIDATION section BP](VALIDATION.md).
+- **D6 — la copie de sûreté `M-B` survit maintenant à la validation
+  canonique v4 complète, pas seulement à la migration SQL.** L'ancien flux
+  supprimait la copie dès que `migrate_previous_schema()` réussissait, puis
+  appelait `finish_open_existing()` — qui peut encore refuser le fichier
+  sur son propre contrat (`build_complete`, `projection_contract`,
+  `root_id`, compte). Dans ce cas, l'ancien code laissait le fichier migré
+  en v4 sans aucune copie v3 pour s'en remettre. Corrigé : la copie n'est
+  supprimée qu'après le succès de `finish_open_existing()`; son échec
+  restaure la copie sur le fichier vivant (la connexion v4 est déjà fermée
+  par simple `Drop` sur ce chemin) avant de renvoyer l'erreur; un échec de
+  restauration remonte sa propre erreur sans supprimer la copie.
+  `finish_open_existing()` n'a été ni dupliquée ni affaiblie.
+- **Preuve, confirmée fausse sur le code précédent (`0daf342f`).** Un test
+  corrompt `build_complete` — une métadonnée que la migration ne touche
+  jamais — pour que le DDL réussisse et que seule la validation échoue.
+  Rejoué contre le code d'avant via `git stash` temporaire : le test échoue
+  bien (`user_version` reste à 4 au lieu d'être restauré à 3). Avec la
+  correction : restauration complète (schéma, nœuds, `seen`, `index_id`,
+  `index_revision`, binding), copie transitoire supprimée, puis une
+  nouvelle tentative après réparation migre proprement sans copie
+  résiduelle.
+- **Aucun rejeu WebView2** — justifié explicitement plutôt qu'omis : le
+  changement ne touche que l'ordre de deux étapes et un chemin de
+  restauration qui ne s'exerce que si `finish_open_existing()` refuse un
+  fichier après une migration SQL réussie, un cas que le harnais (arbres
+  synthétiques valides, jamais corrompus) n'exerce pas. Le chemin heureux
+  est identique avant/après; le rejeu déjà publié sous `0daf342f` reste
+  pleinement applicable.
+- **Preuves :** Rust **412 PASS** (411 + 1 nouveau test D6). TypeScript
+  **339 PASS**, inchangée (aucun fichier TypeScript touché).
+- **Validations :** `cargo test --offline` (412 PASS), `pnpm check`,
+  `pnpm build`, `pnpm test` (339 PASS), `cargo build --offline`,
+  `git diff --check` verts. `cargo fmt` propre sur les 2 fichiers touchés
+  (`map/brain_index.rs`, `map/stable_identity_tests.rs`), vérifié avec
+  `style_edition=2024` explicite. `cargo clippy --all-targets --offline
+  -- -D warnings` : zéro diagnostic dans les deux fichiers touchés,
+  dette historique inchangée.
+- **Non testé / limite assumée :** inchangé par rapport aux passes
+  précédentes — aucune fixture Cloud Files réelle, aucun vrai crash de
+  processus pendant la migration, déplacement inter-volume non testé,
+  `seen` non rejoué en WebView2.
+- **Aucune donnée personnelle**, comme toujours. **X5 inchangé**,
+  `origin/main` inchangé. Aucune `TASK-0037`, aucune PR, fusion, étiquette
+  ni release, aucun watcher/journal/incrémental commencé.
+- **Action unique suivante : contrôle indépendant final de `TASK-0036`.**
+
 ## TASK-0036 — passe corrective D4/D5 (`ACTION-0058`) — IMPLEMENTED — 2026-09-12
 
 - **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Même branche

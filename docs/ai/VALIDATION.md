@@ -1,7 +1,7 @@
 # VALIDATION.md — État de vérification
 
 **Dernière mise à jour :** 2026-09-12
-**Dernière livraison exécutée :** TASK-0036, section **BO** (passe corrective D4/D5, `ACTION-0058`), `IMPLEMENTED`, **en attente de vérification indépendante**. Section BN (passe corrective D1/D2/D3, `ACTION-0057`) acceptée sans régression par ce recontrôle. TASK-0035, section BL, est `VERIFIED` par `ACTION-0056`. TASK-0034, section **BH** (recherche bornée et « Ouvrir dans l'Explorateur »), `IMPLEMENTED`, **en attente de vérification indépendante**. TASK-0033, sections BE/BF, est `VERIFIED` dans sa portée par le verdict indépendant enregistré dans `ACTION-0051`, section BG.
+**Dernière livraison exécutée :** TASK-0036, section **BP** (passe corrective D6, `ACTION-0059`), `IMPLEMENTED`, **en attente de vérification indépendante**. Section BO (passe corrective D4/D5, `ACTION-0058`) acceptée sans régression sur D1/D2/D3/R1/D5 par ce recontrôle, D4 confirmé largement corrigé hors D6. TASK-0035, section BL, est `VERIFIED` par `ACTION-0056`. TASK-0034, section **BH** (recherche bornée et « Ouvrir dans l'Explorateur »), `IMPLEMENTED`, **en attente de vérification indépendante**. TASK-0033, sections BE/BF, est `VERIFIED` dans sa portée par le verdict indépendant enregistré dans `ACTION-0051`, section BG.
 **Dernière tâche évaluée indépendamment :** TASK-0033 — `VERIFIED` le
 2026-09-10 par le verdict indépendant enregistré dans `ACTION-0051`, section
 BG, dans sa portée. TASK-0032 — `VERIFIED` le 2026-09-10 par le verdict
@@ -6653,3 +6653,150 @@ incrémental — est inchangé. Aucune `TASK-0037`.
 `origin/main` inchangé. Aucune PR, fusion, étiquette ni release.
 
 **Action unique suivante :** nouveau contrôle indépendant de `TASK-0036`.
+
+## BP. TASK-0036 — passe corrective D6 (`ACTION-0059`) — 2026-09-12
+
+**Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Même branche
+`build/v0.2-a20-v1-stable-identity`, même `DEC-0009` I-E, inchangée.
+Déclenchée par le recontrôle indépendant
+[`ACTION-0059`](../reviews/ACTION-0059-independent-recontrol.md), qui
+accepte D1/D2/D3/R1 (section BN) et D5 (section BO) sans réserve, confirme
+D4 « largement corrigé », mais trouve un dernier défaut bloquant, D6, dans
+la même fonction.
+
+### BP.1 D6 — la copie de sûreté doit survivre à la validation canonique v4, pas seulement à la migration SQL
+
+**Le défaut, exact.** Le contrat `ACTION-0058` D4 exigeait explicitement
+trois étapes : migration transactionnelle, **réouverture/validation du
+contrat canonique v4**, puis restauration si **migration ou validation**
+échoue. La livraison `0daf342f` (section BO) implémentait :
+
+```text
+migrate_previous_schema() OK
+remove_file(safety_copy)
+finish_open_existing(connection)
+```
+
+La copie était donc détruite **avant** `finish_open_existing()` — qui peut
+encore refuser le fichier sur son propre contrat (`is_built()` :
+`build_complete`, `projection_contract`; puis `identity()`, `count()`,
+`root_id()`). Le DDL SQLite lui-même avait beau avoir réussi et être
+atomique (D2, inchangé), une erreur de validation à cette étape renvoyait
+une erreur en laissant le fichier **déjà en v4**, sans copie v3 disponible
+pour s'en remettre — un écart direct au contrat M-B orchestré.
+
+**Correction, sans dupliquer ni affaiblir `finish_open_existing()`.**
+
+```text
+checks v3 brain/binding             (D1, inchangé)
+lock + quiesce                       (D4, inchangé)
+copy + verify v3                     (D4, inchangé)
+migrate_previous_schema()
+  ERR -> restaurer, nettoyer, renvoyer l'erreur de migration (D4, inchangé)
+  OK  -> finish_open_existing(connection)
+           OK  -> supprimer la copie, retourner le store v4
+           ERR -> restaurer la copie v3, la supprimer si la restauration
+                  réussit, renvoyer l'erreur de VALIDATION (pas de
+                  migration)
+```
+
+Point clé sur la fermeture de connexion : contrairement à la branche
+d'échec de migration (où `probe.index` est déstructuré explicitement pour
+fermer la connexion avant la restauration, parce que le code appelant
+possède encore la connexion à ce moment-là), la branche de validation n'a
+besoin d'**aucune** fermeture manuelle. `finish_open_existing(connection)`
+prend la connexion **par valeur** et la garde dans une variable locale
+(`store`) tout au long de sa propre fonction; quand elle retourne `Err(...)`
+sans avoir renvoyé `store`, Rust relâche (`Drop`, donc ferme) cette
+connexion **avant** que le contrôle ne revienne à l'appelant. Le fichier
+est donc déjà libre d'écriture au moment où `restore_safety_copy` s'exécute
+— aucune duplication de la logique interne de `finish_open_existing()`
+n'était nécessaire pour obtenir cette garantie.
+
+Si la restauration elle-même échoue à cette étape, son erreur
+(`MapError::MigrationUnavailable`, motif `restore failed`) remonte via `?`
+**avant** toute suppression de fichier — la copie reste disponible pour une
+récupération manuelle, exactement le même comportement que la branche
+d'échec de migration avait déjà.
+
+### BP.2 Preuve — confirmée fausse sur le code précédent, exigence explicite du prompt correctif
+
+`d6_a_post_migration_validation_failure_restores_the_v3_index_in_full`
+(`src-tauri/src/map/stable_identity_tests.rs`) :
+
+1. construit un vrai index v4 `REAL_ROOT` via `refresh_map`, marque `seen`
+   sur un nœud, relève `index_id`/`index_revision`;
+2. le ramène en v3 (`downgrade_to_schema_v3`, réutilisée sans modification);
+3. corrompt `build_complete` — une métadonnée canonique que
+   `migrate_previous_schema()` **n'écrit ni ne lit jamais**, donc le DDL
+   `v3 → v4` réussit réellement et seule `finish_open_existing()` refuse
+   ensuite;
+4. appelle `open_map` : l'erreur retournée est bien
+   `map_index_incompatible` (le motif exact de `is_built()` qui échoue);
+5. prouve la restauration complète : `user_version == 3`, tous les nœuds et
+   `seen` identiques (`logical_snapshot`), `index_id`/`index_revision`
+   inchangés, `source_kind`/`source_ref` toujours liés au bon cerveau;
+6. prouve que la copie transitoire (`safety_copy_path`) a été supprimée
+   après la restauration réussie;
+7. répare `build_complete`, relance `open_map` : migration v4 réussie, même
+   `index_id`/`index_revision`, aucune copie résiduelle.
+
+**Rejoué contre le code d'avant cette passe (`0daf342f`), par un
+`git stash` temporaire limité à `brain_index.rs` seul, exactement comme le
+prompt correctif l'exigeait : le test échoue** —
+`user_version` reste à `4` au lieu d'être restauré à `3`
+(`assertion left == right failed`, `left: 4, right: 3`). Le `stash` a été
+immédiatement restauré (`git stash pop`) et la suite complète rejouée pour
+confirmer qu'aucune régression n'a été introduite par cette manipulation.
+
+### BP.3 Non-régression
+
+412 tests Rust passent (411 BO + 1 nouveau), y compris **tous** les tests
+D4 M-B (WAL-pending/restauration/nouvelle tentative, checkpoint occupé,
+copie échouée, refus brain/binding/schéma futur), tous les tests D5 Cloud
+Files, et tous les invariants D1/D2/D3/R1 déjà acquis — aucun modifié dans
+son intention.
+
+### BP.4 WebView2 — non rejoué, justifié explicitement
+
+`NEXT_PROMPT.md` §3 autorisait explicitement à ne pas fabriquer un rejeu
+si le code touché ne peut pas affecter le scénario WebView2. C'est le cas
+ici : le changement ne touche que l'ordre relatif de deux étapes
+(suppression de copie vs. validation canonique) et un chemin de
+restauration qui ne s'exerce **que** si `finish_open_existing()` refuse un
+fichier après une migration SQL par ailleurs réussie. Le harnais WebView2
+de `TASK-0036` construit et lit des arbres synthétiques valides, jamais
+volontairement corrompus sur un invariant canonique — ce chemin n'est donc
+jamais emprunté par le rejeu, avant comme après cette passe. Le chemin
+heureux (migration réussie, validation réussie, copie supprimée, store
+retourné) est **identique** avant et après : aucune ligne de ce chemin n'a
+changé de comportement observable. Le rejeu déjà publié sous `0daf342f`
+(`docs/performance/runs/TASK-0036-webview2.json`, non modifié par cette
+passe) reste donc pleinement applicable et n'a pas été refait.
+
+### BP.5 Validations générales
+
+`cargo test --offline` : **412 PASS**, 0 échec, 5 ignorés. `pnpm check`,
+`pnpm build`, `pnpm test` (**339 PASS**, inchangé), `cargo build --offline`,
+`git diff --check` verts. `cargo fmt` propre sur les 2 fichiers touchés
+(`map/brain_index.rs`, `map/stable_identity_tests.rs`) — vérifié avec
+`--config style_edition=2024` explicite; `brain_index.rs` était déjà propre,
+`stable_identity_tests.rs` portait deux lignes héritées de la section BO
+que `rustfmt` recompose désormais sur une seule ligne (sous la limite de
+largeur), sans rapport avec cette passe, corrigées au passage.
+`cargo clippy --all-targets --offline` : **zéro** diagnostic dans les deux
+fichiers touchés par cette passe; la dette historique (26 erreurs sous
+`-D warnings`) reste ailleurs, inchangée.
+
+### BP.6 Non fait, et limites
+
+Inchangé par rapport à la section BO : aucune fixture Cloud Files réelle,
+aucun vrai crash de processus pendant la migration `M-B` (le test D6
+injecte une corruption de métadonnée déterministe, pas un `SIGKILL`),
+déplacement inter-volume non testé, `seen` non rejoué en WebView2, aucun
+journal/watcher/incrémental. Aucune `TASK-0037`.
+
+**Aucune donnée personnelle**, comme toujours. **X5 inchangé**,
+`origin/main` inchangé. Aucune PR, fusion, étiquette ni release.
+
+**Action unique suivante :** contrôle indépendant final de `TASK-0036`.

@@ -5390,3 +5390,76 @@ ni release; `origin/main` inchangé.
 
 **Action unique suivante :** nouveau contrôle indépendant de `TASK-0036`,
 par une instance distincte, sur les preuves de cette passe corrective.
+
+## 2026-09-12 — TASK-0036 — passe corrective D6 (`ACTION-0059`)
+
+**Agent :** Claude Code, exécuteur, sous GO technique de l'orchestrateur
+(délégation décrite par `AGENTS.md`, section « Délégation d'orchestration
+technique »)
+**Statut à l'issue :** `IMPLEMENTED`, jamais auto-`VERIFIED`
+
+### Motif
+
+Le recontrôle indépendant
+[`ACTION-0059`](../reviews/ACTION-0059-independent-recontrol.md) accepte
+D1/D2/D3/R1 et D5 sans réserve, confirme D4 « largement corrigé », mais
+trouve un dernier défaut bloquant : la copie de sûreté `M-B` était
+supprimée dès que `migrate_previous_schema()` réussissait, **avant** que
+`finish_open_existing()` ait validé le contrat canonique v4 complet
+(`build_complete`, `projection_contract`, identité, compte, `root_id`).
+Une erreur de validation à cette étape laissait le fichier déjà migré en
+v4, sans copie v3 disponible pour s'en remettre — un écart direct au
+contrat `M-B` de `DEC-0013` B qu'`ACTION-0058` D4 exigeait explicitement de
+couvrir sur « migration OU validation ».
+
+### Fait
+
+- **D6.** La copie de sûreté ne disparaît plus qu'après le succès de
+  `finish_open_existing()` elle-même, jamais après le seul succès du DDL
+  SQL. Son échec restaure la copie v3 sur le fichier vivant avant de
+  renvoyer l'erreur de validation; un échec de restauration remonte sa
+  propre erreur claire sans supprimer la copie. Aucune fermeture manuelle
+  de connexion n'était nécessaire sur cette branche : `finish_open_existing`
+  possède la connexion localement et Rust la relâche (`Drop`) dès qu'elle
+  retourne `Err` sans l'avoir rendue, avant que le contrôle ne revienne à
+  l'appelant. `finish_open_existing()` n'a été ni dupliquée ni affaiblie.
+- **Preuve, confirmée fausse sur le code précédent — exigence explicite du
+  prompt correctif.** Un nouveau test corrompt `build_complete`, une
+  métadonnée que la migration ne touche ni ne lit jamais, pour que le DDL
+  réussisse et que seule la validation échoue. Rejoué contre `0daf342f`
+  (`git stash` temporaire limité à `brain_index.rs`) : le test échoue bien
+  (`user_version` reste 4 au lieu d'être restauré à 3). Avec la correction :
+  restauration complète (nœuds, `seen`, `index_id`, `index_revision`,
+  binding), copie transitoire supprimée, puis une nouvelle tentative après
+  réparation migre proprement sans copie résiduelle.
+- **Aucun rejeu WebView2**, justifié explicitement : le chemin heureux est
+  identique avant/après cette passe, et le harnais (arbres synthétiques
+  valides, jamais corrompus) n'exerce jamais le chemin de refus de
+  validation corrigé. Le rejeu déjà publié sous `0daf342f` reste pleinement
+  applicable.
+
+### Preuves
+
+Rust **412 PASS** (411 + 1 nouveau test). TypeScript **339 PASS**,
+inchangée. `pnpm check`, `pnpm build`, `pnpm test`, `cargo build --offline`,
+`git diff --check` verts. `cargo fmt` propre sur les 2 fichiers touchés
+(`map/brain_index.rs`, `map/stable_identity_tests.rs`), vérifié avec
+`--config style_edition=2024` explicite. `cargo clippy --all-targets
+--offline` : zéro diagnostic dans les fichiers touchés, dette historique
+(26 erreurs sous `-D warnings`) inchangée ailleurs.
+
+### Non fait, et limites
+
+Inchangé par rapport à la passe précédente : aucune fixture Cloud Files
+réelle, aucun vrai crash de processus pendant la migration (le test D6
+injecte une corruption de métadonnée déterministe, pas un `SIGKILL`),
+déplacement inter-volume non testé, `seen` non rejoué en WebView2, aucun
+journal/watcher/incrémental. Aucune donnée personnelle. `X5` inchangé;
+aucune `TASK-0037`, aucune PR, fusion, étiquette ni release; `origin/main`
+inchangé.
+
+### Suite
+
+**Action unique suivante :** contrôle indépendant final de `TASK-0036`,
+par une instance distincte, sur l'ensemble des preuves accumulées (D1 à
+D6).

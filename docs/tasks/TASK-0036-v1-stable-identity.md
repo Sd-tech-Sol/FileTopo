@@ -9,7 +9,11 @@
   exigée par [`ACTION-0058`](../reviews/ACTION-0058-independent-recontrol.md)
   (D4 migration `M-B` de `DEC-0013` B, D5 frontière Cloud Files de
   `DEC-0035`), livrée le 2026-09-12 : détail
-  [`VALIDATION.md` section BO](../ai/VALIDATION.md).
+  [`VALIDATION.md` section BO](../ai/VALIDATION.md). **Passe corrective 3**
+  exigée par [`ACTION-0059`](../reviews/ACTION-0059-independent-recontrol.md)
+  (D6 — durée de vie de la copie de sûreté `M-B` autour de la validation
+  canonique v4 finale), livrée le 2026-09-12 : détail
+  [`VALIDATION.md` section BP](../ai/VALIDATION.md).
 - **Correction honnête de portée (`ACTION-0058`) :** la fiche initiale
   omettait `DEC-0013`, applicable depuis son approbation le 2026-08-31 et
   jamais supplantée sur ses points B (migration) et F (Cloud Files) avant
