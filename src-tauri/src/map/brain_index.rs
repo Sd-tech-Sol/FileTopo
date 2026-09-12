@@ -116,10 +116,12 @@ impl BrainIndex {
     ///   snapshot; a safety copy is taken **in the brain's own application
     ///   space** and independently verified openable as the previous schema
     ///   **before** [`crate::index::Index::migrate_previous_schema`] runs
-    ///   its first `ALTER TABLE`; a migration failure restores that copy
-    ///   over the live file and reports the failure; a migration success
-    ///   deletes the now-unneeded copy. The now-current connection is then
-    ///   opened exactly like the first case.
+    ///   its first `ALTER TABLE`. The copy survives past a successful SQL
+    ///   migration — `ACTION-0059` D6 — because [`Self::finish_open_existing`]
+    ///   still has to accept the result as a canonical v4 index; only once
+    ///   *that* succeeds too is the copy deleted. Either the migration
+    ///   itself or this final validation failing restores the copy over the
+    ///   live file before the failure is reported.
     /// * **Anything else** — older, unknown or newer — refused as
     ///   [`MapError::IndexIncompatible`], never migrated: `DEC-0011` forbids
     ///   a backward migration or a migration run on a guess.
@@ -220,8 +222,32 @@ impl BrainIndex {
                 }
             });
         }
-        let _ = std::fs::remove_file(&safety_copy);
-        Self::finish_open_existing(probe.index.connection)
+
+        // `ACTION-0059` D6 — the safety copy stays available through the
+        // *entire* v4 canonical validation, not only the SQL migration:
+        // `finish_open_existing` can still refuse an otherwise-migrated file
+        // on its own contract (`build_complete`, `projection_contract`, a
+        // missing `root_id`/`node_count`, …), and only once that validation
+        // also succeeds is the v3 copy truly unneeded. Deleting it right
+        // after a successful `migrate_previous_schema()` — as the previous
+        // delivery did — left no way back if this next step refused.
+        match Self::finish_open_existing(probe.index.connection) {
+            Ok(store) => {
+                let _ = std::fs::remove_file(&safety_copy);
+                Ok(store)
+            }
+            Err(validation_error) => {
+                // `finish_open_existing` already dropped (closed) the v4
+                // connection on this path: it owned it locally and returned
+                // without handing it back, so Rust closes it before this
+                // arm ever runs — the file is free to overwrite. A failed
+                // restore surfaces its own error and keeps the copy,
+                // exactly as a migration-failure restore already does.
+                restore_safety_copy(path, &safety_copy)?;
+                let _ = std::fs::remove_file(&safety_copy);
+                Err(validation_error)
+            }
+        }
     }
 
     /// The tail shared by [`Self::open_existing`] and

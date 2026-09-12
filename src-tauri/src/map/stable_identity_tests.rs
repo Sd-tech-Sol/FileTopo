@@ -665,8 +665,7 @@ fn d4_a_wal_pending_write_is_captured_and_restored_on_injected_migration_failure
         "the setup is only meaningful if the write really is WAL-pending, not yet in main.db"
     );
 
-    let error =
-        open_map(&paths, &brain).expect_err("the obstructed migration must fail");
+    let error = open_map(&paths, &brain).expect_err("the obstructed migration must fail");
     assert!(
         matches!(error, MapError::Sqlite(_)),
         "expected the real SQL collision to surface, got {error:?}"
@@ -753,8 +752,7 @@ fn d4_a_busy_checkpoint_refuses_without_migrating_or_copying() {
     }
     let before = logical_snapshot(&database);
 
-    let error =
-        open_map(&paths, &brain).expect_err("a busy checkpoint must refuse the migration");
+    let error = open_map(&paths, &brain).expect_err("a busy checkpoint must refuse the migration");
     assert!(
         matches!(&error, MapError::MigrationUnavailable(reason) if reason.contains("quiesce_busy")),
         "expected a quiesce_busy refusal, got {error:?}"
@@ -812,5 +810,141 @@ fn d4_a_failed_safety_copy_refuses_without_migrating() {
         logical_snapshot(&database),
         before,
         "a refused safety copy must not change any row or the schema version"
+    );
+}
+
+/// `ACTION-0059` D6 — the safety copy must survive past a successful SQL
+/// migration: `BrainIndex::finish_open_existing`'s own canonical-contract
+/// validation can still refuse a file the DDL alone already turned into a
+/// structurally valid v4 schema. This test corrupts `build_complete` — a
+/// canonical metadata key `migrate_previous_schema` never writes or reads —
+/// so the `v3 → v4` DDL genuinely succeeds and only the validation step
+/// afterwards fails, proving the fix restores the v3 file in full rather
+/// than leaving a migrated-but-rejected v4 file with no safety copy left to
+/// recover from. This is exactly the scenario the previous delivery
+/// (`0daf342f`) got wrong: it deleted the safety copy immediately after
+/// `migrate_previous_schema()` succeeded, before this later validation ran.
+#[test]
+fn d6_a_post_migration_validation_failure_restores_the_v3_index_in_full() {
+    let (temp, paths) = sandbox();
+    let root = temp.path().join("racine-v3-validation");
+    fs::create_dir_all(&root).unwrap();
+    fs::write(root.join("avant.txt"), b"synthetique").unwrap();
+
+    let brain = register(&paths, &root);
+    refresh_map(&paths, &brain).expect("first refresh builds a real v4 index");
+    let database = paths.brain_map_database(&brain.brain_id);
+    let file_id = id_of(&paths, &brain, "avant.txt");
+    {
+        let store = BrainIndex::open_existing(&database, true).expect("writable store");
+        assert!(store.index.mark_seen(file_id).expect("mark seen"));
+    }
+
+    let (index_id_before, revision_before) = {
+        let store = BrainIndex::open_existing(&database, false).expect("read v4 state");
+        let identity = store.index.identity().expect("identity");
+        (identity.index_id, identity.revision)
+    };
+
+    downgrade_to_schema_v3(&database);
+    // Corrupt a canonical invariant the migration never touches:
+    // `build_complete` is checked by `BrainIndex::is_built()`, part of
+    // `finish_open_existing`'s validation, never written or read by
+    // `migrate_previous_schema` itself.
+    {
+        let connection = rusqlite::Connection::open(&database).unwrap();
+        connection
+            .execute(
+                "UPDATE schema_meta SET value = 'no' WHERE key = 'build_complete'",
+                [],
+            )
+            .unwrap();
+    }
+    let before = logical_snapshot(&database);
+
+    let error = open_map(&paths, &brain).expect_err(
+        "the SQL migration must succeed but the canonical validation must still refuse",
+    );
+    assert!(
+        error.to_string().starts_with("map_index_incompatible"),
+        "unexpected motif: {error}"
+    );
+
+    // Full restoration: the file is exactly the v3 it was, corrupted
+    // invariant included — restoring undoes this attempt, it does not
+    // repair the fixture.
+    assert_eq!(
+        raw_schema_version(&database),
+        3,
+        "a post-migration validation failure must still restore v3"
+    );
+    assert_eq!(
+        logical_snapshot(&database),
+        before,
+        "every node and seen flag must survive the restoration unchanged"
+    );
+    {
+        let restored = rusqlite::Connection::open(&database).unwrap();
+        let restored_index_id: String = restored
+            .query_row(
+                "SELECT value FROM schema_meta WHERE key = 'index_id'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        let restored_revision: u64 = restored
+            .query_row(
+                "SELECT value FROM schema_meta WHERE key = 'index_revision'",
+                [],
+                |row| row.get::<_, String>(0),
+            )
+            .unwrap()
+            .parse()
+            .unwrap();
+        assert_eq!(restored_index_id, index_id_before, "index_id must survive");
+        assert_eq!(restored_revision, revision_before, "revision must not move");
+        let source_kind: String = restored
+            .query_row(
+                "SELECT value FROM schema_meta WHERE key = 'source_kind'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        let source_ref: String = restored
+            .query_row(
+                "SELECT value FROM schema_meta WHERE key = 'source_ref'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(source_kind, "REAL_ROOT", "the binding must survive intact");
+        assert_eq!(
+            source_ref, brain.source_ref,
+            "the binding must survive intact"
+        );
+    }
+    assert!(
+        !safety_copy_path(&database).exists(),
+        "the transient safety copy must be cleaned up after a successful restoration"
+    );
+
+    // Repair the fixture's invariant, exactly as a real recovery would fix
+    // whatever made validation fail, and retry.
+    {
+        let connection = rusqlite::Connection::open(&database).unwrap();
+        connection
+            .execute(
+                "UPDATE schema_meta SET value = '1' WHERE key = 'build_complete'",
+                [],
+            )
+            .unwrap();
+    }
+    let report = open_map(&paths, &brain).expect("a repaired retry must migrate to v4 cleanly");
+    assert_eq!(report.schema_version, crate::map::store::MAP_SCHEMA_VERSION);
+    assert_eq!(report.index_id, index_id_before);
+    assert_eq!(report.revision, revision_before);
+    assert!(
+        !safety_copy_path(&database).exists(),
+        "a successful migration must not leave its safety copy behind"
     );
 }
