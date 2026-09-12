@@ -1,5 +1,73 @@
 # État courant
 
+## TASK-0036 — passe corrective D4/D5 (`ACTION-0058`) — IMPLEMENTED — 2026-09-12
+
+- **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Même branche
+  `build/v0.2-a20-v1-stable-identity`, même `DEC-0009` I-E. Déclenchée par
+  le recontrôle indépendant
+  [`ACTION-0058`](../reviews/ACTION-0058-independent-recontrol.md), qui
+  accepte D1/D2/D3/R1 d'`ACTION-0057` sans régression mais trouve une
+  omission d'orchestration : `DEC-0013` (approuvée le 2026-08-31) restait
+  normative sur B (migration) et F (Cloud Files), jamais citée par la fiche
+  initiale. Détail : [VALIDATION section BO](VALIDATION.md).
+- **D4 — la migration `3 → 4` suit `M-B` de `DEC-0013` B.** Au-dessus de la
+  transaction SQL atomique déjà acquise (`ACTION-0057` D2, inchangée) :
+  quiescer l'index (`PRAGMA wal_checkpoint(TRUNCATE)`), copier le fichier
+  **en espace applicatif** (jamais sous la source), vérifier la copie
+  indépendamment ouvrable en v3, migrer, restaurer la copie si la migration
+  échoue. Un verrou par `brain_id` sérialise deux tentatives concurrentes
+  sur le même fichier — la copie au niveau fichier, contrairement au SQL,
+  n'est pas protégée par le verrouillage SQLite. Refus explicite et sans
+  copie si la quiescence est occupée (lecteur concurrent) ou si la copie
+  échoue (obstacle du système de fichiers); mismatch/schéma futur refusés
+  comme avant, toujours sans copie. Une copie par tentative, jamais
+  accumulée : supprimée dans les deux issues terminales.
+- **D5 — un placeholder Cloud Files reconnu reste `PATH_FALLBACK`.**
+  `DEC-0035` ferme `DEC-0013` F : `identity::compute_identity` détecte un
+  placeholder (`CfGetPlaceholderInfo`, `windows-sys` `Win32_Storage_CloudFilters`,
+  aucune nouvelle dépendance) **avant** toute tentative `SYSTEM`, pour tout
+  nœud déjà éligible. Détection seulement — handle `FILE_READ_ATTRIBUTES`,
+  aucun contenu, aucune hydratation/déshydratation jamais appelée ni
+  importée (prouvé par lecture de source). Positif ou ambigu ⇒
+  `PATH_FALLBACK`; `ERROR_NOT_A_CLOUD_FILE` confirmé ⇒ `SYSTEM` reste
+  disponible.
+- **Preuves :** Rust **411 PASS** (402 + 9 nouvelles fonctions de test : 3
+  côté D4 — un scénario combiné WAL-pending/échec/restauration/nouvelle
+  tentative, un refus de checkpoint occupé, un refus de copie de sûreté
+  échouée — plus 6 côté D5 dont un appel Win32 réel; les tests D1 existants
+  gagnent en plus une assertion « aucune copie de sûreté créée/laissée »
+  chacun, sans devenir de nouvelles fonctions). TypeScript
+  **339 PASS**, inchangée. Rejeu WebView2 complet sans régression,
+  `copyStillSucceeds` toujours `true`, 0 erreur console fatale; aucun
+  scénario `v3 → v4` ajouté au harnais — la preuve produit de la migration
+  reste en Rust, avec un contrôle du fichier v3/copie/WAL plus précis
+  qu'un scénario WebView2 ne pourrait offrir.
+- **Validations :** `cargo test --offline` (411 PASS), `pnpm check`,
+  `pnpm build`, `pnpm test` (339 PASS), `cargo build --offline`,
+  `git diff --check` verts. `cargo fmt` propre sur les 4 fichiers Rust
+  touchés (`identity.rs`, `map/brain_index.rs`, `map/mod.rs`,
+  `map/stable_identity_tests.rs`) plus `Cargo.toml`, vérifié avec
+  `style_edition=2024` explicite. `cargo clippy --all-targets --offline
+  -- -D warnings` rouge à **26 erreurs préexistantes, confirmées
+  identiques ligne par ligne** — aucune dans un fichier touché, aucun
+  nouveau diagnostic (un `.err().expect()` introduit puis corrigé en
+  `expect_err()` avant livraison).
+- **Non testé / limite assumée :** aucune fixture Cloud Files réelle
+  n'a été fabriquée (`CfRegisterSyncRoot` aurait exigé une inscription
+  réelle de fournisseur de synchronisation — risque de scope et d'état
+  système résiduel, explicitement écarté par `ACTION-0058`); la frontière
+  est prouvée par table de décision pure + appel Windows réel sur un
+  fichier ordinaire + sources Microsoft citées par `DEC-0035`. Un vrai
+  crash/coupure de courant pendant la migration `M-B` n'est pas reproduit
+  (échec SQL déterministe et checkpoint occupé injectés, jamais un
+  `SIGKILL` du processus — la même limite que `B1` déclarait déjà). Le
+  reste des limites de `TASK-0036` (inter-volume, `seen` en WebView2) est
+  inchangé.
+- **Aucune donnée personnelle**, comme toujours. **X5 inchangé**,
+  `origin/main` inchangé. Aucune `TASK-0037`, aucune PR, fusion, étiquette
+  ni release, aucun watcher/journal/incrémental commencé.
+- **Action unique suivante : nouveau contrôle indépendant de `TASK-0036`.**
+
 ## TASK-0036 — passe corrective D1/D2/D3 (`ACTION-0057`) — IMPLEMENTED — 2026-09-11
 
 - **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Même branche

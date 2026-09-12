@@ -1,7 +1,7 @@
 # VALIDATION.md — État de vérification
 
-**Dernière mise à jour :** 2026-09-11
-**Dernière livraison exécutée :** TASK-0036, section **BN** (passe corrective D1/D2/D3, `ACTION-0057`), `IMPLEMENTED`, **en attente de vérification indépendante**. TASK-0035, section BL, est `VERIFIED` par `ACTION-0056`. TASK-0034, section **BH** (recherche bornée et « Ouvrir dans l'Explorateur »), `IMPLEMENTED`, **en attente de vérification indépendante**. TASK-0033, sections BE/BF, est `VERIFIED` dans sa portée par le verdict indépendant enregistré dans `ACTION-0051`, section BG.
+**Dernière mise à jour :** 2026-09-12
+**Dernière livraison exécutée :** TASK-0036, section **BO** (passe corrective D4/D5, `ACTION-0058`), `IMPLEMENTED`, **en attente de vérification indépendante**. Section BN (passe corrective D1/D2/D3, `ACTION-0057`) acceptée sans régression par ce recontrôle. TASK-0035, section BL, est `VERIFIED` par `ACTION-0056`. TASK-0034, section **BH** (recherche bornée et « Ouvrir dans l'Explorateur »), `IMPLEMENTED`, **en attente de vérification indépendante**. TASK-0033, sections BE/BF, est `VERIFIED` dans sa portée par le verdict indépendant enregistré dans `ACTION-0051`, section BG.
 **Dernière tâche évaluée indépendamment :** TASK-0033 — `VERIFIED` le
 2026-09-10 par le verdict indépendant enregistré dans `ACTION-0051`, section
 BG, dans sa portée. TASK-0032 — `VERIFIED` le 2026-09-10 par le verdict
@@ -6400,5 +6400,256 @@ réel), aucun journal/watcher/incrémental. Aucune `TASK-0037`.
 **Aucune donnée personnelle**, comme toujours. **X5 inchangé**,
 `origin/main` inchangé. Aucune nouvelle DEC, aucune PR, fusion, étiquette ni
 release.
+
+**Action unique suivante :** nouveau contrôle indépendant de `TASK-0036`.
+
+## BO. TASK-0036 — passe corrective D4/D5 (`ACTION-0058`) — 2026-09-12
+
+**Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Même branche
+`build/v0.2-a20-v1-stable-identity`, même `DEC-0009` I-E, inchangée.
+Déclenchée par le recontrôle indépendant
+[`ACTION-0058`](../reviews/ACTION-0058-independent-recontrol.md), qui
+accepte D1/D2/D3/R1 d'`ACTION-0057` (section BN) sans régression, mais
+trouve que la fiche `TASK-0036` initiale omettait
+[`DEC-0013`](../decisions/DEC-0013-post-risk-gate-technical-arbitration.md),
+approuvée le 2026-08-31 et jamais supplantée sur ses points B (migration) et
+F (Cloud Files) avant [`DEC-0035`](../decisions/DEC-0035-cloud-files-stable-identity-boundary.md).
+Une erreur d'orchestration, pas un écart de l'exécuteur.
+
+### BO.1 D4 — migration `3 → 4` conforme à `M-B` de `DEC-0013` B
+
+**Le défaut, exact.** La transaction SQL atomique de la section BN (D2) est
+correcte comme moteur interne, mais `DEC-0013` B — arbitrée après le banc
+d'essai `B1`, qui a mesuré `M-B` supérieure à `M-C` sur la sûreté, pas
+seulement la vitesse — exige une couche supplémentaire et indépendante :
+**copie de sûreté de fichier, sur base quiescée, avant la première
+mutation, avec restauration explicite si la migration échoue.** Rien de tel
+n'existait : le rollback SQL protège des échecs de transaction, pas d'un
+crash de processus, d'une corruption disque ou d'un doute sur la
+récupération automatique de SQLite elle-même.
+
+**Correction.** Entre le contrôle de binding déjà acquis (D1, inchangé) et
+l'appel à `Index::migrate_previous_schema()`, `BrainIndex::open_existing_migrating`
+insère la séquence `M-B` complète :
+
+1. **Verrou par `brain_id`** (`migration_lock_for`, une
+   `HashMap<String, Arc<Mutex<()>>>` statique, un mutex créé à la demande
+   par cerveau) — étroit et par cerveau, comme demandé par
+   `ACTION-0058`, jamais une architecture nouvelle ni un second store. Ce
+   n'est pas de la prudence excessive : la transaction SQL est déjà
+   protégée par le verrouillage SQLite lui-même, mais la copie de sûreté au
+   niveau **fichier** (`fs::copy`) ne l'est pas — un `fs::copy` lisant un
+   fichier qu'un autre thread est en train de migrer pourrait capturer un
+   instantané déchiré. Après acquisition, la version est relue : un autre
+   thread a pu migrer entre-temps, auquel cas cette fonction rejoint le cas
+   `v4` sans rien refaire.
+2. **Quiescence** — `PRAGMA wal_checkpoint(TRUNCATE)` sur la connexion déjà
+   ouverte. Son premier champ retourné (`busy`) dit si elle a réellement
+   tout replié; `busy != 0` refuse (`MapError::MigrationUnavailable`,
+   motif `quiesce_busy`) **avant toute copie et toute migration** — le
+   texte même d'`ACTION-0058` : « busy/quiescence impossible ⇒ refus sans
+   migration et sans backup trompeur ».
+3. **Copie de sûreté** — `fs::copy` du fichier principal seul vers
+   `<index>.v3-safety-copy`, **dans le même dossier `map/` du cerveau**,
+   jamais sous la source. Aucun `-wal`/`-shm` à copier séparément : la
+   quiescence de l'étape 2 garantit qu'ils sont vides après un `TRUNCATE`
+   réussi, donc le fichier principal seul est déjà « un v3 cohérent et
+   ouvrable ». Un échec de copie refuse
+   (`MigrationUnavailable`, motif `safety copy failed`) sans avoir touché
+   au schéma.
+4. **Vérification indépendante** — la copie est rouverte en lecture seule,
+   son `PRAGMA user_version` confirmé exactement
+   `MAP_PREVIOUS_SCHEMA_VERSION`, sa table `nodes` confirmée lisible.
+   Échec ⇒ refus, copie supprimée, aucune migration tentée. C'est la
+   condition explicite d'`ACTION-0058` : « la copie doit exister et être
+   validée avant le premier DDL v4 ».
+5. **Migration** — `Index::migrate_previous_schema()`, section BN,
+   inchangée.
+6. **Échec de migration ⇒ restauration.** La connexion est fermée
+   explicitement en premier (Windows refuse d'écraser un fichier qu'un
+   handle tient encore ouvert), tout `-wal`/`-shm` résiduel supprimé, la
+   copie recopiée par-dessus le fichier vivant, la copie transitoire
+   supprimée, puis l'erreur d'origine (le vrai échec SQL, pas une
+   enveloppe) est renvoyée.
+7. **Succès ⇒ nettoyage.** La copie transitoire est supprimée; le chemin
+   normal (`finish_open_existing`) continue comme en BN.
+
+**Politique de portée de la copie — bornée, jamais accumulée.** Un seul nom
+de fichier par cerveau (`<index>.v3-safety-copy`); une tentative en cours
+écrase la précédente; la copie est supprimée dans les deux issues
+terminales (succès ou restauration réussie). `ACTION-0058` : « ne multiplie
+pas des backups à chaque ouverture » — respecté par construction, pas par
+discipline. Aucun chemin absolu de la copie ne traverse jamais IPC, log ou
+artefact : le `PathBuf` ne quitte jamais `brain_index.rs`, et aucune
+commande ni DTO ne le porte.
+
+**Preuves minimales — les huit demandées par `ACTION-0058`, toutes
+couvertes :**
+
+| Exigence | Preuve |
+|---|---|
+| v3 en WAL avec écriture committée réellement présente, copie ouvrable et correcte après quiescence | `d4_a_wal_pending_write_is_captured_and_restored_on_injected_migration_failure` — une connexion brute gardée ouverte laisse un `UPDATE` committé uniquement dans `-wal` (vérifié : le fichier `-wal` fait plus de 0 octet avant migration) |
+| La copie existe avant le premier changement de schéma | Ordre du code (copie → vérification → `migrate_previous_schema`), et le test d'échec ci-dessus le prouve en creux : sans copie préexistante, aucune restauration ne serait possible |
+| Échec déterministe après copie et début de migration ⇒ restauration complète (`seen`, `index_id`, `index_revision`, binding, nœuds, version) | Même test : obstruction de schéma réelle (la table `idx_nodes_stable_key`, identique à D2/BN) après que les deux `ALTER TABLE` ont déjà réussi; après restauration, `user_version == 3`, et — le point du test — l'écriture WAL-pending (`seen = 1`) est bien présente dans le fichier restauré, preuve que la quiescence l'a réellement repliée dans la copie |
+| Après restauration, une nouvelle tentative peut réussir | Même test, suite : l'obstruction retirée, `open_map` migre proprement et `seen` reste vrai |
+| Busy/quiescence impossible ⇒ refus sans migration et sans backup trompeur | `d4_a_busy_checkpoint_refuses_without_migrating_or_copying` — un lecteur concurrent ouvre sa lecture **avant** qu'une écriture n'existe (condition nécessaire : un WAL vide checkpointe trivialement quel que soit le lecteur), puis un `UPDATE` par un tiers crée le contenu que le lecteur retient; le `TRUNCATE` échoue, aucune copie n'existe, contenu logique inchangé |
+| Mismatch/future schema ⇒ aucun backup créé, fichier inchangé | Les trois refus D1 existants (`a_v3_index_naming_another_brain_…`, `a_v3_index_with_a_disagreeing_binding_…`, `a_future_schema_…`) gagnent chacun `assert!(!safety_copy_path(&database).exists(), …)` |
+| Migration réussie ⇒ v4 ouvrable, `index_id`/`index_revision` non modifiés, source non lue | Section BN, `a_real_v3_index_upgrades_through_map_open_without_reading_the_source`, inchangée — plus une nouvelle assertion « aucune copie de sûreté laissée derrière » |
+| Republication suivante avance la révision, invalide les anciens curseurs | Même test BN, inchangé : toujours vert |
+
+Aucune primitive de verrouillage globale ni second store n'a été créée — le
+verrou est une simple carte en mémoire de processus, portée par `brain_id`,
+exactement la taille qu'`ACTION-0058` demandait.
+
+**Non couvert, déclaré honnêtement.** Un vrai `SIGKILL`/coupure de courant
+pendant la migration n'est pas reproduit par ces tests — ils injectent un
+échec SQL déterministe et un checkpoint occupé, tous deux dans le même
+processus. C'est la même limite que `PERF-0002`/`B1` déclarait déjà pour le
+spike M-B original.
+
+### BO.2 D5 — frontière d'identité Cloud Files (`DEC-0035`)
+
+**Le défaut, exact.** `DEC-0013` F avait laissé ouverte la question de la
+continuité de l'identité système générique à travers une hydratation
+Cloud Files, et l'avait élevée en porte bloquante avant l'identité
+persistante. La livraison initiale de `TASK-0036` contournait cette
+question pour les entrées `online_only`, mais **pas** pour un placeholder
+déjà hydraté : un tel objet peut ne plus porter les attributs `RECALL_*`
+qui déclenchaient ce repli, et retomber sur la voie `SYSTEM` générique —
+changeant sa provenance, donc son `nodes.id` à la prochaine publication,
+sans rien de visible dans le fichier lui-même.
+
+**Fermeture par `DEC-0035`, sans réouvrir la question.** Plutôt que de
+mesurer la survie du `FILE_ID_INFO` générique à l'hydratation (question
+jamais résolue, faute de source Microsoft), `DEC-0035` rend cette réponse
+inutile : **un placeholder Cloud Files reconnu n'emprunte jamais la voie
+`SYSTEM`, hydraté ou non.**
+
+**Audit d'abord — comme exigé.** `windows-sys = 0.61.2` (déjà pinnée)
+expose `Win32::Storage::CloudFilters::{CfGetPlaceholderInfo,
+CF_PLACEHOLDER_INFO_STANDARD, CF_PLACEHOLDER_STANDARD_INFO}` derrière la
+feature `Win32_Storage_CloudFilters`, sans dépendance supplémentaire à
+`Win32_System_CorrelationVector` pour cette fonction précise (vérifié dans
+le code source vendu de la caisse : `CfGetPlaceholderInfo` ne porte aucun
+`#[cfg(feature = …)]` propre, seulement le gate du module). Ajoutée aux
+features de `Cargo.toml`, rien d'autre.
+
+**Implémentation.** `identity::compute_identity` appelle
+`cloud_files_detection(absolute_path)` juste après le test d'éligibilité
+existant (`!reparse_point && !online_only && kind != Skipped` — inchangé,
+donc aucune ouverture de handle supplémentaire pour les cas déjà exclus) et
+juste avant `system_identity_key`. Trois issues
+(`CloudFilesDetection::{Placeholder, NotCloudFile, Ambiguous}`), une seule
+règle pure et testable séparément de l'appel Windows
+(`blocks_system_identity`) : `Placeholder` et `Ambiguous` bloquent `SYSTEM`;
+seul `NotCloudFile` le laisse disponible. Le handle Windows est ouvert pour
+`FILE_READ_ATTRIBUTES` **seul** (jamais `GENERIC_READ`, jamais de contenu),
+`CfGetPlaceholderInfo(…, CF_PLACEHOLDER_INFO_STANDARD, …)` sert
+**uniquement** de détection — seul le succès ou l'échec de l'appel compte,
+aucun champ de `CF_PLACEHOLDER_STANDARD_INFO` (`FileId`, `PinState`,
+`InSyncState`…) n'est jamais lu. L'échec officiel `ERROR_NOT_A_CLOUD_FILE`
+est reconnu via `HRESULT_FROM_WIN32` implémenté selon la macro standard
+(`FACILITY_WIN32 = 7`), pas une valeur magique observée une fois — testé
+séparément (`hresult_from_win32_matches_the_standard_macro`). Toute autre
+erreur, ou un handle qui ne s'ouvre même pas, retombe sur `Ambiguous` —
+jamais lu comme preuve dans un sens ou dans l'autre.
+
+**Rien d'hydratation n'est jamais appelé.** `CfHydratePlaceholder`,
+`CfDehydratePlaceholder` et les mutateurs de pin/sync-state ne sont
+référencés nulle part dans le code de production — prouvé
+structurellement par `no_hydrate_dehydrate_or_pin_state_api_is_referenced_in_source`,
+qui scanne le texte source d'`identity.rs` **jusqu'à son propre module de
+test** (celui-ci doit nommer ces symboles interdits dans sa propre liste
+d'assertions, donc scanner au-delà rendrait le test faux par construction
+contre lui-même — la même technique de preuve par lecture de source que
+`DEC-0033` I emploie déjà ailleurs dans ce dépôt, adaptée à cette
+contrainte particulière).
+
+**Pas de fixture Cloud Files réelle — déclaré, pas caché.** Fabriquer un
+vrai placeholder synthétique local aurait exigé `CfRegisterSyncRoot`, une
+inscription réelle de fournisseur de synchronisation auprès de Windows :
+un risque réel de laisser un état système si le nettoyage échouait, et un
+élargissement de portée qu'`ACTION-0058` autorisait explicitement à éviter
+(« si une fixture […] peut être créée […] elle est bienvenue mais pas au
+prix d'élargir la portée »). La frontière est donc prouvée par trois
+couches indépendantes, aucune ne portant seule le poids de la preuve :
+
+1. **Table de décision pure**, sans aucun appel Windows —
+   `a_detected_placeholder_blocks_system_identity`,
+   `an_ambiguous_detection_is_conservative_and_blocks_system_identity`,
+   `a_confirmed_non_cloud_file_leaves_system_identity_available` — les
+   trois issues de `blocks_system_identity`, exactement la règle que
+   `DEC-0035` §1 énonce.
+2. **L'appel Windows réel**, contre un fichier ordinaire créé par le test
+   lui-même — `an_ordinary_local_file_is_confirmed_not_a_cloud_file_and_still_reaches_system` :
+   `cloud_files_detection` répond bien `NotCloudFile`, et
+   `compute_identity` atteint toujours `SYSTEM` pour ce fichier — la preuve
+   qu'aucune régression n'a été introduite sur le cas ordinaire, le seul
+   cas que la suite `windows_system_identity` existante exerce déjà par
+   ailleurs (rejouée sans modification, toujours verte).
+3. **Les sources Microsoft** déjà citées en toutes lettres par `DEC-0035`
+   (`CfGetPlaceholderInfo` ne modifie pas le fichier, ne requiert que
+   `READ_ATTRIBUTES`, échoue explicitement si la cible n'est pas un
+   placeholder).
+
+**Confidentialité.** Aucune donnée CFAPI (`FileId`, `PinState`,
+`InSyncState`, volume) n'est jamais lue, encore moins sérialisée — le
+booléen de blocage est tout ce qui traverse la frontière de la fonction.
+
+### BO.3 Invariants `TASK-0036`/`ACTION-0057` rejoués sans régression
+
+411 tests Rust passent (402 BO-moins-1 + 9 cette passe), y compris
+**tous** les tests des sections BM et BN sans modification de leur
+intention : D1/D2/D3 (migration produit, atomicité, fallback brut),
+bijection `publish_with_identity`, `SYSTEM` local, rename/move/sous-arbre,
+`seen`, compteur monotone, isolation multi-cerveaux, révision/curseurs,
+recherche/détails/enfants/projection/Explorer/copie, aucune fuite de clé
+stable ou de chemin (source **ou** copie de sûreté maintenant).
+
+### BO.4 Rejeu WebView2
+
+Un seul lancement réel, zéro redémarrage, même harnais que BM/BN, inchangé :
+tous les invariants déjà acquis restent verts, `copyStillSucceeds: true`
+toujours, `fatalConsoleErrors: 0`. Artefact remplacé :
+[`TASK-0036-webview2.json`](../performance/runs/TASK-0036-webview2.json).
+
+**Scénario `v3 → v4` toujours non ajouté au harnais WebView2 — séparation
+maintenue et réaffirmée par `NEXT_PROMPT.md` lui-même** : « La migration M-B
+doit être prouvée au niveau Rust produit avec contrôle précis du fichier
+v3/backup/WAL; inutile de fabriquer un scénario WebView moins précis si le
+test Rust passe réellement par `open_map`/`open_for_brain`. » C'est
+exactement le cas ici (BO.1) : le test Rust appelle `open_map`, le même
+point d'entrée produit qu'une frappe réelle sur **Actualiser** déclenche.
+
+### BO.5 Validations générales
+
+`cargo test --offline` : **411 PASS**, 0 échec, 5 ignorés. `pnpm check`,
+`pnpm build`, `pnpm test` (**339 PASS**, inchangé), `cargo build --offline`,
+`git diff --check` verts. `cargo fmt` propre sur les 4 fichiers Rust
+touchés (`identity.rs`, `map/brain_index.rs`, `map/mod.rs`,
+`map/stable_identity_tests.rs`) — vérifié avec `--config style_edition=2024`
+explicite, puis par `cargo fmt -- --config style_edition=2024` sur le
+crate entier suivi d'un `git checkout` de chaque fichier hors du périmètre
+réellement touché (le même piège de reformatage d'arbre entier documenté
+par les deux passes précédentes, reproduit et évité de la même façon).
+`cargo clippy --all-targets --offline -- -D warnings` reste rouge à **26
+erreurs** (24 diagnostics uniques, doublons lib/test) — confirmées
+identiques ligne par ligne à l'état d'avant cette passe, aucune dans les 4
+fichiers touchés. Un `.err().expect(…)` introduit dans les trois nouveaux
+tests D4 (là où `expect_err(…)` était en réalité disponible, le type `Ok`
+`MapOpenReport` implémentant `Debug`) a été repéré par ce même passage de
+Clippy et corrigé avant livraison.
+
+### BO.6 Non fait, et limites
+
+Aucune fixture Cloud Files réelle (BO.2, justifié). Aucun vrai crash de
+processus pendant la migration `M-B` (BO.1, même limite que `B1`). Le reste
+des limites de `TASK-0036` — déplacement inter-volume, identité après
+hydratation cloud (désormais **évitée** plutôt que mesurée, exactement le
+choix de `DEC-0035`), `seen` non rejoué en WebView2, aucun journal/watcher/
+incrémental — est inchangé. Aucune `TASK-0037`.
+
+**Aucune donnée personnelle**, comme toujours. **X5 inchangé**,
+`origin/main` inchangé. Aucune PR, fusion, étiquette ni release.
 
 **Action unique suivante :** nouveau contrôle indépendant de `TASK-0036`.

@@ -2,14 +2,27 @@
 
 - Date : 2026-09-11
 - Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`. Détail :
-  [`VALIDATION.md` section BM](../ai/VALIDATION.md). **Passe corrective**
+  [`VALIDATION.md` section BM](../ai/VALIDATION.md). **Passe corrective 1**
   exigée par [`ACTION-0057`](../reviews/ACTION-0057-independent-control.md)
   (D1/D2/D3 + réserve R1), livrée le 2026-09-11 : détail
-  [`VALIDATION.md` section BN](../ai/VALIDATION.md).
+  [`VALIDATION.md` section BN](../ai/VALIDATION.md). **Passe corrective 2**
+  exigée par [`ACTION-0058`](../reviews/ACTION-0058-independent-recontrol.md)
+  (D4 migration `M-B` de `DEC-0013` B, D5 frontière Cloud Files de
+  `DEC-0035`), livrée le 2026-09-12 : détail
+  [`VALIDATION.md` section BO](../ai/VALIDATION.md).
+- **Correction honnête de portée (`ACTION-0058`) :** la fiche initiale
+  omettait `DEC-0013`, applicable depuis son approbation le 2026-08-31 et
+  jamais supplantée sur ses points B (migration) et F (Cloud Files) avant
+  `DEC-0035`. Ce n'était pas un écart de l'exécuteur — la spécification
+  orchestrée elle-même ne la citait pas. Corrigé ici : `DEC-0013` et
+  `DEC-0035` rejoignent les décisions applicables ci-dessous.
 - Branche : `build/v0.2-a20-v1-stable-identity`
 - Prérequis : `TASK-0035 = VERIFIED` par `ACTION-0056`
-- Décisions applicables : `DEC-0009` I-E, `DEC-0010` U-B, `DEC-0011`, `DEC-0030`, `DEC-0031`, `DEC-0033`, `DEC-0034`
-- Preuve à réutiliser : `TASK-0012` B3 / `PERF-0003-b3-windows-identity.md`
+- Décisions applicables : `DEC-0009` I-E, `DEC-0010` U-B, `DEC-0011`,
+  `DEC-0013` B (migration `M-B`) et F (frontière Cloud Files), `DEC-0030`,
+  `DEC-0031`, `DEC-0033`, `DEC-0034`, `DEC-0035` (ferme `DEC-0013` F)
+- Preuve à réutiliser : `TASK-0012` B1 / `PERF-0002-b1-sqlite-migration.md`,
+  `TASK-0012` B3 / `PERF-0003-b3-windows-identity.md`
 
 ## But
 

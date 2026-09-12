@@ -5293,3 +5293,100 @@ inchangé.
 
 **Action unique suivante :** nouveau contrôle indépendant de `TASK-0036`,
 par une instance distincte, sur les preuves de cette passe corrective.
+
+## 2026-09-12 — TASK-0036 — passe corrective D4/D5 (`ACTION-0058`)
+
+**Agent :** Claude Code, exécuteur, sous GO technique de l'orchestrateur
+(délégation décrite par `AGENTS.md`, section « Délégation d'orchestration
+technique »)
+**Statut à l'issue :** `IMPLEMENTED`, jamais auto-`VERIFIED`
+
+### Motif
+
+Le recontrôle indépendant
+[`ACTION-0058`](../reviews/ACTION-0058-independent-recontrol.md) accepte les
+quatre corrections d'`ACTION-0057` (D1/D2/D3/R1) sans régression, mais
+trouve une omission de la spécification orchestrée elle-même : `DEC-0013`,
+approuvée le 2026-08-31, restait normative sur deux points jamais cités par
+la fiche `TASK-0036` initiale — B (la baseline de migration `M-B`) et F (la
+frontière d'identité Cloud Files, fermée entre-temps par la nouvelle
+`DEC-0035`). Deux défauts en découlaient, D4 et D5.
+
+### Fait
+
+- **D4.** `BrainIndex::open_existing_migrating` applique désormais `M-B` de
+  `DEC-0013` B au-dessus de la transaction SQL atomique déjà acquise (D2,
+  inchangée) : un verrou par `brain_id` (`migration_lock_for`, une carte en
+  mémoire de processus, étroite et par cerveau) sérialise deux tentatives
+  concurrentes sur le même fichier; l'index est quiescé
+  (`PRAGMA wal_checkpoint(TRUNCATE)`, refusé si `busy`); une copie de
+  sûreté **de fichier** est prise dans le dossier `map/` du cerveau — jamais
+  sous la source — et vérifiée indépendamment ouvrable en v3 **avant** le
+  premier `ALTER TABLE` v4; un échec de migration ferme la connexion puis
+  restaure la copie sur le fichier vivant; un succès supprime la copie
+  transitoire. Un seul nom de copie par cerveau, jamais accumulé.
+- **Preuve D4.** Un test combine une écriture réellement WAL-pending (une
+  connexion brute gardée ouverte pour empêcher le checkpoint automatique de
+  SQLite à la fermeture), la même obstruction de schéma réelle que D2, et
+  vérifie que la restauration récupère **cette écriture précise** — preuve
+  que la quiescence a réellement replié le WAL dans la copie avant que la
+  migration ne commence. Deux autres tests couvrent le refus sur checkpoint
+  occupé (lecteur concurrent) et sur échec de copie (destination obstruée),
+  chacun sans créer de copie ni toucher au schéma. Les refus D1 existants
+  (mismatch, binding, schéma futur) gagnent chacun l'assertion « aucune
+  copie de sûreté créée ».
+- **D5.** `identity::compute_identity` détecte un placeholder Cloud Files
+  (`CfGetPlaceholderInfo`, nouvelle feature `windows-sys`
+  `Win32_Storage_CloudFilters`, aucune nouvelle dépendance) avant toute
+  tentative `SYSTEM`, pour tout nœud déjà éligible. Détection seulement —
+  handle `FILE_READ_ATTRIBUTES`, aucun contenu; positif ou ambigu ⇒
+  `PATH_FALLBACK` toujours; `ERROR_NOT_A_CLOUD_FILE` confirmé (converti par
+  la macro `HRESULT_FROM_WIN32` standard) ⇒ `SYSTEM` reste disponible.
+  Aucune API d'hydratation/déshydratation/pin-state jamais appelée ni
+  importée — prouvé par lecture structurelle du code source.
+- **Pas de fixture Cloud Files réelle**, déclaré plutôt que masqué :
+  `CfRegisterSyncRoot` aurait exigé une inscription réelle de fournisseur
+  de synchronisation, un risque de scope et d'état système résiduel
+  qu'`ACTION-0058` autorisait explicitement à éviter. La frontière est
+  prouvée par une table de décision pure, l'appel Windows réel contre un
+  fichier ordinaire (confirmant `NotCloudFile` et l'absence de régression
+  sur `SYSTEM`), et les sources Microsoft déjà citées par `DEC-0035`.
+
+### Preuves
+
+Rust **411 PASS** (402 + 9 nouvelles fonctions de test : 3 côté D4, 6 côté
+D5 dont un appel Win32 réel). TypeScript **339 PASS**, inchangée. Rejeu
+WebView2 complet sans régression, `copyStillSucceeds` toujours `true`, 0
+erreur console fatale. Aucun scénario `v3 → v4` ajouté au harnais WebView2 —
+`NEXT_PROMPT.md` autorisait explicitement à garder la preuve produit en
+Rust, plus précise (assertions directes sur `index_id`/`index_revision`/
+cursor) qu'un scénario WebView2 qui devrait fabriquer le même fichier
+autrement.
+
+`pnpm check`, `pnpm build`, `pnpm test`, `cargo build --offline`,
+`git diff --check` verts. `cargo fmt` propre sur les 4 fichiers Rust touchés
+plus `Cargo.toml`, vérifié avec `--config style_edition=2024` explicite — le
+même piège de reformatage d'arbre entier documenté par les deux passes
+précédentes s'est reproduit une troisième fois à l'identique et a été évité
+de la même façon (`cargo fmt` sur le crate entier, puis `git checkout` de
+chaque fichier hors périmètre). `cargo clippy --all-targets --offline --
+-D warnings` rouge à **26 erreurs préexistantes, confirmées identiques
+ligne par ligne**, aucune nouvelle dans les fichiers touchés (un
+`.err().expect(…)` introduit dans les tests D4 puis corrigé en
+`expect_err(…)` avant livraison, repéré par ce même passage de Clippy).
+
+### Non fait, et limites
+
+Aucune fixture Cloud Files réelle (justifié ci-dessus). Aucun vrai crash de
+processus pendant la migration `M-B` — les tests injectent un échec SQL
+déterministe et un checkpoint occupé, pas un `SIGKILL`, la même limite que
+`B1` déclarait déjà pour le spike M-B original. Le reste des limites de
+`TASK-0036` est inchangé : déplacement inter-volume non testé, `seen` non
+rejoué en WebView2, aucun journal/watcher/incrémental. Aucune donnée
+personnelle. `X5` inchangé; aucune `TASK-0037`, aucune PR, fusion, étiquette
+ni release; `origin/main` inchangé.
+
+### Suite
+
+**Action unique suivante :** nouveau contrôle indépendant de `TASK-0036`,
+par une instance distincte, sur les preuves de cette passe corrective.

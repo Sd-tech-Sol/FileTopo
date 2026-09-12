@@ -1,6 +1,148 @@
 # HANDOFF — passage de relais
 
-## Relais actuel — TASK-0036, passe corrective D1/D2/D3 (`ACTION-0057`) livrée — 2026-09-11
+## Relais actuel — TASK-0036, passe corrective D4/D5 (`ACTION-0058`) livrée — 2026-09-12
+
+- **Ce qui vient d'être fait :** le recontrôle indépendant
+  [`ACTION-0058`](../reviews/ACTION-0058-independent-recontrol.md) a accepté
+  les quatre corrections d'`ACTION-0057` (D1/D2/D3/R1, relais précédent) sans
+  régression, mais a trouvé une **omission de la spécification orchestrée
+  elle-même** : `DEC-0013`, approuvée le 2026-08-31, restait normative sur
+  deux points jamais cités par la fiche `TASK-0036` initiale — B (migration
+  `M-B`) et F (frontière Cloud Files) — et n'a été supplantée sur F que par
+  la nouvelle [`DEC-0035`](../decisions/DEC-0035-cloud-files-stable-identity-boundary.md).
+  Deux défauts en découlaient, nommés D4 et D5. La passe corrective décrite
+  par `.orchestrator/NEXT_PROMPT.md` les ferme tous les deux, sur la même
+  branche. `TASK-0036` reste `IMPLEMENTED`, jamais auto-`VERIFIED`. Aucune
+  nouvelle `TASK-0037`, aucun watcher/journal/incrémental commencé.
+- **D4 — la migration `3 → 4` suit maintenant `M-B` de `DEC-0013` B :
+  quiescer, copier, migrer, restaurer si échec.** La transaction SQL
+  atomique d'`ACTION-0057` D2 reste le moteur interne, inchangée — mais
+  `DEC-0013` B exige une couche supplémentaire, indépendante du moteur
+  transactionnel : une copie de sûreté **de fichier**, prise sur une base
+  **quiescée**, avant la première mutation, avec restauration explicite si
+  la migration échoue. `BrainIndex::open_existing_migrating` gagne, entre le
+  contrôle de binding (inchangé) et l'appel à
+  `Index::migrate_previous_schema()` : un verrou par `brain_id`
+  (`migration_lock_for`, une `HashMap<String, Arc<Mutex<()>>>` en mémoire de
+  processus — étroit et par cerveau, comme demandé, jamais une nouvelle
+  architecture ni un second store) qui sérialise deux tentatives
+  concurrentes sur le **même** fichier — nécessaire parce que la copie de
+  sûreté au niveau fichier, contrairement au SQL, n'est pas protégée par le
+  verrouillage SQLite; une quiescence par `PRAGMA wal_checkpoint(TRUNCATE)`,
+  refusée (`MigrationUnavailable`, aucune copie, aucune migration) si elle ne
+  peut pas compléter (`busy != 0`, typiquement un lecteur concurrent qui
+  retient un ancien instantané); une copie `fs::copy` vers
+  `<index>.v3-safety-copy`, dans le même dossier `map/` du cerveau — jamais
+  sous la source — vérifiée indépendamment ouvrable en v3 **avant** le
+  premier `ALTER TABLE` v4; en cas d'échec de la migration, la connexion est
+  fermée explicitement (Windows refuse d'écraser un fichier qu'un handle
+  tient encore ouvert) puis la copie restaurée par-dessus le fichier vivant;
+  la copie transitoire est supprimée dans les deux issues terminales
+  (succès ou restauration réussie) — une seule copie par tentative, jamais
+  accumulée.
+- **Preuve WAL réelle, pas seulement transactionnelle.** Le test
+  `d4_a_wal_pending_write_is_captured_and_restored_on_injected_migration_failure`
+  laisse une écriture **committée uniquement dans `-wal`** (une connexion
+  brute gardée ouverte, ce qui empêche le checkpoint automatique de
+  fermeture de SQLite de la replier avant l'heure), injecte la même
+  obstruction de schéma réelle que D2, et prouve que la restauration après
+  échec récupère **cette même écriture** — la preuve que la quiescence a
+  réellement replié le `-wal` dans la copie avant que la migration ne
+  commence, pas seulement que le rollback SQL fonctionne. Complété par
+  `d4_a_busy_checkpoint_refuses_without_migrating_or_copying` (un lecteur
+  concurrent retenant un ancien instantané bloque le `TRUNCATE`; refus
+  propre, aucune copie) et `d4_a_failed_safety_copy_refuses_without_migrating`
+  (un dossier occupe la destination de la copie; `fs::copy` échoue; refus
+  propre). Les trois refus D1 déjà acquis (brain mismatch, binding
+  disagreeing, future schema) gagnent chacun une assertion « aucune copie de
+  sûreté créée », et le test de succès D1 gagne « aucune copie de sûreté
+  laissée derrière ».
+- **D5 — un placeholder Cloud Files reconnu reste `PATH_FALLBACK`, hydraté
+  ou non.** `DEC-0035` ferme la porte que `DEC-0013` F avait laissée
+  ouverte : l'exclusion `online_only` seule ne suffit pas, parce qu'un
+  placeholder hydraté peut perdre ses attributs `RECALL_*` et retomber sur
+  la voie `SYSTEM` générique, changeant sa provenance — et donc son
+  `nodes.id` à la prochaine publication — sans rien de visible dans le
+  fichier lui-même. `identity::compute_identity` appelle désormais
+  `cloud_files_detection(absolute_path)` (nouvelle primitive, confinée à
+  `identity.rs` comme le reste de l'accès Windows) **avant** toute tentative
+  `SYSTEM`, seulement pour les nœuds déjà éligibles (reparse/skipped/
+  online-only restent exclus comme avant — aucune ouverture de handle
+  supplémentaire pour eux). `windows-sys` gagne la feature
+  `Win32_Storage_CloudFilters`, déjà auditée dans la même caisse pinnée
+  `=0.61.2` — aucune nouvelle dépendance. Le handle est ouvert pour
+  `FILE_READ_ATTRIBUTES` seul (jamais `GENERIC_READ`, jamais de contenu);
+  `CfGetPlaceholderInfo(..., CF_PLACEHOLDER_INFO_STANDARD, ...)` sert
+  **uniquement** de détection — son succès seul suffit (`Placeholder`,
+  jamais `SYSTEM`), l'échec `ERROR_NOT_A_CLOUD_FILE` (converti par
+  `HRESULT_FROM_WIN32` standard, pas une valeur magique) laisse `SYSTEM`
+  disponible (`NotCloudFile`), toute autre erreur ou handle non ouvrable est
+  conservatrice (`Ambiguous`, jamais `SYSTEM`). Aucun appel à
+  `CfHydratePlaceholder`/`CfDehydratePlaceholder`/pin-state — jamais importé,
+  prouvé structurellement par un test qui scanne le texte source de
+  `identity.rs` (même technique que le test `DEC-0033` I existant ailleurs
+  dans le dépôt) en excluant son propre module de test (qui doit *nommer*
+  ces symboles interdits dans sa propre liste d'assertions).
+- **D5 — pas de fixture Cloud Files réelle, et pourquoi.** Fabriquer un vrai
+  placeholder synthétique demanderait `CfRegisterSyncRoot` — une inscription
+  réelle de fournisseur de synchronisation auprès de Windows, avec un risque
+  réel de laisser un état système si le nettoyage échouait. `ACTION-0058`
+  autorisait explicitement à s'en passer plutôt que d'élargir la portée.
+  La frontière est donc prouvée par trois couches : une table de décision
+  pure (`blocks_system_identity`), testée sans aucun appel Windows, sur les
+  trois issues de `CloudFilesDetection`; l'appel Windows réel
+  (`cloud_files_detection`) exercé contre un fichier ordinaire, prouvant la
+  réponse officielle « pas un Cloud Files » et que `compute_identity`
+  atteint toujours `SYSTEM` pour lui — aucune régression sur le cas commun;
+  et les sources Microsoft déjà citées en toutes lettres par `DEC-0035`.
+- **Rejeu WebView2 complet, aucun scénario `v3 → v4` ajouté au harnais —
+  séparation expliquée, pas dette cachée.** `NEXT_PROMPT.md` §4 l'autorisait
+  explicitement : la preuve produit de la migration M-B est en Rust, avec un
+  contrôle précis du fichier v3/copie/WAL qu'un scénario WebView2 ne
+  pourrait pas offrir sans le refabriquer autrement. Le harnais existant
+  (inchangé) reste centré sur le comportement produit :
+  rename/move/sous-arbre déplacé/non-recyclage/recherche/enfants/projection/
+  reveal/copie/confidentialité, tous verts, `copyStillSucceeds` toujours
+  `true`, 0 erreur console fatale.
+- **Ce que le prochain relais doit savoir :**
+  - `migration_lock_for` est un registre **en mémoire de processus** —
+    aucune persistance, aucune portée inter-processus. Ce n'est pas un
+    défaut pour `TASK-0036` (un seul processus FileTopo à la fois par
+    session), mais si une future tâche introduit plusieurs processus contre
+    le même espace applicatif, ce verrou ne les coordonnera pas.
+  - Le fichier de copie de sûreté (`<index>.v3-safety-copy`) n'est **jamais**
+    retourné par une commande, écrit dans un log ou embarqué dans un
+    artefact — son `PathBuf` ne quitte jamais `brain_index.rs`. Un futur
+    lecteur qui voudrait exposer un statut de migration à l'UI doit
+    reconstruire ce nom lui-même plutôt que d'exporter la fonction interne.
+  - Le même piège `rustfmt`/module-tree documenté par les deux relais
+    précédents s'est reproduit une troisième fois à l'identique : `cargo
+    fmt -- --config style_edition=2024` sur le crate entier, puis
+    `git checkout` de tout fichier hors du périmètre réellement touché
+    (14 fichiers cette fois, aucun cette passe ne les a modifiés). Les trois
+    nouveaux tests D4 avaient d'abord repris le `.err().expect(...)` du
+    relais précédent (nécessaire là où le type `Ok` ne porte pas `Debug`) —
+    mais `open_map` rend `MapOpenReport`, qui **implémente** `Debug`, donc
+    `expect_err(...)` était disponible directement; `cargo clippy` sur les
+    fichiers touchés l'a signalé et la correction a été faite avant
+    livraison.
+  - `cargo clippy --all-targets --offline -- -D warnings` reste rouge à 26
+    erreurs uniques (mêmes 24 diagnostics + doublons lib/test qu'au relais
+    précédent), confirmées identiques ligne par ligne — aucune dans un
+    fichier touché par cette passe.
+- **Ce qui reste ouvert :** exactement ce que les relais précédents
+  listaient — aucun watcher, incrémental, FTS5, filtre; déplacement
+  inter-volume non testé; `seen` non rejoué en WebView2 (prouvé côté Rust
+  sur Windows réel); aucune fixture Cloud Files réelle (voir D5 ci-dessus,
+  couvert par abstraction + Win32 réel sur cas ordinaire + sources
+  Microsoft); vrai crash/coupure de courant pendant la migration non
+  reproduit (les tests D4 injectent un échec SQL déterministe et une
+  obstruction de checkpoint, pas un `SIGKILL` du processus — la même limite
+  que `B1` déclarait déjà pour le spike de migration).
+- **Action unique suivante :** nouveau contrôle indépendant de `TASK-0036`,
+  sur cette passe corrective.
+
+## Relais précédent — TASK-0036, passe corrective D1/D2/D3 (`ACTION-0057`) livrée — 2026-09-11
 
 - **Ce qui vient d'être fait :** le contrôle indépendant
   [`ACTION-0057`](../reviews/ACTION-0057-independent-control.md) a confirmé
