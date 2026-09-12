@@ -1,4 +1,4 @@
-# NEXT_PROMPT — TASK-0036 — corrective pass after ACTION-0058
+# NEXT_PROMPT — TASK-0036 — final corrective pass after ACTION-0059
 
 **TARGET_AGENT:** CLAUDE CODE  
 **RECOMMENDED_MODEL:** Sonnet 5, high effort  
@@ -9,133 +9,75 @@
 
 ## /goal
 
-Fermer uniquement **D4 et D5** de `docs/reviews/ACTION-0058-independent-recontrol.md`, puis rejouer les preuves de TASK-0036. Les corrections D1/D2/D3/R1 d’`ACTION-0057` sont **acceptées** et ne doivent pas être réécrites sans régression prouvée.
+Corriger **uniquement D6** de `docs/reviews/ACTION-0059-independent-recontrol.md` : la copie de sûreté M-B ne doit être supprimée qu’après réussite de la validation canonique v4. D1/D2/D3/R1, D4 hors D6 et D5 sont acceptés; ne pas les réécrire sans nécessité démontrée.
 
-Cette passe corrige une omission de l’orchestrateur : `DEC-0013` était applicable mais absent de la fiche initiale TASK-0036. Lire et appliquer **DEC-0013 + DEC-0035** comme normes obligatoires.
-
-Ne créer aucune TASK-0037. Ne commencer ni journal, watcher, incrémental, filtres ni nouvelle UI. Finir `IMPLEMENTED`, jamais auto-`VERIFIED`.
+Aucune TASK-0037. Aucun journal, watcher, incrémental, filtre ou nouvelle UI. Finir `IMPLEMENTED`, jamais auto-`VERIFIED`.
 
 ## 0 — Préconditions
 
 1. Appliquer `AGENTS.md` et `CLAUDE.md`.
-2. Basculer explicitement sur `build/v0.2-a20-v1-stable-identity`, `git fetch origin`, fast-forward uniquement, arbre propre.
-3. Le HEAD doit contenir `ACTION-0058` et `DEC-0035`.
-4. Lire avant code : `ACTION-0057`, `ACTION-0058`, `TASK-0036`, `DEC-0009`, **`DEC-0013`**, `DEC-0032`, `DEC-0033`, **`DEC-0035`**, `TASK-0012` B1/B3, `identity.rs`, `path_codec.rs`, `index.rs`, `brain_index.rs`, `commands.rs`, `scanner.rs`, tests stable identity et harness TASK-0036.
-5. Auditer/réutiliser. Ne refaire ni B1 ni B3.
+2. Bascule explicitement sur `build/v0.2-a20-v1-stable-identity`, `git fetch origin`, fast-forward uniquement, arbre propre.
+3. Le HEAD doit contenir `ACTION-0059`.
+4. Lire `ACTION-0058`, `ACTION-0059`, `DEC-0013`, `DEC-0035`, `TASK-0036`, puis `src-tauri/src/map/brain_index.rs` et les tests stable identity.
 
-## 1 — D4 : migration v3→v4 conforme à M-B de DEC-0013
+## 1 — Correction D6
 
-La transaction v3→v4 actuelle est correcte comme **moteur interne**, mais insuffisante comme stratégie de migration produit. `DEC-0013` B impose M-B : **base quiescée → copie de sûreté de fichier → migration transactionnelle en place → restauration si échec**.
+Le flux actuel supprime `safety_copy` immédiatement après `migrate_previous_schema()` puis appelle `finish_open_existing()`. C’est trop tôt : `finish_open_existing()` peut encore refuser le contrat canonique v4.
 
-### Contrat obligatoire
+Construire le flux suivant sans dupliquer ni affaiblir `finish_open_existing()` :
 
-Conserver les contrôles D1 déjà acquis : brain_id, binding source et version **avant toute mutation et avant toute lecture de source**. Ensuite, pour exactement v3 :
+```text
+checks v3 brain/binding
+lock + quiesce
+copy + verify v3
+migrate_previous_schema()
+finish_open_existing(connection)
+  OK  -> supprimer safety copy -> retourner store v4
+  ERR -> connexion v4 fermée -> restaurer safety copy v3 -> nettoyer la copie
+         si restauration réussie -> retourner l’erreur de validation
+```
 
-1. obtenir une quiescence réelle et bornée de l’index cible; ne jamais copier une base avec des écritures applicatives concurrentes;
-2. traiter correctement WAL/SHM avant la copie : la copie de sûreté doit représenter un v3 cohérent et ouvrable, jamais un `main.db` auquel il manque des commits encore seulement dans `-wal`;
-3. fermer/relâcher ce qui doit l’être avant la copie de fichier selon la stratégie M-B mesurée par B1;
-4. écrire la copie **uniquement dans l’espace applicatif du cerveau**, jamais dans la source;
-5. la copie doit exister et être validée avant le premier DDL v4;
-6. exécuter ensuite le `run_stable_identity_migration()` transactionnel déjà corrigé;
-7. réouvrir/valider le contrat canonique v4;
-8. si migration ou validation échoue, restaurer le v3 de sûreté de façon sûre, avec gestion cohérente des éventuels `-wal`/`-shm`, et rendre l’ancien index ouvrable;
-9. si quiescence, checkpoint ou copie échoue : **aucune migration**, ancien v3 intact;
-10. mismatch brain/source, legacy REAL_ROOT non autorisé, schéma futur/inconnu : refus sans backup, sans mutation, sans lecture de source;
-11. `map_open` conserve `sourceRead=false`.
+Exigences :
 
-Ne remplace pas ceci par SQLite Online Backup : `DEC-0013` précise que B1 a mesuré une **copie de fichier sur base quiescée**, pas l’API Online Backup.
+- la copie doit rester disponible pendant **toute** la validation v4;
+- une erreur de migration conserve le comportement D4 déjà acquis;
+- une erreur de validation finale restaure également le v3;
+- si la restauration échoue, retourner une erreur de restauration claire et **ne pas supprimer** une copie encore utile à récupération;
+- aucun chemin absolu de copie dans DTO/log/artefact;
+- succès normal : pas de copie résiduelle;
+- ne pas introduire de nouveau store ou mécanisme de migration.
 
-### Portée de la copie
+## 2 — Test obligatoire
 
-Définis une politique simple, bornée et documentée pour le fichier de sûreté dans le répertoire applicatif du cerveau. Ne multiplie pas des backups à chaque ouverture. La tâche doit prouver qu’aucun chemin absolu du backup ne traverse IPC/log/artefact.
+Ajouter un test produit déterministe qui passe réellement par `open_map/open_for_brain` :
 
-### Preuves minimales D4
+1. produire un index réel, le ramener en v3;
+2. conserver brain_id + binding corrects pour que D1 autorise la migration;
+3. rendre volontairement invalide un invariant canonique **que la migration ne répare pas** (ex. `build_complete`, `projection_contract`, `root_id` ou équivalent);
+4. appeler `open_map` : le DDL v3→v4 doit réussir, puis `finish_open_existing()` doit échouer;
+5. après l’erreur, prouver restauration du fichier actif au v3 antérieur : `user_version == 3`, contenu attendu, `seen`, `index_id`, `index_revision`, brain/binding inchangés selon la fixture;
+6. prouver que la copie temporaire a été supprimée après restauration réussie;
+7. réparer l’invariant de fixture, relancer `open_map`, prouver migration v4 réussie et aucune copie résiduelle.
 
-Ajouter des tests produit/synthétiques qui prouvent :
+Le test doit échouer sur le code de `0daf342f` et passer après correction.
 
-- v3 en WAL avec une écriture committée réellement présente avant migration : après quiescence/checkpoint, la copie de sûreté s’ouvre en v3 et contient l’état attendu;
-- la copie existe avant le premier changement de schéma;
-- échec déterministe **après création de la copie** et après début de migration ⇒ restauration de l’index v3 complet, avec `seen`, `index_id`, `index_revision`, brain/source binding, nœuds et version inchangés;
-- après restauration, une nouvelle tentative peut réussir;
-- busy/quiescence impossible ⇒ refus sans migration et sans backup trompeur;
-- mismatch/future schema ⇒ aucun backup créé, fichier byte-identical/logiquement identique;
-- migration réussie ⇒ v4 ouvrable, `index_id`/`index_revision` non modifiés par la migration elle-même, source non lue;
-- une republication suivante avance la révision et invalide les anciens curseurs comme avant.
+## 3 — Non-régression
 
-Si la quiescence correcte exige une petite primitive de verrouillage commune au cycle d’index, fais-la **étroite et par index/brain**; ne crée pas une nouvelle architecture globale ni un second store.
+Rejouer au minimum :
 
-## 2 — D5 : appliquer DEC-0035 aux placeholders Cloud Files
+- tous les tests D4 M-B (WAL pending + restore + retry, busy checkpoint, failed safety copy, refus brain/binding/future schema);
+- tous les tests D5 Cloud Files;
+- D1/D2/D3/R1 et les invariants stable identity;
+- `cargo test --offline`;
+- suite TS complète, `pnpm check`, `pnpm build`, `cargo build --offline`, fmt limité, `git diff --check`;
+- Clippy strict en distinguant les 26 diagnostics historiques de tout nouveau diagnostic;
+- WebView2 TASK-0036 seulement si le code touché peut affecter son scénario; sinon justifier explicitement pourquoi le dernier replay `0daf342f` reste applicable. Ne fabrique pas une preuve inutile.
 
-La règle finale est volontairement conservatrice : **un placeholder Cloud Files reconnu utilise toujours PATH_FALLBACK, hydraté ou déshydraté.** On ne tente jamais `FILE_ID_INFO` pour lui. On ferme ainsi la porte `DEC-0013` F sans prétendre connaître la continuité du FileId générique à travers l’hydratation.
+## 4 — Livrables
 
-### Audit d’abord
-
-- vérifier si `windows-sys = 0.61.2` déjà épinglé expose `CfGetPlaceholderInfo`, `CF_PLACEHOLDER_STANDARD_INFO` et les constantes/features nécessaires;
-- réutiliser cette dépendance si possible avec le minimum de features;
-- ne choisir aucune nouvelle caisse sans nécessité démontrée;
-- si le binding n’est pas proprement disponible avec la pile approuvée et qu’une FFI Win32 minimale n’est pas sûre/maintenable, **STOP / BLOCKED** plutôt que contourner.
-
-### Contrat obligatoire
-
-Sous Windows, pour un nœud autrement éligible à SYSTEM :
-
-1. ouvrir uniquement un handle métadonnée permettant `READ_ATTRIBUTES`; aucun `GENERIC_READ`, aucun contenu;
-2. appeler `CfGetPlaceholderInfo(... CF_PLACEHOLDER_STANDARD_INFO ...)` comme **détection seulement**;
-3. succès ⇒ l’objet est Cloud Files ⇒ `PATH_FALLBACK`, sans tentative `GetFileInformationByHandleEx(FileIdInfo)`;
-4. réponse officielle « pas un Cloud Files placeholder » ⇒ la voie SYSTEM générique existante peut continuer;
-5. erreur ambiguë ⇒ comportement conservateur : `PATH_FALLBACK`, jamais SYSTEM affirmé par défaut;
-6. aucun appel à `CfHydratePlaceholder`, `CfDehydratePlaceholder`, pin-state, sync-state mutation ou API de transfert;
-7. aucune nouvelle provenance : seulement `SYSTEM` / `PATH_FALLBACK`;
-8. aucune donnée CFAPI/FileId/volume dans DTO, logs ou artefacts.
-
-Ne te sers pas des attributs `RECALL_*` comme unique détection : le but précisément est qu’un même placeholder garde la même politique d’identité quand son état d’hydratation change.
-
-### Preuves minimales D5
-
-Sans donnée personnelle ni compte cloud réel :
-
-- tests de décision pure/abstraction Win32 : détection Cloud Files positive ⇒ aucun appel SYSTEM possible, résultat PATH_FALLBACK;
-- « not a cloud file » ⇒ chemin SYSTEM normal encore disponible;
-- erreur ambiguë ⇒ PATH_FALLBACK;
-- prouver structurellement qu’aucune fonction d’hydratation/déshydratation n’est importée/appelée;
-- raw-path fallback D3 reste exact;
-- si une fixture Cloud Files locale **entièrement synthétique** peut être créée sans compte, réseau, provider réel ni risque d’hydratation, elle est bienvenue mais **pas au prix d’élargir la portée**. Sinon rapporter honnêtement que la frontière CFAPI est prouvée par abstraction + source Microsoft, pas par un vrai compte cloud.
-
-## 3 — Rejouer les invariants déjà acquis
-
-Doivent rester verts :
-
-- D1 : upgrade produit seulement v3→v4, vérification brain/binding avant mutation;
-- D2 : transaction SQL atomique et rollback;
-- D3 : PATH_FALLBACK depuis chemin OS brut;
-- bijection nodes↔identities refusée proprement;
-- SYSTEM local = `VolumeSerialNumber + FileId 128 bits`, jamais FileId seul;
-- rename/move local intra-volume : même nodeId;
-- moved subtree : IDs + parentage cohérents;
-- seen sur match SYSTEM;
-- no-recycle monotone;
-- isolation multi-cerveaux;
-- index_revision/cursors;
-- recherche, détails, enfants directs, projection, Explorer, Copier le chemin;
-- aucune clé stable/path absolu/backup path dans frontend/log/artefact;
-- capability WebView inchangée.
-
-## 4 — WebView2
-
-Réutiliser le harness TASK-0036. Rejouer rename/move/moved subtree/no-recycle/search/children/projection/reveal/copy/confidentialité et 0 erreur console fatale.
-
-La migration M-B doit être prouvée au niveau Rust produit avec contrôle précis du fichier v3/backup/WAL; inutile de fabriquer un scénario WebView moins précis si le test Rust passe réellement par `open_map/open_for_brain`.
-
-Aucun vrai fichier cloud, aucun compte OneDrive/Dropbox, aucune donnée utilisateur.
-
-## 5 — Validation générale
-
-Exécuter les tests ciblés puis : `cargo test --offline`, suite TS complète, `pnpm check`, `pnpm build`, `cargo build --offline`, fmt limité aux fichiers touchés, Clippy strict en distinguant dette historique/nouveau diagnostic, `git diff --check`.
-
-## 6 — Livrables
-
-- `TASK-0036 = IMPLEMENTED`, jamais auto-VERIFIED;
-- mettre à jour `.orchestrator/RESULT.md`, `CURRENT_STATE`, `HANDOFF`, `NEXT_ACTION`, `VALIDATION`, `CHANGELOG_AI`; corriger honnêtement la fiche TASK-0036 pour inclure `DEC-0013`, `ACTION-0058` et `DEC-0035`;
-- `RESULT.md` sépare clairement D4/M-B et D5/Cloud Files, preuves et limites;
-- `NEXT_ACTION = nouveau contrôle indépendant de TASK-0036`;
-- aucun TASK-0037, PR, merge, tag ou release.
+- `TASK-0036` reste `IMPLEMENTED`, jamais auto-`VERIFIED`;
+- mettre à jour `.orchestrator/RESULT.md`, `CURRENT_STATE`, `HANDOFF`, `NEXT_ACTION`, `VALIDATION`, `CHANGELOG_AI` honnêtement;
+- `RESULT.md` nomme D6 et la preuve de restauration après **échec de validation post-migration**;
+- `NEXT_ACTION = contrôle indépendant final de TASK-0036`;
+- commit + push sur cette branche, arbre propre;
+- aucun PR/merge/tag/release, aucune TASK-0037.
