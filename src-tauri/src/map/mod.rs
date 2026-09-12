@@ -138,6 +138,13 @@ pub enum MapError {
     /// refused before a write transaction opened, never a panic.
     #[error("map_identity_not_bijective: identities must name each published node exactly once")]
     IdentityNotBijective,
+    /// `ACTION-0058` D4 / `DEC-0013` B — the `M-B` migration strategy
+    /// (quiesce, safety copy, migrate, restore) could not proceed safely:
+    /// a busy checkpoint, a failed safety copy, an unreadable safety copy,
+    /// or a failed restoration. In every case but the last, the previous
+    /// index is left completely untouched.
+    #[error("map_migration_unavailable: {0}")]
+    MigrationUnavailable(String),
 }
 
 impl From<MapError> for String {

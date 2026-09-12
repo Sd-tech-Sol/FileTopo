@@ -7,7 +7,9 @@ use crate::domain::{NodeDto, ScanDiagnostic};
 use crate::identity::NodeIdentity;
 use crate::index::Index;
 use rusqlite::OptionalExtension;
-use std::path::Path;
+use std::collections::HashMap;
+use std::path::{Path, PathBuf};
+use std::sync::{Arc, Mutex, OnceLock};
 
 /// What an index claims about its own source — see [`BrainIndex::binding`].
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -94,7 +96,7 @@ impl BrainIndex {
 
     /// Opens an existing canonical index for `brain`, migrating it from the
     /// immediately previous schema first — but only when that is provably
-    /// safe — `ACTION-0057` D1.
+    /// safe — `ACTION-0057` D1, `ACTION-0058` D4, `DEC-0013` B (`M-B`).
     ///
     /// Three schema shapes, and only the narrow middle one does any writing:
     ///
@@ -106,10 +108,18 @@ impl BrainIndex {
     ///   runs and before the source is resolved or read. A mismatch on
     ///   either is refused — [`MapError::BrainMismatch`] or
     ///   [`MapError::SourceMismatch`] — and the file is left exactly as it
-    ///   was: not migrated, not deleted, not read for its source. Only once
-    ///   both agree does [`crate::index::Index::migrate_previous_schema`]
-    ///   run, atomically and in application space alone; the now-current
-    ///   connection is then opened exactly like the first case.
+    ///   was: not migrated, not deleted, not read for its source, **no
+    ///   safety copy taken**. Only once both agree does the `M-B` sequence
+    ///   run: a per-brain lock (see [`migration_lock_for`]) serialises
+    ///   concurrent attempts on the same file; the index is quiesced with a
+    ///   `TRUNCATE` WAL checkpoint so the physical file alone is a complete
+    ///   snapshot; a safety copy is taken **in the brain's own application
+    ///   space** and independently verified openable as the previous schema
+    ///   **before** [`crate::index::Index::migrate_previous_schema`] runs
+    ///   its first `ALTER TABLE`; a migration failure restores that copy
+    ///   over the live file and reports the failure; a migration success
+    ///   deletes the now-unneeded copy. The now-current connection is then
+    ///   opened exactly like the first case.
     /// * **Anything else** — older, unknown or newer — refused as
     ///   [`MapError::IndexIncompatible`], never migrated: `DEC-0011` forbids
     ///   a backward migration or a migration run on a guess.
@@ -160,16 +170,57 @@ impl BrainIndex {
 
         // Both checks passed: neither `brain_id` nor the source binding
         // disagrees, and nothing above this line has altered a byte of the
-        // file. Only now does the atomic, source-blind schema migration run.
-        probe.index.migrate_previous_schema().map_err(|error| {
+        // file. `ACTION-0058` D4 / `DEC-0013` B (`M-B`) from here on: a
+        // per-brain lock, then quiesce -> safety copy -> verify -> migrate,
+        // restoring the copy on any migration failure.
+        let migration_lock = migration_lock_for(&brain.brain_id);
+        let _migration_guard = migration_lock
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+
+        // Re-read the version under the lock: another thread may already
+        // have migrated this exact file while this one was waiting.
+        let version_under_lock: i64 =
+            probe
+                .index
+                .connection
+                .query_row("PRAGMA user_version", [], |r| r.get(0))?;
+        if version_under_lock == super::store::MAP_SCHEMA_VERSION {
+            return Self::finish_open_existing(probe.index.connection);
+        }
+        if version_under_lock != super::store::MAP_PREVIOUS_SCHEMA_VERSION {
+            return Err(MapError::IndexIncompatible(format!(
+                "schema {version_under_lock}"
+            )));
+        }
+
+        quiesce_before_safety_copy(&probe.index.connection)?;
+        let safety_copy = migration_safety_copy_path(path);
+        std::fs::copy(path, &safety_copy).map_err(|error| {
+            MapError::MigrationUnavailable(format!("safety copy failed: {error}"))
+        })?;
+        if let Err(error) = verify_safety_copy(&safety_copy) {
+            let _ = std::fs::remove_file(&safety_copy);
+            return Err(error);
+        }
+
+        if let Err(error) = probe.index.migrate_previous_schema() {
             use crate::index::MigrationError;
-            match error {
+            // `DEC-0013` B — restore over the live file before reporting the
+            // failure. The connection is closed first: Windows refuses to
+            // overwrite a file another handle still has open.
+            let Index { connection } = probe.index;
+            let _ = connection.close();
+            restore_safety_copy(path, &safety_copy)?;
+            let _ = std::fs::remove_file(&safety_copy);
+            return Err(match error {
                 MigrationError::Sqlite(sqlite) => MapError::from(sqlite),
                 MigrationError::UnsupportedVersion { actual, .. } => {
                     MapError::IndexIncompatible(format!("schema {actual}"))
                 }
-            }
-        })?;
+            });
+        }
+        let _ = std::fs::remove_file(&safety_copy);
         Self::finish_open_existing(probe.index.connection)
     }
 
@@ -474,4 +525,115 @@ impl BrainIndex {
         }
         Ok(format!("fnv1a64:{:016x}", fnv1a64(&bytes)))
     }
+}
+
+// -- `ACTION-0058` D4 / `DEC-0013` B — `M-B`: quiesce, safety copy, restore --
+
+/// One mutex per `brain_id`, created on first use and kept for the life of
+/// the process. Narrow and per-brain, exactly as the corrective prompt asks:
+/// it serialises only the `M-B` critical section of
+/// [`BrainIndex::open_existing_migrating`] for **one** brain at a time — a
+/// concurrent migration attempt on a *different* brain is never blocked by
+/// it — and it is a plain in-memory map, not a second store or a new
+/// architecture. Guards against two IPC calls racing the same v3 file: the
+/// SQL transaction inside `migrate_previous_schema` is already idempotent
+/// under a race, but the **file-level** safety copy this function takes is
+/// not — an `fs::copy` reading a file another thread is mid-`ALTER TABLE`
+/// on could capture a torn snapshot.
+fn migration_lock_for(brain_id: &str) -> Arc<Mutex<()>> {
+    static LOCKS: OnceLock<Mutex<HashMap<String, Arc<Mutex<()>>>>> = OnceLock::new();
+    let registry = LOCKS.get_or_init(|| Mutex::new(HashMap::new()));
+    let mut locks = registry
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    locks
+        .entry(brain_id.to_string())
+        .or_insert_with(|| Arc::new(Mutex::new(())))
+        .clone()
+}
+
+/// The safety copy's path — a sibling of the index, in the brain's own
+/// `map/` directory, never under the analysed source. One bounded name per
+/// brain: a migration attempt overwrites the previous attempt's copy rather
+/// than accumulating one per open, and the copy is deleted again as soon as
+/// the migration or its restoration settles — see
+/// [`BrainIndex::open_existing_migrating`]. Never returned by any command,
+/// written to any log, or embedded in any artefact: this `PathBuf` lives
+/// only inside this module's own control flow.
+fn migration_safety_copy_path(database: &Path) -> PathBuf {
+    let mut name = database.file_name().unwrap_or_default().to_os_string();
+    name.push(".v3-safety-copy");
+    database.with_file_name(name)
+}
+
+/// Quiesces the index **before** the safety copy is taken — `DEC-0013` B's
+/// first step, and the reason this migration never needs to touch a `-wal`
+/// sidecar at all: a `TRUNCATE` checkpoint folds every committed page back
+/// into the main file, so a plain `fs::copy` of that one file afterwards is
+/// already "a v3 coherent and openable" snapshot, never a `main.db` missing
+/// commits still only in `-wal`.
+///
+/// `PRAGMA wal_checkpoint(TRUNCATE)` reports whether it fully succeeded as
+/// its first returned column (`busy`): nonzero means another connection's
+/// held snapshot or lock kept some pages in the WAL. Read literally — this
+/// is exactly `ACTION-0058`'s "busy/quiescence impossible ⇒ refus sans
+/// migration et sans backup trompeur": refuse rather than copy a file that
+/// is not actually a complete snapshot.
+fn quiesce_before_safety_copy(connection: &rusqlite::Connection) -> Result<(), MapError> {
+    let (busy, _log, _checkpointed): (i64, i64, i64) =
+        connection.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |row| {
+            Ok((row.get(0)?, row.get(1)?, row.get(2)?))
+        })?;
+    if busy != 0 {
+        return Err(MapError::MigrationUnavailable(
+            "quiesce_busy: could not fully checkpoint the index before the safety copy".into(),
+        ));
+    }
+    Ok(())
+}
+
+/// Independently confirms the safety copy is exactly what `DEC-0013` B
+/// requires it to be **before** the first `v4` `ALTER TABLE` runs: a file
+/// that genuinely opens, at the expected previous schema, with its `nodes`
+/// table readable. A copy that fails any of these is refused immediately —
+/// the caller never proceeds to migrate on the strength of an unverified
+/// copy.
+fn verify_safety_copy(copy: &Path) -> Result<(), MapError> {
+    let unreadable = |error: rusqlite::Error| {
+        MapError::MigrationUnavailable(format!("safety copy not openable: {error}"))
+    };
+    let connection =
+        rusqlite::Connection::open_with_flags(copy, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
+            .map_err(unreadable)?;
+    let version: i64 = connection
+        .query_row("PRAGMA user_version", [], |row| row.get(0))
+        .map_err(unreadable)?;
+    if version != super::store::MAP_PREVIOUS_SCHEMA_VERSION {
+        return Err(MapError::MigrationUnavailable(format!(
+            "safety copy is schema {version}, not the expected previous schema"
+        )));
+    }
+    connection
+        .query_row("SELECT COUNT(*) FROM nodes", [], |row| row.get::<_, i64>(0))
+        .map_err(unreadable)?;
+    Ok(())
+}
+
+/// Restores `target` from its safety `copy` — `DEC-0013` B's last step, run
+/// whenever [`crate::index::Index::migrate_previous_schema`] fails. Any
+/// `-wal`/`-shm` sidecar left by the failed attempt is removed first, so the
+/// restored main file is read back on its own rather than replayed against a
+/// stale journal that no longer matches it.
+fn restore_safety_copy(target: &Path, copy: &Path) -> Result<(), MapError> {
+    for suffix in ["-wal", "-shm"] {
+        let mut sidecar = target.as_os_str().to_os_string();
+        sidecar.push(suffix);
+        let sidecar = PathBuf::from(sidecar);
+        if sidecar.is_file() {
+            let _ = std::fs::remove_file(&sidecar);
+        }
+    }
+    std::fs::copy(copy, target)
+        .map_err(|error| MapError::MigrationUnavailable(format!("restore failed: {error}")))?;
+    Ok(())
 }

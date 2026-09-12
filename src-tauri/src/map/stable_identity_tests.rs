@@ -319,6 +319,41 @@ fn raw_bytes(database: &Path) -> Vec<u8> {
     fs::read(database).expect("read database bytes")
 }
 
+/// The `ACTION-0058` D4 / `DEC-0013` B safety-copy path — the exact naming
+/// convention `brain_index::migration_safety_copy_path` uses internally,
+/// duplicated here rather than exposed as `pub(crate)`: a test that reaches
+/// into an internal helper is a test that breaks the moment the internal
+/// naming changes for an unrelated reason. Recomputing it independently
+/// means a real behavioural drift is what makes these tests fail, not a
+/// rename.
+fn safety_copy_path(database: &Path) -> PathBuf {
+    let mut name = database.file_name().unwrap().to_os_string();
+    name.push(".v3-safety-copy");
+    database.with_file_name(name)
+}
+
+/// The logical content that must survive a quiesce (which can rewrite the
+/// file's bytes by merging `-wal` pages into `main.db` even when nothing
+/// else about the index changes) — used where an assertion needs "nothing
+/// meaningful changed" rather than "not a single byte changed".
+fn logical_snapshot(database: &Path) -> (i64, Vec<(i64, String, bool)>) {
+    let connection = rusqlite::Connection::open(database).expect("open for snapshot");
+    let version: i64 = connection
+        .query_row("PRAGMA user_version", [], |row| row.get(0))
+        .expect("version");
+    let mut statement = connection
+        .prepare("SELECT id, relative_path, seen FROM nodes ORDER BY id")
+        .expect("prepare");
+    let rows = statement
+        .query_map([], |row| {
+            Ok((row.get(0)?, row.get(1)?, row.get::<_, bool>(2)?))
+        })
+        .expect("query")
+        .collect::<Result<Vec<_>, _>>()
+        .expect("rows");
+    (version, rows)
+}
+
 /// The D1 product-pipeline proof `ACTION-0057` demands in full: a v3
 /// canonical `REAL_ROOT` index, built by the real pipeline and reduced to
 /// exactly the previous schema, becomes usable again through an ordinary
@@ -394,6 +429,11 @@ fn a_real_v3_index_upgrades_through_map_open_without_reading_the_source() {
     assert_eq!(
         raw_schema_version(&database),
         crate::map::store::MAP_SCHEMA_VERSION
+    );
+    assert!(
+        !safety_copy_path(&database).exists(),
+        "ACTION-0058 D4: a successful migration must not leave its transient \
+         safety copy behind — one bounded copy per attempt, never accumulated"
     );
 
     // Data and `seen` survived the migration.
@@ -478,6 +518,10 @@ fn a_v3_index_naming_another_brain_is_refused_without_migrating() {
         "a refused brain_id must never trigger a migration write"
     );
     assert_eq!(raw_schema_version(&database_b), 3);
+    assert!(
+        !safety_copy_path(&database_b).exists(),
+        "ACTION-0058 D4: a refusal before the binding check must never create a safety copy"
+    );
 }
 
 /// Refusal 2 — a v3 index whose source binding disagrees with the catalogue
@@ -512,6 +556,10 @@ fn a_v3_index_with_a_disagreeing_binding_is_refused_without_migrating() {
         "a refused binding must never trigger a migration write"
     );
     assert_eq!(raw_schema_version(&database), 3);
+    assert!(
+        !safety_copy_path(&database).exists(),
+        "ACTION-0058 D4: a refusal before the binding check must never create a safety copy"
+    );
 }
 
 /// Refusal 3 — a schema newer than this build knows is refused, never
@@ -552,4 +600,217 @@ fn a_future_schema_is_refused_and_never_migrated_backward() {
         "a refused future schema must never be touched, let alone migrated backward"
     );
     assert_eq!(raw_schema_version(&database), 5);
+    assert!(
+        !safety_copy_path(&database).exists(),
+        "ACTION-0058 D4: a future/unknown schema must never create a safety copy"
+    );
+}
+
+// -- `ACTION-0058` D4 / `DEC-0013` B — `M-B`: quiesce, safety copy, restore --
+
+/// The D4 proof `ACTION-0058` demands in full, in one coherent scenario: a
+/// **real** committed write sitting only in the `-wal` file (never
+/// checkpointed into `main.db`) is present when migration starts; the
+/// migration itself is made to fail **after** the safety copy was taken and
+/// migration had begun (the same real schema-object obstruction D2 already
+/// uses: a `TABLE` named `idx_nodes_stable_key`); the failure restores the
+/// **entire** v3 index — including the write that lived only in `-wal` a
+/// moment before, proving the quiesce genuinely folded it into the copy —
+/// and, the obstruction removed, a retry succeeds cleanly.
+#[test]
+fn d4_a_wal_pending_write_is_captured_and_restored_on_injected_migration_failure() {
+    let (temp, paths) = sandbox();
+    let root = temp.path().join("racine-v3-wal");
+    fs::create_dir_all(&root).unwrap();
+    fs::write(root.join("avant.txt"), b"synthetique").unwrap();
+
+    let brain = register(&paths, &root);
+    refresh_map(&paths, &brain).expect("first refresh builds a real v4 index");
+    let database = paths.brain_map_database(&brain.brain_id);
+    downgrade_to_schema_v3(&database);
+
+    // Obstruct the exact schema object the migration will try to create —
+    // both `ALTER TABLE`s inside the transaction will still succeed first,
+    // so this is a failure genuinely after mutation has begun, not merely
+    // a refusal before anything happened. Done on a short-lived connection,
+    // closed immediately, so it never holds the file open.
+    {
+        let obstruction = rusqlite::Connection::open(&database).expect("obstruct");
+        obstruction
+            .execute_batch("CREATE TABLE idx_nodes_stable_key (blocker INTEGER);")
+            .expect("obstruction");
+    }
+
+    // A write left committed ONLY in `-wal`: this connection is kept open
+    // (never closed, never dropped) for the rest of the setup, which is
+    // exactly what stops SQLite's own "last connection closes" checkpoint
+    // from folding it into `main.db` before the migration flow runs.
+    let raw_writer = rusqlite::Connection::open(&database).expect("raw writer");
+    raw_writer
+        .execute_batch("PRAGMA journal_mode=WAL;")
+        .expect("wal mode");
+    raw_writer
+        .execute(
+            "UPDATE nodes SET seen = 1 WHERE relative_path = 'avant.txt'",
+            [],
+        )
+        .expect("wal-pending write");
+    let wal_path = {
+        let mut p = database.as_os_str().to_os_string();
+        p.push("-wal");
+        PathBuf::from(p)
+    };
+    assert!(
+        fs::metadata(&wal_path).map(|m| m.len()).unwrap_or(0) > 0,
+        "the setup is only meaningful if the write really is WAL-pending, not yet in main.db"
+    );
+
+    let error =
+        open_map(&paths, &brain).expect_err("the obstructed migration must fail");
+    assert!(
+        matches!(error, MapError::Sqlite(_)),
+        "expected the real SQL collision to surface, got {error:?}"
+    );
+
+    // Full restoration: schema back to v3, and — the point of this test —
+    // the write that lived only in `-wal` survived, because quiescing
+    // before the safety copy folded it in.
+    assert_eq!(
+        raw_schema_version(&database),
+        3,
+        "a failed migration must leave user_version at 3"
+    );
+    assert!(
+        !safety_copy_path(&database).exists(),
+        "the transient safety copy must not survive a settled restoration"
+    );
+    let (_, rows) = logical_snapshot(&database);
+    let avant = rows
+        .iter()
+        .find(|(_, path, _)| path == "avant.txt")
+        .expect("avant.txt row");
+    assert!(
+        avant.2,
+        "seen must survive the restoration — proof the WAL-pending write was \
+         captured by the safety copy before the migration ever touched the schema"
+    );
+
+    drop(raw_writer);
+
+    // The obstruction removed, a retry on the very same (now restored) file
+    // succeeds cleanly.
+    {
+        let unblock = rusqlite::Connection::open(&database).expect("unblock");
+        unblock
+            .execute_batch("DROP TABLE idx_nodes_stable_key;")
+            .expect("remove obstruction");
+    }
+    let report = open_map(&paths, &brain).expect("migration now succeeds");
+    assert_eq!(report.schema_version, crate::map::store::MAP_SCHEMA_VERSION);
+    let store = open_store(&paths, &brain).expect("open after retry");
+    let node_id = store.resolve_path("avant.txt").unwrap().unwrap();
+    assert!(
+        store.index.node(node_id).unwrap().unwrap().seen,
+        "seen must still be true after the successful retry"
+    );
+}
+
+/// A checkpoint that cannot fully complete — a concurrent connection holding
+/// an open read transaction, blocking `TRUNCATE` — refuses the migration
+/// before any safety copy is taken and before a single schema-altering
+/// statement runs. `ACTION-0058`: "busy/quiescence impossible ⇒ refus sans
+/// migration et sans backup trompeur".
+#[test]
+fn d4_a_busy_checkpoint_refuses_without_migrating_or_copying() {
+    let (temp, paths) = sandbox();
+    let root = temp.path().join("racine-v3-busy");
+    fs::create_dir_all(&root).unwrap();
+    fs::write(root.join("fichier.txt"), b"synthetique").unwrap();
+
+    let brain = register(&paths, &root);
+    refresh_map(&paths, &brain).expect("refresh");
+    let database = paths.brain_map_database(&brain.brain_id);
+    downgrade_to_schema_v3(&database);
+    // A reader's snapshot only holds a `TRUNCATE` checkpoint back if there is
+    // something for it to hold back: the read transaction has to start
+    // BEFORE a write lands frames in `-wal` that the reader's snapshot still
+    // needs. An empty WAL checkpoints trivially regardless of readers.
+    let reader = rusqlite::Connection::open(&database).expect("reader");
+    reader
+        .execute_batch("PRAGMA journal_mode=WAL; BEGIN; SELECT COUNT(*) FROM nodes;")
+        .expect("open read transaction before any pending write exists");
+    {
+        let writer = rusqlite::Connection::open(&database).expect("writer");
+        writer
+            .execute_batch("PRAGMA journal_mode=WAL;")
+            .expect("wal mode");
+        writer
+            .execute(
+                "UPDATE nodes SET seen = 1 WHERE relative_path = 'fichier.txt'",
+                [],
+            )
+            .expect("a write the reader's older snapshot still needs");
+    }
+    let before = logical_snapshot(&database);
+
+    let error =
+        open_map(&paths, &brain).expect_err("a busy checkpoint must refuse the migration");
+    assert!(
+        matches!(&error, MapError::MigrationUnavailable(reason) if reason.contains("quiesce_busy")),
+        "expected a quiesce_busy refusal, got {error:?}"
+    );
+    assert!(
+        error.to_string().starts_with("map_migration_unavailable"),
+        "unexpected motif: {error}"
+    );
+
+    reader.execute_batch("ROLLBACK;").ok();
+    drop(reader);
+
+    assert_eq!(
+        logical_snapshot(&database),
+        before,
+        "a refused busy checkpoint must not change any row or the schema version"
+    );
+    assert!(
+        !safety_copy_path(&database).exists(),
+        "a busy checkpoint must never reach the safety-copy step"
+    );
+}
+
+/// The safety copy's destination is blocked by a real filesystem obstacle (a
+/// directory sitting exactly where the copy would go) — `fs::copy` fails,
+/// and the migration is refused before a single schema-altering statement
+/// runs. The quiesce itself may still have merged `-wal` into `main.db`
+/// (harmless — same logical content), so this test compares logical state,
+/// not raw bytes.
+#[test]
+fn d4_a_failed_safety_copy_refuses_without_migrating() {
+    let (temp, paths) = sandbox();
+    let root = temp.path().join("racine-v3-copyfail");
+    fs::create_dir_all(&root).unwrap();
+    fs::write(root.join("fichier.txt"), b"synthetique").unwrap();
+
+    let brain = register(&paths, &root);
+    refresh_map(&paths, &brain).expect("refresh");
+    let database = paths.brain_map_database(&brain.brain_id);
+    downgrade_to_schema_v3(&database);
+    let before = logical_snapshot(&database);
+
+    // A directory where the safety copy must land: `fs::copy` cannot
+    // overwrite a directory with a file.
+    fs::create_dir(safety_copy_path(&database)).expect("obstruct the copy destination");
+
+    let error =
+        open_map(&paths, &brain).expect_err("a failed safety copy must refuse the migration");
+    assert!(
+        matches!(&error, MapError::MigrationUnavailable(reason) if reason.contains("safety copy failed")),
+        "expected a safety-copy refusal, got {error:?}"
+    );
+
+    assert_eq!(
+        logical_snapshot(&database),
+        before,
+        "a refused safety copy must not change any row or the schema version"
+    );
 }

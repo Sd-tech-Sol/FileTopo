@@ -134,6 +134,15 @@ fn eligible_for_system_identity(kind: NodeKind, reparse_point: bool, online_only
 /// Resolves one node's stable identity: `SYSTEM` when eligible and
 /// obtainable, `PathFallback` otherwise — the only two provenances I-E
 /// allows, and always exactly one of them.
+///
+/// `ACTION-0058` D5 / `DEC-0035`: a node otherwise eligible for `SYSTEM`
+/// still never attempts it when Windows recognises the path as a managed
+/// Cloud Files placeholder — hydrated or not. This closes `DEC-0013` F: the
+/// existing `online_only` exclusion alone is insufficient, because a
+/// hydrated placeholder can lose its `RECALL_*` attributes and would
+/// otherwise fall straight through to `SYSTEM`, changing this node's
+/// provenance — and therefore its `nodes.id` on the next publish — for no
+/// reason visible in the file itself.
 pub fn compute_identity(
     absolute_path: &Path,
     relative: &Path,
@@ -142,6 +151,7 @@ pub fn compute_identity(
     online_only: bool,
 ) -> (String, IdentityProvenance) {
     if eligible_for_system_identity(kind, reparse_point, online_only)
+        && !blocks_system_identity(cloud_files_detection(absolute_path))
         && let Some(key) = system_identity_key(absolute_path)
     {
         return (key, IdentityProvenance::System);
@@ -150,6 +160,117 @@ pub fn compute_identity(
         path_fallback_key(relative, kind),
         IdentityProvenance::PathFallback,
     )
+}
+
+/// The three outcomes of asking Windows whether a path is a managed Cloud
+/// Files placeholder — `ACTION-0058` D5 / `DEC-0035`. Detection only:
+/// `CfGetPlaceholderInfo` does not modify the file and needs only
+/// `FILE_READ_ATTRIBUTES`, per the Microsoft documentation `DEC-0035` cites
+/// in full.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum CloudFilesDetection {
+    /// `CfGetPlaceholderInfo` succeeded: a managed placeholder, hydrated or
+    /// not. `DEC-0035` never reads its `FileId`/`FileIdentity` as an
+    /// identity — the mere success of this call is the whole answer.
+    Placeholder,
+    /// The official negative answer: `ERROR_NOT_A_CLOUD_FILE`.
+    NotCloudFile,
+    /// A metadata handle could not be opened, or the call failed with any
+    /// other error. Never read as proof of either state.
+    Ambiguous,
+}
+
+/// `DEC-0035`'s rule, as one pure, platform-independent function: only a
+/// **confirmed** "not a cloud file" answer leaves `SYSTEM` available: both a
+/// positive detection and an ambiguous one are conservative refusals. Kept
+/// separate from [`cloud_files_detection`] so the decision itself is
+/// testable without a real Windows call — see
+/// `tests::cloud_files_placeholder_detection_blocks_system_identity` and its
+/// siblings.
+fn blocks_system_identity(detection: CloudFilesDetection) -> bool {
+    !matches!(detection, CloudFilesDetection::NotCloudFile)
+}
+
+/// Converts a Win32 error code to the `HRESULT` `CfGetPlaceholderInfo`
+/// returns on failure — the standard `HRESULT_FROM_WIN32` macro, not
+/// hand-picked from a single observed value, so the comparison in
+/// [`cloud_files_detection`] is exact rather than a magic number.
+#[cfg(windows)]
+fn hresult_from_win32(code: u32) -> i32 {
+    if code == 0 {
+        0
+    } else {
+        ((code & 0xFFFF) | (7 << 16) | 0x8000_0000) as i32
+    }
+}
+
+/// The real Windows call behind [`CloudFilesDetection`] — `DEC-0035`'s
+/// contract exactly: a handle opened for `FILE_READ_ATTRIBUTES` only (never
+/// `GENERIC_READ`, no content, no data access), `CfGetPlaceholderInfo` used
+/// purely as detection, and no hydration/dehydration/pin-state API ever
+/// called or imported here.
+#[cfg(windows)]
+fn cloud_files_detection(path: &Path) -> CloudFilesDetection {
+    use std::ffi::OsStr;
+    use std::os::windows::ffi::OsStrExt;
+    use windows_sys::Win32::Foundation::{
+        CloseHandle, ERROR_NOT_A_CLOUD_FILE, HANDLE, INVALID_HANDLE_VALUE,
+    };
+    use windows_sys::Win32::Storage::CloudFilters::{
+        CF_PLACEHOLDER_INFO_STANDARD, CF_PLACEHOLDER_STANDARD_INFO, CfGetPlaceholderInfo,
+    };
+    use windows_sys::Win32::Storage::FileSystem::{
+        CreateFileW, FILE_ATTRIBUTE_NORMAL, FILE_FLAG_BACKUP_SEMANTICS, FILE_READ_ATTRIBUTES,
+        FILE_SHARE_DELETE, FILE_SHARE_READ, FILE_SHARE_WRITE, OPEN_EXISTING,
+    };
+
+    let mut wide: Vec<u16> = OsStr::new(path).encode_wide().collect();
+    wide.push(0);
+    let handle: HANDLE = unsafe {
+        CreateFileW(
+            wide.as_ptr(),
+            FILE_READ_ATTRIBUTES,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            std::ptr::null(),
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL | FILE_FLAG_BACKUP_SEMANTICS,
+            std::ptr::null_mut(),
+        )
+    };
+    if handle == INVALID_HANDLE_VALUE {
+        // Cannot even confirm the path is a plain local file — conservative:
+        // never affirm SYSTEM on an unresolved question.
+        return CloudFilesDetection::Ambiguous;
+    }
+    // Sized generously past the fixed header for `CF_PLACEHOLDER_STANDARD_INFO`'s
+    // trailing `FileIdentity` byte(s); their contents are never read — only
+    // whether the call itself succeeds is DEC-0035's signal.
+    let mut buffer = [0u8; size_of::<CF_PLACEHOLDER_STANDARD_INFO>() + 64];
+    let mut returned: u32 = 0;
+    let hr = unsafe {
+        CfGetPlaceholderInfo(
+            handle,
+            CF_PLACEHOLDER_INFO_STANDARD,
+            buffer.as_mut_ptr() as *mut core::ffi::c_void,
+            buffer.len() as u32,
+            &mut returned,
+        )
+    };
+    unsafe {
+        CloseHandle(handle);
+    }
+    if hr >= 0 {
+        CloudFilesDetection::Placeholder
+    } else if hr == hresult_from_win32(ERROR_NOT_A_CLOUD_FILE) {
+        CloudFilesDetection::NotCloudFile
+    } else {
+        CloudFilesDetection::Ambiguous
+    }
+}
+
+#[cfg(not(windows))]
+fn cloud_files_detection(_path: &Path) -> CloudFilesDetection {
+    CloudFilesDetection::NotCloudFile
 }
 
 /// The Windows `SYSTEM` identity: `VolumeSerialNumber` + `FileId` 128 bits,
@@ -267,6 +388,114 @@ mod tests {
         assert_ne!(
             crafted, shorter,
             "a path/kind boundary must never be guessable from concatenated bytes"
+        );
+    }
+
+    // -- `ACTION-0058` D5 / `DEC-0035` — the Cloud Files identity boundary --
+    //
+    // Pure decision-table tests, platform-independent by construction: they
+    // exercise `blocks_system_identity` directly against each of the three
+    // `CloudFilesDetection` outcomes, never the real Win32 call. This is
+    // deliberate — `DEC-0035`'s rule is a decision, and a decision is
+    // testable in full without a cloud account or even a Windows host.
+
+    #[test]
+    fn a_detected_placeholder_blocks_system_identity() {
+        assert!(
+            blocks_system_identity(CloudFilesDetection::Placeholder),
+            "a confirmed Cloud Files placeholder must never reach SYSTEM, hydrated or not"
+        );
+    }
+
+    #[test]
+    fn an_ambiguous_detection_is_conservative_and_blocks_system_identity() {
+        assert!(
+            blocks_system_identity(CloudFilesDetection::Ambiguous),
+            "DEC-0035: an unresolved detection must never be read as proof either way"
+        );
+    }
+
+    #[test]
+    fn a_confirmed_non_cloud_file_leaves_system_identity_available() {
+        assert!(
+            !blocks_system_identity(CloudFilesDetection::NotCloudFile),
+            "the official ERROR_NOT_A_CLOUD_FILE answer must not block the generic SYSTEM path"
+        );
+    }
+
+    /// `HRESULT_FROM_WIN32(0) == 0` — the one case the macro special-cases
+    /// (a "successful" Win32 code has no `HRESULT` mapping) — and a real
+    /// nonzero code, `ERROR_NOT_A_CLOUD_FILE` itself, must round-trip to the
+    /// exact value `cloud_files_detection` compares against.
+    #[test]
+    #[cfg(windows)]
+    fn hresult_from_win32_matches_the_standard_macro() {
+        assert_eq!(hresult_from_win32(0), 0);
+        // FACILITY_WIN32 = 7, SEVERITY_ERROR bit set: 0x8007_0000 | code.
+        assert_eq!(hresult_from_win32(376), 0x8007_0178_u32 as i32);
+    }
+
+    /// Structural proof, not a Win32 call: `DEC-0035` forbids ever importing
+    /// or calling a hydration/dehydration/pin-state mutation API from this
+    /// module. Scanning the compiled-in source text is the same technique
+    /// `DEC-0033` I already uses elsewhere in this codebase to prove a
+    /// forbidden command is never registered.
+    #[test]
+    fn no_hydrate_dehydrate_or_pin_state_api_is_referenced_in_source() {
+        // Scanned up to this test module's own opening brace: the module
+        // below it necessarily *names* every forbidden symbol, in this very
+        // assertion list, to prove none of them is ever called from
+        // production code — scanning past that point would make the test
+        // fail against itself.
+        let full_source = include_str!("identity.rs");
+        let production_source = full_source
+            .split_once("mod tests {")
+            .map(|(before, _)| before)
+            .unwrap_or(full_source);
+        for forbidden in [
+            "CfHydratePlaceholder",
+            "CfDehydratePlaceholder",
+            "CfSetPinState",
+            "CfSetInSyncState",
+        ] {
+            assert!(
+                !production_source.contains(forbidden),
+                "identity.rs must never reference {forbidden} outside its own test module"
+            );
+        }
+    }
+
+    /// The real Windows call, against an ordinary file this test creates
+    /// itself — never a real cloud placeholder (registering one would need
+    /// `CfRegisterSyncRoot`, a real sync-provider registration this task
+    /// declines to make: see `RESULT.md` for why). This proves the actual
+    /// `CfGetPlaceholderInfo` call correctly answers "not a cloud file" for
+    /// the overwhelmingly common case, and that `compute_identity` still
+    /// reaches `SYSTEM` for it exactly as before `DEC-0035`.
+    #[test]
+    #[cfg(windows)]
+    fn an_ordinary_local_file_is_confirmed_not_a_cloud_file_and_still_reaches_system() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        let file = temp.path().join("ordinaire.txt");
+        std::fs::write(&file, b"synthetique").expect("write");
+
+        assert_eq!(
+            cloud_files_detection(&file),
+            CloudFilesDetection::NotCloudFile,
+            "a plain local file must be confirmed as not a Cloud Files placeholder"
+        );
+
+        let (_, provenance) = compute_identity(
+            &file,
+            Path::new("ordinaire.txt"),
+            NodeKind::File,
+            false,
+            false,
+        );
+        assert_eq!(
+            provenance,
+            IdentityProvenance::System,
+            "DEC-0035 must not block SYSTEM for a file that is confirmed not a placeholder"
         );
     }
 
