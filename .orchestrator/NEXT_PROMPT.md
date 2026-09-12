@@ -1,83 +1,106 @@
-# NEXT_PROMPT — TASK-0036 — final corrective pass after ACTION-0059
+# NEXT_PROMPT — TASK-0037 — V1 Change Journal on Manual Refresh
 
 **TARGET_AGENT:** CLAUDE CODE  
 **RECOMMENDED_MODEL:** Sonnet 5, high effort  
 **STATUS:** READY  
 **OWNER:** orchestrateur ChatGPT  
-**TASK:** `TASK-0036 — V1 Stable Identity Foundation`  
-**BRANCHE:** `build/v0.2-a20-v1-stable-identity`
+**TASK:** `TASK-0037 — V1 Change Journal on Manual Refresh`  
+**BRANCHE:** `build/v0.2-a21-v1-change-journal`
 
 ## /goal
 
-Corriger **uniquement D6** de `docs/reviews/ACTION-0059-independent-recontrol.md` : la copie de sûreté M-B ne doit être supprimée qu’après réussite de la validation canonique v4. D1/D2/D3/R1, D4 hors D6 et D5 sont acceptés; ne pas les réécrire sans nécessité démontrée.
+Implémenter intégralement `docs/tasks/TASK-0037-v1-change-journal.md` : journal persistant par cerveau alimenté lors d’Actualiser/Reconstruire, avec les cinq natures `CREATED`, `MODIFIED`, `RENAMED`, `MOVED`, `DELETED`, publication atomique avec l’Index, consultation paginée/filtrable et UI V1.
 
-Aucune TASK-0037. Aucun journal, watcher, incrémental, filtre ou nouvelle UI. Finir `IMPLEMENTED`, jamais auto-`VERIFIED`.
+`TASK-0036` est **VERIFIED** par `ACTION-0060`. Sa fondation d’identité stable et sa migration M-B sont des acquis à réutiliser, pas à réécrire.
 
-## 0 — Préconditions
+Cette tâche reste `IMPLEMENTED`, jamais auto-`VERIFIED`. Ne créer aucune TASK-0038. Ne commencer aucun watcher, `ReadDirectoryChangesExW`, application incrémentale U-B, réconciliation W-B/W-C, filtres de carte nouveau/non-vu, ou marquage vu.
+
+## 0 — Préconditions et audit
 
 1. Appliquer `AGENTS.md` et `CLAUDE.md`.
-2. Bascule explicitement sur `build/v0.2-a20-v1-stable-identity`, `git fetch origin`, fast-forward uniquement, arbre propre.
-3. Le HEAD doit contenir `ACTION-0059`.
-4. Lire `ACTION-0058`, `ACTION-0059`, `DEC-0013`, `DEC-0035`, `TASK-0036`, puis `src-tauri/src/map/brain_index.rs` et les tests stable identity.
+2. Bascule explicitement sur `build/v0.2-a21-v1-change-journal`, `git fetch origin`, fast-forward uniquement, arbre propre.
+3. Le HEAD doit contenir `ACTION-0060` et `TASK-0037`.
+4. Lire **en entier** `TASK-0037` avant de coder.
+5. Lire les décisions et sources nommées en section A de la tâche, particulièrement `DEC-0010`, `DEC-0013`, le chemin M-B actuel et la publication stable de `TASK-0036`.
+6. Auditer avant de construire : réutiliser les transactions, curseurs, DTO et composants existants; pas de second Index, pas de journal parallèle.
 
-## 1 — Correction D6
+## 1 — Points de contrôle obligatoires
 
-Le flux actuel supprime `safety_copy` immédiatement après `migrate_previous_schema()` puis appelle `finish_open_existing()`. C’est trop tôt : `finish_open_existing()` peut encore refuser le contrat canonique v4.
+### Schéma / migration
 
-Construire le flux suivant sans dupliquer ni affaiblir `finish_open_existing()` :
+Si l’audit confirme que le schéma courant est v4, faire un saut versionné vers v5 pour le journal. Le chemin produit v4→v5 doit passer par la **même frontière M-B** que TASK-0036 : contrôles binding, quiescence, copie, migration transactionnelle, validation canonique, restauration sur échec de migration ou validation, suppression de copie seulement après succès final.
 
-```text
-checks v3 brain/binding
-lock + quiesce
-copy + verify v3
-migrate_previous_schema()
-finish_open_existing(connection)
-  OK  -> supprimer safety copy -> retourner store v4
-  ERR -> connexion v4 fermée -> restaurer safety copy v3 -> nettoyer la copie
-         si restauration réussie -> retourner l’erreur de validation
-```
+Ne transforme pas `open_existing_migrating()` en collection de chemins divergents. Si nécessaire, factorise un dispatcher de migration par version tout en conservant les preuves de sécurité existantes.
 
-Exigences :
+### Diff
 
-- la copie doit rester disponible pendant **toute** la validation v4;
-- une erreur de migration conserve le comportement D4 déjà acquis;
-- une erreur de validation finale restaure également le v3;
-- si la restauration échoue, retourner une erreur de restauration claire et **ne pas supprimer** une copie encore utile à récupération;
-- aucun chemin absolu de copie dans DTO/log/artefact;
-- succès normal : pas de copie résiduelle;
-- ne pas introduire de nouveau store ou mécanisme de migration.
+Le diff se fait entre l’ancien corpus canonique et le nouveau corpus **après remap des IDs stables**.
 
-## 2 — Test obligatoire
+- présent seulement après → `CREATED`;
+- présent seulement avant → `DELETED`;
+- même ID, nom changé avec même parent → `RENAMED`;
+- même ID, parent changé → `MOVED`;
+- même ID, métadonnée observable non structurelle changée → `MODIFIED`.
 
-Ajouter un test produit déterministe qui passe réellement par `open_map/open_for_brain` :
+Ne journalise pas un faux move sur chaque descendant d’un dossier déplacé si son `parent_id` propre est inchangé. `PATH_FALLBACK` renommé/déplacé reste delete+create. Aucun heuristic matching.
 
-1. produire un index réel, le ramener en v3;
-2. conserver brain_id + binding corrects pour que D1 autorise la migration;
-3. rendre volontairement invalide un invariant canonique **que la migration ne répare pas** (ex. `build_complete`, `projection_contract`, `root_id` ou équivalent);
-4. appeler `open_map` : le DDL v3→v4 doit réussir, puis `finish_open_existing()` doit échouer;
-5. après l’erreur, prouver restauration du fichier actif au v3 antérieur : `user_version == 3`, contenu attendu, `seen`, `index_id`, `index_revision`, brain/binding inchangés selon la fixture;
-6. prouver que la copie temporaire a été supprimée après restauration réussie;
-7. réparer l’invariant de fixture, relancer `open_map`, prouver migration v4 réussie et aucune copie résiduelle.
+Si nom et parent changent ensemble, représente les deux natures avec le même `detected_revision`; l’ordre de journal est déterministe mais **n’est jamais présenté comme l’ordre réel des opérations filesystem**.
 
-Le test doit échouer sur le code de `0daf342f` et passer après correction.
+### Atomicité
 
-## 3 — Non-régression
+Corpus + révision + événements = une seule publication transactionnelle. Échec du journal => rollback publication. Échec publication => aucun événement. Premier build => baseline, journal vide. Refresh inchangé => zéro événement. Historique jamais vidé par rebuild.
 
-Rejouer au minimum :
+### Consultation / UI
 
-- tous les tests D4 M-B (WAL pending + restore + retry, busy checkpoint, failed safety copy, refus brain/binding/future schema);
-- tous les tests D5 Cloud Files;
-- D1/D2/D3/R1 et les invariants stable identity;
-- `cargo test --offline`;
-- suite TS complète, `pnpm check`, `pnpm build`, `cargo build --offline`, fmt limité, `git diff --check`;
-- Clippy strict en distinguant les 26 diagnostics historiques de tout nouveau diagnostic;
-- WebView2 TASK-0036 seulement si le code touché peut affecter son scénario; sinon justifier explicitement pourquoi le dernier replay `0daf342f` reste applicable. Ne fabrique pas une preuve inutile.
+API max 50/page, keyset cursor lié à l’`index_id` mais pas rendu obsolète uniquement parce qu’une nouvelle révision s’ajoute au journal. Filtres par nature, total exact, plus récent d’abord.
 
-## 4 — Livrables
+UI simple « Changements » : pagination, filtres visibles/révocables, chemins relatifs seulement, sélection d’un nœud encore vivant via les primitives existantes, aucun focus possible sur un DELETE.
 
-- `TASK-0036` reste `IMPLEMENTED`, jamais auto-`VERIFIED`;
-- mettre à jour `.orchestrator/RESULT.md`, `CURRENT_STATE`, `HANDOFF`, `NEXT_ACTION`, `VALIDATION`, `CHANGELOG_AI` honnêtement;
-- `RESULT.md` nomme D6 et la preuve de restauration après **échec de validation post-migration**;
-- `NEXT_ACTION = contrôle indépendant final de TASK-0036`;
-- commit + push sur cette branche, arbre propre;
-- aucun PR/merge/tag/release, aucune TASK-0037.
+Ajouter aux rapports Actualiser/Reconstruire un résumé de compteurs par nature, pas la liste complète.
+
+## 2 — Preuves obligatoires
+
+Exécuter toutes les preuves G/H de `TASK-0037`, notamment :
+
+- migration produit vers le nouveau schéma sous M-B;
+- first build vide / no-op refresh zéro événement;
+- cinq natures exactes;
+- rename/move SYSTEM gardent le nodeId;
+- dossier déplacé sans faux événements descendants;
+- PATH_FALLBACK rename/move = delete+create;
+- publication/journal atomiques sous échec injecté;
+- historique persistant au redémarrage;
+- pagination >50 sans trou/doublon + filtres/total;
+- isolation entre cerveaux;
+- aucune donnée sensible dans DTO/DOM/artefacts;
+- WebView2 Windows avec un vrai redémarrage de processus et 0 erreur console fatale.
+
+Ne pas utiliser de donnée personnelle ni de vrai cerveau utilisateur.
+
+## 3 — Non-régression TASK-0036
+
+Les invariants D1–D6 restent verts : stable IDs, raw-path fallback, Cloud Files conservative boundary, M-B, recherche, enfants directs, Explorer, Copier le chemin, projection bornée et aucune permission WebView nouvelle.
+
+## 4 — Validation
+
+Exécuter :
+
+- tests Rust ciblés puis `cargo test --offline`;
+- suite TypeScript complète;
+- `pnpm check`;
+- `pnpm build`;
+- `cargo build --offline`;
+- formatage limité aux fichiers touchés;
+- Clippy strict en séparant dette historique et nouveau diagnostic;
+- `git diff --check`.
+
+## 5 — Livrables
+
+À la fin :
+
+- `TASK-0037 = IMPLEMENTED`, jamais auto-`VERIFIED`;
+- mettre à jour `CURRENT_STATE`, `HANDOFF`, `NEXT_ACTION`, `VALIDATION`, `CHANGELOG_AI` et `FEATURE_MATRIX` honnêtement;
+- `.orchestrator/RESULT.md` doit résumer : audit reuse/adapt/not-build, schéma/migration, modèle d’événement, règles de diff, atomicité, API/UI, preuve des cinq natures, pagination, WebView2, tests et limites;
+- `NEXT_ACTION = contrôle indépendant de TASK-0037`;
+- aucun TASK-0038, PR, merge, tag ou release;
+- commit/push uniquement sur `build/v0.2-a21-v1-change-journal`, arbre propre.
