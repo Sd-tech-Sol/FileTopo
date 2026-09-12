@@ -729,7 +729,7 @@ Aucun dossier utilisateur choisi par l’agent, aucun corpus privé, aucun conte
 - Ajouts publics justifiés : `CODE_OF_CONDUCT.md`, `CHANGELOG.md` public,
   `.github/workflows/ci.yml` (Windows), `.gitattributes`, modèles d'issues et
   de demande de fusion, `README.md` réécrit avec paternité, lien
-  `https://github.com/Vat-faire`, statut alpha et limites exactes.
+  `https://github.com/Sd-tech-Sol`, statut alpha et limites exactes.
 - Corrections : `SECURITY.md` nomme le canal prévu, `CONTRIBUTING.md` renvoie
   au code de conduite et à la CI, `scripts/audit-public-readiness.ps1` reçoit
   `-AllowRemotes` pour rester utilisable après publication, `package.json`
@@ -773,7 +773,7 @@ l'application.
 
 `ACTION-0012` : l'orchestrateur examine, décide de la forme de publication,
 puis commite. Les actions distantes attendent la réauthentification humaine du
-compte GitHub `Vat-faire`.
+compte GitHub `Sd-tech-Sol`.
 
 ---
 
@@ -804,7 +804,7 @@ compte GitHub `Vat-faire`.
 
 Le propriétaire a approuvé une identité publique **minimale** : nom
 « Sébastien Dubé », copyright 2026 et profil GitHub
-`https://github.com/Vat-faire`, afin que le projet soit attribuable dans un
+`https://github.com/Sd-tech-Sol`, afin que le projet soit attribuable dans un
 portfolio professionnel. Ne sont **jamais** publiables : courriel réel, nom de
 compte Windows, chemin local absolu, document privé ou autre donnée
 personnelle.
@@ -926,7 +926,7 @@ puis commite. La recommandation reste de publier le **code source seul**.
 **Cadre :** GO humain spécial de phase 6 et authentification humaine GitHub
 **Résultat :** `VERIFIED`
 
-- Dépôt public `Vat-faire/FileTopo` créé et branche `main` poussée.
+- Dépôt public `Sd-tech-Sol/FileTopo` créé et branche `main` poussée.
 - Description anglaise, huit sujets, issues actives, wiki inactif.
 - Signalement privé de vulnérabilités, analyse de secrets et blocage au push
   activés; Dependabot volontairement inactif.

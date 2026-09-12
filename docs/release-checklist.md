@@ -75,7 +75,7 @@ Si un binaire devait être distribué, ces points sont **bloquants** :
 Le GO humain spécial a été donné par le propriétaire le **2026-08-26**. Il
 ouvre la phase; il n'autorise aucun agent exécuteur à agir hors du dépôt.
 Les actions ci-dessous relèvent de l'orchestrateur ou de l'humain, après
-réauthentification du compte GitHub `Vat-faire`.
+réauthentification du compte GitHub `Sd-tech-Sol`.
 
 - [x] **GO humain spécial et distinct de phase 6 obtenu.**
 - [x] Refaire la diligence sur le nom public et confirmer la destination.
@@ -118,7 +118,7 @@ dans un portfolio professionnel :
 
 - le **nom** « Sébastien Dubé »;
 - le **copyright 2026**;
-- le **profil GitHub** `https://github.com/Vat-faire`.
+- le **profil GitHub** `https://github.com/Sd-tech-Sol`.
 
 Ne doivent **jamais** être publiables : courriel réel, nom de compte Windows,
 chemin local absolu, document privé, ou toute autre donnée personnelle. Les

@@ -4,12 +4,12 @@
 - **Phase :** 6 — Publication
 - **Ouverte le :** 2026-08-26
 - **Approuvée via :** GO humain spécial de phase 6 du 2026-08-26
-- **Compte cible :** `Vat-faire`
-- **Dépôt cible proposé :** `Vat-faire/FileTopo`
+- **Compte cible :** `Sd-tech-Sol`
+- **Dépôt cible proposé :** `Sd-tech-Sol/FileTopo`
 - **Version :** `v0.1.0-alpha.1`, prerelease
 - **Vérifiée le :** 2026-08-26
-- **Dépôt public :** `https://github.com/Vat-faire/FileTopo`
-- **Release :** `https://github.com/Vat-faire/FileTopo/releases/tag/v0.1.0-alpha.1`
+- **Dépôt public :** `https://github.com/Sd-tech-Sol/FileTopo`
+- **Release :** `https://github.com/Sd-tech-Sol/FileTopo/releases/tag/v0.1.0-alpha.1`
 
 ## Objectif
 
@@ -20,7 +20,7 @@ prerelease source seulement, après réauthentification humaine du compte GitHub
 
 - Nom : **Sébastien Dubé**.
 - Copyright : **2026 Sébastien Dubé**.
-- Profil : `https://github.com/Vat-faire`.
+- Profil : `https://github.com/Sd-tech-Sol`.
 - Divulgation de l'assistance IA : `AI_ASSISTANCE.md`.
 
 Aucun courriel réel, nom de compte Windows, chemin local, document privé ou
@@ -28,7 +28,7 @@ autre donnée personnelle ne doit être transmis.
 
 ## Actions autorisées après authentification
 
-1. Créer le dépôt public `Vat-faire/FileTopo` depuis la branche `main`.
+1. Créer le dépôt public `Sd-tech-Sol/FileTopo` depuis la branche `main`.
 2. Pousser les commits locaux vérifiés.
 3. Définir une description anglaise et des sujets techniques pertinents.
 4. Activer les issues et le signalement privé de vulnérabilités si disponible.
@@ -57,7 +57,7 @@ autre donnée personnelle ne doit être transmis.
 
 ## Résultat vérifié
 
-- Dépôt public créé sous `Vat-faire/FileTopo`; branche par défaut `main`.
+- Dépôt public créé sous `Sd-tech-Sol/FileTopo`; branche par défaut `main`.
 - Description anglaise, huit sujets techniques, issues actives et wiki inactif.
 - Signalement privé de vulnérabilités, analyse de secrets et blocage au push
   actifs. Dependabot demeure volontairement inactif.

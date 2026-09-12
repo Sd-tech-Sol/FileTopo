@@ -714,7 +714,7 @@ phase 6.
 
 | Contrôle | Résultat |
 |---|---|
-| Dépôt | `Vat-faire/FileTopo`, public, branche `main` |
+| Dépôt | `Sd-tech-Sol/FileTopo`, public, branche `main` |
 | Licence | MIT détectée par GitHub |
 | CI finale | exécution `33036847625`, succès, chaîne Windows complète |
 | Sécurité | signalement privé, analyse de secrets et blocage au push actifs |
