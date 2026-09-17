@@ -96,7 +96,7 @@ négatif, et non seulement sur un dépôt déjà propre.
 | Liens | 49 fichiers `.md` | résolution sur le disque | **0 lien relatif cassé** |
 
 Liens externes du dépôt, au nombre de quatre et tous délibérés :
-`https://github.com/Vat-faire`, `https://keepachangelog.com/en/1.1.0/`,
+`https://github.com/Sd-tech-Sol`, `https://keepachangelog.com/en/1.1.0/`,
 `https://semver.org/`, `https://www.contributor-covenant.org`.
 
 PyYAML est un module de l'interpréteur Python déjà présent sur la machine.

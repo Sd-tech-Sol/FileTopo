@@ -41,6 +41,11 @@ internal log of agent work lives in `docs/ai/CHANGELOG_AI.md`, in French.
 - The synthetic fixture is a development-only feature. Its location is resolved
   at run time instead of being compiled in, and the button is hidden when the
   build does not provide it.
+- The Tauri application identifier now matches the current GitHub account.
+  Tauri derives its WebView and application-data directories from this
+  identifier, so development indexes created under the previous identifier are
+  not discovered automatically. FileTopo starts with a new registry and can
+  rebuild its indexes; it never changes the analysed folders.
 
 ### Fixed
 

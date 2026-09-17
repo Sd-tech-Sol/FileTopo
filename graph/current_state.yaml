@@ -1,7 +1,7 @@
 schema: current_state
 schema_version: 1
-updated_at: "2026-08-26"
-updated_by: orchestrator
+updated_at: "2026-09-17"
+updated_by: openai_codex
 
 standing_authorization:
   granted_on: "2026-08-25"
@@ -35,7 +35,7 @@ public_identity:
   publishable:
     - "nom : Sébastien Dubé"
     - "copyright 2026"
-    - "profil GitHub : https://github.com/Vat-faire"
+    - "profil GitHub : https://github.com/Sd-tech-Sol"
   never_publishable:
     - courriel_reel
     - nom_de_compte_windows
@@ -49,16 +49,16 @@ phase_6_special_go:
   granted_by: owner
   scope: "autorise la preparation et la publication controlee du code source; aucun binaire, signature ou depense"
   remote_actions_reserved_to: orchestrator
-  github_account: "Vat-faire"
+  github_account: "Sd-tech-Sol"
   github_cli_authenticated: true
-  public_repository: "https://github.com/Vat-faire/FileTopo"
-  source_prerelease: "https://github.com/Vat-faire/FileTopo/releases/tag/v0.1.0-alpha.1"
+  public_repository: "https://github.com/Sd-tech-Sol/FileTopo"
+  source_prerelease: "https://github.com/Sd-tech-Sol/FileTopo/releases/tag/v0.1.0-alpha.1"
   binaries_published: false
 
 in_progress_task: null
 in_progress_count: 0
-last_delivered_task: TASK-0009
-last_delivered_status: VERIFIED
+last_delivered_task: TASK-0010
+last_delivered_status: IMPLEMENTED
 
 tasks:
   - id: TASK-0001
@@ -155,20 +155,35 @@ tasks:
     verified_by: orchestrator
     title: "Phase 6 : publication GitHub source seulement"
     file: docs/tasks/TASK-0009-phase-6-github-publication.md
+  - id: TASK-0010
+    status: IMPLEMENTED
+    verified: false
+    approved_via: "go_final_commit_push_pr_sans_merge_2026-09-17"
+    opened_on: "2026-09-16"
+    started_on: "2026-09-16"
+    delivered_on: "2026-09-17"
+    title: "Correction courante de l'identite publique"
+    branch: audit/public-release
+    commit_authorized: true
+    push_authorized: true
+    pull_request_authorized: true
+    merge_authorized: false
+    history_rewritten: false
+    file: docs/tasks/TASK-0010-current-public-identity.md
 
 next_action:
-  id: ACTION-0014
-  target_task_id: null
-  status: DEFERRED
-  title: "Observer l'alpha avant d'ouvrir une fonction avancee"
-  target_phase: 7
-  actor: orchestrator
-  awaiting: "besoin concret ou retour sur la prerelease alpha"
-  requires_human_go: false
-  human_go_already_granted: "go_special_phase_6_2026-08-26"
+  id: ACTION-0016
+  target_task_id: TASK-0010
+  status: PROPOSED
+  title: "Revue humaine de la PR d'identite publique"
+  target_phase: 6
+  actor: owner_then_orchestrator
+  awaiting: "nouveau GO avant merge"
+  requires_human_go: true
+  human_go_already_granted: false
   executes_research: false
-  network_access: "lecture publique seulement tant qu'aucune tache n'est ouverte"
-  commits_allowed: true
+  network_access: "aucune autre ecriture distante sans nouveau GO"
+  commits_allowed: false
   file: docs/ai/NEXT_ACTION.md
 
 decided:
@@ -391,7 +406,7 @@ verification:
     performed_on: "2026-08-26"
     performed_by: orchestrator
     status: VERIFIED
-    public_repository: "https://github.com/Vat-faire/FileTopo"
+    public_repository: "https://github.com/Sd-tech-Sol/FileTopo"
     default_branch: main
     visibility: public
     license_detected: MIT

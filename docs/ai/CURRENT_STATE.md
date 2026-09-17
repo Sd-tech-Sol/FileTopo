@@ -1,13 +1,23 @@
 # CURRENT_STATE.md — État courant
 
-**Dernière mise à jour :** 2026-08-26 — `TASK-0009` et phase 6 vérifiées;
-dépôt et prerelease source seulement publiés.
+**Dernière mise à jour :** 2026-09-17 — `TASK-0010` livrée en
+`IMPLEMENTED`; le GO final autorise le commit unique, le push de
+`audit/public-release` et l'ouverture d'une PR sans merge.
 
 ## Résumé
 
 FileTopo possède un MVP Windows local construit et vérifié. L'application
 Tauri/Rust/React affiche une carte topographique, un index accessible, une
 interface FR/EN et un pipeline réel scanner → SQLite → DTO.
+
+Sur la branche locale `audit/public-release`, `TASK-0010` remplace dans le
+contenu courant les références publiques obsolètes par `Sd-tech-Sol` et adopte
+`io.github.sd-tech-sol.filetopo`. Le changement d'identifiant déplace le chemin
+logique résolu par Tauri pour les données d'application : les index de
+développement antérieurs ne sont pas importés automatiquement, mais restent
+reconstructibles sans modifier les dossiers analysés. Les tests et le build
+Tauri sans bundle sont réussis. Le merge dans `main` reste soumis à un nouveau
+GO humain.
 
 Le **GO humain spécial de phase 6** a été donné par le propriétaire le
 2026-08-26. Après réauthentification humaine, l'orchestrateur a créé le dépôt
@@ -79,8 +89,11 @@ Preuves : `docs/ai/VALIDATION.md`, sections H et H bis.
 
 ## Tâche active
 
-Aucune tâche n'est `IN_PROGRESS`. `TASK-0008` et `TASK-0009` sont `VERIFIED`.
-La phase 7 reste optionnelle et `DEFERRED` jusqu'à un besoin concret.
+Aucune tâche n'est `IN_PROGRESS`. `TASK-0010` est `IMPLEMENTED`, non
+`VERIFIED`, et sa livraison sur la branche approuvée est autorisée.
+`TASK-0008` et `TASK-0009`
+restent `VERIFIED`. La phase 7 reste optionnelle et `DEFERRED` jusqu'à un besoin
+concret.
 
 ## Décidé
 
@@ -121,8 +134,9 @@ La phase 7 reste optionnelle et `DEFERRED` jusqu'à un besoin concret.
 
 ## Prochaine action
 
-`ACTION-0014` : observer l'alpha; ne pas ouvrir une fonction avancée sans besoin
-concret et critères documentés.
+`ACTION-0016` : examiner la PR de `audit/public-release` vers `main` et attendre
+un nouveau GO humain avant tout merge. Aucune réécriture historique n'est
+prévue.
 
 ## Preuves vérifiées de `TASK-0009`
 

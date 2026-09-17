@@ -1,51 +1,59 @@
 # HANDOFF.md — Passation
 
-**Date :** 2026-08-26
-**De :** orchestrateur, clôture de `TASK-0009`
-**Vers :** prochaine session de maintenance
+**Date :** 2026-09-17
+**De :** OpenAI Codex, livraison distante autorisée de `TASK-0010`
+**Vers :** propriétaire pour revue de la PR et GO de merge
 
 ## État livré
 
-- `TASK-0001` à `TASK-0009` : `VERIFIED`.
-- Phases 0 à 6 : `VERIFIED`; phase 7 : `DEFERRED`.
-- Dépôt public : `https://github.com/Sd-tech-Sol/FileTopo`.
-- Prerelease source seulement : `v0.1.0-alpha.1`, zéro actif joint.
-- CI Windows finale verte; signalement privé, analyse de secrets et blocage au
-  push actifs. Aucun binaire n'est distribué.
+- Branche locale : `audit/public-release`, basée sur `main` au commit
+  `1a7d652ca48281c1687f6d1404c56a1404df91d8`.
+- `TASK-0010` : `IMPLEMENTED`, non `VERIFIED`.
+- GO final reçu pour un commit unique, le push de la branche et l'ouverture
+  d'une PR vers `main`; aucun merge autorisé.
+- Aucune réécriture historique, suppression de référence, modification de tag
+  ou d'ancienne branche.
 
-## Ce qui a changé depuis la dernière passation
+## Changements préparés
 
-- Documentation publique en **anglais**, avec `README.fr.md` complet et
-  équivalent. `docs/ai/**`, `graph/**`, `AGENTS.md`, `CLAUDE.md` et la
-  checklist restent en français.
-- L'application détecte la langue système : français pour une locale `fr`,
-  anglais sinon, anglais en repli. Le bouton FR/EN est conservé et le choix
-  explicite est mémorisé sous la clé `filetopo.locale`.
-- La **fuite de chemins de compilation est corrigée** et vérifiée sur
-  l'artefact : 336 occurrences → 0. Les empreintes SHA-256 de
-  `docs/releases/0.1.0-alpha.1.md` sont vérifiées; les empreintes antérieures
-  sont périmées et leurs artefacts ne doivent pas être distribués.
-- Deux scripts ajoutés : `scripts/build-release-clean.ps1` et
-  `scripts/scan-binary-for-personal-paths.ps1`.
-- Tests : 4 → **36** côté interface, 11 → **13** côté Rust.
+- Les URL, le compte et le chemin de dépôt courants utilisent `Sd-tech-Sol`.
+- L'identifiant Tauri est `io.github.sd-tech-sol.filetopo`.
+- Tauri inclut l'identifiant dans `app_data_dir()` : les index de
+  développement antérieurs ne sont pas retrouvés automatiquement. Aucune
+  migration implicite n'est ajoutée; les index restent reconstructibles et les
+  dossiers analysés ne sont jamais modifiés.
+- `graph/history.jsonl` conserve deux mentions historiques conformément à sa
+  règle d'ajout seul.
+- Aucun exemple de profil Windows à normaliser n'existait dans le contenu de
+  `main`.
 
-## Ce qui attend l'orchestrateur
+## Preuves réussies
 
-Rien d'immédiat. Observer l'alpha et n'ouvrir une tâche de phase 7 qu'à partir
-d'un besoin concret, avec critères et preuves documentés.
+- `pnpm check`;
+- `pnpm test` : 36/36;
+- `pnpm build`;
+- `cargo fmt --check`;
+- `cargo clippy --all-targets -- -D warnings`;
+- `cargo test` : 13/13;
+- `pnpm tauri build --debug --no-bundle`;
+- audit public : 121 fichiers, 0 motif sensible, 0 fichier supérieur à 5 Mio.
+- liens Markdown relatifs : 52 fichiers, 58 liens vérifiés, 0 cassé.
 
-## Ce qui attend l'humain
+Le warning local `linker_messages` contient le chemin du clone dans la sortie
+MSVC. Il était déjà connu et documenté; aucun journal de build ne doit être
+publié.
 
-- Rien pour la publication source terminée.
-- Une autorisation séparée resterait nécessaire pour toute signature, dépense
-  ou distribution de binaire.
+## Action suivante unique
+
+`ACTION-0016` : le propriétaire examine la PR. Attendre un nouveau GO explicite
+avant tout merge dans `main`.
 
 ## Règles à ne pas relâcher
 
 - Ne versionner aucun secret, chemin personnel ou donnée réelle.
 - Tests exclusivement synthétiques ou temporaires.
-- Le GO de phase 6 **ouvre la phase**; il n'autorise aucun agent exécuteur à
-  agir hors du dépôt.
+- Aucun `git-filter-repo`, force-push ou changement de visibilité.
+- Ne modifier aucune ancienne branche ni aucun tag.
 - Tout artefact destiné à sortir de la machine passe
   `scripts/scan-binary-for-personal-paths.ps1`, y compris après signature, qui
   réécrit le fichier.

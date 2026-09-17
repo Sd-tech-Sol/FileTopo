@@ -1,36 +1,37 @@
 # NEXT_ACTION.md — Prochaine action
 
-**Dernière mise à jour :** 2026-08-26
+**Dernière mise à jour :** 2026-09-17
 
 Ce fichier contient **exactement une** action.
 
 ---
 
-## ACTION-0014 — Observer l'alpha avant d'ouvrir une fonction avancée
+## ACTION-0016 — Revue humaine de la PR d'identité publique
 
-- **Tâche visée :** aucune tâche ouverte
-- **Statut :** `DEFERRED`
-- **Exécutant :** orchestrateur après signal concret ou demande du propriétaire
-- **Phase :** 7 — fonctions avancées optionnelles
+- **Tâche visée :** `TASK-0010`
+- **Statut :** `PROPOSED`
+- **Exécutant :** propriétaire puis orchestrateur après un nouveau GO
+- **Phase :** maintenance de la publication source
 
 ### Objet
 
-Observer les retours et incidents de la préversion source seulement
-`v0.1.0-alpha.1`. N'ouvrir une tâche de phase 7 qu'à partir d'un besoin concret,
-documenté et compatible avec les garanties locales et en lecture seule.
+Examiner la PR de `audit/public-release` vers `main`, les preuves de test et
+l'impact documenté du nouvel identifiant Tauri. Décider ensuite si le merge est
+autorisé.
 
-### Point de départ vérifié le 2026-08-26
+### Point de départ vérifié le 2026-09-17
 
-`TASK-0009` et la phase 6 sont `VERIFIED`. Le dépôt public, la CI Windows et la
-prerelease source seulement sont accessibles. Aucun binaire n'est distribué.
+`TASK-0010` est `IMPLEMENTED`, non `VERIFIED`. Les contrôles TypeScript, Vitest,
+Vite, Rust, audit public et build Tauri sans bundle sont réussis. Le GO final
+du 2026-09-17 couvre un commit, le push de `audit/public-release` et l'ouverture
+d'une PR, mais pas son merge.
 
 ### Interdit dans cette action
 
-Activation implicite d'IA, OCR, connecteur distant ou réorganisation physique;
-téléversement de binaire, signature, achat, secret ou accès à un corpus privé.
+Merge sans nouveau GO humain; réécriture historique; `git-filter-repo`;
+force-push; modification d'une ancienne branche, d'un tag ou d'une visibilité.
 
 ### Suite attendue
 
-Aucune action immédiate. Conserver la phase 7 en `DEFERRED` jusqu'à un signal
-concret; toute nouvelle tâche devra définir ses critères et ses preuves avant
-implémentation.
+Présenter la PR et attendre la décision humaine. Sans nouveau GO, laisser la PR
+ouverte et ne pas modifier `main`.
