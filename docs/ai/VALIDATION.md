@@ -666,7 +666,7 @@ Non commité. `TASK-0008` reste `IMPLEMENTED`.
 - Assistance IA divulguée en anglais et en français.
 - Documentation publique anglaise avec README français complet.
 - Version harmonisée à `0.1.0-alpha.1`.
-- Identifiant d'application : `io.github.vat-faire.filetopo`.
+- Identifiant d'application : `io.github.sd-tech-sol.filetopo`.
 - Publication retenue : prerelease GitHub **source seulement**, sans binaire.
 
 ### Preuves rejouées indépendamment
@@ -714,7 +714,7 @@ phase 6.
 
 | Contrôle | Résultat |
 |---|---|
-| Dépôt | `Vat-faire/FileTopo`, public, branche `main` |
+| Dépôt | `Sd-tech-Sol/FileTopo`, public, branche `main` |
 | Licence | MIT détectée par GitHub |
 | CI finale | exécution `33036847625`, succès, chaîne Windows complète |
 | Sécurité | signalement privé, analyse de secrets et blocage au push actifs |
@@ -727,3 +727,32 @@ La première CI a réussi mais signalait trois actions fondées sur Node.js 20.
 Les références ont été mises à jour vers `actions/checkout@v6`,
 `actions/setup-node@v6` et `actions/cache@v5`; les deux CI suivantes ont réussi
 sans cet avertissement. `TASK-0009` et la phase 6 passent à `VERIFIED`.
+
+---
+
+## J. Auto-vérification de TASK-0010 — identité publique courante (2026-09-16)
+
+**Exécutant :** OpenAI Codex. Cette section est une auto-vérification; elle ne
+confère pas le statut `VERIFIED`.
+
+| Contrôle | Résultat |
+|---|---|
+| Branche locale | `audit/public-release`, basée sur `1a7d652ca48281c1687f6d1404c56a1404df91d8` |
+| TypeScript | `pnpm check` réussi |
+| Interface | Vitest **36/36** |
+| Build Web | `pnpm build` réussi |
+| Format Rust | `cargo fmt --check` réussi |
+| Clippy | tous les targets, avertissements refusés, réussi |
+| Tests Rust | **13/13** |
+| Configuration et build Tauri | `pnpm tauri build --debug --no-bundle` réussi |
+| Audit public | 121 fichiers, 0 motif sensible, 0 fichier supérieur à 5 Mio |
+| Liens Markdown relatifs | 52 fichiers, 58 liens vérifiés, 0 cassé |
+| Ancien login dans le contenu courant | 2 lignes historiques intentionnelles dans `graph/history.jsonl` seulement |
+| Réécriture historique | aucune |
+| Livraison distante | GO final reçu le 2026-09-17 pour un commit unique, le push de `audit/public-release` et une PR sans merge |
+
+L'identifiant `io.github.sd-tech-sol.filetopo` respecte les caractères permis
+par Tauri et a été accepté par le build réel. Tauri résout `app_data_dir()` sous
+un chemin contenant l'identifiant de bundle; les index de développement créés
+avec l'identifiant précédent ne sont donc pas retrouvés automatiquement. Cette
+limite est documentée dans `CHANGELOG.md`, `PRIVACY.md` et `TASK-0010`.

@@ -729,7 +729,7 @@ Aucun dossier utilisateur choisi par l’agent, aucun corpus privé, aucun conte
 - Ajouts publics justifiés : `CODE_OF_CONDUCT.md`, `CHANGELOG.md` public,
   `.github/workflows/ci.yml` (Windows), `.gitattributes`, modèles d'issues et
   de demande de fusion, `README.md` réécrit avec paternité, lien
-  `https://github.com/Vat-faire`, statut alpha et limites exactes.
+  `https://github.com/Sd-tech-Sol`, statut alpha et limites exactes.
 - Corrections : `SECURITY.md` nomme le canal prévu, `CONTRIBUTING.md` renvoie
   au code de conduite et à la CI, `scripts/audit-public-readiness.ps1` reçoit
   `-AllowRemotes` pour rester utilisable après publication, `package.json`
@@ -773,7 +773,7 @@ l'application.
 
 `ACTION-0012` : l'orchestrateur examine, décide de la forme de publication,
 puis commite. Les actions distantes attendent la réauthentification humaine du
-compte GitHub `Vat-faire`.
+compte GitHub `Sd-tech-Sol`.
 
 ---
 
@@ -784,7 +784,7 @@ compte GitHub `Vat-faire`.
 
 - Identité publique minimale et divulgation IA approuvées par le propriétaire.
 - Version harmonisée à `0.1.0-alpha.1`; identifiant technique remplacé par
-  `io.github.vat-faire.filetopo`.
+  `io.github.sd-tech-sol.filetopo`.
 - Détection de langue corrigée pour suivre la première préférence valide.
 - 36 tests interface, 13 tests Rust, TypeScript, Vite, fmt, Clippy strict
   debug/release, audit de vulnérabilités et inventaires réussis.
@@ -804,7 +804,7 @@ compte GitHub `Vat-faire`.
 
 Le propriétaire a approuvé une identité publique **minimale** : nom
 « Sébastien Dubé », copyright 2026 et profil GitHub
-`https://github.com/Vat-faire`, afin que le projet soit attribuable dans un
+`https://github.com/Sd-tech-Sol`, afin que le projet soit attribuable dans un
 portfolio professionnel. Ne sont **jamais** publiables : courriel réel, nom de
 compte Windows, chemin local absolu, document privé ou autre donnée
 personnelle.
@@ -926,7 +926,7 @@ puis commite. La recommandation reste de publier le **code source seul**.
 **Cadre :** GO humain spécial de phase 6 et authentification humaine GitHub
 **Résultat :** `VERIFIED`
 
-- Dépôt public `Vat-faire/FileTopo` créé et branche `main` poussée.
+- Dépôt public `Sd-tech-Sol/FileTopo` créé et branche `main` poussée.
 - Description anglaise, huit sujets, issues actives, wiki inactif.
 - Signalement privé de vulnérabilités, analyse de secrets et blocage au push
   activés; Dependabot volontairement inactif.
@@ -939,3 +939,73 @@ puis commite. La recommandation reste de publier le **code source seul**.
 
 Phase 6 `VERIFIED`. `ACTION-0014` conserve la phase 7 en `DEFERRED` jusqu'à un
 besoin concret.
+
+---
+
+## 2026-09-16 — TASK-0010 — correction courante de l'identité publique
+
+**Agent :** OpenAI Codex, exécuteur
+**Cadre :** GO humain limité au contenu courant de `main`
+**Résultat :** `IMPLEMENTED`, non commité, non poussé
+
+### Fait
+
+- Branche locale `audit/public-release` créée depuis
+  `1a7d652ca48281c1687f6d1404c56a1404df91d8`.
+- Références publiques courantes harmonisées vers `Sd-tech-Sol` dans la
+  documentation et l'état machine.
+- Identifiant Tauri remplacé par `io.github.sd-tech-sol.filetopo`.
+- Impact vérifié dans la documentation officielle Tauri et le code local :
+  `app_data_dir()` dépend de l'identifiant; les anciens index de développement
+  ne sont pas importés automatiquement. Aucun mécanisme de migration n'a été
+  ajouté.
+- Impact documenté dans `CHANGELOG.md`, `PRIVACY.md` et la fiche de tâche.
+- Deux événements historiques conservent volontairement l'ancien login dans
+  `graph/history.jsonl`, fichier en ajout seul.
+
+### Preuves
+
+- `pnpm check` : réussi.
+- `pnpm test` : 36 tests réussis.
+- `pnpm build` : réussi.
+- `cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check` : réussi.
+- `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings` : réussi.
+- `cargo test --manifest-path src-tauri/Cargo.toml` : 13 tests réussis.
+- `pnpm tauri build --debug --no-bundle` : réussi.
+- Audit public : 121 fichiers, 0 motif sensible, 0 fichier supérieur à 5 Mio.
+- Liens Markdown relatifs : 52 fichiers, 58 liens vérifiés, 0 cassé.
+
+### Non fait, volontairement
+
+- Aucun commit, push, force-push, changement de visibilité, tag ou branche
+  distante.
+- Aucune réécriture historique et aucun `git-filter-repo`.
+- Aucune modification des anciennes branches publiques.
+
+### Suite
+
+`ACTION-0015` : revue humaine du diff et attente du GO final avant commit ou
+push.
+
+---
+
+## 2026-09-17 — GO final de livraison de TASK-0010
+
+**Agent :** OpenAI Codex, exécuteur
+**Cadre :** GO humain final limité à un commit, au push de
+`audit/public-release` et à l'ouverture d'une PR vers `main`
+**Résultat :** livraison distante autorisée, merge non autorisé
+
+- `main`, `origin/main` et le `main` distant ont été confirmés au commit
+  `1a7d652ca48281c1687f6d1404c56a1404df91d8` avant livraison.
+- Le tag `v0.1.0-alpha.1` a été confirmé inchangé au commit
+  `3ab52e749311a6352f2c667e2ae9e62a173813bb`.
+- La branche distante `audit/public-release` était absente avant le push
+  autorisé.
+- Le merge, le force-push, la réécriture historique et toute modification de
+  tag, d'ancienne branche ou de visibilité restent interdits.
+
+### Suite
+
+`ACTION-0016` : revue humaine de la PR, puis attente d'un nouveau GO explicite
+avant tout merge.

@@ -4,7 +4,7 @@
 > MVP that is built, tested and visually inspected on synthetic data. The
 > **special human go-ahead for phase 6 was granted on 2026-08-26** by the
 > project owner. The source is published at
-> `https://github.com/Vat-faire/FileTopo`, with the source-only prerelease
+> `https://github.com/Sd-tech-Sol/FileTopo`, with the source-only prerelease
 > `v0.1.0-alpha.1`. No binary is distributed. Phase 7 remains deferred.
 
 | Phase | Title | Status |

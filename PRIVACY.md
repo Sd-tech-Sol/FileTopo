@@ -18,6 +18,13 @@ representation is stored as UTF-16LE data. The web interface never receives the
 absolute value. SQLite indexes are written to FileTopo's local application data
 directory, separately from the collections. Seen/unseen state is local too.
 
+The current application identifier is `io.github.sd-tech-sol.filetopo`. Tauri
+uses that identifier as part of the application-data directory. Data created by
+development builds using the pre-2026-09-16 identifier is not imported
+automatically; the current build starts with a new registry and can rebuild its
+indexes from folders chosen explicitly by the user. The original folders are
+never modified during that rebuild.
+
 The interface language is the only preference stored in the web layer, under a
 single `localStorage` key, `filetopo.locale`. It holds `fr` or `en` and nothing
 else.
