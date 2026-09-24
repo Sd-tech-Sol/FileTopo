@@ -7134,3 +7134,152 @@ depuis `TASK-0009`).
 
 **Action unique suivante :** contrôle indépendant de `TASK-0038`.
 
+
+## BS. TASK-0039 — V1 Dynamic Filters — 2026-09-23
+
+**Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche
+`build/v0.2-a23-v1-dynamic-filters`, partie de `TASK-0038 = VERIFIED`
+([`ACTION-0064`](../reviews/ACTION-0064-independent-control.md)), selon
+[`DEC-0037`](../decisions/DEC-0037-dynamic-filtered-projection.md). `main` n'a pas
+été touché. Tout ce qui suit a été exécuté dans cette session, sauf mention « non
+testé ».
+
+### BS.1 Préconditions
+
+`git switch build/v0.2-a23-v1-dynamic-filters` (créée depuis `origin`, suivi
+configuré), `git fetch origin`, `git merge --ff-only` → « Already up to date »;
+`HEAD` `41a840f` == `origin/build/v0.2-a23-v1-dynamic-filters`; arbre propre;
+`HEAD` contient `ACTION-0064`, `DEC-0037` et `TASK-0039`. `DEC-0037` puis
+`TASK-0039` lues en entier avant tout changement.
+
+### BS.2 Audit avant code — réutilisé / adapté / laissé historique
+
+| Élément | Décision |
+|---|---|
+| `Index`, `nodes` canonique (`kind`, `online_only`), clé primaire `id` | **Réutilisés** : aucun second Index, aucune colonne ni table ajoutée, **pas de nouveau schéma** (reste v6) |
+| `change_journal::unseen_predicate`, `seen_watermark`, `change_events` + `seen_change_events` | **Réutilisés** : le prédicat de `DEC-0036` est appelé, pas recopié (une seule visibilité changée : `pub(crate)`) |
+| `hierarchy::identity`, `MAX_ANCESTOR_CHAIN`, `Index::node`, `node_from_row`, `NODE_COLUMNS` | **Réutilisés** (identité/révision du curseur, montée d'ancêtres par clé primaire, forme de ligne) |
+| `projection.rs` : `MATERIAL_BUDGET`, `ORDINARY_MATERIAL_TARGET`, `HierarchyEdge`, `layout::compute`, `BrainIndex::metadata_node` | **Réutilisés**; deux constantes passées `pub(super)`; `materialize_view` **inchangée** hormis `filtered: None` |
+| `map_view`, `MapSnapshot`, `MapApp.tsx`, `MapView.tsx`, `RenderedBrain`, `seenRevision` | **Adaptés** : un paramètre `filter` optionnel, un champ optionnel `filtered` (absent de la sérialisation normale), un panneau, des rôles par nœud, une relecture après « vu » |
+| `Index::query_nodes(unseen_only)`, `nodes.seen`, `Index::mark_seen`, `query_collection_nodes` | **Laissés historiques** : non réactivés, non lus (la colonne `seen` du DTO est remplacée par la constante `0` dans la requête filtrée) |
+| curseurs `ftc1` (enfants) et `fjc1` (journal) | **Laissés tels quels**; un curseur filtré `ftf1` est un troisième format, distinct : aucun ne peut être pris pour un autre (testé) |
+
+### BS.3 Primitive et projection
+
+`node_filter.rs` : `NodeFilter { state, kinds, availability }` fermé
+(`deny_unknown_fields`, valeurs inconnues refusées à la désérialisation),
+`normalized()` (doublons retirés, ordre canonique), `is_inactive()`, `canonical()`
+(`NEW:DIRECTORY+FILE:ONLINE_ONLY`). `Index::filtered_matches` : un **même snapshot**
+(transaction propre si l'appelant n'en tient pas, celle de l'appelant sinon) pour
+l'identité, le `COUNT(*)` exact et la page; `WHERE n.id > :after … ORDER BY n.id
+LIMIT :limit` (probe d'une ligne), aucun `OFFSET`, racine exclue, page plafonnée à 256.
+`map/filtered_projection.rs` : correspondances consommées **une à une** avec leurs
+ancêtres (montée par clé primaire, arrêt au premier ancêtre déjà présent); si l'ajout
+dépasse la cible de 64 nœuds, la correspondance ouvre la page suivante; la première
+est toujours prise, seul le plafond de 256 la refuse (`exceeds view budget`).
+
+### BS.4 Les 22 points de la fiche (`map/filter_tests.rs`, `node_filter.rs::tests`)
+
+| # | Point | Test |
+|---|---|---|
+| 1 | filtre inactif = projection normale | `an_inactive_filter_reproduces_the_normal_projection_byte_for_byte` (égalité de valeur **et** de JSON; aucune clé `filtered`; focus inchangé) |
+| 2–3 | NEW / UNSEEN viennent du journal | `new_and_unseen_are_the_journal_truth` (contre un oracle Rust indépendant), `nodes_seen_neither_creates_nor_removes_a_match` (`nodes.seen` forcé à 1 puis à 0) |
+| 4–5 | `CREATED` acquitté quitte NEW; `MODIFIED` non vu ⇒ UNSEEN, pas NEW | `an_acknowledged_creation_leaves_new_and_a_modification_is_unseen_but_not_new` |
+| 6 | mark-node / mark-all retirent les matches | `marking_an_element_or_everything_removes_its_matches_on_the_next_read` (un changement après « tout marquer vu » redevient seul non vu) |
+| 7–10 | type, disponibilité, type + disponibilité, état + type + disponibilité | `every_group_and_every_combination_matches_the_independent_oracle` (**62** combinaisons non inactives comparées), `named_combinations_have_the_expected_exact_members` |
+| 11 | racine jamais comptée | `the_root_is_never_a_match_and_only_ever_context` (`LOCAL`, l'un des groupes que la racine satisfait; zéro match ⇒ la racine seule, en contexte) |
+| 12 | total = requête indépendante | oracle recomparé sur **chaque** page de chaque parcours; `a_hundred_thousand_nodes_…` par arithmétique |
+| 13 | > 100 matches paginés sans trou ni doublon | `more_than_a_hundred_matches_page_without_a_gap_or_a_duplicate` (301 matches, ≥ 5 pages, ordre strictement croissant) |
+| 14–16 | curseur d'un autre index / d'une autre révision / d'un autre filtre refusé | `a_cursor_of_another_index_is_refused` (`filter_cursor_foreign`), `a_cursor_of_another_revision_is_refused` (`filter_cursor_stale`), `a_cursor_of_another_filter_is_refused_…` (`filter_cursor_filter_mismatch`; une écriture équivalente est acceptée), `malformed_and_foreign_kind_tokens_are_refused` |
+| 17 | matches + ancêtres sous budget | `matches_and_their_ancestors_stay_under_the_budget_and_a_deferred_match_is_never_lost` (20 branches de 6 nœuds : chaque page ≤ 64, les 20 feuilles servies une fois), `a_single_match_with_a_deep_ancestry_is_served_up_to_the_hard_ceiling_only` |
+| 18 | contexte jamais match | `ancestors_that_do_not_satisfy_the_filter_are_context_and_never_matches` |
+| 19 | arêtes réelles seulement | `check_page` (chaque page de chaque test : arête = vrai parent, aucun orphelin, matches ∪ contexte = nœuds, disjoints) |
+| 20 | aucune lecture / DTO de tout le corpus | `the_filter_query_is_a_bounded_keyset_read_…` (texte SQL : pas d'`OFFSET`, `LIMIT` lié, pas de mot `seen`; plan SQLite `SEARCH n USING INTEGER PRIMARY KEY`, pas de tri temporaire), `the_primitive_returns_at_most_a_page_and_a_probe_whatever_the_total` |
+| 21 | deux cerveaux isolés | `two_brains_keep_independent_filters_totals_and_cursors` |
+| 22 | DTO sans chemin / clé stable / identité | `the_filtered_dto_exposes_no_absolute_path_no_stable_key_and_no_system_identity` (jeu de clés exact, aucune clé interdite, aucune valeur `K-…`, aucun chemin absolu) |
+
+Plus : `the_real_pipeline_filters_created_and_modified_and_follows_the_seen_gestures`
+(vraie racine, vrai scanner, `view_with_filter`, vrais gestes `mark_node_seen` /
+`mark_all_changes_seen`) et quatre tests unitaires du modèle (défaut inactif,
+normalisation, refus des valeurs et champs inconnus, aller-retour du curseur).
+
+**100 000 nœuds** (`a_hundred_thousand_nodes_give_an_exact_total_and_a_bounded_page`) :
+99 999 fichiers + racine, journal synthétique (id ≡ 0 mod 3 `CREATED`, ≡ 2 `MODIFIED`,
+id ≡ 0 mod 5 en ligne seulement); six filtres, chacun avec **total exact** (calculé
+par arithmétique, non par la requête), page ≤ 64 nœuds, curseur présent quand il reste
+des matches; la page sérialisée d'un corpus de 100 000 nœuds n'est pas plus grosse que
+celle d'un corpus de 6 000 (à 20 % près) — **quantité indépendante du corpus**; chaîne de
+quatre pages strictement croissante. **Aucun seuil de performance nouveau**; la
+latence n'a pas été mesurée.
+
+### BS.5 Tests TypeScript (36 nouveaux)
+
+`filters.test.ts` (modèle : normalisation identique à celle du cœur, forme canonique,
+description en mots), `FilterPanel.test.tsx` (contrôles nommés et accessibles, état +
+type + disponibilité combinés, réinitialisation en une action, compte exact du cœur,
+Correspondance / Contexte en mot **et** symbole, sélection des deux, pagination qui
+remplace la page, attente du cœur, désactivé sans cerveau, aucune identité machine),
+`useProjectionFilter.test.tsx` (première page à chaque changement de filtre, curseurs
+empilés, **réponse périmée refusée**, réponse d'un autre filtre / cerveau refusée,
+refus du cœur rapporté, **changement de cerveau abandonne le filtre**, **relecture après
+un geste « vu »** pour Nouveaux / Non vus seulement, relecture à la nouvelle révision,
+**aucun nœud ni corpus conservé** — jeu de clés exact — et lecture du source),
+`filterMapView.test.tsx` (rôle écrit sur la carte, dans le nom accessible et par le
+trait; projection normale intacte). Le câblage de `MapApp` est vérifié sur le source
+(panneau, hook, `dropForNavigation`, rôles, aucune commande prototype).
+
+### BS.6 Rejeu WebView2 réel
+
+`scripts/task0039-webview2.ps1` (un lancement réel, deux arbres synthétiques générés
+par la preuve, clics souris réels par CDP) → `docs/performance/runs/TASK-0039-webview2.json`.
+Un premier essai a échoué **avant** toute assertion produit : le binaire venait d'un
+simple `cargo build` (il vise `localhost`); reconstruit par `pnpm tauri build --debug
+--no-bundle`, le rejeu est passé du premier coup. Résultat : panneau présent et inactif
+au départ; **Nouveaux** = les trois créations (le dossier, son fichier, un fichier), pas
+la modification; les correspondances portent « Correspondance », les ancêtres
+« Contexte », la racine est contexte; le compteur de l'interface == celui du cœur; la
+carte porte les rôles dans le nom accessible et n'affiche pas la modification;
+**Non vus** ajoute la modification (4); **fichiers** retire le dossier des matches (il
+reste « Contexte ») (3); **local** = 3, **en ligne seulement** = 0 sur cette fixture
+réelle (ce qui est la bonne réponse; aucun placeholder n'est fabriqué); sélectionner un
+résultat ne marque rien; **marquer l'élément vu** ramène le compte à 2 et retire la
+carte; **Tout marquer vu** (confirmation en deux clics) vide « Non vus »;
+**Réinitialiser** remet la projection normale (aucune carte filtrée, aucun compteur);
+**Actualiser avec un filtre actif** relit le filtre (0 → 151); **151 correspondances en
+3 pages** (63 / 62 / 26 correspondances, 64 / 64 / 28 cartes), aucune servie deux fois,
+« Page précédente » remplace la page; **second cerveau** : filtre et compteur absents,
+son propre compte, puis retour au premier : toujours aucun filtre; aucun chemin absolu,
+clé stable, `FileId` ni volume (DOM, charges, réponses); 0 erreur fatale.
+
+Le binaire du rejeu est celui de `pnpm tauri build --debug --no-bundle`; un
+`cargo build --offline` ultérieur (validation générale) a remplacé l'exécutable local
+sans changer le code. Équivalence déclarée, non re-mesurée.
+
+### BS.7 Validations générales
+
+| Contrôle | Résultat |
+|---|---|
+| `cargo test --offline` | **500 PASS**, 0 échec, 5 ignorés (474 avant : +26) |
+| `pnpm test` | **412 PASS**, 28 fichiers (376 avant : +36) |
+| `pnpm check`, `pnpm build`, `cargo build --offline`, `pnpm tauri build --debug --no-bundle` | verts |
+| `git diff --check` | propre |
+| `rustfmt --edition 2024` | appliqué aux trois fichiers Rust créés; les fichiers existants touchés n'ont reçu que des lignes ajoutées à la main, au style local |
+| `cargo clippy --all-targets --offline` | **dette historique seule** : lib 13, lib-test 22 avertissements (mêmes comptes que `TASK-0037`/`0038`); **zéro** diagnostic dans un fichier créé ou une ligne ajoutée. `view` (test seulement) est `#[cfg(test)]` pour ne pas créer un avertissement `dead_code` |
+| `scripts/audit-public-readiness.ps1 -AllowRemotes` | vert (516 fichiers versionnés, aucun motif sensible, exceptions non élargies) |
+
+### BS.8 Non fait, et limites
+
+Persistance des filtres au redémarrage (`P-19`), watcher, incrémental, facettes
+supplémentaires, filtre par contenu : hors portée déclarée. **`ONLINE_ONLY` n'est prouvé
+qu'au niveau Rust** (colonne canonique `online_only`); aucun placeholder Cloud Files
+réel. Le total est un `COUNT(*)` recalculé à chaque page (exact; **non mesuré**).
+Un nœud de contexte peut satisfaire le filtre : il n'est compté et paginé comme
+correspondance qu'à l'endroit où le keyset l'atteint. Une correspondance dont la seule
+ancestry dépasse le plafond technique est refusée, non tronquée. **Non testé :**
+1 000 000 de nœuds, portable modeste, vrai Cloud Files, crash de processus.
+`graph/` non mis à jour (non tenu depuis `TASK-0009`).
+
+**Aucune donnée personnelle.** `origin/main` inchangé. Aucune `TASK-0040`, aucune PR,
+fusion, étiquette ni release.
+
+**Action unique suivante :** contrôle indépendant de `TASK-0039`.

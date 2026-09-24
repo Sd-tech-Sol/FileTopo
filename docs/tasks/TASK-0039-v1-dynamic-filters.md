@@ -1,7 +1,7 @@
 # TASK-0039 — V1 Dynamic Filters
 
 - **Date :** 2026-09-23
-- **Statut :** `READY`
+- **Statut :** `IMPLEMENTED` (jamais auto-`VERIFIED`; contrôle indépendant en attente)
 - **Branche :** `build/v0.2-a23-v1-dynamic-filters`
 - **Prérequis :** `TASK-0038 = VERIFIED` (`ACTION-0064`)
 - **Décision :** `DEC-0037 — Dynamic filters over the canonical Index and bounded projection`
@@ -255,3 +255,16 @@ Exécuter :
 - `.orchestrator/RESULT.md` complet;
 - `NEXT_ACTION = contrôle indépendant de TASK-0039`;
 - push uniquement sur la branche de tâche, arbre propre.
+
+## Résultat de l'exécution (2026-09-23)
+
+Livrée sur `build/v0.2-a23-v1-dynamic-filters` : primitive SQLite bornée et
+paginée (`node_filter.rs`), projection filtrée (`map/filtered_projection.rs`),
+paramètre optionnel `filter` de `map_view`, curseur filtré `ftf1`, panneau
+« Filtres » (`FilterPanel.tsx`, `useProjectionFilter.ts`), rôles
+Correspondance / Contexte sur la carte. Détail, preuves et limites :
+`docs/ai/VALIDATION.md` § BS et `.orchestrator/RESULT.md`. Adaptations de forme
+par rapport à la fiche (invariants inchangés) : le bloc de sortie est un objet
+`filtered` imbriqué dans la projection (absent pour la projection normale) qui
+ajoute `filterContextIds` aux champs minimaux; la disponibilité `ONLINE_ONLY`
+reste prouvée au niveau Rust.

@@ -9,14 +9,14 @@ pub const VIEW_BUDGET: usize = 512;
 // with omitted children at every level cannot exceed the declared budget. This
 // stays the absolute technical ceiling — `DEC-0034` B never reinterprets it as
 // a display target.
-const MATERIAL_BUDGET: usize = VIEW_BUDGET / 2;
+pub(super) const MATERIAL_BUDGET: usize = VIEW_BUDGET / 2;
 // `DEC-0034` B: an ordinary projection is a small, human-readable map, well
 // under the technical ceiling above. Ancestry and focus are always included
 // even past this target — `MATERIAL_BUDGET` remains the only hard stop — and
 // `idx_nodes_child_order` (`CHILD_ORDER` in `hierarchy.rs`) already orders
 // every page directory-first, so filling up to this smaller target is what
 // keeps directories over files without any extra sorting here.
-const ORDINARY_MATERIAL_TARGET: usize = 64;
+pub(super) const ORDINARY_MATERIAL_TARGET: usize = 64;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ViewAggregate {
@@ -176,6 +176,7 @@ pub fn materialize_view(
         },
         aggregates,
         hierarchy_edges: edges,
+        filtered: None,
     };
     tx.commit()?;
     Ok(result)

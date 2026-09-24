@@ -1,5 +1,60 @@
 # État courant
 
+## TASK-0039 — V1 Dynamic Filters — IMPLEMENTED — 2026-09-23
+
+- **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche
+  `build/v0.2-a23-v1-dynamic-filters`, partie de `TASK-0038 = VERIFIED`
+  ([`ACTION-0064`](../reviews/ACTION-0064-independent-control.md)). Décision :
+  [`DEC-0037`](../decisions/DEC-0037-dynamic-filtered-projection.md). Détail :
+  [VALIDATION section BS](VALIDATION.md), `.orchestrator/RESULT.md`.
+- **Ce qui existe maintenant.** `F-022 / P-09` : trois groupes de filtres —
+  **état** Tout / Nouveaux / Non vus, **type** dossiers / fichiers / ignorés
+  (combinables, OU), **disponibilité** Tout / local / en ligne seulement — combinés
+  par ET, appliqués **par SQLite au seul Index canonique**, avec **total exact**,
+  page de correspondances **keyset bornée** et curseur opaque `ftf1` lié à
+  `index_id` + révision + filtre canonique + dernier match. La racine n'est jamais
+  une correspondance.
+- **Vérité de l'état.** Nouveaux / Non vus consomment **exclusivement** le journal
+  de `DEC-0036` (le prédicat `unseen_predicate` est réutilisé, pas recopié);
+  `nodes.seen` n'est ni lu ni écrit, et la requête ne le nomme même pas (la colonne
+  du DTO est remplacée par une constante).
+- **Projection.** `map_view(brainId, focusId, after, filter?)` : sans filtre actif,
+  **la même fonction, le même DTO, octet pour octet** (aucune clé `filtered`). Avec
+  un filtre : une page de correspondances (≤ 63) + seulement les ancêtres
+  nécessaires (cible ordinaire de 64 nœuds contexte compris; plafond de 256 inchangé;
+  un match qui ne rentre pas avec son ancestry ouvre la page suivante), arêtes
+  parent/enfant réelles seulement, aucun agrégat « enfants omis » réinterprété, mise
+  en page recalculée sur cette vue seule. Le DTO ajoute un objet `filtered`
+  (`filter`, `filteredTotal`, `materializedMatchCount`, `filterMatchIds`,
+  `filterContextIds`, `filterNextCursor`).
+- **Interface.** Panneau « Filtres » près de la carte : trois groupes accessibles,
+  « Réinitialiser les filtres », filtre actif **écrit en mots**, compteur exact
+  « N correspondance(s) », liste de la page avec **« Correspondance » / « Contexte »**
+  (mot + symbole ◆/◇, et sur la carte : trait plein épais / trait pointillé + étiquette),
+  page suivante / précédente sans accumulation. Le filtre appartient à un cerveau :
+  changer de cerveau l'abandonne. Un geste « vu » (TASK-0038) ou un Actualiser relit
+  la page depuis le cœur.
+- **Décisions à examiner.** (1) Un nœud de **contexte** peut lui-même satisfaire le
+  filtre; il n'est compté et paginé comme correspondance qu'à l'endroit où le keyset
+  l'atteint (jamais deux fois). (2) Naviguer (explorer une branche, résultat de
+  recherche) **quitte** la vue filtrée. (3) Un match dont l'ancestry seule dépasserait
+  le plafond technique est **refusé** (`exceeds view budget`), pas tronqué.
+  (4) `commands::view` (4 arguments) devient un raccourci de test; le produit appelle
+  `view_with_filter`.
+- **Preuves.** Rust **500 PASS** (474 + 26), TypeScript **412 PASS** (376 + 36),
+  **rejeu WebView2 réel sur deux cerveaux**
+  (`docs/performance/runs/TASK-0039-webview2.json`) : créations / modification
+  filtrées, type, disponibilité, marquer vu, tout marquer vu, réinitialisation,
+  **151 correspondances en 3 pages** (63 / 62 / 26, ≤ 64 cartes), Actualiser avec
+  filtre actif, changement de cerveau sans filtre ni compteur, 0 fuite, 0 erreur fatale.
+- **Limites.** `ONLINE_ONLY` prouvé au **niveau Rust seulement** (aucun placeholder
+  Cloud Files fabriqué); filtres **non persistés** au redémarrage (`P-19`); aucun seuil
+  de performance nouveau, latence des filtres **non mesurée**; le total est recalculé
+  à chaque page (exact, pas mis en cache). Non testé : 1 000 000 de nœuds, portable
+  modeste, vrai Cloud Files. Aucune `TASK-0040`, watcher, incrémental, PR, fusion,
+  étiquette ni release; `main` inchangé.
+- **Action unique suivante : contrôle indépendant de `TASK-0039`.**
+
 ## TASK-0038 — V1 Journal-derived Seen/Unseen State — IMPLEMENTED — 2026-09-23
 
 - **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche

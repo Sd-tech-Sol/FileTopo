@@ -1,6 +1,45 @@
 # HANDOFF — passage de relais
 
-## Relais actuel — TASK-0038, état vu/non vu dérivé du journal, en attente de contrôle — 2026-09-23
+## Relais actuel — TASK-0039, filtres dynamiques, en attente de contrôle — 2026-09-23
+
+- **Ce qui vient d'être fait :** `TASK-0039` est implémentée sur
+  `build/v0.2-a23-v1-dynamic-filters` (partie de `TASK-0038 = VERIFIED`). Elle reste
+  `IMPLEMENTED`, jamais auto-`VERIFIED`. Aucune `TASK-0040`, PR, fusion, étiquette ni
+  release.
+- **Où regarder, dans l'ordre :** `DEC-0037`; `src-tauri/src/node_filter.rs` (types
+  fermés, `NodeFilter::predicate`, `FilterCursor` `ftf1`, `Index::filtered_matches`);
+  `map/filtered_projection.rs` (`materialize` = l'unique aiguillage de `map_view`,
+  `materialize_filtered_view`, DTO `FilteredProjection`); `map/projection.rs` (deux
+  constantes passées `pub(super)`, `filtered: None`); `map/commands.rs`
+  (`view_with_filter`); `lib.rs` (`map_view` + paramètre `filter`); `change_journal.rs`
+  (`unseen_predicate` rendu `pub(crate)`, **réutilisé**); tests
+  `map/filter_tests.rs` et `node_filter.rs::tests`; côté interface `filters.ts`,
+  `useProjectionFilter.ts`, `FilterPanel.tsx`, rôles dans `MapView.tsx`, câblage dans
+  `MapApp.tsx`; preuve réelle `scripts/task0039-webview2.ps1` →
+  `docs/performance/runs/TASK-0039-webview2.json`.
+- **À savoir pour la reprise :**
+  1. La requête de page **ne nomme pas** `nodes.seen` : la colonne du DTO est
+     remplacée par la constante `0` (`page_columns`), un test l'impose sur le texte SQL.
+  2. Ordre des correspondances = `id` croissant (keyset `id > :after`, `LIMIT` lié, pas
+     d'`OFFSET`); la vue filtrée trie les nœuds par `(depth, id)` pour que le layout voie
+     toujours le parent avant l'enfant (un sous-arbre déplacé garde son ancien `id`).
+  3. Page filtrée = au plus **63 correspondances** (cible de 64 nœuds racine comprise);
+     la première correspondance est toujours prise, seul le plafond de 256 la refuse.
+  4. Un nœud de contexte qui satisfait lui-même le filtre reste « Contexte » sur la page
+     où il n'est qu'ancêtre; il est compté et paginé comme correspondance là où le keyset
+     l'atteint. Décision à examiner.
+  5. Côté interface, le hook ne garde que le filtre, le cerveau et une pile de curseurs;
+     la page (≤ 64 nœuds) est rangée dans `loaded` comme toute projection. Changer de
+     cerveau abandonne le filtre et relit la projection normale de l'ancien cerveau;
+     naviguer (`changeProjection`) abandonne le filtre sans relecture.
+  6. `pnpm tauri build --debug --no-bundle` est **indispensable** avant le rejeu : un
+     simple `cargo build` produit un binaire qui vise `localhost` (page d'erreur).
+- **Non fait, volontairement :** persistance des filtres au redémarrage (`P-19`),
+  watcher `F-030`, incrémental `F-031`, facettes supplémentaires, `ONLINE_ONLY` sur un
+  vrai placeholder Cloud Files.
+- **Action unique suivante :** contrôle indépendant de `TASK-0039`.
+
+## Relais précédent — TASK-0038, état vu/non vu dérivé du journal, en attente de contrôle — 2026-09-23
 
 - **Ce qui vient d'être fait :** `TASK-0038` est implémentée sur
   `build/v0.2-a22-v1-seen-state` (partie de `TASK-0037 = VERIFIED`, porte

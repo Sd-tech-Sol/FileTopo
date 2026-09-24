@@ -10,6 +10,7 @@ import {
 } from "./hierarchy";
 import { edgeAnchors } from "./geometry";
 import type { CrossSegment } from "./crossRelations";
+import { ROLE_LABELS, ROLE_SYMBOLS, type FilterRole } from "./filters";
 import type { RelationSegment } from "./relations";
 import type { Composition, Territory } from "./territories";
 import { headerBox, placeRect, territoryOf } from "./territories";
@@ -91,6 +92,13 @@ export interface RenderedBrain {
   crossNeighbours: Set<number>;
   nodeCount: number;
   aggregates?: ViewAggregate[];
+  /**
+   * `TASK-0039` — for a **filtered** projection, whether each drawn node is a
+   * `match` or only `context` (an ancestor kept so the match has a place).
+   * Empty for the normal projection. Drawn as a word and an outline, never by
+   * colour alone.
+   */
+  filterRoles?: ReadonlyMap<number, FilterRole>;
 }
 
 interface MapViewProps {
@@ -275,6 +283,7 @@ export default function MapView({
                 : "plain";
         const corner = 6;
         const marker = Math.min(node.rect.w, node.rect.h) * 0.28;
+        const filterRole = brain.filterRoles?.get(node.id);
         return (
           <g
             key={node.id}
@@ -293,8 +302,13 @@ export default function MapView({
             role="treeitem"
             aria-level={node.depth + 1}
             aria-selected={isSelected}
-            aria-label={labelFor(node, brain.record)}
-            className={`map-node map-node--${node.kind} map-node--${state}`}
+            aria-label={
+              labelFor(node, brain.record) + (filterRole ? `, ${ROLE_LABELS[filterRole]}` : "")
+            }
+            data-filter-role={filterRole}
+            className={`map-node map-node--${node.kind} map-node--${state}${
+              filterRole ? ` map-node--filter-${filterRole}` : ""
+            }`}
             onPointerDown={(event) => {
               event.stopPropagation();
               onSelect({ brainId: brain.brainId, nodeId: node.id });
@@ -310,6 +324,18 @@ export default function MapView({
               vectorEffect="non-scaling-stroke"
             />
             <g aria-hidden="true">{nodeGlyph(node)}</g>
+            {filterRole ? (
+              // The role is written on the card: a word and a symbol, so a
+              // match is never told from its context by colour alone.
+              <text
+                className={`map-node__filter-tag map-node__filter-tag--${filterRole}`}
+                x={node.rect.x + 8}
+                y={node.rect.y + node.rect.h - 8}
+                aria-hidden="true"
+              >
+                {ROLE_SYMBOLS[filterRole]} {ROLE_LABELS[filterRole]}
+              </text>
+            ) : null}
             {node.accessDiagnostic ? (
               // A hatched corner marks an access diagnostic without relying on
               // colour alone; the panel spells it out in words.

@@ -1734,3 +1734,105 @@ input[type="text"] {
 .node-state__badge {
   margin: 0 8px 4px 0;
 }
+
+/* --- TASK-0039 — filtres dynamiques ----------------------------------- */
+/* Correspondance / contexte : un mot, un symbole et un trait — jamais la
+   couleur seule. */
+
+.filters {
+  border-bottom: 1px solid var(--line);
+  padding: 10px 12px 14px;
+}
+
+.filters__title {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.filters__group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0 0 8px;
+  padding: 4px 8px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.filters__choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.filters__active,
+.filters__count,
+.filters__page {
+  margin: 6px 0;
+  font-size: 12px;
+}
+
+.filters__count {
+  font-weight: 700;
+}
+
+.filters__results {
+  list-style: none;
+  margin: 6px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 260px;
+  overflow: auto;
+}
+
+.filters__results button {
+  width: 100%;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.filters__role {
+  display: inline-block;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.filters__role--match {
+  border-width: 2px;
+  border-color: var(--accent);
+}
+
+.filters__role--context {
+  border-style: dashed;
+  color: var(--ink-soft);
+}
+
+.filters__paging {
+  display: flex;
+  gap: 8px;
+}
+
+.map-node--filter-match rect {
+  stroke-width: 4;
+  stroke-opacity: 1;
+  fill-opacity: 0.95;
+}
+
+.map-node--filter-context rect {
+  stroke-dasharray: 8 5;
+  fill-opacity: 0.5;
+}
+
+.map-node__filter-tag {
+  font-size: 11px;
+  font-weight: 700;
+  fill: var(--ink);
+  pointer-events: none;
+}

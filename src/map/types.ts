@@ -118,6 +118,40 @@ export interface MapProjection extends MapSnapshot {
   hiddenReason: string | null;
   aggregates: ViewAggregate[];
   hierarchyEdges: { parentId: number; childId: number }[];
+  /** `TASK-0039` — present **only** for a filtered projection. */
+  filtered?: FilteredProjection | null;
+}
+
+/* --- TASK-0039 — filtres dynamiques (DEC-0037) --------------------------- */
+
+/** Un seul mode à la fois : « Tout » n'ajoute aucune contrainte nouveau/non vu. */
+export type FilterState = "ALL" | "NEW" | "UNSEEN";
+export type FilterKind = "DIRECTORY" | "FILE" | "SKIPPED";
+export type FilterAvailability = "ALL" | "LOCAL" | "ONLINE_ONLY";
+
+/** Le filtre, tel que le cœur le lit et le renvoie. Trois groupes, combinés par ET. */
+export interface NodeFilter {
+  state: FilterState;
+  /** Vide = tous les types ; sinon combinés par OU. */
+  kinds: FilterKind[];
+  availability: FilterAvailability;
+}
+
+/**
+ * Ce qu'une page filtrée ajoute à la projection. Des identifiants et des
+ * comptes : jamais de chemin, de clé stable ni d'identité système.
+ */
+export interface FilteredProjection {
+  /** Le filtre canonique réellement appliqué. */
+  filter: NodeFilter;
+  /** Nombre exact de correspondances dans tout le cerveau, calculé par SQLite. */
+  filteredTotal: number;
+  materializedMatchCount: number;
+  /** Les nœuds matérialisés qui sont des correspondances de cette page. */
+  filterMatchIds: number[];
+  /** Les nœuds matérialisés qui ne sont là que comme ancêtres. */
+  filterContextIds: number[];
+  filterNextCursor: string | null;
 }
 
 export interface NodeDetail {

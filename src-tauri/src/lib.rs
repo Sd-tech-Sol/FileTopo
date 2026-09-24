@@ -5,6 +5,8 @@ mod hierarchy;
 mod identity;
 mod index;
 mod map;
+/// Dynamic filters over the canonical Index — `TASK-0039`, `DEC-0037`.
+mod node_filter;
 /// Storing a filesystem path exactly, shared by the catalogue and the 0.1
 /// registry — `DEC-0033` C.
 mod path_codec;
@@ -746,9 +748,11 @@ fn map_view(
     brain_id: String,
     focus_id: Option<i64>,
     after: Option<String>,
+    filter: Option<node_filter::NodeFilter>,
 ) -> Result<map::store::MapSnapshot, String> {
     let (paths, brain) = resolve_brain(&app, &brain_id)?;
-    map::commands::view(&paths, &brain, focus_id, after.as_deref()).map_err(String::from)
+    map::commands::view_with_filter(&paths, &brain, focus_id, after.as_deref(), filter.as_ref())
+        .map_err(String::from)
 }
 
 #[tauri::command]

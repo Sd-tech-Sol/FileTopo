@@ -5641,3 +5641,27 @@ précréation de `TASK-0038` par l'exécuteur.
 - DEC-0037 approuvée;
 - TASK-0039 créée READY sur `build/v0.2-a23-v1-dynamic-filters`;
 - aucun code produit exécuté par l’orchestrateur, aucune TASK-0040.
+
+
+## 2026-09-23 — TASK-0039 — V1 Dynamic Filters
+
+**Agent :** exécuteur Claude Code (Sonnet 5) · **Branche :** `build/v0.2-a23-v1-dynamic-filters`
+**Statut à l'issue :** `IMPLEMENTED` (jamais auto-`VERIFIED`)
+
+- `node_filter.rs` : filtre fermé (état, types, disponibilité), normalisation, forme
+  canonique, primitive `Index::filtered_matches` (total exact + page keyset bornée dans
+  un même snapshot, sans `OFFSET`, racine exclue), curseur `ftf1` lié à
+  index/révision/filtre. NEW/UNSEEN par `unseen_predicate` (réutilisé); `nodes.seen`
+  jamais nommé.
+- `map/filtered_projection.rs` : `materialize` (aiguillage unique de `map_view`),
+  projection filtrée bornée (≤ 64 nœuds contexte compris, plafond 256 inchangé), DTO
+  `filtered`; projection normale inchangée octet pour octet.
+- `map_view` gagne un paramètre `filter` optionnel. Aucune nouvelle commande.
+- Interface : `FilterPanel`, `useProjectionFilter`, rôles Correspondance / Contexte sur
+  la carte (mot + symbole + trait), relecture après « vu » ou Actualiser, filtre
+  abandonné au changement de cerveau.
+- Preuves : Rust 500 PASS (+26), TypeScript 412 PASS (+36), rejeu WebView2 réel
+  (`TASK-0039-webview2.json`), `git diff --check`, audit public-readiness vert;
+  Clippy : dette historique seule, aucun diagnostic dans les fichiers touchés.
+- Limites : `ONLINE_ONLY` niveau Rust; filtres non persistés (`P-19`); latence non
+  mesurée. Aucune `TASK-0040`, watcher, incrémental, PR, fusion, étiquette ni release.

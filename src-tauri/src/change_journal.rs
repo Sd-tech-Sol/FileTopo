@@ -534,7 +534,7 @@ pub(crate) fn validate_seen_schema(connection: &Connection) -> rusqlite::Result<
 
 /// The event predicate every seen/unseen query shares, over an alias `e`:
 /// "not acknowledged". `watermark_param` names the bound watermark parameter.
-fn unseen_predicate(watermark_param: &str) -> String {
+pub(crate) fn unseen_predicate(watermark_param: &str) -> String {
     format!(
         "(e.event_id > {watermark_param} \
           AND NOT EXISTS (SELECT 1 FROM seen_change_events s WHERE s.event_id = e.event_id))"

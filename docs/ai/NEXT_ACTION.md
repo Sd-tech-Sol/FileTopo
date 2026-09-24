@@ -1,31 +1,25 @@
 # Action suivante
 
-## TASK-0039 — V1 Dynamic Filters
+## Contrôle indépendant de TASK-0039
 
-`TASK-0038 — V1 Journal-derived Seen/Unseen State` est **VERIFIED** par
-[`ACTION-0064`](../reviews/ACTION-0064-independent-control.md).
+[`TASK-0039 — V1 Dynamic Filters`](../tasks/TASK-0039-v1-dynamic-filters.md) est
+**IMPLEMENTED** sur `build/v0.2-a23-v1-dynamic-filters`, selon
+[`DEC-0037`](../decisions/DEC-0037-dynamic-filtered-projection.md). Elle n'est **pas**
+`VERIFIED` : l'exécuteur ne s'attribue jamais ce statut.
 
-La prochaine tranche est
-[`TASK-0039 — V1 Dynamic Filters`](../tasks/TASK-0039-v1-dynamic-filters.md),
-encadrée par
-[`DEC-0037`](../decisions/DEC-0037-dynamic-filtered-projection.md).
+Action unique : **contrôle indépendant, sur preuves, de `TASK-0039`** par une instance
+distincte de l'exécuteur — `.orchestrator/RESULT.md`, `docs/ai/VALIDATION.md` § BS,
+`docs/performance/runs/TASK-0039-webview2.json`, puis le code (`node_filter.rs`,
+`map/filtered_projection.rs`, `map/filter_tests.rs`, `FilterPanel.tsx`,
+`useProjectionFilter.ts`).
 
-Objectif : fermer `F-022 / P-09` avec des filtres calculés côté Index et une
-projection toujours bornée :
+Points à examiner en priorité :
 
-- Tout / Nouveaux / Non vus;
-- type;
-- disponibilité;
-- combinaisons;
-- total exact;
-- pagination keyset;
-- match/contexte explicites.
+- NEW / UNSEEN viennent du journal (`unseen_predicate`), jamais de `nodes.seen`;
+- total exact et page bornée, curseur `ftf1` refusé hors index / révision / filtre;
+- la projection sans filtre est inchangée (test d'égalité octet pour octet);
+- un nœud de **contexte** peut satisfaire le filtre sans être compté deux fois;
+- `ONLINE_ONLY` n'est prouvé qu'au niveau Rust.
 
-NEW/UNSEEN consomment exclusivement la vérité de `TASK-0038`;
-`nodes.seen` reste historique.
-
-Action unique : exécuter `.orchestrator/NEXT_PROMPT.md` sur
-`build/v0.2-a23-v1-dynamic-filters`.
-
-Hors portée : watcher `F-030`, incrémental `F-031`, persistance P-19 des
-filtres, TASK-0040.
+Hors portée : watcher `F-030`, incrémental `F-031`, persistance `P-19` des filtres,
+`TASK-0040`, PR, fusion, étiquette, release.

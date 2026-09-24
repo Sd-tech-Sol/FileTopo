@@ -50,6 +50,11 @@ pub struct MapSnapshot {
     pub hidden_reason: Option<String>,
     pub aggregates: Vec<super::projection::ViewAggregate>,
     pub hierarchy_edges: Vec<super::projection::HierarchyEdge>,
+    /// `TASK-0039` — present **only** for a filtered projection. Absent from
+    /// the serialised DTO otherwise, so the normal projection is byte-identical
+    /// to what it was before filters existed.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub filtered: Option<super::filtered_projection::FilteredProjection>,
     /// Brain identity read from the canonical index metadata.
     pub brain_id: String,
     /// The synthetic source behind the brain. A developer diagnostic —

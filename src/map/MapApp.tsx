@@ -5,7 +5,10 @@ import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import CompositionBar from "./CompositionBar";
 import DetailsPanel, { type PanelStrings } from "./DetailsPanel";
+import FilterPanel from "./FilterPanel";
+import { filterRoles } from "./filters";
 import MapView, { aggregateLabel, type RenderedBrain } from "./MapView";
+import { useProjectionFilter } from "./useProjectionFilter";
 import CrossRelationsPanel from "./CrossRelationsPanel";
 import RelationsPanel from "./RelationsPanel";
 import ReviewQueuePanel from "./ReviewQueuePanel";
@@ -307,6 +310,52 @@ export default function MapApp() {
   // other re-reads the backend rather than showing a stale answer.
   const [seenRevision, setSeenRevision] = useState(0);
   const notifySeenChange = useCallback(() => setSeenRevision((current) => current + 1), []);
+  // `TASK-0039` — the map filters (`DEC-0037`). The hook keeps the filter, the
+  // brain it belongs to and a stack of page cursors, nothing else: the bounded
+  // filtered page goes into `loaded` exactly as any other projection does.
+  const filterBrainId = composed?.focusedBrainId ?? null;
+  const filterRevision = filterBrainId ? (loaded.get(filterBrainId)?.snapshot.indexRevision ?? null) : null;
+  const activeFilterBrain = useRef<string | null>(null);
+  const restoreTicket = useRef(new Map<string, number>());
+  const acceptFilteredProjection = useCallback((brainId: string, snapshot: MapProjection) => {
+    setLoaded((current) => {
+      const previous = current.get(brainId);
+      if (!previous) return current;
+      const next = new Map(current);
+      next.set(brainId, { ...previous, snapshot, hierarchy: buildHierarchy(snapshot.nodes, snapshot.rootId) });
+      return next;
+    });
+    const total = snapshot.filtered?.filteredTotal ?? 0;
+    setStatus(`${total} correspondance${total > 1 ? "s" : ""} — ${snapshot.materializedCount} éléments visibles sur ${snapshot.nodeCount}`);
+  }, []);
+  // The filter was dropped: read that brain's **normal** projection again, unless
+  // a filter was applied to it again in the meantime.
+  const restoreNormalProjection = useCallback((brainId: string) => {
+    const ticket = (restoreTicket.current.get(brainId) ?? 0) + 1;
+    restoreTicket.current.set(brainId, ticket);
+    void invoke<MapProjection>("map_view", { brainId })
+      .then((snapshot) => {
+        if (restoreTicket.current.get(brainId) !== ticket) return;
+        if (activeFilterBrain.current === brainId || snapshot.brainId !== brainId) return;
+        setLoaded((current) => {
+          const previous = current.get(brainId);
+          if (!previous) return current;
+          const next = new Map(current);
+          next.set(brainId, { ...previous, snapshot, hierarchy: buildHierarchy(snapshot.nodes, snapshot.rootId) });
+          return next;
+        });
+      })
+      .catch((error) => setStatus(`Projection normale illisible : ${String(error)}`));
+  }, []);
+  const filter = useProjectionFilter({
+    brainId: filterBrainId,
+    revision: filterRevision,
+    seenRevision,
+    onProjection: acceptFilteredProjection,
+    onRestore: restoreNormalProjection,
+    onError: (message) => setStatus(message),
+  });
+  activeFilterBrain.current = filter.session?.brainId ?? null;
   const [contentObservedBrains, setContentObservedBrains] = useState<ReadonlySet<string>>(new Set());
   const [selfCheck, setSelfCheck] = useState<MapSelfCheck | null>(null);
   const [viewport, setViewport] = useState<Viewport>({ width: 1, height: 1 });
@@ -530,6 +579,8 @@ export default function MapApp() {
           crossNeighbours: crossNeighbours.get(brainId) ?? new Set<number>(),
           nodeCount: brain.snapshot.materializedCount,
           aggregates: brain.snapshot.aggregates,
+          // `TASK-0039`: match / context of a filtered page, empty otherwise.
+          filterRoles: filterRoles(brain.snapshot.filtered),
         },
       ];
     });
@@ -968,6 +1019,8 @@ export default function MapApp() {
    */
   const projectionRequest = useRef(new Map<string, number>());
   const changeProjection = useCallback(async (brainId: string, focusId: number, after: string | null = null) => {
+    // Navigating is leaving the filtered view: this call loads its own projection.
+    filter.dropForNavigation(brainId);
     const ticket = (projectionRequest.current.get(brainId) ?? 0) + 1;
     projectionRequest.current.set(brainId, ticket);
     try {
@@ -996,7 +1049,7 @@ export default function MapApp() {
     } catch (error) {
       if (projectionRequest.current.get(brainId) === ticket) setStatus(`Projection refusée : ${String(error)}`);
     }
-  }, [activate, order]);
+  }, [activate, filter.dropForNavigation, order]);
 
   const selectNode = useCallback(
     (reference: BrainNodeRef) => {
@@ -2751,6 +2804,26 @@ export default function MapApp() {
               ) : null}
             </section>
           ) : null}
+
+          <FilterPanel
+            filter={filter.filter}
+            active={filter.active}
+            disabled={!focusedBrain}
+            filtered={
+              focusedBrain && filter.session?.brainId === focusedBrain.record.brainId
+                ? (focusedBrain.snapshot.filtered ?? null)
+                : null
+            }
+            nodes={focusedBrain?.snapshot.nodes ?? []}
+            pageNumber={filter.pageNumber}
+            canPrevious={filter.canPrevious}
+            selectedNodeId={selected && selected.brainId === focusedBrain?.record.brainId ? selected.nodeId : null}
+            onChange={filter.change}
+            onReset={filter.reset}
+            onPrevious={filter.previous}
+            onNext={() => filter.next(focusedBrain?.snapshot.filtered?.filterNextCursor ?? null)}
+            onSelect={selectInSelectedBrain}
+          />
 
           {focusedBrain ? (
             <section aria-label="Navigation progressive" data-testid="projection-controls">

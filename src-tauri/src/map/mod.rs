@@ -11,6 +11,7 @@ pub mod commands;
 pub mod content_signals;
 pub mod cross_commands;
 pub mod cross_relations;
+pub mod filtered_projection;
 pub mod fixtures;
 pub mod layout;
 #[cfg(test)]
@@ -44,6 +45,10 @@ pub enum MapError {
     /// malformed cursor, or one issued by another index.
     #[error("{0}")]
     Journal(#[from] crate::change_journal::JournalError),
+    /// `TASK-0039` — a refusal from the dynamic filters: a malformed cursor, one
+    /// issued by another index, another revision or another filter.
+    #[error("{0}")]
+    Filter(#[from] crate::node_filter::FilterError),
     #[error("map_view_rejected: {0}")]
     View(String),
     #[error("map_io_failed: {0}")]

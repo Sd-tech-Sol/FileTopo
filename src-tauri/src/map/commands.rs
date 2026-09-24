@@ -658,13 +658,28 @@ pub(crate) fn analysis_input(
     })
 }
 
+/// The unfiltered projection. The Tauri command calls [`view_with_filter`];
+/// this shorthand is what the many `TASK-0031`+ tests call.
+#[cfg(test)]
 pub fn view(
     paths: &SandboxPaths,
     brain: &BrainRecord,
     focus: Option<i64>,
     after: Option<&str>,
 ) -> Result<MapSnapshot, MapError> {
-    super::projection::materialize_view(&open_store(paths, brain)?, focus, after)
+    view_with_filter(paths, brain, focus, after, None)
+}
+
+/// [`view`] with the `TASK-0039` dynamic filter. An absent or inactive filter
+/// *is* the normal projection — same function, same arguments, same DTO.
+pub fn view_with_filter(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+    focus: Option<i64>,
+    after: Option<&str>,
+    filter: Option<&crate::node_filter::NodeFilter>,
+) -> Result<MapSnapshot, MapError> {
+    super::filtered_projection::materialize(&open_store(paths, brain)?, focus, after, filter)
 }
 
 pub fn snapshot(paths: &SandboxPaths, brain: &BrainRecord) -> Result<MapSnapshot, MapError> {
@@ -2443,3 +2458,7 @@ mod change_journal_tests;
 #[cfg(test)]
 #[path = "seen_state_tests.rs"]
 mod seen_state_tests;
+
+#[cfg(test)]
+#[path = "filter_tests.rs"]
+mod filter_tests;
