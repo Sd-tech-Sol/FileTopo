@@ -1,6 +1,29 @@
 # HANDOFF — passage de relais
 
-## Relais actuel — TASK-0037, V1 Change Journal livrée, en attente de contrôle — 2026-09-23
+## Relais actuel — porte public-readiness fermée, prête pour l'orchestration de la tranche V1 suivante — 2026-09-23
+
+- **Ce qui vient d'être fait :** sur `chore/v0.2-public-readiness-cleanup`, le
+  chemin Git local absolu hérité de `TASK-0027` a été retiré du tree courant
+  (`docs/ai/VALIDATION.md` et `docs/tasks/TASK-0027-…md`) et l'audit
+  `scripts/audit-public-readiness.ps1 -AllowRemotes` est **vert** (487 fichiers).
+  `TASK-0037` est `VERIFIED` (`ACTION-0061`); son code n'a pas été modifié.
+- **À savoir pour la reprise :**
+  1. C'est un nettoyage du **tree courant**, pas une réécriture de l'historique
+     Git : l'ancien chemin reste dans les commits publiés.
+  2. Le script d'audit s'arrêtait à la première trouvaille et masquait les
+     suivantes; il les liste désormais toutes. Il tolère deux noms fictifs
+     (`quelquun`, `other`) issus de tests synthétiques — décision à confirmer
+     (l'alternative est de réécrire ces constantes de test).
+  3. Rien de fonctionnel n'a changé; Rust/TS non rejoués, à raison.
+  4. Incident de méthode consigné dans `.orchestrator/RESULT.md` : un
+     `checkout` échoué suivi d'un `merge --ff-only` chaîné avait avancé
+     localement la branche build; remise sur son `origin`, rien poussé.
+- **Non fait, volontairement :** aucune `TASK-0038`; watcher, incrémental,
+  filtres nouveau/non-vu, marquer vu restent hors portée tant que
+  l'orchestrateur n'a pas cadré la tranche.
+- **Action unique suivante :** audit/orchestration de la tranche V1 suivante.
+
+## Relais précédent — TASK-0037, V1 Change Journal livrée, en attente de contrôle — 2026-09-23
 
 - **Ce qui vient d'être fait :** `TASK-0037` est implémentée sur
   `build/v0.2-a21-v1-change-journal` (partie de `TASK-0036 = VERIFIED`,

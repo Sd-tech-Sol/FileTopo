@@ -1,5 +1,34 @@
 # État courant
 
+## Porte de confidentialité (`ACTION-0061` R1) — fermée sur le tree courant — 2026-09-23
+
+- **`TASK-0037 = VERIFIED`** par
+  [`ACTION-0061`](../reviews/ACTION-0061-independent-control.md), dans sa portée.
+  Son code et son modèle de journal n'ont pas été touchés par cette passe.
+- **L'audit public-readiness est revenu au vert** :
+  `scripts/audit-public-readiness.ps1 -AllowRemotes` → « 487 fichiers versionnés,
+  aucun motif sensible, aucun fichier > 5 Mio ». Il était rouge avant.
+- **Ce qui a été nettoyé (tree courant seulement).** Le chemin Git local absolu
+  de la section `TASK-0027` de `docs/ai/VALIDATION.md` **et** la même valeur dans
+  la fiche `docs/tasks/TASK-0027-…md` (que l'audit n'atteignait pas : il
+  s'arrêtait à la première trouvaille) sont remplacés par « racine Git locale
+  (chemin absolu non consigné) »; branche, arbre propre, `fetch` et fast-forward
+  sont conservés.
+- **Outil d'audit.** Le script liste maintenant **toutes** les trouvailles au lieu
+  de s'arrêter à la première, et tolère deux **noms d'utilisateur fictifs**
+  nominatifs (`quelquun`, `other`) utilisés par des tests synthétiques
+  (`map/sandbox.rs`, `scale_spike/profile.rs`) qui prouvent justement qu'un chemin
+  absolu n'est jamais publié. Toute autre valeur reste détectée (test négatif
+  exécuté). **Décision à examiner** : cela resserre légèrement la porte; l'autre
+  voie était de réécrire ces constantes de test (fichiers produit, hors portée).
+- **Ce nettoyage ne réécrit pas l'historique Git.** L'ancien chemin reste dans
+  les commits déjà publiés; aucune purge n'est revendiquée.
+- **Aucune modification fonctionnelle**, suites Rust/TypeScript non rejouées
+  (aucun fichier produit touché). Aucune `TASK-0038`, PR, fusion, étiquette ni
+  release; `main` inchangé.
+- **Action unique suivante : audit/orchestration de la tranche V1 suivante** —
+  sans que l'exécuteur précrée `TASK-0038`.
+
 ## TASK-0037 — V1 Change Journal on Manual Refresh — IMPLEMENTED — 2026-09-23
 
 - **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche

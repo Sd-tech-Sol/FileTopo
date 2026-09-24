@@ -5531,3 +5531,44 @@ non tenu depuis `TASK-0009`. Aucune donnée personnelle.
 ### Suite
 
 **Action unique suivante :** contrôle indépendant de `TASK-0037`.
+
+---
+
+## 2026-09-23 — Porte public-readiness (`ACTION-0061` R1)
+
+**Agent :** exécuteur Claude Code (Sonnet 5)
+**Statut à l'issue :** fait, documentaire seulement
+**Branche :** `chore/v0.2-public-readiness-cleanup`
+
+### Fait
+
+- Chemin Git local absolu retiré du **tree courant** : ligne « Racine Git » de
+  `docs/ai/VALIDATION.md` (section `TASK-0027`) et de la fiche
+  `docs/tasks/TASK-0027-…md`, remplacée par « racine Git locale (chemin absolu non
+  consigné) ». Faits historiques conservés.
+- `scripts/audit-public-readiness.ps1` : liste toutes les trouvailles (il
+  s'arrêtait à la première) et tolère deux noms d'utilisateur fictifs nominatifs
+  (`quelquun`, `other`) de tests synthétiques. Test négatif : un vrai chemin est
+  toujours détecté.
+- `TASK-0037 = VERIFIED` (`ACTION-0061`) consigné; audit revenu au vert.
+
+### Preuves
+
+`audit-public-readiness.ps1 -AllowRemotes` : rouge avant, **vert après** (487
+fichiers). `git diff --check` propre. Recherche ciblée (`git grep`) des chemins
+utilisateur absolus : plus aucune donnée locale réelle, le reste étant des
+fixtures fictives, des formulations génériques ou le nom de dossier provisoire du
+projet. Aucun fichier produit touché : suites Rust/TS non rejouées.
+
+### Non fait, et limites
+
+L'historique Git n'est pas réécrit (l'ancien chemin reste dans les commits
+publiés). L'audit ne prouve pas l'absence de toute donnée personnelle. Aucune
+`TASK-0038`, PR, fusion, étiquette ou release. Incident consigné dans
+`.orchestrator/RESULT.md` : `checkout` échoué puis `merge --ff-only` chaîné ayant
+avancé localement la branche build (remise sur son `origin`, rien poussé).
+
+### Suite
+
+**Action unique suivante :** audit/orchestration de la tranche V1 suivante, sans
+précréation de `TASK-0038` par l'exécuteur.
