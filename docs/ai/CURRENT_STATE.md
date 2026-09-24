@@ -2879,3 +2879,13 @@ est levée pour Claude Code**; elle **reste entière pour Codex**.
 - `DEC-0039` : **APPROVED** — Actualiser un Index estampé doit dériver un lot minimal et appeler U-B; Reconstruire reste full explicite.
 - `TASK-0041` : **READY** sur `build/v0.2-a25-v1-manual-refresh-incremental`.
 - Watcher/W-B/W-C/F-032 restent hors portée.
+
+
+## Mise à jour 2026-09-24 — après TASK-0041
+
+- `TASK-0041` : **VERIFIED** par `ACTION-0068`.
+- Le vrai bouton Actualiser consomme U-B après scan complet manuel; Reconstruire reste full explicite.
+- Audit suivant : la racine absente est déjà refusée sans toucher l'Index, mais aucun état durable/explicite ne distingue encore indisponible, source changée, scan incomplet ou apply échoué.
+- `DEC-0040` : **APPROVED** — machine d'état de dernière observation source, sans jamais convertir indisponibilité en suppressions.
+- `TASK-0042` : **READY** sur `build/v0.2-a26-v1-source-availability`.
+- F-032 restera partielle jusqu'à consommation automatique par F-030.
