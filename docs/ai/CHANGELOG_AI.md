@@ -5591,3 +5591,15 @@ précréation de `TASK-0038` par l'exécuteur.
   --check` propre; aucun fichier produit modifié, suites non rejouées.
 - Limites : tree courant seulement, historique non réécrit; exception par
   fichier, pas par ligne. Aucune `TASK-0038` créée.
+
+
+## 2026-09-23 — ACTION-0063 / préparation TASK-0038
+
+**Orchestrateur :** ChatGPT
+
+- fermeture indépendante de la porte public-readiness après resserrement de l’exception de fixtures;
+- audit `F-022`, `F-028` à `F-031`, `P-17/P-18`, `DEC-0010` et code courant;
+- choix de séquence : état vu/non-vu dérivé du journal avant filtres et avant watcher/incrémental;
+- `DEC-0036` approuvée;
+- `TASK-0038` créée READY sur `build/v0.2-a22-v1-seen-state`;
+- aucun code produit exécuté par l’orchestrateur, aucune TASK-0039.
