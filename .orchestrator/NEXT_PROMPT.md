@@ -1,156 +1,221 @@
-# NEXT_PROMPT — TASK-0040 — F-031 canonical measurement recontrol after ACTION-0066
+# NEXT_PROMPT — TASK-0041 — V1 Manual Refresh Through Incremental Apply
 
 **TARGET_AGENT:** CLAUDE CODE  
-**RECOMMENDED_MODEL:** Sonnet 5, medium effort  
+**RECOMMENDED_MODEL:** Sonnet 5, high effort  
 **STATUS:** READY  
-**BRANCH:** `build/v0.2-a24-v1-incremental-apply`
+**BRANCH:** `build/v0.2-a25-v1-manual-refresh-incremental`
 
 ## /goal
 
-Fermer uniquement le blocage **P1** de
-`docs/reviews/ACTION-0066-task0040-independent-recontrol.md`.
+Implémenter intégralement
+`docs/tasks/TASK-0041-v1-manual-refresh-incremental.md` selon
+`docs/decisions/DEC-0039-manual-refresh-incremental-apply.md`.
 
-Le noyau U-B de TASK-0040 est accepté fonctionnellement. Cette passe ne doit
-**pas** optimiser ou modifier le noyau produit. Elle doit seulement produire
-une mesure canonique F-031 robuste sous un protocole figé avant exécution.
+Le but est précis :
 
-Ne pas créer TASK-0041. Ne pas construire watcher/F-030/F-032. Ne pas brancher
-`map_refresh`.
+`Actualiser (index existant estampé) = scan complet manuel -> lot minimal -> apply_update_batch`
+
+**Reconstruire reste un remplacement complet explicite.**
+
+Ne pas construire le watcher, W-B/W-C ni F-032 dans cette passe.
 
 ## 0 — Préconditions
 
 1. Appliquer `AGENTS.md` et `CLAUDE.md`.
 2. Basculer explicitement sur
-   `build/v0.2-a24-v1-incremental-apply`.
+   `build/v0.2-a25-v1-manual-refresh-incremental`.
 3. `git fetch origin`.
-4. Synchroniser en fast-forward seulement.
+4. Synchroniser uniquement en fast-forward avec
+   `origin/build/v0.2-a25-v1-manual-refresh-incremental`.
 5. Vérifier arbre propre.
-6. Vérifier que HEAD contient `ACTION-0066`.
-7. Lire ACTION-0066 en entier **avant** de lancer une nouvelle mesure.
+6. Vérifier que HEAD contient :
+   - `ACTION-0067` — TASK-0040 VERIFIED;
+   - `DEC-0039`;
+   - `TASK-0041`.
+7. Lire en entier `DEC-0039` puis `TASK-0041` avant toute modification.
 
-Si une précondition ne tient pas : STOP/BLOCKED.
+STOP/BLOCKED si le dépôt contredit ces préconditions.
 
-## 1 — Interdiction de tuning produit
+## 1 — Audit reuse-first obligatoire
 
-Dans cette passe :
+Avant de coder, auditer :
 
-- ne modifier **aucune** logique de `incremental.rs`;
-- ne modifier aucun réglage produit SQLite;
-- ne changer aucun seuil;
-- ne supprimer aucun artefact FAIL existant;
-- ne choisir aucun résultat a posteriori;
-- ne faire aucun benchmark checkpoint/cache pour le verdict canonique.
+- `map::commands::publish_map / refresh_map / rebuild_map`;
+- `Index::apply_update_batch`;
+- `Index::publish_with_identity`;
+- le remapping/stable identity existant;
+- `BrainIndex::replace_with_identity`;
+- métadonnées `built_unix_ms`, binding, build_complete,
+  projection_contract, layout_algorithm;
+- diagnostics;
+- `lifecycle.ts`, `MapApp.tsx`, résumé existant.
 
-Une modification strictement nécessaire du **harnais de benchmark** ou de son
-script est autorisée uniquement pour automatiser le protocole ci-dessous et
-doit être clairement séparée du noyau.
+Dans `.orchestrator/RESULT.md`, séparer clairement :
 
-## 2 — Protocole canonique figé
+- **réutilisé**;
+- **adapté**;
+- **laissé full volontairement**.
 
-Configuration unique :
+Ne pas recopier la logique du journal ou de l'identité.
 
-- profil test avec `opt-level=3`;
-- SQLite WAL;
-- `synchronous=NORMAL`;
-- cache SQLite par défaut;
-- aucun checkpoint explicite;
-- aucune variable diagnostique `TASK0040_CHECKPOINT` /
-  `TASK0040_CACHE_KIB`.
+## 2 — Réconciliateur produit
 
-Exécuter **5 campagnes indépendantes**.
+Créer une primitive interne qui reçoit le scan complet déjà réussi et l'Index
+courant, puis dérive un `UpdateBatch` **minimal**.
 
-Chaque campagne :
+Elle doit :
 
-- reconstruit des DB fraîches;
-- exécute les mêmes 4 cas :
-  - 1k / 10 changements;
-  - 10k / 10;
-  - 100k / 10;
-  - 100k / 1000;
-- **7 échantillons par cas**;
-- aucun échantillon rejeté;
-- produit son artefact JSON propre, par exemple
-  `TASK-0040-incremental-apply-canonical-01.json` … `05.json`.
+- comparer par stable key uniquement;
+- ne mettre en upsert que nouveau/changé;
+- détecter les suppressions exactes;
+- résoudre les parents correctement;
+- inclure les descendants dont chemin/profondeur changent lors d'un move/rename
+  de dossier;
+- produire PATH_FALLBACK rename/move comme delete+create;
+- porter la root observation;
+- être déterministe;
+- retourner un vrai no-op quand rien ne change.
 
-Ne pas arrêter tôt si les premières campagnes passent ou échouent.
+Le scan complet peut être O(corpus) dans cette tranche : c'est F-029 manuel,
+pas le futur watcher. Ne pas transformer pour autant le noyau U-B en batch de
+tout le corpus.
 
-## 3 — Synthèse canonique
+## 3 — Câblage lifecycle
 
-Créer un artefact de synthèse dédié, par exemple :
+### Refresh neuf
 
-`docs/performance/runs/TASK-0040-incremental-apply-canonical-summary.json`
+Aucun Index :
+- chemin full de baseline;
+- `applicationMode = BASELINE_FULL`.
 
-Il doit contenir :
+### Refresh existant estampé
 
-- les 5 artefacts sources;
-- les **35 samples bruts** de 1k/10;
-- les 35 samples bruts de 10k/10;
-- les 35 samples bruts de 100k/10;
-- les 35 samples bruts de 100k/1000;
-- médiane/min/max de chaque ensemble de 35;
-- les 5 ratios individuels de campagne;
-- le ratio canonique :
-  `median(35 samples 100k/10) / median(35 samples 1k/10)`;
-- plafond = 2.0;
-- verdict PASS/FAIL;
-- cibles absolues §3.3 PASS/FAIL sur les médianes canoniques;
-- environnement complet et confirmation que la configuration est identique
-  pour les 5 campagnes;
-- zéro échantillon écarté.
+- scan actuel réussi;
+- réconciliation;
+- `apply_update_batch`;
+- **jamais** `publish_with_identity`;
+- `applicationMode = INCREMENTAL`.
 
-La médiane doit être calculée sur les exécutions brutes, **pas** comme médiane
-des médianes.
+### Legacy migré mais non estampé
 
-## 4 — Règle d’arrêt
+- full restamp identity-aware autorisé une fois;
+- `applicationMode = IDENTITY_RESTAMP_FULL`;
+- le refresh suivant doit être `INCREMENTAL`.
 
-### Si ratio canonique <= 2
+### Rebuild explicite
 
-- ne touche toujours pas au noyau;
-- documenter P1 comme candidat à fermeture;
-- TASK-0040 reste `IMPLEMENTED` : seul l’orchestrateur pourra la déclarer
-  VERIFIED;
-- NEXT_ACTION = contrôle indépendant de la nouvelle preuve.
+- full publication;
+- `applicationMode = EXPLICIT_REBUILD_FULL`.
 
-### Si ratio canonique > 2
+Un échec incrémental ne doit jamais basculer automatiquement sur rebuild/full.
 
-- **STOP / BLOCKED**;
-- ne pas optimiser;
-- ne pas changer le benchmark;
-- ne pas exécuter de variantes de cache/checkpoint;
-- documenter l’échec tel quel;
-- NEXT_ACTION = arbitrage orchestrateur sur F-031.
+## 4 — Métadonnées et diagnostics
 
-## 5 — Contrôles de non-régression
+Auditer avant modification du noyau.
 
-Comme le noyau produit ne doit pas changer :
+Si `built_unix_ms` / diagnostics ou une autre métadonnée doivent bouger
+atomiquement avec le lot pour que l'Index reste exact, choisir la modification
+la plus étroite possible.
 
-- vérifier par diff qu’aucune ligne de `incremental.rs` n’est modifiée;
-- si seul le harnais/docs changent, tests ciblés du benchmark + compilation
-  suffisants;
-- rejouer `git diff --check`;
-- rejouer `scripts/audit-public-readiness.ps1 -AllowRemotes`;
-- ne pas élargir l’allowlist.
+Toute modification de `incremental.rs` exige :
 
-Pas de WebView2.
+- justification dans RESULT;
+- tests TASK-0040 de non-régression;
+- aucune nouvelle lecture globale;
+- aucune régression du contrat F-031.
 
-## 6 — Mémoire durable
+Ne toucher au noyau que si nécessaire.
 
-Mettre à jour :
+## 5 — Preuve structurelle
 
-- `.orchestrator/RESULT.md`;
-- `docs/ai/VALIDATION.md`;
-- `docs/ai/CURRENT_STATE.md`;
-- `docs/ai/HANDOFF.md`;
-- `docs/ai/NEXT_ACTION.md`;
-- `docs/ai/CHANGELOG_AI.md`;
-- `BASELINE_TARGETS §3.3` uniquement pour ajouter la nouvelle mesure
-  canonique sans effacer les anciennes campagnes ni changer le seuil.
+Il faut une preuve qui **échoue réellement** si un refresh estampé repasse par
+le chemin full.
 
-## 7 — Gouvernance
+Ne te contente pas d'un grep/commentaire.
 
-- aucune TASK-0041;
+Exemples acceptables :
+
+- test hook qui interdit le full path;
+- instrumentation test-only comptant les appels;
+- contrainte de test qui ferait échouer le full publish mais pas U-B.
+
+La preuve doit traverser le vrai `refresh_map`/chemin produit.
+
+## 6 — F-029 sûreté
+
+Prouver via le chemin produit :
+
+- scan incomplet/annulé -> aucune écriture;
+- erreur après scan avant apply -> ancien Index;
+- erreur injectée pendant U-B -> rollback exact;
+- aucun fallback full;
+- no-op -> même révision;
+- changement effectif -> une seule nouvelle révision;
+- résumé exact;
+- source inchangée.
+
+## 7 — UI / DTO
+
+Ajouter uniquement `applicationMode` au rapport/type si nécessaire pour la
+preuve et le diagnostic.
+
+Le résumé existant doit rester la surface utilisateur principale :
+ne pas refaire le panneau.
+
+Après refresh :
+
+- projection relue;
+- journal relu via révision;
+- filtres NEW/UNSEEN cohérents;
+- seen-state conservé.
+
+## 8 — WebView2 réel
+
+Obligatoire : le vrai chemin `map_refresh` change.
+
+Rejouer le scénario TASK-0041, incluant au minimum :
+
+- baseline full;
+- refresh no-op incremental;
+- mutation synthétique externe;
+- refresh incremental + résumé;
+- journal + NEW/UNSEEN;
+- geste vu puis changement futur;
+- rebuild explicite full;
+- vrai redémarrage;
+- aucune fuite;
+- 0 erreur fatale.
+
+## 9 — Validation
+
+Exécuter toute la fiche, notamment :
+
+- tests ciblés;
+- `cargo test --offline`;
+- `pnpm test`;
+- `pnpm check`;
+- `pnpm build`;
+- `cargo build --offline`;
+- Tauri debug + WebView2;
+- Clippy dette historique distinguée;
+- `git diff --check`;
+- `scripts/audit-public-readiness.ps1 -AllowRemotes`.
+
+Si le noyau U-B est modifié, rejouer une preuve F-031 pertinente; le ratio
+canonique existant ne doit pas être réécrit.
+
+## 10 — Gouvernance
+
+À la fin :
+
+- TASK-0041 = `IMPLEMENTED`, jamais `VERIFIED`;
+- aucune TASK-0042;
 - aucun watcher;
-- aucun changement fonctionnel produit;
-- aucun PR/merge/tag/release;
-- push uniquement sur la branche actuelle;
-- arbre propre à la fin.
+- aucun W-B/W-C;
+- F-032 hors portée;
+- pas de PR/merge/tag/release;
+- docs durables + FEATURE_MATRIX à jour honnêtement;
+- `.orchestrator/RESULT.md` complet;
+- `NEXT_ACTION` = contrôle indépendant de TASK-0041;
+- push uniquement sur la branche;
+- arbre propre.
