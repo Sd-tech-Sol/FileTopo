@@ -7799,3 +7799,105 @@ catalogue; `graph/` non mis à jour. Aucune donnée personnelle; aucune TASK-004
 étiquette ni release.
 
 **Action unique suivante :** contrôle indépendant du correctif P1 / P1b.
+
+## BY. TASK-0043 — Surveillance automatique et réconciliation (F-030) — 2026-09-24
+
+**Statut : `TASK-0043` = `IMPLEMENTED`**, jamais auto-`VERIFIED`. Branche
+`build/v0.2-a27-v1-watcher-reconciliation`, partie de `5b752be`. Décisions à trancher :
+`DEC-0041` §13 et `.orchestrator/RESULT.md`.
+
+### BY.1 Préconditions et audit reuse-first
+
+`git switch` explicite (branche distante seule, suivie), `git fetch origin`, fast-forward (déjà à jour),
+arbre propre; `HEAD` contient `ACTION-0070`, `DEC-0041`, `TASK-0043`; `DEC-0041`, `TASK-0043`, `DEC-0010`
+lus en entier avant toute modification. Audit : `windows-sys 0.61.2` expose avec les features **déjà
+activées** `ReadDirectoryChangesExW`, `ReadDirectoryNotifyInformation`, `OVERLAPPED`,
+`GetOverlappedResultEx`, `CancelIoEx`, `ERROR_NOTIFY_ENUM_DIR` (vérifié dans les sources de la crate en
+cache, lecture ciblée de métadonnées d'outillage) : **ni `notify` ni nouvelle feature**. Annulation d'un
+appel bloquant : attente par tranches de 100 ms (`GetOverlappedResultEx`), puis `CancelIoEx` **et attente de
+la fin** avant de libérer le tampon et de fermer le handle. `PUBLICATION_LOCK` réutilisé tel quel; les
+anciens `IndexJobs` ne sont pas réactivés.
+
+### BY.2 Suites
+
+| Contrôle | Résultat |
+|---|---|
+| `cargo test --offline` | **719 PASS**, 0 FAIL, 6 ignorés (629 avant + 90) |
+| `pnpm test` | **471 PASS** (439 + 32 : logique pure, badge, `MapApp` réel à backend scripté) |
+| `pnpm check` / `pnpm build` / `cargo build --offline` | PASS |
+| `pnpm tauri build --debug --no-bundle` | PASS |
+| `cargo clippy --offline` | dette historique seule : lib **13**, lib-test **22**, comptes inchangés; aucun diagnostic dans un fichier créé |
+| `rustfmt` | fichiers créés formatés; le dépôt n'est pas propre ailleurs (historique), **non reformaté** |
+| `git diff --check` | propre |
+
+### BY.3 Ce que les tests Rust établissent
+
+- **Parseur / lecteur** : plusieurs records; record malformé, longueur hors tampon, longueur impaire, action
+  inconnue, `NextEntryOffset` en boucle ou non aligné, octets arbitraires : refus, jamais de panique;
+  zéro octet = débordement = perte; `ERROR_NOTIFY_ENUM_DIR` = perte (constante épinglée à `windows-sys`);
+  un nom non confinable rend **toute** la rafale non fiable. Lecteur **réel** : un changement profond
+  arrive comme nom relatif; l'arrêt annule l'appel et rend la main en moins de trois secondes; un handle
+  ouvert est **prouvé par le système** (ouverture exclusive refusée) puis libéré au `drop`.
+- **File** : bornée, doublons fusionnés (bit le plus fort conservé), saturation = perte explicite et
+  jamais un abandon silencieux, une perte est collante jusqu'à sa prise.
+- **W-B contre un scan complet** (`map/watch_scope_tests.rs`, 20 tests) : un changement profond n'énumère
+  **pas** le gros frère (1 dossier listé, 3 entrées observées sur 300+); un dossier en place n'est pas
+  ouvert; un dossier nouveau est créé en entier; création / modification / suppression; renommage et
+  déplacement (ids canoniques conservés, journal identique à celui d'un Actualiser jumeau); déplacement
+  entre deux portées = **un** lot atomique; dossier renommé / déplacé avec ses descendants; portées
+  disjointes fusionnées; un dossier supprimé monte au parent; racine = refus; portée trop grande = refus
+  sans écriture; dossier remplacé monte; Index non estampé = jamais écrit; racine absente = escalade;
+  `PATH_FALLBACK` réel (jonction) = suppression + création; entrée observée seule; **90 tours aléatoires**
+  (3 graines × 30) toujours égaux à un scan complet, garde « aucun remplacement complet » armée.
+- **Manager** (`watch/tests.rs`, ~35 tests) : `STARTING` -> `VERIFYING/INITIAL_CHECK` -> `WATCHING`;
+  **interruption** (arrêt, mutations hors ligne, relance : l'Index capturé **dans le notifier**, à
+  l'instant où `WATCHING` est annoncé, égale le scan complet); hint = cycle ciblé; faux hint = rien de
+  journalisé; racine de premier niveau = W-C; escalade = W-C; **perte injectée dans le moteur produit**;
+  chaque genre de perte; file saturée; lecteur mort rouvert; signal **pendant W-B**, **pendant W-C**,
+  débordement pendant W-C; rafale sans fin = reste `VERIFYING` sans boucler; racine déplacée puis remise
+  (fausse et **native**) : `DEGRADED`, zéro `DELETED`, Index et journal intacts, retour vérifié;
+  racine remplacée : `SOURCE_CHANGED`, aucun scan en boucle, **Reconstruire** l'accepte; racine absente
+  au lancement; `PERIODIC` (jamais `WATCHING`) et convergence périodique; watcher natif sain sans repli;
+  vrais changements natifs sans aucune action manuelle; **Actualiser concurrent** sérialisé, 30 fichiers
+  journalisés **exactement une fois**; deux cerveaux isolés; cerveau synthétique / non indexé non
+  surveillés; `ensure` idempotent, séquences strictement croissantes; arrêt = lecteur libéré; arrêt
+  pendant un W-C = annulation, Index intact; enveloppe fermée (7 clés, aucun nom / chemin / clé / OS);
+  **aucun `println!` / log** dans les sources du watcher.
+
+### BY.4 Rafale de 10 000 opérations externes (`F-030`, O1)
+
+Vrai volume NTFS, vrai lecteur, moteur produit, 10 000 opérations (créations, réécritures, suppressions,
+renommages, créer-puis-supprimer) faites par le test hors du code du watcher. Index final = scan complet de
+référence, journal cohérent, aucune source écrite. Mesures d'ingénierie d'une machine (pas des SLA), trois
+exécutions isolées, voie ciblée : opérations en ~2,1 s, convergence 0,94 à 0,95 s après la dernière,
+file au plus **1 270 à 1 325** hints, 12 à 13 cycles W-B, **0** escalade, **1** W-C (l'initial),
+22 100 signaux reçus dont ~15 700 coalescés, 0 perte. Voie débordement (file de 64, 8 portées) : file au
+plus **64**, 4 pertes, 6 W-C, convergence 1,35 s, résultat tout aussi exact. Sous la charge de la suite
+complète les chiffres se dégradent (jusqu'à 3 W-C, ~4,3 s) : l'assertion ne porte donc pas sur la voie
+prise mais sur l'exactitude.
+
+### BY.5 WebView2 réel (`scripts/task0043-webview2.ps1`)
+
+Deux lancements réels, **fermeture réelle** entre eux, source changée application fermée, exécuté deux fois
+(concordant), `TASK-0043-webview2.json` : le seul clic est la baseline; le watcher démarre seul
+(`STARTING > VERIFYING/INITIAL_CHECK > WATCHING`, « Surveillance active », natif); créations, édition,
+suppression, renommage, déplacement, nouveau sous-arbre **sans clic** : carte, journal (cinq natures),
+non-vus et filtre Nouveaux (écran = backend); rafale de **1 380 opérations** (convergence ~1,5 s) = disque;
+racine entière déplacée : `DEGRADED` / source indisponible, carte gardée, zéro `DELETED`, Index intact;
+remise : `VERIFYING/SOURCE_RETURNED` puis `WATCHING`, `SYNCED`, rien d'inventé; second cerveau isolé dans
+les deux sens; après relance sans clic : Index = disque (5 376 nœuds) au premier état stable, révision
+avancée, changements hors ligne journalisés, second cerveau rattrapé, watcher vivant. Chaque événement du
+backend (19 puis 4) est enregistré depuis la page : exactement les sept clés fermées, aucun chemin ni
+identité; 0 erreur fatale. **Le rejeu a trouvé un vrai défaut** (badge d'observation figé au retour de la
+racine), corrigé et couvert par `watchMapApp.test.tsx`.
+
+### BY.6 Non testé, limites
+
+Partage réseau, FAT, dossier synchronisé infonuagique, USN (hors portée); repli périodique dans l'hôte
+(Rust seulement); cadences produit 5 s / 30 s non attendues en réel; deux processus sur un même cerveau;
+crash brutal; l'ordre « Index = disque avant tout état stable » est prouvé dans le moteur (capture dans le
+notifier) et, côté hôte, à l'état du premier `WATCHING` visible (la relance court après le chargement de la
+page; la transition a été vue à l'écran dans les deux exécutions). Une machine, corpus synthétique; pas une
+acceptation « portable modeste ». Aucune donnée personnelle; `origin/main` inchangé.
+
+**Action unique suivante :** contrôle indépendant de `TASK-0043`.

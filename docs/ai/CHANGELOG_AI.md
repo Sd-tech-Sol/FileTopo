@@ -5817,3 +5817,25 @@ précréation de `TASK-0038` par l'exécuteur.
 - DEC-0041 approuvée : événements OS = hints, W-B/W-C autoritaires via U-B, root guard, fallback périodique;
 - TASK-0043 créée READY sur `build/v0.2-a27-v1-watcher-reconciliation`;
 - aucun code produit exécuté par l'orchestrateur, aucune TASK-0044.
+
+---
+
+## 2026-09-24 — TASK-0043 — Surveillance automatique et réconciliation (F-030)
+
+**Agent :** exécuteur Claude Code (Sonnet 5)
+**Statut à l'issue :** `IMPLEMENTED`, jamais auto-`VERIFIED`
+
+### Fait
+
+- `src-tauri/src/watch/` (types fermés, file bornée, parseur défensif, coalescence, lecteur
+  `ReadDirectoryChangesExW` via `windows-sys`, boucle de réconciliation, `WatchManager`), `scope.rs` (W-B),
+  `map/watch_ops.rs` (W-C, W-B, garde de racine sous `PUBLICATION_LOCK`), `scanner::observe_entry`.
+- Tauri : `map_watch_status`, événement fermé `map-watch-status`, hook après Actualiser / Reconstruire,
+  arrêt propre. Interface : `WatchStatusBadge`, `watchStatus.ts`, rechargement sur place.
+- Tests : Rust 629 -> 719, TypeScript 439 -> 471; rafale de 10 000; rejeu WebView2 réel avec redémarrage.
+- `DEC-0041` §13, `TASK-0043`, `FEATURE_MATRIX`, `CURRENT_STATE`, `NEXT_ACTION`, `HANDOFF`, `VALIDATION BY`,
+  `.orchestrator/RESULT.md`.
+
+### Non fait, volontairement
+
+Aucune TASK-0044, aucun USN, aucun PR / fusion / étiquette / release; `graph/` et `incremental.rs` non touchés.

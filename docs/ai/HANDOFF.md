@@ -1,5 +1,31 @@
 # HANDOFF — passage de relais
 
+## Relais actuel — TASK-0043, watcher automatique, en attente de contrôle — 2026-09-24
+
+- **Fait :** `TASK-0043` est implémentée sur `build/v0.2-a27-v1-watcher-reconciliation` (partie de
+  `5b752be`). Elle reste `IMPLEMENTED`. Aucune TASK-0044, USN, PR, fusion, étiquette ni release;
+  `graph/` non touché; `incremental.rs` **non modifié** (seuil `F-031` intact).
+- **Où regarder, dans l'ordre :** `DEC-0041` (dont §13); `src-tauri/src/watch/worker.rs` (la boucle) puis
+  `queue.rs`, `parser.rs`, `backend.rs` / `native.rs`, `coalesce.rs`; `src-tauri/src/scope.rs` (W-B);
+  `map/watch_ops.rs`; `map/watch_scope_tests.rs` (parité avec un scan complet, dont 90 tours aléatoires) et
+  `watch/tests.rs` (manager, pertes, garde, périodique, 10 000); côté interface `watchStatus.ts`,
+  `WatchStatusBadge.tsx`, `watchMapApp.test.tsx`; `scripts/task0043-webview2.{ps1,mjs}` + le seed.
+- **À savoir pour la reprise :**
+  1. Une portée est **un dossier et ses entrées directes**; un hint porte **un bit fermé** (l'appartenance de
+     l'entrée a pu changer / seule l'entrée a bougé) — sans lui chaque modification d'un dossier de premier
+     niveau serait un W-C. Ce n'est pas une nature du journal. À trancher : `DEC-0041` §13.
+  2. `PUBLICATION_LOCK` est maintenant `pub(super)` : c'est la **seule** coordination d'écriture.
+  3. Les tests utilisent des points d'observation `#[cfg(test)]` dans le worker (`before/after_wb/wc`) pour
+     faire arriver un signal *pendant* un cycle; absents d'un binaire produit.
+  4. Rejeu : `pnpm tauri build --debug --no-bundle` puis `pwsh scripts/task0043-webview2.ps1` (pwsh, pas
+     PowerShell 5.1). Les cadences sont raccourcies par `FILETOPO_WATCH_*` (**build de développement
+     seulement**). Le fil CDP compte les `POST` (un préflight comptait deux fois).
+  5. Le rejeu réel a révélé un défaut d'interface (badge d'observation figé au retour de la racine), corrigé
+     et couvert.
+- **Non fait / non testé :** réseau, FAT, cloud, USN; repli périodique dans l'hôte; cadences produit en
+  réel; deux processus; crash brutal.
+- **Action unique suivante :** contrôle indépendant de `TASK-0043`.
+
 ## Relais actuel — TASK-0042, correctif ACTION-0069 P1/P1b, en attente de contrôle — 2026-09-24
 
 - **Fait :** commit `4bed627` sur `build/v0.2-a26-v1-source-availability`. `TASK-0042` reste

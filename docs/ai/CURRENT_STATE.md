@@ -1,5 +1,42 @@
 # État courant
 
+## TASK-0043 — V1 Automatic Watcher & Reconciliation — IMPLEMENTED — 2026-09-24
+
+- **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche `build/v0.2-a27-v1-watcher-reconciliation`,
+  partie de `5b752be` (`TASK-0042 = VERIFIED` par `ACTION-0070`, `DEC-0041`, `TASK-0043` présents).
+  Décision : [`DEC-0041`](../decisions/DEC-0041-watcher-signals-and-reconciliation.md) (§13 : précisions
+  d'implémentation à trancher). Détail : [VALIDATION section BY](VALIDATION.md), `.orchestrator/RESULT.md`.
+- **Principe tenu : événement OS = hint, jamais vérité.** `ReadDirectoryChangesExW` (`windows-sys 0.61.2`,
+  features existantes, **aucune crate ajoutée**) -> hints bornés -> W-B / W-C ->
+  `apply_update_batch`. L'action de l'OS est jetée au parseur; le journal vient d'une réénumération et d'une
+  comparaison canonique.
+- **Ce qui existe.** `src-tauri/src/watch/` : types fermés, file bornée (saturation = **perte explicite**),
+  parseur défensif, coalescence, lecteur natif (annulation puis attente avant de fermer le handle),
+  boucle de réconciliation par cerveau, `WatchManager`. `scope.rs` : **W-B**, qui relit les dossiers
+  pointés (jamais un gros frère non concerné), entre seulement dans un dossier nouveau ou déplacé, observe
+  seule une entrée qui n'a que bougé. `map/watch_ops.rs` : W-C (= pipeline d'Actualiser), W-B et garde de
+  racine sous le **même** `PUBLICATION_LOCK`. Tauri : `map_watch_status` (lecture, brain seul), événement
+  fermé `map-watch-status`, arrêt propre. Interface : `WatchStatusBadge`, rechargement sur place, aucun polling.
+- **Règles gardées par le code.** Aucun `WATCHING` sans W-C initial; un signal arrivé pendant un cycle
+  impose un cycle de plus; perte (débordement, `ERROR_NOTIFY_ENUM_DIR`, parseur, nom non confinable, file
+  pleine, lecteur mort) = W-C; racine absente / remplacée = observation (`UNAVAILABLE` / `SOURCE_CHANGED`),
+  **jamais** un lot de suppressions, retour = W-C avant l'état stable; pas de mécanisme natif = `PERIODIC`
+  (jamais `WATCHING`); Index sans identités durables = `NEEDS_MANUAL_REFRESH`, jamais écrit.
+- **Preuves.** Rust **719 PASS** (629 + 90), TypeScript **471 PASS** (439 + 32), `pnpm check` /
+  `pnpm build` / `cargo build --offline` PASS, Clippy 13 lib / 22 lib-test = dette historique inchangée.
+  Rafale de **10 000 opérations externes** sur vrai volume NTFS : Index = scan complet (voie ciblée **et**
+  voie débordement -> W-C). Rejeu **WebView2 réel** avec redémarrage réel
+  (`TASK-0043-webview2.json`, 0 erreur fatale, 0 fuite, 2 exécutions concordantes).
+- **Défaut trouvé par le rejeu réel, corrigé.** Au retour de la racine (même révision, donc pas de
+  rechargement) le badge d'observation restait `UNAVAILABLE`; l'interface relit maintenant l'observation à
+  chaque passage à un état stable ou hors d'un état dégradé (test de non-régression).
+- **Non testé / limites.** Volume NTFS local seulement : partage réseau, FAT, dossier synchronisé
+  infonuagique, USN non exercés; repli `PERIODIC` prouvé au niveau Rust (backend « non supporté »), pas
+  dans l'hôte; cadences produit (5 s / 30 s) non attendues en réel (surcharges de développement);
+  deux processus sur un cerveau non testés; crash brutal du processus non provoqué; le rejeu de relance
+  court après le chargement de la page (voir `limits` de l'artefact).
+- **Action unique suivante : contrôle indépendant de `TASK-0043`.**
+
 ## TASK-0042 — correctif ACTION-0069 (P1 / P1b) — toujours IMPLEMENTED — 2026-09-24
 
 - **Statut : `TASK-0042` reste `IMPLEMENTED`, jamais auto-`VERIFIED`.** Correctif étroit de

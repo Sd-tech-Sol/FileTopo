@@ -527,7 +527,8 @@ if (phase === 1) {
     (await uiNodeCount()) === afterBurst.nodeCount &&
     clicksOnActualiser() === 1;
   assert(results.burstConvergesToTheDisk, "after a burst the Index equals the disk exactly, with no click");
-  results.burst = { operations: operations.length + 0, mutatedMs: mutatedIn, convergedMs: convergedIn };
+  // 30 directories + 900 creations, 300 rewrites, 75 deletions and 75 renames = 1 380 operations.
+  results.burst = { jobs: operations.length, operations: 30 + 30 * 30 + 300 + 75 + 75, mutatedMs: mutatedIn, convergedMs: convergedIn };
 
   // ---- 5 — the whole root is MOVED away -------------------------------------------------
   const beforeAbsence = await snapshot(brainA);

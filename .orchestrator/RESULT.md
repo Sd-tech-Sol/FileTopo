@@ -1,74 +1,75 @@
-TASK_ID: TASK-0042 — corrective pass after ACTION-0069 (P1 / P1b)
+TASK_ID: TASK-0043 — V1 Automatic Watcher & Reconciliation
 AGENT: CLAUDE (Sonnet 5)
-RESULT: DONE
-BRANCH: build/v0.2-a26-v1-source-availability
-BASE: 7107f74 (fast-forward from origin; contains ACTION-0069; tree was clean)
-COMMITS: 4bed627 (code + tests); docs commit follows and is the branch HEAD
+RESULT: DONE — TASK-0043 = IMPLEMENTED (never self-VERIFIED)
+BRANCH: build/v0.2-a27-v1-watcher-reconciliation
+BASE: 5b752be (fast-forward from origin; tree was clean; HEAD contains ACTION-0070, DEC-0041, TASK-0043)
+COMMITS: d9e45ac (backend), ba879bb (interface), the UI observation fix, the docs/proof commit (branch HEAD)
 
-SUMMARY:
-- TASK-0042 stays IMPLEMENTED (never self-VERIFIED). Only P1 / P1b of ACTION-0069 were touched. No
-  watcher, polling, W-B/W-C, new DB, corpus migration, TASK-0043, PR, merge, tag or release.
-  `incremental.rs`, `scanner.rs`, `lib.rs`, `MapApp.tsx`, `lifecycle.ts` NOT modified.
-- P1 (honesty when the observation's own write fails): an observation whose `catalog_meta` write failed
-  is also kept in a PROCESS-LOCAL slot, one per brain (keyed by catalogue file + brain id, never
-  serialised). `read()` serves it first, always `persisted:false`. Any successful write drops it;
-  a restart loses it by design; it never becomes a source of truth for the Index or the corpus.
-  `record_failure` starts from it (if present) so the last success is not forgotten.
-  Result: source absent -> UNAVAILABLE recorded -> write refused -> the next read (same functions Tauri
-  calls) is UNAVAILABLE / ROOT_NOT_FOUND / persisted:false, never the old SYNCED still on disk.
-- P1b (stale failure record): `describes()` — SYNCED needs lastSuccessfulRevision == served; a failure
-  with lastSuccessfulRevision = Some(R) needs R == served, else it reads UNKNOWN (never SYNCED);
-  a failure with None stays valid.
+PRINCIPLE KEPT: OS event = hint, never truth. ReadDirectoryChangesExW -> bounded hints -> W-B/W-C ->
+apply_update_batch. The OS action is dropped at the parser; the journal comes from a re-enumeration.
 
-CRASH-WINDOW SEMANTICS (stated, not hidden):
-  The in-memory slot fixes the CURRENT SESSION, not a crash or a restart. After a restart, an observation
-  that never reached the disk is not recovered; the record on disk is judged against the served revision
-  (UNKNOWN if it no longer describes it). No atomicity between the Index commit and the catalogue commit
-  is claimed.
+REUSE-FIRST AUDIT (written before code):
+- windows-sys 0.61.2, features ALREADY enabled (Foundation, Storage_FileSystem, System_IO) expose
+  ReadDirectoryChangesExW, ReadDirectoryNotifyInformation, OVERLAPPED, GetOverlappedResultEx, CancelIoEx,
+  ERROR_NOTIFY_ENUM_DIR: NO crate, NO feature added, no `notify`. (Read from the cached crate sources: a
+  targeted read of tooling metadata, outside the repository, nothing else.)
+- Cancel of a blocking call: 100 ms wait slices, then CancelIoEx AND await completion before freeing the
+  buffer / closing the handle. Proven by the OS itself (exclusive open refused while the reader lives).
+- PUBLICATION_LOCK reused (now pub(super)): Actualiser, Reconstruire, W-B, W-C, root-guard writes share it.
+- scanner / reconcile_full_scan / apply_update_batch reused; scanner::observe_entry is the ONE
+  classification for the full scan and W-B. incremental.rs NOT modified (F-031 threshold untouched).
+- SourceObservation machine consumed unchanged. Tauri: managed state, one closed event, one read command.
+- Old prototype IndexJobs/collections NOT reactivated.
 
-TESTS:
-- T1 `an_unwritable_failure_record_is_still_the_current_observation_for_the_session`: real refresh_map,
-  trigger refusing INSERT/UPDATE of `source_observation.%`, root moved away; Index dump, digest, revision,
-  journal natures, catalogue-minus-observation identical; disk still holds old SYNCED; reads =
-  UNAVAILABLE/ROOT_NOT_FOUND/persisted:false; no trigger text, no path; second refusal keeps last success;
-  trigger removed + source still absent -> persisted:true; restart no longer changes anything.
-- T2 `a_failure_record_left_next_to_a_newer_revision_is_not_believed`: UNAVAILABLE(R) on disk, Index R+1,
-  no new record -> open_map and read_source_observation = UNKNOWN. Plus the direct-record variant in
-  `a_synced_record_for_another_revision_is_not_believed` (failure of another revision -> UNKNOWN; of the
-  served revision or with no success -> believed).
-- T3 `a_record_that_cannot_be_written_never_turns_an_applied_index_into_a_failure` (kept): Index applied,
-  report SYNCED persisted:false; in session read = SYNCED persisted:false; after simulated restart = UNKNOWN.
-  `a_restart_loses_an_unwritten_failure_and_never_invents_one` pins the limit (old SYNCED remains).
-- T4 `src/map/refreshFailure.test.tsx`: real MapApp, scripted backend (map_refresh refused,
-  map_source_observation = UNAVAILABLE persisted:false): badge UNAVAILABLE, data-persisted="false",
-  "non enregistrée", loaded map unchanged, exactly one local read ({brainId} only), no map_rebuild,
-  map_prepare_synthetic_source, map_open or map_view afterwards. Mutation check: with the backend
-  answering SYNCED the test fails.
+WHAT WAS BUILT: src-tauri/src/watch/ (types, queue, parser, backend, native, coalesce, worker, manager),
+src-tauri/src/scope.rs (W-B), src-tauri/src/map/watch_ops.rs; lib.rs wiring (map_watch_status,
+map-watch-status event, hook after Actualiser/Reconstruire, clean shutdown); UI WatchStatusBadge,
+watchStatus.ts, in-place reload on a new revision.
 
-EXISTING TESTS TOUCHED (each moved legitimately):
-  - `lifecycle_tests::state()` compares the Index WITHOUT the observation (the sandbox has no catalogue,
-    so the observation now differs by an honest persisted:false; same gesture as `rr5` in TASK-0042).
-  - `a_synced_record_for_another_revision_is_not_believed`: a failure of another revision is now UNKNOWN.
-  - the success-write-failure test gained the in-session / after-restart assertions.
+DECISIONS FOR THE INDEPENDENT CONTROL (also DEC-0041 section 13):
+1. A scope is ONE DIRECTORY + its direct entries, entering only NEW or MOVED child directories — not the
+   whole subtree of DEC-0041 section 3. Reads less, same honesty (each changed entry has its own hint;
+   otherwise W-C). "An ancestor covers its descendant" is realised at apply time: hints whose directory is
+   not (yet) safe rise to the same ancestor and become one scope.
+2. A hint carries ONE CLOSED BIT: membership of the entry in its directory may have changed (added, removed,
+   both halves of a rename) vs only the entry itself moved (modified). It cannot become a journal nature.
+   Without it every "directory modified" notification of a top-level directory would be a full scan (found
+   by the first real-OS test). Top-level ADD/REMOVE/RENAME keep the root as scope = W-C, as specified.
+3. Root-level scope = W-C exactly as TASK-0043 section E says.
+4. W-B never promotes a failure observation; it re-records SYNCED at the new revision only if it was SYNCED.
+5. NEEDS_MANUAL_REFRESH: an Index without durable identities/binding, or at an older schema, is never
+   written or migrated by the watcher (only the person's Actualiser restamps).
+6. Guard identity: only SYSTEM vs SYSTEM mismatch is SOURCE_CHANGED; an uncomparable identity is no evidence.
+7. A root refused by a W-C (SOURCE_CHANGED) is not re-scanned in a loop (growing wait) until Reconstruire.
+8. Development-only env overrides (FILETOPO_WATCH_GUARD_MS, _COALESCE_MS, _CALM_MS, _PERIODIC_MS,
+   _FORCE_PERIODIC) exist under debug_assertions only; a release build ignores them.
 
-VALIDATIONS:
-- `cargo test --offline`: 629 PASS, 0 FAIL, 6 ignored (626 + 3).
-- `pnpm test`: 439 PASS (438 + 1); `pnpm check` PASS; `pnpm build` PASS; `cargo build --offline` PASS.
-- Clippy: lib 13 / lib-test 22 = same counts as before the change (historical debt); none in
-  source_observation.rs, lifecycle_tests.rs, source_availability_tests.rs. rustfmt --check clean on the
-  three touched Rust files.
-- `git diff --check` clean. `scripts/audit-public-readiness.ps1 -AllowRemotes`: green (561 versioned files, no sensitive pattern, none over 5 MiB).
-- WebView2 NOT replayed: visible UI and transport unchanged (no TS product change); T4 covers the catch.
-- NOT tested: real process crash between the two commits (only simulated by dropping the slot); two
-  processes on one catalogue; a real host with an unwritable catalogue.
+TESTS / VALIDATIONS:
+- cargo test --offline: 719 PASS, 0 FAIL, 6 ignored (629 before + 90).
+- pnpm test: 471 PASS (439 + 32); pnpm check, pnpm build, cargo build --offline, pnpm tauri build --debug
+  --no-bundle: PASS.
+- cargo clippy: lib 13 / lib-test 22 = historical debt, unchanged; none in created files.
+- git diff --check clean; scripts/audit-public-readiness.ps1 -AllowRemotes: see final report line below.
+- 10 000 external operations, real NTFS, real reader, product engine, Index == full scan:
+  targeted path (3 isolated runs): mutate ~2.1 s, converge 0.94-0.95 s, queue max 1 270-1 325, 12-13 W-B,
+  0 escalation, 1 W-C (initial), 22 100 signals / ~15 700 coalesced, 0 loss.
+  overflow path (queue 64): queue max 64, 4 losses, 6 W-C, converge 1.35 s, equally exact.
+  Under the load of the full suite the numbers degrade (up to 3 W-C, ~4.3 s): assertions are on exactness.
+- Rejection tests: burst 10 000 OK; forced loss injected into the product engine OK; interruption (stop,
+  mutate, relaunch, Index captured INSIDE the notifier at the WATCHING announcement == full scan) OK; whole
+  root moved away (scripted AND native handle): DEGRADED, zero DELETED, Index/journal intact, return = W-C
+  then SYNCED OK.
+- Real WebView2 (two real launches, real close between, source changed while closed; run twice, concordant):
+  docs/performance/runs/TASK-0043-webview2.json — one click (baseline) then everything without a click;
+  watcher starts by itself; 1 380-operation burst converges (~1.5 s); root moved away/back; second brain
+  isolated; relaunch: Index == disk (5 376 nodes) at the first stable state, second brain caught up; 19+4
+  backend events recorded from the page, closed envelope only; 0 fatal console errors, 0 leak.
+- The real replay FOUND a UI defect (source badge stuck UNAVAILABLE after the root returned with an
+  unchanged revision); fixed, regression test added, replay rerun.
 
-DURABLE MEMORY UPDATED: CURRENT_STATE, HANDOFF, NEXT_ACTION, VALIDATION (section BX), CHANGELOG_AI,
-TASK-0042 note. `graph/` untouched.
+NOT TESTED / LIMITS: network share, FAT, cloud-synced folder, USN; PERIODIC fallback in the host (Rust only:
+an "unsupported" backend); product cadences (5 s / 30 s) not waited for in the host; two processes on one
+brain; hard process crash; relaunch replay races the page load (see artefact limits); one dev machine.
 
-GIT: pushed to the same branch only; tree clean at the end.
-REMOTE / DESTRUCTIVE ACTIONS: none beyond the push to the working branch. No PR, merge, tag, release,
-reset, clean, force push or history rewrite. Every proof source is synthetic; no real data.
-
-NEXT_ACTION: independent control of the P1 / P1b correction (VALIDATION BX, source_observation.rs, the
-three new tests in map/source_availability_tests.rs, src/map/refreshFailure.test.tsx). Limit to judge:
-the fallback corrects the session, not a crash.
+GOVERNANCE: TASK-0043 = IMPLEMENTED; no TASK-0044; no USN; no PR / merge / tag / release; graph/ untouched;
+push only to the task branch; NEXT_ACTION = independent control of TASK-0043.
