@@ -15,8 +15,8 @@ Le contrôle indépendant confirme :
 - le remplacement par « racine Git locale (chemin absolu non consigné) » conserve le sens documentaire sans inventer de valeur;
 - aucune réécriture d’historique Git n’est revendiquée;
 - aucun code produit de FileTopo n’a été modifié par cette passe;
-- les occurrences `C:\Users\quelquun\...` de `src-tauri/src/map/sandbox.rs` sont des fixtures synthétiques de tests qui prouvent précisément qu’un chemin absolu ne sort pas du sandbox;
-- l’occurrence `/Users/other/` / `D:/Users/other/dev` de `src-tauri/src/scale_spike/profile.rs` est également une fixture synthétique de sanitisation, pas une donnée locale.
+- les occurrences de chemins Windows dont le dossier utilisateur est `quelquun` dans `src-tauri/src/map/sandbox.rs` sont des fixtures synthétiques de tests qui prouvent précisément qu’un chemin absolu ne sort pas du sandbox;
+- l’occurrence de chemins dont le dossier utilisateur est `other` (macOS et lecteur `D:`) dans `src-tauri/src/scale_spike/profile.rs` est également une fixture synthétique de sanitisation, pas une donnée locale.
 
 ## R2 — exception d’audit trop large
 
@@ -26,7 +26,7 @@ La correction a ajouté :
 
 et ignore ensuite **toute** correspondance de chemin utilisateur dont le nom capturé est l’un de ces deux noms, quel que soit le fichier.
 
-Cela rend l’audit plus permissif au niveau global. Exemple : un futur vrai chemin `/Users/other/Documents/...` ajouté dans un document quelconque serait accepté silencieusement uniquement parce que son segment utilisateur vaut `other`.
+Cela rend l’audit plus permissif au niveau global. Exemple : un futur vrai chemin macOS dont le dossier utilisateur vaut `other`, ajouté dans un document quelconque serait accepté silencieusement uniquement parce que son segment utilisateur vaut `other`.
 
 Ce n’est pas nécessaire pour autoriser les fixtures connues.
 
@@ -42,7 +42,7 @@ Au minimum :
 - `src-tauri/src/map/sandbox.rs` peut tolérer `quelquun`;
 - `src-tauri/src/scale_spike/profile.rs` peut tolérer `other`;
 - ces noms ne doivent **pas** être tolérés ailleurs dans le dépôt;
-- un test négatif doit prouver qu’un fichier temporaire quelconque contenant `/Users/other/...` ou `C:\Users\quelquun\...` est encore signalé;
+- un test négatif doit prouver qu’un fichier temporaire quelconque contenant un chemin macOS complet d'utilisateur `other` ou Windows complet d'utilisateur `quelquun` est encore signalé;
 - les fixtures synthétiques existantes doivent rester tolérées;
 - `audit-public-readiness.ps1 -AllowRemotes` doit rester vert;
 - `git diff --check` doit rester propre.

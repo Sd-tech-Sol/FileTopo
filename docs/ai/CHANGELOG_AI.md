@@ -5572,3 +5572,22 @@ avancé localement la branche build (remise sur son `origin`, rien poussé).
 
 **Action unique suivante :** audit/orchestration de la tranche V1 suivante, sans
 précréation de `TASK-0038` par l'exécuteur.
+
+---
+
+## 2026-09-23 — Porte public-readiness, correctif final (`ACTION-0062` R2)
+
+**Agent :** exécuteur Claude Code (Sonnet 5) · **Branche :** `chore/v0.2-public-readiness-cleanup`
+
+- `scripts/audit-public-readiness.ps1` : la liste globale de noms fictifs est
+  remplacée par une exception **contextuelle** (fichier exact → nom exact) :
+  `map/sandbox.rs` tolère `quelquun`, `scale_spike/profile.rs` tolère `other`,
+  rien ailleurs. Fixtures Rust non modifiées.
+- Trois documents qui citaient ces chemins d'exemple en entier ont été
+  reformulés sans reproduire un chemin complet (prompt courant, `ACTION-0062`,
+  ancien `RESULT.md`) : sinon l'audit resserré les signalait à juste titre.
+- Preuves : audit `-AllowRemotes` vert; tests négatifs temporaires (chemin macOS
+  `other`, chemin Windows `quelquun`) détectés hors des deux fichiers; `git diff
+  --check` propre; aucun fichier produit modifié, suites non rejouées.
+- Limites : tree courant seulement, historique non réécrit; exception par
+  fichier, pas par ligne. Aucune `TASK-0038` créée.

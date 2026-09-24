@@ -15,12 +15,16 @@ $textExtensions = @(
 )
 
 # Les trois premiers motifs capturent le nom de dossier utilisateur (groupe 1).
-# Un nom de la liste ci-dessous est un **nom fictif** utilisé par des jeux
-# d'essai synthétiques (par exemple les tests qui prouvent qu'un chemin absolu
-# n'est jamais publié); ce n'est pas une donnée locale. La liste est
-# volontairement courte et nominative : tout autre nom de dossier utilisateur
-# reste une trouvaille.
-$syntheticUserNames = @('quelquun', 'other')
+# Exception **contextuelle** (ACTION-0062 R2) : un nom fictif n'est toléré que
+# dans le fichier exact où un jeu d'essai synthétique l'emploie pour prouver
+# qu'un chemin absolu n'est jamais publié; ce n'est pas une donnée locale.
+# Clé = chemin relatif au dépôt (séparateur `/`, comparaison exacte), valeur =
+# noms fictifs exacts tolérés dans ce fichier seulement. Partout ailleurs, ces
+# mêmes noms restent une trouvaille, comme tout autre nom de dossier utilisateur.
+$syntheticUserNamesByFile = @{
+  'src-tauri/src/map/sandbox.rs'           = @('quelquun')
+  'src-tauri/src/scale_spike/profile.rs' = @('other')
+}
 
 $patterns = [ordered]@{
   'chemin Windows personnel' = '[A-Za-z]:' + '\\Users\\([^\\\r\n]+)\\'
@@ -51,7 +55,8 @@ try {
     foreach ($entry in $patterns.GetEnumerator()) {
       foreach ($match in [regex]::Matches($content, $entry.Value)) {
         $isUserPath = $match.Groups.Count -gt 1
-        if ($isUserPath -and ($syntheticUserNames -contains $match.Groups[1].Value)) { continue }
+        if ($isUserPath -and $syntheticUserNamesByFile.ContainsKey($relativePath) -and
+            ($syntheticUserNamesByFile[$relativePath] -ccontains $match.Groups[1].Value)) { continue }
         $findings += "${relativePath}: $($entry.Key)"
         break
       }

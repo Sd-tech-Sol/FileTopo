@@ -47,8 +47,8 @@ comparaison est exacte et lisible.
 
 1. `scripts/audit-public-readiness.ps1 -AllowRemotes` → PASS.
 2. Test négatif temporaire hors des deux fichiers autorisés :
-   - `/Users/other/Documents/secret.txt` doit être détecté;
-   - `C:\Users\quelquun\Documents\secret.txt` doit être détecté.
+   - un chemin macOS complet dont le dossier utilisateur est `other` doit être détecté;
+   - un chemin Windows complet dont le dossier utilisateur est `quelquun` doit être détecté.
 3. Les fixtures existantes des deux fichiers autorisés ne doivent pas faire
    échouer l’audit.
 4. `git diff --check` → propre.

@@ -1,16 +1,19 @@
 # Action suivante
 
-## Recontrôle final de la porte public-readiness — ACTION-0062 R2
+## Audit/orchestration de la tranche V1 suivante
 
-`TASK-0037` reste **VERIFIED** par `ACTION-0061`.
+`ACTION-0062` **R2 est fermée** : l'exception d'audit pour les noms d'utilisateur
+synthétiques `quelquun` et `other` n'est plus globale, elle est limitée au fichier
+exact où chacun est employé (`src-tauri/src/map/sandbox.rs`, `src-tauri/src/scale_spike/profile.rs`).
+Ces noms restent détectés partout ailleurs (test négatif exécuté), et
+`scripts/audit-public-readiness.ps1 -AllowRemotes` est vert. Le tree courant reste
+assaini; l'historique Git n'a pas été réécrit.
 
-Le nettoyage du tree courant a retiré les anciens chemins locaux réels, mais
-`ACTION-0062` a trouvé une réserve unique : l’audit public tolère actuellement
-les noms synthétiques `quelquun` et `other` **partout** dans le dépôt.
+`TASK-0037` reste `VERIFIED` (`ACTION-0061`).
 
-Action unique : exécuter `.orchestrator/NEXT_PROMPT.md` sur
-`chore/v0.2-public-readiness-cleanup` pour rendre cette exception strictement
-contextuelle aux deux fichiers de fixtures connus, prouver qu’un même nom reste
-détecté ailleurs, puis rejouer l’audit public-readiness.
+Action unique : l'orchestrateur contrôle cette branche, puis audite l'état du
+produit et cadre la **tranche V1 suivante** (candidats déjà nommés : watcher
+`F-030`, application incrémentale `F-031`, filtres nouveau/non-vu `F-022`,
+marquer vu `F-028`) et crée lui-même la fiche de tâche correspondante.
 
-Aucune `TASK-0038` avant fermeture de R2.
+L'exécuteur ne précrée aucune `TASK-0038`.
