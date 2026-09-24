@@ -7637,7 +7637,7 @@ chemins de migration / reconstruction, `reconstructible_digest`).
 | `cargo clippy --offline --all-targets` | dette historique seule : lib **13**, lib-test **22** (comptes de `TASK-0037` à `TASK-0041`); mesuré identique **avec et sans** les changements (`git stash`); zéro diagnostic dans un fichier créé ou sur une ligne ajoutée |
 | `rustfmt --check` | propre sur les fichiers créés et touchés; le dépôt n'est pas propre ailleurs (historique — `hierarchy.rs`, `content_signals.rs`, `relations.rs`, …), **non reformaté** (un `cargo fmt` global lancé par mégarde a été annulé fichier par fichier avant tout commit) |
 | `git diff --check` | propre |
-| `scripts/audit-public-readiness.ps1 -AllowRemotes` | voir BW.5 (rejoué après commit) |
+| `scripts/audit-public-readiness.ps1 -AllowRemotes` | **réussi après commit** : 559 fichiers versionnés, aucun motif sensible, aucun fichier > 5 Mio, allowlist non élargie |
 
 ### BW.3 Ce que les 33 tests Rust établissent
 

@@ -94,8 +94,8 @@ VALIDATIONS:
   `rustfmt --check` clean on created/touched files; the repo is not rustfmt-clean elsewhere (historical). A
   global `cargo fmt` was run by mistake mid-task and REVERTED file by file before any commit; nothing
   outside this task's files is reformatted.
-- `git diff --check` clean; `scripts/audit-public-readiness.ps1 -AllowRemotes`: see the post-commit line at
-  the end of this file.
+- `git diff --check` clean; `scripts/audit-public-readiness.ps1 -AllowRemotes`: green after the commits (559 versioned
+  files, no sensitive pattern, none over 5 MiB, allowlist not widened).
 - NOT tested: permission-denied / unplugged drive / network share in the real host (classified by error
   kind at the Rust level only); SCAN_INCOMPLETE and APPLY_FAILED in the real host (Rust level only);
   process crash between the Index commit and the observation write; two processes; that a recreated
