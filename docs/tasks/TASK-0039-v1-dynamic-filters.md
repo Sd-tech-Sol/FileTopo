@@ -1,7 +1,7 @@
 # TASK-0039 — V1 Dynamic Filters
 
 - **Date :** 2026-09-23
-- **Statut :** `IMPLEMENTED` (jamais auto-`VERIFIED`; contrôle indépendant en attente)
+- **Statut :** `VERIFIED` par `ACTION-0065`
 - **Branche :** `build/v0.2-a23-v1-dynamic-filters`
 - **Prérequis :** `TASK-0038 = VERIFIED` (`ACTION-0064`)
 - **Décision :** `DEC-0037 — Dynamic filters over the canonical Index and bounded projection`
@@ -268,3 +268,8 @@ par rapport à la fiche (invariants inchangés) : le bloc de sortie est un objet
 `filtered` imbriqué dans la projection (absent pour la projection normale) qui
 ajoute `filterContextIds` aux champs minimaux; la disponibilité `ONLINE_ONLY`
 reste prouvée au niveau Rust.
+
+
+## Clôture indépendante — ACTION-0065
+
+`TASK-0039` est **VERIFIED dans sa portée**. Les filtres dynamiques F-022/P-09, le total exact, la pagination keyset, la projection matches/contexte et les preuves 100k/WebView2 sont acceptés. La persistance P-19, l’incrémental F-031 et le watcher F-030 restent hors portée.
