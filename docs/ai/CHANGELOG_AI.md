@@ -5726,3 +5726,26 @@ précréation de `TASK-0038` par l'exécuteur.
 - DEC-0039 approuvée : scan manuel complet -> lot minimal -> noyau U-B;
 - TASK-0041 créée READY sur `build/v0.2-a25-v1-manual-refresh-incremental`;
 - Reconstruire reste full explicite; aucun watcher/W-B/W-C/F-032 ouvert.
+
+
+## 2026-09-24 — TASK-0041 — Actualiser manuel par le noyau incrémental
+
+**Agent :** exécuteur Claude Code (Sonnet 5) · **Branche :** `build/v0.2-a25-v1-manual-refresh-incremental`
+**Statut à l'issue :** `IMPLEMENTED` (jamais auto-`VERIFIED`)
+
+- `Actualiser` d'un Index estampé = scan complet manuel → `reconcile.rs` (lot minimal, clé
+  stable seulement) → `Index::apply_update_batch`; jamais `publish_with_identity` sur ce
+  chemin. Noyau `TASK-0040` inchangé (commentaires de tête seulement).
+- `MapBuildReport.applicationMode` (`BASELINE_FULL` / `INCREMENTAL` / `IDENTITY_RESTAMP_FULL` /
+  `EXPLICIT_REBUILD_FULL`) + une étiquette discrète dans l'interface; un échec incrémental est
+  une erreur, jamais une bascule vers un chemin complet. `Reconstruire` reste un remplacement
+  complet explicite.
+- Preuve « pas de remplacement complet » : garde SQLite qui refuse d'insérer un id existant
+  (arrête Reconstruire; mutation de l'arm incrémental ⇒ 22 tests sur 41 échouent).
+- Six décisions signalées (`RESULT.md`), dont un Index legacy sans liaison de source routé vers
+  le restamp complet, `built_unix_ms` inchangé par l'incrémental, racine changée d'identité =
+  refus explicite, un no-op n'avance plus la révision.
+- Preuves : Rust 593 PASS (+43), TypeScript 415 PASS (+3), rejeu WebView2 réel avec
+  redémarrage réel (`TASK-0041-webview2.json`). Ajouts : `reconcile.rs`,
+  `map/refresh_incremental_tests.rs`, `scripts/task0041-*`.
+- Aucune TASK-0042, watcher, W-B/W-C, F-032, PR, fusion, étiquette ni release.

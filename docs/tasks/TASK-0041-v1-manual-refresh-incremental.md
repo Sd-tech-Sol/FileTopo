@@ -1,7 +1,7 @@
 # TASK-0041 — V1 Manual Refresh Through Incremental Apply
 
 - **Date :** 2026-09-24
-- **Statut :** `READY`
+- **Statut :** `IMPLEMENTED` (jamais auto-`VERIFIED`)
 - **Branche :** `build/v0.2-a25-v1-manual-refresh-incremental`
 - **Décision :** `DEC-0039`
 - **Portée :** `F-029` + branchement produit de `F-031`
@@ -238,3 +238,48 @@ Si le noyau U-B change, rejouer également le banc canonique F-031 ou une preuve
 - docs durables + FEATURE_MATRIX honnêtes;
 - `NEXT_ACTION = contrôle indépendant de TASK-0041`;
 - push uniquement sur la branche, arbre propre.
+
+## Résultat de l'exécution (2026-09-24)
+
+- **Ce qui existe.** `Actualiser` d'un Index déjà estampé fait maintenant
+  `scan complet manuel -> src-tauri/src/reconcile.rs -> UpdateBatch minimal ->
+  Index::apply_update_batch` (`BrainIndex::refresh_incrementally`). Jamais
+  `publish_with_identity` sur ce chemin. Le noyau `TASK-0040` n'a **pas** été modifié
+  (`incremental.rs` : commentaires de tête seulement, aucune ligne de code).
+- **Mode d'application** (`MapBuildReport.applicationMode`, fermé, non sensible) :
+  `BASELINE_FULL` (aucun Index), `INCREMENTAL`, `IDENTITY_RESTAMP_FULL` (Index legacy sans
+  estampille durable), `EXPLICIT_REBUILD_FULL` (Reconstruire). Un échec incrémental est une
+  erreur : **aucune bascule** vers l'un des modes complets.
+- **Réconciliateur.** Comparaison par clé stable uniquement, un seul passage en flux sur les
+  lignes stockées; n'entrent dans le lot que les nœuds nouveaux ou dont une colonne stockée
+  change (descendants d'un dossier déplacé / renommé compris); suppressions exactes;
+  `PATH_FALLBACK` renommé = suppression + création (la clé change avec le chemin);
+  observation de la racine seulement si elle diffère; déterministe; scan sans changement =
+  lot vide, **aucun verrou d'écriture**, révision inchangée. Refus avant toute écriture d'un
+  scan qui n'est pas une bijection à racine unique, ou dont la racine n'est plus la racine
+  indexée (`F-032` : ni devinette ni reconstruction automatique).
+- **Preuve « pas de remplacement complet ».** Un garde SQLite refuse d'insérer toute ligne
+  dont l'id existe déjà : une publication complète (DELETE puis réinsertion) ne peut pas le
+  franchir, le noyau n'insère que des ids neufs. Un test de contrôle montre que le garde
+  arrête bel et bien **Reconstruire** et `publish_with_identity`; un test de mutation (l'arm
+  incrémental remplacé par la publication complète, étiquette conservée) fait échouer
+  22 tests sur les 41 alors écrits (mesure faite avant l'ajout de deux tests).
+- **Preuves.** Rust **593 PASS** (550 + 43, tous dans `map/refresh_incremental_tests.rs`, dont
+  la parité aléatoire réconciliateur / publication complète; le test de contrat de
+  `TASK-0040` sur `commands.rs` est mis à jour, non ajouté); TypeScript **415 PASS** (412 + 3); rejeu WebView2 **réel**
+  (`scripts/task0041-webview2.ps1`, un redémarrage réel, 0 erreur fatale, 0 fuite).
+- **Décisions à examiner par le contrôle** (détail : `.orchestrator/RESULT.md`) :
+  (1) un Index legacy **estampé mais sans liaison de source** (avant `DEC-0033`) est routé
+  vers le restamp complet `IDENTITY_RESTAMP_FULL`, car le noyau ne réécrit jamais les
+  métadonnées de cerveau et l'Actualiser explicite est précisément ce qui acquiert la
+  liaison (`DEC-0033` D); (2) `built_unix_ms` garde l'instant de la dernière **publication
+  complète** (aucun lecteur ne s'en sert; l'instant d'une application incrémentale est le
+  `detectedUnixMs` de ses événements); (3) racine changée d'identité = refus explicite;
+  (4) un Actualiser sans changement **n'avance plus la révision** (`DEC-0039` §6), une date
+  de dossier seule l'avance sans événement; (5) `Reconstruire` sans Index = `BASELINE_FULL`.
+- **Limites.** Le scan reste complet et le rapport recalcule `reconstructibleDigest` sur tout
+  le corpus (`O(corpus)`, `F-029` manuel, hors périmètre du watcher); coût d'un Actualiser
+  incrémental sur 100 000 nœuds non mesuré de bout en bout; `PATH_FALLBACK` d'origine
+  « en ligne seulement » non fabriqué (jonction Windows réelle testée); aucun crash de
+  processus provoqué; le corps des réponses IPC n'est pas lisible par CDP : le mode est lu
+  sur l'étiquette que le produit affiche depuis le rapport réel.

@@ -7500,3 +7500,110 @@ médiane sur 35.
 `map_refresh`, aucune PR, fusion, étiquette ni release.
 
 **Action unique suivante :** contrôle indépendant de la preuve canonique F-031.
+
+
+
+## BV. TASK-0041 — Actualiser manuel par le noyau incrémental — 2026-09-24
+
+**Statut : `TASK-0041` = `IMPLEMENTED`**, jamais auto-`VERIFIED`. Branche
+`build/v0.2-a25-v1-manual-refresh-incremental`, partie de `d7b17a1` (contient `ACTION-0067`,
+`DEC-0039`, `TASK-0041`). Décisions à trancher : `.orchestrator/RESULT.md`.
+
+### BV.1 Préconditions
+
+`git checkout` explicite de la branche, `git fetch origin`, fast-forward (déjà à jour),
+arbre propre, `HEAD` contient `ACTION-0067`, `DEC-0039` et `TASK-0041`; `DEC-0039` puis
+`TASK-0041` lues en entier avant toute modification. Audit reuse-first fait avant le code
+(`publish_map`, `apply_update_batch`, `publish_with_identity`, remap d'identité,
+`replace_with_identity`, métadonnées de build, diagnostics, `lifecycle.ts`, `MapApp.tsx`).
+
+### BV.2 Suites
+
+| Contrôle | Résultat |
+|---|---|
+| `cargo test --offline` | **593 PASS**, 0 FAIL, 6 ignorés (550 avant + 43 dans `map/refresh_incremental_tests.rs`) |
+| Dont les 49 tests du noyau `TASK-0040` | PASS; un seul test de contrat (`commands.rs` ne nomme pas le noyau) mis à jour, expliqué |
+| `pnpm test` | **415 PASS** (412 + 3) |
+| `pnpm check` / `pnpm build` | PASS / PASS |
+| `cargo build --offline` | PASS |
+| `pnpm tauri build --debug --no-bundle` | PASS (un simple `cargo build` pointe sur `localhost:1420`) |
+| `cargo clippy --offline --all-targets` | dette historique seule : lib **13**, lib-test **22** (comptes de `TASK-0037`/`0038`/`0039`); zéro diagnostic dans un fichier créé ou sur une ligne ajoutée |
+| `rustfmt --check` | propre sur les fichiers créés, `brain_index.rs` et les fichiers de test touchés; le dépôt n'est pas propre ailleurs (historique), `lib.rs`/`commands.rs` non reformatés |
+| `git diff --check` | propre |
+| `scripts/audit-public-readiness.ps1 -AllowRemotes` | réussi (voir `RESULT.md` pour le compte après commit) |
+
+### BV.3 Ce que les 43 tests établissent
+
+- **Réconciliateur contre la référence.** Après chaque tour aléatoire (6 graines × 40 tours ×
+  1 à 3 opérations : création, modification, suppression de sous-arbre, renommage, déplacement,
+  date de dossier, date de racine; identités `SYSTEM` et `PATH_FALLBACK`), l'Index qui n'a reçu
+  que le lot réconcilié est égal à l'Index remplacé en entier par `publish_with_identity` :
+  mêmes ids canoniques, mêmes lignes, `child_count`, compteurs, journal.
+- **Minimalité et déterminisme.** Scan inchangé = lot vide (aucun nœud, aucune suppression,
+  racine non observée); un dossier renommé n'amène que ses descendants; rejeux identiques.
+- **Refus avant écriture.** Clé dupliquée, identité manquante ou étrangère, deux racines, aucune
+  racine, parent non scanné, racine scannée ≠ racine indexée (aucun message ne porte de clé).
+- **Chemin produit (vrai arbre, vrai scanner, vraie identité `SYSTEM`).** Premier Actualiser =
+  `BASELINE_FULL`; second inchangé = `INCREMENTAL`, no-op, même révision, base identique au
+  niveau logique (toutes les tables); création, modification, renommage, déplacement,
+  renommage + déplacement, sous-arbre créé puis supprimé, dossier renommé puis déplacé
+  (profondeurs recalculées), lot mixte (compteurs exacts 1/1/1/1/1/5), `child_count` exact,
+  **chaque scénario suivi d'une Reconstruire qui ne change rien** (l'incrémental *est* ce que
+  produit une publication complète), jonction Windows réelle `PATH_FALLBACK` (suppression +
+  création).
+- **Filtres, vu / non vu, journal, curseurs.** NEW / UNSEEN exacts après Actualiser (un nœud
+  supprimé n'est pas sélectionnable); acquittement antérieur conservé; journal antérieur
+  conservé (mêmes `event_id`); un no-op laisse valide un curseur lié à la révision, un
+  changement l'invalide.
+- **Index anciens.** v3 migré : `IDENTITY_RESTAMP_FULL` une fois, puis `INCREMENTAL`; v5 migré
+  en v6 : directement `INCREMENTAL` (déjà estampé), historique conservé; estampilles perdues :
+  restamp; legacy sans liaison (`b1`) : restamp puis `INCREMENTAL`.
+- **Sûreté.** Scan annulé, source absente, racine changée d'identité : ancien Index intact
+  (comparaison de **toutes** les tables). Échec SQL injecté pendant l'application (INSERT,
+  UPDATE, DELETE, journal, révision) : rollback exact, `index_id` et révision inchangés, aucun
+  message « full-publication-forbidden » (aucune reconstruction tentée), puis le même refresh
+  s'applique une fois, incrémentalement, résumé 1/1/1/3.
+- **Preuve structurelle.** Garde SQLite (refuse d'insérer un id existant) : le refresh estampé
+  le franchit sur quatre changements successifs; **Reconstruire** et `publish_with_identity`
+  direct ne le franchissent pas (contrôle). Mutation : arm incrémental → publication complète
+  (étiquette conservée) ⇒ 22 des 41 tests alors écrits échouent, dont ceux du garde. Un test
+  textuel complémentaire (jamais la preuve) : `refresh_incrementally` ne nomme aucune
+  publication complète.
+- **Métadonnées.** `brain_id`, liaison, `label`, `layout_algorithm`, `build_complete`,
+  `projection_contract`, `built_unix_ms` inchangés par un Actualiser incrémental; aucun
+  diagnostic; la source n'est jamais modifiée. Date de dossier seule : révision +1, résumé 0.
+- **Confidentialité / isolation.** Deux cerveaux : l'Actualiser de l'un ne modifie pas un octet
+  de l'autre; rapport, journal, projection et projection filtrée sans chemin absolu, sans clé
+  stable (`SYS1:`/`PFv1:` ni valeurs stockées).
+
+### BV.4 WebView2 réel (`scripts/task0041-webview2.ps1`)
+
+Deux lancements réels du même exécutable (un redémarrage réel), deux arbres synthétiques
+générés par `task0041-seed-proof.py`, mutations disque faites **hors du processus**, clics
+réels (souris / clavier CDP). Artefact : `docs/performance/runs/TASK-0041-webview2.json`
+(`NONCANONICAL_ENGINEERING_EVIDENCE`), tous les drapeaux `true`, **0 erreur fatale**, 0 fuite.
+Scénario : baseline `BASELINE_FULL` (aucun événement inventé) → Actualiser inchangé
+`INCREMENTAL` « Aucun changement détecté. », même révision, même `indexId` → lot externe
+(créer, modifier, supprimer, renommer, déplacer, dossier neuf + fichier) → **un** Actualiser
+`INCREMENTAL`, résumé « 7 changement(s) détecté(s) : 3 créé(s) · 1 modifié(s) · 1 renommé(s) ·
+1 déplacé(s) · 1 supprimé(s) », exactement +1 révision, ids conservés → journal (7 événements
+non vus, égal à la page du backend) et filtres Nouveaux / Non vus exacts par le vrai panneau →
+« Tout marquer vu » puis changement ultérieur non vu → élément marqué puis re-modifié → dossier
+renommé avec descendants → **Reconstruire** `EXPLICIT_REBUILD_FULL` (journal et vu conservés,
++1 révision) → `INCREMENTAL` de nouveau → second cerveau intact → **redémarrage réel** : même
+Index, même révision, journal identique drapeau pour drapeau, Actualiser à froid `INCREMENTAL`
+silencieux, puis un changement appliqué incrémentalement.
+Le corps d'une réponse IPC (protocole personnalisé) n'est pas lisible par CDP : le fil
+(`Network`) prouve la complétion et le succès de chaque `map_refresh` / `map_rebuild`, et le
+mode est lu sur l'étiquette que le produit rend depuis le rapport réel.
+
+### BV.5 Non testé, limites
+
+Coût de bout en bout d'un Actualiser sur 100 000+ nœuds (scan, lecture des lignes stockées et
+empreinte du rapport sont `O(corpus)`); `ONLINE_ONLY` réel (Cloud Files); crash de processus
+en cours de refresh; deux processus sur un même Index; watcher `F-030`, `F-032`, W-B/W-C
+(hors portée). Une machine, corpus synthétique; pas une acceptation « portable modeste ».
+`graph/` non mis à jour (non tenu depuis `TASK-0009`). Aucune donnée personnelle;
+`origin/main` inchangé; aucune TASK-0042, PR, fusion, étiquette ni release.
+
+**Action unique suivante :** contrôle indépendant de `TASK-0041`.

@@ -1,5 +1,32 @@
 # HANDOFF — passage de relais
 
+## Relais actuel — TASK-0041, Actualiser manuel par le noyau incrémental, en attente de contrôle — 2026-09-24
+
+- **Fait :** `TASK-0041` est implémentée sur `build/v0.2-a25-v1-manual-refresh-incremental`
+  (partie de `d7b17a1`, `TASK-0040 = VERIFIED`). Elle reste `IMPLEMENTED`, jamais
+  auto-`VERIFIED`. Aucune TASK-0042, watcher, W-B/W-C, F-032, PR, fusion, étiquette ni release.
+- **Où regarder, dans l'ordre :** `DEC-0039`; `src-tauri/src/reconcile.rs` (le
+  réconciliateur, ~310 lignes); `map/brain_index.rs::refresh_incrementally` /
+  `has_current_stamp`; `map/commands.rs::publish_map` (`Gesture`, `ApplicationMode`);
+  `map/refresh_incremental_tests.rs` (parité aléatoire, scénarios sur vrai arbre, garde
+  « aucun remplacement complet »); `scripts/task0041-webview2.{ps1,mjs}` + le seed.
+- **À savoir pour la reprise :**
+  1. Le garde de preuve est un **trigger SQLite** refusant d'insérer un id déjà existant : la
+     publication complète (DELETE puis réinsertion) ne le franchit pas, le noyau oui. Il
+     persiste dans le fichier de test; `assert_incremental_equals_full` le retire avant
+     l'unique **Reconstruire** de comparaison.
+  2. Le réconciliateur lit toutes les lignes stockées en un passage (`O(corpus)`) : c'est
+     `F-029` manuel, pas le watcher. Le coût du **lot** reste celui de `TASK-0040`.
+  3. Un Index legacy sans liaison de source est **estampé** mais passe par le restamp complet
+     (le noyau n'écrit jamais les métadonnées de cerveau). `built_unix_ms` n'avance qu'aux
+     publications complètes.
+  4. Le rejeu WebView2 lit le mode sur l'étiquette `data-testid="application-mode"`; le fil
+     (CDP `Network`) ne prouve que la complétion. Il faut `pnpm tauri build --debug
+     --no-bundle` (un simple `cargo build` pointe sur le serveur de développement).
+- **Non fait / non testé :** coût d'un Actualiser sur 100 000+ nœuds; crash de processus;
+  deux processus sur un même Index; F-030, F-032, W-B/W-C.
+- **Action unique suivante :** contrôle indépendant de `TASK-0041`.
+
 ## Relais actuel — TASK-0040, recontrôle canonique F-031, en attente de contrôle — 2026-09-24
 
 - **Fait :** les 5 campagnes canoniques d'`ACTION-0066` (35 échantillons bruts par cas) ont

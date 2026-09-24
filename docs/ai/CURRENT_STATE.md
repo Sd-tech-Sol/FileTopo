@@ -1,5 +1,54 @@
 # État courant
 
+## TASK-0041 — V1 Manual Refresh Through Incremental Apply — IMPLEMENTED — 2026-09-24
+
+- **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche
+  `build/v0.2-a25-v1-manual-refresh-incremental`, partie de `d7b17a1` (`TASK-0040 =
+  VERIFIED` par [`ACTION-0067`](../reviews/ACTION-0067-task0040-final-control.md)).
+  Décision : [`DEC-0039`](../decisions/DEC-0039-manual-refresh-incremental-apply.md).
+  Détail : [VALIDATION section BV](VALIDATION.md), `.orchestrator/RESULT.md`.
+- **Ce qui existe maintenant.** **Actualiser** d'un Index déjà estampé fait
+  `scan complet manuel -> reconcile_full_scan -> UpdateBatch minimal ->
+  Index::apply_update_batch` (`BrainIndex::refresh_incrementally`); jamais
+  `publish_with_identity` sur ce chemin. Le noyau `TASK-0040` est **inchangé** (commentaires
+  de tête seulement). Le rapport de build porte `applicationMode` (`BASELINE_FULL`,
+  `INCREMENTAL`, `IDENTITY_RESTAMP_FULL`, `EXPLICIT_REBUILD_FULL`), affiché par une
+  étiquette discrète à côté du résumé existant. Un échec incrémental est une **erreur**,
+  jamais une bascule vers un chemin complet.
+- **Chemins complets, explicites :** première indexation (aucun Index); restamp legacy une
+  seule fois (fichier v3 migré sans stable_key, ou fichier d'avant `DEC-0033` sans liaison
+  de source); **Reconstruire**.
+- **Réconciliateur (`reconcile.rs`).** Clé stable seulement, aucune heuristique; un passage
+  en flux sur les lignes stockées; lot minimal (nouveaux ou changés, descendants d'un
+  dossier déplacé compris; suppressions exactes; `PATH_FALLBACK` renommé = suppression +
+  création); racine observée seulement si elle diffère; déterministe; scan sans changement
+  = lot vide, aucun verrou d'écriture, **même révision**. Refus avant écriture : scan non
+  bijectif, racine scannée ≠ racine indexée (`F-032`).
+- **Décisions à examiner (six).** (1) Index legacy estampé mais sans liaison → restamp
+  complet (`DEC-0033` D promet que l'Actualiser explicite acquiert la liaison; le noyau
+  n'écrit jamais les métadonnées de cerveau). (2) `built_unix_ms` = instant de la dernière
+  publication **complète**; l'instant d'une application incrémentale est le
+  `detectedUnixMs` de ses événements. (3) Racine changée d'identité → refus explicite
+  `map_refresh_reconcile_refused`, pas de reconstruction automatique. (4) Un Actualiser sans
+  changement n'avance plus la révision; une date de dossier seule l'avance sans événement
+  (testé). (5) `Reconstruire` sans Index = `BASELINE_FULL`. (6) Aucun diagnostic obsolète
+  possible : un Index estampé produit n'en porte jamais (scan incomplet refusé depuis
+  `de60ef1`, avant l'identité stable).
+- **Preuves.** Rust **593 PASS** (550 + 43, `map/refresh_incremental_tests.rs`) : parité
+  aléatoire réconciliateur / publication complète (6 graines × 40 tours, `SYSTEM` et
+  `PATH_FALLBACK`), scénarios sur vrai arbre (création, modification, renommage, déplacement,
+  renommage + déplacement, sous-arbre, dossier renommé puis déplacé, lot mixte, jonction
+  `PATH_FALLBACK` réelle), rollback par injection (INSERT, UPDATE, DELETE, journal, révision),
+  garde « aucun remplacement complet » (un trigger SQLite qui refuse d'insérer un id existant;
+  contrôle : il arrête **Reconstruire**; mutation : 22 des 41 tests alors écrits échouent si
+  l'arm incrémental repasse par la publication complète), v3 / v5 / estampilles perdues /
+  legacy, deux cerveaux isolés, aucune fuite. TypeScript **415 PASS** (412 + 3). Rejeu
+  **WebView2 réel** avec redémarrage réel : `TASK-0041-webview2.json`, 0 erreur fatale, 0 fuite.
+- **Non testé.** Coût d'un Actualiser sur 100 000+ nœuds (scan et empreinte `O(corpus)`);
+  crash de processus; deux processus sur un Index; `ONLINE_ONLY` (jonction réelle testée).
+- **Hors portée, non fait :** watcher `F-030`, W-B/W-C, indisponibilité `F-032`, `TASK-0042`.
+- **Action unique suivante : contrôle indépendant de `TASK-0041`.**
+
 ## TASK-0040 — recontrôle canonique F-031 (ACTION-0066 P1) — IMPLEMENTED — 2026-09-24
 
 - **Statut : `TASK-0040` reste `IMPLEMENTED`**, jamais auto-`VERIFIED`. Passe de mesure
