@@ -320,6 +320,67 @@ export interface SourceObservation {
 }
 
 /**
+ * `TASK-0043`, `DEC-0041` §8 — the state of a brain's automatic watcher. Process
+ * local: a fresh process starts at `STOPPED` and earns every other state again.
+ *
+ * - `STOPPED` — no watcher runs for this brain (a fixture, a brain never indexed);
+ * - `STARTING` — the watcher is being started; **never** shown as watching;
+ * - `VERIFYING` — a reconciliation is running or owed; the served Index is the last
+ *   committed one, not claimed current;
+ * - `WATCHING` — the native mechanism is active and the last reconciliation converged;
+ * - `PERIODIC` — no native mechanism: full verifications on a cadence, never `WATCHING`;
+ * - `DEGRADED` — the source cannot be read reliably, or a reconciliation keeps failing;
+ *   the last reliable Index keeps being served.
+ */
+export type WatchState =
+  | "STOPPED"
+  | "STARTING"
+  | "VERIFYING"
+  | "WATCHING"
+  | "PERIODIC"
+  | "DEGRADED";
+
+export type WatchMode = "NATIVE" | "PERIODIC" | "NONE";
+
+/** The closed set of reasons — never formatted from an OS error, never a path. */
+export type WatchReason =
+  | "INITIAL_CHECK"
+  | "SIGNALS_LOST"
+  | "QUEUE_SATURATED"
+  | "SCOPE_UNSAFE"
+  | "PERIODIC_CHECK"
+  | "SOURCE_RETURNED"
+  | "MORE_SIGNALS"
+  | "RETRY"
+  | "NATIVE_UNSUPPORTED"
+  | "SOURCE_UNAVAILABLE"
+  | "SOURCE_CHANGED"
+  | "SCAN_INCOMPLETE"
+  | "APPLY_FAILED"
+  | "NEEDS_MANUAL_REFRESH";
+
+/**
+ * **The whole of what the interface reads about a watcher**, and the payload of the
+ * backend event: one brain, a closed state and mode, a revision, a bool and a sequence
+ * number. No path, no file name, no key, no identity, no operating-system message.
+ *
+ * `sequence` is strictly increasing per process, across watcher restarts: an interface
+ * that keeps the highest value it has seen for a brain ignores any older event that
+ * arrives late.
+ */
+export interface WatchStatus {
+  brainId: string;
+  state: WatchState;
+  mode: WatchMode;
+  reason: WatchReason | null;
+  /** The Index revision the watcher last saw committed; `null` until its first read. */
+  indexRevision: number | null;
+  /** Signals were queued, or a reconciliation was owed, when this status was made. */
+  pending: boolean;
+  sequence: number;
+}
+
+/**
  * `TASK-0041`, `DEC-0039` §8 — which path applied a manual scan to the Index. A
  * closed, non-sensitive lifecycle diagnostic (never an identity, a key or a
  * path), so a person or a proof can tell an incremental **Actualiser** from a

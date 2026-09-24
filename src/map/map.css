@@ -1860,3 +1860,24 @@ input[type="text"] {
 .source-observation__when {
   opacity: 0.85;
 }
+
+/* `TASK-0043` — the automatic watcher's state. A word and a symbol, never colour alone. */
+.watch-status {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+}
+
+.watch-status__symbol {
+  font-weight: 700;
+}
+
+.watch-status__mode,
+.watch-status__pending {
+  opacity: 0.85;
+}
+
+.watch-status[data-state="DEGRADED"] {
+  color: var(--warn);
+}

@@ -1,5 +1,12 @@
 import { readSourceObservation, runLifecycle, type LifecycleAction } from "./lifecycle";
 import SourceObservationBadge from "./SourceObservationBadge";
+import WatchStatusBadge from "./WatchStatusBadge";
+import {
+  ReloadCoordinator,
+  WatchTracker,
+  parseWatchStatus,
+  subscribeToWatchStatus,
+} from "./watchStatus";
 import { prepareScenarioIndex } from "./lifecycle";
 import { canonicalizeSearchQuery, runCoordinatedSearch, SearchCoordinator } from "./searchCoordinator";
 import { invoke } from "@tauri-apps/api/core";
@@ -79,6 +86,7 @@ import {
 } from "./measure";
 import "./map.css";
 import type {
+  WatchStatus,
   ApplicationMode,
   BrainCatalogView,
   BrainNodeRef,
@@ -447,6 +455,18 @@ export default function MapApp() {
   const [sourceObservations, setSourceObservations] = useState<
     ReadonlyMap<string, SourceObservation>
   >(new Map());
+  // `TASK-0043` — the **automatic watcher** of each brain, as the backend last said it
+  // (one closed event, plus one read when a brain is first shown). The interface never
+  // starts a watcher, never polls one, and never derives its state.
+  const [watchStatuses, setWatchStatuses] = useState<ReadonlyMap<string, WatchStatus>>(
+    new Map(),
+  );
+  const watchStatusesRef = useRef<ReadonlyMap<string, WatchStatus>>(new Map());
+  const watchTracker = useRef(new WatchTracker()).current;
+  const watchReloads = useRef(new ReloadCoordinator()).current;
+  // Bumped when the watcher reloaded the selected brain, so the detail of the selected
+  // element is read again rather than showing a stale size or date.
+  const [detailRefresh, setDetailRefresh] = useState(0);
 
   // The measurement loop drives the same state the interface does, so what it
   // times is what a person would experience — not a parallel code path.
@@ -736,7 +756,7 @@ export default function MapApp() {
    * bringing Gamma into the view alongside Alpha leaves Alpha active.
    */
   const loadBrain = useCallback(
-    async (brainId: string, action: LifecycleAction): Promise<LoadedBrain> => {
+    async (brainId: string, action: LifecycleAction, focusId?: number): Promise<LoadedBrain> => {
       projectionRequest.current.set(brainId, (projectionRequest.current.get(brainId) ?? 0) + 1);
       const record = catalogRef.current?.brains.find((brain) => brain.brainId === brainId);
       if (!record) throw new Error(`cerveau absent du catalogue : ${brainId}`);
@@ -765,7 +785,18 @@ export default function MapApp() {
         const mode = report.applicationMode;
         setLastApplicationModes((current) => new Map(current).set(brainId, mode));
       }
-      const snapshot = await invoke<MapProjection>("map_view", { brainId });
+      // A reload the watcher asked for keeps the branch the person is on; when that
+      // branch no longer exists the root is read instead, never an error.
+      let snapshot: MapProjection;
+      try {
+        snapshot = await invoke<MapProjection>(
+          "map_view",
+          focusId === undefined ? { brainId } : { brainId, focusId },
+        );
+      } catch (error) {
+        if (focusId === undefined) throw error;
+        snapshot = await invoke<MapProjection>("map_view", { brainId });
+      }
       const integrity = null; // Opening must never read or fingerprint the source.
 
       // The snapshot has to be the one that was asked for. A mismatch here
@@ -812,6 +843,105 @@ export default function MapApp() {
     );
     return record;
   }, []);
+
+  /**
+   * `TASK-0043` — the watcher committed a new revision of a brain that is **on screen**:
+   * read it again, in place. `map_open` and `map_view` only (the source is never touched),
+   * the branch the person is on is kept, and the journal, the new / unseen filters and the
+   * selected element re-read because their revision moved. A brain that is not displayed
+   * is not read at all: it is loaded when it is shown.
+   */
+  const reloadForWatch = useCallback(
+    async (brainId: string) => {
+      const before = loadedRef.current.get(brainId);
+      if (!before) return;
+      const focusId =
+        before.snapshot.focusId !== before.snapshot.rootId ? before.snapshot.focusId : undefined;
+      const fresh = await loadBrain(brainId, "open", focusId);
+      // The brain may have left the view while it was being read.
+      if (!loadedRef.current.has(brainId)) return;
+      setLoaded((current) => (current.has(brainId) ? new Map(current).set(brainId, fresh) : current));
+      setSelected((current) =>
+        current && current.brainId === brainId && !fresh.hierarchy.byId.has(current.nodeId)
+          ? { brainId, nodeId: fresh.snapshot.rootId }
+          : current,
+      );
+      setDetailRefresh((count) => count + 1);
+      // The journal and the selected element's state re-read on their revision; the
+      // active filter re-reads its page on the same change.
+      setSeenRevision((count) => count + 1);
+    },
+    [loadBrain],
+  );
+
+  /** One closed event of the backend watcher, or one read of its state. */
+  const onWatchStatus = useCallback(
+    (status: WatchStatus) => {
+      if (!watchTracker.accept(status)) return; // an older generation, arrived late
+      const previous = watchStatusesRef.current.get(status.brainId);
+      watchStatusesRef.current = new Map(watchStatusesRef.current).set(status.brainId, status);
+      setWatchStatuses(watchStatusesRef.current);
+      const shown = loadedRef.current.get(status.brainId);
+      if (!shown) return; // not on screen: only its state is kept
+      if (status.indexRevision !== null && status.indexRevision !== shown.snapshot.indexRevision) {
+        void watchReloads.request(status.brainId, () => reloadForWatch(status.brainId));
+      } else if (
+        previous !== undefined &&
+        (status.state === "DEGRADED" || previous.state === "DEGRADED")
+      ) {
+        // No new revision, but the source's own observation may have moved (the guard
+        // saw the root leave or come back): the map stays, the badge follows. Only a
+        // change into or out of a degraded state asks — every other transition leaves the
+        // observation exactly as `map_open` gave it.
+        void readSourceObservation(invoke, status.brainId).then((observed) => {
+          if (observed) setSourceObservations((current) => new Map(current).set(status.brainId, observed));
+        });
+      }
+    },
+    [reloadForWatch, watchReloads, watchTracker],
+  );
+
+  // One subscription for the life of the page: the interface listens, it does not poll.
+  const onWatchStatusRef = useRef(onWatchStatus);
+  onWatchStatusRef.current = onWatchStatus;
+  useEffect(() => {
+    let live = true;
+    let unlisten: (() => void) | null = null;
+    void subscribeToWatchStatus((status) => {
+      if (live) onWatchStatusRef.current(status);
+    }).then((stop) => {
+      if (live) unlisten = stop;
+      else stop();
+    });
+    return () => {
+      live = false;
+      unlisten?.();
+    };
+  }, []);
+
+  // The state of a watcher is read **once** for each brain shown, so a page that opens
+  // after the backend already started (or already lost) a watcher does not have to wait
+  // for the next event. Never repeated: everything after that comes from the event.
+  const shownRealRoots = composed
+    ? composed.displayedBrainIds.filter(
+        (brainId) =>
+          catalog?.brains.find((brain) => brain.brainId === brainId)?.sourceKind === "REAL_ROOT" &&
+          loaded.has(brainId),
+      )
+    : [];
+  const shownRealRootsKey = shownRealRoots.join("|");
+  useEffect(() => {
+    for (const brainId of shownRealRootsKey === "" ? [] : shownRealRootsKey.split("|")) {
+      if (watchTracker.has(brainId)) continue;
+      void invoke<unknown>("map_watch_status", { brainId })
+        .then((payload) => {
+          // Never trusted as it arrives: only the closed envelope is accepted.
+          const status = parseWatchStatus(payload);
+          if (status) onWatchStatusRef.current(status);
+        })
+        .catch(() => {});
+    }
+  }, [shownRealRootsKey, watchTracker]);
 
   /**
    * Applies a composition: loads what is missing, drops what left, restores.
@@ -1243,7 +1373,7 @@ export default function MapApp() {
     return () => {
       live = false;
     };
-  }, [selected]);
+  }, [selected, detailRefresh]);
 
   // Content facts are read from the selected brain's own signals store. The
   // query is deliberately separate from relation loading: equal digests never
@@ -2567,6 +2697,10 @@ export default function MapApp() {
             observation={
               composed ? (sourceObservations.get(composed.focusedBrainId) ?? null) : null
             }
+            locale="fr"
+          />
+          <WatchStatusBadge
+            status={composed ? (watchStatuses.get(composed.focusedBrainId) ?? null) : null}
             locale="fr"
           />
           {composed && lastChanges.has(composed.focusedBrainId) ? (
