@@ -2525,3 +2525,6 @@ chiffres ou en lettres.
 
 
 > **Relais 2026-09-23 — TASK-0040 prête.** TASK-0039 est VERIFIED par ACTION-0065. La suite n’est pas encore le watcher : DEC-0010 exige d’abord U-B, un noyau d’application différentielle interne. TASK-0040 doit muter uniquement les nœuds touchés, garder identité/journal/seen-state atomiques et mesurer le critère F-031 sur 1k/10k/100k. `map_refresh` reste inchangé dans cette tranche. Lire DEC-0038, TASK-0040 puis `.orchestrator/NEXT_PROMPT.md` sur `build/v0.2-a24-v1-incremental-apply`.
+
+
+> **Relais 2026-09-24 — TASK-0041 prête.** TASK-0040 est VERIFIED par ACTION-0067 et le critère F-031 canonique passe à 1,533. La prochaine étape ne construit pas encore le watcher : elle branche U-B dans le vrai bouton Actualiser. Sur un Index estampé : scan manuel complet, réconciliation en lot minimal, `apply_update_batch`; no-op = pas de révision. Première indexation/restamp legacy et Reconstruire restent full explicites. Lire DEC-0039, TASK-0041 puis `.orchestrator/NEXT_PROMPT.md` sur `build/v0.2-a25-v1-manual-refresh-incremental`.
