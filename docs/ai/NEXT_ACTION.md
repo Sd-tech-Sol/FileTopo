@@ -1,26 +1,31 @@
 # Action suivante
 
-## Audit/orchestration de F-022 — filtres dynamiques
+## TASK-0039 — V1 Dynamic Filters
 
 `TASK-0038 — V1 Journal-derived Seen/Unseen State` est **VERIFIED** par
 [`ACTION-0064`](../reviews/ACTION-0064-independent-control.md).
 
-La source de vérité de « nouveau » / « non vu » est maintenant stable et
-journal-derived. La prochaine tranche doit auditer puis implémenter `F-022`
-sans utiliser `nodes.seen` et sans casser la projection bornée
-`DEC-0031/DEC-0034`.
+La prochaine tranche est
+[`TASK-0039 — V1 Dynamic Filters`](../tasks/TASK-0039-v1-dynamic-filters.md),
+encadrée par
+[`DEC-0037`](../decisions/DEC-0037-dynamic-filtered-projection.md).
 
-Cible fonctionnelle `P-09` :
+Objectif : fermer `F-022 / P-09` avec des filtres calculés côté Index et une
+projection toujours bornée :
 
 - Tout / Nouveaux / Non vus;
 - type;
 - disponibilité;
-- critères combinables;
-- total exact dérivé de l’Index;
-- filtre actif visible et révocable;
-- aucun whole-corpus DTO vers le frontend.
+- combinaisons;
+- total exact;
+- pagination keyset;
+- match/contexte explicites.
 
-Watcher `F-030` et incrémental `F-031` restent hors portée.
+NEW/UNSEEN consomment exclusivement la vérité de `TASK-0038`;
+`nodes.seen` reste historique.
 
-Le cadrage détaillé de la prochaine branche est préparé par l’orchestrateur;
-aucun exécuteur ne doit créer seul la tâche suivante.
+Action unique : exécuter `.orchestrator/NEXT_PROMPT.md` sur
+`build/v0.2-a23-v1-dynamic-filters`.
+
+Hors portée : watcher `F-030`, incrémental `F-031`, persistance P-19 des
+filtres, TASK-0040.
