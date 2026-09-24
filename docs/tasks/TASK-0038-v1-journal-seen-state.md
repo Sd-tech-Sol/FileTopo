@@ -1,7 +1,7 @@
 # TASK-0038 — V1 Journal-derived Seen/Unseen State
 
 - **Date :** 2026-09-23
-- **Statut :** `IMPLEMENTED`
+- **Statut :** `VERIFIED` par `ACTION-0064`
 - **Branche :** `build/v0.2-a22-v1-seen-state`
 - **Prérequis :** `TASK-0037 = VERIFIED` (`ACTION-0061`), public-readiness vert (`ACTION-0063`)
 - **Décision :** `DEC-0036 — État vu/non vu dérivé du journal de changements`
@@ -294,3 +294,8 @@ Exécutée sur `build/v0.2-a22-v1-seen-state`. **Jamais auto-`VERIFIED`.** Déta
   La fiche laissait la définition ouverte (« si utile »).
 - **Hors portée respectée :** `F-022`, `F-030`, `F-031`, `nodes.seen` conservé
   tel quel (historique), aucune `TASK-0039`.
+
+
+## Clôture indépendante — ACTION-0064
+
+`TASK-0038` est **VERIFIED dans sa portée**. La source de vérité journal-derived, la migration v6, les trois gestes de marquage, l’isolation par cerveau, la persistance et les preuves WebView2 sont acceptées. Les filtres de carte `F-022`, le watcher `F-030` et l’incrémental `F-031` restent hors portée.
