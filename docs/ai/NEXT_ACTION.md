@@ -1,16 +1,28 @@
 # Action suivante
 
-## Contrôle indépendant de la preuve canonique F-031 — TASK-0040
+## TASK-0041 — V1 Manual Refresh Through Incremental Apply
 
-Le recontrôle de mesure demandé par
-[`ACTION-0066`](../reviews/ACTION-0066-task0040-independent-recontrol.md) est produit :
-5 campagnes × 7 échantillons, 35 exécutions brutes par cas, **ratio canonique 100k/1k =
-1,533 ≤ 2 (PASS)**, cibles absolues §3.3 PASS, zéro échantillon écarté, noyau et seuil
-inchangés. `TASK-0040` reste `IMPLEMENTED`.
+`TASK-0040 — V1 Incremental Update Application Kernel` est **VERIFIED** par
+[`ACTION-0067`](../reviews/ACTION-0067-task0040-final-control.md).
 
-Action unique : contrôle indépendant, sur preuves, de
-`docs/performance/runs/TASK-0040-incremental-apply-canonical-summary.json` (et des cinq
-artefacts sources) pour décider si le P1 d'`ACTION-0066` est fermé et si `TASK-0040`
-peut passer `VERIFIED`. Seul l'orchestrateur peut le déclarer.
+Le bouton **Actualiser** et le résumé de changements existent déjà, mais le
+backend produit passe encore par une publication complète après le scan.
 
-Aucune TASK-0041, aucun watcher et aucun branchement de `map_refresh` avant ce contrôle.
+La prochaine tranche est
+[`TASK-0041 — V1 Manual Refresh Through Incremental Apply`](../tasks/TASK-0041-v1-manual-refresh-incremental.md),
+encadrée par
+[`DEC-0039`](../decisions/DEC-0039-manual-refresh-incremental-apply.md).
+
+Objectif :
+
+`scan complet manuel -> lot minimal -> apply_update_batch`
+
+sur un Index existant estampé.
+
+Première indexation et restamp legacy restent des full paths explicites;
+`Reconstruire` reste full volontairement.
+
+Action unique : exécuter `.orchestrator/NEXT_PROMPT.md` sur
+`build/v0.2-a25-v1-manual-refresh-incremental`.
+
+Hors portée : watcher F-030, W-B/W-C, indisponibilité F-032, TASK-0042.
