@@ -1,194 +1,156 @@
-# NEXT_PROMPT — TASK-0040 — V1 Incremental Update Application Kernel
+# NEXT_PROMPT — TASK-0040 — F-031 canonical measurement recontrol after ACTION-0066
 
 **TARGET_AGENT:** CLAUDE CODE  
-**RECOMMENDED_MODEL:** Sonnet 5, high effort  
+**RECOMMENDED_MODEL:** Sonnet 5, medium effort  
 **STATUS:** READY  
 **BRANCH:** `build/v0.2-a24-v1-incremental-apply`
 
 ## /goal
 
-Implémenter intégralement
-`docs/tasks/TASK-0040-v1-incremental-apply.md` selon
-`docs/decisions/DEC-0038-incremental-application-kernel.md`.
+Fermer uniquement le blocage **P1** de
+`docs/reviews/ACTION-0066-task0040-independent-recontrol.md`.
 
-La tâche construit le noyau `U-B` de `DEC-0010` : appliquer seulement un
-lot de changements déjà réconcilié, avec identité stable, journal et révision
-atomiques.
+Le noyau U-B de TASK-0040 est accepté fonctionnellement. Cette passe ne doit
+**pas** optimiser ou modifier le noyau produit. Elle doit seulement produire
+une mesure canonique F-031 robuste sous un protocole figé avant exécution.
 
-**Ne pas construire le watcher. Ne pas remplacer encore `map_refresh`.**
+Ne pas créer TASK-0041. Ne pas construire watcher/F-030/F-032. Ne pas brancher
+`map_refresh`.
 
-## 0 — Préconditions obligatoires
+## 0 — Préconditions
 
 1. Appliquer `AGENTS.md` et `CLAUDE.md`.
 2. Basculer explicitement sur
    `build/v0.2-a24-v1-incremental-apply`.
 3. `git fetch origin`.
-4. Synchroniser uniquement en fast-forward avec
-   `origin/build/v0.2-a24-v1-incremental-apply`.
+4. Synchroniser en fast-forward seulement.
 5. Vérifier arbre propre.
-6. Vérifier que HEAD contient :
-   - `ACTION-0065` — TASK-0039 VERIFIED;
-   - `DEC-0038`;
-   - `TASK-0040`.
-7. Lire **en entier** `DEC-0038` puis `TASK-0040` avant modification.
-8. Lire `DEC-0010` et `BASELINE_TARGETS §3.3`.
+6. Vérifier que HEAD contient `ACTION-0066`.
+7. Lire ACTION-0066 en entier **avant** de lancer une nouvelle mesure.
 
-Si une précondition contredit le dépôt : STOP/BLOCKED. Ne pas improviser une
-autre architecture.
+Si une précondition ne tient pas : STOP/BLOCKED.
 
-## 1 — Audit reuse-first
+## 1 — Interdiction de tuning produit
 
-Avant le code, auditer précisément :
+Dans cette passe :
 
-- `Index::publish` actuel;
-- remapping d’identité stable / `next_node_id`;
-- journal TASK-0037;
-- seen-state TASK-0038;
-- hiérarchie et child_count;
-- les index SQLite disponibles;
-- busy timeout / concurrence existants.
+- ne modifier **aucune** logique de `incremental.rs`;
+- ne modifier aucun réglage produit SQLite;
+- ne changer aucun seuil;
+- ne supprimer aucun artefact FAIL existant;
+- ne choisir aucun résultat a posteriori;
+- ne faire aucun benchmark checkpoint/cache pour le verdict canonique.
 
-Dans `.orchestrator/RESULT.md`, distinguer **réutilisé / adapté / laissé
-historique**.
+Une modification strictement nécessaire du **harnais de benchmark** ou de son
+script est autorisée uniquement pour automatiser le protocole ci-dessous et
+doit être clairement séparée du noyau.
 
-Ne dupliquer aucune règle d’identité si elle peut être extraite/réutilisée
-proprement.
+## 2 — Protocole canonique figé
 
-## 2 — Frontière interne seulement
+Configuration unique :
 
-Le lot incrémental est une API Rust privilégiée :
+- profil test avec `opt-level=3`;
+- SQLite WAL;
+- `synchronous=NORMAL`;
+- cache SQLite par défaut;
+- aucun checkpoint explicite;
+- aucune variable diagnostique `TASK0040_CHECKPOINT` /
+  `TASK0040_CACHE_KIB`.
 
-- pas `Serialize`;
-- pas `#[tauri::command]`;
-- aucune stable key envoyée au WebView;
-- aucune commande debug publique pour contourner cette règle.
+Exécuter **5 campagnes indépendantes**.
 
-Les tests peuvent construire des lots directement en Rust.
+Chaque campagne :
 
-## 3 — U-B réel
+- reconstruit des DB fraîches;
+- exécute les mêmes 4 cas :
+  - 1k / 10 changements;
+  - 10k / 10;
+  - 100k / 10;
+  - 100k / 1000;
+- **7 échantillons par cas**;
+- aucun échantillon rejeté;
+- produit son artefact JSON propre, par exemple
+  `TASK-0040-incremental-apply-canonical-01.json` … `05.json`.
 
-Le chemin incrémental ne doit jamais :
+Ne pas arrêter tôt si les premières campagnes passent ou échouent.
 
-- faire `DELETE FROM nodes` global;
-- réinsérer le corpus complet;
-- charger tout `nodes` en mémoire;
-- appeler le diff global de tout le journal;
-- corréler par nom/taille/date;
-- lire le contenu des fichiers.
+## 3 — Synthèse canonique
 
-Il doit toucher seulement :
+Créer un artefact de synthèse dédié, par exemple :
 
-- les nœuds du lot;
-- les parents/descendants explicitement nécessaires;
-- les métadonnées globales minimales.
+`docs/performance/runs/TASK-0040-incremental-apply-canonical-summary.json`
 
-## 4 — Préflight avant mutation
+Il doit contenir :
 
-Refuser sans écrire :
+- les 5 artefacts sources;
+- les **35 samples bruts** de 1k/10;
+- les 35 samples bruts de 10k/10;
+- les 35 samples bruts de 100k/10;
+- les 35 samples bruts de 100k/1000;
+- médiane/min/max de chaque ensemble de 35;
+- les 5 ratios individuels de campagne;
+- le ratio canonique :
+  `median(35 samples 100k/10) / median(35 samples 1k/10)`;
+- plafond = 2.0;
+- verdict PASS/FAIL;
+- cibles absolues §3.3 PASS/FAIL sur les médianes canoniques;
+- environnement complet et confirmation que la configuration est identique
+  pour les 5 campagnes;
+- zéro échantillon écarté.
 
-- doublons d’identité / token;
-- stable-key collision;
-- suppression inconnue;
-- suppression/réparentage de la racine;
-- parent absent;
-- cycle;
-- orphelin survivant;
-- lot de déplacement de sous-arbre incomplet.
+La médiane doit être calculée sur les exécutions brutes, **pas** comme médiane
+des médianes.
 
-PATH_FALLBACK reste delete+create.
+## 4 — Règle d’arrêt
 
-## 5 — Transaction / journal
+### Si ratio canonique <= 2
 
-Un lot effectif = une transaction `IMMEDIATE`, une révision.
+- ne touche toujours pas au noyau;
+- documenter P1 comme candidat à fermeture;
+- TASK-0040 reste `IMPLEMENTED` : seul l’orchestrateur pourra la déclarer
+  VERIFIED;
+- NEXT_ACTION = contrôle indépendant de la nouvelle preuve.
 
-Dans la transaction :
+### Si ratio canonique > 2
 
-- snapshot minimal des lignes touchées;
-- résolution/allocation d’identités;
-- mutations ciblées;
-- child_count/métadonnées ciblés;
-- événements exacts;
-- append journal;
-- revision +1;
-- commit.
+- **STOP / BLOCKED**;
+- ne pas optimiser;
+- ne pas changer le benchmark;
+- ne pas exécuter de variantes de cache/checkpoint;
+- documenter l’échec tel quel;
+- NEXT_ACTION = arbitrage orchestrateur sur F-031.
 
-No-op = aucune révision, aucun événement.
+## 5 — Contrôles de non-régression
 
-Toute erreur après mutation SQL doit prouver rollback exact.
+Comme le noyau produit ne doit pas changer :
 
-## 6 — Parité avec le résultat d’un scan complet
+- vérifier par diff qu’aucune ligne de `incremental.rs` n’est modifiée;
+- si seul le harnais/docs changent, tests ciblés du benchmark + compilation
+  suffisants;
+- rejouer `git diff --check`;
+- rejouer `scripts/audit-public-readiness.ps1 -AllowRemotes`;
+- ne pas élargir l’allowlist.
 
-La preuve fonctionnelle centrale n’est pas seulement « les lignes attendues
-ont changé ».
+Pas de WebView2.
 
-Pour plusieurs lots synthétiques, construire le même état final par :
+## 6 — Mémoire durable
 
-A. noyau incrémental;  
-B. pipeline de référence par scan/publication complète.
+Mettre à jour :
 
-Comparer les invariants reconstruisibles pertinents : ids stables attendus,
-nœuds, parents, chemins relatifs, profondeurs, child_count, node_count,
-root_id, et événements attendus.
+- `.orchestrator/RESULT.md`;
+- `docs/ai/VALIDATION.md`;
+- `docs/ai/CURRENT_STATE.md`;
+- `docs/ai/HANDOFF.md`;
+- `docs/ai/NEXT_ACTION.md`;
+- `docs/ai/CHANGELOG_AI.md`;
+- `BASELINE_TARGETS §3.3` uniquement pour ajouter la nouvelle mesure
+  canonique sans effacer les anciennes campagnes ni changer le seuil.
 
-Les différences intentionnelles (par exemple révision/nombre d’étapes) doivent
-être expliquées, jamais masquées.
+## 7 — Gouvernance
 
-## 7 — Performance obligatoire
-
-Mesurer le **vrai noyau produit** :
-
-- 1k / 10 changements;
-- 10k / 10;
-- 100k / 10;
-- 100k / 1000.
-
-Minimum 5 runs par cas, médiane + min/max.
-
-Le ratio médian `100k(10) / 1k(10)` doit être **≤ 2**. S’il échoue, écrire
-FAIL et ne pas prétendre F-031 satisfaite.
-
-Rapporter les cibles absolues de §3.3 comme PASS/FAIL sur la machine mesurée,
-avec environnement déclaré.
-
-Ne pas optimiser le benchmark au détriment du chemin produit.
-
-## 8 — Non-régressions
-
-Prouver explicitement :
-
-- journal + seen-state;
-- filtres NEW/UNSEEN après commit;
-- cursors/revision;
-- deux cerveaux;
-- rollback;
-- aucun changement frontend;
-- aucune nouvelle permission/capability.
-
-## 9 — Validation
-
-Exécuter la fiche TASK-0040 complètement, incluant :
-
-- `cargo test --offline`;
-- `pnpm test`;
-- `pnpm check`;
-- `pnpm build`;
-- `cargo build --offline`;
-- Clippy avec dette historique distinguée;
-- `git diff --check`;
-- `scripts/audit-public-readiness.ps1 -AllowRemotes`.
-
-Pas de WebView2 si aucun code/UI frontend n’est touché.
-
-## 10 — Gouvernance
-
-À la fin :
-
-- TASK-0040 = `IMPLEMENTED`, jamais `VERIFIED`;
 - aucune TASK-0041;
 - aucun watcher;
-- `map_refresh` reste sur son flux actuel;
+- aucun changement fonctionnel produit;
 - aucun PR/merge/tag/release;
-- docs durables + `.orchestrator/RESULT.md` complets;
-- `NEXT_ACTION` = contrôle indépendant de TASK-0040;
-- push uniquement sur la branche;
-- arbre propre.
+- push uniquement sur la branche actuelle;
+- arbre propre à la fin.
