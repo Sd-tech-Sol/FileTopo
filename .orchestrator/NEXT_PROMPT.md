@@ -1,196 +1,229 @@
-# NEXT_PROMPT — TASK-0041 — V1 Manual Refresh Through Incremental Apply
+# NEXT_PROMPT — TASK-0042 — V1 Source Availability & Stale Index Foundation
 
 **TARGET_AGENT:** CLAUDE CODE  
 **RECOMMENDED_MODEL:** Sonnet 5, high effort  
 **STATUS:** READY  
-**BRANCH:** `build/v0.2-a25-v1-manual-refresh-incremental`
+**BRANCH:** `build/v0.2-a26-v1-source-availability`
 
 ## /goal
 
 Implémenter intégralement
-`docs/tasks/TASK-0041-v1-manual-refresh-incremental.md` selon
-`docs/decisions/DEC-0039-manual-refresh-incremental-apply.md`.
+`docs/tasks/TASK-0042-v1-source-availability.md` selon
+`docs/decisions/DEC-0040-source-observation-stale-index.md`.
 
-Le but est précis :
+Le but est de rendre une source absente/inaccessible **explicite sans jamais
+la convertir en suppressions**. Le dernier Index fiable reste servi.
 
-`Actualiser (index existant estampé) = scan complet manuel -> lot minimal -> apply_update_batch`
-
-**Reconstruire reste un remplacement complet explicite.**
-
-Ne pas construire le watcher, W-B/W-C ni F-032 dans cette passe.
+Cette tranche prépare F-032 mais ne construit **aucun watcher**.
 
 ## 0 — Préconditions
 
 1. Appliquer `AGENTS.md` et `CLAUDE.md`.
 2. Basculer explicitement sur
-   `build/v0.2-a25-v1-manual-refresh-incremental`.
+   `build/v0.2-a26-v1-source-availability`.
 3. `git fetch origin`.
 4. Synchroniser uniquement en fast-forward avec
-   `origin/build/v0.2-a25-v1-manual-refresh-incremental`.
+   `origin/build/v0.2-a26-v1-source-availability`.
 5. Vérifier arbre propre.
 6. Vérifier que HEAD contient :
-   - `ACTION-0067` — TASK-0040 VERIFIED;
-   - `DEC-0039`;
-   - `TASK-0041`.
-7. Lire en entier `DEC-0039` puis `TASK-0041` avant toute modification.
+   - `ACTION-0068` — TASK-0041 VERIFIED;
+   - `DEC-0040`;
+   - `TASK-0042`.
+7. Lire en entier `DEC-0040` puis `TASK-0042` avant modification.
 
 STOP/BLOCKED si le dépôt contredit ces préconditions.
 
-## 1 — Audit reuse-first obligatoire
+## 1 — Audit du stockage avant code
 
-Avant de coder, auditer :
+Auditer en priorité :
 
-- `map::commands::publish_map / refresh_map / rebuild_map`;
-- `Index::apply_update_batch`;
-- `Index::publish_with_identity`;
-- le remapping/stable identity existant;
-- `BrainIndex::replace_with_identity`;
-- métadonnées `built_unix_ms`, binding, build_complete,
-  projection_contract, layout_algorithm;
+- `catalog_meta` / catalogue cerveau;
+- `schema_meta` de l'Index;
+- les invariants no-op de TASK-0041;
+- les chemins de migration/rebuild.
+
+Choisir le store existant qui préserve le mieux :
+
+- persistance par cerveau;
+- aucun nouveau fichier DB;
+- aucune dépendance de validité du corpus à cette métadonnée;
+- no-op canonique sans revision/event;
+- lecture par `Ouvrir` sans source.
+
+Dans `.orchestrator/RESULT.md`, expliquer le choix et les conséquences
+d'atomicité. Ne pas cacher un éventuel compromis.
+
+## 2 — Machine d'état fermée
+
+Implémenter exactement les états de DEC-0040 :
+
+- UNKNOWN
+- SYNCED
+- UNAVAILABLE
+- SOURCE_CHANGED
+- SCAN_INCOMPLETE
+- APPLY_FAILED
+
+Les raisons exposées sont des codes fermés.
+
+Jamais de :
+
+- chemin;
+- stable key;
+- FileId;
+- volume serial;
+- message OS brut.
+
+L'état signifie **dernière observation**, pas disponibilité temps réel.
+
+## 3 — Transitions du vrai pipeline
+
+Brancher le vrai `publish_map`.
+
+### Succès
+Tout succès BASELINE_FULL / RESTAMP / INCREMENTAL / REBUILD → SYNCED.
+
+### UNAVAILABLE
+Erreur de métadonnée racine indiquant qu'elle ne peut pas être observée.
+
+### SOURCE_CHANGED
+- root non directory;
+- root reparse;
+- root stable identity différente.
+
+### SCAN_INCOMPLETE
 - diagnostics;
-- `lifecycle.ts`, `MapApp.tsx`, résumé existant.
+- fingerprint drift.
 
-Dans `.orchestrator/RESULT.md`, séparer clairement :
+### APPLY_FAILED
+Scan valide puis réconciliation/application refusée ou erreur.
 
-- **réutilisé**;
-- **adapté**;
-- **laissé full volontairement**.
+### Annulation
+Ne touche pas l'observation précédente.
 
-Ne pas recopier la logique du journal ou de l'identité.
+Aucun des quatre états d'échec ne doit produire un événement du journal ou
+avancer la révision.
 
-## 2 — Réconciliateur produit
+## 4 — Classification d'erreurs
 
-Créer une primitive interne qui reçoit le scan complet déjà réussi et l'Index
-courant, puis dérive un `UpdateBatch` **minimal**.
+Ne pars pas du texte `Display` des erreurs.
 
-Elle doit :
+Préserver ou introduire une classification structurée suffisamment haut dans la
+pile pour distinguer les états ci-dessus.
 
-- comparer par stable key uniquement;
-- ne mettre en upsert que nouveau/changé;
-- détecter les suppressions exactes;
-- résoudre les parents correctement;
-- inclure les descendants dont chemin/profondeur changent lors d'un move/rename
-  de dossier;
-- produire PATH_FALLBACK rename/move comme delete+create;
-- porter la root observation;
-- être déterministe;
-- retourner un vrai no-op quand rien ne change.
+Sur Windows, les erreurs réelles de lecteur/réseau peuvent varier. Une erreur
+de métadonnée de **racine** non classable mais empêchant totalement
+l'observation peut tomber dans une raison fermée générique
+`ROOT_METADATA_UNAVAILABLE`; ne pas exposer le code/message OS brut.
 
-Le scan complet peut être O(corpus) dans cette tranche : c'est F-029 manuel,
-pas le futur watcher. Ne pas transformer pour autant le noyau U-B en batch de
-tout le corpus.
+## 5 — Lecture sans toucher la source
 
-## 3 — Câblage lifecycle
+`map_open` reste strictement source-free.
 
-### Refresh neuf
+Ajouter l'observation au report ou une commande read-only par brainId si
+nécessaire pour l'UI après un refresh en erreur.
 
-Aucun Index :
-- chemin full de baseline;
-- `applicationMode = BASELINE_FULL`.
+Une telle commande :
 
-### Refresh existant estampé
+- ouvre seulement l'état local FileTopo;
+- ne résout pas la racine;
+- ne fait aucun `metadata/stat`;
+- est bornée et sans path.
 
-- scan actuel réussi;
-- réconciliation;
-- `apply_update_batch`;
-- **jamais** `publish_with_identity`;
-- `applicationMode = INCREMENTAL`.
+## 6 — UI : garder la carte
 
-### Legacy migré mais non estampé
+Après un échec d'Actualiser :
 
-- full restamp identity-aware autorisé une fois;
-- `applicationMode = IDENTITY_RESTAMP_FULL`;
-- le refresh suivant doit être `INCREMENTAL`.
+- ne pas vider `loaded`;
+- ne pas remplacer la projection par une vue vide;
+- relire uniquement l'observation locale;
+- afficher le badge/message prévu;
+- garder les actions locales sur l'Index disponibles lorsque c'est sûr.
 
-### Rebuild explicite
+Aucune couleur seule.
 
-- full publication;
-- `applicationMode = EXPLICIT_REBUILD_FULL`.
+Respecter FR/EN : ne pas ajouter des libellés uniquement français.
 
-Un échec incrémental ne doit jamais basculer automatiquement sur rebuild/full.
+## 7 — Preuve centrale
 
-## 4 — Métadonnées et diagnostics
+La preuve prioritaire est le cycle :
 
-Auditer avant modification du noyau.
+`SYNCED -> racine absente -> UNAVAILABLE -> restart -> Ouvrir sans source -> restauration -> SYNCED`.
 
-Si `built_unix_ms` / diagnostics ou une autre métadonnée doivent bouger
-atomiquement avec le lot pour que l'Index reste exact, choisir la modification
-la plus étroite possible.
+Vérifier à chaque étape :
 
-Toute modification de `incremental.rs` exige :
+- index_id;
+- revision;
+- corpus;
+- journal;
+- seen state;
+- préférences;
+- projection;
+- absence de DELETED inventés.
 
-- justification dans RESULT;
-- tests TASK-0040 de non-régression;
-- aucune nouvelle lecture globale;
-- aucune régression du contrat F-031.
+La restauration du **même dossier** déplacé puis remis doit produire un no-op
+si aucun contenu n'a changé.
 
-Ne toucher au noyau que si nécessaire.
+## 8 — Refus d'une racine remplacée
 
-## 5 — Preuve structurelle
+Prouver séparément qu'un dossier supprimé puis recréé au même chemin ne devient
+pas une reprise silencieuse :
 
-Il faut une preuve qui **échoue réellement** si un refresh estampé repasse par
-le chemin full.
+- état SOURCE_CHANGED;
+- ancien Index servi;
+- aucune suppression/création de masse;
+- Reconstruire reste le geste explicite si l'utilisateur veut accepter la
+  nouvelle racine.
 
-Ne te contente pas d'un grep/commentaire.
+## 9 — Non-régressions TASK-0041
 
-Exemples acceptables :
+Rejouer les preuves clés :
 
-- test hook qui interdit le full path;
-- instrumentation test-only comptant les appels;
-- contrainte de test qui ferait échouer le full publish mais pas U-B.
+- Actualiser estampé = INCREMENTAL;
+- Reconstruire = full explicite;
+- no-op revision inchangée;
+- guard anti-full;
+- journal/seen/filters.
 
-La preuve doit traverser le vrai `refresh_map`/chemin produit.
+Si `incremental.rs` est modifié, STOP et justifier avant de continuer : cette
+tranche ne devrait normalement pas toucher le noyau U-B.
 
-## 6 — F-029 sûreté
+## 10 — WebView2 réel
 
-Prouver via le chemin produit :
+Rejeu obligatoire avec REAL_ROOT synthétique externe :
 
-- scan incomplet/annulé -> aucune écriture;
-- erreur après scan avant apply -> ancien Index;
-- erreur injectée pendant U-B -> rollback exact;
-- aucun fallback full;
-- no-op -> même révision;
-- changement effectif -> une seule nouvelle révision;
-- résumé exact;
-- source inchangée.
-
-## 7 — UI / DTO
-
-Ajouter uniquement `applicationMode` au rapport/type si nécessaire pour la
-preuve et le diagnostic.
-
-Le résumé existant doit rester la surface utilisateur principale :
-ne pas refaire le panneau.
-
-Après refresh :
-
-- projection relue;
-- journal relu via révision;
-- filtres NEW/UNSEEN cohérents;
-- seen-state conservé.
-
-## 8 — WebView2 réel
-
-Obligatoire : le vrai chemin `map_refresh` change.
-
-Rejouer le scénario TASK-0041, incluant au minimum :
-
-- baseline full;
-- refresh no-op incremental;
-- mutation synthétique externe;
-- refresh incremental + résumé;
-- journal + NEW/UNSEEN;
-- geste vu puis changement futur;
-- rebuild explicite full;
-- vrai redémarrage;
-- aucune fuite;
+- baseline;
+- source déplacée hors chemin;
+- Actualiser échoue proprement;
+- carte reste;
+- badge UNAVAILABLE;
+- restart réel source toujours absente;
+- Ouvrir sans accès source, carte + observation persistées;
+- source remise;
+- Actualiser SYNCED/no-op;
+- 0 fuite;
 - 0 erreur fatale.
 
-## 9 — Validation
+## 11 — Gouvernance
 
-Exécuter toute la fiche, notamment :
+À la fin :
 
-- tests ciblés;
+- TASK-0042 = `IMPLEMENTED`, jamais `VERIFIED`;
+- F-032 reste **partielle/fondation**, pas entièrement VERIFIED;
+- aucune TASK-0043;
+- aucun watcher/polling;
+- aucun W-B/W-C;
+- pas de PR/merge/tag/release;
+- docs durables + FEATURE_MATRIX honnêtes;
+- `.orchestrator/RESULT.md` complet;
+- `NEXT_ACTION` = contrôle indépendant de TASK-0042;
+- push uniquement sur la branche;
+- arbre propre.
+
+## 12 — Validation
+
+Exécuter la fiche complète :
+
 - `cargo test --offline`;
 - `pnpm test`;
 - `pnpm check`;
@@ -200,22 +233,3 @@ Exécuter toute la fiche, notamment :
 - Clippy dette historique distinguée;
 - `git diff --check`;
 - `scripts/audit-public-readiness.ps1 -AllowRemotes`.
-
-Si le noyau U-B est modifié, rejouer une preuve F-031 pertinente; le ratio
-canonique existant ne doit pas être réécrit.
-
-## 10 — Gouvernance
-
-À la fin :
-
-- TASK-0041 = `IMPLEMENTED`, jamais `VERIFIED`;
-- aucune TASK-0042;
-- aucun watcher;
-- aucun W-B/W-C;
-- F-032 hors portée;
-- pas de PR/merge/tag/release;
-- docs durables + FEATURE_MATRIX à jour honnêtement;
-- `.orchestrator/RESULT.md` complet;
-- `NEXT_ACTION` = contrôle indépendant de TASK-0041;
-- push uniquement sur la branche;
-- arbre propre.
