@@ -1,24 +1,24 @@
 # Action suivante
 
-## Contrôle indépendant de TASK-0041
+## TASK-0042 — V1 Source Availability & Stale Index Foundation
 
-`TASK-0041 — V1 Manual Refresh Through Incremental Apply` est **`IMPLEMENTED`**, pas
-`VERIFIED`, sur `build/v0.2-a25-v1-manual-refresh-incremental`
-([`DEC-0039`](../decisions/DEC-0039-manual-refresh-incremental-apply.md)).
+`TASK-0041 — V1 Manual Refresh Through Incremental Apply` est **VERIFIED** par
+[`ACTION-0068`](../reviews/ACTION-0068-task0041-independent-control.md).
 
-**Actualiser** d'un Index déjà estampé fait maintenant
-`scan complet manuel -> lot minimal -> apply_update_batch` (`reconcile.rs`,
-`BrainIndex::refresh_incrementally`), sans jamais repasser par le remplacement complet.
-Première indexation, restamp legacy et **Reconstruire** restent des chemins complets
-explicites; le noyau `TASK-0040` n'a pas été modifié.
+La prochaine tranche prépare la frontière d'indisponibilité temporaire avant
+le watcher :
 
-Action unique : contrôle indépendant de `TASK-0041`, sur preuves — `.orchestrator/RESULT.md`,
-[`VALIDATION.md` section BV](VALIDATION.md), `src-tauri/src/reconcile.rs`,
-`map/refresh_incremental_tests.rs`, `docs/performance/runs/TASK-0041-webview2.json`.
+[`TASK-0042 — V1 Source Availability & Stale Index Foundation`](../tasks/TASK-0042-v1-source-availability.md),
+encadrée par
+[`DEC-0040`](../decisions/DEC-0040-source-observation-stale-index.md).
 
-Points à trancher par le contrôle (six décisions, détail dans `RESULT.md`) : Index legacy
-sans liaison de source routé vers le restamp complet; `built_unix_ms` = dernière publication
-**complète**; racine changée d'identité = refus explicite; Actualiser sans changement
-n'avance plus la révision; `Reconstruire` sans Index = baseline.
+Objectif : mémoriser et afficher la dernière observation source
+(UNKNOWN/SYNCED/UNAVAILABLE/SOURCE_CHANGED/SCAN_INCOMPLETE/APPLY_FAILED), garder
+le dernier Index fiable en cas d'échec et ne jamais transformer une racine
+absente en suppressions.
 
-Hors portée : watcher `F-030`, W-B/W-C, indisponibilité `F-032`, `TASK-0042`.
+Action unique : exécuter `.orchestrator/NEXT_PROMPT.md` sur
+`build/v0.2-a26-v1-source-availability`.
+
+Hors portée : watcher F-030, W-B/W-C, TASK-0043. F-032 reste une fondation tant
+que le watcher ne consomme pas ce contrat automatiquement.
