@@ -4,8 +4,10 @@ mod hierarchy;
 /// Stable node identity — `DEC-0009` I-E, `TASK-0036`.
 mod identity;
 /// Incremental application kernel — `TASK-0040`, `DEC-0038`, `DEC-0010 U-B`.
-/// Internal: no command, no DTO, no `Serialize`. Its only intended caller is the
-/// future reconciler (`W-B`); today it is exercised by tests and the benchmark.
+/// Internal: no command, no DTO, no `Serialize`. Since `TASK-0041` its product
+/// caller is the manual-refresh reconciler ([`reconcile`]) through
+/// `BrainIndex::refresh_incrementally`; the future watcher (`W-B`) is the other
+/// intended caller. It is also exercised by tests and the benchmark.
 #[allow(dead_code)]
 mod incremental;
 mod index;
@@ -15,6 +17,9 @@ mod node_filter;
 /// Storing a filesystem path exactly, shared by the catalogue and the 0.1
 /// registry — `DEC-0033` C.
 mod path_codec;
+/// Full-scan reconciler for the manual refresh — `TASK-0041`, `DEC-0039`.
+/// Internal: a scan and the Index in, an `UpdateBatch` out.
+mod reconcile;
 mod registry;
 /// `TASK-0040` incremental kernel bench (`F-031`). Compiled by `cargo test`
 /// only: it is absent from every product binary and exposes no command.

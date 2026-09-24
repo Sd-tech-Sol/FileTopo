@@ -35,6 +35,30 @@ describe("TASK-0031 L6 lifecycle intents", () => {
     expect(opened.changeSummary).toBeUndefined();
   });
 
+  it("TASK-0041 — carries which path applied the scan, and only for Actualiser/Reconstruire", async () => {
+    const summary = {
+      baselineEstablished: false,
+      created: 0,
+      modified: 0,
+      renamed: 0,
+      moved: 0,
+      deleted: 0,
+      total: 0,
+    };
+    const modes = { map_refresh: "INCREMENTAL", map_rebuild: "EXPLICIT_REBUILD_FULL" } as const;
+    const invoke = vi.fn(async (command: string) =>
+      command === "map_open"
+        ? { brainId: "brain-alpha", revision: 2 }
+        : { brainId: "brain-alpha", changeSummary: summary, applicationMode: modes[command as keyof typeof modes] },
+    );
+    const refreshed = await runLifecycle(invoke as unknown as LifecycleInvoke, "brain-alpha", "refresh");
+    expect(refreshed.applicationMode).toBe("INCREMENTAL");
+    const rebuilt = await runLifecycle(invoke as unknown as LifecycleInvoke, "brain-alpha", "rebuild");
+    expect(rebuilt.applicationMode).toBe("EXPLICIT_REBUILD_FULL");
+    const opened = await runLifecycle(invoke as unknown as LifecycleInvoke, "brain-alpha", "open");
+    expect(opened.applicationMode).toBeUndefined();
+  });
+
   it("does not turn an open refusal into a scan or source preparation", async () => {
     const invoke = vi.fn().mockRejectedValue(new Error("map_not_built"));
     await expect(runLifecycle(invoke as LifecycleInvoke, "brain-alpha", "open")).rejects.toThrow("map_not_built");

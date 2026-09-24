@@ -153,6 +153,13 @@ fn b1_a_legacy_index_is_refused_by_open_and_republished_by_an_explicit_refresh()
     let after = snapshot_of(&paths, &brain);
     assert_eq!(after.0, before.0, "index_id must survive the republication");
     assert_eq!(after.1, before.1 + 1, "revision advances exactly once");
+    // `TASK-0041`: this legacy file is already stamped with `PATH_FALLBACK` keys
+    // but carries no binding, and the incremental kernel never rewrites brain
+    // metadata — so acquiring the binding is the one explicit full restamp.
+    assert_eq!(
+        report.application_mode,
+        ApplicationMode::IdentityRestampFull
+    );
     assert_eq!(report.index_id, before.0);
     assert!(report.index_reused, "the file was reused, not recreated");
     {
@@ -173,6 +180,12 @@ fn b1_a_legacy_index_is_refused_by_open_and_republished_by_an_explicit_refresh()
     assert_eq!(opened.index_id, before.0);
     assert_eq!(opened.revision, before.1 + 1);
     assert!(view(&paths, &brain, None, None).is_ok());
+
+    // 6 — the restamp happens once: the next refresh is incremental (and, the
+    // tree being unchanged, a no-op that keeps the revision).
+    let again = refresh_map(&paths, &brain).expect("the next refresh");
+    assert_eq!(again.application_mode, ApplicationMode::Incremental);
+    assert_eq!(again.revision, before.1 + 1);
 }
 
 /// Proof 6: a refresh that fails before publication leaves the legacy index

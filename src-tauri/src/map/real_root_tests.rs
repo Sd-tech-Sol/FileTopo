@@ -616,11 +616,13 @@ fn rr5_a_real_root_opens_from_its_index_with_the_source_gone() {
         index_bytes,
         "a failed refresh must not have touched the index"
     );
-    // And with the source back, refreshing works again and advances only the
-    // revision.
+    // And with the source back, refreshing works again. The tree is unchanged, so
+    // since `TASK-0041` (`DEC-0039` §6) the incremental refresh is a no-op that
+    // leaves the revision where it was.
     let after = commands::refresh_map(&paths, &brain).unwrap();
     assert_eq!(after.index_id, before_open.index_id);
-    assert_eq!(after.revision, before_open.revision + 1);
+    assert_eq!(after.application_mode, ApplicationMode::Incremental);
+    assert_eq!(after.revision, before_open.revision);
 }
 
 // ---------------------------------------------------------------------------

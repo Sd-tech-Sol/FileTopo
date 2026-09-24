@@ -1,6 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useRef, useState } from "react";
 import type {
+  ApplicationMode,
   BrainNodeRef,
   ChangeEvent,
   ChangeJournalPage,
@@ -63,6 +64,23 @@ export function describeChangeSummary(summary: ChangeSummary): string {
     `${summary.modified} modifié(s) · ${summary.renamed} renommé(s) · ` +
     `${summary.moved} déplacé(s) · ${summary.deleted} supprimé(s)`
   );
+}
+
+/**
+ * `TASK-0041` — the discreet diagnostic naming how the last scan reached the
+ * Index. A closed set of words; it says nothing about the tree.
+ */
+export function describeApplicationMode(mode: ApplicationMode): string {
+  switch (mode) {
+    case "BASELINE_FULL":
+      return "Première indexation";
+    case "INCREMENTAL":
+      return "Mise à jour incrémentale";
+    case "IDENTITY_RESTAMP_FULL":
+      return "Ré-estampillage complet (ancien index)";
+    case "EXPLICIT_REBUILD_FULL":
+      return "Reconstruction complète";
+  }
 }
 
 function detectedAt(unixMs: number): string {

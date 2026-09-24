@@ -668,7 +668,7 @@ fn has_object(database: &Path, name: &str) -> bool {
 /// `TASK-0037` shipped: the journal stays, the seen state disappears, the
 /// version is stamped `5`. Every event, node, binding, `index_id` and revision
 /// stays exactly as the real pipeline wrote it.
-fn downgrade_to_schema_v5(database: &Path) {
+pub(super) fn downgrade_to_schema_v5(database: &Path) {
     rusqlite::Connection::open(database)
         .expect("open for downgrade")
         .execute_batch(

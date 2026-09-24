@@ -1444,10 +1444,48 @@ fn the_kernel_is_not_serialisable_nor_a_tauri_command_and_the_host_registers_non
             "no command may expose the incremental kernel: {forbidden}"
         );
     }
-    // `map_refresh` still publishes a full scan: the kernel is not wired in.
+    // `TASK-0041` wired the kernel into `map_refresh`, and only through one door:
+    // `commands.rs` never names the kernel — it calls `BrainIndex::
+    // refresh_incrementally`, which reconciles a full scan and applies the batch.
+    // No other non-test source outside the kernel and the reconciler may call it.
     let commands = include_str!("commands.rs");
     assert!(!commands.contains("apply_update_batch"));
     assert!(!commands.contains("incremental::"));
+    assert!(commands.contains("refresh_incrementally"));
+    let production = |source: &str| {
+        source
+            .split("#[cfg(test)]")
+            .next()
+            .unwrap_or_default()
+            .to_string()
+    };
+    let code_lines = |source: String| -> String {
+        source
+            .lines()
+            .filter(|line| !line.trim_start().starts_with("//"))
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
+    let brain_index = code_lines(production(include_str!("brain_index.rs")));
+    assert_eq!(
+        brain_index.matches("apply_update_batch").count(),
+        1,
+        "`BrainIndex::refresh_incrementally` is the one product call"
+    );
+    for (name, source) in [
+        ("index.rs", include_str!("../index.rs")),
+        ("projection.rs", include_str!("projection.rs")),
+        (
+            "filtered_projection.rs",
+            include_str!("filtered_projection.rs"),
+        ),
+        ("../lib.rs", include_str!("../lib.rs")),
+    ] {
+        assert!(
+            !production(source).contains("apply_update_batch("),
+            "{name} must not call the kernel"
+        );
+    }
 }
 
 #[test]

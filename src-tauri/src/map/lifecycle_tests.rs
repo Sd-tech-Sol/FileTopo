@@ -138,19 +138,28 @@ fn l4_l5_cancel_and_sql_failure_roll_back_corpus_metadata_and_revision() {
     prepare_synthetic_source(&paths, &brain).unwrap();
     refresh_map(&paths, &brain).unwrap();
     let before = state(&paths, &brain);
-    assert!(publish_map(&paths, &brain, "REFRESHED", || true).is_err());
+    assert!(publish_map(&paths, &brain, Gesture::Refresh, || true).is_err());
     assert_eq!(state(&paths, &brain), before);
     let database = paths.brain_map_database(&brain.brain_id);
     let connection = rusqlite::Connection::open(&database).unwrap();
     // Real SQLite abort after DELETE and partial INSERT, not a mocked return value.
     connection.execute_batch("CREATE TRIGGER task0031_fail BEFORE INSERT ON nodes WHEN NEW.id = 3 BEGIN SELECT RAISE(ABORT, 'task0031-injected-index-failure'); END;").unwrap();
-    for operation in [refresh_map, rebuild_map] {
-        assert!(matches!(
-            operation(&paths, &brain),
-            Err(MapError::Sqlite(_))
-        ));
-        assert_eq!(state(&paths, &brain), before);
-    }
+    // `TASK-0041`: **Reconstruire** still replaces the corpus (DELETE, then
+    // INSERT), so the trigger fires on it and everything rolls back.
+    assert!(matches!(
+        rebuild_map(&paths, &brain),
+        Err(MapError::Sqlite(_))
+    ));
+    assert_eq!(state(&paths, &brain), before);
+    // **Actualiser** of an unchanged, stamped Index inserts nothing: it is a
+    // no-op that succeeds and leaves the very same state — including the
+    // revision. The injected-failure-during-a-real-change proof for the
+    // incremental path lives in `refresh_incremental_tests`.
+    assert_eq!(
+        refresh_map(&paths, &brain).unwrap().application_mode,
+        ApplicationMode::Incremental
+    );
+    assert_eq!(state(&paths, &brain), before);
     connection
         .execute_batch("DROP TRIGGER task0031_fail;")
         .unwrap();

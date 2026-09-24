@@ -425,6 +425,65 @@ impl BrainIndex {
     /// journal — `TASK-0037` E. The cursor is checked against **this
     /// index's** durable `index_id`, so another brain's (or another file's)
     /// cursor is refused rather than continued.
+    /// Whether this Index carries durable identities, i.e. whether the
+    /// incremental kernel can correlate against it. `false` only for a schema-3
+    /// file that was migrated but never republished — `TASK-0041`, `DEC-0039` §3.
+    pub(crate) fn is_identity_stamped(&self) -> Result<bool, MapError> {
+        crate::reconcile::is_identity_stamped(&self.index).map_err(map_reconcile_error)
+    }
+
+    /// Whether an **Actualiser** may go through the incremental kernel: the Index
+    /// carries durable identities **and** the current source binding.
+    ///
+    /// Both are stamps a full publication writes and the kernel does not. A
+    /// schema-3 file migrated but never republished lacks the first; a file
+    /// written before `DEC-0033` lacks the second (its explicit refresh exists
+    /// precisely to acquire it — `DEC-0033` D), and the kernel never rewrites
+    /// brain metadata. Either one needs the **one explicit full restamp**; once it
+    /// is done this is `true` for good. Caller has already established, through
+    /// `check_publishable`, that a present binding is this brain's.
+    pub(crate) fn has_current_stamp(&self) -> Result<bool, MapError> {
+        Ok(self.is_identity_stamped()? && matches!(self.binding()?, IndexBinding::Bound { .. }))
+    }
+
+    /// `TASK-0041` — the manual **Actualiser** of an Index that already carries
+    /// durable identities: the full scan the caller holds is reconciled with the
+    /// Index into the **minimal** batch, and only that batch is applied, by
+    /// [`Index::apply_update_batch`] (`TASK-0040`, `U-B`).
+    ///
+    /// The Index is **never** replaced here: no `publish_with_identity`, no
+    /// `DELETE FROM nodes`. Any refusal — of the scan, of the root, of the kernel,
+    /// or a SQLite failure inside its transaction — leaves corpus, journal,
+    /// seen-state, revision and metadata exactly as they were, and is returned as
+    /// an error: nothing falls back to a full publication (`DEC-0039` §4).
+    ///
+    /// Brain metadata is deliberately not rewritten. The binding was validated
+    /// before the scan and `brain_id`, source, `build_complete`,
+    /// `projection_contract` and `layout_algorithm` are already what a
+    /// publication would write. `built_unix_ms` keeps the instant of the last
+    /// *full* publication: it is not a freshness stamp, no reader uses it, and the
+    /// instant of an incremental application is the `detected_unix_ms` of the
+    /// journal events it appends. A batch that is a no-op therefore writes
+    /// **nothing at all**, revision included.
+    pub fn refresh_incrementally(
+        &mut self,
+        nodes: &[NodeDto],
+        identities: &[NodeIdentity],
+        detected_unix_ms: i64,
+    ) -> Result<crate::change_journal::ChangeSummary, MapError> {
+        let batch =
+            crate::reconcile::reconcile_full_scan(&self.index, nodes, identities, detected_unix_ms)
+                .map_err(map_reconcile_error)?;
+        let outcome = self
+            .index
+            .apply_update_batch(&batch)
+            .map_err(|error| match error {
+                crate::incremental::BatchError::Sqlite(sqlite) => MapError::from(sqlite),
+                other => MapError::RefreshIncrementalRefused(other.to_string()),
+            })?;
+        Ok(outcome.journal)
+    }
+
     pub fn change_journal_page(
         &self,
         natures: &[crate::change_journal::ChangeNature],
@@ -637,6 +696,16 @@ impl BrainIndex {
             bytes.push(255);
         }
         Ok(format!("fnv1a64:{:016x}", fnv1a64(&bytes)))
+    }
+}
+
+fn map_reconcile_error(error: crate::reconcile::ReconcileError) -> MapError {
+    use crate::reconcile::ReconcileError;
+    match error {
+        ReconcileError::Sqlite(sqlite) => MapError::from(sqlite),
+        ReconcileError::IdentityCollision => MapError::IdentityCollision,
+        ReconcileError::NotBijective => MapError::IdentityNotBijective,
+        other => MapError::RefreshReconcileRefused(other.to_string()),
     }
 }
 

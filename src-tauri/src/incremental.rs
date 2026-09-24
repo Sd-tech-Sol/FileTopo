@@ -6,13 +6,18 @@
 //! change journal and the revision written in the same transaction.
 //!
 //! What this module is **not**: it detects nothing (no watcher, no
-//! `ReadDirectoryChangesExW`, no re-enumeration — `F-030`), does not replace
-//! `map_refresh` (which still publishes a full scan through
-//! [`Index::publish_with_identity`]), and is **not reachable from the WebView**:
-//! none of these types is `Serialize`, none is a Tauri command, and no stable
-//! key ever leaves the privileged core. Today only tests and the benchmark call
-//! [`Index::apply_update_batch`]; the future reconciler (`W-B`/`W-C`) is its
-//! only intended caller.
+//! `ReadDirectoryChangesExW`, no re-enumeration — `F-030`), and is **not
+//! reachable from the WebView**: none of these types is `Serialize`, none is a
+//! Tauri command, and no stable key ever leaves the privileged core.
+//!
+//! Its product caller, since `TASK-0041` (`DEC-0039`), is the manual **Actualiser**
+//! of an Index that already carries durable identities: `crate::reconcile`
+//! derives a minimal batch from the full scan the refresh has just read, and
+//! `BrainIndex::refresh_incrementally` applies it here. First indexing, the
+//! one-time restamp of a legacy Index and **Reconstruire** remain full
+//! publications through [`Index::publish_with_identity`]. The future watcher
+//! (`W-B`/`W-C`) is the other intended caller; tests and the benchmark call it
+//! directly.
 //!
 //! # Reuse, not a second set of rules
 //!

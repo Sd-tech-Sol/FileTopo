@@ -294,7 +294,7 @@ fn store_has_path(paths: &SandboxPaths, brain: &BrainRecord, relative_path: &str
 /// exactly as the real product wrote it, because it is real product output,
 /// never hand-written SQL pretending to be a schema this program never
 /// produced.
-fn downgrade_to_schema_v3(database: &Path) {
+pub(super) fn downgrade_to_schema_v3(database: &Path) {
     let connection = rusqlite::Connection::open(database).expect("open for downgrade");
     connection
         .execute_batch(

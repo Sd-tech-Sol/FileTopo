@@ -93,6 +93,46 @@ pub struct MapBuildReport {
     /// only set the reference state (a brain's first build), which is why its
     /// counters are zero by construction rather than by observation.
     pub change_summary: crate::change_journal::ChangeSummary,
+    /// **Which path applied the scan to the Index** — `TASK-0041`, `DEC-0039` §8.
+    /// A closed, non-sensitive lifecycle diagnostic: never an identity, a key or
+    /// a path. It exists so a test, a scenario or a person can *prove* that an
+    /// **Actualiser** of an already-stamped Index went through the incremental
+    /// kernel and not through a full replacement.
+    pub application_mode: ApplicationMode,
+}
+
+/// How a manual scan was applied to the canonical Index — `DEC-0039` §8.
+///
+/// Exactly one full-replacement mode exists for each of the three reasons a full
+/// publication is legitimate, and **none of them is a fallback**: an incremental
+/// failure is an error, never a switch to one of these.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum ApplicationMode {
+    /// No Index existed: the baseline is established by a full publication, and
+    /// no `CREATED` event is invented for it.
+    BaselineFull,
+    /// **Actualiser** on an Index that carries durable identities: the scan is
+    /// reconciled into a minimal batch and applied by the `TASK-0040` kernel.
+    Incremental,
+    /// **Actualiser** on a legacy Index that lacks a durable stamp — a schema-3
+    /// file migrated but never given stable identities (`DEC-0039` §3), or a
+    /// pre-`DEC-0033` file that carries no source binding: one explicit,
+    /// identity-aware full publication that writes both. The next **Actualiser**
+    /// is [`ApplicationMode::Incremental`]. Impossible on an Index that already
+    /// carries both stamps.
+    IdentityRestampFull,
+    /// **Reconstruire** on an existing Index: the person asked for a full
+    /// replacement.
+    ExplicitRebuildFull,
+}
+
+/// The gesture that started a publication. `Refresh` may end up incremental;
+/// `Rebuild` never does.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) enum Gesture {
+    Refresh,
+    Rebuild,
 }
 
 /// Lifecycle facts only; opening never invents scan timings or source freshness.
@@ -230,10 +270,10 @@ pub fn prepare_synthetic_source(paths: &SandboxPaths, brain: &BrainRecord) -> Re
 }
 
 pub fn refresh_map(paths: &SandboxPaths, brain: &BrainRecord) -> Result<MapBuildReport, MapError> {
-    publish_map(paths, brain, "REFRESHED", || false)
+    publish_map(paths, brain, Gesture::Refresh, || false)
 }
 pub fn rebuild_map(paths: &SandboxPaths, brain: &BrainRecord) -> Result<MapBuildReport, MapError> {
-    publish_map(paths, brain, "REBUILT", || false)
+    publish_map(paths, brain, Gesture::Rebuild, || false)
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -373,12 +413,25 @@ pub fn build_map(
 // Serialize publications in this runtime; readers retain SQLite snapshots.
 static PUBLICATION_LOCK: Mutex<()> = Mutex::new(());
 
-fn publish_map(
+/// The one lifecycle entry behind **Actualiser** and **Reconstruire**.
+///
+/// Everything up to and including the scan is common: binding checked before the
+/// source is resolved, an incomplete or cancelled scan refused with the previous
+/// Index untouched. What differs is only how the accepted scan reaches the Index
+/// — see [`ApplicationMode`]. **Reconstruire** and a first build replace the
+/// corpus; **Actualiser** of a stamped Index reconciles and applies a minimal
+/// batch (`TASK-0041`, `DEC-0039`); a failure of that path is an error and never a
+/// full publication.
+pub(super) fn publish_map(
     paths: &SandboxPaths,
     brain: &BrainRecord,
-    state: &str,
+    gesture: Gesture,
     cancelled: impl Fn() -> bool,
 ) -> Result<MapBuildReport, MapError> {
+    let state = match gesture {
+        Gesture::Refresh => "REFRESHED",
+        Gesture::Rebuild => "REBUILT",
+    };
     let _publication = PUBLICATION_LOCK
         .lock()
         .map_err(|_| MapError::View("publication lock".into()))?;
@@ -438,18 +491,33 @@ fn publish_map(
     } else {
         BrainIndex::open(&database)?
     };
-    let change_summary = store.replace_with_identity(
-        &brain.brain_id,
-        SourceStamp {
-            kind: brain.source_kind,
-            source_ref: &brain.source_ref,
-            label: &brain.source_label,
-        },
-        &scan.nodes,
-        &scan.identities,
-        &scan.diagnostics,
-        now_ms(),
-    )?;
+    let application_mode = match (reused, gesture) {
+        (false, _) => ApplicationMode::BaselineFull,
+        (true, Gesture::Rebuild) => ApplicationMode::ExplicitRebuildFull,
+        // The one question asked of the Index before the scan is compared, and
+        // never asked to recover from an error.
+        (true, Gesture::Refresh) if store.has_current_stamp()? => ApplicationMode::Incremental,
+        (true, Gesture::Refresh) => ApplicationMode::IdentityRestampFull,
+    };
+    let change_summary = match application_mode {
+        ApplicationMode::Incremental => {
+            store.refresh_incrementally(&scan.nodes, &scan.identities, now_ms())?
+        }
+        ApplicationMode::BaselineFull
+        | ApplicationMode::IdentityRestampFull
+        | ApplicationMode::ExplicitRebuildFull => store.replace_with_identity(
+            &brain.brain_id,
+            SourceStamp {
+                kind: brain.source_kind,
+                source_ref: &brain.source_ref,
+                label: &brain.source_label,
+            },
+            &scan.nodes,
+            &scan.identities,
+            &scan.diagnostics,
+            now_ms(),
+        )?,
+    };
     let index_ms = elapsed_ms(index_started);
 
     let identity = store.index.identity()?;
@@ -498,6 +566,7 @@ fn publish_map(
             .unwrap_or_else(|| LAYOUT_ALGORITHM.to_string()),
         diagnostics: scan.diagnostics,
         change_summary,
+        application_mode,
     })
 }
 
@@ -2466,3 +2535,7 @@ mod filter_tests;
 #[cfg(test)]
 #[path = "incremental_apply_tests.rs"]
 mod incremental_apply_tests;
+
+#[cfg(test)]
+#[path = "refresh_incremental_tests.rs"]
+mod refresh_incremental_tests;

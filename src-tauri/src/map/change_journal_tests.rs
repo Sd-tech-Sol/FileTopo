@@ -937,11 +937,14 @@ fn the_real_pipeline_journals_create_modify_and_delete_with_exact_counters() {
     assert_eq!(first.change_summary.total, 0);
     assert!(journal(&paths, &brain, &[]).is_empty());
 
-    // 2 — nothing changed: zero events, revision still advances.
+    // 2 — nothing changed: zero events and, since `TASK-0041` (`DEC-0039` §6),
+    // **no revision either**: the refresh is an incremental no-op that writes
+    // nothing. (Before it, a full publication advanced the revision every time.)
     let noop = refresh_map(&paths, &brain).expect("no-op refresh");
     assert!(!noop.change_summary.baseline_established);
     assert_eq!(noop.change_summary.total, 0);
-    assert_eq!(noop.revision, first.revision + 1);
+    assert_eq!(noop.application_mode, ApplicationMode::Incremental);
+    assert_eq!(noop.revision, first.revision);
     assert!(journal(&paths, &brain, &[]).is_empty());
 
     // 3 — create.

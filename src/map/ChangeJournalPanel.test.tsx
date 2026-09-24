@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import ChangeJournalPanel, { describeChangeSummary } from "./ChangeJournalPanel";
+import ChangeJournalPanel, { describeApplicationMode, describeChangeSummary } from "./ChangeJournalPanel";
 import panelSource from "./ChangeJournalPanel.tsx?raw";
 import appSource from "./MapApp.tsx?raw";
 import type { ChangeEvent, ChangeJournalPage, ChangeNature } from "./types";
@@ -285,6 +285,28 @@ describe("TASK-0037 F — the Changements panel", () => {
     fireEvent.click(screen.getByTestId("journal-toggle"));
     await waitFor(() => expect(screen.getByTestId("journal-error").textContent).toMatch(/journal_cursor_foreign/));
     expect(screen.queryByTestId("journal-empty")).toBeNull();
+  });
+});
+
+describe("TASK-0041 — how the last scan reached the Index", () => {
+  it("names each of the four closed modes in a distinct, fixed sentence", () => {
+    const words = (
+      ["BASELINE_FULL", "INCREMENTAL", "IDENTITY_RESTAMP_FULL", "EXPLICIT_REBUILD_FULL"] as const
+    ).map(describeApplicationMode);
+    expect(words).toEqual([
+      "Première indexation",
+      "Mise à jour incrémentale",
+      "Ré-estampillage complet (ancien index)",
+      "Reconstruction complète",
+    ]);
+    expect(new Set(words).size).toBe(4);
+  });
+
+  it("is a discreet diagnostic beside the existing summary, which stays the main surface", () => {
+    expect(appSource).toMatch(/data-testid="application-mode"/);
+    expect(appSource).toMatch(/data-testid="change-summary"/);
+    // Only the closed word crosses the boundary: no path, key or identity field.
+    expect(appSource).toMatch(/data-application-mode=\{lastApplicationModes\.get\(/);
   });
 });
 

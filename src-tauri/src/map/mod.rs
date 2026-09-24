@@ -154,6 +154,20 @@ pub enum MapError {
     /// index is left completely untouched.
     #[error("map_migration_unavailable: {0}")]
     MigrationUnavailable(String),
+    /// `TASK-0041` — the manual refresh could not reconcile the scan it had just
+    /// read with the Index: a scan that is not a well-formed single-rooted
+    /// bijection, or a root that is no longer the indexed one (`F-032` owns that
+    /// case). Raised before the kernel is called; the Index is untouched and
+    /// **nothing falls back to a full replacement** — the person may still
+    /// choose **Reconstruire**. The inner code is a fixed word, never a key or a
+    /// path.
+    #[error("map_refresh_reconcile_refused: {0}")]
+    RefreshReconcileRefused(String),
+    /// `TASK-0041` — the incremental kernel refused a batch, or a constraint
+    /// failed inside its transaction (which then rolled back entirely). Same
+    /// guarantee: the Index is exactly as it was, and no full path is tried.
+    #[error("map_refresh_incremental_refused: {0}")]
+    RefreshIncrementalRefused(String),
 }
 
 impl From<MapError> for String {

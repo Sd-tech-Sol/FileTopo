@@ -256,6 +256,28 @@ export interface MapOpenReport {
   freshness: "UNKNOWN";
 }
 
+/**
+ * `TASK-0041`, `DEC-0039` §8 — which path applied a manual scan to the Index. A
+ * closed, non-sensitive lifecycle diagnostic (never an identity, a key or a
+ * path), so a person or a proof can tell an incremental **Actualiser** from a
+ * full replacement:
+ *
+ * - `BASELINE_FULL` — no Index existed: the reference state was laid down;
+ * - `INCREMENTAL` — **Actualiser** of an Index that already carries durable
+ *   identities: a minimal reconciled batch, applied by the incremental kernel;
+ * - `IDENTITY_RESTAMP_FULL` — **Actualiser** of a legacy Index that lacks a
+ *   durable stamp: one explicit full restamp, after which it is `INCREMENTAL`;
+ * - `EXPLICIT_REBUILD_FULL` — **Reconstruire**: the person asked for a full
+ *   replacement.
+ *
+ * A failed incremental refresh is an error, never one of the full modes.
+ */
+export type ApplicationMode =
+  | "BASELINE_FULL"
+  | "INCREMENTAL"
+  | "IDENTITY_RESTAMP_FULL"
+  | "EXPLICIT_REBUILD_FULL";
+
 export interface MapBuildReport {
   state: "REFRESHED" | "REBUILT";
   indexId: string;
@@ -304,6 +326,8 @@ export interface MapBuildReport {
    * **counters only**, never the event list (see {@link ChangeJournalPage}).
    */
   changeSummary: ChangeSummary;
+  /** `TASK-0041` — how the scan reached the Index. See {@link ApplicationMode}. */
+  applicationMode: ApplicationMode;
 }
 
 /* --- TASK-0037 — journal de changements ---------------------------------- */

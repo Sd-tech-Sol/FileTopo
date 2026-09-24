@@ -13,7 +13,10 @@ import CrossRelationsPanel from "./CrossRelationsPanel";
 import RelationsPanel from "./RelationsPanel";
 import ReviewQueuePanel from "./ReviewQueuePanel";
 import ExactDuplicateExplorer from "./ExactDuplicateExplorer";
-import ChangeJournalPanel, { describeChangeSummary } from "./ChangeJournalPanel";
+import ChangeJournalPanel, {
+  describeApplicationMode,
+  describeChangeSummary,
+} from "./ChangeJournalPanel";
 import NodeChangeState from "./NodeChangeState";
 import {
   ComposedViewError,
@@ -75,6 +78,7 @@ import {
 } from "./measure";
 import "./map.css";
 import type {
+  ApplicationMode,
   BrainCatalogView,
   BrainNodeRef,
   BrainRecord,
@@ -430,6 +434,10 @@ export default function MapApp() {
   // Reconstruire in this session. Counters only: the events themselves are
   // read page by page from the brain's journal (`ChangeJournalPanel`).
   const [lastChanges, setLastChanges] = useState<ReadonlyMap<string, ChangeSummary>>(new Map());
+  // `TASK-0041` — and the closed word saying which path applied that scan.
+  const [lastApplicationModes, setLastApplicationModes] = useState<
+    ReadonlyMap<string, ApplicationMode>
+  >(new Map());
 
   // The measurement loop drives the same state the interface does, so what it
   // times is what a person would experience — not a parallel code path.
@@ -727,6 +735,10 @@ export default function MapApp() {
       if (report.changeSummary) {
         const summary = report.changeSummary;
         setLastChanges((current) => new Map(current).set(brainId, summary));
+      }
+      if (report.applicationMode) {
+        const mode = report.applicationMode;
+        setLastApplicationModes((current) => new Map(current).set(brainId, mode));
       }
       const snapshot = await invoke<MapProjection>("map_view", { brainId });
       const integrity = null; // Opening must never read or fingerprint the source.
@@ -2529,6 +2541,14 @@ export default function MapApp() {
           {composed && lastChanges.has(composed.focusedBrainId) ? (
             <span data-testid="change-summary" data-summary={JSON.stringify(lastChanges.get(composed.focusedBrainId))}>
               {describeChangeSummary(lastChanges.get(composed.focusedBrainId)!)}
+            </span>
+          ) : null}
+          {composed && lastApplicationModes.has(composed.focusedBrainId) ? (
+            <span
+              data-testid="application-mode"
+              data-application-mode={lastApplicationModes.get(composed.focusedBrainId)}
+            >
+              {describeApplicationMode(lastApplicationModes.get(composed.focusedBrainId)!)}
             </span>
           ) : null}
           {integrity ? (
