@@ -2475,3 +2475,6 @@ chiffres ou en lettres.
 
 
 > **Relais 2026-09-23 — TASK-0039 prête.** TASK-0038 est VERIFIED par ACTION-0064. La suite est F-022/P-09 : filtres dynamiques côté Index, exacts et bornés, avec projection spécialisée matches + ancêtres de contexte. Aucun calcul NEW/UNSEEN via `nodes.seen`; aucune sérialisation whole-corpus. Lire DEC-0037, TASK-0039 puis `.orchestrator/NEXT_PROMPT.md` sur `build/v0.2-a23-v1-dynamic-filters`.
+
+
+> **Relais 2026-09-23 — TASK-0040 prête.** TASK-0039 est VERIFIED par ACTION-0065. La suite n’est pas encore le watcher : DEC-0010 exige d’abord U-B, un noyau d’application différentielle interne. TASK-0040 doit muter uniquement les nœuds touchés, garder identité/journal/seen-state atomiques et mesurer le critère F-031 sur 1k/10k/100k. `map_refresh` reste inchangé dans cette tranche. Lire DEC-0038, TASK-0040 puis `.orchestrator/NEXT_PROMPT.md` sur `build/v0.2-a24-v1-incremental-apply`.
