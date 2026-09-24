@@ -2962,3 +2962,13 @@ est levée pour Claude Code**; elle **reste entière pour Codex**.
 - `DEC-0040` : **APPROVED** — machine d'état de dernière observation source, sans jamais convertir indisponibilité en suppressions.
 - `TASK-0042` : **READY** sur `build/v0.2-a26-v1-source-availability`.
 - F-032 restera partielle jusqu'à consommation automatique par F-030.
+
+
+## Mise à jour 2026-09-24 — après TASK-0042
+
+- `TASK-0042` : **VERIFIED dans sa portée** par `ACTION-0070`.
+- ACTION-0069 P1/P1b fermée : observation non persistée honnête dans la session; records succès/échec stale neutralisés contre la révision servie.
+- F-032 reste une **fondation** tant que la détection automatique n'est pas branchée.
+- Audit F-030 : `windows-sys 0.61.2` est déjà présent avec FileSystem/System_IO; aucune crate watcher existante à réutiliser.
+- `DEC-0041` : **APPROVED** — événements OS = hints; W-B ciblé, repli W-C, U-B autoritaire; root guard et fallback périodique.
+- `TASK-0043` : **READY** sur `build/v0.2-a27-v1-watcher-reconciliation`.
