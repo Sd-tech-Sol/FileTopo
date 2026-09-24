@@ -5761,3 +5761,29 @@ précréation de `TASK-0038` par l'exécuteur.
 - TASK-0042 créée READY sur `build/v0.2-a26-v1-source-availability`;
 - F-032 volontairement non déclarée complète avant F-030;
 - aucun watcher, polling ou W-B/W-C ouvert.
+
+
+## 2026-09-24 — TASK-0042 — Source indisponible et Index périmé (fondation F-032)
+
+**Agent :** Claude Code (Sonnet 5) · **Branche :** `build/v0.2-a26-v1-source-availability` ·
+**Statut à l'issue :** `IMPLEMENTED` (jamais auto-`VERIFIED`)
+
+- Dernière observation de la source **par cerveau**, fermée et sans chemin (six états, treize
+  raisons), persistée dans `catalog_meta`, écrite par le vrai `publish_map` (succès ⇒
+  `SYNCED`, refus explicable par la source ⇒ l'état correspondant, annulation ⇒ rien), lue par
+  `map_open` et par la nouvelle commande `map_source_observation(brainId)`. Nouveau module
+  `map/source_observation.rs`.
+- Le dernier Index fiable reste servi : corpus, `index_id`, révision, journal, vu / non vu et
+  préférences intacts pendant une indisponibilité, aucun événement ni suppression inventés; le
+  même dossier remis = no-op `SYNCED`; un dossier supprimé puis recréé = `SOURCE_CHANGED`,
+  Reconstruire l'accepte.
+- Classification sur la **structure** des erreurs (`ScanError`, `MapError::RefreshRootChanged`,
+  `Refused::apply`), jamais sur leur texte; une ligne de `scanner.rs` : le message de
+  `RootMetadata` ne porte plus que le genre de l'erreur.
+- Interface : `SourceObservationBadge` (mot + symbole, FR + EN); un Actualiser en échec garde la
+  carte chargée et relit l'observation au backend.
+- Preuves : Rust 626 PASS (+33), TypeScript 438 PASS (+23), rejeu WebView2 réel avec redémarrage
+  réel source encore absente (`TASK-0042-webview2.json`). Ajouts :
+  `map/source_availability_tests.rs`, `scripts/task0042-*`.
+- Aucun watcher, polling, W-B/W-C, TASK-0043, PR, fusion, étiquette ni release. `F-032` reste une
+  fondation.

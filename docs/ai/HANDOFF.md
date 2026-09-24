@@ -2558,3 +2558,7 @@ chiffres ou en lettres.
 
 
 > **Relais 2026-09-24 — TASK-0042 prête.** TASK-0041 est VERIFIED par ACTION-0068. Avant le watcher, la prochaine fondation est l'état de source : dernière observation UNKNOWN/SYNCED/UNAVAILABLE/SOURCE_CHANGED/SCAN_INCOMPLETE/APPLY_FAILED, persistée sans chemin sensible, avec dernier Index fiable toujours servi. Aucun watcher/W-B/W-C dans cette tranche. Lire DEC-0040, TASK-0042 puis `.orchestrator/NEXT_PROMPT.md` sur `build/v0.2-a26-v1-source-availability`.
+
+
+
+> **Relais 2026-09-24 — TASK-0042 exécutée, en attente de contrôle.** La dernière observation de la source (`UNKNOWN`/`SYNCED`/`UNAVAILABLE`/`SOURCE_CHANGED`/`SCAN_INCOMPLETE`/`APPLY_FAILED`, raison fermée, sans chemin) est persistée par cerveau dans `catalog_meta`, écrite par le vrai `publish_map`, relue par `Ouvrir` sans source et par `map_source_observation(brainId)` après un échec. **Ne fais aucun watcher ici** : `F-030` doit passer par cette machine d'état puis W-B/W-C, et un signal « source absente » ne devient jamais un lot de suppressions. **N'écris jamais l'observation dans l'Index** (deux commits assumés, fenêtre de crash bornée par la règle « un `SYNCED` d'une autre révision se lit `UNKNOWN` »). **Ne classe jamais sur le texte d'une erreur** : `classify_scan_error`, `probe_root`, `MapError::RefreshRootChanged`, `Refused::apply`. Pour un rejeu WebView2 : `pnpm tauri build --debug --no-bundle` (un simple `cargo build` pointe sur `localhost:1420`) et `pwsh`, pas Windows PowerShell 5.1. Lire VALIDATION section BW puis `.orchestrator/RESULT.md`.

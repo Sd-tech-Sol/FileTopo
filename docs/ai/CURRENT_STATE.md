@@ -1,5 +1,52 @@
 # État courant
 
+## TASK-0042 — V1 Source Availability & Stale Index Foundation — IMPLEMENTED — 2026-09-24
+
+- **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche
+  `build/v0.2-a26-v1-source-availability`, partie de `5329c0b` (`TASK-0041 = VERIFIED` par
+  [`ACTION-0068`](../reviews/ACTION-0068-task0041-independent-control.md)). Décision :
+  [`DEC-0040`](../decisions/DEC-0040-source-observation-stale-index.md). Détail :
+  [VALIDATION section BW](VALIDATION.md), `.orchestrator/RESULT.md`.
+- **Ce qui existe maintenant.** Une **dernière observation de la source, par cerveau**
+  (`F-032`, fondation) : `UNKNOWN` / `SYNCED` / `UNAVAILABLE` / `SOURCE_CHANGED` /
+  `SCAN_INCOMPLETE` / `APPLY_FAILED` + une raison **fermée** (13 codes), `observedUnixMs`, dernière
+  révision et dernier instant synchronisés, `persisted`. Sans chemin, sans clé stable, sans
+  identité de fichier, sans numéro de volume, sans message OS. Elle est écrite par le vrai
+  `publish_map` : tout succès (baseline, restamp, incrémental **no-op compris**, reconstruction)
+  ⇒ `SYNCED`; un refus que la source explique ⇒ l'état correspondant; **une annulation ne touche
+  à rien**; aucune observation n'est écrite quand aucun Index n'existait encore.
+- **Le dernier Index fiable est toujours servi.** Les quatre états d'échec ne modifient ni le
+  corpus, ni l'`index_id`, ni la révision, ni le journal, ni le vu / non vu, ni les préférences :
+  seulement la petite observation. **Aucun événement, aucune suppression inventée.**
+- **Stockage.** `catalog_meta` du catalogue (une clé par cerveau), pas `schema_meta` de l'Index :
+  l'observation d'un échec doit s'écrire alors que l'Index n'est **pas** touché, survit à un Index
+  reconstruit et ne peut jamais l'invalider. **Deux commits, pas un** : un crash entre eux est
+  borné et détecté (un `SYNCED` d'une autre révision se lit `UNKNOWN`), pas provoqué.
+- **Lecture.** `map_open` porte `sourceObservation`; `map_source_observation(brainId)` la relit
+  après un Actualiser en échec — brainId seul, aucune racine, aucun `stat`. **`Ouvrir` ne touche
+  toujours jamais la source** (preuve : le blob de racine remplacé par des octets illisibles).
+- **Interface.** `SourceObservationBadge` : mot + symbole, jamais la couleur seule, FR + EN. Un
+  Actualiser en échec **garde la carte chargée**, relit l'observation au backend et dit
+  « … — dernier index conservé ». Aucun Reconstruire automatique. Le texte dit la **dernière**
+  observation, jamais une disponibilité présente.
+- **Preuves.** Rust **626 PASS** (593 + 33), TypeScript **438 PASS** (415 + 23), rejeu **WebView2
+  réel** avec redémarrage réel **source encore absente** (`TASK-0042-webview2.json`, 0 erreur
+  fatale, 0 fuite) : baseline `SYNCED` → racine déplacée par le harnais → Actualiser refusé, carte
+  gardée, badge `UNAVAILABLE` → redémarrage → Ouvrir sans source → même dossier remis → no-op
+  `SYNCED` → racine recréée ⇒ `SOURCE_CHANGED` → Reconstruire ⇒ `SYNCED`.
+- **Décisions à examiner (cinq).** (1) `catalog_meta` plutôt que `schema_meta` — atomicité en
+  deux commits; (2) rien n'est écrit quand aucun Index n'existait; (3) une ligne de `scanner.rs` :
+  le message d'`ScanError::RootMetadata` ne porte plus que le **genre** de l'erreur (le texte OS
+  s'affichait dans la ligne d'état); (4) un refus non explicable par la source (liaison,
+  catalogue) n'est pas une observation; (5) l'échec d'écriture est signalé sur un succès
+  (`persisted:false`) mais pas sur un échec.
+- **Non testé.** Permission refusée / lecteur débranché / partage réseau en réel (classés par
+  genre d'erreur); `SCAN_INCOMPLETE` et `APPLY_FAILED` en réel (prouvés au niveau Rust); crash
+  entre les deux commits; unicité d'un `FileId` de dossier recréé hors d'une machine NTFS.
+- **Hors portée, non fait :** watcher `F-030`, W-B/W-C, polling, `TASK-0043`. **`F-032` reste une
+  fondation**, non une fonction complète, tant que `F-030` ne consomme pas ce contrat.
+- **Action unique suivante : contrôle indépendant de `TASK-0042`.**
+
 ## TASK-0041 — V1 Manual Refresh Through Incremental Apply — IMPLEMENTED — 2026-09-24
 
 - **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche

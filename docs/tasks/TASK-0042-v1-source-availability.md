@@ -1,7 +1,7 @@
 # TASK-0042 — V1 Source Availability & Stale Index Foundation
 
 - **Date :** 2026-09-24
-- **Statut :** `READY`
+- **Statut :** `IMPLEMENTED` (jamais auto-`VERIFIED`)
 - **Branche :** `build/v0.2-a26-v1-source-availability`
 - **Décision :** `DEC-0040`
 - **Portée :** fondation de `F-032`, cycle manuel + persistance
@@ -256,3 +256,52 @@ au niveau Rust s'ils sont dangereux ou artificiels à provoquer dans le host.
 - `scripts/audit-public-readiness.ps1 -AllowRemotes`.
 
 Aucun benchmark F-031 requis si `incremental.rs` n'est pas modifié.
+
+## Résultat de l'exécution (2026-09-24)
+
+- **Ce qui existe.** Une **dernière observation de la source, par cerveau**, fermée et sans
+  chemin : `UNKNOWN` / `SYNCED` / `UNAVAILABLE` / `SOURCE_CHANGED` / `SCAN_INCOMPLETE` /
+  `APPLY_FAILED`, une **raison fermée** (13 codes), `observedUnixMs`, dernière révision et
+  dernier instant synchronisés, et `persisted`. Elle est écrite par le **vrai**
+  `publish_map` — succès de `BASELINE_FULL` / `IDENTITY_RESTAMP_FULL` / `INCREMENTAL`
+  (no-op compris) / `EXPLICIT_REBUILD_FULL` ⇒ `SYNCED`; un refus que la **source** explique ⇒
+  l'état correspondant; une annulation ⇒ rien. Nouveau module `map/source_observation.rs`.
+- **Stockage.** `catalog_meta` du catalogue existant, une clé `source_observation.<brain_id>`,
+  JSON fermé. **Pas** `schema_meta` de l'Index : voir « Décisions à examiner ». Aucune nouvelle
+  base; aucune écriture dans l'Index (corpus, `index_id`, révision, journal, vu / non vu,
+  préférences : octet pour octet identiques pendant une indisponibilité).
+- **Classification structurée, jamais sur le texte.** `ScanError` → `classify_scan_error`
+  (avant sa conversion en chaîne); la racine d'un fixture synthétique est sondée
+  (`probe_root`) avant son empreinte; `reconcile_root_identity_changed` a sa propre variante
+  `MapError::RefreshRootChanged` (**même message** qu'avant); un refus d'application est
+  classé par la structure de l'erreur (`Refused::apply`).
+- **Lecture sans source.** `map_open` porte `sourceObservation`; une commande
+  `map_source_observation(brainId)` — brainId seul, aucune racine, aucun `stat` — la relit
+  après un Actualiser en échec. Preuve fonctionnelle : le blob de racine du catalogue est
+  remplacé par des octets illisibles et les deux lectures répondent quand même; preuve de
+  structure : aucune de ces fonctions ne nomme la source.
+- **Interface.** `SourceObservationBadge` (mot + symbole ✓ ? ⚠, jamais la couleur seule,
+  FR + EN exhaustifs) à côté du rapport, à la place de « fraîcheur inconnue ». Un Actualiser en
+  échec **garde la carte chargée** (`loaded` n'est remplacé que par un succès), relit
+  l'observation au backend et affiche « … — dernier index conservé ». Aucun Reconstruire
+  automatique, aucune obligation de rouvrir.
+- **Preuves.** Rust **626 PASS** (593 + 33 : 30 dans `map/source_availability_tests.rs`, 2
+  unitaires, 1 sur les commandes exposées); TypeScript **438 PASS** (415 + 23); rejeu
+  **WebView2 réel** avec redémarrage réel (`scripts/task0042-webview2.ps1`,
+  `docs/performance/runs/TASK-0042-webview2.json`), la source **encore absente** au
+  redémarrage, 0 erreur fatale, 0 fuite.
+- **Décisions à examiner par le contrôle** (détail : `.orchestrator/RESULT.md`) : (1) `catalog_meta`
+  plutôt que `schema_meta` — **deux commits, pas un**, avec une fenêtre de crash bornée et
+  détectée; (2) aucune observation n'est écrite quand **aucun Index n'existait** encore;
+  (3) une seule ligne de `scanner.rs` : le message d'`ScanError::RootMetadata` ne porte plus
+  que le **genre** de l'erreur (le texte OS apparaissait dans la ligne d'état de l'interface);
+  (4) un refus qui n'est pas explicable par la source (liaison, catalogue) n'est pas une
+  observation; (5) l'échec d'**écriture** de l'observation est signalé (`persisted:false`) sur
+  un succès, mais ne peut pas l'être sur un échec (seule l'erreur revient).
+- **Limites.** Un permission refusée, un lecteur débranché et un partage réseau ne sont pas
+  fabriqués en réel (classement prouvé sur des genres d'erreur); `SCAN_INCOMPLETE` et
+  `APPLY_FAILED` sont prouvés au niveau Rust seulement; aucun crash de processus entre les
+  deux commits; le rejeu WebView2 de `TASK-0041` n'a pas été relancé (son artefact est protégé;
+  ses 43 tests Rust ont été rejoués). **La détection reste manuelle : aucun watcher, aucun
+  polling** — `F-032` reste une **fondation**, non une fonction complète, tant que `F-030` ne
+  consomme pas ce contrat.

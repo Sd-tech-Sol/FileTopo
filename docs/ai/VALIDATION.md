@@ -7607,3 +7607,125 @@ en cours de refresh; deux processus sur un même Index; watcher `F-030`, `F-032`
 `origin/main` inchangé; aucune TASK-0042, PR, fusion, étiquette ni release.
 
 **Action unique suivante :** contrôle indépendant de `TASK-0041`.
+
+
+## BW. TASK-0042 — Source indisponible et Index périmé (fondation F-032) — 2026-09-24
+
+**Statut : `TASK-0042` = `IMPLEMENTED`**, jamais auto-`VERIFIED`. Branche
+`build/v0.2-a26-v1-source-availability`, partie de `5329c0b` (contient `ACTION-0068`,
+`DEC-0040`, `TASK-0042`). Décisions à trancher : `.orchestrator/RESULT.md`.
+
+### BW.1 Préconditions
+
+`git checkout` explicite de la branche, `git fetch origin`, fast-forward (déjà à jour, 0 / 0),
+arbre propre, `HEAD` contient `ACTION-0068`, `DEC-0040` et `TASK-0042`; `DEC-0040` puis
+`TASK-0042` lues en entier avant toute modification. Audit du stockage fait avant le code
+(`catalog_meta` du catalogue, `schema_meta` de l'Index, invariants no-op de `TASK-0041`,
+chemins de migration / reconstruction, `reconstructible_digest`).
+
+### BW.2 Suites
+
+| Contrôle | Résultat |
+|---|---|
+| `cargo test --offline` | **626 PASS**, 0 FAIL, 6 ignorés (593 avant + 33 : 30 dans `map/source_availability_tests.rs`, 2 dans `source_observation.rs`, 1 sur les commandes exposées de `lib.rs`) |
+| Dont les 43 tests de `TASK-0041` et les 49 du noyau `TASK-0040` | PASS; `incremental.rs` **non modifié** (`git diff` vide) ⇒ aucun rejeu du banc `F-031` requis |
+| Tests antérieurs dont le contrat a bougé | un seul : `rr5` compare désormais le rapport d'ouverture **hors observation** (les deux refus qu'il provoque sont maintenant une observation `UNAVAILABLE`, ce que le test affirme). Le garde de forme de `TASK-0041` sur l'arm incrémental n'a pas été édité : le code a gardé sa forme |
+| `pnpm test` | **438 PASS** (415 + 23 : 15 du badge, 8 du cycle de vie) |
+| `pnpm check` / `pnpm build` | PASS / PASS |
+| `cargo build --offline` | PASS |
+| `pnpm tauri build --debug --no-bundle` | PASS (un simple `cargo build` pointe sur `localhost:1420` : le rejeu réel exige ce build, qui embarque `dist`) |
+| `cargo clippy --offline --all-targets` | dette historique seule : lib **13**, lib-test **22** (comptes de `TASK-0037` à `TASK-0041`); mesuré identique **avec et sans** les changements (`git stash`); zéro diagnostic dans un fichier créé ou sur une ligne ajoutée |
+| `rustfmt --check` | propre sur les fichiers créés et touchés; le dépôt n'est pas propre ailleurs (historique — `hierarchy.rs`, `content_signals.rs`, `relations.rs`, …), **non reformaté** (un `cargo fmt` global lancé par mégarde a été annulé fichier par fichier avant tout commit) |
+| `git diff --check` | propre |
+| `scripts/audit-public-readiness.ps1 -AllowRemotes` | voir BW.5 (rejoué après commit) |
+
+### BW.3 Ce que les 33 tests Rust établissent
+
+Le vrai `refresh_map` / `rebuild_map` / `open_map` sur un vrai `REAL_ROOT`, le vrai scanner et la
+vraie identité Windows; les seules injections sont celles que le pipeline offre déjà (la
+fermeture `cancelled` que le scanner appelle en marchant, des déclencheurs SQLite, une ligne de
+catalogue éditée) — aucune branche réservée aux tests dans le produit.
+
+- **Transitions** : ancien profil sans record ⇒ `UNKNOWN` (Index intact, utilisable); baseline ⇒
+  `SYNCED` avec la révision produite; no-op incrémental ⇒ `SYNCED`, même révision, fichier
+  d'Index **identique octet pour octet**; racine déplacée ⇒ `UNAVAILABLE`/`ROOT_NOT_FOUND`; racine
+  supprimée (Actualiser **et** Reconstruire refusés); racine devenue fichier ⇒ `SOURCE_CHANGED`;
+  racine devenue lien ⇒ `SOURCE_CHANGED` (la raison suit l'ordre du scanner : un lien n'est pas un
+  dossier pour `symlink_metadata`, et les deux raisons sont fermées); **dossier supprimé puis
+  recréé au même chemin, même contenu** ⇒ `SOURCE_CHANGED`/`ROOT_IDENTITY_CHANGED`, ancien Index
+  servi, aucune création ni suppression de masse, **Reconstruire** l'accepte ⇒ `SYNCED`; un
+  dossier qui disparaît **pendant** le scan ⇒ `SCAN_INCOMPLETE`/`SCAN_DIAGNOSTICS`; un fixture qui
+  dérive entre ses deux empreintes ⇒ `FINGERPRINT_DRIFT`; un fixture dont la racine s'est
+  envolée ⇒ `UNAVAILABLE` (plus une erreur d'E/S anonyme); un échec SQL pendant U-B ⇒
+  `APPLY_FAILED`/`STORE_WRITE_FAILED`, rollback **exact** (fichier d'Index identique, révision et
+  `index_id` inchangés), puis le même Actualiser s'applique une fois; une réconciliation refusée
+  après un scan valide ⇒ `RECONCILE_REFUSED`; les six familles de refus d'application sont
+  classées par la **structure** de l'erreur; **annulation** (avant et en cours de scan) ⇒ le
+  record est **octet pour octet** celui d'avant, l'instant compris.
+- **Le cycle central de `F-032`** (`an_unavailable_root_is_an_observation_never_a_batch_of_deletions`) :
+  Index d'un vrai arbre avec journal, vu partiel, préférence non défaut, cerveau actif;
+  racine absente; vrai `refresh_map`; `UNAVAILABLE`; « redémarrage » (objets neufs, source
+  toujours absente); **fichier d'Index, `index_id`, révision, digest, journal (pages et drapeaux
+  `seen`), projection sérialisée, catalogue hors observation : identiques**; **aucun `DELETED`**;
+  le même dossier remis ⇒ `INCREMENTAL`, **même révision**, aucun événement, `SYNCED`,
+  `lastSuccessfulRevision` = la révision servie. Une récupération avec de vrais changements
+  journalise **exactement** ceux-là.
+- **Isolation / persistance** : deux cerveaux, une clé par cerveau, l'un ne bouge jamais l'autre;
+  l'observation survit à un « redémarrage »; **aucune nouvelle base** (seuls `catalog.sqlite` et
+  `map/index.sqlite` existent); aucune préférence bougée à aucune étape.
+- **Lecture sans source** : le blob de racine du catalogue remplacé par des octets illisibles
+  (la résolution échouerait bruyamment — contrôle) : `map_open` et `map_source_observation`
+  répondent quand même; garde de structure : ces fonctions ne nomment ni `BrainSource`, ni
+  `resolve(`, ni `real_root_path`, ni `metadata`, ni `read_dir`, ni le scanner.
+- **Le record lui-même** : corrompu, inconnu ou incohérent (paire état / raison qu'aucune version
+  n'écrit) ⇒ `UNKNOWN`, l'Index reste intact; un `SYNCED` d'une **autre révision** n'est pas cru
+  (`UNKNOWN`); une **écriture qui échoue** ne fait pas de l'Index appliqué un échec —
+  `persisted:false` sur un rapport de succès; un catalogue disparu ⇒ `UNKNOWN` et **la lecture ne
+  le recrée pas**; un premier build qui échoue (aucun Index) n'écrit rien.
+- **Confidentialité** : JSON d'ouverture, observation et record stocké, à trois moments : ni chemin
+  absolu, ni nom de dossier, ni racine d'état, ni clé stable, ni « fileId », « volume », « serial »,
+  « identity », ni « os error »; forme **exacte** de six champs; le message du refus n'emporte plus
+  le texte OS (une ligne de `scanner.rs`).
+- **Frontière** : le module n'importe ni `BrainIndex`, ni thread, ni sommeil, ni notification;
+  aucune commande dont le nom évoque un watcher; `map_source_observation` ne prend que `brain_id`.
+
+### BW.4 WebView2 réel (`scripts/task0042-webview2.ps1`)
+
+Deux lancements réels du même exécutable (un redémarrage réel), un arbre synthétique généré par
+`task0042-seed-proof.py`, mutations disque faites **par le harnais, hors du processus**, clics
+réels (clavier CDP). Artefact : `docs/performance/runs/TASK-0042-webview2.json`
+(`NONCANONICAL_ENGINEERING_EVIDENCE`), tous les drapeaux `true`, **0 erreur fatale**, 0 fuite.
+Scénario : baseline `BASELINE_FULL` ⇒ badge `SYNCED` « À jour à la dernière vérification » →
+Actualiser inchangé, no-op → un changement (journal non vide) → **le harnais déplace la racine
+entière hors de son chemin** → un vrai Actualiser **échoue proprement** (en-tête `Tauri-Response`
+= erreur sur le fil) → le badge devient `UNAVAILABLE`/`ROOT_NOT_FOUND`, « Source indisponible —
+dernier index conservé — le dossier est introuvable », rôle `alert`; **le produit a relu le
+backend** (`map_source_observation`, sans `map_open`, sans second scan); la carte, son rapport
+et sa révision restent à l'écran; le journal (action locale) reste lisible; révision, `index_id`,
+corpus, journal, vu / non vu et projection **identiques**, aucun `DELETED` → **redémarrage réel,
+la source toujours absente** (vérifié sur disque) → aucun build au démarrage; **Ouvrir** affiche la
+carte et l'`UNAVAILABLE` persisté, **même instant** (non régénéré) → le harnais remet le **même
+dossier** → Actualiser ⇒ `INCREMENTAL`, « Aucun changement détecté. », **même révision**, badge
+`SYNCED`, rien d'inventé → le harnais **supprime et recrée** le dossier (autre racine, même chemin,
+même contenu) ⇒ Actualiser refusé, `SOURCE_CHANGED`/`ROOT_IDENTITY_CHANGED` « Source remplacée ou
+différente — dernier index conservé », Index ancien servi, aucun changement de masse →
+**Reconstruire** ⇒ `EXPLICIT_REBUILD_FULL`, badge `SYNCED`.
+Le corps d'une réponse IPC n'est pas lisible par CDP : le fil prouve l'ordre des commandes et leur
+issue (en-tête), les valeurs fermées sont lues sur le badge que le produit rend depuis le rapport.
+**Note d'exploitation :** lancer le script avec `pwsh` — Windows PowerShell 5.1 transforme la
+sortie d'erreur redirigée de `node` en erreur terminante.
+
+### BW.5 Non testé, limites
+
+Permission refusée, lecteur débranché, partage réseau : classés par **genre d'erreur** au niveau
+Rust, **non fabriqués** en réel; `SCAN_INCOMPLETE` et `APPLY_FAILED` prouvés au niveau Rust
+seulement (dangereux ou artificiels dans l'hôte); crash de processus entre le commit de l'Index et
+l'écriture de l'observation (la fenêtre est **bornée et détectée**, pas provoquée); deux processus;
+l'unicité d'un `FileId` de dossier recréé n'est constatée que sur **une** machine NTFS (le refus
+de racine remplacée en dépend pour l'identité `SYSTEM`); rejeu WebView2 de `TASK-0041` non relancé
+(son artefact est protégé; ses tests Rust l'ont été). **Aucun watcher, aucun polling** : la
+détection reste manuelle et `F-032` reste une **fondation**. Une machine, corpus synthétique; pas
+une acceptation « portable modeste ». `graph/` non mis à jour. Aucune donnée personnelle;
+`origin/main` inchangé; aucune TASK-0043, PR, fusion, étiquette ni release.
+
+**Action unique suivante :** contrôle indépendant de `TASK-0042`.
