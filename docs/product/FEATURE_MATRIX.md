@@ -231,8 +231,7 @@ Les preuves et constats ci-dessous sont inchangés.
 >
 > **`TASK-0036` est `VERIFIED`** (`ACTION-0060`).
 
-> **`TASK-0037` — journal de changements sur Actualiser/Reconstruire, `IMPLEMENTED`,
-> en attente de contrôle indépendant.** `F-027` passe de `PROPOSED` à
+> **`TASK-0037` — journal de changements sur Actualiser/Reconstruire, **`VERIFIED` par `ACTION-0061`**.** `F-027` passe de `PROPOSED` à
 > `IMPLEMENTED` **pour la détection manuelle seulement** : chaque
 > Actualiser/Reconstruire compare l'Index canonique précédent au nouveau corpus
 > remappé par l'identité stable de `TASK-0036` et journalise, dans le même
