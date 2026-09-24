@@ -2676,3 +2676,12 @@ est levée pour Claude Code**; elle **reste entière pour Codex**.
 - `DEC-0036` : **APPROVED** — journal append-only + état d’acquittement séparé; `nodes.seen` reste historique.
 - `TASK-0038` : **READY** sur `build/v0.2-a22-v1-seen-state`.
 - Aucun watcher, incrémental ni filtre de carte n’est ouvert dans cette tranche.
+
+
+## Mise à jour 2026-09-23 — après TASK-0038
+
+- `TASK-0038` : **VERIFIED** par `ACTION-0064`.
+- `DEC-0037` : **APPROVED** — F-022 sera une requête/projection bornée côté Index, jamais un filtre sur le seul DOM courant.
+- `TASK-0039` : **READY** sur `build/v0.2-a23-v1-dynamic-filters`.
+- NEW/UNSEEN doivent provenir de `change_events + acknowledgements`; `nodes.seen` interdit comme vérité.
+- Watcher/incrémental et persistance cross-restart des filtres restent hors portée.
