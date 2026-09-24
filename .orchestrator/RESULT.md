@@ -49,7 +49,7 @@ TESTS / VALIDATIONS:
 - pnpm test: 471 PASS (439 + 32); pnpm check, pnpm build, cargo build --offline, pnpm tauri build --debug
   --no-bundle: PASS.
 - cargo clippy: lib 13 / lib-test 22 = historical debt, unchanged; none in created files.
-- git diff --check clean; scripts/audit-public-readiness.ps1 -AllowRemotes: see final report line below.
+- git diff --check clean; scripts/audit-public-readiness.ps1 -AllowRemotes: green (585 versioned files, no sensitive pattern, none over 5 MiB).
 - 10 000 external operations, real NTFS, real reader, product engine, Index == full scan:
   targeted path (3 isolated runs): mutate ~2.1 s, converge 0.94-0.95 s, queue max 1 270-1 325, 12-13 W-B,
   0 escalation, 1 W-C (initial), 22 100 signals / ~15 700 coalesced, 0 loss.
