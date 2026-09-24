@@ -887,12 +887,18 @@ export default function MapApp() {
         void watchReloads.request(status.brainId, () => reloadForWatch(status.brainId));
       } else if (
         previous !== undefined &&
-        (status.state === "DEGRADED" || previous.state === "DEGRADED")
+        previous.state !== status.state &&
+        (status.state === "DEGRADED" ||
+          status.state === "WATCHING" ||
+          status.state === "PERIODIC" ||
+          previous.state === "DEGRADED")
       ) {
-        // No new revision, but the source's own observation may have moved (the guard
-        // saw the root leave or come back): the map stays, the badge follows. Only a
-        // change into or out of a degraded state asks — every other transition leaves the
-        // observation exactly as `map_open` gave it.
+        // No new revision, but the source's own observation may have moved: the guard saw
+        // the root leave (`DEGRADED`), or a verification of a returned root finished
+        // without changing a thing (`WATCHING` again, same revision — nothing to reload,
+        // yet the observation is `SYNCED` again). The map stays, the badge follows. Only a
+        // change of state asks, and only into a settled one (or out of a degraded one):
+        // `STARTING` and `VERIFYING` leave the observation exactly as it was.
         void readSourceObservation(invoke, status.brainId).then((observed) => {
           if (observed) setSourceObservations((current) => new Map(current).set(status.brainId, observed));
         });

@@ -229,3 +229,50 @@ Le watcher est accepté uniquement si :
 - monitoring hors processus quand FileTopo est fermé;
 - SLA de latence universel;
 - plusieurs processus FileTopo sur le même cerveau.
+
+## 13. Précisions d'implémentation (`TASK-0043`, 2026-09-24)
+
+Non normatif : ces lignes disent **comment** `TASK-0043` a réalisé la décision, et les écarts de
+lecture que le contrôle indépendant doit trancher. Aucun point d'arrêt de Sébastien n'est touché.
+
+1. **Une portée est un dossier et ses entrées directes, pas son sous-arbre.** Lire une portée,
+   c'est observer le dossier lui-même, lister ses entrées, et **entrer seulement** dans un enfant
+   dossier **nouveau ou qui n'est pas là où l'Index l'a** (création, déplacement, renommage :
+   il faut alors tout son sous-arbre, sinon le noyau refuse). Un enfant déjà en place n'est pas
+   ouvert : un gros frère non concerné n'est jamais énuméré. Cela lit **moins** que « réénumérer
+   le sous-arbre » du §3 et repose sur la même hypothèse : chaque entrée qui change a son propre
+   hint, donc sa propre portée; quand les hints ne suffisent plus à le garantir, la réponse est
+   W-C, pas un sous-arbre plus large. « Un ancêtre couvre son descendant » se réalise à
+   l'application : deux hints dont le dossier n'est pas (encore) sûr montent au même ancêtre et
+   ne font qu'une portée.
+2. **Un hint porte un bit fermé** en plus du nom relatif : « l'appartenance de l'entrée à son
+   dossier a pu changer » (ajout, retrait, les deux moitiés d'un renommage) ou « seule l'entrée
+   elle-même a bougé » (modification). Il ne dit pas *créé*, *déplacé* ou *supprimé* et ne peut
+   donc pas devenir une nature du journal — l'action de l'OS est jetée au parseur. Il sert à ne
+   pas transformer en W-C chaque *modification* d'un dossier de premier niveau que le système
+   signale à chaque changement dedans : cette entrée est **observée seule** (aucune lecture de
+   la racine); un ajout / retrait / renommage d'une entrée de premier niveau, lui, a bien la
+   racine pour portée et reste un W-C (§3 : « si le scope sûr devient la racine, traiter comme
+   W-C »).
+3. **Une portée qui n'est pas sûre monte à l'ancêtre sûr** : le dossier existe dans l'Index **et**
+   sur le disque, est un vrai dossier (ni lien ni point d'analyse) et est **le même objet**
+   (même clé stable). Un dossier supprimé, remplacé ou jamais indexé monte d'un cran; arrivée à la
+   racine = W-C.
+4. **Toute dérivation refusée est une escalade, jamais une erreur montrée** : portée qui monte à
+   la racine, dossier illisible, plus de 20 000 entrées, lot refusé par le noyau, racine illisible
+   → W-C. Un Index sans identités durables ou sans liaison de source n'est jamais écrit par le
+   watcher (`NEEDS_MANUAL_REFRESH`) : seul l'Actualiser explicite le restampe.
+5. **Le watcher partage `PUBLICATION_LOCK`** avec Actualiser et Reconstruire (une seule
+   coordination d'écriture). W-C **est** le pipeline de l'Actualiser (`publish_map`, geste
+   `Refresh`), donc il enregistre l'observation de la source comme lui; un W-B qui commit et
+   trouve l'observation `SYNCED` la ré-enregistre à la nouvelle révision (sinon elle se lirait
+   `UNKNOWN`), mais **ne promeut jamais** un état d'échec.
+6. **Racine** : le garde compare la **clé système** de la racine (identité `SYSTEM` seulement)
+   à celle de l'Index; une identité qui ne se compare pas (repli d'un côté) n'est pas une
+   preuve de changement. Racine revenue = W-C avant `WATCHING`; racine refusée par un W-C
+   (`SOURCE_CHANGED`) = pas de nouveau W-C tant que la racine reste refusée (attente croissante),
+   jusqu'à un **Reconstruire** explicite.
+7. **Aucune limite universelle** : la file (4 096 hints distincts), le nombre de portées (128), le
+   nombre d'entrées d'un W-B (20 000), la fenêtre de coalescence (300 ms), la fenêtre calme
+   (300 ms), le garde (5 s) et le repli périodique (30 s) sont des valeurs produit, injectables,
+   mesurées sur une machine — pas des SLA.

@@ -427,9 +427,40 @@ describe("brains stay apart, and the map survives an unavailable source", () => 
     );
     expect(screen.getByTestId("composed-total").textContent).toBe(totalBefore);
     expect(called("map_open", A).length).toBe(opens); // no reload: nothing new was committed
-    expect(called("map_source_observation", A)).toHaveLength(1);
+    // Read on each settled transition (WATCHING, then DEGRADED): local state, brain id only.
+    const reads = called("map_source_observation", A);
+    expect(reads.length).toBeGreaterThanOrEqual(1);
+    expect(reads.every((call) => JSON.stringify(call.args) === JSON.stringify({ brainId: A }))).toBe(true);
     // The two badges stay separate.
     expect(screen.getByTestId("source-observation")).not.toBe(badge());
+  });
+
+  it("brings the F-032 badge back to SYNCED when the same source returns, with no reload", async () => {
+    // The regression the real WebView2 run found: the root comes back, its verification
+    // changes nothing (same revision), so no reload happens — and the observation, which
+    // is SYNCED again in the backend, must still reach the screen.
+    await boot();
+    await emit(status({ state: "WATCHING", reason: null, sequence: 3 }));
+    world.observation = UNAVAILABLE;
+    await emit(
+      status({ state: "DEGRADED", mode: "NONE", reason: "SOURCE_UNAVAILABLE", sequence: 4 }),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId("source-observation").getAttribute("data-state")).toBe("UNAVAILABLE"),
+    );
+    const opens = called("map_open", A).length;
+
+    // The root is back: a verification runs (the observation is still the old one)...
+    await emit(status({ state: "VERIFYING", reason: "SOURCE_RETURNED", sequence: 5 }));
+    // ...it finishes, records SYNCED at the same revision, and the watcher is stable again.
+    world.observation = SYNCED(3);
+    await emit(status({ state: "WATCHING", reason: null, sequence: 6 }));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("source-observation").getAttribute("data-state")).toBe("SYNCED"),
+    );
+    expect(badge().getAttribute("data-state")).toBe("WATCHING");
+    expect(called("map_open", A).length).toBe(opens); // same revision: nothing was reloaded
   });
 });
 

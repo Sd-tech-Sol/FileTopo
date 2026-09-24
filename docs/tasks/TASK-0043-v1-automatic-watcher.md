@@ -1,7 +1,7 @@
 # TASK-0043 — V1 Automatic Watcher & Reconciliation
 
 - **Date :** 2026-09-24
-- **Statut :** `READY`
+- **Statut :** `IMPLEMENTED` — jamais auto-`VERIFIED`; contrôle indépendant attendu
 - **Branche :** `build/v0.2-a27-v1-watcher-reconciliation`
 - **Décision :** `DEC-0041`
 - **Portée :** `F-030`, consommation automatique W-B/W-C + U-B + F-032
@@ -333,3 +333,25 @@ rejouer la preuve F-031 canonique.
 - docs durables + FEATURE_MATRIX honnêtes;
 - `NEXT_ACTION = contrôle indépendant de TASK-0043`;
 - push uniquement sur la branche de tâche, arbre propre.
+
+## Livraison (`IMPLEMENTED`, 2026-09-24)
+
+Exécutée par le prompt `.orchestrator/NEXT_PROMPT.md` sur la branche de tâche. Le détail chiffré est
+dans [`VALIDATION` section BY](../ai/VALIDATION.md), le rapport compact dans
+`.orchestrator/RESULT.md`, les précisions de lecture de la décision dans
+[`DEC-0041` §13](../decisions/DEC-0041-watcher-signals-and-reconciliation.md).
+
+- **Audit reuse-first** (§A) : `windows-sys 0.61.2` expose déjà, avec les features **existantes**
+  (`Win32_Foundation`, `Win32_Storage_FileSystem`, `Win32_System_IO`), `ReadDirectoryChangesExW`,
+  `READ_DIRECTORY_NOTIFY_INFORMATION_CLASS`, `OVERLAPPED`, `GetOverlappedResultEx`, `CancelIoEx` et
+  `ERROR_NOTIFY_ENUM_DIR` : **aucune crate, aucune feature ajoutée**, pas de `notify`. Les anciens
+  `IndexJobs` / collections du prototype ne sont pas réactivés.
+- **Modules** : `src-tauri/src/watch/` (types fermés, file bornée, parseur défensif, coalescence,
+  lecteur natif, worker de réconciliation, `WatchManager`), `src-tauri/src/scope.rs` (W-B),
+  `src-tauri/src/map/watch_ops.rs` (W-C, W-B et garde de racine sous le **même** `PUBLICATION_LOCK`
+  qu'Actualiser / Reconstruire), `scanner::observe_entry` (la classification unique du scan complet
+  et de W-B), hook Tauri (`map_watch_status`, événement `map-watch-status`, arrêt propre).
+- **Interface** : `WatchStatusBadge`, `watchStatus.ts`, rechargement sur place à une nouvelle
+  révision, aucun polling.
+- **Non fait, voulu** : aucune TASK-0044, aucun USN, aucune PR / fusion / étiquette / release,
+  `graph/` non touché, seuil `F-031` non touché (`incremental.rs` **non modifié**).
