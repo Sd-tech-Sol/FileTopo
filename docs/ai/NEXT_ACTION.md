@@ -1,25 +1,28 @@
 # Action suivante
 
-## Contrôle indépendant de TASK-0039
+## TASK-0040 — V1 Incremental Update Application Kernel
 
-[`TASK-0039 — V1 Dynamic Filters`](../tasks/TASK-0039-v1-dynamic-filters.md) est
-**IMPLEMENTED** sur `build/v0.2-a23-v1-dynamic-filters`, selon
-[`DEC-0037`](../decisions/DEC-0037-dynamic-filtered-projection.md). Elle n'est **pas**
-`VERIFIED` : l'exécuteur ne s'attribue jamais ce statut.
+`TASK-0039 — V1 Dynamic Filters` est **VERIFIED** par
+[`ACTION-0065`](../reviews/ACTION-0065-independent-control.md).
 
-Action unique : **contrôle indépendant, sur preuves, de `TASK-0039`** par une instance
-distincte de l'exécuteur — `.orchestrator/RESULT.md`, `docs/ai/VALIDATION.md` § BS,
-`docs/performance/runs/TASK-0039-webview2.json`, puis le code (`node_filter.rs`,
-`map/filtered_projection.rs`, `map/filter_tests.rs`, `FilterPanel.tsx`,
-`useProjectionFilter.ts`).
+L’audit de la chaîne de mise à jour confirme :
 
-Points à examiner en priorité :
+- l’Actualiser actuel est **sûr** en cas de scan incomplet : l’ancien Index
+  reste servi;
+- mais l’application reste un remplacement complet
+  (`DELETE FROM nodes` + réinsertion dans une transaction);
+- `DEC-0010` impose donc `U-B` avant le watcher.
 
-- NEW / UNSEEN viennent du journal (`unseen_predicate`), jamais de `nodes.seen`;
-- total exact et page bornée, curseur `ftf1` refusé hors index / révision / filtre;
-- la projection sans filtre est inchangée (test d'égalité octet pour octet);
-- un nœud de **contexte** peut satisfaire le filtre sans être compté deux fois;
-- `ONLINE_ONLY` n'est prouvé qu'au niveau Rust.
+La prochaine tranche est
+[`TASK-0040 — V1 Incremental Update Application Kernel`](../tasks/TASK-0040-v1-incremental-apply.md),
+encadrée par
+[`DEC-0038`](../decisions/DEC-0038-incremental-application-kernel.md).
 
-Hors portée : watcher `F-030`, incrémental `F-031`, persistance `P-19` des filtres,
-`TASK-0040`, PR, fusion, étiquette, release.
+Objectif : appliquer un lot déjà réconcilié en coût proportionnel aux
+changements, avec identité stable, journal et révision atomiques.
+
+Action unique : exécuter `.orchestrator/NEXT_PROMPT.md` sur
+`build/v0.2-a24-v1-incremental-apply`.
+
+Hors portée : watcher F-030, indisponibilité F-032, remplacement de
+`map_refresh`, TASK-0041.
