@@ -31,7 +31,12 @@ impl Drop for UnavailableSource {
 }
 
 fn state(paths: &SandboxPaths, brain: &BrainRecord) -> (MapOpenReport, String, serde_json::Value) {
-    let report = open_map(paths, brain).unwrap();
+    let mut report = open_map(paths, brain).unwrap();
+    // What is compared is the Index and what it serves. The last observation of the
+    // source is *meant* to change after a refused refresh (`TASK-0042`); it is proved in
+    // `source_availability_tests`. Here the sandbox has no catalogue, so it would only
+    // differ by the honest `persisted: false` of a session-only observation.
+    report.source_observation = SourceObservation::unknown(true);
     let digest = open_store(paths, brain)
         .unwrap()
         .reconstructible_digest()

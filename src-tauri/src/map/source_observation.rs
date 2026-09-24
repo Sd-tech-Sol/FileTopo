@@ -41,6 +41,29 @@
 //! turns a correctly applied Index into a failed refresh: the report carries
 //! `persisted: false` instead.
 //!
+//! # When the write itself fails (`ACTION-0069`, P1)
+//!
+//! A refusal has no report to carry `persisted: false` — only the error comes back —
+//! so the interface reads the observation again afterwards. If that read only saw the
+//! record on disk, it would show the *previous* observation (say `SYNCED`) right after
+//! an *Actualiser* that had just seen the root absent. So an observation whose write
+//! failed is also kept in a **process-local** slot, one per brain, read first and
+//! always `persisted: false`. It is never written to disk implicitly, it is dropped
+//! the moment a write succeeds, and a restart loses it by design. It is a fallback
+//! for the session that made the observation, **not** a promise: a crash or a restart
+//! cannot recover an observation that never reached the disk, and nothing here makes
+//! the Index commit and the catalogue commit atomic. After a restart the record on
+//! disk is judged against the served revision like any other (below).
+//!
+//! # Believing a record (`ACTION-0069`, P1b)
+//!
+//! A record is believed only if it can still describe the Index that is served.
+//! `SYNCED` needs `lastSuccessfulRevision == served`. A **failure** record is created
+//! while the Index serves exactly its `lastSuccessfulRevision`, so a different served
+//! revision means a newer Index was committed after it (the same crash window, seen
+//! the other way round): it reads back as `UNKNOWN`, never as `SYNCED`. A failure with
+//! no recorded success (`None`) belongs to an Index that had none, and stays valid.
+//!
 //! **Not here:** any watcher, any polling, any automatic action. A future watcher
 //! (`F-030`) must go through this state machine before anything else (`DEC-0040` §8).
 
@@ -50,9 +73,11 @@ use super::sandbox::SandboxPaths;
 use crate::path_codec::is_reparse_point;
 use crate::scanner::ScanError;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 use std::fs;
 use std::io;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+use std::sync::Mutex;
 
 /// The closed set of states — `DEC-0040` §1. `Serialize` as one SCREAMING word.
 ///
@@ -273,35 +298,111 @@ fn stored(paths: &SandboxPaths, brain_id: &str) -> Result<Option<SourceObservati
         .and_then(|value| decode(&value)))
 }
 
+/// Whether `observation` can still describe an Index that serves `served_revision`.
+///
+/// `SYNCED` claims a synchronisation *of a revision*; a failure claims what was seen
+/// while the Index served its `lastSuccessfulRevision`. Either is stale next to any
+/// other revision. A stale record is never turned into `SYNCED` — the caller reads it
+/// as `UNKNOWN`.
+fn describes(observation: &SourceObservation, served_revision: Option<u64>) -> bool {
+    match observation.state {
+        SourceState::Unknown => true,
+        SourceState::Synced => {
+            served_revision.is_some() && observation.last_successful_revision == served_revision
+        }
+        _ => {
+            observation.last_successful_revision.is_none()
+                || observation.last_successful_revision == served_revision
+        }
+    }
+}
+
 /// The observation to show, given the revision the Index actually serves.
 ///
 /// **Never fails and never touches the source.** A missing catalogue, a missing key,
 /// a record that does not decode, a catalogue that cannot be opened: all read as
 /// `UNKNOWN` — the loss of this metadata must never make anything else fail.
 ///
-/// A `SYNCED` observation whose revision is not the served one describes an Index
-/// that is no longer the served one (a crash between the two commits, or an Index
-/// replaced from outside); it reads as `UNKNOWN` rather than claiming a
-/// synchronisation nobody observed.
+/// The process-local record of an observation whose write failed comes first
+/// (`persisted: false`); otherwise the catalogue's record. Either one that no longer
+/// describes the served revision (a crash between the two commits, or an Index
+/// replaced from outside) reads as `UNKNOWN` rather than claiming something nobody
+/// observed.
 pub(super) fn read(
     paths: &SandboxPaths,
     brain_id: &str,
     served_revision: Option<u64>,
 ) -> SourceObservation {
-    let Ok(found) = stored(paths, brain_id) else {
-        return SourceObservation::unknown(false);
+    let (found, from_disk) = match transient(paths, brain_id) {
+        Some(observation) => (Some(observation), false),
+        None => match stored(paths, brain_id) {
+            Ok(found) => (found, true),
+            Err(_) => return SourceObservation::unknown(false),
+        },
     };
     match found {
         None => SourceObservation::unknown(true),
-        Some(observation)
-            if observation.state == SourceState::Synced
-                && (served_revision.is_none()
-                    || observation.last_successful_revision != served_revision) =>
-        {
-            SourceObservation::unknown(true)
+        Some(observation) if !describes(&observation, served_revision) => {
+            SourceObservation::unknown(from_disk)
         }
         Some(observation) => observation,
     }
+}
+
+/// Observations whose write failed, for **this process only**: at most one per brain
+/// (keyed by catalogue file and brain, so two sandboxes never share a slot). Each is the
+/// closed value already shown to the interface; the key is never serialised.
+static TRANSIENT: Mutex<BTreeMap<(PathBuf, String), SourceObservation>> =
+    Mutex::new(BTreeMap::new());
+
+fn slot(paths: &SandboxPaths, brain_id: &str) -> (PathBuf, String) {
+    (paths.catalog_database(), brain_id.to_owned())
+}
+
+fn transient(paths: &SandboxPaths, brain_id: &str) -> Option<SourceObservation> {
+    let slots = TRANSIENT
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    slots.get(&slot(paths, brain_id)).cloned()
+}
+
+fn keep_transient(paths: &SandboxPaths, brain_id: &str, observation: &SourceObservation) {
+    let mut slots = TRANSIENT
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    slots.insert(
+        slot(paths, brain_id),
+        SourceObservation {
+            persisted: false,
+            ..observation.clone()
+        },
+    );
+}
+
+fn drop_transient(paths: &SandboxPaths, brain_id: &str) {
+    let mut slots = TRANSIENT
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    slots.remove(&slot(paths, brain_id));
+}
+
+/// What a restart does to the process-local slot: everything is lost.
+#[cfg(test)]
+pub(super) fn lose_transient_as_a_restart_would(paths: &SandboxPaths, brain_id: &str) {
+    drop_transient(paths, brain_id);
+}
+
+/// Writes `observation` and settles the process-local slot with the outcome: a write
+/// that stuck removes any older transient; one that did not keeps this observation so
+/// the session can still show it. Returns whether it was persisted.
+fn commit(paths: &SandboxPaths, brain_id: &str, observation: &SourceObservation) -> bool {
+    let persisted = write(paths, brain_id, observation);
+    if persisted {
+        drop_transient(paths, brain_id);
+    } else {
+        keep_transient(paths, brain_id, observation);
+    }
+    persisted
 }
 
 fn write(paths: &SandboxPaths, brain_id: &str, observation: &SourceObservation) -> bool {
@@ -337,7 +438,7 @@ pub(super) fn record_success(
         last_successful_unix_ms: Some(now),
         persisted: true,
     };
-    observation.persisted = write(paths, brain_id, &observation);
+    observation.persisted = commit(paths, brain_id, &observation);
     observation
 }
 
@@ -351,7 +452,9 @@ pub(super) fn record_failure(
     failure: Failure,
     now: i64,
 ) -> SourceObservation {
-    let previous = stored(paths, brain_id).ok().flatten();
+    // The newest thing known about the last success: an observation of this session
+    // whose write failed is newer than whatever is on disk.
+    let previous = transient(paths, brain_id).or_else(|| stored(paths, brain_id).ok().flatten());
     let mut observation = SourceObservation {
         state: failure.state,
         reason: Some(failure.reason),
@@ -360,7 +463,7 @@ pub(super) fn record_failure(
         last_successful_unix_ms: previous.as_ref().and_then(|p| p.last_successful_unix_ms),
         persisted: true,
     };
-    observation.persisted = write(paths, brain_id, &observation);
+    observation.persisted = commit(paths, brain_id, &observation);
     observation
 }
 

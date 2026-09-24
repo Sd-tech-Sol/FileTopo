@@ -20,7 +20,7 @@ use super::refresh_incremental_tests::{arm_guard, dump_index_file};
 use super::*;
 use crate::change_journal::ChangeNature;
 use crate::map::brains::BrainCatalog;
-use crate::map::source_observation::{SourceObservation, SourceReason, SourceState};
+use crate::map::source_observation::{self, SourceObservation, SourceReason, SourceState};
 use std::cell::Cell;
 use std::fs;
 
@@ -1258,8 +1258,9 @@ fn a_synced_record_for_another_revision_is_not_believed() {
         .put_meta(&key, &stale)
         .unwrap();
     assert_eq!(fixture.observation().state, SourceState::Unknown);
-    // A failure record keeps its old revision without being disbelieved: it claims no
-    // synchronisation, only what was last seen.
+    // A failure record is judged the same way (`ACTION-0069`, P1b): it was made while the
+    // Index served its `lastSuccessfulRevision`, so next to another revision it is not
+    // the current observation either. `UNKNOWN`, never `SYNCED`.
     let failed = stale.replace(
         r#""state":"SYNCED","reason":null"#,
         r#""state":"UNAVAILABLE","reason":"ROOT_NOT_FOUND""#,
@@ -1268,7 +1269,186 @@ fn a_synced_record_for_another_revision_is_not_believed() {
         .unwrap()
         .put_meta(&key, &failed)
         .unwrap();
+    assert_eq!(fixture.observation().state, SourceState::Unknown);
+    assert_eq!(
+        read_source_observation(&fixture.paths, &fixture.brain)
+            .unwrap()
+            .state,
+        SourceState::Unknown
+    );
+    // Whereas a failure that matches the served revision is believed as recorded…
+    let matching = failed.replace(
+        &format!(r#""lastSuccessfulRevision":{}"#, served + 7),
+        &format!(r#""lastSuccessfulRevision":{served}"#),
+    );
+    BrainCatalog::open(&fixture.paths.catalog_database())
+        .unwrap()
+        .put_meta(&key, &matching)
+        .unwrap();
     assert_eq!(fixture.observation().state, SourceState::Unavailable);
+    // …and one that recorded no success at all (an Index that had none) stays valid.
+    let none = matching.replace(
+        &format!(r#""lastSuccessfulRevision":{served}"#),
+        r#""lastSuccessfulRevision":null"#,
+    );
+    BrainCatalog::open(&fixture.paths.catalog_database())
+        .unwrap()
+        .put_meta(&key, &none)
+        .unwrap();
+    assert_eq!(fixture.observation().state, SourceState::Unavailable);
+}
+
+/// `ACTION-0069` P1b, through the same pipeline: a failure is recorded against R, the
+/// source comes back and the Index moves to R+1, but the record of that success never
+/// reaches the disk. Next to R+1, the old `UNAVAILABLE` is not the current observation.
+#[test]
+fn a_failure_record_left_next_to_a_newer_revision_is_not_believed() {
+    let fixture = Fixture::indexed("racine-c2b");
+    let baseline = fixture.revision();
+    fixture.move_away();
+    refresh_map(&fixture.paths, &fixture.brain).expect_err("no source");
+    let unavailable = fixture.observation();
+    assert_eq!(unavailable.state, SourceState::Unavailable);
+    assert!(unavailable.persisted);
+    assert_eq!(unavailable.last_successful_revision, Some(baseline));
+    let on_disk = fixture.stored_observation_text();
+
+    // The source returns with a real change; the observation cannot be written.
+    fixture.put_back();
+    fs::write(fixture.path("nouveau.txt"), b"neuf").unwrap();
+    refuse_observation_writes(&fixture);
+    let report = fixture.refresh();
+    assert_eq!(report.revision, baseline + 1);
+    // The simulated crash window: the process is gone, and with it any transient.
+    source_observation::lose_transient_as_a_restart_would(&fixture.paths, &fixture.brain.brain_id);
+    assert_eq!(
+        fixture.stored_observation_text(),
+        on_disk,
+        "no new record reached the disk"
+    );
+
+    let opened = fixture.opened();
+    assert_eq!(opened.revision, baseline + 1);
+    assert_eq!(opened.source_observation.state, SourceState::Unknown);
+    let read = read_source_observation(&fixture.paths, &fixture.brain).unwrap();
+    assert_eq!(read.state, SourceState::Unknown);
+    assert_eq!(read.reason, None);
+}
+
+/// Installs the two triggers that make the catalogue refuse **only** the observation
+/// records — nothing else it holds.
+fn refuse_observation_writes(fixture: &Fixture) {
+    rusqlite::Connection::open(fixture.paths.catalog_database())
+        .unwrap()
+        .execute_batch(
+            "CREATE TRIGGER refuse_insert BEFORE INSERT ON catalog_meta
+               WHEN NEW.key LIKE 'source_observation.%'
+               BEGIN SELECT RAISE(ABORT, 'no-observation-writes'); END;
+             CREATE TRIGGER refuse_update BEFORE UPDATE ON catalog_meta
+               WHEN NEW.key LIKE 'source_observation.%'
+               BEGIN SELECT RAISE(ABORT, 'no-observation-writes'); END;",
+        )
+        .unwrap();
+}
+
+fn allow_observation_writes(fixture: &Fixture) {
+    rusqlite::Connection::open(fixture.paths.catalog_database())
+        .unwrap()
+        .execute_batch("DROP TRIGGER refuse_insert; DROP TRIGGER refuse_update;")
+        .unwrap();
+}
+
+/// `ACTION-0069` P1: the source is absent **and** the record of that observation
+/// cannot be written. The refresh still fails for the source, nothing but the record
+/// is affected, and the interface's next read shows what was really seen — not the
+/// `SYNCED` that is still sitting on the disk.
+#[test]
+fn an_unwritable_failure_record_is_still_the_current_observation_for_the_session() {
+    let fixture = Fixture::indexed("racine-p1");
+    let before = fixture.dump();
+    let digest = fixture.digest();
+    let revision = fixture.revision();
+    let events = fixture.events();
+    let catalogue = fixture.catalogue_without_observations();
+    let synced = fixture.observation();
+    assert_eq!(synced.state, SourceState::Synced);
+
+    fixture.move_away();
+    refuse_observation_writes(&fixture);
+    let error = refresh_map(&fixture.paths, &fixture.brain).expect_err("no source");
+    assert!(error.to_string().starts_with("map_scan_failed"));
+    assert!(!error.to_string().contains("no-observation-writes"));
+
+    // Nothing else moved.
+    assert_only_the_observation_moved(&fixture, &before, "unwritable failure record");
+    assert_eq!(fixture.digest(), digest);
+    assert_eq!(fixture.revision(), revision);
+    assert_eq!(natures(&fixture.events()), natures(&events));
+    assert_eq!(fixture.catalogue_without_observations(), catalogue);
+    // The disk still holds the old SYNCED — that is exactly the trap.
+    assert!(
+        fixture
+            .stored_observation_text()
+            .unwrap()
+            .contains(r#""state":"SYNCED""#)
+    );
+
+    // What the interface reads right after (the same functions Tauri calls).
+    for read in [
+        read_source_observation(&fixture.paths, &fixture.brain).unwrap(),
+        fixture.opened().source_observation,
+    ] {
+        assert_eq!(read.state, SourceState::Unavailable);
+        assert_eq!(read.reason, Some(SourceReason::RootNotFound));
+        assert!(!read.persisted, "and it says so");
+        assert_eq!(read.last_successful_revision, Some(revision));
+        assert_eq!(read.last_successful_unix_ms, synced.last_successful_unix_ms);
+        assert!(read.observed_unix_ms >= synced.observed_unix_ms);
+        let text = serde_json::to_string(&read).unwrap();
+        assert!(!text.contains("no-observation-writes"));
+        assert!(!text.contains(&*fixture.root.to_string_lossy()));
+    }
+
+    // A second refusal while the write still fails keeps the last success, and still
+    // holds one slot, not two.
+    refresh_map(&fixture.paths, &fixture.brain).expect_err("still no source");
+    let again = read_source_observation(&fixture.paths, &fixture.brain).unwrap();
+    assert_eq!(again.state, SourceState::Unavailable);
+    assert_eq!(again.last_successful_revision, Some(revision));
+    assert!(!again.persisted);
+
+    // The catalogue accepts writes again; the source is still absent.
+    allow_observation_writes(&fixture);
+    refresh_map(&fixture.paths, &fixture.brain).expect_err("still no source");
+    let persisted = read_source_observation(&fixture.paths, &fixture.brain).unwrap();
+    assert_eq!(persisted.state, SourceState::Unavailable);
+    assert_eq!(persisted.reason, Some(SourceReason::RootNotFound));
+    assert!(persisted.persisted);
+    assert_eq!(persisted.last_successful_revision, Some(revision));
+    // The transient is gone: a "restart" changes nothing now.
+    source_observation::lose_transient_as_a_restart_would(&fixture.paths, &fixture.brain.brain_id);
+    assert_eq!(
+        read_source_observation(&fixture.paths, &fixture.brain).unwrap(),
+        persisted
+    );
+    assert_only_the_observation_moved(&fixture, &before, "after the record could be written");
+}
+
+/// After a restart the process-local observation is gone by design: the disk still
+/// holds an older `SYNCED` for the *same* revision, which is then all there is to
+/// believe. The slot corrects the session, not a crash — this pins that limit.
+#[test]
+fn a_restart_loses_an_unwritten_failure_and_never_invents_one() {
+    let fixture = Fixture::indexed("racine-p1-restart");
+    fixture.move_away();
+    refuse_observation_writes(&fixture);
+    refresh_map(&fixture.paths, &fixture.brain).expect_err("no source");
+    assert_eq!(fixture.observation().state, SourceState::Unavailable);
+    source_observation::lose_transient_as_a_restart_would(&fixture.paths, &fixture.brain.brain_id);
+    let after = fixture.observation();
+    // The old record still describes the served revision, so it is what remains.
+    assert_eq!(after.state, SourceState::Synced);
+    assert!(after.persisted);
 }
 
 #[test]
@@ -1297,9 +1477,19 @@ fn a_record_that_cannot_be_written_never_turns_an_applied_index_into_a_failure()
         "and the report says, honestly, that the record did not stick"
     );
     assert!(!format!("{:?}", report.source_observation).contains("no-observation-writes"));
-    // What survives on disk is the *previous* record, and — since its revision is no
-    // longer the served one — it is not believed.
-    assert_eq!(fixture.observation().state, SourceState::Unknown);
+    // In this process the observation that could not be written is still the one shown,
+    // and it says so.
+    let session = fixture.observation();
+    assert_eq!(session.state, SourceState::Synced);
+    assert!(!session.persisted);
+    assert_eq!(session.last_successful_revision, Some(revision + 1));
+    assert_eq!(fixture.revision(), revision + 1);
+    // After a restart the slot is gone. What survives on disk is the *previous* record,
+    // and — since its revision is no longer the served one — it is not believed.
+    source_observation::lose_transient_as_a_restart_would(&fixture.paths, &fixture.brain.brain_id);
+    let restarted = fixture.observation();
+    assert_eq!(restarted.state, SourceState::Unknown);
+    assert!(restarted.persisted);
     assert_eq!(fixture.revision(), revision + 1);
 }
 
