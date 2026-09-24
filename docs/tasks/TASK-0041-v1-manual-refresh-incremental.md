@@ -1,7 +1,7 @@
 # TASK-0041 — V1 Manual Refresh Through Incremental Apply
 
 - **Date :** 2026-09-24
-- **Statut :** `IMPLEMENTED` (jamais auto-`VERIFIED`)
+- **Statut :** `VERIFIED` par `ACTION-0068`
 - **Branche :** `build/v0.2-a25-v1-manual-refresh-incremental`
 - **Décision :** `DEC-0039`
 - **Portée :** `F-029` + branchement produit de `F-031`
@@ -283,3 +283,8 @@ Si le noyau U-B change, rejouer également le banc canonique F-031 ou une preuve
   « en ligne seulement » non fabriqué (jonction Windows réelle testée); aucun crash de
   processus provoqué; le corps des réponses IPC n'est pas lisible par CDP : le mode est lu
   sur l'étiquette que le produit affiche depuis le rapport réel.
+
+
+## Clôture indépendante — ACTION-0068
+
+`TASK-0041` est **VERIFIED dans sa portée**. Le vrai bouton Actualiser consomme maintenant U-B sur un Index estampé, avec réconciliation scan complet → lot minimal, no-op sans révision, preuve structurelle anti-full-replacement, rollback, résumé/journal/seen-state cohérents et rejeu WebView2 réel. Reconstruire, baseline et restamp legacy restent des chemins full explicites. F-030/F-032/W-B/W-C restent hors portée.
