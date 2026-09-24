@@ -2740,3 +2740,12 @@ est levée pour Claude Code**; elle **reste entière pour Codex**.
 - `TASK-0039` : **READY** sur `build/v0.2-a23-v1-dynamic-filters`.
 - NEW/UNSEEN doivent provenir de `change_events + acknowledgements`; `nodes.seen` interdit comme vérité.
 - Watcher/incrémental et persistance cross-restart des filtres restent hors portée.
+
+
+## Mise à jour 2026-09-23 — après TASK-0039
+
+- `TASK-0039` : **VERIFIED** par `ACTION-0065`.
+- Audit de mise à jour : `map_refresh` scanne encore tout le corpus et `Index::publish` remplace toutes les lignes dans une transaction. L’ancien Index est conservé si le scan échoue, donc le flux est sûr mais pas incrémental.
+- `DEC-0038` : **APPROVED** — construire d’abord le noyau U-B interne, sans watcher ni nouvelle commande WebView.
+- `TASK-0040` : **READY** sur `build/v0.2-a24-v1-incremental-apply`.
+- Critère de rejet F-031 à mesurer : ratio médian 100k/1k à 10 changements ≤ 2.
