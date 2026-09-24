@@ -5804,3 +5804,16 @@ précréation de `TASK-0038` par l'exécuteur.
   439 PASS. Deux tests existants ajustés (voir VALIDATION BX).
 - Aucun changement à `incremental.rs`; aucun watcher, polling, W-B/W-C, TASK-0043, PR, fusion,
   étiquette ni release. Aucune atomicité Index / catalogue prétendue.
+
+
+## 2026-09-24 — ACTION-0070 / préparation TASK-0043
+
+**Orchestrateur :** ChatGPT
+
+- contrôle indépendant du correctif ACTION-0069 : P1/P1b fermées;
+- TASK-0042 VERIFIED dans sa portée par ACTION-0070;
+- matrice F-031/F-032 réconciliée avec les preuves ACTION-0067/0068/0070;
+- audit watcher : windows-sys déjà disponible; aucun `notify`/watcher existant à réutiliser; IndexJobs prototype écarté;
+- DEC-0041 approuvée : événements OS = hints, W-B/W-C autoritaires via U-B, root guard, fallback périodique;
+- TASK-0043 créée READY sur `build/v0.2-a27-v1-watcher-reconciliation`;
+- aucun code produit exécuté par l'orchestrateur, aucune TASK-0044.
