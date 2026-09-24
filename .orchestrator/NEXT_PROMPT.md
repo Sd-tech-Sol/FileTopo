@@ -1,76 +1,135 @@
-# NEXT_PROMPT — Correctif final de la porte public-readiness après ACTION-0062
+# NEXT_PROMPT — TASK-0038 — V1 Journal-derived Seen/Unseen State
 
 **TARGET_AGENT:** CLAUDE CODE  
-**RECOMMENDED_MODEL:** Sonnet 5, low effort  
+**RECOMMENDED_MODEL:** Sonnet 5, high effort  
 **STATUS:** READY  
-**BRANCHE:** `chore/v0.2-public-readiness-cleanup`
+**BRANCH:** `build/v0.2-a22-v1-seen-state`
 
 ## /goal
 
-Fermer uniquement **R2** de
-`docs/reviews/ACTION-0062-public-readiness-recontrol.md`.
+Implémenter intégralement
+`docs/tasks/TASK-0038-v1-journal-seen-state.md` selon
+`docs/decisions/DEC-0036-journal-derived-seen-state.md`.
 
-Le nettoyage du tree courant est accepté. Le seul problème restant est que
-`scripts/audit-public-readiness.ps1` tolère globalement les noms d’utilisateur
-synthétiques `quelquun` et `other`, ce qui affaiblit inutilement l’audit.
+La tâche doit rendre persistants et par cerveau :
 
-Ne toucher ni au code produit ni à TASK-0037. Ne créer aucune TASK-0038.
+- l’état vu/non vu d’un changement;
+- l’état nouveau/non vu d’un nœud courant, **dérivé du journal**;
+- « marquer ce changement vu »;
+- « marquer cet élément vu »;
+- « tout marquer vu » avec confirmation UI explicite.
 
-## Préconditions
+Ne pas construire les filtres de carte `F-022`, le watcher `F-030` ni
+l’incrémental `F-031`.
+
+## 0 — Préconditions obligatoires
 
 1. Appliquer `AGENTS.md` et `CLAUDE.md`.
-2. Basculer explicitement sur `chore/v0.2-public-readiness-cleanup`.
-3. `git fetch origin`, fast-forward seulement.
-4. Arbre propre.
-5. Lire `ACTION-0062` en entier avant modification.
+2. Basculer explicitement sur
+   `build/v0.2-a22-v1-seen-state`.
+3. `git fetch origin`.
+4. Synchroniser uniquement en fast-forward avec
+   `origin/build/v0.2-a22-v1-seen-state`.
+5. Vérifier arbre propre.
+6. Vérifier que HEAD contient :
+   - `ACTION-0061` (TASK-0037 VERIFIED);
+   - `ACTION-0063` (public-readiness fermé);
+   - `DEC-0036`;
+   - `TASK-0038`.
+7. Lire **en entier** `DEC-0036` puis `TASK-0038` avant le premier changement.
 
-## Correction unique
+Si une précondition contredit le dépôt, STOP/BLOCKED et rapporter l’écart. Ne
+pas improviser une autre branche ni une autre architecture.
 
-Dans `scripts/audit-public-readiness.ps1`, remplacer l’allowlist globale par
-une exception **contextuelle**.
+## 1 — Audit avant code
 
-Contrat minimal :
+Auditer les implémentations existantes citées par TASK-0038, en particulier :
 
-- `src-tauri/src/map/sandbox.rs` peut tolérer le nom synthétique
-  `quelquun`;
-- `src-tauri/src/scale_spike/profile.rs` peut tolérer le nom synthétique
-  `other`;
-- ces noms doivent rester **bloqués partout ailleurs**;
-- aucune autre exception utilisateur ne doit être ajoutée;
-- ne pas modifier les fichiers Rust de fixtures dans cette passe.
+- le journal v5 et son curseur;
+- le dispatcher de migration et M-B;
+- `nodes.seen`, `Index::mark_seen`, les vieux chemins prototype
+  `mark_node_seen/query_collection_nodes`;
+- la projection courante et le panneau contextuel;
+- `ChangeJournalPanel`.
 
-Une structure du genre mapping
-`repo-relative-file -> allowed synthetic usernames` est acceptable si la
-comparaison est exacte et lisible.
+Dans `.orchestrator/RESULT.md`, écrire ce qui est **réutilisé**, **adapté** et
+**laissé historique**.
 
-## Preuves obligatoires
+Interdiction : réactiver les commandes prototype pour aller plus vite.
+La V1 doit utiliser les frontières `map_*` actuelles et `BrainNodeRef`.
 
-1. `scripts/audit-public-readiness.ps1 -AllowRemotes` → PASS.
-2. Test négatif temporaire hors des deux fichiers autorisés :
-   - un chemin macOS complet dont le dossier utilisateur est `other` doit être détecté;
-   - un chemin Windows complet dont le dossier utilisateur est `quelquun` doit être détecté.
-3. Les fixtures existantes des deux fichiers autorisés ne doivent pas faire
-   échouer l’audit.
-4. `git diff --check` → propre.
-5. Aucun fichier produit, Rust/TS, n’est modifié.
+## 2 — Source de vérité
 
-## Mémoire durable
+Appliquer `DEC-0036` sans dilution :
 
-Mettre à jour uniquement :
+- `change_events` reste append-only;
+- les acquittements sont séparés;
+- `nodes.seen` n’est jamais la vérité de `isNew/isUnseen`;
+- `new` = CREATED non vu sur nœud courant;
+- `unseen` = au moins un événement non vu sur nœud courant;
+- aucun auto-mark à la sélection ou à l’ouverture.
 
-- `.orchestrator/RESULT.md`;
-- `docs/ai/NEXT_ACTION.md`;
-- au besoin une courte note dans `CHANGELOG_AI.md`.
+Si l’audit démontre qu’un détail SQL proposé par TASK-0038 est mauvais, tu peux
+adapter **la forme** en conservant tous ces invariants; documente le choix.
 
-Consigner que :
+## 3 — Migration v6
 
-- ACTION-0062 R2 est fermée;
-- le tree courant reste assaini;
-- l’audit reste strict pour `other` / `quelquun` hors des fixtures nommées;
-- l’historique Git n’a pas été réécrit;
-- aucune TASK-0038 n’est créée par l’exécuteur.
+Faire le saut v5→v6 via **le même M-B**, sans second chemin.
 
-## Sortie
+La migration d’un vrai v5 existant doit baseliner l’état vu/non-vu au dernier
+`event_id` déjà présent : historique conservé, mais aucun faux backlog
+« non vu » fabriqué au moment où la fonction apparaît.
 
-Commit + push uniquement sur
-`chore/v0.2-public-readiness-cleanup`, arbre propre, aucun PR/merge/tag/release.
+Conserver les preuves de restauration migration/validation et les scénarios
+v3/v4/v5 qui restent supportés par le dispatcher.
+
+## 4 — Mutations et lecture
+
+Implémenter les trois gestes et l’état du nœud avec transactions et isolation
+par cerveau. Les commandes Tauri n’acceptent ni chemin ni identité système.
+
+Points à contrôler explicitement :
+
+- event inexistant → refus clair;
+- node inexistant → refus clair;
+- idempotence;
+- mark-all ne voit que les événements commités avant son propre commit;
+- événement futur reste non vu;
+- curseur journal inchangé et toujours valide après marquage;
+- aucun autre cerveau touché.
+
+## 5 — UI
+
+Réutiliser le panneau « Changements » et le panneau contextuel existant.
+
+« Tout marquer vu » doit être **confirmé inline** : aucune mutation sur le
+premier clic ni sur Annuler.
+
+Ne pas utiliser seulement la couleur pour Vu/Non vu/Nouveau.
+
+## 6 — Preuves
+
+Les tests de TASK-0038 sont des critères de sortie, pas des suggestions.
+
+Rejouer les suites et le WebView2 réel demandés. L’artefact de preuve doit
+rester synthétique et public-safe.
+
+Rejouer aussi :
+
+`scripts/audit-public-readiness.ps1 -AllowRemotes`
+
+et ne pas élargir ses exceptions.
+
+## 7 — Gouvernance
+
+À la fin :
+
+- TASK-0038 = `IMPLEMENTED`, jamais `VERIFIED`;
+- aucune TASK-0039;
+- pas de watcher/incrémental/filtres de carte;
+- pas de PR/merge/tag/release;
+- mettre à jour seulement les documents durables demandés;
+- `.orchestrator/RESULT.md` complet;
+- `NEXT_ACTION` = contrôle indépendant de TASK-0038;
+- commit + push sur la branche;
+- arbre propre.
