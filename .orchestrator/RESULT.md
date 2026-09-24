@@ -35,7 +35,7 @@ REUSE AUDIT:
   - `map/commands.rs::publish_map` (now `Gesture` + mode choice), `MapBuildReport` (+`applicationMode`),
     `map/brain_index.rs` (+`refresh_incrementally`, `has_current_stamp`, `is_identity_stamped`),
     `map/mod.rs` (+2 refusal variants, fixed-word messages), `lib.rs` (module + doc comment).
-  - Frontend: `types.ts` (+`ApplicationMode`), `lifecycle.ts` (carries the mode), `MapApp.tsx` + 
+  - Frontend: `types.ts` (+`ApplicationMode`), `lifecycle.ts` (carries the mode), `MapApp.tsx` +
     `ChangeJournalPanel.tsx` (one discreet label beside the existing summary; panel not redone).
   - Earlier tests whose contract legitimately moved (see DECISIONS 4): lifecycle l4/l5, change-journal
     no-op step, real-root rr5, legacy-binding b1, TASK-0040 structural test on commands.rs.
@@ -98,7 +98,8 @@ VALIDATIONS:
   created file or on an added line (the one in `lib.rs` is the untouched `unattended` block).
   `rustfmt --check` clean on every created file, on `brain_index.rs` and on the touched test files;
   the repository is not rustfmt-clean elsewhere (historical), `lib.rs`/`commands.rs` were not reformatted.
-- `git diff --check` clean; `scripts/audit-public-readiness.ps1 -AllowRemotes`: see final line.
+- `git diff --check` clean; `scripts/audit-public-readiness.ps1 -AllowRemotes`: green after the commits
+  (547 versioned files, no sensitive pattern, none over 5 MiB, allowlist not widened).
 - NOT tested: end-to-end Actualiser cost on 100k+ nodes (scan and digest are O(corpus)); an
   "online-only" PATH_FALLBACK (real junction tested); a process crash mid-refresh; two processes on one
   Index; the watcher, F-032, W-B/W-C (out of scope). The WebView2 harness reads the mode from the

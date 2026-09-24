@@ -7530,7 +7530,7 @@ arbre propre, `HEAD` contient `ACTION-0067`, `DEC-0039` et `TASK-0041`; `DEC-003
 | `cargo clippy --offline --all-targets` | dette historique seule : lib **13**, lib-test **22** (comptes de `TASK-0037`/`0038`/`0039`); zéro diagnostic dans un fichier créé ou sur une ligne ajoutée |
 | `rustfmt --check` | propre sur les fichiers créés, `brain_index.rs` et les fichiers de test touchés; le dépôt n'est pas propre ailleurs (historique), `lib.rs`/`commands.rs` non reformatés |
 | `git diff --check` | propre |
-| `scripts/audit-public-readiness.ps1 -AllowRemotes` | réussi (voir `RESULT.md` pour le compte après commit) |
+| `scripts/audit-public-readiness.ps1 -AllowRemotes` | **réussi après commit** : 547 fichiers versionnés, aucun motif sensible, aucun fichier > 5 Mio, allowlist non élargie |
 
 ### BV.3 Ce que les 43 tests établissent
 
