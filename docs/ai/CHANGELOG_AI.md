@@ -5629,3 +5629,15 @@ précréation de `TASK-0038` par l'exécuteur.
 - Limites : détection manuelle; filtres `F-022` non construits; harnais `TASK-0037` non
   rejoué (il affirme le schéma 5). Aucune `TASK-0039`, PR, fusion, étiquette ni release.
 
+
+
+## 2026-09-23 — ACTION-0064 / préparation TASK-0039
+
+**Orchestrateur :** ChatGPT
+
+- contrôle indépendant de TASK-0038 : VERIFIED;
+- audit de F-022/P-09 contre DEC-0031, DEC-0034, DEC-0036, projection.rs et les requêtes existantes;
+- décision : filtrage serveur sur Index canonique + vue bornée matches/contexte, jamais filtre du seul frontend;
+- DEC-0037 approuvée;
+- TASK-0039 créée READY sur `build/v0.2-a23-v1-dynamic-filters`;
+- aucun code produit exécuté par l’orchestrateur, aucune TASK-0040.
