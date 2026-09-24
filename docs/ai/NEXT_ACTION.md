@@ -1,15 +1,29 @@
 # Action suivante
 
-## Contrôle indépendant du correctif TASK-0042 — ACTION-0069 P1 / P1b
+## TASK-0043 — V1 Automatic Watcher & Reconciliation
 
-`TASK-0042` reste `IMPLEMENTED`, pas `VERIFIED`. Le correctif (commit `4bed627`) :
+`TASK-0042 — V1 Source Availability & Stale Index Foundation` est **VERIFIED
+dans sa portée** par
+[`ACTION-0070`](../reviews/ACTION-0070-task0042-final-control.md).
 
-- garde en mémoire du processus, un par cerveau, l'observation dont l'écriture a échoué, et la
-  sert avec `persisted:false` (fin du `SYNCED` périmé après un Actualiser refusé);
-- lit `UNKNOWN` un record d'échec dont `lastSuccessfulRevision` n'est pas la révision servie.
+Tous les prérequis de `DEC-0010` sont maintenant présents :
 
-Action unique : contrôle indépendant, sur preuves, de `docs/ai/VALIDATION.md` section BX,
-`map/source_observation.rs`, les trois nouveaux tests de `map/source_availability_tests.rs` et
-`src/map/refreshFailure.test.tsx`. Limite à juger : le fallback corrige la session, pas un crash.
+- identité stable;
+- journal;
+- U-B vérifié;
+- Actualiser produit via U-B;
+- machine d'indisponibilité F-032.
 
-Aucune TASK-0043, aucun watcher/polling/W-B/W-C avant ce contrôle.
+La prochaine tranche est
+[`TASK-0043 — V1 Automatic Watcher & Reconciliation`](../tasks/TASK-0043-v1-automatic-watcher.md),
+encadrée par
+[`DEC-0041`](../decisions/DEC-0041-watcher-signals-and-reconciliation.md).
+
+Principe : les événements OS sont seulement des **hints**. La vérité vient
+toujours de W-B/W-C puis U-B.
+
+Action unique : exécuter `.orchestrator/NEXT_PROMPT.md` sur
+`build/v0.2-a27-v1-watcher-reconciliation`.
+
+Aucune TASK-0044, aucun USN, aucun PR/merge/tag/release avant contrôle
+indépendant de TASK-0043.
