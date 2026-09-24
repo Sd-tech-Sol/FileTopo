@@ -1,22 +1,26 @@
 # Action suivante
 
-## Contrôle indépendant de TASK-0038
+## Audit/orchestration de F-022 — filtres dynamiques
 
-`TASK-0038 — V1 Journal-derived Seen/Unseen State` est **`IMPLEMENTED`** sur
-`build/v0.2-a22-v1-seen-state`, jamais auto-`VERIFIED`.
+`TASK-0038 — V1 Journal-derived Seen/Unseen State` est **VERIFIED** par
+[`ACTION-0064`](../reviews/ACTION-0064-independent-control.md).
 
-Action unique : **contrôle indépendant de `TASK-0038`**, par une instance
-distincte de l'exécuteur et **sur preuves** (Git, code, tests, artefact
-`docs/performance/runs/TASK-0038-webview2.json`, `.orchestrator/RESULT.md`,
-[VALIDATION section BR](VALIDATION.md)), selon
-[`DEC-0036`](../decisions/DEC-0036-journal-derived-seen-state.md) et la fiche
-[`TASK-0038`](../tasks/TASK-0038-v1-journal-seen-state.md).
+La source de vérité de « nouveau » / « non vu » est maintenant stable et
+journal-derived. La prochaine tranche doit auditer puis implémenter `F-022`
+sans utiliser `nodes.seen` et sans casser la projection bornée
+`DEC-0031/DEC-0034`.
 
-Points à regarder en priorité : la baseline v5 → v6 (aucun faux « non vu »),
-l'absence de toute lecture ou écriture de `nodes.seen` par le nouveau code, la
-confirmation de « Tout marquer vu » (aucun appel au premier clic ni sur
-« Annuler »), l'isolation par cerveau, et le choix déclaré de `unseenTotal`
-non filtré.
+Cible fonctionnelle `P-09` :
 
-Hors portée : filtres de carte `F-022`, watcher `F-030`, incrémental `F-031`,
-toute `TASK-0039`, PR, fusion, étiquette, release.
+- Tout / Nouveaux / Non vus;
+- type;
+- disponibilité;
+- critères combinables;
+- total exact dérivé de l’Index;
+- filtre actif visible et révocable;
+- aucun whole-corpus DTO vers le frontend.
+
+Watcher `F-030` et incrémental `F-031` restent hors portée.
+
+Le cadrage détaillé de la prochaine branche est préparé par l’orchestrateur;
+aucun exécuteur ne doit créer seul la tâche suivante.
