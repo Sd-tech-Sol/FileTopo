@@ -2395,3 +2395,6 @@ en remplaçant `TASK-0022` par `TASK-0023`. Le remplacement littéral reconduit
 la panne d'un cran. Un test de garde interdit désormais, dans toute source
 d'écriture, `startsWith("TASK-00xx-")` et tout compte de noms protégés écrit en
 chiffres ou en lettres.
+
+
+> **Relais 2026-09-23 — prochaine exécution : TASK-0038.** TASK-0037 est VERIFIED; ACTION-0063 ferme la porte public-readiness. La prochaine tranche est `F-028` : état vu/non-vu dérivé du journal selon DEC-0036. Le booléen `nodes.seen` reste historique et ne doit pas devenir la vérité de `new/unseen`. F-022/F-030/F-031 restent hors portée. Lire `.orchestrator/NEXT_PROMPT.md` sur `build/v0.2-a22-v1-seen-state`.
