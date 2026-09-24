@@ -5714,3 +5714,15 @@ précréation de `TASK-0038` par l'exécuteur.
   `VALIDATION BU`.
 - Aucune ligne du noyau ni du harnais Rust modifiée. Aucune TASK-0041, watcher, PR, fusion,
   étiquette ni release.
+
+
+## 2026-09-24 — ACTION-0067 / préparation TASK-0041
+
+**Orchestrateur :** ChatGPT
+
+- recontrôle indépendant des 5 artefacts canoniques F-031 et recalcul des 35 échantillons bruts par cas;
+- ratio canonique recalculé : 1,533 <= 2; TASK-0040 VERIFIED par ACTION-0067;
+- audit du vrai flux Actualiser : résumé/UI déjà présents, mais publication backend encore full-replacement;
+- DEC-0039 approuvée : scan manuel complet -> lot minimal -> noyau U-B;
+- TASK-0041 créée READY sur `build/v0.2-a25-v1-manual-refresh-incremental`;
+- Reconstruire reste full explicite; aucun watcher/W-B/W-C/F-032 ouvert.
