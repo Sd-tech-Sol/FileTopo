@@ -2555,3 +2555,6 @@ chiffres ou en lettres.
 
 
 > **Relais 2026-09-24 — TASK-0041 prête.** TASK-0040 est VERIFIED par ACTION-0067 et le critère F-031 canonique passe à 1,533. La prochaine étape ne construit pas encore le watcher : elle branche U-B dans le vrai bouton Actualiser. Sur un Index estampé : scan manuel complet, réconciliation en lot minimal, `apply_update_batch`; no-op = pas de révision. Première indexation/restamp legacy et Reconstruire restent full explicites. Lire DEC-0039, TASK-0041 puis `.orchestrator/NEXT_PROMPT.md` sur `build/v0.2-a25-v1-manual-refresh-incremental`.
+
+
+> **Relais 2026-09-24 — TASK-0042 prête.** TASK-0041 est VERIFIED par ACTION-0068. Avant le watcher, la prochaine fondation est l'état de source : dernière observation UNKNOWN/SYNCED/UNAVAILABLE/SOURCE_CHANGED/SCAN_INCOMPLETE/APPLY_FAILED, persistée sans chemin sensible, avec dernier Index fiable toujours servi. Aucun watcher/W-B/W-C dans cette tranche. Lire DEC-0040, TASK-0042 puis `.orchestrator/NEXT_PROMPT.md` sur `build/v0.2-a26-v1-source-availability`.
