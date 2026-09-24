@@ -41,7 +41,7 @@ ne code rien.**
 
 | Précondition | Constat |
 |---|---|
-| Racine Git | `C:/Users/Vatfaire/Documents/TopographicDocumentMap` |
+| Racine Git | racine Git locale (chemin absolu non consigné) |
 | Checkout de départ | `build/v0.2-a10-exact-duplicate-explorer` |
 | Arbre local | **propre** avant et après le fast-forward |
 | `git fetch origin` | exécuté |

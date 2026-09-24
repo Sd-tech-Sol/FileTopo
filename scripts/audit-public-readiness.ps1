@@ -14,10 +14,18 @@ $textExtensions = @(
   '.toml', '.ts', '.tsx', '.txt', '.yaml', '.yml'
 )
 
+# Les trois premiers motifs capturent le nom de dossier utilisateur (groupe 1).
+# Un nom de la liste ci-dessous est un **nom fictif** utilisé par des jeux
+# d'essai synthétiques (par exemple les tests qui prouvent qu'un chemin absolu
+# n'est jamais publié); ce n'est pas une donnée locale. La liste est
+# volontairement courte et nominative : tout autre nom de dossier utilisateur
+# reste une trouvaille.
+$syntheticUserNames = @('quelquun', 'other')
+
 $patterns = [ordered]@{
-  'chemin Windows personnel' = '[A-Za-z]:' + '\\Users\\[^\\\r\n]+\\'
-  'chemin macOS personnel' = '/' + 'Users' + '/[^/\r\n]+/'
-  'chemin Linux personnel' = '/' + 'home' + '/[^/\r\n]+/'
+  'chemin Windows personnel' = '[A-Za-z]:' + '\\Users\\([^\\\r\n]+)\\'
+  'chemin macOS personnel' = '/' + 'Users' + '/([^/\r\n]+)/'
+  'chemin Linux personnel' = '/' + 'home' + '/([^/\r\n]+)/'
   'clé privée' = 'BEGIN ' + '[A-Z ]*PRIVATE KEY'
   'clé AWS' = 'AKIA' + '[0-9A-Z]{16}'
   'jeton GitHub' = 'gh' + '[pousr]_[A-Za-z0-9]{20,}'
@@ -41,14 +49,20 @@ try {
     $fullPath = Join-Path $projectRoot $relativePath
     $content = [IO.File]::ReadAllText($fullPath)
     foreach ($entry in $patterns.GetEnumerator()) {
-      if ([regex]::IsMatch($content, $entry.Value)) {
+      foreach ($match in [regex]::Matches($content, $entry.Value)) {
+        $isUserPath = $match.Groups.Count -gt 1
+        if ($isUserPath -and ($syntheticUserNames -contains $match.Groups[1].Value)) { continue }
         $findings += "${relativePath}: $($entry.Key)"
+        break
       }
     }
   }
 
   if ($findings.Count -gt 0) {
-    $findings | Sort-Object -Unique | ForEach-Object { Write-Error $_ }
+    # Toutes les trouvailles sont listées avant d'échouer: `Write-Error` avec
+    # `$ErrorActionPreference = 'Stop'` s'arrêterait sinon à la première et
+    # masquerait les suivantes.
+    $findings | Sort-Object -Unique | ForEach-Object { Write-Host "Audit public: $_" }
     throw 'Audit public: motifs sensibles détectés.'
   }
 

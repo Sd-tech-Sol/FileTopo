@@ -3790,7 +3790,7 @@ performance**. L'exécuteur ne s'attribue pas `VERIFIED`.
 
 | Contrôle | Constat |
 |---|---|
-| Racine Git | `C:/Users/Vatfaire/Documents/TopographicDocumentMap` |
+| Racine Git | racine Git locale (chemin absolu non consigné) |
 | Branche de départ | `build/v0.2-a10-exact-duplicate-explorer` |
 | Arbre local | **propre** |
 | `git fetch origin` | exécuté |
