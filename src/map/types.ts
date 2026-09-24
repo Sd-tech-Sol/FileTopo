@@ -265,6 +265,81 @@ export interface MapBuildReport {
   schemaVersion: number;
   layoutAlgorithm: string;
   diagnostics: ScanDiagnostic[];
+  /**
+   * `TASK-0037` — what this publication added to the change journal:
+   * **counters only**, never the event list (see {@link ChangeJournalPage}).
+   */
+  changeSummary: ChangeSummary;
+}
+
+/* --- TASK-0037 — journal de changements ---------------------------------- */
+
+/** The five natures of `P-16`, and no other. */
+export type ChangeNature = "CREATED" | "MODIFIED" | "RENAMED" | "MOVED" | "DELETED";
+
+/**
+ * Exact counters of one Actualiser/Reconstruire. `baselineEstablished` is
+ * `true` when the publication only set the reference state (a brain's first
+ * build): its counters are then zero **by construction**, not by observation.
+ */
+export interface ChangeSummary {
+  baselineEstablished: boolean;
+  created: number;
+  modified: number;
+  renamed: number;
+  moved: number;
+  deleted: number;
+  total: number;
+}
+
+/**
+ * One journal entry — canonical `nodeId`s, names and **relative** paths only.
+ * Never an absolute path, a stable key, a `FileId`, a volume serial or file
+ * content.
+ *
+ * `detectedUnixMs` is the instant FileTopo **detected** the difference at an
+ * explicit Actualiser/Reconstruire — never the instant the filesystem changed —
+ * and `ordinal` orders events *within one detected revision* for display only:
+ * it is not the order in which the filesystem operations happened.
+ */
+export interface ChangeEvent {
+  brainId: string;
+  eventId: number;
+  detectedRevision: number;
+  ordinal: number;
+  nature: ChangeNature;
+  nodeId: number;
+  nodeKind: MapNodeKind;
+  oldName: string | null;
+  newName: string | null;
+  oldRelativePath: string | null;
+  newRelativePath: string | null;
+  oldParentId: number | null;
+  newParentId: number | null;
+  detectedUnixMs: number;
+  /**
+   * Whether the node is in the Index **now**. Ids are never recycled, so
+   * `false` is permanent: the UI must not offer a selection for it.
+   */
+  nodePresent: boolean;
+}
+
+/**
+ * A bounded page of the journal — newest first, exact `total` for the filter
+ * in force, and a keyset cursor tied to the **index** (not to its revision:
+ * the journal is append-only, so a new Actualiser cannot invalidate a walk
+ * through older history).
+ */
+export interface ChangeJournalPage {
+  brainId: string;
+  indexId: string;
+  indexRevision: number;
+  /** The natures the page was filtered by; empty means every nature. */
+  natures: ChangeNature[];
+  total: number;
+  items: ChangeEvent[];
+  nextCursor: string | null;
+  limit: number;
 }
 
 export interface HostInfo {

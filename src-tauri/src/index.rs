@@ -1,3 +1,4 @@
+use crate::change_journal::{self, CurrentNode, JournalOutcome};
 use crate::domain::{NodeDto, NodeKind, ScanDiagnostic};
 use crate::hierarchy::{self, ChildCursor, ChildrenPage, HierarchyError, IndexIdentity};
 use crate::identity::{self, IdentityProvenance, NodeIdentity};
@@ -7,12 +8,25 @@ use std::path::Path;
 
 /// Current schema version of the node index.
 ///
+/// `5` since `TASK-0037`: the persistent `change_events` journal
+/// ([`crate::change_journal`]), written in the same transaction as the corpus
+/// it describes.
 /// `4` since `TASK-0036`: the durable stable-identity columns and the
 /// monotone id counter of
 /// [`DEC-0009`](../../docs/decisions/DEC-0009-data-model-and-relations.md) I-E.
 /// `3` was `TASK-0029`'s two generated sort columns and child-order index
 /// ([`DEC-0030`](../../docs/decisions/DEC-0030-bounded-hierarchy-query-contract.md)).
-const SCHEMA_VERSION: i64 = 4;
+const SCHEMA_VERSION: i64 = 5;
+
+/// The schema `TASK-0036` stamped: durable identity columns and id counter.
+const STABLE_IDENTITY_SCHEMA_VERSION: i64 = 4;
+
+/// The oldest schema the product will migrate to the current one — the
+/// `TASK-0029` shape. Anything older, unknown or newer is refused, never
+/// guessed at (`DEC-0011`). Each step from here is one versioned transaction
+/// (see [`Index::migrate_to_current_schema`]), and every one of them runs
+/// inside the same `M-B` envelope of `BrainIndex::open_existing_migrating`.
+pub(crate) const OLDEST_MIGRATABLE_SCHEMA_VERSION: i64 = 3;
 
 /// The node columns, in the exact order [`node_from_row`] reads them.
 ///
@@ -87,7 +101,8 @@ impl Index {
             )?;
         }
         self.migrate_to_bounded_hierarchy()?;
-        self.migrate_to_stable_identity()
+        self.migrate_to_stable_identity()?;
+        self.migrate_to_change_journal()
     }
 
     /// Schema `2 → 3` — `DEC-0030 §E`. Idempotent, and safe on a populated
@@ -171,35 +186,84 @@ impl Index {
         let version: i64 = self
             .connection
             .query_row("PRAGMA user_version", [], |row| row.get(0))?;
-        if version >= SCHEMA_VERSION {
+        if version >= STABLE_IDENTITY_SCHEMA_VERSION {
             return Ok(());
         }
         self.run_stable_identity_migration()
     }
 
-    /// The product-reachable `v3 → v4` upgrade — `ACTION-0057` D1.
-    ///
-    /// Unlike [`migrate_to_stable_identity`](Self::migrate_to_stable_identity),
-    /// which [`initialize`](Self::initialize) runs unconditionally and which
-    /// therefore has to tolerate a fresh, empty or already-current file, this
-    /// entry point is reached only through `BrainIndex::open_existing_migrating`
-    /// — after the caller has already verified the file's `brain_id` and
-    /// source binding against the catalogue — and refuses anything that is
-    /// not **exactly** [`SCHEMA_VERSION`] `- 1`: no chain of intermediate
-    /// versions, no guess for an older or newer schema, never a migration run
-    /// backward. The migration itself is the same atomic transaction either
-    /// way; see [`Self::run_stable_identity_migration`].
-    pub(crate) fn migrate_previous_schema(&self) -> MigrationResult<()> {
+    /// Schema `4 → 5` — `TASK-0037`. Called unconditionally by
+    /// [`initialize`](Self::initialize) (a no-op the instant the file is
+    /// already at [`SCHEMA_VERSION`]): a brand-new file reaches the journal
+    /// through the same step an existing v4 file does.
+    fn migrate_to_change_journal(&self) -> Result<()> {
         let version: i64 = self
             .connection
             .query_row("PRAGMA user_version", [], |row| row.get(0))?;
-        if version != SCHEMA_VERSION - 1 {
+        if version >= SCHEMA_VERSION {
+            return Ok(());
+        }
+        self.run_change_journal_migration()
+    }
+
+    /// The product-reachable schema upgrade — `ACTION-0057` D1, generalised
+    /// by `TASK-0037` into a dispatcher **by version**.
+    ///
+    /// Unlike [`migrate_to_stable_identity`](Self::migrate_to_stable_identity)
+    /// and [`migrate_to_change_journal`](Self::migrate_to_change_journal),
+    /// which [`initialize`](Self::initialize) runs unconditionally and which
+    /// therefore have to tolerate a fresh, empty or already-current file,
+    /// this entry point is reached only through
+    /// `BrainIndex::open_existing_migrating` — after the caller has already
+    /// verified the file's `brain_id` and source binding against the
+    /// catalogue, quiesced it and taken a verified safety copy (`DEC-0013` B,
+    /// `M-B`).
+    ///
+    /// It refuses anything outside
+    /// `OLDEST_MIGRATABLE_SCHEMA_VERSION..SCHEMA_VERSION` — never an older,
+    /// unknown or newer version, never a migration run backward — and
+    /// otherwise applies **one versioned step at a time**: `3 → 4`
+    /// ([`Self::run_stable_identity_migration`]) then `4 → 5`
+    /// ([`Self::run_change_journal_migration`]). Each step is its own atomic
+    /// transaction that stamps its own `user_version` last; a failure between
+    /// two steps is the caller's `M-B` restore, which puts back the safety
+    /// copy of the file **as it was found**, whichever step failed. Adding a
+    /// version later means adding one arm and one step, not another path.
+    pub(crate) fn migrate_to_current_schema(&self) -> MigrationResult<()> {
+        let read_version = || -> rusqlite::Result<i64> {
+            self.connection
+                .query_row("PRAGMA user_version", [], |row| row.get(0))
+        };
+        let mut version = read_version()?;
+        if !(OLDEST_MIGRATABLE_SCHEMA_VERSION..SCHEMA_VERSION).contains(&version) {
             return Err(MigrationError::UnsupportedVersion {
                 actual: version,
                 expected: SCHEMA_VERSION - 1,
             });
         }
-        Ok(self.run_stable_identity_migration()?)
+        while version < SCHEMA_VERSION {
+            match version {
+                3 => self.run_stable_identity_migration()?,
+                4 => self.run_change_journal_migration()?,
+                other => {
+                    return Err(MigrationError::UnsupportedVersion {
+                        actual: other,
+                        expected: SCHEMA_VERSION - 1,
+                    });
+                }
+            }
+            let reached = read_version()?;
+            if reached != version + 1 {
+                // A step that did not land exactly one version higher would
+                // otherwise loop, or skip a version silently.
+                return Err(MigrationError::UnsupportedVersion {
+                    actual: reached,
+                    expected: version + 1,
+                });
+            }
+            version = reached;
+        }
+        Ok(())
     }
 
     /// The atomic body of the `3 → 4` transition — `ACTION-0057` D2.
@@ -248,6 +312,27 @@ impl Index {
                  SELECT 'next_node_id', CAST(COALESCE(MAX(id), 0) + 1 AS TEXT) FROM nodes",
             [],
         )?;
+        transaction.execute_batch(&format!(
+            "PRAGMA user_version={STABLE_IDENTITY_SCHEMA_VERSION};
+             INSERT OR REPLACE INTO schema_meta(key, value)
+             VALUES ('schema_version', '{STABLE_IDENTITY_SCHEMA_VERSION}');",
+        ))?;
+        transaction.commit()
+    }
+
+    /// The atomic body of the `4 → 5` transition — `TASK-0037`.
+    ///
+    /// Adds the `change_events` table and its two indexes and stamps the new
+    /// version **last, inside the same transaction**: on any earlier failure
+    /// the connection rolls back to the exact v4 file it started from. No
+    /// existing row is touched, and the journal starts **empty** — a
+    /// migration never fabricates history. The DDL is deliberately strict
+    /// (`CREATE`, not `CREATE … IF NOT EXISTS`): the version guard already
+    /// makes the step run once, and a pre-existing object of the same name is
+    /// a foreign or half-migrated file that must fail, not be adopted.
+    fn run_change_journal_migration(&self) -> Result<()> {
+        let transaction = self.connection.unchecked_transaction()?;
+        transaction.execute_batch(change_journal::JOURNAL_DDL)?;
         transaction.execute_batch(&format!(
             "PRAGMA user_version={SCHEMA_VERSION};
              INSERT OR REPLACE INTO schema_meta(key, value)
@@ -430,7 +515,53 @@ impl Index {
             .find(|node| node.parent_id.is_none())
             .map(|root| remap.get(&root.id).copied().unwrap_or(root.id));
 
-        let transaction = self.connection.transaction()?;
+        // `IMMEDIATE`: the write lock is taken **before** the previous corpus
+        // is read for the journal diff below, so what is compared is exactly
+        // what this same transaction then replaces — never a snapshot a
+        // concurrent writer could have moved on from.
+        let transaction = self
+            .connection
+            .transaction_with_behavior(rusqlite::TransactionBehavior::Immediate)?;
+
+        // `TASK-0037` D — the journal diff, computed **inside** the
+        // publication's transaction and **before** `nodes` is replaced.
+        // Only the real scanner pipeline (`identities: Some`) journals:
+        // without durable identities a corpus has nothing whose `id` means
+        // "the same object", and a diff on caller-chosen ids would be noise.
+        let mut events = Vec::new();
+        let previous = if identities.is_some() {
+            change_journal::load_previous(&transaction)?
+        } else {
+            None
+        };
+        if let Some(previous) = &previous {
+            let current = nodes
+                .iter()
+                .map(|node| CurrentNode {
+                    id: remap.get(&node.id).copied().unwrap_or(node.id),
+                    parent_id: node
+                        .parent_id
+                        .map(|parent| remap.get(&parent).copied().unwrap_or(parent)),
+                    name: &node.name,
+                    relative_path: &node.relative_path,
+                    kind: node.kind,
+                    size_bytes: i64::try_from(node.size_bytes).unwrap_or(i64::MAX),
+                    modified_unix_ms: node.modified_unix_ms,
+                    online_only: node.online_only,
+                    reparse_point: node.reparse_point,
+                })
+                .collect::<Vec<_>>();
+            events = change_journal::diff(previous, &current, |id| {
+                change_journal::previous_relative_path(&transaction, id)
+            })?;
+            outcome.journal = change_journal::summarize(&events);
+        } else if identities.is_some() {
+            // First build of a brain, or a file whose previous rows carry no
+            // durable identity: the reference is established, no event is
+            // invented for it.
+            outcome.journal.baseline_established = true;
+        }
+
         transaction.execute("DELETE FROM nodes", [])?;
         {
             let mut statement = transaction.prepare(
@@ -510,7 +641,20 @@ impl Index {
                 params![next_id.to_string()],
             )?;
         }
-        hierarchy::advance_revision(&transaction)?;
+        // The events and the revision they were detected at are written in
+        // this same transaction as the corpus: the journal, the rows and the
+        // revision become visible together, or none of them does. A failure
+        // of this insert fails the publication (the `?`), and a failure of
+        // anything after it removes these rows with the rest.
+        let detected_revision = hierarchy::read_revision(&transaction)?.saturating_add(1);
+        let detected_unix_ms = metadata
+            .iter()
+            .find(|(key, _)| *key == "built_unix_ms")
+            .and_then(|(_, value)| value.parse::<i64>().ok())
+            .unwrap_or_default();
+        change_journal::append_events(&transaction, detected_revision, detected_unix_ms, &events)?;
+        let advanced = hierarchy::advance_revision(&transaction)?;
+        debug_assert_eq!(advanced, detected_revision);
         transaction.commit()?;
         Ok(outcome)
     }
@@ -539,11 +683,11 @@ pub(crate) enum PublishError {
 
 pub(crate) type PublishResult<T> = std::result::Result<T, PublishError>;
 
-/// A refusal from [`Index::migrate_previous_schema`] — `ACTION-0057` D1. The
-/// guard exists because [`Index::run_stable_identity_migration`] stamps
-/// `user_version = SCHEMA_VERSION` unconditionally at the end of its
-/// transaction: calling it on anything but exactly the migratable previous
-/// version would silently relabel an unrelated schema as current.
+/// A refusal from [`Index::migrate_to_current_schema`] — `ACTION-0057` D1. The
+/// guard exists because each versioned step stamps its own `user_version`
+/// unconditionally at the end of its transaction: calling one on anything
+/// but the version it upgrades from would silently relabel an unrelated
+/// schema.
 #[derive(Debug, thiserror::Error)]
 pub(crate) enum MigrationError {
     #[error("schema {actual} is not the migratable previous version {expected}")]
@@ -555,11 +699,14 @@ pub(crate) enum MigrationError {
 pub(crate) type MigrationResult<T> = std::result::Result<T, MigrationError>;
 
 /// How many published nodes reused a previous canonical id versus received a
-/// fresh one — diagnostic only, never serialized to the frontend.
+/// fresh one — diagnostic only, never serialized to the frontend — and what
+/// the publication did to the change journal (`TASK-0037`), whose counters the
+/// build report carries.
 #[derive(Debug, Clone, Copy, Default)]
 pub(crate) struct PublishOutcome {
     pub matched: usize,
     pub created: usize,
+    pub journal: JournalOutcome,
 }
 
 /// Reads the durable id counter, bootstrapping it from `MAX(id) + 1` if it is

@@ -298,7 +298,9 @@ fn downgrade_to_schema_v3(database: &Path) {
     let connection = rusqlite::Connection::open(database).expect("open for downgrade");
     connection
         .execute_batch(
-            "DROP INDEX IF EXISTS idx_nodes_stable_key;
+            // `TASK-0037`: a v3 file has no journal either.
+            "DROP TABLE IF EXISTS change_events;
+             DROP INDEX IF EXISTS idx_nodes_stable_key;
              ALTER TABLE nodes DROP COLUMN identity_provenance;
              ALTER TABLE nodes DROP COLUMN stable_key;
              DELETE FROM schema_meta WHERE key = 'next_node_id';
@@ -328,7 +330,7 @@ fn raw_bytes(database: &Path) -> Vec<u8> {
 /// rename.
 fn safety_copy_path(database: &Path) -> PathBuf {
     let mut name = database.file_name().unwrap().to_os_string();
-    name.push(".v3-safety-copy");
+    name.push(".migration-safety-copy");
     database.with_file_name(name)
 }
 
@@ -578,7 +580,7 @@ fn a_future_schema_is_refused_and_never_migrated_backward() {
     {
         let connection = rusqlite::Connection::open(&database).unwrap();
         connection
-            .execute_batch("PRAGMA user_version = 5;")
+            .execute_batch("PRAGMA user_version = 6;")
             .unwrap();
     }
     let before = raw_bytes(&database);
@@ -599,7 +601,7 @@ fn a_future_schema_is_refused_and_never_migrated_backward() {
         before,
         "a refused future schema must never be touched, let alone migrated backward"
     );
-    assert_eq!(raw_schema_version(&database), 5);
+    assert_eq!(raw_schema_version(&database), 6);
     assert!(
         !safety_copy_path(&database).exists(),
         "ACTION-0058 D4: a future/unknown schema must never create a safety copy"

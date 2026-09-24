@@ -15,6 +15,7 @@ use super::sandbox::{self, SandboxPaths};
 use super::source::BrainSource;
 use super::store::{MapSnapshot, NON_RECONSTRUCTIBLE_KEYS, NodeDetail};
 use super::{MAX_FIXTURE_DEPTH, MapError, fixtures};
+use crate::change_journal::{ChangeNature, JournalCursor};
 use crate::domain::ScanDiagnostic;
 use crate::scanner::scan_tree_controlled;
 use serde::{Deserialize, Serialize};
@@ -85,6 +86,13 @@ pub struct MapBuildReport {
     /// The algorithm persisted by the map store and read back after the build.
     pub layout_algorithm: String,
     pub diagnostics: Vec<ScanDiagnostic>,
+    /// What this publication added to the change journal — `TASK-0037`:
+    /// **counters only** (`created`/`modified`/`renamed`/`moved`/`deleted`/
+    /// `total`), never the event list, which `map_change_journal` serves
+    /// page by page. `baselineEstablished` is `true` when the publication
+    /// only set the reference state (a brain's first build), which is why its
+    /// counters are zero by construction rather than by observation.
+    pub change_summary: crate::change_journal::ChangeSummary,
 }
 
 /// Lifecycle facts only; opening never invents scan timings or source freshness.
@@ -430,7 +438,7 @@ fn publish_map(
     } else {
         BrainIndex::open(&database)?
     };
-    store.replace_with_identity(
+    let change_summary = store.replace_with_identity(
         &brain.brain_id,
         SourceStamp {
             kind: brain.source_kind,
@@ -489,6 +497,7 @@ fn publish_map(
             .meta("layout_algorithm")?
             .unwrap_or_else(|| LAYOUT_ALGORITHM.to_string()),
         diagnostics: scan.diagnostics,
+        change_summary,
     })
 }
 
@@ -560,11 +569,9 @@ fn open_for_brain(paths: &SandboxPaths, brain: &BrainRecord) -> Result<BrainInde
     // the one schema the product ever migrates automatically. Ordinary opens
     // (the overwhelmingly common case) still go through the unchanged,
     // strictly-current `open_existing`, read-only exactly as before; only a
-    // file at `MAP_PREVIOUS_SCHEMA_VERSION` takes the writable, checked
-    // migration path.
-    let store = if BrainIndex::peek_schema_version(&database)?
-        == super::store::MAP_PREVIOUS_SCHEMA_VERSION
-    {
+    // file at a migratable older schema (`store::is_migratable_schema`) takes
+    // the writable, checked migration path.
+    let store = if super::store::is_migratable_schema(BrainIndex::peek_schema_version(&database)?) {
         BrainIndex::open_existing_migrating(&database, true, brain)?
     } else {
         BrainIndex::open_existing(&database, false)?
@@ -777,6 +784,111 @@ pub fn node_children(
         next_cursor: page.next_cursor.map(|cursor| cursor.encode()),
         index_revision: page.identity.revision,
         limit: page.page_size,
+    })
+}
+
+/// One entry of a brain's change journal — `TASK-0037` E.
+///
+/// Canonical `nodeId`s, names and **relative** paths only: never an absolute
+/// path, a root, a stable key, a `FileId`, a volume serial or file content.
+/// `detectedUnixMs` is the instant FileTopo **detected** the difference at an
+/// explicit Actualiser/Reconstruire — never the instant the filesystem
+/// changed — and `ordinal` orders events *within one detected revision* for
+/// display only: it is not the order the filesystem operations happened in.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChangeEvent {
+    pub brain_id: String,
+    pub event_id: i64,
+    pub detected_revision: u64,
+    pub ordinal: u64,
+    pub nature: ChangeNature,
+    pub node_id: i64,
+    pub node_kind: crate::domain::NodeKind,
+    pub old_name: Option<String>,
+    pub new_name: Option<String>,
+    pub old_relative_path: Option<String>,
+    pub new_relative_path: Option<String>,
+    pub old_parent_id: Option<i64>,
+    pub new_parent_id: Option<i64>,
+    pub detected_unix_ms: i64,
+    /// Whether a node with this id is in the Index **now**. Node ids are
+    /// never recycled, so `false` is permanent: the UI must not offer a
+    /// selection for it.
+    pub node_present: bool,
+}
+
+/// A bounded page of the journal — newest event first, exact `total` for the
+/// filter in force, and a keyset cursor tied to the **index** (never to its
+/// revision: the journal is append-only, so a fresh Actualiser cannot
+/// invalidate a walk through older history).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ChangeJournalPage {
+    pub brain_id: String,
+    pub index_id: String,
+    pub index_revision: u64,
+    /// The natures the page was filtered by; empty means every nature.
+    pub natures: Vec<ChangeNature>,
+    pub total: u64,
+    pub items: Vec<ChangeEvent>,
+    pub next_cursor: Option<String>,
+    pub limit: usize,
+}
+
+/// Server-side ceiling on a journal page — `TASK-0037` E.
+pub const JOURNAL_LIMIT_MAX: usize = crate::change_journal::JOURNAL_PAGE_MAX;
+
+/// One bounded, filtered page of a brain's change journal.
+///
+/// The brain is identified explicitly (`open_store` is the only door, exactly
+/// as for search and children); no path crosses this boundary in either
+/// direction. `after`, when given, must be a cursor this same command
+/// returned: it is refused if it belongs to another index.
+pub fn change_journal(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+    natures: &[ChangeNature],
+    after: Option<&str>,
+    limit: usize,
+) -> Result<ChangeJournalPage, MapError> {
+    let store = open_store(paths, brain)?;
+    let cursor = after.map(JournalCursor::decode).transpose()?;
+    let (page, identity) =
+        store.change_journal_page(natures, cursor.as_ref(), limit.clamp(1, JOURNAL_LIMIT_MAX))?;
+    let mut distinct = natures.to_vec();
+    distinct.sort();
+    distinct.dedup();
+    let items = page
+        .items
+        .into_iter()
+        .map(|event| ChangeEvent {
+            brain_id: brain.brain_id.clone(),
+            event_id: event.event_id,
+            detected_revision: event.detected_revision,
+            ordinal: event.ordinal,
+            nature: event.nature,
+            node_id: event.node_id,
+            node_kind: event.node_kind,
+            old_name: event.old_name,
+            new_name: event.new_name,
+            old_relative_path: event.old_relative_path,
+            new_relative_path: event.new_relative_path,
+            old_parent_id: event.old_parent_id,
+            new_parent_id: event.new_parent_id,
+            detected_unix_ms: event.detected_unix_ms,
+            node_present: event.node_present,
+        })
+        .collect();
+    Ok(ChangeJournalPage {
+        brain_id: brain.brain_id.clone(),
+        index_id: identity.index_id,
+        index_revision: identity.revision,
+        natures: distinct,
+        total: page.total,
+        items,
+        next_cursor: page.next_cursor.map(|cursor| cursor.encode()),
+        limit: page.limit,
     })
 }
 
@@ -2167,3 +2279,7 @@ mod context_panel_tests;
 #[cfg(test)]
 #[path = "stable_identity_tests.rs"]
 mod stable_identity_tests;
+
+#[cfg(test)]
+#[path = "change_journal_tests.rs"]
+mod change_journal_tests;

@@ -40,6 +40,10 @@ pub const MAX_FIXTURE_DEPTH: u32 = 40;
 pub enum MapError {
     #[error("{0}")]
     Hierarchy(#[from] crate::hierarchy::HierarchyError),
+    /// `TASK-0037` — a refusal from the change journal's read side: a
+    /// malformed cursor, or one issued by another index.
+    #[error("{0}")]
+    Journal(#[from] crate::change_journal::JournalError),
     #[error("map_view_rejected: {0}")]
     View(String),
     #[error("map_io_failed: {0}")]

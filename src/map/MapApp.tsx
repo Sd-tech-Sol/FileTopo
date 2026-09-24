@@ -10,6 +10,7 @@ import CrossRelationsPanel from "./CrossRelationsPanel";
 import RelationsPanel from "./RelationsPanel";
 import ReviewQueuePanel from "./ReviewQueuePanel";
 import ExactDuplicateExplorer from "./ExactDuplicateExplorer";
+import ChangeJournalPanel, { describeChangeSummary } from "./ChangeJournalPanel";
 import {
   ComposedViewError,
   addBrain,
@@ -73,6 +74,7 @@ import type {
   BrainCatalogView,
   BrainNodeRef,
   BrainRecord,
+  ChangeSummary,
   FixtureIntegrity,
   FixtureSummary,
   HostInfo,
@@ -369,6 +371,10 @@ export default function MapApp() {
   const childrenRequestTicket = useRef(0);
   const [copyBusy, setCopyBusy] = useState(false);
   const [copyError, setCopyError] = useState<string | null>(null);
+  // `TASK-0037` — the change counters of each brain's **last** Actualiser or
+  // Reconstruire in this session. Counters only: the events themselves are
+  // read page by page from the brain's journal (`ChangeJournalPanel`).
+  const [lastChanges, setLastChanges] = useState<ReadonlyMap<string, ChangeSummary>>(new Map());
 
   // The measurement loop drives the same state the interface does, so what it
   // times is what a person would experience — not a parallel code path.
@@ -661,6 +667,10 @@ export default function MapApp() {
       const record = catalogRef.current?.brains.find((brain) => brain.brainId === brainId);
       if (!record) throw new Error(`cerveau absent du catalogue : ${brainId}`);
       const report = await runLifecycle(invoke, brainId, action);
+      if (report.changeSummary) {
+        const summary = report.changeSummary;
+        setLastChanges((current) => new Map(current).set(brainId, summary));
+      }
       const snapshot = await invoke<MapProjection>("map_view", { brainId });
       const integrity = null; // Opening must never read or fingerprint the source.
 
@@ -2457,6 +2467,11 @@ export default function MapApp() {
             schema {report.schemaVersion} · {focusedBrain?.snapshot.layoutAlgorithm}
           </span>
           <span>Dernier index enregistré · source non vérifiée · fraîcheur inconnue</span>
+          {composed && lastChanges.has(composed.focusedBrainId) ? (
+            <span data-testid="change-summary" data-summary={JSON.stringify(lastChanges.get(composed.focusedBrainId))}>
+              {describeChangeSummary(lastChanges.get(composed.focusedBrainId)!)}
+            </span>
+          ) : null}
           {integrity ? (
             <span className={integrity.filetopoArtifacts.length === 0 ? "ok" : "ko"}>
               {integrity.filetopoArtifacts.length === 0 ? t.noArtifacts : t.artifactsFound}
@@ -2778,6 +2793,12 @@ export default function MapApp() {
           <ExactDuplicateExplorer
             brainId={composed?.focusedBrainId ?? null}
             revision={contentRevision}
+            onSelect={selectNode}
+          />
+
+          <ChangeJournalPanel
+            brainId={composed?.focusedBrainId ?? null}
+            revision={focusedBrain?.report.revision ?? null}
             onSelect={selectNode}
           />
 

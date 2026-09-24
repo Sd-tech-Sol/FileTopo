@@ -1628,3 +1628,65 @@ input[type="text"] {
   opacity: 0.6;
   cursor: default;
 }
+
+/* --- TASK-0037 — journal de changements ------------------------------- */
+
+.journal {
+  border-bottom: 1px solid var(--line);
+  padding: 10px 12px 14px;
+}
+
+.journal__title {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.journal__toggle,
+.journal__events button {
+  text-align: left;
+}
+
+.journal__toggle {
+  width: 100%;
+}
+
+.journal__boundary {
+  border-left: 3px solid var(--accent);
+  padding-left: 8px;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.journal__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 8px 0;
+  font-size: 12px;
+}
+
+.journal__groups,
+.journal__events {
+  list-style: none;
+  margin: 6px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.journal__group-title {
+  margin: 8px 0 2px;
+  font-size: 12px;
+  color: var(--muted, inherit);
+}
+
+.journal__events li {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.journal__paging {
+  display: flex;
+  gap: 8px;
+}

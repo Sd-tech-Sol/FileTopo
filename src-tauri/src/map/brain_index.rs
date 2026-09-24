@@ -102,7 +102,10 @@ impl BrainIndex {
     ///
     /// * **Current** (`MAP_SCHEMA_VERSION`) — opened exactly as
     ///   [`Self::open_existing`] always has; nothing below this branch runs.
-    /// * **Immediately previous** (`MAP_PREVIOUS_SCHEMA_VERSION`) — this
+    /// * **An older migratable schema** (`store::is_migratable_schema`,
+    ///   `v3`/`v4` since `TASK-0037`; the `M-B` sequence below is one
+    ///   envelope around the index's versioned dispatcher, whatever the
+    ///   number of steps) — this
     ///   file's own `brain_id` and [`Self::binding_matches`] are checked
     ///   against `brain` **first**, before a single schema-altering statement
     ///   runs and before the source is resolved or read. A mismatch on
@@ -146,7 +149,7 @@ impl BrainIndex {
         if version == super::store::MAP_SCHEMA_VERSION {
             return Self::finish_open_existing(connection);
         }
-        if !writable || version != super::store::MAP_PREVIOUS_SCHEMA_VERSION {
+        if !writable || !super::store::is_migratable_schema(version) {
             return Err(MapError::IndexIncompatible(format!("schema {version}")));
         }
 
@@ -190,7 +193,7 @@ impl BrainIndex {
         if version_under_lock == super::store::MAP_SCHEMA_VERSION {
             return Self::finish_open_existing(probe.index.connection);
         }
-        if version_under_lock != super::store::MAP_PREVIOUS_SCHEMA_VERSION {
+        if !super::store::is_migratable_schema(version_under_lock) {
             return Err(MapError::IndexIncompatible(format!(
                 "schema {version_under_lock}"
             )));
@@ -201,12 +204,12 @@ impl BrainIndex {
         std::fs::copy(path, &safety_copy).map_err(|error| {
             MapError::MigrationUnavailable(format!("safety copy failed: {error}"))
         })?;
-        if let Err(error) = verify_safety_copy(&safety_copy) {
+        if let Err(error) = verify_safety_copy(&safety_copy, version_under_lock) {
             let _ = std::fs::remove_file(&safety_copy);
             return Err(error);
         }
 
-        if let Err(error) = probe.index.migrate_previous_schema() {
+        if let Err(error) = probe.index.migrate_to_current_schema() {
             use crate::index::MigrationError;
             // `DEC-0013` B — restore over the live file before reporting the
             // failure. The connection is closed first: Windows refuses to
@@ -266,6 +269,12 @@ impl BrainIndex {
         store.index.identity()?;
         store.count()?;
         store.root_id()?;
+        // `TASK-0037` — the v5 canonical contract also requires the journal
+        // to exist with every column: `M-B` step 5, the validation that can
+        // still send a migrated file back to its safety copy.
+        if !crate::change_journal::validate_schema(&store.index.connection)? {
+            return Err(MapError::IndexIncompatible("change journal".into()));
+        }
         Ok(store)
     }
 
@@ -374,6 +383,11 @@ impl BrainIndex {
     /// with the canonical, post-remap truth as the authoritative last write
     /// of its own transaction, so nothing downstream ever reads the
     /// placeholder.
+    ///
+    /// Returns the change journal's own account of the publication
+    /// (`TASK-0037`): exact counters by nature, or "baseline established".
+    /// The events themselves were written in the same transaction as the
+    /// corpus.
     pub fn replace_with_identity(
         &mut self,
         brain: &str,
@@ -382,9 +396,10 @@ impl BrainIndex {
         identities: &[NodeIdentity],
         diagnostics: &[ScanDiagnostic],
         built: i64,
-    ) -> Result<(), MapError> {
+    ) -> Result<crate::change_journal::ChangeSummary, MapError> {
         Self::validate_single_root(nodes)?;
-        self.index
+        let outcome = self
+            .index
             .publish_with_identity(
                 nodes,
                 identities,
@@ -396,7 +411,34 @@ impl BrainIndex {
                 crate::index::PublishError::IdentityCollision => MapError::IdentityCollision,
                 crate::index::PublishError::IdentityNotBijective => MapError::IdentityNotBijective,
             })?;
-        Ok(())
+        Ok(outcome.journal)
+    }
+
+    /// One bounded, filtered, keyset-paged page of this brain's change
+    /// journal — `TASK-0037` E. The cursor is checked against **this
+    /// index's** durable `index_id`, so another brain's (or another file's)
+    /// cursor is refused rather than continued.
+    pub fn change_journal_page(
+        &self,
+        natures: &[crate::change_journal::ChangeNature],
+        after: Option<&crate::change_journal::JournalCursor>,
+        limit: usize,
+    ) -> Result<
+        (
+            crate::change_journal::JournalPage,
+            crate::hierarchy::IndexIdentity,
+        ),
+        MapError,
+    > {
+        let identity = self.index.identity()?;
+        let page = crate::change_journal::page(
+            &self.index.connection,
+            &identity.index_id,
+            natures,
+            after,
+            limit,
+        )?;
+        Ok((page, identity))
     }
 
     fn validate_single_root(nodes: &[NodeDto]) -> Result<(), MapError> {
@@ -588,7 +630,7 @@ fn migration_lock_for(brain_id: &str) -> Arc<Mutex<()>> {
 /// only inside this module's own control flow.
 fn migration_safety_copy_path(database: &Path) -> PathBuf {
     let mut name = database.file_name().unwrap_or_default().to_os_string();
-    name.push(".v3-safety-copy");
+    name.push(".migration-safety-copy");
     database.with_file_name(name)
 }
 
@@ -624,7 +666,7 @@ fn quiesce_before_safety_copy(connection: &rusqlite::Connection) -> Result<(), M
 /// table readable. A copy that fails any of these is refused immediately —
 /// the caller never proceeds to migrate on the strength of an unverified
 /// copy.
-fn verify_safety_copy(copy: &Path) -> Result<(), MapError> {
+fn verify_safety_copy(copy: &Path, expected_version: i64) -> Result<(), MapError> {
     let unreadable = |error: rusqlite::Error| {
         MapError::MigrationUnavailable(format!("safety copy not openable: {error}"))
     };
@@ -634,9 +676,10 @@ fn verify_safety_copy(copy: &Path) -> Result<(), MapError> {
     let version: i64 = connection
         .query_row("PRAGMA user_version", [], |row| row.get(0))
         .map_err(unreadable)?;
-    if version != super::store::MAP_PREVIOUS_SCHEMA_VERSION {
+    if version != expected_version {
         return Err(MapError::MigrationUnavailable(format!(
-            "safety copy is schema {version}, not the expected previous schema"
+            "safety copy is schema {version}, not the schema {expected_version} \
+             the live file was found at"
         )));
     }
     connection

@@ -13,6 +13,28 @@ describe("TASK-0031 L6 lifecycle intents", () => {
     expect(invoke.mock.calls).toEqual(commands.map(command => [command, { brainId: "brain-alpha" }]));
   });
 
+  it("TASK-0037 — carries the change counters of Actualiser/Reconstruire, never of a plain open", async () => {
+    const summary = {
+      baselineEstablished: false,
+      created: 1,
+      modified: 0,
+      renamed: 0,
+      moved: 0,
+      deleted: 0,
+      total: 1,
+    };
+    const invoke = vi.fn(async (command: string) =>
+      command === "map_open" ? { brainId: "brain-alpha", revision: 2 } : { brainId: "brain-alpha", changeSummary: summary },
+    );
+    for (const action of ["refresh", "rebuild"] as const) {
+      const report = await runLifecycle(invoke as unknown as LifecycleInvoke, "brain-alpha", action);
+      expect(report.changeSummary).toEqual(summary);
+      expect(report.revision).toBe(2);
+    }
+    const opened = await runLifecycle(invoke as unknown as LifecycleInvoke, "brain-alpha", "open");
+    expect(opened.changeSummary).toBeUndefined();
+  });
+
   it("does not turn an open refusal into a scan or source preparation", async () => {
     const invoke = vi.fn().mockRejectedValue(new Error("map_not_built"));
     await expect(runLifecycle(invoke as LifecycleInvoke, "brain-alpha", "open")).rejects.toThrow("map_not_built");

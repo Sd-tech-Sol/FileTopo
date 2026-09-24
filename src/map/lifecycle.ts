@@ -1,12 +1,25 @@
-import type { MapBuildReport, MapOpenReport } from "./types";
+import type { ChangeSummary, MapBuildReport, MapOpenReport } from "./types";
 
 export type LifecycleAction = "open" | "refresh" | "rebuild";
 export type LifecycleInvoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
 
-export async function runLifecycle(invoke: LifecycleInvoke, brainId: string, action: LifecycleAction) {
-  if (action === "refresh") await invoke<MapBuildReport>("map_refresh", { brainId });
-  if (action === "rebuild") await invoke<MapBuildReport>("map_rebuild", { brainId });
-  return invoke<MapOpenReport>("map_open", { brainId });
+/**
+ * What a lifecycle action answers: the existing-index read, plus — only for
+ * Actualiser/Reconstruire — the change counters of the publication that just
+ * happened (`TASK-0037`). `open` never scans, so it never carries a summary.
+ */
+export type LifecycleReport = MapOpenReport & { changeSummary?: ChangeSummary };
+
+export async function runLifecycle(
+  invoke: LifecycleInvoke,
+  brainId: string,
+  action: LifecycleAction,
+): Promise<LifecycleReport> {
+  let build: MapBuildReport | null = null;
+  if (action === "refresh") build = await invoke<MapBuildReport>("map_refresh", { brainId });
+  if (action === "rebuild") build = await invoke<MapBuildReport>("map_rebuild", { brainId });
+  const opened = await invoke<MapOpenReport>("map_open", { brainId });
+  return build?.changeSummary ? { ...opened, changeSummary: build.changeSummary } : opened;
 }
 
 /** Proof setup only. Never used by the product's Open action. */

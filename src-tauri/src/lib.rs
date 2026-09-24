@@ -1,3 +1,4 @@
+mod change_journal;
 mod domain;
 mod hierarchy;
 /// Stable node identity — `DEC-0009` I-E, `TASK-0036`.
@@ -813,6 +814,29 @@ fn map_node_children(
     .map_err(String::from)
 }
 
+/// `TASK-0037` E — one bounded, filtered page of a brain's change journal.
+/// The brain is named by `brain_id`; no path is accepted or returned.
+/// `natures` empty (or omitted) means every nature; `after` must be a
+/// `nextCursor` this same command returned for the same brain.
+#[tauri::command]
+fn map_change_journal(
+    app: tauri::AppHandle,
+    brain_id: String,
+    natures: Option<Vec<change_journal::ChangeNature>>,
+    after: Option<String>,
+    limit: Option<usize>,
+) -> Result<map::commands::ChangeJournalPage, String> {
+    let (paths, brain) = resolve_brain(&app, &brain_id)?;
+    map::commands::change_journal(
+        &paths,
+        &brain,
+        natures.as_deref().unwrap_or_default(),
+        after.as_deref(),
+        limit.unwrap_or(map::commands::JOURNAL_LIMIT_MAX),
+    )
+    .map_err(String::from)
+}
+
 /// `TASK-0035` C — "Copier le chemin". The **only** input is a
 /// [`map::brains::BrainNodeRef`], exactly like [`map_reveal_node`]; the
 /// resolved text is held only long enough to hand it to the clipboard and
@@ -1423,6 +1447,7 @@ pub fn run() {
             map_search_nodes,
             map_reveal_node,
             map_node_children,
+            map_change_journal,
             map_copy_node_path,
             map_ui_preferences,
             map_ui_preferences_update,
@@ -1766,6 +1791,46 @@ mod integration_tests {
             assert!(
                 !children_signature.contains(forbidden),
                 "map_node_children's signature must not accept `{forbidden}`: {children_signature}"
+            );
+        }
+    }
+
+    /// `TASK-0037` E — the change journal is reachable, and its one command
+    /// names a brain by `brain_id` and never accepts a path, a root or a
+    /// system identity from the WebView. No new permission is needed either:
+    /// it is an ordinary app command, like search and children.
+    #[test]
+    fn the_change_journal_command_is_exposed_and_accepts_no_path_or_identity() {
+        let exposed = registered_commands();
+        assert!(
+            exposed.iter().any(|name| name == "map_change_journal"),
+            "TASK-0037 needs `map_change_journal` reachable from the WebView"
+        );
+        let header = "fn map_change_journal(";
+        let start = THIS_SOURCE
+            .find(header)
+            .expect("map_change_journal must be defined in this file");
+        let params_start = start + header.len();
+        let end = THIS_SOURCE[params_start..]
+            .find(") -> Result<map::commands::ChangeJournalPage, String> {")
+            .expect("map_change_journal's signature must end where expected");
+        let signature = &THIS_SOURCE[params_start..params_start + end];
+        assert!(
+            signature.contains("brain_id: String"),
+            "the journal names its brain explicitly: {signature}"
+        );
+        for forbidden in [
+            "path",
+            "root",
+            "folder",
+            "directory",
+            "stable",
+            "file_id",
+            "volume",
+        ] {
+            assert!(
+                !signature.contains(forbidden),
+                "map_change_journal's signature must not accept `{forbidden}`: {signature}"
             );
         }
     }

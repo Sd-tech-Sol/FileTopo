@@ -5,13 +5,19 @@ use serde::{Deserialize, Serialize};
 /// Kept in lockstep with `crate::index::SCHEMA_VERSION` by hand: the two
 /// constants describe the same `PRAGMA user_version`, one from the canonical
 /// `Index`'s side and one from `BrainIndex::open_existing`'s compatibility
-/// check. `4` since `TASK-0036` — the durable stable-identity columns.
-pub const MAP_SCHEMA_VERSION: i64 = 4;
-/// The one schema version the product will ever migrate automatically —
-/// `ACTION-0057` D1. `BrainIndex::open_existing_migrating` upgrades exactly
-/// this version in place, after checking the file's `brain_id` and source
-/// binding; anything older, unknown or newer is refused, never guessed at.
-pub const MAP_PREVIOUS_SCHEMA_VERSION: i64 = MAP_SCHEMA_VERSION - 1;
+/// check. `5` since `TASK-0037` — the persistent change journal; `4` was
+/// `TASK-0036`'s durable stable-identity columns.
+pub const MAP_SCHEMA_VERSION: i64 = 5;
+/// Whether the product will migrate a file stamped `version` automatically —
+/// `ACTION-0057` D1, widened by `TASK-0037` from "exactly the previous
+/// version" to the closed range the index's own versioned dispatcher knows
+/// ([`crate::index::Index::migrate_to_current_schema`]).
+/// `BrainIndex::open_existing_migrating` upgrades such a file in place, after
+/// checking its `brain_id` and source binding, inside the `M-B` envelope;
+/// anything older, unknown or newer is refused, never guessed at.
+pub fn is_migratable_schema(version: i64) -> bool {
+    (crate::index::OLDEST_MIGRATABLE_SCHEMA_VERSION..MAP_SCHEMA_VERSION).contains(&version)
+}
 pub const NON_RECONSTRUCTIBLE_KEYS: [&str; 1] = ["built_unix_ms"];
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
