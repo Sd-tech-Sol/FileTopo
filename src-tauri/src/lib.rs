@@ -3,6 +3,11 @@ mod domain;
 mod hierarchy;
 /// Stable node identity — `DEC-0009` I-E, `TASK-0036`.
 mod identity;
+/// Incremental application kernel — `TASK-0040`, `DEC-0038`, `DEC-0010 U-B`.
+/// Internal: no command, no DTO, no `Serialize`. Its only intended caller is the
+/// future reconciler (`W-B`); today it is exercised by tests and the benchmark.
+#[allow(dead_code)]
+mod incremental;
 mod index;
 mod map;
 /// Dynamic filters over the canonical Index — `TASK-0039`, `DEC-0037`.
@@ -11,6 +16,10 @@ mod node_filter;
 /// registry — `DEC-0033` C.
 mod path_codec;
 mod registry;
+/// `TASK-0040` incremental kernel bench (`F-031`). Compiled by `cargo test`
+/// only: it is absent from every product binary and exposes no command.
+#[cfg(test)]
+mod incremental_bench;
 /// `TASK-0029` scale query bench. Compiled by `cargo test` only: it is absent
 /// from every product binary and exposes no command.
 #[cfg(test)]

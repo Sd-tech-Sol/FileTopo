@@ -5677,3 +5677,24 @@ précréation de `TASK-0038` par l'exécuteur.
 - DEC-0038 approuvée : noyau U-B avant watcher;
 - TASK-0040 créée READY sur `build/v0.2-a24-v1-incremental-apply`;
 - aucune commande watcher, aucune TASK-0041, aucun code produit exécuté par l’orchestrateur.
+
+
+## 2026-09-24 — TASK-0040 — V1 Incremental Update Application Kernel
+
+**Agent :** exécuteur Claude Code (Sonnet 5) · **Branche :** `build/v0.2-a24-v1-incremental-apply`
+**Statut à l'issue :** `IMPLEMENTED` (jamais auto-`VERIFIED`)
+
+- `incremental.rs` : `Index::apply_update_batch`, noyau interne (`DEC-0038`, `DEC-0010 U-B`) —
+  préflight sans écriture, une transaction `IMMEDIATE`, une révision, `child_count` par delta,
+  journal par le `diff` de `TASK-0037` sur les seules lignes touchées. Non branché à
+  `map_refresh`; aucune commande, aucun `Serialize`.
+- `index.rs` : `read_next_node_id` rendu `pub(crate)`. `lib.rs` : deux `mod`.
+- Tests : `map/incremental_apply_tests.rs` (49) — parité avec scan complet, rollback par
+  injection, préflight, concurrence, plans `EXPLAIN`; `incremental_bench.rs` (banc `F-031` +
+  test du générateur); `scripts/task0040-incremental-bench.ps1`.
+- Mesures : `docs/performance/runs/TASK-0040-incremental-apply-*.json` (7 campagnes). Ratio
+  100k/1k à 10 changements 1,59–2,11, une campagne sur sept > 2.
+- Docs : `TASK-0040`, `BASELINE_TARGETS §3.3`, `FEATURE_MATRIX F-031`, `VALIDATION BT`.
+- Rust 550 PASS (+50), TypeScript 412 PASS; aucun fichier frontend, capability ni
+  dépendance touché. Aucune TASK-0041, watcher, PR, fusion, étiquette ni release.
+

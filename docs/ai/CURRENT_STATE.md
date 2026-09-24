@@ -1,5 +1,59 @@
 # État courant
 
+## TASK-0040 — V1 Incremental Update Application Kernel — IMPLEMENTED — 2026-09-24
+
+- **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche
+  `build/v0.2-a24-v1-incremental-apply`, partie de `TASK-0039 = VERIFIED`
+  ([`ACTION-0065`](../reviews/ACTION-0065-independent-control.md)). Décision :
+  [`DEC-0038`](../decisions/DEC-0038-incremental-application-kernel.md). Détail :
+  [VALIDATION section BT](VALIDATION.md), `.orchestrator/RESULT.md`.
+- **Ce qui existe maintenant.** `Index::apply_update_batch` (`incremental.rs`) : applique
+  **un lot déjà réconcilié** (upserts par clé stable, suppressions par id canonique,
+  métadonnées propres de la racine) en **une transaction `IMMEDIATE` et une révision**,
+  avec journal exact. Interne : aucun `Serialize`, aucune commande, aucune clé stable
+  vers le WebView. **Non branché** : `map_refresh` fait toujours le remplacement
+  complet; aucun watcher; aucune TASK-0041.
+- **Règles.** Préflight complet **avant** la première écriture (doublons de jeton / clé /
+  suppression, suppression inconnue, racine, parent absent / supprimé / non dossier,
+  cycle, chemin ou profondeur incohérents, frère homonyme, orphelin, sous-arbre
+  incomplet, `PATH_FALLBACK` prétendument renommé, changement de provenance, index sans
+  identité durable). Puis : nouvelles lignes parents d'abord, lignes modifiées,
+  suppressions par profondeur décroissante (sonde anti-cascade), deltas signés de
+  `child_count`, `node_count`, `next_node_id`, événements, révision. Un lot sans colonne
+  changée est un no-op (aucun événement, aucune révision).
+- **Réutilisé :** `change_journal::diff` — le contrat de `TASK-0037` est le même code,
+  pas une copie; `append_events`, `advance_revision`, `read_next_node_id`,
+  `idx_nodes_stable_key`. Vu / non vu (`DEC-0036`) : rien lu ni écrit, les nouveaux
+  événements sont au-dessus du watermark donc non vus.
+- **Décisions à examiner.** (1) Un lot peut porter les **métadonnées propres de la
+  racine** (date, en ligne, lien) — jamais son identité ni son parent — sinon sa date
+  divergerait d'un scan complet (révélé par le test sur vrai arbre). (2) « Effectif » =
+  au moins une colonne stockée change : une date de dossier seule avance la révision sans
+  événement (sinon des curseurs resteraient valides sur des données changées).
+  (3) `child_count` par **delta signé**, pas par recomptage (un recomptage coûterait
+  autant de lignes que le parent a d'enfants); exactitude vérifiée par tests, refus si un
+  compte deviendrait négatif. (4) Refus d'un lot sur un index `v3` migré non republié.
+  (5) Frère homonyme et cohérence chemin/profondeur vérifiés au-delà de la liste de
+  `DEC-0038`. (6) Les diagnostics d'un chemin qui ne nomme plus le nœud sont retirés;
+  un lot n'en ajoute pas. (7) L'ordre du lot fixe l'ordre d'allocation des ids.
+- **Preuves.** Rust **550 PASS** (500 + 50), TypeScript 412 PASS (inchangé). Parité
+  avec un scan complet : 3 graines × 40 lots aléatoires, vrai arbre disque (identité
+  `SYSTEM` réelle), et un scan complet publié après les lots ne trouve rien à
+  journaliser. Rollback prouvé par injection (UPDATE, DELETE, journal, révision,
+  contrainte); deux écrivains sérialisés; un lecteur ne voit jamais un lot partiel;
+  `SQLITE_BUSY` échoue proprement; chaque requête du noyau a un plan `EXPLAIN` keyé.
+- **Performance `F-031`** (`incremental_bench.rs`, `TASK-0040-incremental-apply-*.json`,
+  7 campagnes, aucune écartée; application seule, une machine) : 10 changements —
+  0,9–1,7 ms (1k), 1,1–2,3 ms (10k), 1,6–2,8 ms (100k); 1 000 changements sur 100k —
+  178–369 ms; le remplacement complet existant coûte 9–25 ms / 95–250 ms / 1,4–3,1 s.
+  **Ratio 100k/1k : 1,59 · 1,62 · 2,11 · 1,72 · 1,82 · 1,71 · 1,67 — une campagne sur
+  sept dépasse 2.** Critère non établi de façon robuste; cibles absolues PASS partout.
+- **Limites.** Aucun producteur réel de lot; coût = application, pas réconciliation;
+  non testé : 1 000 000 de nœuds, portable modeste, crash de processus réel, suppression
+  d'un dossier de 100 000 enfants (le lot doit alors les nommer tous). Aucune PR,
+  fusion, étiquette ni release; `main` inchangé.
+- **Action unique suivante : contrôle indépendant de `TASK-0040`.**
+
 ## TASK-0039 — V1 Dynamic Filters — IMPLEMENTED — 2026-09-23
 
 - **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche

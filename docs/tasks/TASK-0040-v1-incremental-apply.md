@@ -1,7 +1,7 @@
 # TASK-0040 — V1 Incremental Update Application Kernel
 
 - **Date :** 2026-09-23
-- **Statut :** `READY`
+- **Statut :** `IMPLEMENTED` (jamais auto-`VERIFIED`)
 - **Branche :** `build/v0.2-a24-v1-incremental-apply`
 - **Décision :** `DEC-0038`
 - **Portée :** `F-031` / `DEC-0010 U-B`
@@ -194,3 +194,29 @@ surface UI est touchée, le rejeu devient obligatoire.
 - mettre à jour les docs durables et `FEATURE_MATRIX` honnêtement;
 - `NEXT_ACTION = contrôle indépendant de TASK-0040`;
 - commit/push uniquement sur la branche de tâche, arbre propre.
+
+## Résultat de l'exécution (2026-09-24)
+
+- **Noyau :** `src-tauri/src/incremental.rs` — `Index::apply_update_batch(&UpdateBatch)`,
+  interne (aucun `Serialize`, aucune commande Tauri, aucune clé stable vers le WebView).
+  **Non branché** : `map_refresh` / `publish_map` gardent le remplacement complet; le
+  watcher `F-030` n'existe pas. Aucune TASK-0041.
+- **Réutilisé, pas recopié :** `change_journal::diff` (les cinq natures, le double
+  événement renommage + déplacement, « un descendant d'un dossier déplacé ne produit
+  aucun événement », « la date propre d'un dossier n'est pas une modification » —
+  contrat de `TASK-0037` verbatim), `append_events`, `hierarchy::advance_revision`,
+  `read_next_node_id` (rendu `pub(crate)`), l'index unique `idx_nodes_stable_key`.
+- **Preuves :** Rust **550 PASS** (500 + 50 : 49 tests du noyau dans
+  `map/incremental_apply_tests.rs` + 1 test du générateur du banc); TypeScript 412 PASS
+  (inchangé). Parité avec un scan complet : trois graines × 40 lots aléatoires, un vrai
+  arbre disque scanné (identité `SYSTEM` réelle), et un scan complet publié *après* les
+  lots ne trouve plus rien à journaliser. Test de mutation : un `child_count` cassé
+  volontairement fait échouer 20+ tests.
+- **F-031 (banc `incremental_bench.rs`)** : voir `docs/ai/VALIDATION.md` section BT et
+  `docs/performance/runs/TASK-0040-incremental-apply-*.json` (7 campagnes, aucune
+  écartée). Ratio 100k/1k à 10 changements : 1,59 · 1,62 (profil test) et **2,11** ·
+  1,72 · 1,82 (opt-level 3) + 1,71 · 1,67 (variantes). **Une campagne sur sept dépasse 2.**
+  Cibles absolues §3.3 : toutes PASS dans les sept.
+- **Limites :** noyau seul (aucun producteur réel de lots); coût mesuré = application,
+  pas réconciliation; non testé : 1 000 000 de nœuds, portable modeste, crash de
+  processus, suppression d'un dossier de 100 000 enfants.

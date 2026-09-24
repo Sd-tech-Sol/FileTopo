@@ -1,6 +1,37 @@
 # HANDOFF — passage de relais
 
-## Relais actuel — TASK-0039, filtres dynamiques, en attente de contrôle — 2026-09-23
+## Relais actuel — TASK-0040, noyau d'application incrémentale, en attente de contrôle — 2026-09-24
+
+- **Ce qui vient d'être fait :** `TASK-0040` est implémentée sur
+  `build/v0.2-a24-v1-incremental-apply` (partie de `TASK-0039 = VERIFIED`). Elle reste
+  `IMPLEMENTED`, jamais auto-`VERIFIED`. Aucune TASK-0041, watcher, PR, fusion,
+  étiquette ni release; `map_refresh` inchangé.
+- **Où regarder, dans l'ordre :** `DEC-0038`; `src-tauri/src/incremental.rs` (types
+  `UpdateBatch` / `ObservedNode` / `ParentRef` / `RootObservation` / `BatchError`,
+  `Index::apply_update_batch`, requêtes nommées `SQL_*`); `change_journal.rs::diff`
+  (réutilisé tel quel); `index.rs::read_next_node_id` (seule visibilité changée);
+  `map/incremental_apply_tests.rs` (monde de test, producteur de lot de test
+  `derive_batch`, `Pair` = noyau contre scan complet); `incremental_bench.rs` +
+  `scripts/task0040-incremental-bench.ps1`.
+- **À savoir pour la reprise :**
+  1. Le journal est produit par le **même** `diff` que `publish` sur les seules lignes
+     touchées (`previous` = lignes connues du lot + supprimées; « seulement avant ⇒
+     DELETED » = exactement les suppressions).
+  2. Ordre d'écriture : insertions par profondeur croissante (clé étrangère), mises à
+     jour, suppressions par profondeur décroissante (`ON DELETE CASCADE` : une sonde
+     refuse si un enfant reste), deltas de `child_count`, métadonnées, journal, révision.
+  3. Un lot est **complet** ou refusé : un dossier dont le chemin change amène tous ses
+     descendants; un dossier supprimé, tous ses enfants.
+  4. Les tests de parité exigent un monde en **ordre de scan** (parents avant enfants) :
+     `publish` de référence l'exige aussi.
+  5. La CI locale ne compile les tests qu'avec `debug_assertions` : les mesures « dev »
+     ont SQLite compilé sans optimisation; « opt3 » = `CARGO_PROFILE_DEV_OPT_LEVEL=3`
+     dans `src-tauri/target/opt` (supprimé après usage).
+- **Non fait, volontairement :** watcher, réconciliation W-B/W-C, indisponibilité
+  `F-032`, remplacement de `map_refresh`, producteur réel de lots.
+- **Action unique suivante :** contrôle indépendant de `TASK-0040`.
+
+## Relais précédent — TASK-0039, filtres dynamiques, en attente de contrôle — 2026-09-23
 
 - **Ce qui vient d'être fait :** `TASK-0039` est implémentée sur
   `build/v0.2-a23-v1-dynamic-filters` (partie de `TASK-0038 = VERIFIED`). Elle reste

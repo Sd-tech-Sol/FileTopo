@@ -2462,3 +2462,7 @@ mod seen_state_tests;
 #[cfg(test)]
 #[path = "filter_tests.rs"]
 mod filter_tests;
+
+#[cfg(test)]
+#[path = "incremental_apply_tests.rs"]
+mod incremental_apply_tests;

@@ -97,10 +97,20 @@ prototype.
 
 | Jeu | Changements appliqués | Cible | Résultat |
 |---|---:|---|---|
-| `SYN-1K` | 10 | ≤ 200 ms | **non testé** |
-| `SYN-10K` | 10 | ≤ 250 ms | **non testé** |
-| `SYN-100K` | 10 | ≤ 400 ms | **non testé** |
-| `SYN-100K` | 1 000 | ≤ 3 s | **non testé** |
+| `SYN-1K` | 10 | ≤ 200 ms | **0,9–1,7 ms** (médianes de 7 campagnes, noyau `TASK-0040`) — PASS |
+| `SYN-10K` | 10 | ≤ 250 ms | **1,1–2,3 ms** — PASS |
+| `SYN-100K` | 10 | ≤ 400 ms | **1,6–2,8 ms** — PASS |
+| `SYN-100K` | 1 000 | ≤ 3 s | **178–369 ms** — PASS |
+
+> **Portée de ces mesures (`TASK-0040`, 2026-09-24).** Elles chronomètrent
+> l'**application d'un lot déjà réconcilié** par le noyau `Index::apply_update_batch`
+> (`DEC-0038`), sur un index SQLite WAL sur disque, une machine, une session; pas la
+> réconciliation ni la détection, qui n'existent pas encore. Sept exécutions par cas,
+> aucune écartée; détail et environnement : `runs/TASK-0040-incremental-apply-*.json`.
+> **Critère de rejet, ratio 100k/1k à 10 changements : 1,59 · 1,62 · 2,11 · 1,72 · 1,82
+> · 1,71 · 1,67 — une campagne sur sept dépasse 2** (voir `VALIDATION.md` BT). Le critère
+> n'est donc **pas établi de façon robuste**; il n'est pas non plus franchement rejeté
+> (le remplacement complet existant fait ×120 à ×150 sur les mêmes tailles).
 
 **Critère de rejet, plus important que les valeurs absolues.** À nombre de
 changements égal (10), la durée sur `SYN-100K` ne doit pas dépasser

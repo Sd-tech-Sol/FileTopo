@@ -1,0 +1,260 @@
+{
+  "criterion": "docs/performance/BASELINE_TARGETS.md §3.3",
+  "decision": "DEC-0038",
+  "measurement": {
+    "cases": [
+      {
+        "changes": 10,
+        "corpusNodes": 1000,
+        "maxMeetsTarget": true,
+        "maxUs": 1198,
+        "medianMeetsTarget": true,
+        "medianMs": 0.917,
+        "medianUs": 917,
+        "minUs": 867,
+        "mix": {
+          "created": 3,
+          "deleted": 2,
+          "modified": 3,
+          "moved": 1,
+          "renamed": 1
+        },
+        "runs": 7,
+        "samplesUs": [
+          1198,
+          917,
+          892,
+          867,
+          889,
+          956,
+          949
+        ],
+        "sqliteRowsWrittenMedian": 28,
+        "sqliteRowsWrittenPerRun": [
+          27,
+          30,
+          28,
+          30,
+          28,
+          30,
+          28
+        ],
+        "targetMs": 200.0,
+        "verdictAbsoluteTarget": "PASS"
+      },
+      {
+        "changes": 10,
+        "corpusNodes": 10000,
+        "maxMeetsTarget": true,
+        "maxUs": 1335,
+        "medianMeetsTarget": true,
+        "medianMs": 1.201,
+        "medianUs": 1201,
+        "minUs": 1078,
+        "mix": {
+          "created": 3,
+          "deleted": 2,
+          "modified": 3,
+          "moved": 1,
+          "renamed": 1
+        },
+        "runs": 7,
+        "samplesUs": [
+          1335,
+          1201,
+          1275,
+          1113,
+          1138,
+          1230,
+          1078
+        ],
+        "sqliteRowsWrittenMedian": 30,
+        "sqliteRowsWrittenPerRun": [
+          29,
+          30,
+          30,
+          30,
+          30,
+          30,
+          30
+        ],
+        "targetMs": 250.0,
+        "verdictAbsoluteTarget": "PASS"
+      },
+      {
+        "changes": 10,
+        "corpusNodes": 100000,
+        "maxMeetsTarget": true,
+        "maxUs": 3043,
+        "medianMeetsTarget": true,
+        "medianMs": 1.578,
+        "medianUs": 1578,
+        "minUs": 1397,
+        "mix": {
+          "created": 3,
+          "deleted": 2,
+          "modified": 3,
+          "moved": 1,
+          "renamed": 1
+        },
+        "runs": 7,
+        "samplesUs": [
+          3043,
+          1578,
+          1397,
+          1469,
+          2122,
+          2495,
+          1531
+        ],
+        "sqliteRowsWrittenMedian": 30,
+        "sqliteRowsWrittenPerRun": [
+          29,
+          30,
+          30,
+          30,
+          30,
+          30,
+          30
+        ],
+        "targetMs": 400.0,
+        "verdictAbsoluteTarget": "PASS"
+      },
+      {
+        "changes": 1000,
+        "corpusNodes": 100000,
+        "maxMeetsTarget": true,
+        "maxUs": 299566,
+        "medianMeetsTarget": true,
+        "medianMs": 284.852,
+        "medianUs": 284852,
+        "minUs": 270314,
+        "mix": {
+          "created": 300,
+          "deleted": 200,
+          "modified": 300,
+          "moved": 100,
+          "renamed": 100
+        },
+        "runs": 7,
+        "samplesUs": [
+          280690,
+          290861,
+          270314,
+          284852,
+          284722,
+          288743,
+          299566
+        ],
+        "sqliteRowsWrittenMedian": 2679,
+        "sqliteRowsWrittenPerRun": [
+          2679,
+          2683,
+          2683,
+          2677,
+          2679,
+          2675,
+          2677
+        ],
+        "targetMs": 3000.0,
+        "verdictAbsoluteTarget": "PASS"
+      }
+    ],
+    "environment": {
+      "arch": "x86_64",
+      "buildProfile": "test (debug_assertions on)",
+      "conditions": {
+        "checkpointAfterBuild": false,
+        "pageCacheKiB": "sqlite default (2000)"
+      },
+      "cpu": "Intel64 Family 6 Model 158 Stepping 12, GenuineIntel",
+      "discardedRuns": 0,
+      "foreignKeys": "ON",
+      "journalMode": "WAL",
+      "logicalProcessors": 16,
+      "note": "One machine, one session. Not a laptop-modest acceptance run; the absolute targets are reported for this machine only.",
+      "os": "windows",
+      "profileOverride": "opt-level=3",
+      "runsPerCase": 7,
+      "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)",
+      "sqlite": "3.53.2",
+      "storage": "on-disk SQLite in the repository sandbox (ignored by Git)",
+      "synchronous": "NORMAL"
+    },
+    "fullReplacementReference": [
+      {
+        "corpusNodes": 1000,
+        "note": "Existing full-replacement publication of the unchanged corpus, for context. Not a target.",
+        "runs": 3,
+        "samplesMs": [
+          8.988,
+          8.652,
+          8.449
+        ]
+      },
+      {
+        "corpusNodes": 10000,
+        "note": "Existing full-replacement publication of the unchanged corpus, for context. Not a target.",
+        "runs": 3,
+        "samplesMs": [
+          105.52,
+          96.742,
+          110.082
+        ]
+      },
+      {
+        "corpusNodes": 100000,
+        "note": "Existing full-replacement publication of the unchanged corpus, for context. Not a target.",
+        "runs": 3,
+        "samplesMs": [
+          1403.123,
+          1385.636,
+          1372.438
+        ]
+      }
+    ],
+    "invariantsAfterCampaign": [
+      {
+        "afterCampaign": {
+          "childCountMismatches": 0,
+          "expectedJournalEvents": 70,
+          "journalEvents": 70,
+          "nodeCountExact": true
+        },
+        "corpusNodes": 1000
+      },
+      {
+        "afterCampaign": {
+          "childCountMismatches": 0,
+          "expectedJournalEvents": 70,
+          "journalEvents": 70,
+          "nodeCountExact": true
+        },
+        "corpusNodes": 10000
+      },
+      {
+        "afterCampaign": {
+          "childCountMismatches": 0,
+          "expectedJournalEvents": 7070,
+          "journalEvents": 7070,
+          "nodeCountExact": true
+        },
+        "corpusNodes": 100000
+      }
+    ],
+    "rejectionCriterion": {
+      "ceiling": 2.0,
+      "f031Satisfied": true,
+      "median100kUs": 1578.0,
+      "median10kUs": 1201.0,
+      "median1kUs": 917.0,
+      "ratio100kOver1k": 1.7208287895310797,
+      "text": "à 10 changements, la médiane sur 100k ne dépasse pas 2× la médiane sur 1k (BASELINE_TARGETS §3.3)",
+      "verdict": "PASS"
+    }
+  },
+  "notAProductClaim": "Mesures d'ingénierie du noyau d'application (lot déjà réconcilié) sur corpus synthétique. Ni détection de changements ni watcher : la latence de bout en bout d'une mise à jour disque n'est pas mesurée ici.",
+  "status": "ENGINEERING_MEASUREMENT / NOT A PRODUCT CLAIM / NONCANONICAL UNTIL INDEPENDENT CONTROL",
+  "task": "TASK-0040",
+  "title": "V1 Incremental Update Application Kernel — F-031 measurement"
+}

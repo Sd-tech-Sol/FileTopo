@@ -7283,3 +7283,154 @@ ancestry dépasse le plafond technique est refusée, non tronquée. **Non testé
 fusion, étiquette ni release.
 
 **Action unique suivante :** contrôle indépendant de `TASK-0039`.
+
+
+## BT. TASK-0040 — V1 Incremental Update Application Kernel — 2026-09-24
+
+**Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche
+`build/v0.2-a24-v1-incremental-apply`, partie de `TASK-0039 = VERIFIED`
+([`ACTION-0065`](../reviews/ACTION-0065-independent-control.md)), selon
+[`DEC-0038`](../decisions/DEC-0038-incremental-application-kernel.md). `main` n'a pas
+été touché. Tout ce qui suit a été exécuté dans cette session, sauf mention « non testé ».
+
+### BT.1 Préconditions
+
+`git switch` explicite (branche créée depuis `origin`, suivi configuré), `git fetch`,
+`git pull --ff-only` → « Already up to date »; `HEAD` `cd149d5` == `origin/…`; arbre
+propre; `HEAD` contient `ACTION-0065`, `DEC-0038`, `TASK-0040`. `DEC-0038`, `TASK-0040`,
+`DEC-0010` et `BASELINE_TARGETS §3.3` lues en entier avant tout changement.
+
+### BT.2 Audit avant code — réutilisé / adapté / laissé historique
+
+| Élément | Décision |
+|---|---|
+| `change_journal::diff` (+ `PreviousNode`, `CurrentNode`, `append_events`, `summarize`) | **Réutilisés tels quels** : le contrat des cinq natures est le code de `TASK-0037`, appelé sur les seules lignes touchées |
+| `hierarchy::read_revision` / `advance_revision` | **Réutilisés** (révision +1 dans la transaction) |
+| `index.rs::read_next_node_id`, `idx_nodes_stable_key` (unique partiel), `idx_nodes_parent` | **Réutilisés**; `read_next_node_id` passé `pub(crate)` (seul changement de `index.rs`) |
+| règle d'identité (clé connue ⇒ même id, clé neuve ⇒ `next_node_id`, `PATH_FALLBACK` ne corrèle rien) | **Réutilisée** : pas de seconde règle; `identity.rs` non touché |
+| vu / non vu (`DEC-0036`) | **Réutilisé sans code** : rien lu ni écrit; événements neufs au-dessus du watermark |
+| `Index::publish` / `publish_with_identity` | **Laissés historiques** (remplacement complet, toujours appelé par `map_refresh`); sert de **référence** aux tests de parité |
+| `change_journal::load_previous` (diff global) | **Laissé** : interdit dans le chemin incrémental (test sur le source) |
+| `nodes.seen` | **Laissé historique** : non lu, non écrit |
+| busy timeout | **Hérité** : 5 s par défaut de `rusqlite`, vérifié par `PRAGMA busy_timeout`, non modifié |
+
+### BT.3 Noyau
+
+`Index::apply_update_batch(&UpdateBatch) -> Result<ApplyOutcome, BatchError>` :
+forme du lot, ordre des écritures, refus et décisions : voir `CURRENT_STATE.md` et
+l'en-tête de `incremental.rs`. Aucun `DELETE FROM nodes` sans prédicat, aucune
+réinsertion, aucun `COUNT(*)`, aucun `load_previous`, aucune lecture de fichier, aucune
+corrélation par nom / taille / date (test sur le source non commenté).
+
+### BT.4 Les 18 points de la fiche §G et le reste de la fiche (`map/incremental_apply_tests.rs`)
+
+| § | Point | Test(s) |
+|---|---|---|
+| G1 | 10 créations sur un grand index : seules les nouvelles lignes | `ten_creations_on_a_large_index_write_only_the_new_rows` (1 021 nœuds : 20 lignes diffèrent = 10 neuves + 10 parents; ≤ 40 lignes écrites selon SQLite) |
+| G2 | 10 modifications, ids inchangés | `ten_modifications_keep_every_id_…` |
+| G3–G5 | renommage / déplacement `SYSTEM`; les deux ensemble | `a_system_rename_…`, `a_system_move_…`, `a_rename_and_a_move_in_one_batch_journal_two_events_as_task_0037_does` |
+| G6 | `PATH_FALLBACK` renommé = delete + create; corrélation refusée | `a_path_fallback_rename_is_a_delete_and_a_create_…`, `a_batch_may_not_pretend_…` |
+| G7–G8 | suppression fichier / sous-arbre; orphelin refusé | `deleting_a_file_…` (l'événement survit au nœud), `deleting_a_whole_subtree_…`, `deleting_a_directory_without_its_children_…` |
+| G9 | sous-arbre déplacé / renommé : chemins, profondeurs, un seul événement | `moving_a_subtree_…`, `renaming_a_directory_…`, `a_moved_directory_without_all_its_descendants_…` (refus) |
+| G10 | `child_count` ancien / nouveau exact | `assert_invariants` après **chaque** lot (contre `child_count_mismatches` et un recomptage du test) |
+| G11 | lot mixte | `a_mixed_batch_of_every_kind_of_change_equals_a_full_scan` (un événement de chacune des cinq natures) |
+| G12 | no-op | `an_unchanged_batch_is_a_no_op_…` (`total_changes` inchangé), `a_directory_that_only_changed_its_own_timestamp_…` |
+| G13 | deux cerveaux isolés | `two_brains_are_isolated_from_each_other` |
+| G14–G15 | vu / non vu, filtres NEW / UNSEEN | `new_events_are_unseen_and_earlier_acknowledgements_are_left_alone`, `the_new_and_unseen_filters_see_the_committed_batch_immediately` |
+| G16 | curseurs | `a_cursor_issued_before_a_batch_is_stale_after_it` (et un no-op n'invalide pas) |
+| G17–G18 | aucune fuite; aucune commande | `no_stable_key_or_absolute_path_reaches_…`, `the_kernel_is_not_serialisable_nor_a_tauri_command_and_the_host_registers_none` |
+| B | préflight, zéro écriture | 12 tests de refus (`assert_refused` : état entier, `total_changes`, révision identiques) |
+| F | rollback | UPDATE, DELETE, journal, dernière écriture (révision), contrainte : état exact restauré, puis le même lot réussit sans le déclencheur |
+| F | concurrence | `two_writers_…` (2 × 25 créations, 50 ids distincts, +2 révisions), `a_reader_never_sees_a_partial_batch` (40 lots, lecteur sur snapshot), `a_prolonged_busy_lock_fails_cleanly_…`, `the_kernel_inherits_the_existing_busy_timeout_…` |
+| C | pas de balayage | `every_statement_of_the_kernel_is_keyed_…` (plans `EXPLAIN` des constantes `SQL_*` du noyau), `the_kernel_path_never_replaces_the_corpus_…` |
+| — | racine, nature, diagnostics | `the_roots_own_metadata_follows_a_batch_…`, `a_directory_that_becomes_a_file_…`, `a_diagnostic_keyed_by_a_path_…` |
+
+**Parité avec un scan complet (§ « Parité »).** Le harnais `Pair` applique un lot au
+noyau `A` et publie le scan complet équivalent (`publish_with_identity`) dans `B` :
+lignes (id, parent, nom, chemin, nature, profondeur, taille, date, drapeaux,
+`child_count`, clé, provenance), `node_count`, `root_id`, `next_node_id`, événements du
+pas et journal entier sont égaux. `forty_random_batches_…` : 3 graines × 40 pas de 1 à 6
+opérations (créations, dossiers, modifications, renommages, déplacements de sous-arbre,
+suppressions, identités `SYSTEM` et `PATH_FALLBACK` mêlées); puis un scan complet publié
+sur `A` après les 40 lots donne **0 événement** et aucune ligne changée.
+`a_real_scanned_tree_…` : vrai arbre temporaire, vrai scanner, quatre mutations disque
+réelles (renommage, création, déplacement, renommage de dossier avec contenu,
+suppression, modification); l'id du fichier déplacé survit quand la provenance est
+`SYSTEM`. **Différences intentionnelles, assertées et non masquées :** la *révision*
+(`B` +1 à chaque publication; `A` +1 seulement pour un lot effectif) et les *event_id*
+(mêmes suites parce que les deux journaux partent égaux; comparés sans eux).
+**Test de mutation :** en retirant l'incrément de `child_count` d'un parent, au moins 20
+tests échouent (parité, rollback, filtres, lecteur…) — le harnais détecte la classe de
+défaut qu'il prétend couvrir.
+
+### BT.5 Performance `F-031` — banc `incremental_bench.rs`
+
+Ce qui est chronométré : `Index::apply_update_batch`, le vrai noyau, sur un index SQLite
+WAL sur disque (`synchronous=NORMAL`, clés étrangères actives), construit par
+`publish_with_identity`. Corpus déterministe en arbre 10-aire (`n` nœuds); lot mixte
+30 % créations / 30 % modifications / 10 % renommages / 10 % déplacements / 20 %
+suppressions de fichiers feuilles, chaque victime utilisée **une seule fois** sur toute la
+campagne. **7 exécutions par cas, aucune écartée**, tous les échantillons publiés à côté de
+la médiane; chaque exécution vérifie `applied` et « un événement par changement ».
+Après campagne (hors chronométrage) : `node_count` exact, 0 `child_count` erroné, journal
+= 70 / 70 / 7 070 événements attendus. Environnement (déclaré dans chaque artefact) :
+Windows x86_64, Intel64 Family 6 Model 158, 16 processeurs logiques, rustc 1.98.0,
+SQLite 3.53.2; profil de test (`debug_assertions`, la suite ne compile qu'ainsi) **et**
+`opt-level=3`.
+
+| Campagne (artefact `…-apply-<tag>.json`) | 1k / 10 | 10k / 10 | 100k / 10 | 100k / 1000 | Ratio 100k/1k |
+|---|---:|---:|---:|---:|---:|
+| `dev` | 1,66 ms | 2,19 | 2,64 | 368,9 | **1,59** |
+| `dev-run2` | 1,70 | 2,32 | 2,75 | 363,6 | **1,62** |
+| `opt3` | 0,91 | 1,12 | 1,92 | 283,1 | **2,11 — FAIL** |
+| `opt3-run2` | 0,92 | 1,20 | 1,58 | 284,9 | 1,72 |
+| `opt3-run3` | 0,91 | 1,10 | 1,66 | 281,8 | 1,82 |
+| `opt3-checkpointed` (WAL tronqué après construction) | 0,93 | 1,18 | 1,60 | 286,2 | 1,71 |
+| `opt3-cache256m` (cache de pages 256 Mio) | 0,95 | 1,14 | 1,59 | 177,8 | 1,67 |
+
+**Cibles absolues §3.3** (1k/10 ≤ 200 ms, 10k/10 ≤ 250 ms, 100k/10 ≤ 400 ms, 100k/1000 ≤
+3 s) : **PASS dans les sept campagnes**, en médiane comme en maximum, avec deux ordres de
+grandeur de marge. **Critère de rejet (ratio ≤ 2) :** PASS dans six campagnes, **FAIL
+dans une** (`opt3`, 2,11). Lecture honnête : le coût de 10 changements passe de ≈ 1 ms à
+≈ 1,6–2,8 ms quand le corpus est multiplié par 100 (une croissance linéaire donnerait
+×100; le remplacement complet existant, mesuré dans les mêmes artefacts, fait
+9–25 ms → 95–250 ms → 1,4–3,1 s, soit ×120 à ×150), donc le noyau est **incrémental**;
+mais la constante du noyau étant ≈ 1 ms, l'écart absolu de ≈ 0,7 ms lié à la taille du
+fichier (pages hors du cache de 2 Mio, dispersion du cas 100k/10 : min 1,38 ms, max
+2,85 ms) suffit à faire osciller le ratio autour de 1,6–2,1. **On ne conclut donc pas
+que `F-031` est satisfaite sans réserve** : le critère est tenu dans 6 campagnes sur 7,
+franchement rejeté dans aucune, et la campagne défaillante est publiée. Aucun
+paramètre du produit, aucun seuil ni aucun chemin n'a été ajusté pour le ratio; les deux
+variantes (`checkpointed`, `cache256m`) sont des **conditions de diagnostic déclarées**,
+pas des réglages du produit. Le remplacement complet est mesuré à titre de contexte
+(3 exécutions, publication du corpus inchangé), pas comme cible.
+
+### BT.6 Validations générales
+
+| Contrôle | Résultat |
+|---|---|
+| `cargo test --offline` | **550 PASS**, 0 échec, 6 ignorés (500 avant : +50 = 49 noyau + 1 générateur du banc; la campagne `F-031` est le 6ᵉ ignoré) |
+| `pnpm test` | **412 PASS**, 28 fichiers (inchangé) |
+| `pnpm check`, `pnpm build`, `cargo build --offline` | verts |
+| `git diff --check` | propre |
+| `rustfmt --edition 2024 (style_edition=2024)` | appliqué aux trois fichiers Rust créés; les lignes ajoutées aux fichiers existants suivent le style local |
+| `cargo clippy --all-targets --offline` | **dette historique seule** : lib 13, lib-test 22 — mêmes comptes que la référence recalculée sur le `HEAD` de départ (`git stash`); **zéro** diagnostic dans un fichier créé (un `type_complexity` introduit dans un test a été corrigé avant livraison) |
+| `scripts/audit-public-readiness.ps1 -AllowRemotes` | voir `RESULT.md` (rejoué après le commit) |
+| WebView2 | **non rejoué, justifié** : aucun fichier frontend, aucune commande, aucune capability, aucune dépendance touchés (`git diff --stat`) |
+
+### BT.7 Non fait, et limites
+
+Watcher, réconciliation W-B/W-C, `F-032`, remplacement de `map_refresh`, producteur de
+lots réel : hors portée déclarée. Le producteur des tests (`derive_batch`) est un
+diff naïf de deux scans, **pas** le futur réconciliateur. Le coût mesuré est celui de
+l'application d'un lot, pas d'une mise à jour disque de bout en bout. **Non testé :**
+1 000 000 de nœuds, portable modeste, vrai crash de processus, suppression d'un dossier
+de 100 000 enfants (le lot doit les nommer tous : coût proportionnel, non mesuré),
+Cloud Files réel, déplacement inter-volume. `graph/` non mis à jour (non tenu depuis
+`TASK-0009`).
+
+**Aucune donnée personnelle.** `origin/main` inchangé. Aucune TASK-0041, aucune PR,
+fusion, étiquette ni release.
+
+**Action unique suivante :** contrôle indépendant de `TASK-0040`.
+

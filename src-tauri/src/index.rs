@@ -771,7 +771,7 @@ pub(crate) struct PublishOutcome {
 /// re-opening an already-compatible file must not re-migrate it). This is
 /// the same bootstrap `migrate_to_stable_identity` performs, kept available
 /// here too so the counter is never the reason a republish fails.
-fn read_next_node_id(connection: &Connection) -> rusqlite::Result<i64> {
+pub(crate) fn read_next_node_id(connection: &Connection) -> rusqlite::Result<i64> {
     match connection.query_row(
         "SELECT value FROM schema_meta WHERE key = 'next_node_id'",
         [],
