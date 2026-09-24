@@ -322,6 +322,12 @@ export interface ChangeEvent {
    * `false` is permanent: the UI must not offer a selection for it.
    */
   nodePresent: boolean;
+  /**
+   * `TASK-0038` — whether the change is acknowledged. Derived by the backend
+   * from the journal's own acknowledgement state (`DEC-0036`); never inferred
+   * here, and never from the legacy `nodes.seen` flag.
+   */
+  seen: boolean;
 }
 
 /**
@@ -337,9 +343,50 @@ export interface ChangeJournalPage {
   /** The natures the page was filtered by; empty means every nature. */
   natures: ChangeNature[];
   total: number;
+  /**
+   * `TASK-0038` — exact count of unseen changes over the **whole** journal,
+   * not narrowed by `natures`: it is what « Tout marquer vu » would affect.
+   */
+  unseenTotal: number;
   items: ChangeEvent[];
   nextCursor: string | null;
   limit: number;
+}
+
+/** `TASK-0038` — the answer to « Marquer ce changement vu ». */
+export interface MarkChangeSeenResult {
+  brainId: string;
+  eventId: number;
+  /** `true` when the change was already seen: nothing was written. */
+  alreadySeen: boolean;
+}
+
+/** `TASK-0038` — the answer to « Marquer cet élément vu ». */
+export interface MarkNodeSeenResult {
+  brainId: string;
+  nodeId: number;
+  newlySeenCount: number;
+}
+
+/** `TASK-0038` — the answer to « Tout marquer vu ». */
+export interface MarkAllSeenResult {
+  brainId: string;
+  /** The newest change that existed when the mark committed. */
+  seenThroughEventId: number;
+  newlySeenCount: number;
+}
+
+/**
+ * `TASK-0038`, `DEC-0036` — the journal-derived state of one **present**
+ * element. `isNew` = an unseen creation; `isUnseen` = at least one unseen
+ * change of any nature. Displaying or selecting an element never changes it.
+ */
+export interface NodeChangeState {
+  brainId: string;
+  nodeId: number;
+  isNew: boolean;
+  isUnseen: boolean;
+  unseenChangeCount: number;
 }
 
 export interface HostInfo {

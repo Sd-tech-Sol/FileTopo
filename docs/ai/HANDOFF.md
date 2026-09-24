@@ -1,6 +1,41 @@
 # HANDOFF — passage de relais
 
-## Relais actuel — porte public-readiness fermée, prête pour l'orchestration de la tranche V1 suivante — 2026-09-23
+## Relais actuel — TASK-0038, état vu/non vu dérivé du journal, en attente de contrôle — 2026-09-23
+
+- **Ce qui vient d'être fait :** `TASK-0038` est implémentée sur
+  `build/v0.2-a22-v1-seen-state` (partie de `TASK-0037 = VERIFIED`, porte
+  public-readiness fermée). Elle reste `IMPLEMENTED`, jamais auto-`VERIFIED`.
+  Aucune `TASK-0039`, aucune PR, fusion, étiquette ni release.
+- **Où regarder, dans l'ordre :** `DEC-0036`; `src-tauri/src/change_journal.rs`
+  (`SEEN_STATE_DDL`, `validate_seen_schema`, `mark_event_seen`, `mark_node_seen`,
+  `mark_all_seen`, `node_change_state`, `page` qui lit le watermark dans son
+  snapshot); `src-tauri/src/index.rs` (`run_seen_state_migration`, bras `5 =>` du
+  dispatcher, `migrate_to_seen_state`); `map/brain_index.rs` (validation v6,
+  méthodes de marquage); `map/commands.rs` (`open_store_writable`, DTO et quatre
+  fonctions); `lib.rs` (`map_change_mark_seen`, `map_node_mark_seen`,
+  `map_change_mark_all_seen`, `map_node_change_state`);
+  `src/map/ChangeJournalPanel.tsx`, `src/map/NodeChangeState.tsx`,
+  `src/map/DetailsPanel.tsx` (une fente `changeState`); tests
+  `map/seen_state_tests.rs`, `NodeChangeState.test.tsx`,
+  `ChangeJournalSeenState.test.tsx`; preuve réelle
+  `scripts/task0038-webview2.ps1` → `docs/performance/runs/TASK-0038-webview2.json`.
+- **À savoir pour la reprise :**
+  1. `nodes.seen` est **historique** : ni lu ni écrit par la V1, jamais la vérité de
+     `isNew`/`isUnseen` (un test force une valeur contradictoire).
+  2. La **baseline** v5 → v6 est le `MAX(event_id)` existant : ce n'est pas « l'utilisateur
+     a tout lu », c'est « le suivi commence ici ».
+  3. Les commandes de marquage ouvrent l'index en **écriture** (`open_store_writable`),
+     avec les mêmes contrôles brain/binding et la même migration `M-B` que la lecture.
+  4. Après un Actualiser, la sélection revient sur la racine (comportement existant) :
+     le panneau d'élément montre alors l'état de la racine jusqu'à une nouvelle sélection.
+  5. Le harnais `TASK-0037` affirme le schéma 5 et échouerait sur cette ligne; il n'a pas
+     été rejoué et son artefact vérifié n'a pas été touché.
+  6. `unseenTotal` est celui de **tout** le journal (pas du filtre) — choix déclaré.
+- **Non fait, volontairement :** filtres de carte `F-022`, watcher `F-030`, incrémental
+  `F-031`, rétention du journal, suppression de `nodes.seen`.
+- **Action unique suivante :** contrôle indépendant de `TASK-0038`.
+
+## Relais précédent — porte public-readiness fermée, prête pour l'orchestration de la tranche V1 suivante — 2026-09-23
 
 - **Ce qui vient d'être fait :** sur `chore/v0.2-public-readiness-cleanup`, le
   chemin Git local absolu hérité de `TASK-0027` a été retiré du tree courant

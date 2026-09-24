@@ -24,7 +24,7 @@ use std::time::{Duration, SystemTime};
 
 // -- Index level: synthetic, controlled identities ---------------------------
 
-struct Spec {
+pub(super) struct Spec {
     id: i64,
     parent: Option<i64>,
     name: &'static str,
@@ -35,7 +35,7 @@ struct Spec {
     key: &'static str,
 }
 
-fn spec(
+pub(super) fn spec(
     id: i64,
     parent: Option<i64>,
     name: &'static str,
@@ -56,18 +56,18 @@ fn spec(
 }
 
 impl Spec {
-    fn size(mut self, size: u64) -> Self {
+    pub(super) fn size(mut self, size: u64) -> Self {
         self.size = size;
         self
     }
-    fn mtime(mut self, mtime: i64) -> Self {
+    pub(super) fn mtime(mut self, mtime: i64) -> Self {
         self.mtime = Some(mtime);
         self
     }
 }
 
 /// `racine` ▸ `a/` (▸ `a/f.txt`), `b/`, `g.txt`.
-fn base() -> Vec<Spec> {
+pub(super) fn base() -> Vec<Spec> {
     vec![
         spec(1, None, "racine", "", NodeKind::Root, "K-root"),
         spec(2, Some(1), "a", "a", NodeKind::Directory, "K-a"),
@@ -81,7 +81,7 @@ fn base() -> Vec<Spec> {
     ]
 }
 
-fn publish(
+pub(super) fn publish(
     index: &mut Index,
     specs: &[Spec],
 ) -> Result<crate::index::PublishOutcome, crate::index::PublishError> {
@@ -122,7 +122,7 @@ fn publish(
     )
 }
 
-fn canonical(index: &Index, path: &str) -> i64 {
+pub(super) fn canonical(index: &Index, path: &str) -> i64 {
     index
         .connection
         .query_row(
@@ -134,7 +134,7 @@ fn canonical(index: &Index, path: &str) -> i64 {
 }
 
 /// Every event, newest first, following the cursors exactly as a client does.
-fn all_events(index: &Index, natures: &[ChangeNature]) -> Vec<StoredEvent> {
+pub(super) fn all_events(index: &Index, natures: &[ChangeNature]) -> Vec<StoredEvent> {
     let index_id = index.identity().unwrap().index_id;
     let mut cursor: Option<JournalCursor> = None;
     let mut collected = Vec::new();
@@ -154,7 +154,7 @@ fn shape(events: &[StoredEvent]) -> Vec<(ChangeNature, i64)> {
     events.iter().map(|e| (e.nature, e.node_id)).collect()
 }
 
-fn in_memory() -> Index {
+pub(super) fn in_memory() -> Index {
     Index::in_memory().expect("in-memory index")
 }
 
@@ -472,7 +472,7 @@ fn only_observed_metadata_changes_are_modified_and_a_directory_timestamp_is_not_
     );
 }
 
-fn clone_spec(s: &Spec) -> Spec {
+pub(super) fn clone_spec(s: &Spec) -> Spec {
     Spec {
         id: s.id,
         parent: s.parent,
@@ -639,7 +639,7 @@ fn a_corpus_without_durable_identity_is_re_baselined_and_never_flooded_with_even
 // -- Consultation --------------------------------------------------------------
 
 /// 130 events of two natures in ONE publication, then more in later ones.
-fn many_files(count: i64, first_id: i64, tag: &'static str) -> Vec<Spec> {
+pub(super) fn many_files(count: i64, first_id: i64, tag: &'static str) -> Vec<Spec> {
     (0..count)
         .map(|n| {
             let id = first_id + n;
@@ -874,17 +874,17 @@ fn the_stored_journal_carries_no_identity_material_no_absolute_path_and_no_conte
 
 // -- Product level: the real pipeline ------------------------------------------
 
-fn sandbox() -> (tempfile::TempDir, SandboxPaths) {
+pub(super) fn sandbox() -> (tempfile::TempDir, SandboxPaths) {
     let temp = tempfile::tempdir().unwrap();
     let paths = SandboxPaths::under(temp.path().join("filetopo-state"));
     (temp, paths)
 }
 
-fn register(paths: &SandboxPaths, root: &Path) -> BrainRecord {
+pub(super) fn register(paths: &SandboxPaths, root: &Path) -> BrainRecord {
     commands::register_real_root(paths, root).expect("registered")
 }
 
-fn id_of(paths: &SandboxPaths, brain: &BrainRecord, relative_path: &str) -> i64 {
+pub(super) fn id_of(paths: &SandboxPaths, brain: &BrainRecord, relative_path: &str) -> i64 {
     open_store(paths, brain)
         .expect("open store")
         .resolve_path(relative_path)
@@ -892,7 +892,7 @@ fn id_of(paths: &SandboxPaths, brain: &BrainRecord, relative_path: &str) -> i64 
         .unwrap_or_else(|| panic!("no node at {relative_path:?}"))
 }
 
-fn journal(
+pub(super) fn journal(
     paths: &SandboxPaths,
     brain: &BrainRecord,
     natures: &[ChangeNature],
@@ -1330,14 +1330,14 @@ fn the_journal_survives_reopening_the_index_from_disk() {
 
 // -- Schema v5 through the `M-B` boundary ----------------------------------------
 
-fn raw_schema_version(database: &Path) -> i64 {
+pub(super) fn raw_schema_version(database: &Path) -> i64 {
     rusqlite::Connection::open(database)
         .expect("open for version probe")
         .query_row("PRAGMA user_version", [], |row| row.get(0))
         .expect("version")
 }
 
-fn safety_copy_path(database: &Path) -> PathBuf {
+pub(super) fn safety_copy_path(database: &Path) -> PathBuf {
     let mut name = database.file_name().unwrap().to_os_string();
     name.push(".migration-safety-copy");
     database.with_file_name(name)
@@ -1351,14 +1351,18 @@ fn downgrade_to_schema_v4(database: &Path) {
     rusqlite::Connection::open(database)
         .expect("open for downgrade")
         .execute_batch(
-            "DROP TABLE change_events;
+            // `TASK-0038`: the seen state (v6) goes first — it references the
+            // journal.
+            "DROP TABLE seen_change_events;
+             DELETE FROM schema_meta WHERE key = 'seen_through_event_id';
+             DROP TABLE change_events;
              UPDATE schema_meta SET value = '4' WHERE key = 'schema_version';
              PRAGMA user_version = 4;",
         )
         .expect("downgrade to the v4 shape");
 }
 
-fn built_real_index(
+pub(super) fn built_real_index(
     name: &str,
 ) -> (
     tempfile::TempDir,
@@ -1525,9 +1529,9 @@ fn a_v5_file_without_its_journal_table_fails_the_canonical_validation() {
     let (_temp, paths, _root, brain, database) = built_real_index("racine-v5-sans-journal");
     rusqlite::Connection::open(&database)
         .unwrap()
-        .execute_batch("DROP TABLE change_events;")
+        .execute_batch("DROP TABLE seen_change_events; DROP TABLE change_events;")
         .unwrap();
-    let error = open_map(&paths, &brain).expect_err("a v5 file with no journal is not canonical");
+    let error = open_map(&paths, &brain).expect_err("a v6 file with no journal is not canonical");
     assert!(
         error.to_string().starts_with("map_index_incompatible"),
         "{error}"
@@ -1541,7 +1545,9 @@ fn a_v3_index_migrated_to_v5_is_re_baselined_by_its_first_republication_not_floo
     rusqlite::Connection::open(&database)
         .unwrap()
         .execute_batch(
-            "DROP TABLE change_events;
+            "DROP TABLE seen_change_events;
+             DELETE FROM schema_meta WHERE key = 'seen_through_event_id';
+             DROP TABLE change_events;
              DROP INDEX IF EXISTS idx_nodes_stable_key;
              ALTER TABLE nodes DROP COLUMN identity_provenance;
              ALTER TABLE nodes DROP COLUMN stable_key;

@@ -5603,3 +5603,29 @@ précréation de `TASK-0038` par l'exécuteur.
 - `DEC-0036` approuvée;
 - `TASK-0038` créée READY sur `build/v0.2-a22-v1-seen-state`;
 - aucun code produit exécuté par l’orchestrateur, aucune TASK-0039.
+
+
+## 2026-09-23 — TASK-0038 — V1 Journal-derived Seen/Unseen State
+
+**Agent :** exécuteur Claude Code (Sonnet 5) · **Branche :** `build/v0.2-a22-v1-seen-state`
+**Statut à l'issue :** `IMPLEMENTED` (jamais auto-`VERIFIED`)
+
+- Schéma **v6** par la même frontière `M-B` : watermark `seen_through_event_id`,
+  table `seen_change_events`, index `change_events(node_id, event_id)`; baseline au
+  `MAX(event_id)` existant; validation canonique étendue; restauration prouvée sur
+  échec de migration et de validation.
+- `change_journal.rs` : `mark_event_seen`, `mark_node_seen`, `mark_all_seen`,
+  `node_change_state`; `page` expose `seen` par événement et `unseenTotal`.
+  `nodes.seen` ni lu ni écrit.
+- Quatre commandes `map_*` sans chemin ni identité système; ouverture en écriture
+  réservée aux trois gestes.
+- UI : badges `Vu`/`Non vu` (mot + symbole), « Marquer vu », « Tout marquer vu »
+  confirmé inline, `NodeChangeState` (`Nouveau`/`Non vu`/`Vu`) dans le panneau
+  contextuel, aucune mutation à la sélection.
+- Preuves : Rust 474 PASS (+30), TypeScript 376 PASS (+24), rejeu WebView2 réel sur
+  deux cerveaux avec vrai redémarrage (`TASK-0038-webview2.json`), `git diff --check`,
+  audit public-readiness vert; clippy rouge sur la dette historique seule (aucun
+  diagnostic dans les fichiers touchés).
+- Limites : détection manuelle; filtres `F-022` non construits; harnais `TASK-0037` non
+  rejoué (il affirme le schéma 5). Aucune `TASK-0039`, PR, fusion, étiquette ni release.
+

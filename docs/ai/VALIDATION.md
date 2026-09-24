@@ -6992,3 +6992,145 @@ performance sur portable modeste. `graph/history.jsonl` et
 `TASK-0038`, aucune PR, fusion, étiquette ni release.
 
 **Action unique suivante :** contrôle indépendant de `TASK-0037`.
+
+## BR. TASK-0038 — V1 Journal-derived Seen/Unseen State — 2026-09-23
+
+**Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche
+`build/v0.2-a22-v1-seen-state`, partie de `TASK-0037 = VERIFIED`
+([`ACTION-0061`](../reviews/ACTION-0061-independent-control.md)) et de la porte
+public-readiness fermée
+([`ACTION-0063`](../reviews/ACTION-0063-public-readiness-final-control.md)),
+selon [`DEC-0036`](../decisions/DEC-0036-journal-derived-seen-state.md).
+`main` n'a pas été touché. Tout ce qui suit a été exécuté dans cette session,
+sauf mention « non testé ».
+
+### BR.1 Préconditions
+
+`git switch build/v0.2-a22-v1-seen-state` (créée depuis `origin`, suivi
+configuré), `git fetch origin`, `git pull --ff-only` → « Already up to date »;
+`HEAD` `e5d7289` == `origin/build/v0.2-a22-v1-seen-state`; arbre propre; `HEAD`
+contient `ACTION-0061`, `ACTION-0063`, `DEC-0036` et `TASK-0038`. `DEC-0036` puis
+`TASK-0038` lues en entier avant tout changement.
+
+### BR.2 Audit avant code — réutilisé / adapté / laissé historique
+
+| Élément | Décision |
+|---|---|
+| `change_events` append-only, publication dans la transaction de `publish`, curseur `fjc1` | **Réutilisés tels quels** : aucune ligne d'événement n'est modifiée par un marquage |
+| Enveloppe `M-B` (`open_existing_migrating`) | **Réutilisée**, une seule fonction; un bras `5 → 6` de plus au dispatcher, aucun second chemin |
+| `BrainNodeRef`, `resolve_brain`, `belongs_to` | **Réutilisés** comme seule frontière d'un élément |
+| `finish_open_existing`, `page`, `open_for_brain`, `ChangeJournalPanel`, `DetailsPanel` | **Adaptés** : validation v6, lecture du watermark dans le snapshot de la page, mode écriture réservé aux trois gestes, badges/boutons/confirmation, une fente `changeState` |
+| `nodes.seen`, `Index::mark_seen`, `query_nodes(unseen_only)`, commandes prototype `mark_node_seen`/`query_collection_nodes` | **Laissés historiques** : non réactivés, non lus par le nouveau code; `exposed_commands_stay_within_the_slice` continue de les interdire |
+
+### BR.3 Schéma v6 et baseline
+
+Forme attendue conservée, sans écart : `schema_meta['seen_through_event_id']`
+(watermark monotone), `seen_change_events(event_id PK REFERENCES change_events ON
+DELETE CASCADE)`, `idx_change_events_node(node_id, event_id)`. Validation
+canonique (`M-B` étape 5) : table présente, watermark présent, entier ≥ 0 et **pas
+au-delà** du plus grand `event_id` (un watermark au-delà du journal masquerait tous
+les événements futurs).
+
+| Point | Preuve (`map/seen_state_tests.rs`) |
+|---|---|
+| v5 réel avec historique → v6 par `map_open` | `a_real_v5_index_with_history_migrates_to_v6_baselined_history_kept_and_nothing_unseen` : source non lue, `index_id` et révision inchangés, watermark = plus grand `event_id`, historique identique (mêmes événements, même ordre), tous vus, `unseenTotal` 0, aucun nœud nouveau; le changement suivant est non vu |
+| v5 à journal vide | `a_real_v5_index_with_an_empty_journal_baselines_at_zero` |
+| Échec **après** début de mutation | `a_v5_to_v6_migration_that_fails_midway_restores_the_v5_file_in_full` : `user_version` reste 5, aucune table à moitié créée, aucun watermark, journal intact, copie réglée; nouvelle tentative migre |
+| Échec de **validation** canonique | `a_v5_to_v6_migration_whose_canonical_validation_fails_is_restored_too` : v5 restauré; après réparation, migre |
+| Fichier v6 sans watermark | `a_v6_file_without_its_seen_state_fails_the_canonical_validation`; watermark hors journal / non entier / absent : `a_watermark_beyond_the_journal_or_a_missing_one_is_not_a_canonical_seen_state` |
+| Fichier frais | `a_fresh_v6_file_starts_with_a_zero_watermark_an_empty_ack_table_and_a_canonical_seen_state` |
+| v3 / v4 encore migrables | tests `TASK-0036`/`TASK-0037` existants (helpers de rétrogradation adaptés à v6), tous verts |
+
+### BR.4 Sémantique et gestes (les 19 points de la fiche)
+
+| # | Point | Test |
+|---|---|---|
+| 1–2 | v5 → v6 par `M-B`; historique conservé et baseliné | voir BR.3 |
+| 3 | premier événement après v6 = non vu | `the_first_event_after_the_baseline_is_unseen` |
+| 4–6 | `CREATED` non vu ⇒ nouveau + non vu; acquitté ⇒ plus nouveau; `MODIFIED` ensuite ⇒ non vu, pas nouveau | `a_created_node_is_new_and_unseen_until_its_creation_is_acknowledged`, `a_modification_after_an_acknowledged_creation_is_unseen_but_not_new` |
+| 7 | marquer un changement idempotent et persistant après réouverture | `marking_a_change_is_idempotent_and_writes_one_row_at_most`, `the_product_gestures_persist_across_a_cold_reopening_of_the_index` |
+| 8–9 | marquer un élément n'acquitte que lui; un événement futur reste non vu | `marking_an_element_acknowledges_only_that_element`, `a_change_of_an_element_detected_after_it_was_marked_seen_stays_unseen` |
+| 10–11 | tout marquer vu couvre ce qui existe à son commit; un événement publié après reste non vu — y compris avec une **vraie seconde connexion** qui tient le verrou d'écriture (tout marquer vu attend, couvre ce que l'écrivain a commité avant, rien après) | `mark_all_acknowledges_everything_that_exists_at_its_commit_and_advances_the_watermark`, `an_event_published_after_mark_all_committed_stays_unseen`, `mark_all_waits_for_a_writer_then_covers_what_that_writer_committed_and_nothing_after` |
+| 12 | `DELETED` acquittable comme changement, nœud non sélectionnable | `a_deleted_event_can_be_acknowledged_but_its_node_is_not_selectable`, `a_deleted_real_file_leaves_an_acknowledgeable_event_and_no_selectable_node` |
+| 13 | renommage `SYSTEM` : même `nodeId`, non vu, pas nouveau | `a_system_rename_keeps_the_node_id_and_makes_the_node_unseen_but_not_new`, `a_real_rename_keeps_the_node_id_and_the_node_is_unseen_but_not_new` |
+| 14 | `PATH_FALLBACK` suppression + création : le nouveau nœud est nouveau/non vu, l'ancien `DELETED` reste indépendant | `a_node_whose_identity_changes_is_a_new_node_and_the_old_delete_stays_independent` (niveau Index) et, sous Windows, `a_renamed_raw_path_node_is_new_and_unseen_and_the_old_delete_is_independent` (vraie jonction) |
+| 15 | deux cerveaux isolés, **numéros coïncidants** | `two_brains_share_no_seen_state_even_when_their_ids_coincide` (événement 1 et nœud identiques dans les deux; référence d'un autre cerveau refusée avant écriture) |
+| 16 | `nodes.seen` contradictoire sans effet | `the_legacy_nodes_seen_column_is_never_the_truth` (forcé à « vu » puis « non vu »; les gestes ne l'écrivent pas) |
+| 17 | curseur valide avant/après, aucun `eventId` modifié | `marking_never_changes_an_event_a_cursor_or_the_order_of_the_journal` (130 événements, trois gestes, mêmes lignes/ordre/nombre) |
+| 18 | restauration v5 sur échec migration/validation | voir BR.3 |
+| 19 | aucune donnée sensible dans les DTO | `the_seen_dtos_expose_no_path_no_key_and_no_identity` (ni racine, ni temp, ni clé, ni `FileId`, ni volume, ni provenance; jeux de clés exacts) |
+
+Refus clairs, sans écriture : `journal_event_missing: N`, `map_node_missing: N`
+(`an_unknown_event_or_node_is_refused_clearly_and_nothing_is_written`, dont la clé
+étrangère qui refuse un acquittement fantôme). L'état de page et `unseenTotal` sont
+lus dans le même snapshot et ne dépendent pas du filtre
+(`the_page_flags_and_the_unseen_total_describe_the_same_snapshot_and_ignore_the_filter`).
+
+### BR.5 Tests TypeScript
+
+`NodeChangeState.test.tsx` (13) et `ChangeJournalSeenState.test.tsx` (11) : badges
+`Vu`/`Non vu`/`Nouveau` en toutes lettres; marquer un changement (appel nommé, puis
+relecture du backend); marquer l'élément sélectionné; **aucune mutation** à
+l'ouverture, au filtre, à la pagination, au rafraîchissement ni à la sélection
+(comportement **et** lecture du source : la seule mutation du composant est le
+gestionnaire du bouton); « Tout marquer vu » — premier clic = confirmation seule,
+« Annuler » n'appelle rien, confirmer appelle une fois avec le seul `brainId`;
+changement de cerveau efface confirmation et état; réponse d'un autre cerveau ou
+d'un autre nœud refusée; réponse périmée ignorée. Le test `TASK-0037` du panneau a
+été mis à jour : sa liste d'appels autorisés nomme désormais les deux marquages du
+journal.
+
+### BR.6 Rejeu WebView2 réel
+
+`scripts/task0038-webview2.ps1` (deux lancements réels du même binaire, un vrai
+redémarrage, deux arbres synthétiques générés par la preuve →
+`docs/performance/runs/TASK-0038-webview2.json`). Premiers essais échoués par une
+erreur du **harnais** (l'Actualiser remet la sélection sur la racine, comportement
+produit existant; le pilote sélectionnait mal), corrigée puis rejouée en entier.
+Résultat : référence sans « non vu »; création → changement non vu et élément
+`Nouveau`; sélectionner (et attendre) ne marque rien; marquer le changement →
+élément « Vu »; modification → « Non vu » mais pas nouveau; marquer l'élément; cinq
+changements mêlés → premier clic = confirmation seule, « Annuler » ne mute rien,
+confirmer marque tout (total inchangé, `DELETED` acquitté et toujours « historique
+seulement »); un changement **après** « tout marquer vu » reste non vu, son nœud
+est nouveau; **second cerveau** : sa propre référence, ses propres « non vu », le
+premier intact, marquer le second laisse le premier tel quel, revenir au premier
+montre ses seuls drapeaux; **après le vrai redémarrage** : drapeaux identiques,
+un à un, pour les deux cerveaux, états d'éléments persistés et affichés par les
+panneaux, `map_open` sans lecture de la source, schéma 6. Aucun chemin absolu, clé
+stable, `FileId` ni volume (DOM, charges, réponses, artefact relu : aucun chemin
+personnel). 0 erreur fatale.
+
+Le binaire du rejeu est celui de `pnpm tauri build --debug --no-bundle` construit
+avant la seule modification postérieure (normalisation des fins de ligne en LF, sans
+effet sur le code); équivalence déclarée, non re-mesurée.
+
+### BR.7 Validations générales
+
+| Contrôle | Résultat |
+|---|---|
+| `cargo test --offline` | **474 PASS**, 0 échec, 5 ignorés (444 avant : +30 tests de `seen_state_tests.rs`; ~12 tests existants dont les helpers de rétrogradation ont été adaptés à v6) |
+| `pnpm test` | **376 PASS** (352 avant : +13 état d'élément, +11 panneau) |
+| `pnpm check`, `pnpm build`, `cargo build --offline`, `pnpm tauri build --debug --no-bundle` | verts |
+| `git diff --check` | propre |
+| `rustfmt --edition 2024 --check` | aucun écart dans les 10 fichiers Rust touchés; dette antérieure dans 14 autres fichiers non touchés (un `cargo fmt` de toute la caisse les avait reformatés : restaurés par `git checkout --` avant livraison) |
+| `cargo clippy --all-targets --offline -- -D warnings` | **rouge sur la dette historique seule** : lib **13**, lib-test **22** erreurs, comptes identiques à ceux consignés pour `TASK-0037` (section BQ.8); **zéro** diagnostic dans un fichier touché. Non re-mesuré sur la base dans cette session |
+| `scripts/audit-public-readiness.ps1 -AllowRemotes` | vert (exceptions non élargies) — voir le rapport terminal pour la ligne finale |
+
+### BR.8 Non fait, et limites
+
+Détection **manuelle** seulement; **filtres** `F-022` non construits (ils
+consommeront cette source); pas de watcher, d'incrémental ni de rétention du
+journal; `nodes.seen` conservé, historique. « Tout marquer vu » vise tout le journal
+du cerveau, pas le filtre courant. Le harnais `TASK-0037` affirme le schéma 5 : il
+n'a pas été rejoué (son artefact vérifié n'est pas touché). **Non testé :** crash
+de processus réel pendant la migration (défaillances injectées dans la base);
+journaux de 100 000 événements ou plus; portable modeste; placeholder Cloud Files
+réel. `graph/history.jsonl` et `graph/current_state.yaml` non mis à jour (non tenus
+depuis `TASK-0009`).
+
+**Aucune donnée personnelle**, comme toujours. `origin/main` inchangé. Aucune
+`TASK-0039`, aucune PR, fusion, étiquette ni release.
+
+**Action unique suivante :** contrôle indépendant de `TASK-0038`.
+

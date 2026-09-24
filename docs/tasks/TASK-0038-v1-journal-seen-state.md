@@ -1,7 +1,7 @@
 # TASK-0038 — V1 Journal-derived Seen/Unseen State
 
 - **Date :** 2026-09-23
-- **Statut :** `READY`
+- **Statut :** `IMPLEMENTED`
 - **Branche :** `build/v0.2-a22-v1-seen-state`
 - **Prérequis :** `TASK-0037 = VERIFIED` (`ACTION-0061`), public-readiness vert (`ACTION-0063`)
 - **Décision :** `DEC-0036 — État vu/non vu dérivé du journal de changements`
@@ -278,3 +278,19 @@ Exécuter :
 - `NEXT_ACTION = contrôle indépendant de TASK-0038`;
 - commit/push uniquement sur la branche de tâche;
 - aucun PR/merge/tag/release.
+
+## Livraison (2026-09-23) — `IMPLEMENTED`, en attente de contrôle indépendant
+
+Exécutée sur `build/v0.2-a22-v1-seen-state`. **Jamais auto-`VERIFIED`.** Détail :
+[VALIDATION section BR](../ai/VALIDATION.md) et `.orchestrator/RESULT.md`.
+
+- **Forme SQL retenue :** celle attendue — `schema_meta['seen_through_event_id']`,
+  `seen_change_events(event_id PK REFERENCES change_events ON DELETE CASCADE)` et
+  `idx_change_events_node(node_id, event_id)`. Aucun écart de forme.
+- **Migration :** même `M-B`, un bras de plus au dispatcher (`5 → 6`); la baseline
+  du watermark est `MAX(event_id)` existant (`0` pour un fichier frais).
+- **Choix à examiner :** `unseenTotal` est le compte **de tout le journal**, non
+  restreint par le filtre de nature (c'est ce que « Tout marquer vu » affecterait).
+  La fiche laissait la définition ouverte (« si utile »).
+- **Hors portée respectée :** `F-022`, `F-030`, `F-031`, `nodes.seen` conservé
+  tel quel (historique), aucune `TASK-0039`.

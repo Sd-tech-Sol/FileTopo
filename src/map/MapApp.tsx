@@ -11,6 +11,7 @@ import RelationsPanel from "./RelationsPanel";
 import ReviewQueuePanel from "./ReviewQueuePanel";
 import ExactDuplicateExplorer from "./ExactDuplicateExplorer";
 import ChangeJournalPanel, { describeChangeSummary } from "./ChangeJournalPanel";
+import NodeChangeState from "./NodeChangeState";
 import {
   ComposedViewError,
   addBrain,
@@ -301,6 +302,11 @@ export default function MapApp() {
   const [contentCampaignRunning, setContentCampaignRunning] = useState(false);
   const [contentReport, setContentReport] = useState<ContentObservationReport | null>(null);
   const [contentRevision, setContentRevision] = useState(0);
+  // `TASK-0038` — bumped whenever one of the two seen/unseen surfaces (the
+  // journal panel, the selected element's state) acknowledged something, so the
+  // other re-reads the backend rather than showing a stale answer.
+  const [seenRevision, setSeenRevision] = useState(0);
+  const notifySeenChange = useCallback(() => setSeenRevision((current) => current + 1), []);
   const [contentObservedBrains, setContentObservedBrains] = useState<ReadonlySet<string>>(new Set());
   const [selfCheck, setSelfCheck] = useState<MapSelfCheck | null>(null);
   const [viewport, setViewport] = useState<Viewport>({ width: 1, height: 1 });
@@ -2800,6 +2806,8 @@ export default function MapApp() {
             brainId={composed?.focusedBrainId ?? null}
             revision={focusedBrain?.report.revision ?? null}
             onSelect={selectNode}
+            seenRevision={seenRevision}
+            onSeenChange={notifySeenChange}
           />
 
           <button
@@ -2840,6 +2848,14 @@ export default function MapApp() {
               copyError={copyError}
               copyActionLabel={t.copyAction}
               copyBusyLabel={t.copyBusy}
+              changeState={
+                <NodeChangeState
+                  reference={selected}
+                  revision={focusedBrain?.report.revision ?? null}
+                  seenRevision={seenRevision}
+                  onSeenChange={notifySeenChange}
+                />
+              }
             />
           ) : null}
 

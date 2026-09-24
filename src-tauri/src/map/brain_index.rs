@@ -103,7 +103,7 @@ impl BrainIndex {
     /// * **Current** (`MAP_SCHEMA_VERSION`) — opened exactly as
     ///   [`Self::open_existing`] always has; nothing below this branch runs.
     /// * **An older migratable schema** (`store::is_migratable_schema`,
-    ///   `v3`/`v4` since `TASK-0037`; the `M-B` sequence below is one
+    ///   `v3`/`v4`/`v5` since `TASK-0038`; the `M-B` sequence below is one
     ///   envelope around the index's versioned dispatcher, whatever the
     ///   number of steps) — this
     ///   file's own `brain_id` and [`Self::binding_matches`] are checked
@@ -275,6 +275,13 @@ impl BrainIndex {
         if !crate::change_journal::validate_schema(&store.index.connection)? {
             return Err(MapError::IndexIncompatible("change journal".into()));
         }
+        // `TASK-0038` — and the v6 canonical contract requires the seen state:
+        // its table, and a watermark that exists and does not point past the
+        // journal. Same `M-B` step 5: this can still send a migrated file back
+        // to its safety copy.
+        if !crate::change_journal::validate_seen_schema(&store.index.connection)? {
+            return Err(MapError::IndexIncompatible("seen state".into()));
+        }
         Ok(store)
     }
 
@@ -439,6 +446,44 @@ impl BrainIndex {
             limit,
         )?;
         Ok((page, identity))
+    }
+
+    /// **Marks one change seen** — `TASK-0038`. Needs a writable handle.
+    pub fn mark_change_seen(
+        &self,
+        event_id: i64,
+    ) -> Result<crate::change_journal::MarkEventOutcome, MapError> {
+        Ok(crate::change_journal::mark_event_seen(
+            &self.index.connection,
+            event_id,
+        )?)
+    }
+
+    /// **Marks one element seen**: every currently-unseen event of a node that
+    /// is present now. Returns how many events were newly acknowledged.
+    pub fn mark_node_changes_seen(&self, node_id: i64) -> Result<u64, MapError> {
+        Ok(crate::change_journal::mark_node_seen(
+            &self.index.connection,
+            node_id,
+        )?)
+    }
+
+    /// **Marks everything seen**: advances the watermark atomically.
+    pub fn mark_all_changes_seen(&self) -> Result<crate::change_journal::MarkAllOutcome, MapError> {
+        Ok(crate::change_journal::mark_all_seen(
+            &self.index.connection,
+        )?)
+    }
+
+    /// The journal-derived new/unseen state of one present node.
+    pub fn node_change_state(
+        &self,
+        node_id: i64,
+    ) -> Result<crate::change_journal::NodeChangeState, MapError> {
+        Ok(crate::change_journal::node_change_state(
+            &self.index.connection,
+            node_id,
+        )?)
     }
 
     fn validate_single_root(nodes: &[NodeDto]) -> Result<(), MapError> {

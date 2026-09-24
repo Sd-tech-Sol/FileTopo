@@ -7,6 +7,8 @@ import type {
   ChangeNature,
   ChangeSummary,
   MapNodeKind,
+  MarkAllSeenResult,
+  MarkChangeSeenResult,
 } from "./types";
 
 /**
@@ -21,6 +23,14 @@ import type {
  * Two honesty rules the wording keeps: the date is the instant FileTopo
  * **detected** a difference, not the instant the disk changed; and the order
  * inside one detection is the order of publication, not a real chronology.
+ *
+ * `TASK-0038` adds the seen/unseen state of each change (`DEC-0036`): a
+ * per-change « Marquer vu », and « Tout marquer vu » behind an **explicit
+ * inline confirmation** — the first gesture only opens the confirmation, and
+ * « Annuler » never calls the backend. Nothing here marks anything seen by
+ * being displayed, opened or paged. After every acknowledgement the visible
+ * state is **re-read from the backend**, never assumed. A `Vu`/`Non vu` state
+ * is always a word and a symbol, never a colour alone.
  */
 
 const PAGE_LIMIT = 50;
@@ -110,9 +120,22 @@ interface Props {
   /** The brain's current Index revision: a change of it reloads the first page. */
   revision: number | null;
   onSelect: (reference: BrainNodeRef) => void;
+  /**
+   * Bumped by whoever else marked something seen (the selected element's
+   * panel): the page is then re-read from the backend.
+   */
+  seenRevision?: number;
+  /** Called after this panel acknowledged something, so siblings re-read. */
+  onSeenChange?: () => void;
 }
 
-export default function ChangeJournalPanel({ brainId, revision, onSelect }: Props) {
+export default function ChangeJournalPanel({
+  brainId,
+  revision,
+  onSelect,
+  seenRevision = 0,
+  onSeenChange,
+}: Props) {
   const [open, setOpen] = useState(false);
   const [natures, setNatures] = useState<ChangeNature[]>([]);
   // The `after` cursors used to reach the current page — the last entry is the
@@ -121,16 +144,25 @@ export default function ChangeJournalPanel({ brainId, revision, onSelect }: Prop
   const [page, setPage] = useState<ChangeJournalPage | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // `TASK-0038` — a re-read after an acknowledgement, and the state of the
+  // one mutation in flight (they never overlap) and of the confirmation.
+  const [reload, setReload] = useState(0);
+  const [marking, setMarking] = useState(false);
+  const [markError, setMarkError] = useState<string | null>(null);
+  const [confirmingAll, setConfirmingAll] = useState(false);
   const ticket = useRef(0);
 
-  // Another brain: nothing of the previous one — filter, position, page —
-  // is carried over.
+  // Another brain: nothing of the previous one — filter, position, page,
+  // pending confirmation — is carried over.
   useEffect(() => {
     ticket.current += 1;
     setNatures([]);
     setCursorStack([null]);
     setPage(null);
     setError(null);
+    setMarking(false);
+    setMarkError(null);
+    setConfirmingAll(false);
   }, [brainId]);
 
   // A new revision (Actualiser/Reconstruire) appended events at the top:
@@ -167,7 +199,53 @@ export default function ChangeJournalPanel({ brainId, revision, onSelect }: Prop
       .finally(() => {
         if (mine === ticket.current) setLoading(false);
       });
-  }, [open, brainId, revision, natures, after]);
+  }, [open, brainId, revision, natures, after, reload, seenRevision]);
+
+  /** Re-reads the visible page from the backend and lets siblings do the same. */
+  function acknowledged() {
+    setReload((current) => current + 1);
+    onSeenChange?.();
+  }
+
+  async function markChangeSeen(eventId: number) {
+    if (!brainId || marking) return;
+    setMarking(true);
+    setMarkError(null);
+    try {
+      const result = await invoke<MarkChangeSeenResult>("map_change_mark_seen", {
+        brainId,
+        eventId,
+      });
+      if (result.brainId !== brainId || result.eventId !== eventId) {
+        setMarkError("réponse d'un autre cerveau refusée");
+        return;
+      }
+      acknowledged();
+    } catch (reason) {
+      setMarkError(String(reason));
+    } finally {
+      setMarking(false);
+    }
+  }
+
+  async function markAllSeen() {
+    if (!brainId || marking) return;
+    setMarking(true);
+    setMarkError(null);
+    try {
+      const result = await invoke<MarkAllSeenResult>("map_change_mark_all_seen", { brainId });
+      if (result.brainId !== brainId) {
+        setMarkError("réponse d'un autre cerveau refusée");
+        return;
+      }
+      setConfirmingAll(false);
+      acknowledged();
+    } catch (reason) {
+      setMarkError(String(reason));
+    } finally {
+      setMarking(false);
+    }
+  }
 
   function toggleNature(nature: ChangeNature) {
     setNatures((current) =>
@@ -245,6 +323,55 @@ export default function ChangeJournalPanel({ brainId, revision, onSelect }: Prop
               >
                 {page.total} changement(s){filtered ? " pour ces filtres" : ""} · page {pageNumber}
               </p>
+              <div className="journal__seen" data-testid="journal-seen-controls">
+                <p
+                  data-testid="journal-unseen-total"
+                  data-unseen-total={page.unseenTotal}
+                  aria-live="polite"
+                >
+                  {page.unseenTotal === 0
+                    ? "Tous les changements sont vus."
+                    : `${page.unseenTotal} changement(s) non vu(s) dans ce cerveau.`}
+                </p>
+                {confirmingAll ? (
+                  <div role="alertdialog" aria-label="Confirmer : tout marquer vu" data-testid="journal-mark-all-confirm">
+                    <p>
+                      Marquer <strong>les {page.unseenTotal} changement(s) non vu(s)</strong> de ce
+                      cerveau comme vus ? Les changements détectés ensuite resteront non vus.
+                    </p>
+                    <button
+                      type="button"
+                      data-testid="journal-mark-all-confirm-yes"
+                      disabled={marking}
+                      onClick={() => void markAllSeen()}
+                    >
+                      {marking ? "Marquage…" : "Confirmer : tout marquer vu"}
+                    </button>{" "}
+                    <button
+                      type="button"
+                      data-testid="journal-mark-all-cancel"
+                      disabled={marking}
+                      onClick={() => setConfirmingAll(false)}
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    data-testid="journal-mark-all"
+                    disabled={page.unseenTotal === 0 || marking}
+                    onClick={() => setConfirmingAll(true)}
+                  >
+                    Tout marquer vu
+                  </button>
+                )}
+                {markError ? (
+                  <p role="alert" data-testid="journal-mark-error">
+                    Marquage impossible : {markError}
+                  </p>
+                ) : null}
+              </div>
               {page.items.length === 0 ? (
                 <p data-testid="journal-empty">
                   {filtered
@@ -267,10 +394,30 @@ export default function ChangeJournalPanel({ brainId, revision, onSelect }: Prop
                             data-nature={event.nature}
                             data-node-id={event.nodeId}
                             data-node-present={event.nodePresent}
+                            data-seen={event.seen}
                           >
+                            <span
+                              className={`journal__seen-badge journal__seen-badge--${event.seen ? "seen" : "unseen"}`}
+                              data-testid="journal-seen-badge"
+                            >
+                              <span aria-hidden="true">{event.seen ? "✓" : "●"}</span>{" "}
+                              {event.seen ? "Vu" : "Non vu"}
+                            </span>{" "}
                             <strong>{NATURE_LABELS[event.nature]}</strong>
                             <span> · {KIND_LABELS[event.nodeKind]}</span>
                             <span> · {describe(event)}</span>{" "}
+                            {event.seen ? null : (
+                              <>
+                                <button
+                                  type="button"
+                                  data-testid="journal-mark-seen"
+                                  disabled={marking}
+                                  onClick={() => void markChangeSeen(event.eventId)}
+                                >
+                                  Marquer vu
+                                </button>{" "}
+                              </>
+                            )}
                             {event.nature !== "DELETED" && event.nodePresent ? (
                               <button
                                 type="button"

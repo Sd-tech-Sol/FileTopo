@@ -8,6 +8,9 @@ use std::path::Path;
 
 /// Current schema version of the node index.
 ///
+/// `6` since `TASK-0038`: the seen/unseen state derived from the journal —
+/// `seen_change_events` plus the `seen_through_event_id` watermark
+/// ([`crate::change_journal::SEEN_STATE_DDL`]), baselined by the migration.
 /// `5` since `TASK-0037`: the persistent `change_events` journal
 /// ([`crate::change_journal`]), written in the same transaction as the corpus
 /// it describes.
@@ -16,10 +19,13 @@ use std::path::Path;
 /// [`DEC-0009`](../../docs/decisions/DEC-0009-data-model-and-relations.md) I-E.
 /// `3` was `TASK-0029`'s two generated sort columns and child-order index
 /// ([`DEC-0030`](../../docs/decisions/DEC-0030-bounded-hierarchy-query-contract.md)).
-const SCHEMA_VERSION: i64 = 5;
+const SCHEMA_VERSION: i64 = 6;
 
 /// The schema `TASK-0036` stamped: durable identity columns and id counter.
 const STABLE_IDENTITY_SCHEMA_VERSION: i64 = 4;
+
+/// The schema `TASK-0037` stamped: the `change_events` journal.
+const CHANGE_JOURNAL_SCHEMA_VERSION: i64 = 5;
 
 /// The oldest schema the product will migrate to the current one — the
 /// `TASK-0029` shape. Anything older, unknown or newer is refused, never
@@ -102,7 +108,8 @@ impl Index {
         }
         self.migrate_to_bounded_hierarchy()?;
         self.migrate_to_stable_identity()?;
-        self.migrate_to_change_journal()
+        self.migrate_to_change_journal()?;
+        self.migrate_to_seen_state()
     }
 
     /// Schema `2 → 3` — `DEC-0030 §E`. Idempotent, and safe on a populated
@@ -200,10 +207,24 @@ impl Index {
         let version: i64 = self
             .connection
             .query_row("PRAGMA user_version", [], |row| row.get(0))?;
-        if version >= SCHEMA_VERSION {
+        if version >= CHANGE_JOURNAL_SCHEMA_VERSION {
             return Ok(());
         }
         self.run_change_journal_migration()
+    }
+
+    /// Schema `5 → 6` — `TASK-0038`, `DEC-0036`. Called unconditionally by
+    /// [`initialize`](Self::initialize), like the two steps before it: a
+    /// brand-new file reaches the seen state through the same step an existing
+    /// v5 file does.
+    fn migrate_to_seen_state(&self) -> Result<()> {
+        let version: i64 = self
+            .connection
+            .query_row("PRAGMA user_version", [], |row| row.get(0))?;
+        if version >= SCHEMA_VERSION {
+            return Ok(());
+        }
+        self.run_seen_state_migration()
     }
 
     /// The product-reachable schema upgrade — `ACTION-0057` D1, generalised
@@ -223,8 +244,9 @@ impl Index {
     /// `OLDEST_MIGRATABLE_SCHEMA_VERSION..SCHEMA_VERSION` — never an older,
     /// unknown or newer version, never a migration run backward — and
     /// otherwise applies **one versioned step at a time**: `3 → 4`
-    /// ([`Self::run_stable_identity_migration`]) then `4 → 5`
-    /// ([`Self::run_change_journal_migration`]). Each step is its own atomic
+    /// ([`Self::run_stable_identity_migration`]), `4 → 5`
+    /// ([`Self::run_change_journal_migration`]) then `5 → 6`
+    /// ([`Self::run_seen_state_migration`]). Each step is its own atomic
     /// transaction that stamps its own `user_version` last; a failure between
     /// two steps is the caller's `M-B` restore, which puts back the safety
     /// copy of the file **as it was found**, whichever step failed. Adding a
@@ -245,6 +267,7 @@ impl Index {
             match version {
                 3 => self.run_stable_identity_migration()?,
                 4 => self.run_change_journal_migration()?,
+                5 => self.run_seen_state_migration()?,
                 other => {
                     return Err(MigrationError::UnsupportedVersion {
                         actual: other,
@@ -333,6 +356,36 @@ impl Index {
     fn run_change_journal_migration(&self) -> Result<()> {
         let transaction = self.connection.unchecked_transaction()?;
         transaction.execute_batch(change_journal::JOURNAL_DDL)?;
+        transaction.execute_batch(&format!(
+            "PRAGMA user_version={CHANGE_JOURNAL_SCHEMA_VERSION};
+             INSERT OR REPLACE INTO schema_meta(key, value)
+             VALUES ('schema_version', '{CHANGE_JOURNAL_SCHEMA_VERSION}');",
+        ))?;
+        transaction.commit()
+    }
+
+    /// The atomic body of the `5 → 6` transition — `TASK-0038`, `DEC-0036` §5.
+    ///
+    /// Adds the acknowledgement table and the per-node journal index, and
+    /// **baselines** the watermark at the newest `event_id` the journal already
+    /// holds: the history stays whole and consultable, but it is not presented
+    /// as "unseen" the instant the function appears — the product cannot prove
+    /// anyone read it. It means only "seen/unseen tracking starts with this
+    /// version". A fresh file (empty journal) baselines at `0`. No event is
+    /// created, altered or removed, and no source is read.
+    ///
+    /// Same discipline as `4 → 5`: strict `CREATE`/`INSERT` (a pre-existing
+    /// object or key is a foreign or half-migrated file and must fail, not be
+    /// adopted), and the version stamped **last, inside the same
+    /// transaction**.
+    fn run_seen_state_migration(&self) -> Result<()> {
+        let transaction = self.connection.unchecked_transaction()?;
+        transaction.execute_batch(change_journal::SEEN_STATE_DDL)?;
+        transaction.execute(
+            "INSERT INTO schema_meta(key, value)
+             SELECT ?1, CAST(COALESCE(MAX(event_id), 0) AS TEXT) FROM change_events",
+            [change_journal::SEEN_WATERMARK_KEY],
+        )?;
         transaction.execute_batch(&format!(
             "PRAGMA user_version={SCHEMA_VERSION};
              INSERT OR REPLACE INTO schema_meta(key, value)

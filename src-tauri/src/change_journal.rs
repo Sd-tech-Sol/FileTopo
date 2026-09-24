@@ -88,6 +88,32 @@ pub(crate) const JOURNAL_DDL: &str = "
         ON change_events(detected_revision, ordinal);
 ";
 
+/// The whole DDL of the seen/unseen state — `TASK-0038`, `DEC-0036`. One
+/// definition, used by the fresh-file path and the `5 → 6` migration step.
+///
+/// * `seen_change_events` holds the events acknowledged **individually above**
+///   the watermark; an event at or below `schema_meta['seen_through_event_id']`
+///   needs no row here.
+/// * The foreign key makes an acknowledgement of an event that does not exist
+///   impossible at the storage level, not only in the command.
+/// * `idx_change_events_node` keeps the per-node questions ("is this node new,
+///   is it unseen") bounded by that node's own history rather than by the
+///   whole journal.
+///
+/// `change_events` itself is never altered: marking something seen writes
+/// **only** here and in the watermark.
+pub(crate) const SEEN_STATE_DDL: &str = "
+    CREATE TABLE seen_change_events (
+        event_id INTEGER PRIMARY KEY
+            REFERENCES change_events(event_id) ON DELETE CASCADE
+    );
+    CREATE INDEX idx_change_events_node ON change_events(node_id, event_id);
+";
+
+/// The `schema_meta` key of the monotone watermark: every event whose
+/// `event_id` is at or below it is seen.
+pub(crate) const SEEN_WATERMARK_KEY: &str = "seen_through_event_id";
+
 /// The five natures of `P-16`, and no other. Serialised in the same
 /// `SCREAMING_SNAKE_CASE` the table stores.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
@@ -472,6 +498,239 @@ pub(crate) fn validate_schema(connection: &Connection) -> rusqlite::Result<bool>
     Ok(present == REQUIRED_COLUMNS.len() as i64)
 }
 
+/// Whether the v6 seen state is canonical — `TASK-0038`, part of the same
+/// `M-B` step 5 validation as [`validate_schema`]:
+///
+/// * `seen_change_events` exists with its `event_id` column;
+/// * the watermark is present, a non-negative integer, and **not beyond the
+///   newest event** — a watermark past the journal would silently mark every
+///   *future* event as already seen.
+pub(crate) fn validate_seen_schema(connection: &Connection) -> rusqlite::Result<bool> {
+    let has_column: i64 = connection.query_row(
+        "SELECT COUNT(*) FROM pragma_table_info('seen_change_events') WHERE name = 'event_id'",
+        [],
+        |row| row.get(0),
+    )?;
+    if has_column != 1 {
+        return Ok(false);
+    }
+    let Ok(watermark) = seen_watermark(connection) else {
+        return Ok(false);
+    };
+    let newest: i64 = connection.query_row(
+        "SELECT COALESCE(MAX(event_id), 0) FROM change_events",
+        [],
+        |row| row.get(0),
+    )?;
+    Ok(watermark <= newest)
+}
+
+// -- Seen / unseen state — `TASK-0038`, `DEC-0036` ---------------------------
+//
+// The truth is `change_events` (append-only) plus the acknowledgement state
+// kept beside it. `nodes.seen`, inherited from the 0.1 prototype, is neither
+// read nor written here: it describes a node, not a change, cannot represent a
+// deleted node, and predates the journal.
+
+/// The event predicate every seen/unseen query shares, over an alias `e`:
+/// "not acknowledged". `watermark_param` names the bound watermark parameter.
+fn unseen_predicate(watermark_param: &str) -> String {
+    format!(
+        "(e.event_id > {watermark_param} \
+          AND NOT EXISTS (SELECT 1 FROM seen_change_events s WHERE s.event_id = e.event_id))"
+    )
+}
+
+/// The brain's watermark: every event at or below it is seen. Monotone.
+pub(crate) fn seen_watermark(connection: &Connection) -> rusqlite::Result<i64> {
+    let raw: String = connection.query_row(
+        "SELECT value FROM schema_meta WHERE key = ?1",
+        [SEEN_WATERMARK_KEY],
+        |row| row.get(0),
+    )?;
+    raw.parse::<i64>()
+        .ok()
+        .filter(|value| *value >= 0)
+        .ok_or(rusqlite::Error::InvalidQuery)
+}
+
+/// Exact count of events not yet acknowledged, over the **whole** journal.
+pub(crate) fn unseen_event_total(connection: &Connection) -> rusqlite::Result<u64> {
+    let watermark = seen_watermark(connection)?;
+    let count: i64 = connection.query_row(
+        &format!(
+            "SELECT COUNT(*) FROM change_events e WHERE {}",
+            unseen_predicate("?1")
+        ),
+        [watermark],
+        |row| row.get(0),
+    )?;
+    Ok(count.max(0) as u64)
+}
+
+/// What [`mark_event_seen`] did.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MarkEventOutcome {
+    /// `true` when the event was already seen: nothing was written.
+    pub already_seen: bool,
+}
+
+/// What [`mark_all_seen`] did.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MarkAllOutcome {
+    /// The watermark after the call: the newest `event_id` that existed at the
+    /// instant this transaction committed.
+    pub seen_through_event_id: i64,
+    /// Exact number of events that were unseen and now are not.
+    pub newly_seen: u64,
+}
+
+/// The derived state of one **currently present** node.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct NodeChangeState {
+    /// At least one `CREATED` event of this node is unseen.
+    pub is_new: bool,
+    /// At least one event of this node — of any nature — is unseen.
+    pub is_unseen: bool,
+    /// Exact number of this node's unseen events.
+    pub unseen_change_count: u64,
+}
+
+fn immediate(connection: &Connection) -> rusqlite::Result<rusqlite::Transaction<'_>> {
+    // `IMMEDIATE`: the write lock is taken before anything is read, so a
+    // concurrent publication (itself `IMMEDIATE`) is serialised strictly
+    // before or after this call, never interleaved with it.
+    rusqlite::Transaction::new_unchecked(connection, rusqlite::TransactionBehavior::Immediate)
+}
+
+/// **Marks one change seen.** An event that does not exist in this brain's
+/// journal is refused; an already-seen one is a no-op.
+pub(crate) fn mark_event_seen(
+    connection: &Connection,
+    event_id: i64,
+) -> Result<MarkEventOutcome, JournalError> {
+    let transaction = immediate(connection)?;
+    let exists: bool = transaction.query_row(
+        "SELECT EXISTS(SELECT 1 FROM change_events WHERE event_id = ?1)",
+        [event_id],
+        |row| row.get(0),
+    )?;
+    if !exists {
+        return Err(JournalError::EventMissing(event_id));
+    }
+    let watermark = seen_watermark(&transaction)?;
+    let acknowledged: bool = transaction.query_row(
+        "SELECT EXISTS(SELECT 1 FROM seen_change_events WHERE event_id = ?1)",
+        [event_id],
+        |row| row.get(0),
+    )?;
+    let already_seen = event_id <= watermark || acknowledged;
+    if !already_seen {
+        transaction.execute(
+            "INSERT INTO seen_change_events(event_id) VALUES (?1)",
+            [event_id],
+        )?;
+    }
+    transaction.commit()?;
+    Ok(MarkEventOutcome { already_seen })
+}
+
+/// **Marks one element seen**: acknowledges every event of `node_id` that is
+/// unseen *right now*. The node must be present in the Index; nothing about any
+/// other node changes, and a change of this node detected later stays unseen.
+/// Returns the exact number of events newly acknowledged.
+pub(crate) fn mark_node_seen(connection: &Connection, node_id: i64) -> Result<u64, JournalError> {
+    let transaction = immediate(connection)?;
+    let present: bool = transaction.query_row(
+        "SELECT EXISTS(SELECT 1 FROM nodes WHERE id = ?1)",
+        [node_id],
+        |row| row.get(0),
+    )?;
+    if !present {
+        return Err(JournalError::NodeMissing(node_id));
+    }
+    let watermark = seen_watermark(&transaction)?;
+    let newly = transaction.execute(
+        "INSERT OR IGNORE INTO seen_change_events(event_id)
+         SELECT event_id FROM change_events WHERE node_id = ?1 AND event_id > ?2",
+        params![node_id, watermark],
+    )?;
+    transaction.commit()?;
+    Ok(newly as u64)
+}
+
+/// **Marks everything seen**: the watermark advances, in one transaction, to
+/// the newest `event_id` that exists when the transaction holds the write lock.
+/// An event published afterwards has a higher id and stays unseen; one already
+/// present becomes seen. The explicit acknowledgements the new watermark makes
+/// redundant are removed. `change_events` is not touched.
+pub(crate) fn mark_all_seen(connection: &Connection) -> Result<MarkAllOutcome, JournalError> {
+    let transaction = immediate(connection)?;
+    let watermark = seen_watermark(&transaction)?;
+    let newest: i64 = transaction.query_row(
+        "SELECT COALESCE(MAX(event_id), 0) FROM change_events",
+        [],
+        |row| row.get(0),
+    )?;
+    let newly: i64 = transaction.query_row(
+        &format!(
+            "SELECT COUNT(*) FROM change_events e WHERE {}",
+            unseen_predicate("?1")
+        ),
+        [watermark],
+        |row| row.get(0),
+    )?;
+    // Monotone: never moves backwards, whatever the journal holds.
+    let advanced = watermark.max(newest);
+    transaction.execute(
+        "UPDATE schema_meta SET value = ?1 WHERE key = ?2",
+        params![advanced.to_string(), SEEN_WATERMARK_KEY],
+    )?;
+    transaction.execute(
+        "DELETE FROM seen_change_events WHERE event_id <= ?1",
+        [advanced],
+    )?;
+    transaction.commit()?;
+    Ok(MarkAllOutcome {
+        seen_through_event_id: advanced,
+        newly_seen: newly.max(0) as u64,
+    })
+}
+
+/// The derived new/unseen state of a node that is **present in the Index now**.
+/// A node that is gone is not an element anyone can select: refused, while its
+/// events stay readable (and markable) as changes.
+pub(crate) fn node_change_state(
+    connection: &Connection,
+    node_id: i64,
+) -> Result<NodeChangeState, JournalError> {
+    let snapshot = connection.unchecked_transaction()?;
+    let present: bool = snapshot.query_row(
+        "SELECT EXISTS(SELECT 1 FROM nodes WHERE id = ?1)",
+        [node_id],
+        |row| row.get(0),
+    )?;
+    if !present {
+        return Err(JournalError::NodeMissing(node_id));
+    }
+    let watermark = seen_watermark(&snapshot)?;
+    let (unseen, created): (i64, i64) = snapshot.query_row(
+        &format!(
+            "SELECT COUNT(*), COALESCE(SUM(e.nature = 'CREATED'), 0)
+             FROM change_events e WHERE e.node_id = ?2 AND {}",
+            unseen_predicate("?1")
+        ),
+        params![watermark, node_id],
+        |row| Ok((row.get(0)?, row.get(1)?)),
+    )?;
+    snapshot.commit()?;
+    Ok(NodeChangeState {
+        is_new: created > 0,
+        is_unseen: unseen > 0,
+        unseen_change_count: unseen.max(0) as u64,
+    })
+}
+
 // -- Consultation ----------------------------------------------------------
 
 /// A refusal from the journal's read side.
@@ -484,6 +743,14 @@ pub enum JournalError {
     /// The cursor was issued by another index. Refused, never reinterpreted.
     #[error("journal_cursor_foreign: the cursor belongs to another index")]
     ForeignCursor,
+    /// `TASK-0038` — an acknowledgement named an event this brain's journal
+    /// does not hold. Refused, never created.
+    #[error("journal_event_missing: {0}")]
+    EventMissing(i64),
+    /// `TASK-0038` — an element operation named a node that is not in the
+    /// Index now. Same wording as `MapError::NodeMissing`.
+    #[error("map_node_missing: {0}")]
+    NodeMissing(i64),
 }
 
 /// Where a journal page resumes.
@@ -543,6 +810,9 @@ pub struct StoredEvent {
     /// Whether a node with this id exists **now**. Node ids are never
     /// recycled, so `false` means the node is gone for good.
     pub node_present: bool,
+    /// `TASK-0038` — whether the event is acknowledged: at or below the
+    /// brain's watermark, or individually marked above it.
+    pub seen: bool,
 }
 
 /// One bounded page of the journal.
@@ -552,6 +822,10 @@ pub struct JournalPage {
     /// Exact count of events matching the filter — a `COUNT(*)`, never an
     /// estimate.
     pub total: u64,
+    /// `TASK-0038` — exact count of **unseen** events over the whole journal,
+    /// deliberately *not* narrowed by the nature filter: « Tout marquer vu » is
+    /// not filtered either, so this is the number that gesture would affect.
+    pub unseen_total: u64,
     /// `Some` **only** when older matching events remain.
     pub next_cursor: Option<JournalCursor>,
     pub limit: usize,
@@ -593,6 +867,10 @@ pub fn page(
     };
 
     let snapshot = connection.unchecked_transaction()?;
+    // Read inside the page's own snapshot, so the flags, the total and the
+    // unseen count all describe the same instant.
+    let watermark = seen_watermark(&snapshot)?;
+    let unseen_total = unseen_event_total(&snapshot)?;
     let total: i64 = snapshot.query_row(
         &format!("SELECT COUNT(*) FROM change_events e WHERE {filter}"),
         [],
@@ -603,14 +881,16 @@ pub fn page(
                 e.node_kind, e.old_name, e.new_name, e.old_relative_path,
                 e.new_relative_path, e.old_parent_id, e.new_parent_id,
                 e.detected_unix_ms,
-                EXISTS(SELECT 1 FROM nodes n WHERE n.id = e.node_id)
+                EXISTS(SELECT 1 FROM nodes n WHERE n.id = e.node_id),
+                (e.event_id <= ?3
+                 OR EXISTS(SELECT 1 FROM seen_change_events s WHERE s.event_id = e.event_id))
          FROM change_events e
          WHERE e.event_id < ?1 AND {filter}
          ORDER BY e.event_id DESC
          LIMIT ?2"
     ))?;
     let resume_before = after.map_or(i64::MAX, |cursor| cursor.after_event_id);
-    let mut rows = statement.query(params![resume_before, (limit + 1) as i64])?;
+    let mut rows = statement.query(params![resume_before, (limit + 1) as i64, watermark])?;
     let mut items = Vec::with_capacity(limit + 1);
     while let Some(row) = rows.next()? {
         let nature: String = row.get(3)?;
@@ -633,6 +913,7 @@ pub fn page(
             new_parent_id: row.get(11)?,
             detected_unix_ms: row.get(12)?,
             node_present: row.get(13)?,
+            seen: row.get(14)?,
         });
     }
     drop(rows);
@@ -652,6 +933,7 @@ pub fn page(
     Ok(JournalPage {
         items,
         total: total.max(0) as u64,
+        unseen_total,
         next_cursor,
         limit,
     })

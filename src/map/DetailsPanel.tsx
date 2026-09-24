@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { BrainNodeRef, MapNode, NodeChildrenPage, NodeDetail } from "./types";
 import ContentObservationsPanel from "./ContentObservationsPanel";
 import type { ContentObservation, ContentObservationSummary } from "./types";
@@ -56,6 +57,12 @@ interface DetailsPanelProps {
   copyError?: string | null;
   copyActionLabel?: string;
   copyBusyLabel?: string;
+  /**
+   * `TASK-0038` — the journal-derived new/unseen state of the selection,
+   * rendered by its own component. The panel only gives it a place: it holds
+   * no seen/unseen logic and never marks anything.
+   */
+  changeState?: ReactNode;
 }
 
 export interface PanelStrings {
@@ -124,6 +131,7 @@ export default function DetailsPanel({
   copyError = null,
   copyActionLabel = "Copier le chemin",
   copyBusyLabel = "Copie…",
+  changeState = null,
 }: DetailsPanelProps) {
   if (loading) {
     return (
@@ -180,6 +188,8 @@ export default function DetailsPanel({
           ) : null}
         </p>
       ) : null}
+
+      {changeState}
 
       <dl className="details__list">
         <div className="details__row">

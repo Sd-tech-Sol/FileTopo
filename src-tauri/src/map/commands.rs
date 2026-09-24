@@ -531,7 +531,23 @@ fn elapsed_ms(started: Instant) -> f64 {
 /// a [`MapError::BrainMismatch`] rather than another brain's nodes served
 /// under the active brain's name.
 pub fn open_store(paths: &SandboxPaths, brain: &BrainRecord) -> Result<BrainIndex, MapError> {
-    let store = open_for_brain(paths, brain)?;
+    open_store_with(paths, brain, false)
+}
+
+/// [`open_store`] with a **writable** connection — for the three
+/// acknowledgement gestures of `TASK-0038` and nothing else. Every check is the
+/// same one; only the connection's mode differs. A file at an older migratable
+/// schema is migrated through `M-B` exactly as a read would.
+fn open_store_writable(paths: &SandboxPaths, brain: &BrainRecord) -> Result<BrainIndex, MapError> {
+    open_store_with(paths, brain, true)
+}
+
+fn open_store_with(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+    writable: bool,
+) -> Result<BrainIndex, MapError> {
+    let store = open_for_brain_with(paths, brain, writable)?;
     // `DEC-0033` D — the index must also prove it was built from the source the
     // catalogue still binds this brain to. **Both keys**, not just the handle:
     // the same `source_ref` under a different `source_kind` describes a
@@ -561,6 +577,14 @@ pub fn open_store(paths: &SandboxPaths, brain: &BrainRecord) -> Result<BrainInde
 /// demanding it beforehand would strand every index written before
 /// `DEC-0033` — the defect this split repairs.
 fn open_for_brain(paths: &SandboxPaths, brain: &BrainRecord) -> Result<BrainIndex, MapError> {
+    open_for_brain_with(paths, brain, false)
+}
+
+fn open_for_brain_with(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+    writable: bool,
+) -> Result<BrainIndex, MapError> {
     let database = paths.brain_map_database(&brain.brain_id);
     if !database.is_file() {
         return Err(MapError::NotBuilt(brain.brain_id.clone()));
@@ -574,7 +598,7 @@ fn open_for_brain(paths: &SandboxPaths, brain: &BrainRecord) -> Result<BrainInde
     let store = if super::store::is_migratable_schema(BrainIndex::peek_schema_version(&database)?) {
         BrainIndex::open_existing_migrating(&database, true, brain)?
     } else {
-        BrainIndex::open_existing(&database, false)?
+        BrainIndex::open_existing(&database, writable)?
     };
     match store.built_for_brain()? {
         Some(found) if found == brain.brain_id => Ok(store),
@@ -816,6 +840,10 @@ pub struct ChangeEvent {
     /// never recycled, so `false` is permanent: the UI must not offer a
     /// selection for it.
     pub node_present: bool,
+    /// `TASK-0038` — acknowledged (at or below the brain's watermark, or marked
+    /// individually). Derived from the journal's own acknowledgement state,
+    /// never from `nodes.seen`.
+    pub seen: bool,
 }
 
 /// A bounded page of the journal — newest event first, exact `total` for the
@@ -831,6 +859,9 @@ pub struct ChangeJournalPage {
     /// The natures the page was filtered by; empty means every nature.
     pub natures: Vec<ChangeNature>,
     pub total: u64,
+    /// `TASK-0038` — exact count of unseen events over the **whole** journal,
+    /// not narrowed by `natures`: it is what « Tout marquer vu » would affect.
+    pub unseen_total: u64,
     pub items: Vec<ChangeEvent>,
     pub next_cursor: Option<String>,
     pub limit: usize,
@@ -878,6 +909,7 @@ pub fn change_journal(
             new_parent_id: event.new_parent_id,
             detected_unix_ms: event.detected_unix_ms,
             node_present: event.node_present,
+            seen: event.seen,
         })
         .collect();
     Ok(ChangeJournalPage {
@@ -886,9 +918,133 @@ pub fn change_journal(
         index_revision: identity.revision,
         natures: distinct,
         total: page.total,
+        unseen_total: page.unseen_total,
         items,
         next_cursor: page.next_cursor.map(|cursor| cursor.encode()),
         limit: page.limit,
+    })
+}
+
+/// The answer to « marquer ce changement vu » — `TASK-0038`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MarkChangeSeenResult {
+    pub brain_id: String,
+    pub event_id: i64,
+    /// `true` when the event was already seen: nothing was written.
+    pub already_seen: bool,
+}
+
+/// The answer to « marquer cet élément vu » — `TASK-0038`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MarkNodeSeenResult {
+    pub brain_id: String,
+    pub node_id: i64,
+    /// Exact number of this node's events that were unseen and now are not.
+    pub newly_seen_count: u64,
+}
+
+/// The answer to « tout marquer vu » — `TASK-0038`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MarkAllSeenResult {
+    pub brain_id: String,
+    /// The newest `event_id` that existed when the mark committed. An event
+    /// detected afterwards is above it and stays unseen.
+    pub seen_through_event_id: i64,
+    pub newly_seen_count: u64,
+}
+
+/// The journal-derived state of one **present** node — `TASK-0038`, `DEC-0036`:
+/// `isNew` = an unseen `CREATED`; `isUnseen` = at least one unseen event of any
+/// nature. Counters and booleans only.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct NodeChangeStateDto {
+    pub brain_id: String,
+    pub node_id: i64,
+    pub is_new: bool,
+    pub is_unseen: bool,
+    pub unseen_change_count: u64,
+}
+
+/// « Marquer ce changement vu ». The brain and the `event_id` are the whole
+/// input: no path, stable key or system identity crosses this boundary. An
+/// event the brain's journal does not hold is refused; an already-seen one is a
+/// no-op.
+pub fn mark_change_seen(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+    event_id: i64,
+) -> Result<MarkChangeSeenResult, MapError> {
+    let store = open_store_writable(paths, brain)?;
+    let outcome = store.mark_change_seen(event_id)?;
+    Ok(MarkChangeSeenResult {
+        brain_id: brain.brain_id.clone(),
+        event_id,
+        already_seen: outcome.already_seen,
+    })
+}
+
+/// « Marquer cet élément vu ». The input is a [`BrainNodeRef`]: a reference that
+/// names another brain is refused before any file is opened for writing, and a
+/// node that is not in this brain's Index now is refused too.
+pub fn mark_node_seen(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+    reference: &BrainNodeRef,
+) -> Result<MarkNodeSeenResult, MapError> {
+    if !reference.belongs_to(&brain.brain_id) {
+        return Err(MapError::BrainMismatch {
+            expected: brain.brain_id.clone(),
+            found: reference.brain_id.clone(),
+        });
+    }
+    let store = open_store_writable(paths, brain)?;
+    let newly = store.mark_node_changes_seen(reference.node_id)?;
+    Ok(MarkNodeSeenResult {
+        brain_id: brain.brain_id.clone(),
+        node_id: reference.node_id,
+        newly_seen_count: newly,
+    })
+}
+
+/// « Tout marquer vu ». Input: the brain, nothing else. The confirmation is the
+/// interface's job; this call performs the one atomic advance of the watermark.
+pub fn mark_all_changes_seen(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+) -> Result<MarkAllSeenResult, MapError> {
+    let store = open_store_writable(paths, brain)?;
+    let outcome = store.mark_all_changes_seen()?;
+    Ok(MarkAllSeenResult {
+        brain_id: brain.brain_id.clone(),
+        seen_through_event_id: outcome.seen_through_event_id,
+        newly_seen_count: outcome.newly_seen,
+    })
+}
+
+/// The new/unseen state of the selected element — a bounded read, never a
+/// mutation: selecting or displaying an element never marks it seen.
+pub fn node_change_state(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+    reference: &BrainNodeRef,
+) -> Result<NodeChangeStateDto, MapError> {
+    if !reference.belongs_to(&brain.brain_id) {
+        return Err(MapError::BrainMismatch {
+            expected: brain.brain_id.clone(),
+            found: reference.brain_id.clone(),
+        });
+    }
+    let state = open_store(paths, brain)?.node_change_state(reference.node_id)?;
+    Ok(NodeChangeStateDto {
+        brain_id: brain.brain_id.clone(),
+        node_id: reference.node_id,
+        is_new: state.is_new,
+        is_unseen: state.is_unseen,
+        unseen_change_count: state.unseen_change_count,
     })
 }
 
@@ -2283,3 +2439,7 @@ mod stable_identity_tests;
 #[cfg(test)]
 #[path = "change_journal_tests.rs"]
 mod change_journal_tests;
+
+#[cfg(test)]
+#[path = "seen_state_tests.rs"]
+mod seen_state_tests;

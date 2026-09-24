@@ -87,6 +87,12 @@ fn legacy_index(paths: &SandboxPaths, brain: &BrainRecord) {
     drop(connection);
 
     let mut expected = TASK0031_META_KEYS.map(str::to_string).to_vec();
+    // `TASK-0038`: the file this helper strips is a *current* (v6) one, and a
+    // v6 file legitimately carries its seen/unseen watermark — the canonical
+    // validation refuses a v6 file without it. The `DEC-0033` and `TASK-0036`
+    // keys are what the helper removes; this one is deliberately kept, or the
+    // republish this test proves would be refused for an unrelated reason.
+    expected.push("seen_through_event_id".to_string());
     expected.sort();
     assert_eq!(
         meta_keys(paths, brain),

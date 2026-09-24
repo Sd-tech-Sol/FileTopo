@@ -29,6 +29,9 @@ function event(eventId: number, nature: ChangeNature, overrides: Partial<ChangeE
     newParentId: null,
     detectedUnixMs: 1_700_000_000_000,
     nodePresent: true,
+    // Already seen unless a test says otherwise: the TASK-0037 assertions do not
+    // depend on the seen state, and a seen change offers no mutation.
+    seen: true,
     ...overrides,
   };
 }
@@ -40,6 +43,7 @@ function page(items: ChangeEvent[], overrides: Partial<ChangeJournalPage> = {}):
     indexRevision: 3,
     natures: [],
     total: items.length,
+    unseenTotal: items.filter((item) => !item.seen).length,
     items,
     nextCursor: null,
     limit: 50,
@@ -300,8 +304,15 @@ describe("TASK-0037 — report counters and wiring", () => {
     expect(appSource).toContain("<ChangeJournalPanel");
     expect(appSource).toContain('data-testid="change-summary"');
     // The panel names the brain and the node; it has no path to send or show.
+    // TASK-0038: the read, and the two acknowledgement gestures that belong to
+    // the journal itself (« Marquer vu » and « Tout marquer vu »). The per-element
+    // mark lives in NodeChangeState.
     const calls = panelSource.match(/invoke<[^>]+>\("[a-z_]+"/g) ?? [];
-    expect(calls).toEqual(['invoke<ChangeJournalPage>("map_change_journal"']);
+    expect(calls).toEqual([
+      'invoke<ChangeJournalPage>("map_change_journal"',
+      'invoke<MarkChangeSeenResult>("map_change_mark_seen"',
+      'invoke<MarkAllSeenResult>("map_change_mark_all_seen"',
+    ]);
     expect(panelSource).not.toMatch(/absolutePath|stableKey|fileId|volumeSerial|localPath/i);
   });
 });

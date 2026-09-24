@@ -837,6 +837,51 @@ fn map_change_journal(
     .map_err(String::from)
 }
 
+/// `TASK-0038` — « Marquer ce changement vu ». Input: the brain and one
+/// `event_id`; no path, stable key or system identity is accepted.
+#[tauri::command]
+fn map_change_mark_seen(
+    app: tauri::AppHandle,
+    brain_id: String,
+    event_id: i64,
+) -> Result<map::commands::MarkChangeSeenResult, String> {
+    let (paths, brain) = resolve_brain(&app, &brain_id)?;
+    map::commands::mark_change_seen(&paths, &brain, event_id).map_err(String::from)
+}
+
+/// `TASK-0038` — « Marquer cet élément vu ». The only input is a
+/// [`map::brains::BrainNodeRef`].
+#[tauri::command]
+fn map_node_mark_seen(
+    app: tauri::AppHandle,
+    reference: map::brains::BrainNodeRef,
+) -> Result<map::commands::MarkNodeSeenResult, String> {
+    let (paths, brain) = resolve_brain(&app, &reference.brain_id)?;
+    map::commands::mark_node_seen(&paths, &brain, &reference).map_err(String::from)
+}
+
+/// `TASK-0038` — « Tout marquer vu ». The brain is the whole input; the
+/// interface confirms explicitly before invoking it.
+#[tauri::command]
+fn map_change_mark_all_seen(
+    app: tauri::AppHandle,
+    brain_id: String,
+) -> Result<map::commands::MarkAllSeenResult, String> {
+    let (paths, brain) = resolve_brain(&app, &brain_id)?;
+    map::commands::mark_all_changes_seen(&paths, &brain).map_err(String::from)
+}
+
+/// `TASK-0038` — the journal-derived new/unseen state of the selected
+/// element. A read: it never marks anything seen.
+#[tauri::command]
+fn map_node_change_state(
+    app: tauri::AppHandle,
+    reference: map::brains::BrainNodeRef,
+) -> Result<map::commands::NodeChangeStateDto, String> {
+    let (paths, brain) = resolve_brain(&app, &reference.brain_id)?;
+    map::commands::node_change_state(&paths, &brain, &reference).map_err(String::from)
+}
+
 /// `TASK-0035` C — "Copier le chemin". The **only** input is a
 /// [`map::brains::BrainNodeRef`], exactly like [`map_reveal_node`]; the
 /// resolved text is held only long enough to hand it to the clipboard and
@@ -1448,6 +1493,10 @@ pub fn run() {
             map_reveal_node,
             map_node_children,
             map_change_journal,
+            map_change_mark_seen,
+            map_node_mark_seen,
+            map_change_mark_all_seen,
+            map_node_change_state,
             map_copy_node_path,
             map_ui_preferences,
             map_ui_preferences_update,

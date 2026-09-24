@@ -1690,3 +1690,47 @@ input[type="text"] {
   display: flex;
   gap: 8px;
 }
+
+/* --- TASK-0038 — état vu / non vu ------------------------------------- */
+/* Un état est toujours un mot et un symbole : la couleur n'est qu'un renfort. */
+
+.journal__seen {
+  margin: 8px 0;
+  font-size: 12px;
+}
+
+.journal__seen p {
+  margin: 4px 0;
+}
+
+.journal__seen-badge,
+.node-state__badge {
+  display: inline-block;
+  padding: 0 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.journal__seen-badge--unseen,
+.node-state__badge--unseen,
+.node-state__badge--new {
+  border-color: var(--warn);
+  color: var(--warn);
+}
+
+.journal__seen-badge--seen,
+.node-state__badge--seen {
+  border-color: var(--line);
+  color: var(--ink-soft);
+}
+
+.node-state {
+  margin: 6px 0;
+}
+
+.node-state__badge {
+  margin: 0 8px 4px 0;
+}

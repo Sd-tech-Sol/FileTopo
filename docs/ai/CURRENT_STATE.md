@@ -1,5 +1,52 @@
 # État courant
 
+## TASK-0038 — V1 Journal-derived Seen/Unseen State — IMPLEMENTED — 2026-09-23
+
+- **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche
+  `build/v0.2-a22-v1-seen-state`, partie de `TASK-0037 = VERIFIED`
+  ([`ACTION-0061`](../reviews/ACTION-0061-independent-control.md)) et de la porte
+  public-readiness fermée (`ACTION-0063`). Décision :
+  [`DEC-0036`](../decisions/DEC-0036-journal-derived-seen-state.md). Détail :
+  [VALIDATION section BR](VALIDATION.md), `.orchestrator/RESULT.md`.
+- **Ce qui existe maintenant.** Un état **vu / non vu persistant, par cerveau,
+  dérivé du journal** (`F-028`; `P-17` pour la source de vérité, les trois gestes
+  et l'isolation). Schéma **v6** : un watermark
+  `schema_meta['seen_through_event_id']` et une table `seen_change_events`
+  d'acquittements individuels au-dessus, à côté de `change_events` qui reste
+  **append-only** (marquer vu n'en modifie aucune ligne).
+- **Règles.** Un changement est vu s'il est sous le watermark ou acquitté
+  individuellement. Un élément **présent** est **non vu** s'il a au moins un
+  changement non vu, **nouveau** s'il a un `CREATED` non vu (un élément dont la
+  création a été acquittée puis modifié est non vu, plus nouveau). **`nodes.seen`
+  n'est ni lu ni écrit** par la V1; il reste un champ historique.
+- **Trois gestes** (`map_change_mark_seen`, `map_node_mark_seen`,
+  `map_change_mark_all_seen`) et **une lecture** (`map_node_change_state`), aucun
+  ne prenant chemin, clé stable ni identité système; `map_change_journal` porte en
+  plus `seen` par événement et `unseenTotal`. « Tout marquer vu » est **confirmé
+  inline** dans l'interface (premier clic = confirmation seulement, « Annuler »
+  n'appelle rien); rien n'est jamais marqué vu par simple sélection ou affichage.
+- **Migration v5 → v6 par la même frontière `M-B`.** Un bras de plus au
+  dispatcher; le watermark est **baseliné** au plus grand `event_id` déjà présent :
+  l'historique v5 reste entier et consultable mais n'est **pas** présenté comme
+  « non vu » (la V1 ne peut pas prouver qu'il a été lu). Restauration prouvée sur
+  échec de migration **et** de validation; la validation exige le watermark et
+  refuse un watermark au-delà du journal.
+- **Décision à examiner :** `unseenTotal` compte **tout** le journal, sans le
+  filtre de nature (c'est ce que « Tout marquer vu » affecterait).
+- **Preuves.** Rust **474 PASS** (444 + 30 tests `seen_state_tests.rs`), TypeScript
+  **376 PASS** (352 + 24), et **rejeu WebView2 réel avec vrai redémarrage sur deux
+  cerveaux** (`docs/performance/runs/TASK-0038-webview2.json`) : états, gestes,
+  confirmation/annulation, changement après « tout marquer vu » resté non vu,
+  isolation du second cerveau, mêmes drapeaux après redémarrage, 0 fuite, 0 erreur
+  fatale.
+- **Limites.** Détection toujours **manuelle**; les **filtres** `F-022` qui
+  consommeront cet état ne sont **pas** construits; « tout marquer vu » vise tout
+  le journal du cerveau, pas le filtre courant; le harnais `TASK-0037` affirme le
+  schéma 5 et n'a pas été rejoué. Non testé : crash de processus réel pendant la
+  migration, journaux de 100 000+ événements, portable modeste. Aucune `TASK-0039`,
+  PR, fusion, étiquette ni release; `main` inchangé.
+- **Action unique suivante : contrôle indépendant de `TASK-0038`.**
+
 ## Porte de confidentialité (`ACTION-0061` R1) — fermée sur le tree courant — 2026-09-23
 
 - **`TASK-0037 = VERIFIED`** par
