@@ -1,135 +1,165 @@
-# NEXT_PROMPT — TASK-0038 — V1 Journal-derived Seen/Unseen State
+# NEXT_PROMPT — TASK-0039 — V1 Dynamic Filters
 
 **TARGET_AGENT:** CLAUDE CODE  
 **RECOMMENDED_MODEL:** Sonnet 5, high effort  
 **STATUS:** READY  
-**BRANCH:** `build/v0.2-a22-v1-seen-state`
+**BRANCH:** `build/v0.2-a23-v1-dynamic-filters`
 
 ## /goal
 
 Implémenter intégralement
-`docs/tasks/TASK-0038-v1-journal-seen-state.md` selon
-`docs/decisions/DEC-0036-journal-derived-seen-state.md`.
+`docs/tasks/TASK-0039-v1-dynamic-filters.md` selon
+`docs/decisions/DEC-0037-dynamic-filtered-projection.md`.
 
-La tâche doit rendre persistants et par cerveau :
+La tâche livre `F-022 / P-09` :
 
-- l’état vu/non vu d’un changement;
-- l’état nouveau/non vu d’un nœud courant, **dérivé du journal**;
-- « marquer ce changement vu »;
-- « marquer cet élément vu »;
-- « tout marquer vu » avec confirmation UI explicite.
+- état Tout / Nouveaux / Non vus;
+- type;
+- disponibilité;
+- combinaisons;
+- total exact;
+- projection filtrée bornée;
+- match/contexte distingués;
+- pagination filtrée.
 
-Ne pas construire les filtres de carte `F-022`, le watcher `F-030` ni
-l’incrémental `F-031`.
+Ne pas construire le watcher, l’incrémental ni la persistance cross-restart des
+filtres.
 
-## 0 — Préconditions obligatoires
+## 0 — Préconditions
 
 1. Appliquer `AGENTS.md` et `CLAUDE.md`.
 2. Basculer explicitement sur
-   `build/v0.2-a22-v1-seen-state`.
+   `build/v0.2-a23-v1-dynamic-filters`.
 3. `git fetch origin`.
 4. Synchroniser uniquement en fast-forward avec
-   `origin/build/v0.2-a22-v1-seen-state`.
+   `origin/build/v0.2-a23-v1-dynamic-filters`.
 5. Vérifier arbre propre.
 6. Vérifier que HEAD contient :
-   - `ACTION-0061` (TASK-0037 VERIFIED);
-   - `ACTION-0063` (public-readiness fermé);
-   - `DEC-0036`;
-   - `TASK-0038`.
-7. Lire **en entier** `DEC-0036` puis `TASK-0038` avant le premier changement.
+   - `ACTION-0064` — TASK-0038 VERIFIED;
+   - `DEC-0037`;
+   - `TASK-0039`.
+7. Lire en entier `DEC-0037` puis `TASK-0039` avant toute modification.
 
-Si une précondition contredit le dépôt, STOP/BLOCKED et rapporter l’écart. Ne
-pas improviser une autre branche ni une autre architecture.
+STOP/BLOCKED si le dépôt contredit ces préconditions.
 
-## 1 — Audit avant code
+## 1 — Audit / reuse-first
 
-Auditer les implémentations existantes citées par TASK-0038, en particulier :
+Avant de coder, auditer :
 
-- le journal v5 et son curseur;
-- le dispatcher de migration et M-B;
-- `nodes.seen`, `Index::mark_seen`, les vieux chemins prototype
-  `mark_node_seen/query_collection_nodes`;
-- la projection courante et le panneau contextuel;
-- `ChangeJournalPanel`.
+- `projection.rs`;
+- `hierarchy.rs`;
+- `Index::query_nodes` et les index SQLite existants;
+- `change_journal.rs` seen/unseen;
+- `MapApp.tsx` / `MapView.tsx`;
+- les curseurs déjà existants.
 
-Dans `.orchestrator/RESULT.md`, écrire ce qui est **réutilisé**, **adapté** et
-**laissé historique**.
+Le rapport doit distinguer :
 
-Interdiction : réactiver les commandes prototype pour aller plus vite.
-La V1 doit utiliser les frontières `map_*` actuelles et `BrainNodeRef`.
+- réutilisé;
+- adapté;
+- laissé historique.
 
-## 2 — Source de vérité
+Interdictions :
 
-Appliquer `DEC-0036` sans dilution :
+- aucun second Index;
+- aucun whole-corpus JSON;
+- aucun filtre calculé sur les seuls nœuds déjà rendus;
+- aucun usage de `nodes.seen` pour NEW/UNSEEN;
+- aucune réactivation de `query_collection_nodes`.
 
-- `change_events` reste append-only;
-- les acquittements sont séparés;
-- `nodes.seen` n’est jamais la vérité de `isNew/isUnseen`;
-- `new` = CREATED non vu sur nœud courant;
-- `unseen` = au moins un événement non vu sur nœud courant;
-- aucun auto-mark à la sélection ou à l’ouverture.
+## 2 — Exactitude avant UX
 
-Si l’audit démontre qu’un détail SQL proposé par TASK-0038 est mauvais, tu peux
-adapter **la forme** en conservant tous ces invariants; documente le choix.
+La requête filtrée doit être une primitive SQLite bornée et paginée.
 
-## 3 — Migration v6
+Le total est calculé côté Rust/SQLite sur le corpus canonique, jamais au
+frontend.
 
-Faire le saut v5→v6 via **le même M-B**, sans second chemin.
+NEW / UNSEEN utilisent uniquement la vérité de DEC-0036.
 
-La migration d’un vrai v5 existant doit baseliner l’état vu/non-vu au dernier
-`event_id` déjà présent : historique conservé, mais aucun faux backlog
-« non vu » fabriqué au moment où la fonction apparaît.
+Type et disponibilité utilisent uniquement les colonnes canoniques de
+`nodes`.
 
-Conserver les preuves de restauration migration/validation et les scénarios
-v3/v4/v5 qui restent supportés par le dispatcher.
+La racine n’est jamais un match.
 
-## 4 — Mutations et lecture
+## 3 — Projection filtrée
 
-Implémenter les trois gestes et l’état du nœud avec transactions et isolation
-par cerveau. Les commandes Tauri n’acceptent ni chemin ni identité système.
+Préserver **strictement** le comportement de `map_view` quand aucun filtre
+n’est actif.
 
-Points à contrôler explicitement :
+Quand un filtre est actif :
 
-- event inexistant → refus clair;
-- node inexistant → refus clair;
-- idempotence;
-- mark-all ne voit que les événements commités avant son propre commit;
-- événement futur reste non vu;
-- curseur journal inchangé et toujours valide après marquage;
-- aucun autre cerveau touché.
+- construire une vue spécialisée à partir d’une page de matches;
+- ajouter seulement les ancêtres nécessaires;
+- distinguer matches et contexte;
+- conserver de vraies arêtes parent/enfant seulement;
+- ne pas transformer les agrégats enfants de la vue normale en résultats de
+  filtre;
+- conserver les budgets DEC-0031 / DEC-0034;
+- pagination sans accumulation.
+
+Si l’audit montre qu’un détail du DTO proposé par TASK-0039 doit être ajusté,
+adapter la forme, pas les invariants.
+
+## 4 — Cursor
+
+Le cursor filtré doit être opaque/versionné et lié au minimum à :
+
+- index_id;
+- index_revision;
+- filtre canonique;
+- dernier match.
+
+Refuser explicitement un cursor d’un autre index, d’une autre révision ou d’un
+autre filtre.
+
+Pas d’OFFSET sur le hot path.
 
 ## 5 — UI
 
-Réutiliser le panneau « Changements » et le panneau contextuel existant.
+Le filtre actif doit être lisible sans couleur seule.
 
-« Tout marquer vu » doit être **confirmé inline** : aucune mutation sur le
-premier clic ni sur Annuler.
+- État : Tout / Nouveaux / Non vus;
+- Type : dossiers / fichiers / ignorés;
+- Disponibilité : Tout / local / en ligne seulement;
+- Réinitialiser les filtres;
+- compteur exact;
+- match = « Correspondance »;
+- ancêtre = « Contexte »;
+- page suivante/précédente;
+- switch de cerveau : aucun état transporté.
 
-Ne pas utiliser seulement la couleur pour Vu/Non vu/Nouveau.
+Après une mutation TASK-0038, si NEW ou UNSEEN est actif, relire la projection
+depuis le backend.
 
 ## 6 — Preuves
 
-Les tests de TASK-0038 sont des critères de sortie, pas des suggestions.
+Les tests listés dans TASK-0039 sont obligatoires.
 
-Rejouer les suites et le WebView2 réel demandés. L’artefact de preuve doit
-rester synthétique et public-safe.
+Le test 100k doit prouver exactitude + sortie bornée, sans inventer de nouveau
+budget de performance.
 
-Rejouer aussi :
+Le WebView2 doit employer des données générées par la preuve uniquement.
+Ne pas fabriquer un vrai placeholder Cloud Files pour tester ONLINE_ONLY :
+cette branche peut rester prouvée au niveau Rust.
+
+## 7 — Validation / confidentialité
+
+Rejouer toutes les validations demandées, y compris :
 
 `scripts/audit-public-readiness.ps1 -AllowRemotes`
 
-et ne pas élargir ses exceptions.
+Ne pas élargir son allowlist.
 
-## 7 — Gouvernance
+## 8 — Gouvernance
 
 À la fin :
 
-- TASK-0038 = `IMPLEMENTED`, jamais `VERIFIED`;
-- aucune TASK-0039;
-- pas de watcher/incrémental/filtres de carte;
+- TASK-0039 = `IMPLEMENTED`, jamais `VERIFIED`;
+- aucune TASK-0040;
+- pas de watcher/incrémental;
 - pas de PR/merge/tag/release;
-- mettre à jour seulement les documents durables demandés;
+- durable docs à jour;
 - `.orchestrator/RESULT.md` complet;
-- `NEXT_ACTION` = contrôle indépendant de TASK-0038;
-- commit + push sur la branche;
+- `NEXT_ACTION` = contrôle indépendant de TASK-0039;
+- push uniquement sur la branche;
 - arbre propre.
