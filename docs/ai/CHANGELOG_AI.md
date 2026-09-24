@@ -5665,3 +5665,15 @@ précréation de `TASK-0038` par l'exécuteur.
   Clippy : dette historique seule, aucun diagnostic dans les fichiers touchés.
 - Limites : `ONLINE_ONLY` niveau Rust; filtres non persistés (`P-19`); latence non
   mesurée. Aucune `TASK-0040`, watcher, incrémental, PR, fusion, étiquette ni release.
+
+
+## 2026-09-23 — ACTION-0065 / préparation TASK-0040
+
+**Orchestrateur :** ChatGPT
+
+- contrôle indépendant de TASK-0039 : VERIFIED;
+- audit de F-029/F-030/F-031/F-032, DEC-0010, BASELINE_TARGETS §3.3 et du flux réel `publish_map -> Index::publish`;
+- constat : actualisation actuelle sûre mais toujours full-scan/full-replacement;
+- DEC-0038 approuvée : noyau U-B avant watcher;
+- TASK-0040 créée READY sur `build/v0.2-a24-v1-incremental-apply`;
+- aucune commande watcher, aucune TASK-0041, aucun code produit exécuté par l’orchestrateur.
