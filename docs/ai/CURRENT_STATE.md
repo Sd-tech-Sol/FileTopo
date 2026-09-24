@@ -2820,3 +2820,13 @@ est levée pour Claude Code**; elle **reste entière pour Codex**.
 - `DEC-0038` : **APPROVED** — construire d’abord le noyau U-B interne, sans watcher ni nouvelle commande WebView.
 - `TASK-0040` : **READY** sur `build/v0.2-a24-v1-incremental-apply`.
 - Critère de rejet F-031 à mesurer : ratio médian 100k/1k à 10 changements ≤ 2.
+
+
+## Mise à jour 2026-09-24 — après TASK-0040
+
+- `TASK-0040` : **VERIFIED** par `ACTION-0067`.
+- Preuve canonique F-031 : ratio médian 100k/1k à 10 changements = **1,533 ≤ 2** sur 35 mesures brutes par cas; anciennes campagnes, dont le 2,11, conservées.
+- Audit F-029 : le bouton Actualiser et le résumé existent déjà, mais `map_refresh` appelle encore la publication complète après le scan.
+- `DEC-0039` : **APPROVED** — Actualiser un Index estampé doit dériver un lot minimal et appeler U-B; Reconstruire reste full explicite.
+- `TASK-0041` : **READY** sur `build/v0.2-a25-v1-manual-refresh-incremental`.
+- Watcher/W-B/W-C/F-032 restent hors portée.
