@@ -424,7 +424,7 @@ pub struct MapSelfCheck {
     pub detail_mismatches: Vec<String>,
 }
 
-fn now_ms() -> i64 {
+pub(super) fn now_ms() -> i64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
@@ -448,7 +448,11 @@ pub fn build_map(
 }
 
 // Serialize publications in this runtime; readers retain SQLite snapshots.
-static PUBLICATION_LOCK: Mutex<()> = Mutex::new(());
+//
+// **The one write coordination** (`TASK-0043` J): **Actualiser**, **Reconstruire** and the
+// automatic watcher's reconciliations (`map::watch_ops`) all take this very lock, so two
+// logical writers never compete for the Index. Nothing else is a second mechanism.
+pub(super) static PUBLICATION_LOCK: Mutex<()> = Mutex::new(());
 
 /// The one lifecycle entry behind **Actualiser** and **Reconstruire**.
 ///
@@ -776,7 +780,10 @@ pub fn open_store(paths: &SandboxPaths, brain: &BrainRecord) -> Result<BrainInde
 /// acknowledgement gestures of `TASK-0038` and nothing else. Every check is the
 /// same one; only the connection's mode differs. A file at an older migratable
 /// schema is migrated through `M-B` exactly as a read would.
-fn open_store_writable(paths: &SandboxPaths, brain: &BrainRecord) -> Result<BrainIndex, MapError> {
+pub(super) fn open_store_writable(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+) -> Result<BrainIndex, MapError> {
     open_store_with(paths, brain, true)
 }
 
@@ -2708,6 +2715,12 @@ mod incremental_apply_tests;
 #[cfg(test)]
 #[path = "refresh_incremental_tests.rs"]
 mod refresh_incremental_tests;
+
+/// `TASK-0043` — the targeted reconciliation (`W-B`) against a full scan. `pub(crate)` so
+/// the watcher's own tests reuse its fixture and its full-scan reference.
+#[cfg(test)]
+#[path = "watch_scope_tests.rs"]
+pub(crate) mod watch_scope_tests;
 
 #[cfg(test)]
 #[path = "source_availability_tests.rs"]

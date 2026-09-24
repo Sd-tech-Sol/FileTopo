@@ -34,7 +34,11 @@ mod scale_query;
 #[cfg(test)]
 mod scale_spike;
 mod scanner;
+/// `W-B` — targeted re-enumeration and reconciliation of hinted scopes (`TASK-0043`).
+mod scope;
 mod synthetic;
+/// Automatic watching — hints, bounded queue, `W-B` / `W-C` reconciliation (`TASK-0043`).
+mod watch;
 
 use domain::{
     AppHealth, CollectionSnapshot, CollectionSummary, IndexProgress, NodePage, NodeQueryRequest,
@@ -51,7 +55,7 @@ use std::path::{Component, Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use tauri_plugin_dialog::DialogExt;
 
@@ -719,11 +723,14 @@ async fn map_refresh(
     brain_id: String,
 ) -> Result<map::commands::MapBuildReport, String> {
     let (paths, brain) = resolve_brain(&app, &brain_id)?;
-    tauri::async_runtime::spawn_blocking(move || {
+    let watched = brain.clone();
+    let result = tauri::async_runtime::spawn_blocking(move || {
         map::commands::refresh_map(&paths, &brain).map_err(String::from)
     })
     .await
-    .map_err(|_| "map_worker_failed".to_string())?
+    .map_err(|_| "map_worker_failed".to_string())?;
+    watch_after_manual_gesture(&app, &watched);
+    result
 }
 
 #[tauri::command]
@@ -732,12 +739,48 @@ async fn map_rebuild(
     brain_id: String,
 ) -> Result<map::commands::MapBuildReport, String> {
     let (paths, brain) = resolve_brain(&app, &brain_id)?;
-    tauri::async_runtime::spawn_blocking(move || {
+    let watched = brain.clone();
+    let result = tauri::async_runtime::spawn_blocking(move || {
         map::commands::rebuild_map(&paths, &brain).map_err(String::from)
     })
     .await
-    .map_err(|_| "map_worker_failed".to_string())?
+    .map_err(|_| "map_worker_failed".to_string())?;
+    watch_after_manual_gesture(&app, &watched);
+    result
 }
+
+/// `TASK-0043` J — a manual **Actualiser** or **Reconstruire** just finished (or was
+/// refused): the watcher of that brain adopts the revision, re-checks the source, and —
+/// for a brain that has just been indexed for the first time — is started. The watcher
+/// never runs a second, competing write: it shares the publication lock with these two
+/// gestures, and whatever it received meanwhile is reconciled after them, not discarded.
+fn watch_after_manual_gesture(app: &tauri::AppHandle, brain: &map::brains::BrainRecord) {
+    if let Some(manager) = app.try_state::<watch::WatchManager>() {
+        manager.after_manual(brain);
+    }
+}
+
+/// **The state of a brain's automatic watcher** — `TASK-0043`, `DEC-0041` §8.
+///
+/// Takes the brain and nothing else, is read-only, and answers from the process' own
+/// memory: it never resolves the root, never stats it and never scans. The answer is a
+/// closed state, a closed mode, a revision and a bool — no path, no file name, no key, no
+/// identity, no operating-system message. A brain that is not watched (a synthetic
+/// fixture, one never indexed) is `STOPPED`. The watcher itself is **backend-owned**:
+/// nothing here starts one.
+#[tauri::command]
+fn map_watch_status(app: tauri::AppHandle, brain_id: String) -> Result<watch::WatchStatus, String> {
+    // An unknown brain is an error that names it — `K2` — never a default.
+    resolve_brain(&app, &brain_id)?;
+    Ok(app
+        .try_state::<watch::WatchManager>()
+        .map(|manager| manager.status(&brain_id))
+        .unwrap_or_else(|| watch::WatchStatus::stopped(&brain_id)))
+}
+
+/// The one backend event of the watcher: its payload is exactly [`watch::WatchStatus`] —
+/// a brain, a closed state and mode, a revision, a bool and a sequence number.
+const WATCH_STATUS_EVENT: &str = "map-watch-status";
 
 #[tauri::command]
 async fn map_prepare_synthetic_source(
@@ -1511,7 +1554,32 @@ pub fn run() {
                     let _ = window.set_focus();
                 }
             }
+            // `TASK-0043` — the automatic watcher is **backend-owned**: it starts here,
+            // for every `REAL_ROOT` brain that already has an Index, and each one opens
+            // with a mandatory full verification. The interface never starts one and
+            // never polls: it listens to one closed event.
+            if let Ok(paths) = map_sandbox(app.handle()) {
+                let emitter = app.handle().clone();
+                let manager = watch::WatchManager::from_environment(
+                    paths,
+                    Arc::new(move |status: &watch::WatchStatus| {
+                        let _ = emitter.emit(WATCH_STATUS_EVENT, status.clone());
+                    }),
+                );
+                manager.start_all();
+                app.manage(manager);
+            }
             Ok(())
+        })
+        // Closing the last window releases every native handle and joins every watcher
+        // thread (bounded: a worker inside a long manual publication is not waited for
+        // beyond a few seconds).
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::Destroyed = event
+                && let Some(manager) = window.app_handle().try_state::<watch::WatchManager>()
+            {
+                manager.shutdown(std::time::Duration::from_secs(3));
+            }
         })
         .invoke_handler(tauri::generate_handler![
             map_fixtures,
@@ -1521,6 +1589,7 @@ pub fn run() {
             map_brain_choose_real_root,
             map_open,
             map_source_observation,
+            map_watch_status,
             map_refresh,
             map_rebuild,
             map_prepare_synthetic_source,
@@ -1698,54 +1767,109 @@ mod integration_tests {
     }
 
     /// `TASK-0042` — the source observation is readable by the WebView through one
-    /// command that takes **only a brain**, and the slice added **no watcher, no
-    /// polling and no notification command**: the only new surface is a read of
-    /// FileTopo's own local state (`F-030` is a later slice).
+    /// command that takes **only a brain**.
+    ///
+    /// `TASK-0043` — and the automatic watcher adds exactly **one** more read: the state of a
+    /// brain's watcher. Still nothing that starts a watcher, polls, subscribes or accepts a
+    /// place on disk: the watcher is backend-owned, and the interface only listens to one
+    /// closed event.
     #[test]
-    fn the_source_observation_command_takes_only_a_brain_and_no_watcher_was_added() {
+    fn the_source_observation_and_watch_status_commands_take_only_a_brain() {
         let exposed = registered_commands();
-        assert!(
-            exposed.iter().any(|name| name == "map_source_observation"),
-            "TASK-0042 needs `map_source_observation` reachable from the WebView"
-        );
+        for required in ["map_source_observation", "map_watch_status"] {
+            assert!(
+                exposed.iter().any(|name| name == required),
+                "`{required}` must be reachable from the WebView"
+            );
+        }
         for name in &exposed {
             for forbidden in [
-                "watch",
                 "poll",
                 "notify",
                 "monitor",
                 "subscribe",
                 "observe_source",
+                "watch_start",
+                "watch_stop",
+                "watch_ensure",
+                "watch_restart",
             ] {
                 assert!(
                     !name.contains(forbidden),
-                    "`{name}` looks like a watcher; F-030 is not part of TASK-0042"
+                    "`{name}` looks like a way to drive or poll a watcher"
+                );
+            }
+            if name.contains("watch") {
+                assert_eq!(
+                    name, "map_watch_status",
+                    "the only watcher command is the read-only status"
                 );
             }
         }
-        let start = THIS_SOURCE
-            .find("async fn map_source_observation(")
-            .expect("map_source_observation must be defined in this file");
-        let end = THIS_SOURCE[start..]
-            .find(") -> Result<map::source_observation::SourceObservation, String> {")
-            .expect("its signature must end where expected");
-        let signature = &THIS_SOURCE[start..start + end];
-        assert!(signature.contains("brain_id: String"), "{signature}");
-        for forbidden in ["path", "root", "folder", "directory", "Path"] {
-            assert!(
-                !signature.contains(forbidden),
-                "map_source_observation must not accept `{forbidden}`: {signature}"
-            );
+        for (command, returns, must_call) in [
+            (
+                "async fn map_source_observation(",
+                ") -> Result<map::source_observation::SourceObservation, String> {",
+                Some("read_source_observation"),
+            ),
+            (
+                "fn map_watch_status(",
+                ") -> Result<watch::WatchStatus, String> {",
+                None,
+            ),
+        ] {
+            let start = THIS_SOURCE
+                .find(command)
+                .unwrap_or_else(|| panic!("{command} must be defined in this file"));
+            let end = THIS_SOURCE[start..]
+                .find(returns)
+                .expect("its signature must end where expected");
+            let signature = &THIS_SOURCE[start..start + end];
+            assert!(signature.contains("brain_id: String"), "{signature}");
+            for forbidden in ["path", "root", "folder", "directory", "Path"] {
+                assert!(
+                    !signature.contains(forbidden),
+                    "{command} must not accept `{forbidden}`: {signature}"
+                );
+            }
+            // Its body reads FileTopo's own state and never the source.
+            let body_end = THIS_SOURCE[start..]
+                .find("\n}\n")
+                .expect("end of the command");
+            let body = &THIS_SOURCE[start..start + body_end];
+            if let Some(call) = must_call {
+                assert!(body.contains(call));
+            }
+            for forbidden in [
+                "refresh_map",
+                "rebuild_map",
+                "scan",
+                "resolve(",
+                "metadata",
+                "ensure(",
+                "start_all",
+            ] {
+                assert!(!body.contains(forbidden), "{command}: {forbidden}");
+            }
         }
-        // Its body reads FileTopo's own state and never the source.
-        let body_end = THIS_SOURCE[start..]
-            .find("\n}\n")
-            .expect("end of map_source_observation");
-        let body = &THIS_SOURCE[start..start + body_end];
-        assert!(body.contains("read_source_observation"));
-        for forbidden in ["refresh_map", "rebuild_map", "scan", "resolve(", "metadata"] {
-            assert!(!body.contains(forbidden), "{forbidden}");
-        }
+    }
+
+    /// `TASK-0043` — the watcher's event carries a closed envelope and nothing else: it is
+    /// emitted from exactly one place, with the status value itself.
+    #[test]
+    fn the_watch_event_carries_only_the_closed_status() {
+        // The product code only — this test's own text mentions the call it looks for.
+        let runtime = THIS_SOURCE
+            .split("mod integration_tests {")
+            .next()
+            .expect("the runtime source");
+        assert_eq!(
+            runtime.matches(".emit(").count(),
+            1,
+            "the runtime emits exactly one backend event"
+        );
+        assert!(runtime.contains("emitter.emit(WATCH_STATUS_EVENT, status.clone())"));
+        assert!(runtime.contains("const WATCH_STATUS_EVENT: &str = \"map-watch-status\";"));
     }
 
     #[test]

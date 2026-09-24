@@ -26,6 +26,8 @@ pub mod source;
 /// The last source observation of a brain — `TASK-0042`, `DEC-0040`.
 pub mod source_observation;
 pub mod store;
+/// What the automatic watcher does to a brain, under the publication lock — `TASK-0043`.
+pub(crate) mod watch_ops;
 
 use thiserror::Error;
 

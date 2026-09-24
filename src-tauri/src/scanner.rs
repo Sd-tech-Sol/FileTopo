@@ -139,46 +139,29 @@ pub fn scan_tree_controlled(
                     continue;
                 }
             };
-            let reparse = is_reparse_point(&metadata) || metadata.file_type().is_symlink();
-            let kind = if reparse {
-                NodeKind::Skipped
-            } else if metadata.is_dir() {
-                NodeKind::Directory
-            } else if metadata.is_file() {
-                NodeKind::File
-            } else {
-                NodeKind::Skipped
-            };
+            // One classification, shared with the `W-B` scope scan
+            // (`observe_entry`): the same kind, the same `SYSTEM` / `PATH_FALLBACK`
+            // identity, the same Cloud Files boundary — never a second set of rules.
+            let observed = observe_entry(&entry.path(), &relative, &metadata);
+            let kind = observed.kind;
             let id = next_id;
             next_id += 1;
-            let relative_display = display_relative(&relative);
-            let online_only = is_online_only(&metadata);
-            // `ACTION-0057` D3: the identity is computed from the raw `Path`
-            // the scanner just walked, never from `relative_display` — that
-            // string has already been through `to_string_lossy()` and can
-            // fold two distinct raw paths onto the same text.
-            let (stable_key, provenance) =
-                identity::compute_identity(&entry.path(), &relative, kind, reparse, online_only);
             identities.push(NodeIdentity {
                 node_id: id,
-                stable_key,
-                provenance,
+                stable_key: observed.stable_key,
+                provenance: observed.provenance,
             });
             nodes.push(NodeDto {
                 id,
                 parent_id: Some(directory.node_id),
                 name: entry.file_name().to_string_lossy().into_owned(),
-                relative_path: relative_display,
+                relative_path: display_relative(&relative),
                 kind,
                 depth: directory.depth + 1,
-                size_bytes: if metadata.is_file() {
-                    metadata.len()
-                } else {
-                    0
-                },
-                modified_unix_ms: modified_ms(&metadata),
-                online_only,
-                reparse_point: reparse,
+                size_bytes: observed.size_bytes,
+                modified_unix_ms: observed.modified_unix_ms,
+                online_only: observed.online_only,
+                reparse_point: observed.reparse_point,
                 child_count: 0,
                 seen: false,
             });
@@ -216,11 +199,66 @@ pub fn scan_tree_controlled(
     })
 }
 
-fn display_relative(path: &Path) -> String {
+/// What one directory entry is, as the scanner reads it — metadata only, never
+/// content. **The single classification** used by the full scan
+/// ([`scan_tree_controlled`]) and by the `W-B` scope scan (`crate::scope`,
+/// `TASK-0043`): a reparse point or a symbolic link is `Skipped` and never
+/// followed, anything that is neither a directory nor a file is `Skipped`, and
+/// the identity follows `DEC-0009` / `DEC-0035` exactly as a full scan computes it.
+///
+/// `ACTION-0057` D3: the identity is computed from the raw `Path` just walked,
+/// never from the lossy display string.
+#[derive(Debug, Clone)]
+pub(crate) struct ObservedEntry {
+    pub kind: NodeKind,
+    pub reparse_point: bool,
+    pub online_only: bool,
+    pub size_bytes: u64,
+    pub modified_unix_ms: Option<i64>,
+    pub stable_key: String,
+    pub provenance: identity::IdentityProvenance,
+}
+
+/// Classifies an entry from the metadata of the entry **itself**
+/// (`symlink_metadata`), and resolves its stable identity.
+pub(crate) fn observe_entry(
+    absolute: &Path,
+    relative: &Path,
+    metadata: &fs::Metadata,
+) -> ObservedEntry {
+    let reparse = is_reparse_point(metadata) || metadata.file_type().is_symlink();
+    let kind = if reparse {
+        NodeKind::Skipped
+    } else if metadata.is_dir() {
+        NodeKind::Directory
+    } else if metadata.is_file() {
+        NodeKind::File
+    } else {
+        NodeKind::Skipped
+    };
+    let online_only = is_online_only(metadata);
+    let (stable_key, provenance) =
+        identity::compute_identity(absolute, relative, kind, reparse, online_only);
+    ObservedEntry {
+        kind,
+        reparse_point: reparse,
+        online_only,
+        size_bytes: if metadata.is_file() {
+            metadata.len()
+        } else {
+            0
+        },
+        modified_unix_ms: modified_ms(metadata),
+        stable_key,
+        provenance,
+    }
+}
+
+pub(crate) fn display_relative(path: &Path) -> String {
     path.to_string_lossy().replace('\\', "/")
 }
 
-fn modified_ms(metadata: &fs::Metadata) -> Option<i64> {
+pub(crate) fn modified_ms(metadata: &fs::Metadata) -> Option<i64> {
     metadata
         .modified()
         .ok()?
@@ -240,7 +278,7 @@ fn file_attributes(_metadata: &fs::Metadata) -> u32 {
     0
 }
 
-fn is_reparse_point(metadata: &fs::Metadata) -> bool {
+pub(crate) fn is_reparse_point(metadata: &fs::Metadata) -> bool {
     file_attributes(metadata) & FILE_ATTRIBUTE_REPARSE_POINT != 0
 }
 
