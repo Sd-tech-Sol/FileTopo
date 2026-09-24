@@ -1,18 +1,20 @@
 # Action suivante
 
-## Contrôle indépendant de TASK-0040
+## Recontrôle F-031 de TASK-0040 — ACTION-0066 P1
 
-`TASK-0040 — V1 Incremental Update Application Kernel` est **`IMPLEMENTED`**, pas
-`VERIFIED`, sur `build/v0.2-a24-v1-incremental-apply`
-([`DEC-0038`](../decisions/DEC-0038-incremental-application-kernel.md)).
+Le noyau U-B de `TASK-0040` est **accepté fonctionnellement** par
+[`ACTION-0066`](../reviews/ACTION-0066-task0040-independent-recontrol.md),
+mais la tâche reste `IMPLEMENTED`, pas `VERIFIED`.
 
-Action unique : contrôle indépendant de `TASK-0040`, sur preuves — `.orchestrator/RESULT.md`,
-[`VALIDATION.md` section BT](VALIDATION.md), `incremental.rs`,
-`map/incremental_apply_tests.rs`, et les sept artefacts
-`docs/performance/runs/TASK-0040-incremental-apply-*.json`.
+Blocage unique : le critère de rejet F-031
+`median(100k/10) / median(1k/10) <= 2` n’est pas encore établi de façon
+robuste. Une campagne standard `opt-level=3` a produit **2,11 (FAIL)**,
+alors que les répétitions donnent 1,72 et 1,82.
 
-Points à trancher par le contrôle : le ratio 100k/1k (une campagne sur sept à 2,11) suffit-il
-à `F-031`; les sept décisions listées dans `CURRENT_STATE.md`.
+Action unique : exécuter `.orchestrator/NEXT_PROMPT.md` sur
+`build/v0.2-a24-v1-incremental-apply` pour produire la mesure canonique
+pré-définie de cinq campagnes / 35 échantillons par cas, **sans modifier le
+noyau ni le seuil**.
 
-Hors portée : watcher `F-030`, indisponibilité `F-032`, remplacement de `map_refresh`,
-`TASK-0041`.
+Aucune TASK-0041, aucun watcher et aucun branchement de `map_refresh` avant
+ce recontrôle.
