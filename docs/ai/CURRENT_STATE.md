@@ -1,5 +1,31 @@
 # État courant
 
+## TASK-0042 — correctif ACTION-0069 (P1 / P1b) — toujours IMPLEMENTED — 2026-09-24
+
+- **Statut : `TASK-0042` reste `IMPLEMENTED`, jamais auto-`VERIFIED`.** Correctif étroit de
+  [`ACTION-0069`](../reviews/ACTION-0069-task0042-independent-recontrol.md), commit `4bed627`.
+  Fondation `F-032` inchangée (aucun watcher, polling, W-B/W-C, `TASK-0043`, nouvelle base;
+  `incremental.rs` intact).
+- **P1 fermé.** Une observation dont **l'écriture** dans `catalog_meta` échoue est aussi gardée
+  dans un emplacement **en mémoire du processus**, un par cerveau (`source_observation.rs`,
+  `TRANSIENT`). `read()` le sert **en premier**, toujours `persisted:false`. Il n'est jamais écrit
+  sur disque implicitement, il est retiré dès qu'une écriture réussit, un redémarrage le perd (par
+  conception). Un Actualiser refusé (racine absente) dont le record ne peut pas s'écrire montre
+  donc `UNAVAILABLE / ROOT_NOT_FOUND / persisted:false`, plus le vieux `SYNCED`.
+- **P1b fermé.** Un record d'**échec** dont `lastSuccessfulRevision = Some(R)` avec `R` ≠ révision
+  servie est **périmé** et se lit `UNKNOWN` (jamais `SYNCED`), comme un `SYNCED` d'une autre
+  révision. Un échec sans succès enregistré (`None`) reste valide.
+- **Limite dite honnêtement.** L'emplacement mémoire corrige **la session**, pas un crash ni un
+  redémarrage : une observation qui n'a jamais pu être écrite n'est pas retrouvée après
+  redémarrage; le record sur disque est alors jugé contre la révision servie (`UNKNOWN` s'il ne la
+  décrit plus). **Aucune atomicité Index / catalogue n'est prétendue.**
+- **Preuves.** Rust **629 PASS** (626 + 3 nouveaux; 2 tests existants ajustés, voir VALIDATION
+  BX), TypeScript **439 PASS** (438 + 1 : rendu réel de `MapApp`), `pnpm check`, `pnpm build`,
+  `cargo build --offline` PASS, Clippy 13 lib / 22 lib-test = dette historique, aucun diagnostic
+  dans un fichier touché. WebView2 **non rejoué** : l'interface visible et le transport ne
+  changent pas (le test de rendu couvre le `catch`).
+- **Action unique suivante : contrôle indépendant du correctif P1 / P1b.**
+
 ## TASK-0042 — V1 Source Availability & Stale Index Foundation — IMPLEMENTED — 2026-09-24
 
 - **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche

@@ -1,22 +1,15 @@
 # Action suivante
 
-## Recontrôle TASK-0042 — ACTION-0069 P1/P1b
+## Contrôle indépendant du correctif TASK-0042 — ACTION-0069 P1 / P1b
 
-La fondation `TASK-0042` est fonctionnellement acceptée, mais reste
-`IMPLEMENTED`, pas `VERIFIED`.
+`TASK-0042` reste `IMPLEMENTED`, pas `VERIFIED`. Le correctif (commit `4bed627`) :
 
-Blocage unique : si la source est réellement indisponible **et** que l'écriture
-du petit record `source_observation.*` échoue, le frontend peut relire l'ancien
-record persisté et afficher un état périmé (par exemple `SYNCED`).
+- garde en mémoire du processus, un par cerveau, l'observation dont l'écriture a échoué, et la
+  sert avec `persisted:false` (fin du `SYNCED` périmé après un Actualiser refusé);
+- lit `UNKNOWN` un record d'échec dont `lastSuccessfulRevision` n'est pas la révision servie.
 
-`ACTION-0069` exige donc deux corrections étroites :
+Action unique : contrôle indépendant, sur preuves, de `docs/ai/VALIDATION.md` section BX,
+`map/source_observation.rs`, les trois nouveaux tests de `map/source_availability_tests.rs` et
+`src/map/refreshFailure.test.tsx`. Limite à juger : le fallback corrige la session, pas un crash.
 
-- rendre l'observation courante disponible avec `persisted:false` dans la
-  session même si son write échoue;
-- invalider aussi un ancien **failure record** dont
-  `lastSuccessfulRevision` ne correspond plus à la révision servie.
-
-Action unique : exécuter `.orchestrator/NEXT_PROMPT.md` sur
-`build/v0.2-a26-v1-source-availability`.
-
-Aucune TASK-0043, aucun watcher/polling/W-B/W-C avant fermeture de P1/P1b.
+Aucune TASK-0043, aucun watcher/polling/W-B/W-C avant ce contrôle.

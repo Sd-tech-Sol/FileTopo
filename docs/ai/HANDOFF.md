@@ -1,5 +1,27 @@
 # HANDOFF — passage de relais
 
+## Relais actuel — TASK-0042, correctif ACTION-0069 P1/P1b, en attente de contrôle — 2026-09-24
+
+- **Fait :** commit `4bed627` sur `build/v0.2-a26-v1-source-availability`. `TASK-0042` reste
+  `IMPLEMENTED`. Aucune TASK-0043, watcher, polling, W-B/W-C, PR, fusion, étiquette ni release.
+- **Où regarder :** `map/source_observation.rs` (`describes`, `TRANSIENT`, `commit`,
+  `lose_transient_as_a_restart_would` réservé aux tests); les trois nouveaux tests de
+  `map/source_availability_tests.rs` (`an_unwritable_failure_record_…`,
+  `a_failure_record_left_next_to_a_newer_revision_…`, `a_restart_loses_an_unwritten_failure_…`);
+  `src/map/refreshFailure.test.tsx` (rendu réel de `MapApp`, backend scripté).
+- **À savoir pour la reprise :**
+  1. L'emplacement mémoire est clé par (fichier du catalogue, cerveau), jamais sérialisé : deux
+     bacs à sable de test ne partagent jamais une entrée. **Il ne rend pas l'état durable** : un
+     redémarrage le perd, et c'est voulu.
+  2. Un failure record est jugé contre la révision servie **comme** un `SYNCED` (sauf `None`).
+     `record_failure` part du transient s'il existe pour garder le dernier succès.
+  3. Deux tests existants ont bougé légitimement : `lifecycle_tests::state()` compare l'Index sans
+     l'observation (comme `rr5`), et `a_synced_record_for_another_revision_is_not_believed`
+     attend maintenant `UNKNOWN` pour un échec d'une autre révision.
+- **Non fait / non testé :** WebView2 non rejoué; crash de processus réel entre les deux commits
+  (seulement simulé par la perte du transient); deux processus.
+- **Action unique suivante :** contrôle indépendant du correctif P1 / P1b.
+
 ## Relais actuel — TASK-0041, Actualiser manuel par le noyau incrémental, en attente de contrôle — 2026-09-24
 
 - **Fait :** `TASK-0041` est implémentée sur `build/v0.2-a25-v1-manual-refresh-incremental`

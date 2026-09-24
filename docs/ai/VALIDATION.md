@@ -7729,3 +7729,73 @@ une acceptation « portable modeste ». `graph/` non mis à jour. Aucune donnée
 `origin/main` inchangé; aucune TASK-0043, PR, fusion, étiquette ni release.
 
 **Action unique suivante :** contrôle indépendant de `TASK-0042`.
+
+## BX. TASK-0042 — correctif ACTION-0069 (P1 / P1b) — 2026-09-24
+
+Commit `4bed627`, branche `build/v0.2-a26-v1-source-availability`, partie de `7107f74`
+(`ACTION-0069` présent, arbre propre, fast-forward seul). `TASK-0042` reste `IMPLEMENTED`.
+
+### BX.1 Ce qui a changé
+
+- `source_observation.rs` : `describes()` (un `SYNCED` **ou un échec** avec
+  `lastSuccessfulRevision = Some(R)` n'est cru que si `R` = révision servie; un échec avec `None`
+  reste valide); un emplacement **en mémoire du processus** (`TRANSIENT`, un par cerveau, clé
+  (catalogue, cerveau), jamais sérialisé) pour une observation dont l'écriture a échoué, lu en
+  premier par `read()` avec `persisted:false`, retiré par toute écriture réussie
+  (`commit`), perdu au redémarrage. `record_failure` part du transient s'il existe.
+- Tests existants ajustés : `lifecycle_tests::state()` compare l'Index sans l'observation (le
+  bac à sable n'a pas de catalogue : l'observation y diffère par un `persisted:false` honnête,
+  même geste que `rr5`); `a_synced_record_for_another_revision_is_not_believed` attend `UNKNOWN`
+  pour un échec d'une autre révision, et vérifie qu'un échec de la révision servie ou sans succès
+  reste cru. `a_record_that_cannot_be_written…` (T3) dit maintenant `SYNCED persisted:false` dans la
+  session, `UNKNOWN` après perte du transient (redémarrage simulé).
+- `incremental.rs`, `scanner.rs`, `lib.rs`, `MapApp.tsx`, `lifecycle.ts` : **non modifiés**.
+
+### BX.2 Preuves
+
+- **T1** `an_unwritable_failure_record_is_still_the_current_observation_for_the_session` : vrai
+  `refresh_map`, trigger refusant `INSERT`/`UPDATE` des clés `source_observation.%`, racine
+  déplacée. Refus `map_scan_failed`; dump de l'Index, digest, révision, natures du journal, catalogue
+  sans observation : identiques; le disque garde le vieux `SYNCED`; `read_source_observation` et
+  `open_map` répondent `UNAVAILABLE / ROOT_NOT_FOUND / persisted:false`, dernier succès conservé,
+  aucun texte du trigger ni chemin; un second refus garde le dernier succès; trigger retiré, source
+  toujours absente ⇒ `UNAVAILABLE persisted:true`; « redémarrage » sans effet ensuite.
+- **T2** `a_failure_record_left_next_to_a_newer_revision_is_not_believed` : `UNAVAILABLE` (dernier
+  succès R) persisté, source revenue, Index servi R+1, écriture refusée, transient perdu (fenêtre de
+  crash simulée) ⇒ `open_map` et `read_source_observation` = `UNKNOWN`, jamais `SYNCED`.
+- **T3** voir BX.1; **restart** `a_restart_loses_an_unwritten_failure_and_never_invents_one` :
+  après perte du transient le disque décrit encore la révision servie ⇒ le vieux `SYNCED`
+  (limite assumée, pas un état inventé).
+- **T4** `src/map/refreshFailure.test.tsx` : le vrai `MapApp`, backend scripté (`map_refresh`
+  refusé, `map_source_observation` = `UNAVAILABLE persisted:false`) : le badge passe à
+  `UNAVAILABLE`, `data-persisted="false"`, « non enregistrée », jamais « À jour à la dernière
+  vérification »; le total de la carte est inchangé; une seule lecture locale
+  (`{brainId}` seul); ni `map_rebuild`, ni `map_prepare_synthetic_source`, ni `map_open`, ni
+  `map_view` après le refus. Contrôle de mutation : en faisant répondre `SYNCED` au backend, le test
+  échoue.
+
+### BX.3 Suites
+
+- `cargo test --offline` : **629 PASS**, 0 FAIL, 6 ignorés (626 + 3).
+- `pnpm test` : **439 PASS** (438 + 1); `pnpm check` PASS; `pnpm build` PASS.
+- `cargo build --offline` PASS. Clippy : 13 diagnostics lib / 22 lib-test = **dette historique**
+  (mêmes nombres qu'avant), aucun dans `source_observation.rs`, `lifecycle_tests.rs`,
+  `source_availability_tests.rs`. `rustfmt --check` propre sur les trois fichiers Rust touchés.
+- `git diff --check` propre; `scripts/audit-public-readiness.ps1 -AllowRemotes` : voir
+  `.orchestrator/RESULT.md`.
+
+### BX.4 Fenêtre de crash — ce qui est et n'est pas promis
+
+L'emplacement mémoire corrige **la session** qui a fait l'observation. Il ne corrige pas un crash ni
+un redémarrage : une observation qui n'a jamais pu être écrite n'est pas retrouvée. Après
+redémarrage, le record du disque est jugé contre la révision servie et se lit `UNKNOWN` s'il ne la
+décrit plus (P1b). **L'atomicité entre l'Index et le catalogue n'est pas prétendue.**
+
+### BX.5 Non testé, limites
+
+WebView2 non rejoué (interface visible et transport inchangés; le rendu de `MapApp` couvre le
+`catch`); crash de processus réel (simulé par la perte du transient); deux processus sur un même
+catalogue; `graph/` non mis à jour. Aucune donnée personnelle; aucune TASK-0043, PR, fusion,
+étiquette ni release.
+
+**Action unique suivante :** contrôle indépendant du correctif P1 / P1b.

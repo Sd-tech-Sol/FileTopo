@@ -305,3 +305,17 @@ Aucun benchmark F-031 requis si `incremental.rs` n'est pas modifié.
   ses 43 tests Rust ont été rejoués). **La détection reste manuelle : aucun watcher, aucun
   polling** — `F-032` reste une **fondation**, non une fonction complète, tant que `F-030` ne
   consomme pas ce contrat.
+
+## Correctif après ACTION-0069 (2026-09-24, commit `4bed627`)
+
+Le contrôle indépendant (`ACTION-0069`) a accepté la fondation et gardé `TASK-0042 = IMPLEMENTED`,
+avec un seul blocage : l'honnêteté de l'observation quand **son propre write** échoue.
+
+- **P1.** Une observation dont l'écriture dans `catalog_meta` échoue est gardée dans un emplacement
+  **en mémoire du processus**, un par cerveau, lu en premier avec `persisted:false`, retiré par
+  toute écriture réussie, perdu au redémarrage. Un Actualiser refusé ne relit plus l'ancien `SYNCED`.
+- **P1b.** Un record d'**échec** dont `lastSuccessfulRevision = Some(R)` avec `R` ≠ révision servie
+  se lit `UNKNOWN`; un échec sans succès (`None`) reste valide.
+- **Limite.** Le fallback corrige la session, pas un crash ni un redémarrage; aucune atomicité
+  Index / catalogue n'est prétendue. Preuves : `docs/ai/VALIDATION.md` section BX.
+- La tâche reste `IMPLEMENTED`; aucun watcher, polling, W-B/W-C, `TASK-0043`.

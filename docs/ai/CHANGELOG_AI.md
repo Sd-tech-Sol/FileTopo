@@ -5787,3 +5787,20 @@ précréation de `TASK-0038` par l'exécuteur.
   `map/source_availability_tests.rs`, `scripts/task0042-*`.
 - Aucun watcher, polling, W-B/W-C, TASK-0043, PR, fusion, étiquette ni release. `F-032` reste une
   fondation.
+
+
+## 2026-09-24 — TASK-0042 — Correctif ACTION-0069 (P1 / P1b)
+
+**Agent :** Claude Code (Sonnet 5) · **Branche :** `build/v0.2-a26-v1-source-availability` ·
+**Statut à l'issue :** `IMPLEMENTED` (jamais auto-`VERIFIED`) · **Commit :** `4bed627`
+
+- P1 : une observation dont l'écriture dans `catalog_meta` échoue est gardée dans un emplacement
+  mémoire du processus, un par cerveau, lu en premier avec `persisted:false`; un Actualiser refusé
+  ne relit plus l'ancien `SYNCED`. Jamais écrit implicitement, retiré par toute écriture réussie,
+  perdu au redémarrage.
+- P1b : un record d'échec dont le dernier succès n'est pas la révision servie se lit `UNKNOWN`.
+- Tests : vrai `refresh_map` + trigger sur `source_observation.%`, record d'échec périmé,
+  redémarrage simulé, rendu réel de `MapApp` (`refreshFailure.test.tsx`). Rust 629 PASS, TypeScript
+  439 PASS. Deux tests existants ajustés (voir VALIDATION BX).
+- Aucun changement à `incremental.rs`; aucun watcher, polling, W-B/W-C, TASK-0043, PR, fusion,
+  étiquette ni release. Aucune atomicité Index / catalogue prétendue.
