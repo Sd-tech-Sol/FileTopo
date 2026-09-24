@@ -1,7 +1,7 @@
 # TASK-0037 — V1 Change Journal on Manual Refresh
 
 - Date : 2026-09-12
-- Statut : `IMPLEMENTED` (2026-09-23) — jamais auto-`VERIFIED`; contrôle indépendant requis
+- Statut : `VERIFIED` (2026-09-23) par `ACTION-0061`
 - Branche : `build/v0.2-a21-v1-change-journal`
 - Prérequis : `TASK-0036 = VERIFIED` par `ACTION-0060`
 - Portée produit : `F-027` / parité `P-16`, plus le résumé manuel de changements de `P-18`
@@ -244,3 +244,8 @@ Aucune donnée personnelle. Aucun PR/merge/tag/release.
 - `.orchestrator/RESULT.md` doit donner : schéma/migration, modèle d’événement, règles exactes de classification, atomicité, pagination/filtres, résumé manuel, tests Rust/TS/WebView2, limites;
 - `NEXT_ACTION = contrôle indépendant de TASK-0037`;
 - commit/push uniquement sur `build/v0.2-a21-v1-change-journal`, arbre propre.
+
+
+## Clôture indépendante — ACTION-0061
+
+TASK-0037 est **VERIFIED dans sa portée**. Le journal manuel, sa migration v5, l’atomicité, les cinq natures, la consultation bornée, l’UI et les preuves produit sont acceptés. Une porte de dépôt distincte reste obligatoire avant toute TASK-0038 : l’audit public-readiness du tree courant doit redevenir vert après suppression d’un ancien chemin local absolu hérité de TASK-0027. Cette réserve ne vient pas du code de TASK-0037 mais bloque la tranche suivante.
