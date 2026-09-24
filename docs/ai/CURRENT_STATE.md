@@ -2619,3 +2619,13 @@ session Claude Code `2.1.252` ouverte après l'installation des skills : skill
 découvert et résolu, protocole partagé lu et exécuté, Git vérifié avant toute
 lecture, lecture minimale respectée. **La réserve « non testé » du 2026-08-31
 est levée pour Claude Code**; elle **reste entière pour Codex**.
+
+
+## Mise à jour 2026-09-23 — reprise V1 après TASK-0037
+
+- `TASK-0037` : **VERIFIED** par `ACTION-0061`.
+- Porte public-readiness : **VERTE sur le tree courant** par `ACTION-0063`.
+- Audit de séquence : le vieux `nodes.seen` et ses commandes prototype ne sont pas la vérité de `P-17`; la prochaine fondation doit dériver nouveau/non-vu du journal.
+- `DEC-0036` : **APPROVED** — journal append-only + état d’acquittement séparé; `nodes.seen` reste historique.
+- `TASK-0038` : **READY** sur `build/v0.2-a22-v1-seen-state`.
+- Aucun watcher, incrémental ni filtre de carte n’est ouvert dans cette tranche.
