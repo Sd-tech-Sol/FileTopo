@@ -229,7 +229,27 @@ Les preuves et constats ci-dessous sont inchangés.
 > identité frontend; aucune clé stable, empreinte ou donnée machine n'est
 > jamais sérialisée vers le WebView.
 >
-> **`TASK-0036` est `IMPLEMENTED`, en attente de contrôle indépendant.**
+> **`TASK-0036` est `VERIFIED`** (`ACTION-0060`).
+
+> **`TASK-0037` — journal de changements sur Actualiser/Reconstruire, `IMPLEMENTED`,
+> en attente de contrôle indépendant.** `F-027` passe de `PROPOSED` à
+> `IMPLEMENTED` **pour la détection manuelle seulement** : chaque
+> Actualiser/Reconstruire compare l'Index canonique précédent au nouveau corpus
+> remappé par l'identité stable de `TASK-0036` et journalise, dans le même
+> SQLite et la même transaction que le corpus et la révision, les cinq natures
+> (`CREATED`, `MODIFIED`, `RENAMED`, `MOVED`, `DELETED`), avec historique
+> persistant, consultation paginée (50 max), filtres par nature et une surface
+> « Changements » dans `MapApp`. **Ce que cela ne fait pas, honnêtement :**
+> `F-030` surveillance automatique et `F-031` mise à jour incrémentale restent
+> `PROPOSED` et hors portée; `P-16` n'est donc **que partiellement couvert** (la
+> détection automatique manque), et son mot « ordonnés » est tenu au sens
+> honnête — l'ordre d'un même lot est l'ordre **de publication du journal**,
+> jamais la chronologie réelle des opérations disque, qu'un scan complet ne peut
+> pas connaître. `F-022` filtres « nouveau / non vu » et `F-028` marquer vu
+> restent `PROPOSED` : cette tranche ne fait que poser la source de vérité dont
+> `P-17` exige qu'ils dérivent. `F-029` reste `PROPOSED` : l'Actualiser est
+> toujours un rescan complet; il gagne seulement le **résumé de compteurs par
+> nature** que `P-18` (manuel) réclame.
 
 | Identifiant | Fonction | Comportement cible | Prototype actuel | Preuve dans le dépôt | Écart | Priorité | Phase | État | Critères d'acceptation | Baseline TASK-0011 |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -259,7 +279,7 @@ Les preuves et constats ci-dessous sont inchangés.
 | F-024 | Copier le chemin | Presse-papiers explicite | Aucune preuve trouvée | App.tsx | Manquant | P1 | 5 | PROPOSED | Copie exacte sans journal sensible | `MVP` |
 | F-025 | Ouvrir dans Explorateur | Dossier ouvert/fichier sélectionné | Présent, confinement vérifié par code | lib.rs:310 | Non rejoué dans TASK-0010 | P0 | 5 | IMPLEMENTED | Essai Windows synthétique et erreurs gérées | `MVP` |
 | F-026 | Contenu du dossier | Enfants directs consultables | Liste globale filtrée | App.tsx:378 | Vue contextuelle manque | P1 | 5 | PROPOSED | Liste exacte, paginée et navigable | `MVP` |
-| F-027 | Journal de changements | Créations, modifications, mouvements, renommages, suppressions | Absent | replace_nodes dans index.rs | Manquant | P0 | 6 | PROPOSED | Événements synthétiques complets et ordonnés | `MVP` |
+| F-027 | Journal de changements | Créations, modifications, mouvements, renommages, suppressions | **Journal persistant par cerveau** dans le même SQLite (`change_events`, schéma v5), alimenté par la comparaison de l'Index canonique précédent et du nouveau corpus remappé par l'identité stable; cinq natures exactes; publié dans la **même transaction** que le corpus et la révision; consultable via `map_change_journal` (50 max, curseur keyset lié à l'index, filtres par nature, total exact) et panneau « Changements » | `TASK-0037` `IMPLEMENTED`, en attente de contrôle; `change_journal.rs`; `index.rs::publish`; `map/commands.rs::change_journal`; `ChangeJournalPanel.tsx`; preuves Rust (31 tests journal/exposition, dont des cas `#[cfg(windows)]` réels) et rejeu WebView2 réel avec vrai redémarrage (`TASK-0037-webview2.json`) | Détection **manuelle seulement** : aucun watcher (`F-030`) ni incrémental (`F-031`). L'ordre d'un lot est celui de la publication, pas la chronologie disque; l'horodatage est l'instant de **détection**. Un `MODIFIED` n'observe que taille/date de fichier et indicateurs en ligne/lien (jamais le contenu, jamais l'horodatage propre d'un dossier). `PATH_FALLBACK` renommé/déplacé = suppression + création (`DEC-0009`). Premier build et premier republish après une migration `v3` = référence sans événement | P0 | 6 | IMPLEMENTED | Événements synthétiques complets et ordonnés | `MVP` |
 | F-028 | Vu/non vu | Élément/changement et tout marquer vu | Marquage d'un nœud vu | index.rs:178; App.tsx:244 | Pas changements ni tout marquer | P1 | 6 | PROPOSED | Persistance et commandes unitaires/globales | `MVP` |
 | F-029 | Actualisation manuelle | Rafraîchir le cerveau | Réindexation manuelle complète | App.tsx:215 | Destructive pour l'index courant | P0 | 6 | PROPOSED | Mise à jour sûre avec résumé de changements | `MVP` |
 | F-030 | Surveillance automatique | Observer sans rescanner inutilement | Absente | aucune commande watcher dans lib.rs | Manquant | P0 | 6 | PROPOSED | Rafales, pertes et reprise testées | `MVP` |

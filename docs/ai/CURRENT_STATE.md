@@ -1,5 +1,79 @@
 # État courant
 
+## TASK-0037 — V1 Change Journal on Manual Refresh — IMPLEMENTED — 2026-09-23
+
+- **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche
+  `build/v0.2-a21-v1-change-journal`, partie de `TASK-0036 = VERIFIED`
+  ([`ACTION-0060`](../reviews/ACTION-0060-independent-final-recontrol.md)).
+  Détail : [VALIDATION section BQ](VALIDATION.md), `.orchestrator/RESULT.md`.
+- **Ce qui existe maintenant.** Un **journal persistant par cerveau**, dans le
+  même SQLite que les nœuds canoniques (schéma **v5**, table `change_events`).
+  Chaque Actualiser/Reconstruire compare l'Index canonique précédent au nouveau
+  corpus remappé par l'identité stable de `TASK-0036` et écrit les événements
+  — `CREATED`, `MODIFIED`, `RENAMED`, `MOVED`, `DELETED`, jamais une sixième
+  nature — **dans la même transaction** que le corpus et la révision. Il se
+  consulte par `map_change_journal` (50 max, curseur keyset lié à l'index,
+  filtres par nature, total exact) et par le panneau « Changements »; le
+  rapport d'Actualiser/Reconstruire porte un **résumé de compteurs** par nature.
+- **Migration v4 → v5 par la frontière `M-B` de `DEC-0013` B, sans second
+  chemin.** `Index::migrate_previous_schema` est devenu un dispatcher **par
+  version** (`3 → 4` puis `4 → 5`), chaque saut étant sa propre transaction
+  atomique; `open_existing_migrating` (contrôles brain/binding, verrou,
+  quiescence, copie vérifiée, restauration si migration **ou validation**
+  échoue, copie supprimée après validation finale) est **la même fonction**, et
+  la validation canonique exige désormais le journal. **Décision à examiner :**
+  un index v3 reste migrable (par les deux sauts dans une seule enveloppe
+  `M-B`) plutôt que d'être abandonné par la montée de version; un schéma plus
+  récent que le courant reste refusé sans copie ni migration.
+- **Règles de diff (fonction pure, aucune heuristique).** Présent seulement
+  après → `CREATED`; seulement avant → `DELETED`; même id : nom changé →
+  `RENAMED`, `parent_id` changé → `MOVED`, les deux → les deux événements (même
+  révision, chemins avant/après la publication entière, **aucune chronologie
+  inventée**); un descendant dont le nom et le parent propres sont inchangés ne
+  génère **aucun** faux événement quand un ancêtre bouge; `MODIFIED` = taille,
+  type, en ligne, lien, et date **des fichiers seulement** (jamais le contenu,
+  jamais `child_count`/`depth`/chemin dérivé/`seen`, jamais l'horodatage propre
+  d'un dossier — l'OS le réécrit à chaque entrée créée ou supprimée dedans).
+  `PATH_FALLBACK` renommé/déplacé = suppression + création (prouvé avec une vraie
+  jonction Windows). **Premier build, et premier republish après une migration
+  v3 (lignes sans clé stable), = référence sans événement.**
+- **Preuves.** Rust **444 PASS** (412 + 31 tests du journal + 1 test
+  d'exposition IPC). TypeScript **352 PASS** (339 + 12 panneau + 1
+  lifecycle). **Rejeu WebView2 réel avec un vrai redémarrage** : baseline vide,
+  rafraîchissement sans changement = 0 événement, les cinq natures avec
+  compteurs exacts et même `nodeId` pour renommage/déplacement, lot de 130
+  fichiers paginé 50/50/35 sans trou ni doublon, filtres, historique identique
+  page pour page après le redémarrage, 0 chemin absolu/clé stable/FileId/volume,
+  0 erreur console fatale (`docs/performance/runs/TASK-0037-webview2.json`).
+  Rejeu du harnais `TASK-0036` sur le nouveau binaire : invariants tous vrais,
+  0 erreur fatale (son artefact vérifié n'est pas modifié).
+- **Validations :** `cargo test --offline`, `pnpm check`, `pnpm build`,
+  `pnpm test`, `cargo build --offline`, `pnpm tauri build --debug --no-bundle`,
+  `git diff --check` verts. `rustfmt` (édition 2024) propre sur les 9 fichiers
+  Rust touchés. `cargo clippy --all-targets --offline -- -D warnings` rouge sur
+  la **dette historique seule** : mesurée sur `HEAD` d'avant la tâche dans un
+  worktree temporaire (lib 13 + lib-test 22), **identique fichier par fichier**
+  après; **zéro** diagnostic dans un fichier touché.
+- **Non testé / limites assumées.** Détection **manuelle seulement** : ni
+  watcher (`F-030`) ni incrémental (`F-031`) — `P-16` n'est que partiellement
+  couvert, `F-029` reste `PROPOSED`. L'ordre d'un lot est l'ordre de publication
+  du journal, l'horodatage est l'instant de **détection**. Une édition de
+  l'horodatage propre d'un dossier seul n'est pas journalisée. Déplacement
+  inter-volume = suppression + création (`DEC-0009`). Aucune fixture Cloud Files
+  réelle, aucun vrai crash de processus (défaillances injectées dans la base,
+  jamais un `SIGKILL`), rien mesuré au-delà de quelques centaines de nœuds pour
+  le journal, croissance du journal non bornée par conception (« historique
+  jamais vidé »), aucune mesure sur portable modeste.
+- **Constats hors périmètre, non corrigés ici.**
+  `scripts/audit-public-readiness.ps1` échoue sur un contenu **antérieur**
+  (`docs/ai/VALIDATION.md` ligne 3793, chemin local personnel); `graph/history.jsonl`
+  et `graph/current_state.yaml` ne sont plus tenus à jour depuis `TASK-0009`
+  (2026-08-26), comme pour les 27 tâches précédentes.
+- **Aucune donnée personnelle.** `origin/main` inchangé. Aucune `TASK-0038`,
+  aucune PR, fusion, étiquette ni release; aucun watcher, incrémental, filtre de
+  carte nouveau/non vu ni marquage vu.
+- **Action unique suivante : contrôle indépendant de `TASK-0037`.**
+
 ## TASK-0036 — passe corrective D6 (`ACTION-0059`) — IMPLEMENTED — 2026-09-12
 
 - **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Même branche

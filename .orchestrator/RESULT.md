@@ -1,132 +1,214 @@
-TASK_ID: TASK-0036 — V1 Stable Identity Foundation — corrective pass (ACTION-0059)
-AGENT: CLAUDE
-RESULT: DONE
-BRANCH: build/v0.2-a20-v1-stable-identity
+TASK_ID: TASK-0037 — V1 Change Journal on Manual Refresh
+AGENT: CLAUDE CODE (Sonnet 5)
+RESULT: DONE — IMPLEMENTED, never self-VERIFIED
+BRANCH: build/v0.2-a21-v1-change-journal
 FINAL_HEAD: (see git log after commit)
+DATE: 2026-09-23
 
 SUMMARY:
-ACTION-0059 accepted D1/D2/D3/R1 (from ACTION-0057) and D5 (from
-ACTION-0058) without reservation, confirmed D4 was "largely corrected",
-but found one last blocking defect, D6, in the same function
-(BrainIndex::open_existing_migrating). Closed this pass. No scope
-widening (no TASK-0037, no journal/watcher/incremental); D1/D2/D3/R1, D4
-outside D6, and D5 were left unmodified as instructed.
+A persistent, per-brain, append-only change journal now lives in the brain's
+one canonical SQLite (schema v5, table `change_events`). Every explicit
+Actualiser/Reconstruire diffs the previous canonical corpus against the new
+corpus (after the TASK-0036 stable-id remap) and writes the events in the SAME
+transaction as the corpus and the revision. The journal is readable through a
+bounded command (`map_change_journal`) and a « Changements » panel; the
+Actualiser/Reconstruire report carries exact counters by nature.
+No watcher, no incremental update, no map-level new/unseen filter, no mark-seen,
+no TASK-0038, no PR, merge, tag or release.
 
-- D6 — the M-B safety copy was deleted one step too early: right after
-  Index::migrate_previous_schema() succeeded, BEFORE finish_open_existing()
-  had validated the full v4 canonical contract (is_built(): build_complete,
-  projection_contract; then identity(), count(), root_id()). ACTION-0058's
-  own D4 contract explicitly required restoration to cover a failure of
-  "migration OR validation" — the previous delivery (0daf342f) only covered
-  the migration half. When finish_open_existing() refused a file whose SQL
-  migration had otherwise succeeded, the old code returned an error while
-  leaving the file already migrated to v4, with no v3 safety copy left to
-  recover from — a direct gap in the orchestrated M-B contract, even though
-  the SQLite DDL itself was correct and atomic (D2, unchanged).
+0 — PRECONDITIONS
+- Applied AGENTS.md/CLAUDE.md; explicit `git checkout build/v0.2-a21-v1-change-journal`,
+  `git fetch origin`, `git merge --ff-only origin/...` ("Already up to date"),
+  tree clean; HEAD c34096c contains ACTION-0060 and TASK-0037. main and
+  docs/record-pr4-merge untouched.
+- Read TASK-0037 in full before coding.
 
-  Fix, without duplicating or weakening finish_open_existing(): the copy
-  now survives past a successful migrate_previous_schema() call and is
-  only deleted after finish_open_existing() ITSELF succeeds. On its
-  failure, the copy is restored over the live file before the validation
-  error is returned; on a restore failure, that restore's own clear error
-  propagates instead, and the copy is NOT deleted (still useful for manual
-  recovery) — exactly mirroring how the existing migration-failure branch
-  already behaved. No explicit connection close was needed on this new
-  branch: finish_open_existing(connection) takes the connection by value
-  and holds it in a local variable for its own duration; when it returns
-  Err without handing the connection back, Rust drops (closes) it before
-  control returns to the caller, so the file is already free to overwrite
-  by the time restore_safety_copy runs.
+1 — AUDIT: REUSED / ADAPTED / NOT BUILT
+Reused unchanged:
+- The one canonical SQLite per brain (no second DB, no second Index, no parallel
+  diff engine): `Index::publish` is still the ONLY publication path.
+- TASK-0036 stable identity (`stable_key`, `next_node_id`, remap) — the diff
+  runs on the remapped canonical ids; nothing of TASK-0036 was rewritten.
+- The `M-B` migration boundary of `BrainIndex::open_existing_migrating`
+  (brain/binding checks before mutation, per-brain lock, quiesce, verified
+  safety copy, restore on migration OR validation failure, copy deleted only
+  after final validation) — same function, same evidence D1–D6.
+- `hierarchy::advance_revision/read_revision`, `IndexIdentity`, the keyset
+  cursor style (versioned tag, ids only), the `SearchPage`/`NodeChildrenPage`
+  DTO style, `open_store` as the only door, `BrainNodeRef` for selection,
+  `selectNode`, the `ExactDuplicateExplorer` self-contained panel pattern,
+  the TASK-0033..0036 WebView2 harness technique.
+Adapted (minimal):
+- `Index::migrate_previous_schema` → `Index::migrate_to_current_schema`, a
+  dispatcher BY VERSION (3→4 then 4→5). Each step is its own atomic
+  transaction stamping its own user_version last. `MAP_PREVIOUS_SCHEMA_VERSION`
+  ("exactly N-1") became `store::is_migratable_schema` (closed range 3..current).
+  DECISION TO REVIEW: v3 stays migratable (through both steps inside ONE M-B
+  envelope) instead of being stranded by the bump; a schema newer than
+  current, or older than 3, is still refused, never migrated backward.
+- Safety-copy file name `.v3-safety-copy` → `.migration-safety-copy` (it no
+  longer names a version).
+- `finish_open_existing` (the M-B validation step) now also requires the
+  journal table with all 13 columns.
+- `publish` takes its transaction `IMMEDIATE` (write lock before the previous
+  corpus is read for the diff) — otherwise unchanged.
+- `MapBuildReport` gained `changeSummary`; `runLifecycle` returns the open
+  report plus the counters for refresh/rebuild (its 3-argument contract and
+  the command sequence are unchanged and still tested).
+Not built (out of scope, per TASK-0037 I): watcher/`ReadDirectoryChangesExW`,
+incremental application (U-B), W-B/W-C reconciliation, USN, map-level
+new/unseen filters (F-022), mark seen / mark all seen (F-028), FTS5, cross-volume
+heuristics, retention/pruning of the journal, a new database.
 
-  src-tauri/src/map/brain_index.rs, open_existing_migrating: the tail after
-  a successful migrate_previous_schema() call now matches on
-  Self::finish_open_existing(probe.index.connection) instead of
-  unconditionally deleting the copy first and calling it unconditionally
-  after.
+2 — SCHEMA / MIGRATION
+- Current schema was v4 (confirmed) → v5 (`crate::index::SCHEMA_VERSION`,
+  `store::MAP_SCHEMA_VERSION`).
+- `change_events(event_id INTEGER PRIMARY KEY AUTOINCREMENT, detected_revision,
+  ordinal, nature CHECK IN (5 natures), node_id, node_kind, old_name, new_name,
+  old_relative_path, new_relative_path, old_parent_id, new_parent_id,
+  detected_unix_ms)` + `idx_change_events_nature(nature, event_id)` +
+  UNIQUE `idx_change_events_revision_ordinal(detected_revision, ordinal)`.
+  No foreign key to `nodes` (a DELETED event must outlive its node; `nodes` is
+  wholly replaced by every publication). AUTOINCREMENT = monotone, never reused.
+- Product path v4→v5 goes through the SAME M-B: `open_map`/`open_for_brain` →
+  `open_existing_migrating`. Fresh files reach v5 through `initialize()`.
+- The 4→5 DDL is strict `CREATE` (not IF NOT EXISTS): a pre-existing object of the
+  same name fails the step instead of being adopted.
+- A migration never fabricates history: the journal starts empty.
+- Proven: real v4 → v5 through `map_open` (source not read, index_id/revision
+  unchanged, seen kept, copy deleted); injected failure AFTER mutation began
+  (an object of the same name as a step-created index) → v4 restored, no
+  half journal, retry works; validation failure (build_complete corrupted) →
+  v4 restored, repaired retry migrates; a v5 file without its journal is
+  refused by the canonical validation; v3 → v5 in one envelope; future schema
+  (now 6) refused untouched, no copy.
 
-- Proof, confirmed false against the pre-fix code — the corrective prompt's
-  own explicit requirement: a new test,
-  d6_a_post_migration_validation_failure_restores_the_v3_index_in_full
-  (src-tauri/src/map/stable_identity_tests.rs), builds a real v4 REAL_ROOT
-  index, downgrades it to v3, then corrupts `build_complete` — a canonical
-  metadata key migrate_previous_schema() never writes or reads — so the
-  v3->v4 DDL genuinely succeeds and only finish_open_existing()'s own
-  validation refuses afterward (map_index_incompatible). Replayed against
-  0daf342f via a temporary `git stash push -- src-tauri/src/map/brain_index.rs`
-  (isolating just that one file's revert, keeping the new test in place):
-  the test genuinely fails there — user_version is left at 4 instead of
-  being restored to 3 (assertion left==right: left: 4, right: 3). The
-  stash was immediately popped and the full suite re-run to confirm no
-  regression from that manipulation. With the fix in place: full
-  restoration proven (user_version==3, every node and seen flag identical
-  via a logical-content snapshot, index_id/index_revision unchanged,
-  source_kind/source_ref binding intact), the transient safety copy
-  deleted after a successful restoration, and — after repairing the
-  corrupted invariant — a retry migrates to v4 cleanly with no leftover
-  copy.
+3 — EVENT MODEL (no absolute path, stable key, FileId, volume serial, content)
+event_id (monotone in the brain) · detected_revision · ordinal (deterministic
+within the revision) · nature · node_id (canonical `nodes.id`) · node_kind ·
+old/new name · old/new RELATIVE path · old/new parent_id · detected_unix_ms
+(the instant of DETECTION — never presented as the instant the disk changed).
+DTO adds `brainId` and `nodePresent` (does that id exist in the Index now;
+ids are never recycled so `false` is permanent).
 
-TASK-0036 = IMPLEMENTED, never self-VERIFIED.
+4 — DIFF RULES (pure function `change_journal::diff`, no heuristic)
+- id only in new → CREATED; only in old → DELETED (one event PER node, also for
+  the content of a created/deleted folder).
+- same id, name changed → RENAMED; parent_id changed → MOVED; both → both, same
+  detected_revision, and BOTH carry the path before/after the WHOLE publication
+  (never an invented intermediate path). Journal order is (node_id, nature rank
+  CREATED<RENAMED<MOVED<MODIFIED<DELETED) — deterministic, and presented only
+  as publication order, never as the real chronology of disk operations.
+- a descendant whose own name and parent_id are unchanged gets NO event when an
+  ancestor moved/was renamed.
+- MODIFIED (frozen list): kind, size_bytes, online_only, reparse_point for every
+  node; modified_unix_ms ONLY for file/skipped. Never compared: child_count,
+  depth, relative_path, seen, content (never read). A directory's OWN timestamp
+  is excluded because the OS rewrites it whenever an entry appears/disappears/
+  is renamed in it — it would flag every parent of every structural change.
+  DECLARED LIMIT: a directory timestamp edit alone is not journaled.
+- PATH_FALLBACK renamed/moved = its identity changes = DELETED + CREATED
+  (proved with a real Windows directory junction, a real reparse point).
+- Baseline rule: the first build of a brain, and the first republish of an
+  index whose previous rows have NULL stable_key (a v3 file migrated but not
+  yet republished), establish the reference: ZERO events, `baselineEstablished`
+  true. Otherwise every id would be reported deleted+created.
+- Only the identity pipeline journals (`identities: Some`, i.e. `publish_map`).
+  The test-only `replace`/`replace_nodes` (caller-chosen ids) never journal.
 
-VALIDATIONS:
-- cargo test --offline: 412 PASS (411 + 1 new test function), 5 ignored
-  (unchanged), 0 failed. All existing D4 M-B tests (WAL-pending/failure/
-  restore/retry, busy checkpoint, failed safety copy, brain/binding/
-  future-schema refusals), all D5 Cloud Files tests, and all D1/D2/D3/R1
-  invariants replay unchanged and green.
-- pnpm test (vitest): 339 PASS, unchanged — zero TypeScript file touched.
-- pnpm check, pnpm build, cargo build --offline, git diff --check: green.
-- cargo fmt: clean on the 2 files this pass touched
-  (map/brain_index.rs, map/stable_identity_tests.rs), verified with
-  `--config style_edition=2024` explicit (the same rustfmt/style-edition
-  pitfall the three previous corrective passes already documented and
-  handled the same way). brain_index.rs was already clean; two lines in
-  stable_identity_tests.rs inherited from the previous (ACTION-0058) pass
-  were recomposed onto one line each by rustfmt (they fit under the width
-  limit) — unrelated to this pass's logic, fixed in passing.
-- cargo clippy --all-targets --offline: zero diagnostics in either of the
-  2 touched files; the pre-existing 26-error debt under -D warnings is
-  unaffected and lives entirely outside this pass's scope.
-- WebView2: NOT re-run this pass, and explicitly justified rather than
-  silently skipped, per NEXT_PROMPT.md §3's own instruction not to
-  fabricate unneeded proof. The change only reorders when the safety copy
-  is deleted relative to finish_open_existing()'s validation, and adds a
-  restore path that only ever triggers when that validation refuses a
-  file whose SQL migration otherwise succeeded. The TASK-0036 WebView2
-  harness builds and reads only valid synthetic trees — it never
-  deliberately corrupts a canonical invariant — so it never exercised that
-  refusal path before this pass and still does not after. The happy path
-  (migration succeeds, validation succeeds, copy deleted, store returned)
-  is byte-for-byte identical in behavior before and after. The previously
-  published replay under 0daf342f (docs/performance/runs/TASK-0036-webview2.json,
-  untouched by this pass) remains fully applicable.
+5 — ATOMICITY
+Diff, node replacement, event insert and revision bump are one IMMEDIATE
+transaction. The event insert precedes the LAST write (revision bump).
+Proved with in-database triggers, no production hook: a failing journal insert
+fails the whole publication (corpus, revision, journal all unchanged, index
+still publishable after the fault is removed); a failure of the last write
+rolls the already-written events back. First build → empty journal; unchanged
+refresh → zero events while the revision still advances; history never emptied
+by refresh/rebuild; survives a cold reopen and a real process restart.
 
-IMPORTANT_FILES:
-- src-tauri/src/map/brain_index.rs (open_existing_migrating: safety-copy
-  lifetime now spans finish_open_existing()'s validation, not just
-  migrate_previous_schema())
-- src-tauri/src/map/stable_identity_tests.rs (new D6 test)
-- docs/ai/CURRENT_STATE.md, HANDOFF.md, VALIDATION.md (section BP),
-  CHANGELOG_AI.md, NEXT_ACTION.md; docs/tasks/TASK-0036-v1-stable-identity.md
+6 — API / UI / REPORT
+- `map_change_journal(brainId, natures?, after?, limit?)`: brain named
+  explicitly, no path in or out, ≤ 50/page (server clamp), newest first,
+  keyset cursor `fjc1.<index_id>.<event_id>` bound to the INDEX (foreign or
+  malformed → refused), NOT to the revision (a new Actualiser cannot stale a walk
+  through older history), exact total for the filter read in the same read
+  transaction as the page. lib.rs exposure test forbids path/root/identity params.
+- `ChangeJournalPanel` (« Changements », in `MapApp`'s aside): toggle,
+  five visible/combinable/revocable nature checkboxes + « Retirer les filtres »,
+  exact total, events grouped by detected revision with detection date,
+  relative paths only, Page précédente/suivante, « Afficher » only for a node
+  that still exists (never for DELETED/vanished: « historique seulement »),
+  boundary text (detection date ≠ disk date; order ≠ real chronology). Reloads
+  from the newest page on a revision change (filters kept), resets on brain change,
+  refuses a page naming another brain. Keyboard/accessibility at the level of
+  the existing panels (native buttons/checkboxes, aria-expanded, aria-live).
+- Report: `MapBuildReport.changeSummary` = created/modified/renamed/moved/
+  deleted/total + baselineEstablished (counters only, not the event list);
+  shown in the app report line (`change-summary`).
 
-COMMIT:
-PUSHED: pending (commit/push to happen immediately after this report is
-written)
+7 — PROOF OF THE FIVE NATURES / PAGINATION / WEBVIEW2
+Rust (Windows, real scanner + real FileIdInfo): create, modify (size and
+mtime-only), delete, rename (same nodeId, RENAMED only), move (same nodeId,
+MOVED only), folder move (folder event only), junction rename (DELETED+CREATED),
+content changed with same size/mtime (NOT observed — content never read).
+Index-level synthetic identities cover the same on every platform, plus
+rename+move together, directory-timestamp echo, NULL-key re-baseline.
+Pagination: 130 events → pages 50/50/30 (index level), strictly decreasing
+event_id, no gap/duplicate, exact totals, filters (single, multiple, repeated),
+old cursor still valid after a new publication; foreign/malformed cursor refused.
+WebView2 (real, docs/performance/runs/TASK-0037-webview2.json; two real launches,
+one real restart; tree generated by the proof + a 130-file batch): baseline empty;
+no-op refresh 0 events; create/modify/rename/move/delete each with exact
+counters (1 event, total 1) and same nodeId for rename/move; 130-file batch;
+UI pages 50/50/35 with no gap/duplicate; filters CREATED=131, RENAMED+MOVED=2,
+DELETED=1, MODIFIED=1, revocable; page-back restores page 1; select-from-journal
+opens the node; DELETED offers no selection; API bounded at 50 with working
+cursor; after the restart total 135 and first/last pages identical, all five
+natures present, deleted still history-only, map_open read no source, schema 5;
+no absolute path / stable key / FileId / volume in DOM, payloads or artefact;
+0 fatal console errors. TASK-0036 replay on the new binary: all invariants
+true, 0 fatal (its artefact left untouched).
 
-LIMITS_OR_BLOCKERS:
-- No real process crash/power-loss reproduction for this specific failure
-  mode either — the D6 test injects a deterministic metadata corruption,
-  not a SIGKILL. Same category of limit PERF-0002/B1 and the D4 tests
-  already declared.
-- Every other limit already declared by the three earlier TASK-0036
-  deliveries is unchanged: no real Cloud Files fixture, inter-volume move
-  untested, seen-across-rename not replayed in WebView2.
-- cargo clippy remains red at 26 pre-existing errors, confirmed to live
-  entirely outside the 2 files this pass touched.
-- Out of scope as specified: change journal, watcher, incremental update,
-  no new TASK-0037.
+8 — TESTS / VALIDATIONS (all run in this session)
+- cargo test --offline: 444 passed, 0 failed, 5 ignored (412 before: +31
+  change-journal tests in map/change_journal_tests.rs, +1 exposure test in lib.rs).
+- pnpm test: 352 passed (339 before: +12 ChangeJournalPanel, +1 lifecycle).
+- pnpm check, pnpm build, cargo build --offline, `pnpm tauri build --debug
+  --no-bundle` (needed for the WebView2 replay: a bare `cargo build` binary
+  targets devUrl): green. git diff --check: clean.
+- rustfmt (edition 2024) clean on all 9 touched Rust files.
+- clippy --all-targets --offline -- -D warnings: RED on HISTORICAL debt only.
+  Baseline HEAD c34096c measured in a temporary worktree: lib 13 + lib-test 22
+  errors; now: lib 13 + lib-test 22, identical per file. ZERO diagnostic in any
+  file touched by this task (one introduced type-complexity in a new test was
+  fixed before delivery).
+- scripts/audit-public-readiness.ps1 FAILS on PRE-EXISTING content
+  (docs/ai/VALIDATION.md:3793 contains a personal local path, committed long
+  before this task). Not introduced, not touched here; reported for the orchestrator.
 
-NEXT_ORCHESTRATOR_DECISION:
-- A final independent control of TASK-0036, by an instance distinct from
-  the executor, on the full accumulated evidence (D1 through D6).
-  TASK-0036 stays IMPLEMENTED until that control renders VERIFIED. No
-  TASK-0037 pre-created.
+9 — LIMITS (honest)
+- Manual detection only: the WATCHER (F-030) and INCREMENTAL update (F-031)
+  are not built; P-16 is only partly covered; F-029 stays PROPOSED (Actualiser is
+  still a full rescan; only the counters summary is new).
+- No true chronology: ordinal = publication order; the timestamp = detection.
+- A directory's own timestamp edit alone is not journaled (see 4).
+- Inter-volume moves and any PATH_FALLBACK rename are DELETED+CREATED (DEC-0009).
+- The first republish after a v3→v5 migration journals nothing (re-baseline).
+- Not tested: real Cloud Files placeholders (unchanged from TASK-0036); a real
+  process crash mid-migration or mid-publication (failures are injected in the
+  database, deterministic, never a SIGKILL); a corpus of 100k+ nodes for the
+  journal (memory of the diff is proportional to the corpus, like the publication
+  it belongs to; P-18's incremental cost target belongs to F-031); journal
+  retention/growth (unbounded by design: "history never emptied").
+- Modest-laptop performance not measured; WebView2 proof is on a dev workstation.
+- The dead-code warning `SUGGESTION_STATES` and the 24 clippy findings are historical.
+- graph/history.jsonl and graph/current_state.yaml were not updated: they have
+  not been maintained since TASK-0009 (2026-08-26); catching up 27 tasks is
+  outside this task. Flagged for the orchestrator.
+
+10 — DELIVERABLES / NEXT
+- TASK-0037 = IMPLEMENTED (task file, CURRENT_STATE, HANDOFF, NEXT_ACTION,
+  VALIDATION section BQ, CHANGELOG_AI, FEATURE_MATRIX F-027 updated honestly).
+- NEXT_ACTION = independent control of TASK-0037.
+- No TASK-0038, no PR, merge, tag or release. Commit and push ONLY on
+  build/v0.2-a21-v1-change-journal.

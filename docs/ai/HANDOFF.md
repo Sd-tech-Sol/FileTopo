@@ -1,6 +1,55 @@
 # HANDOFF — passage de relais
 
-## Relais actuel — TASK-0036, passe corrective D6 (`ACTION-0059`) livrée — 2026-09-12
+## Relais actuel — TASK-0037, V1 Change Journal livrée, en attente de contrôle — 2026-09-23
+
+- **Ce qui vient d'être fait :** `TASK-0037` est implémentée sur
+  `build/v0.2-a21-v1-change-journal` (partie de `TASK-0036 = VERIFIED`,
+  `ACTION-0060`). Elle reste `IMPLEMENTED`, jamais auto-`VERIFIED`. Aucune
+  `TASK-0038`, aucune PR, fusion, étiquette ni release.
+- **Où regarder, dans l'ordre :** `src-tauri/src/change_journal.rs` (DDL,
+  `diff` pure, `append_events`, `page`, curseur `fjc1`);
+  `src-tauri/src/index.rs` (`publish` : diff + événements dans la même
+  transaction `IMMEDIATE`; dispatcher `migrate_to_current_schema`, étape
+  `run_change_journal_migration`); `map/brain_index.rs`
+  (`open_existing_migrating` : même `M-B`, validation qui exige le journal;
+  `change_journal_page`); `map/commands.rs` (`change_journal`, DTO,
+  `MapBuildReport.changeSummary`); `lib.rs` (`map_change_journal`);
+  `src/map/ChangeJournalPanel.tsx`; `map/change_journal_tests.rs`;
+  `scripts/task0037-*`.
+- **Décisions à examiner en priorité (le contrôle indépendant doit les
+  trancher, pas les subir) :**
+  1. **v3 reste migrable.** Le dispatcher enchaîne `3 → 4 → 5` dans **une**
+     enveloppe `M-B` (une copie de sûreté du fichier tel que trouvé) au lieu de
+     n'accepter que « exactement la version précédente » comme `ACTION-0057` D1.
+     Choisi pour ne pas abandonner un index v3 existant et garder valides les
+     preuves D1–D6; à confirmer ou à resserrer.
+  2. **`MODIFIED` n'observe pas l'horodatage propre d'un dossier** (réécrit par
+     l'OS à chaque entrée créée/supprimée/renommée dedans; sinon chaque parent
+     de chaque changement structurel serait un faux `MODIFIED`). Limite déclarée.
+  3. **Référence sans événement** au premier build **et** au premier republish
+     d'un index migré depuis v3 (lignes sans clé stable) : sinon tout nœud serait
+     « supprimé puis créé ».
+  4. **Seul le pipeline à identités journalise** (`publish_map`). Les chemins
+     `replace`/`replace_nodes` de test, à ids choisis par l'appelant, ne journalisent
+     pas.
+  5. **Curseur lié à l'`index_id`, pas à la révision** : le journal est en ajout
+     seul, une nouvelle actualisation n'invalide pas une lecture de l'historique.
+- **Preuves à rejouer si besoin :** `cargo test --offline` (444),
+  `pnpm test` (352), et — après `pnpm build` **puis
+  `pnpm tauri build --debug --no-bundle`** (un `cargo build` seul vise `devUrl`
+  et le harnais n'affiche rien) — `powershell -File scripts/task0037-webview2.ps1`
+  (deux lancements réels, un redémarrage réel).
+- **Rappels d'hygiène :** le rejeu du harnais `TASK-0036` réécrit
+  `docs/performance/runs/TASK-0036-webview2.json` (artefact d'une tâche
+  `VERIFIED`) : le restaurer avec `git checkout --` après un rejeu, comme fait ici.
+  `scripts/audit-public-readiness.ps1` échoue sur un contenu antérieur
+  (`VALIDATION.md` ligne 3793); `graph/*` n'est plus tenu depuis `TASK-0009`.
+- **Non fait, hors périmètre :** watcher, `ReadDirectoryChangesExW`,
+  application incrémentale U-B, réconciliation W-B/W-C, filtres de carte
+  nouveau/non vu, marquer vu, FTS5, rétention du journal.
+- **Action unique suivante :** contrôle indépendant de `TASK-0037`.
+
+## Relais précédent — TASK-0036, passe corrective D6 (`ACTION-0059`) livrée — 2026-09-12
 
 - **Ce qui vient d'être fait :** le recontrôle indépendant
   [`ACTION-0059`](../reviews/ACTION-0059-independent-recontrol.md) a accepté

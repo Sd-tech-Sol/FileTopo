@@ -6800,3 +6800,195 @@ journal/watcher/incrémental. Aucune `TASK-0037`.
 `origin/main` inchangé. Aucune PR, fusion, étiquette ni release.
 
 **Action unique suivante :** contrôle indépendant final de `TASK-0036`.
+
+
+## BQ. TASK-0037 — V1 Change Journal on Manual Refresh — 2026-09-23
+
+**Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche
+`build/v0.2-a21-v1-change-journal`, partie de `TASK-0036 = VERIFIED`
+([`ACTION-0060`](../reviews/ACTION-0060-independent-final-recontrol.md)).
+`main` et `docs/record-pr4-merge` n'ont pas été touchés. Tout ce qui suit a été
+exécuté dans cette session, sauf mention « non testé ».
+
+### BQ.1 Préconditions
+
+`git checkout build/v0.2-a21-v1-change-journal`, `git fetch origin`,
+`git merge --ff-only origin/build/v0.2-a21-v1-change-journal` → « Already up to
+date »; arbre propre; `HEAD` `c34096c` contient `ACTION-0060` et `TASK-0037`.
+`TASK-0037` lue en entier avant tout code.
+
+### BQ.2 Schéma v5 et migration par `M-B` (`DEC-0013` B)
+
+| Point | Preuve (`map/change_journal_tests.rs`) |
+|---|---|
+| v4 réel → v5 par le chemin produit (`map_open`) | `a_real_v4_index_upgrades_to_v5_through_the_product_path_with_an_empty_journal` : source non lue, `index_id` et révision inchangés, `seen` conservé, copie transitoire supprimée, journal vide, journal fonctionnel dès la publication suivante |
+| Échec **après** début de mutation | `a_v4_to_v5_migration_that_fails_midway_restores_the_v4_file_in_full` : objet de même nom qu'un index du saut → `user_version` reste 4, aucune table `change_events` à moitié créée, copie réglée; nouvelle tentative migre |
+| Échec de **validation** canonique | `a_v4_to_v5_migration_whose_canonical_validation_fails_is_restored_too` : `build_complete` corrompu → v4 restauré; après réparation, migre |
+| Fichier v5 sans journal | `a_v5_file_without_its_journal_table_fails_the_canonical_validation` → `map_index_incompatible` |
+| v3 → v5, une enveloppe `M-B` | `a_v3_index_migrated_to_v5_is_re_baselined_by_its_first_republication_not_flooded` |
+| Schéma futur (maintenant 6) | `a_future_schema_is_refused_and_never_migrated_backward` (test `TASK-0036` adapté : 5 → 6) — refusé, octets intacts, aucune copie |
+| Preuves `ACTION-0057`/`0058`/`0059` (D1–D6) | les **15** tests de `stable_identity_tests.rs` (identité + migration D1–D6) passent, seuls changements : helper de rétrogradation qui supprime aussi le journal, nom de la copie de sûreté, version « future » |
+
+`Index::migrate_previous_schema` (« exactement N−1 ») est devenu
+`migrate_to_current_schema`, dispatcher **par version** : `3 → 4`
+(`run_stable_identity_migration`, inchangée sur le fond) puis `4 → 5`
+(`run_change_journal_migration`). Chaque saut est sa propre transaction et
+estampille son `user_version` en dernier; un saut qui n'atterrit pas exactement
+une version plus haut est refusé. `MAP_PREVIOUS_SCHEMA_VERSION` est remplacé par
+`store::is_migratable_schema` (intervalle fermé `3..courant`).
+**Décision à examiner :** v3 reste migrable (au lieu de n'accepter que la version
+immédiatement précédente); plus ancien que 3, inconnu ou plus récent : refusé.
+
+### BQ.3 Modèle et règles de diff
+
+`change_events(event_id AUTOINCREMENT, detected_revision, ordinal, nature CHECK
+∈ 5 natures, node_id, node_kind, old/new name, old/new relative_path,
+old/new parent_id, detected_unix_ms)`, index `(nature, event_id)` et unique
+`(detected_revision, ordinal)`; aucune clé étrangère vers `nodes`.
+Interdits stockés : chemin absolu, racine, `stable_key`, `FileId`, série de volume,
+contenu — vérifié par le schéma (`the_stored_journal_carries_no_identity_material_…`)
+et par la sérialisation (`the_serialized_page_and_report_expose_no_path_no_key_and_no_identity`).
+
+| Règle | Test |
+|---|---|
+| Premier build → journal vide, `baselineEstablished` | `the_first_publication_establishes_a_baseline_…` (Index) et `the_real_pipeline_journals_create_modify_and_delete_with_exact_counters` (réel) |
+| Refresh inchangé → 0 événement, la révision avance | `an_unchanged_republication_journals_nothing_but_the_revision_still_advances` |
+| Création → un `CREATED` sur le nouvel id | `a_new_key_is_exactly_one_created_event_on_a_never_recycled_id` |
+| Suppression → un `DELETED` sur l'ancien id, non recyclé, jamais sélectionnable | `a_vanished_key_is_exactly_one_deleted_event_…` |
+| Renommage SYSTEM → même id, `RENAMED` seul | `a_real_rename_keeps_the_node_id_…` (`cfg(windows)`) + `a_rename_keeps_the_id_and_is_exactly_one_renamed_event` |
+| Déplacement SYSTEM → même id, `MOVED` seul | `a_real_move_keeps_the_node_id_…` (`cfg(windows)`) + `a_move_keeps_the_id_and_is_exactly_one_moved_event` |
+| Dossier déplacé : événement sur le dossier, aucun sur les descendants | `a_moved_folder_is_one_event_on_the_folder_and_none_on_its_descendants` + le cas réel `cfg(windows)` |
+| Nom + parent changés : les deux natures, même révision, chemins avant/après la publication entière, jamais un chemin intermédiaire | `a_rename_and_a_move_in_one_publication_journal_both_natures_without_inventing_an_order` |
+| `PATH_FALLBACK` renommé → suppression + création | `a_renamed_raw_path_node_is_a_real_delete_plus_a_real_create_never_a_rename` (vraie jonction Windows, point d'analyse) + `a_node_whose_identity_changes_is_a_delete_plus_a_create_never_a_similarity_match` |
+| `MODIFIED` : taille, date de fichier; **pas** l'horodatage propre d'un dossier | `only_observed_metadata_changes_are_modified_and_a_directory_timestamp_is_not_one` |
+| Le contenu n'est jamais lu | `a_content_change_that_leaves_size_and_timestamp_alone_is_not_observed_and_not_read` (contenu changé, taille et date restaurées → 0 événement; date seule changée → 1 `MODIFIED`) |
+| Ligne sans clé stable (v3 migré) → référence, pas d'inondation | `a_corpus_without_durable_identity_is_re_baselined_and_never_flooded_with_events` |
+
+### BQ.4 Atomicité
+
+Diff, remplacement des nœuds, insertion des événements et incrément de révision
+forment **une** transaction `IMMEDIATE` (verrou d'écriture pris avant la lecture
+de l'ancien corpus); l'insertion des événements précède la dernière écriture
+(`advance_revision`). Défaillances injectées **dans la base** par déclencheurs SQL,
+sans crochet de production :
+
+- `a_failing_journal_insert_fails_the_whole_publication_and_leaves_the_old_index_intact` :
+  l'échec d'écriture du journal fait échouer la publication entière; corpus,
+  révision et journal identiques avant/après; publication à nouveau possible
+  après retrait de la panne;
+- `a_publication_failing_after_the_journal_was_written_leaves_no_event_behind` :
+  l'échec de la dernière écriture retire aussi les événements déjà écrits;
+- `the_journal_survives_reopening_the_index_from_disk` et l'assertion d'historique
+  après `rebuild_map` : le journal survit à une réouverture à froid et à un
+  Reconstruire; il n'est jamais vidé avec `nodes`.
+
+### BQ.5 Consultation et pagination
+
+`map_change_journal(brainId, natures?, after?, limit?)` : cerveau nommé, aucun
+chemin; 50 max (serveur : `limit` 500 → 50); plus récent d'abord; curseur
+`fjc1.<index_id>.<event_id>` lié à l'**index** et non à la révision; total exact
+lu dans la même transaction de lecture que la page.
+
+- `pagination_walks_more_than_fifty_events_without_a_gap_or_a_duplicate` : 130
+  événements → pages 50/50/30, `event_id` strictement décroissants, aucun trou
+  ni doublon, total exact à chaque page; **un curseur ancien reste valide après
+  une nouvelle publication** (reprise exactement à l'endroit de l'arrêt);
+- `the_journal_filters_by_one_or_several_natures_with_an_exact_total` : 62/60/1/2/0,
+  nature répétée = un seul filtre;
+- `a_cursor_of_another_index_or_a_malformed_one_is_refused` et
+  `two_brains_on_the_same_root_keep_independent_journals` : curseur d'un autre
+  index refusé (`journal_cursor_foreign`), curseur mal formé refusé, deux cerveaux
+  sur une même racine gardent des journaux indépendants;
+- `the_change_journal_command_is_exposed_and_accepts_no_path_or_identity`
+  (`lib.rs`) : la commande est enregistrée et sa signature n'accepte ni chemin, ni
+  racine, ni identité système. **Aucune permission WebView2 nouvelle**
+  (`capabilities/` inchangé).
+
+### BQ.6 Interface
+
+`ChangeJournalPanel` (12 tests) : rien n'est lu avant l'ouverture; cinq filtres
+visibles, combinables, révocables; pages précédente/suivante par pile de curseurs;
+un filtre revient à la page la plus récente; sélection **seulement** pour un
+nœud encore présent, jamais pour `DELETED` ni un nœud disparu (« historique
+seulement »); regroupement par révision de détection; aucun chemin absolu;
+retour à la première page si la révision d'Index change (filtres conservés);
+rien n'est reporté sur un autre cerveau et une page nommant un autre cerveau est
+refusée; un refus du back-end n'est pas présenté comme un journal vide. Le
+rapport d'Actualiser/Reconstruire affiche le résumé de compteurs
+(`describeChangeSummary`); `runLifecycle` garde son contrat à trois arguments et
+sa séquence de commandes (test existant inchangé) et n'ajoute les compteurs que
+pour refresh/rebuild.
+
+### BQ.7 WebView2 Windows réel, avec vrai redémarrage
+
+`scripts/task0037-seed-proof.py`, `task0037-webview2.mjs`, `task0037-webview2.ps1`
+→ `docs/performance/runs/TASK-0037-webview2.json`
+(`NONCANONICAL_ENGINEERING_EVIDENCE`). **Deux lancements réels** du même exécutable
+sur le même variant de bac à sable; arbre généré par la preuve (`REAL_ROOT`
+enregistré directement dans un catalogue neuf), lot de 130 fichiers généré par le
+script; toutes les opérations disque hors du processus produit, entre de vrais
+clics sur Actualiser.
+
+Résultat (tous vrais, 0 erreur console fatale sur les deux phases) : schéma 5;
+baseline vide; actualisation sans changement = 0 événement; `created=1`,
+`modified=1`, `renamed=1`, `moved=1`, `deleted=1` (chacun `total=1`, aucun
+delete+create pour rename/move); **même `nodeId`** après renommage et
+déplacement; un `DELETED` sans sélection possible; lot `created=130`; historique
+de 135 événements paginé **50/50/35 sans trou ni doublon**; retour de page
+restaure la page 1; filtres `CREATED=131`, `RENAMED+MOVED=2`, `DELETED=1`,
+`MODIFIED=1`, révocables; sélection depuis le journal ouvre le nœud; API bornée à
+50 avec curseur qui continue. **Après le vrai redémarrage** : total 135, première
+et dernière pages **identiques** aux identifiants d'événements d'avant, les cinq
+natures présentes, le nœud supprimé toujours « historique seulement »,
+`map_open` sans lecture de la source, schéma 5. Aucun chemin absolu, clé stable,
+`FileId` ni série de volume dans le DOM, les charges d'appel, les réponses ni
+l'artefact (contrôlés dans le script, puis relus dans le fichier : aucun chemin
+personnel).
+
+**Constat de méthode :** le binaire doit être produit par
+`pnpm tauri build --debug --no-bundle`; un `cargo build --offline` seul vise
+`devUrl` et la page ne s'affiche pas (première tentative échouée pour cette raison,
+le harnais `TASK-0036` échouait pareillement avant la reconstruction).
+**Rejeu du harnais `TASK-0036` sur le nouveau binaire :** tous les invariants
+vrais, `copyStillSucceeds` vrai, 0 erreur fatale. Son artefact (`VERIFIED`) a été
+restauré par `git checkout --` : seul son formatage diffère.
+
+Le binaire du rejeu a été construit avant la dernière passe de formatage
+`rustfmt` et l'ajout de tests seuls; le code de production n'a pas changé depuis
+(le formatage ne change pas le comportement) — cette équivalence est déclarée,
+non re-mesurée par un second rejeu.
+
+### BQ.8 Validations générales
+
+| Contrôle | Résultat |
+|---|---|
+| `cargo test --offline` | **444 PASS**, 0 échec, 5 ignorés (412 avant : +31 tests du journal, +1 exposition IPC) |
+| `pnpm test` | **352 PASS** (339 avant : +12 panneau, +1 lifecycle) |
+| `pnpm check`, `pnpm build`, `cargo build --offline` | verts |
+| `pnpm tauri build --debug --no-bundle` | vert |
+| `git diff --check` | propre |
+| `rustfmt --edition 2024 --check` | propre sur les 9 fichiers Rust touchés : `change_journal.rs`, `index.rs`, `lib.rs`, `map/brain_index.rs`, `map/commands.rs`, `map/mod.rs`, `map/store.rs`, `map/stable_identity_tests.rs`, `map/change_journal_tests.rs` |
+| `cargo clippy --all-targets --offline -- -D warnings` | **rouge sur la dette historique seule.** `HEAD` `c34096c` mesuré dans un worktree temporaire (supprimé) : lib **13**, lib-test **22** erreurs; après la tâche : lib **13**, lib-test **22**, **identiques fichier par fichier**. **Zéro** diagnostic dans un fichier touché (un `type_complexity` introduit dans un nouveau test a été corrigé avant livraison) |
+| `scripts/audit-public-readiness.ps1 -AllowRemotes` | **ÉCHOUE sur un contenu antérieur** : `docs/ai/VALIDATION.md` ligne 3793 (chemin local personnel, commité bien avant); non introduit ni modifié par cette tâche, signalé à l'orchestrateur |
+
+### BQ.9 Non fait, et limites
+
+Détection **manuelle** seulement : ni watcher (`F-030`) ni application
+incrémentale (`F-031`); `P-16` n'est que partiellement couvert et `F-029` reste
+`PROPOSED`. L'ordre d'un lot est l'ordre de publication du journal; l'horodatage
+est l'instant de détection. L'édition de l'horodatage propre d'un dossier seul
+n'est pas journalisée. Un déplacement inter-volume et tout renommage en
+`PATH_FALLBACK` = suppression + création (`DEC-0009`). Le premier republish après
+une migration v3 ne journalise rien (référence). **Non testé :** placeholder
+Cloud Files réel; vrai crash de processus pendant une migration ou une
+publication (les défaillances sont injectées dans la base, déterministes); journal
+sur 100 000 nœuds ou plus (la mémoire du diff est proportionnelle au corpus, comme
+la publication qui l'héberge; la cible de coût incrémental de `P-18` appartient à
+`F-031`); rétention ou croissance du journal (non bornée par conception);
+performance sur portable modeste. `graph/history.jsonl` et
+`graph/current_state.yaml` non mis à jour (non tenus depuis `TASK-0009`).
+
+**Aucune donnée personnelle**, comme toujours. `origin/main` inchangé. Aucune
+`TASK-0038`, aucune PR, fusion, étiquette ni release.
+
+**Action unique suivante :** contrôle indépendant de `TASK-0037`.

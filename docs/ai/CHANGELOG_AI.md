@@ -5463,3 +5463,71 @@ inchangé.
 **Action unique suivante :** contrôle indépendant final de `TASK-0036`,
 par une instance distincte, sur l'ensemble des preuves accumulées (D1 à
 D6).
+
+
+---
+
+## 2026-09-23 — TASK-0037 — V1 Change Journal on Manual Refresh
+
+**Agent :** exécuteur Claude Code (Sonnet 5)
+**Statut à l'issue :** `IMPLEMENTED` (jamais auto-`VERIFIED`)
+**Branche :** `build/v0.2-a21-v1-change-journal`
+
+### Fait
+
+- **Journal persistant par cerveau** dans le SQLite canonique (schéma **v5**,
+  table `change_events`, événements en ajout seul, `AUTOINCREMENT`, aucune clé
+  étrangère vers `nodes`). Nouveau module `src-tauri/src/change_journal.rs` :
+  DDL, diff pure, insertion, lecture paginée, curseur `fjc1`.
+- **Cinq natures exactes** (`CREATED`, `MODIFIED`, `RENAMED`, `MOVED`, `DELETED`),
+  diff entre l'ancien corpus canonique et le nouveau corpus **remappé** par
+  l'identité stable de `TASK-0036`; aucun événement inventé sur un descendant
+  d'un dossier déplacé; nom+parent changés = les deux natures sans chronologie
+  inventée; `PATH_FALLBACK` renommé/déplacé = suppression + création; premier
+  build (et premier republish après migration v3) = référence sans événement.
+- **Publication atomique** : diff, remplacement des nœuds, événements et
+  révision dans une même transaction `IMMEDIATE` (`Index::publish`); échec du
+  journal ⇒ échec de la publication; échec de la publication ⇒ aucun événement.
+- **Migration v4 → v5 par `M-B`** : `migrate_previous_schema` devient un
+  dispatcher par version (`3 → 4 → 5`), `open_existing_migrating` inchangée sur
+  le fond, validation canonique qui exige le journal, copie de sûreté renommée
+  `.migration-safety-copy`.
+- **API** `map_change_journal` (50 max, curseur lié à l'index et non à la
+  révision, filtres par nature, total exact, aucun chemin ni identité système),
+  **résumé de compteurs** dans `MapBuildReport.changeSummary`.
+- **UI** : panneau « Changements » (`ChangeJournalPanel.tsx`) dans `MapApp` —
+  filtres visibles et révocables, pagination, regroupement par révision de
+  détection, chemins relatifs seulement, sélection d'un nœud encore présent via
+  `BrainNodeRef`, jamais pour un `DELETED`; compteurs dans le rapport d'Actualiser.
+- **Preuves** : 31 tests Rust du journal + 1 d'exposition IPC (dont des cas
+  `#[cfg(windows)]` réels : renommage, déplacement, dossier déplacé, jonction
+  `PATH_FALLBACK`), 13 tests TypeScript, **rejeu WebView2 réel avec vrai
+  redémarrage** (`docs/performance/runs/TASK-0037-webview2.json`) et rejeu du
+  harnais `TASK-0036` sur le nouveau binaire.
+- Documentation : `TASK-0037` → `IMPLEMENTED`, `CURRENT_STATE`, `HANDOFF`,
+  `NEXT_ACTION`, `VALIDATION` section BQ, `FEATURE_MATRIX` (`F-027` seulement),
+  `.orchestrator/RESULT.md`.
+
+### Preuves
+
+Rust **444 PASS** (412 + 32), TypeScript **352 PASS** (339 + 13), `pnpm check`,
+`pnpm build`, `cargo build --offline`, `pnpm tauri build --debug --no-bundle`,
+`git diff --check` verts; `rustfmt` propre sur les 9 fichiers Rust touchés;
+clippy `-D warnings` rouge sur la seule dette historique, **identique fichier
+par fichier** à celle de `HEAD` (mesurée dans un worktree temporaire), zéro
+diagnostic dans un fichier touché.
+
+### Non fait, et limites
+
+Ni watcher, ni incrémental, ni filtre de carte nouveau/non vu, ni marquage vu,
+ni `TASK-0038`, ni PR, fusion, étiquette ou release. Détection manuelle
+seulement; ordre = ordre de publication, horodatage = instant de détection;
+horodatage propre d'un dossier non observé; aucune fixture Cloud Files réelle,
+aucun vrai crash de processus, rien de mesuré au-delà de quelques centaines de
+nœuds pour le journal. Constats antérieurs non corrigés :
+`audit-public-readiness.ps1` échoue sur `VALIDATION.md` ligne 3793, `graph/*`
+non tenu depuis `TASK-0009`. Aucune donnée personnelle.
+
+### Suite
+
+**Action unique suivante :** contrôle indépendant de `TASK-0037`.

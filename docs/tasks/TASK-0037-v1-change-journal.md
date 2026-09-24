@@ -1,7 +1,7 @@
 # TASK-0037 — V1 Change Journal on Manual Refresh
 
 - Date : 2026-09-12
-- Statut : `READY`
+- Statut : `IMPLEMENTED` (2026-09-23) — jamais auto-`VERIFIED`; contrôle indépendant requis
 - Branche : `build/v0.2-a21-v1-change-journal`
 - Prérequis : `TASK-0036 = VERIFIED` par `ACTION-0060`
 - Portée produit : `F-027` / parité `P-16`, plus le résumé manuel de changements de `P-18`
