@@ -57,7 +57,7 @@ VALIDATIONS:
 - Clippy: lib 13 / lib-test 22 = same counts as before the change (historical debt); none in
   source_observation.rs, lifecycle_tests.rs, source_availability_tests.rs. rustfmt --check clean on the
   three touched Rust files.
-- `git diff --check` clean. `scripts/audit-public-readiness.ps1 -AllowRemotes`: see the line below.
+- `git diff --check` clean. `scripts/audit-public-readiness.ps1 -AllowRemotes`: green (561 versioned files, no sensitive pattern, none over 5 MiB).
 - WebView2 NOT replayed: visible UI and transport unchanged (no TS product change); T4 covers the catch.
 - NOT tested: real process crash between the two commits (only simulated by dropping the slot); two
   processes on one catalogue; a real host with an unwritable catalogue.

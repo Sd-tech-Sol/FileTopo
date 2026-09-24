@@ -7781,8 +7781,8 @@ Commit `4bed627`, branche `build/v0.2-a26-v1-source-availability`, partie de `71
 - `cargo build --offline` PASS. Clippy : 13 diagnostics lib / 22 lib-test = **dette historique**
   (mêmes nombres qu'avant), aucun dans `source_observation.rs`, `lifecycle_tests.rs`,
   `source_availability_tests.rs`. `rustfmt --check` propre sur les trois fichiers Rust touchés.
-- `git diff --check` propre; `scripts/audit-public-readiness.ps1 -AllowRemotes` : voir
-  `.orchestrator/RESULT.md`.
+- `git diff --check` propre; `scripts/audit-public-readiness.ps1 -AllowRemotes` : réussi (561 fichiers versionnés,
+  aucun motif sensible, aucun fichier > 5 Mio).
 
 ### BX.4 Fenêtre de crash — ce qui est et n'est pas promis
 
