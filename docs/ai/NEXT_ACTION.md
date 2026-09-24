@@ -1,21 +1,22 @@
 # Action suivante
 
-## Contrôle indépendant de TASK-0042
+## Recontrôle TASK-0042 — ACTION-0069 P1/P1b
 
-`TASK-0042 — V1 Source Availability & Stale Index Foundation` est **IMPLEMENTED** sur
-`build/v0.2-a26-v1-source-availability` : la dernière observation de la source (six états
-fermés, raison fermée, sans chemin) est persistée par cerveau, écrite par le vrai Actualiser,
-relue par `Ouvrir` sans toucher la source; une racine absente, remplacée ou illisible conserve
-le dernier Index fiable sans aucune suppression inventée.
+La fondation `TASK-0042` est fonctionnellement acceptée, mais reste
+`IMPLEMENTED`, pas `VERIFIED`.
 
-Action unique : **contrôle indépendant de `TASK-0042` sur preuves**, par une instance distincte
-de l'exécuteur — `.orchestrator/RESULT.md`, [VALIDATION section BW](VALIDATION.md),
-`src-tauri/src/map/source_observation.rs`, `src-tauri/src/map/source_availability_tests.rs`,
-`publish_map` dans `map/commands.rs`, `SourceObservationBadge.tsx`, et l'artefact
-`docs/performance/runs/TASK-0042-webview2.json`. Les cinq décisions de `RESULT.md` sont les
-points à trancher.
+Blocage unique : si la source est réellement indisponible **et** que l'écriture
+du petit record `source_observation.*` échoue, le frontend peut relire l'ancien
+record persisté et afficher un état périmé (par exemple `SYNCED`).
 
-Seul le contrôle peut attribuer `VERIFIED`. **`F-032` ne peut pas être déclarée complète** :
-aucune détection automatique n'existe tant que `F-030` ne consomme pas ce contrat.
+`ACTION-0069` exige donc deux corrections étroites :
 
-Hors portée : watcher `F-030`, W-B/W-C, polling, `TASK-0043`, PR, fusion, étiquette, release.
+- rendre l'observation courante disponible avec `persisted:false` dans la
+  session même si son write échoue;
+- invalider aussi un ancien **failure record** dont
+  `lastSuccessfulRevision` ne correspond plus à la révision servie.
+
+Action unique : exécuter `.orchestrator/NEXT_PROMPT.md` sur
+`build/v0.2-a26-v1-source-availability`.
+
+Aucune TASK-0043, aucun watcher/polling/W-B/W-C avant fermeture de P1/P1b.
