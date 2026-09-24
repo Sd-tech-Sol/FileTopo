@@ -112,6 +112,27 @@ prototype.
 > n'est donc **pas établi de façon robuste**; il n'est pas non plus franchement rejeté
 > (le remplacement complet existant fait ×120 à ×150 sur les mêmes tailles).
 
+> **Mesure canonique F-031 (`ACTION-0066`, 2026-09-24) — ajoutée, sans effacer les
+> campagnes ci-dessus ni changer le seuil.** Protocole figé avant exécution (clarification
+> de « cinq exécutions minimum, médiane retenue ») : profil test `opt-level=3`, SQLite du banc
+> inchangé (WAL, `synchronous=NORMAL`, cache par défaut), aucun checkpoint ni cache
+> diagnostique; **5 campagnes indépendantes** sur index frais, **7 échantillons par cas**,
+> aucun écarté; médiane calculée sur les **35 exécutions brutes** de chaque cas (pas une
+> médiane de médianes). Résultat (`runs/TASK-0040-incremental-apply-canonical-01..05.json`,
+> synthèse `…-canonical-summary.json`) :
+>
+> | Jeu | Changements | Médiane des 35 | min – max | Cible | Verdict |
+> |---|---:|---:|---:|---|---|
+> | `SYN-1K` | 10 | **0,964 ms** | 0,844 – 1,326 ms | ≤ 200 ms | PASS |
+> | `SYN-10K` | 10 | **1,330 ms** | 1,081 – 2,027 ms | ≤ 250 ms | PASS |
+> | `SYN-100K` | 10 | **1,478 ms** | 1,339 – 2,846 ms | ≤ 400 ms | PASS |
+> | `SYN-100K` | 1 000 | **260,332 ms** | 248,004 – 323,236 ms | ≤ 3 s | PASS |
+>
+> **Ratio canonique 100k/1k à 10 changements = 1,478 / 0,964 = 1,533 ≤ 2 → PASS.** Ratios
+> individuels des 5 campagnes (diagnostic) : 1,451 · 1,436 · 1,588 · 1,537 · 1,558 — aucun
+> ne dépasse 2. Une machine, une session; la campagne à 2,11 antérieure reste publiée
+> (`runs/TASK-0040-incremental-apply-opt3.json`), non supprimée ni réinterprétée.
+
 **Critère de rejet, plus important que les valeurs absolues.** À nombre de
 changements égal (10), la durée sur `SYN-100K` ne doit pas dépasser
 **2 fois** celle sur `SYN-1K`. C'est le facteur que

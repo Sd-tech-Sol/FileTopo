@@ -1,5 +1,21 @@
 # HANDOFF — passage de relais
 
+## Relais actuel — TASK-0040, recontrôle canonique F-031, en attente de contrôle — 2026-09-24
+
+- **Fait :** les 5 campagnes canoniques d'`ACTION-0066` (35 échantillons bruts par cas) ont
+  été exécutées; **ratio canonique 1,533 ≤ 2 → PASS**, cibles absolues PASS. `TASK-0040`
+  reste `IMPLEMENTED`. Noyau, harnais Rust, réglages SQLite et seuil non touchés.
+- **Où regarder :** `docs/performance/runs/TASK-0040-incremental-apply-canonical-summary.json`
+  (sources, 35 échantillons bruts par cas, médianes, ratios, environnement identique),
+  les cinq `…-canonical-0N.json`, `scripts/task0040-f031-canonical.ps1`,
+  `BASELINE_TARGETS §3.3`, `VALIDATION BU`.
+- **À savoir :** le script recalcule la synthèse seul avec `-SummaryOnly`. Le build
+  `opt-level=3` vit dans `src-tauri/target/opt` (ignoré par Git). Les campagnes antérieures
+  (dont 2,11) sont conservées.
+- **Non fait :** suite Rust complète non rejouée (aucun code Rust modifié); TASK-0041,
+  watcher, F-030/F-032, branchement de `map_refresh`.
+- **Action unique suivante :** contrôle indépendant de la preuve canonique F-031.
+
 ## Relais actuel — TASK-0040, noyau d'application incrémentale, en attente de contrôle — 2026-09-24
 
 - **Ce qui vient d'être fait :** `TASK-0040` est implémentée sur

@@ -1,20 +1,16 @@
 # Action suivante
 
-## Recontrôle F-031 de TASK-0040 — ACTION-0066 P1
+## Contrôle indépendant de la preuve canonique F-031 — TASK-0040
 
-Le noyau U-B de `TASK-0040` est **accepté fonctionnellement** par
-[`ACTION-0066`](../reviews/ACTION-0066-task0040-independent-recontrol.md),
-mais la tâche reste `IMPLEMENTED`, pas `VERIFIED`.
+Le recontrôle de mesure demandé par
+[`ACTION-0066`](../reviews/ACTION-0066-task0040-independent-recontrol.md) est produit :
+5 campagnes × 7 échantillons, 35 exécutions brutes par cas, **ratio canonique 100k/1k =
+1,533 ≤ 2 (PASS)**, cibles absolues §3.3 PASS, zéro échantillon écarté, noyau et seuil
+inchangés. `TASK-0040` reste `IMPLEMENTED`.
 
-Blocage unique : le critère de rejet F-031
-`median(100k/10) / median(1k/10) <= 2` n’est pas encore établi de façon
-robuste. Une campagne standard `opt-level=3` a produit **2,11 (FAIL)**,
-alors que les répétitions donnent 1,72 et 1,82.
+Action unique : contrôle indépendant, sur preuves, de
+`docs/performance/runs/TASK-0040-incremental-apply-canonical-summary.json` (et des cinq
+artefacts sources) pour décider si le P1 d'`ACTION-0066` est fermé et si `TASK-0040`
+peut passer `VERIFIED`. Seul l'orchestrateur peut le déclarer.
 
-Action unique : exécuter `.orchestrator/NEXT_PROMPT.md` sur
-`build/v0.2-a24-v1-incremental-apply` pour produire la mesure canonique
-pré-définie de cinq campagnes / 35 échantillons par cas, **sans modifier le
-noyau ni le seuil**.
-
-Aucune TASK-0041, aucun watcher et aucun branchement de `map_refresh` avant
-ce recontrôle.
+Aucune TASK-0041, aucun watcher et aucun branchement de `map_refresh` avant ce contrôle.

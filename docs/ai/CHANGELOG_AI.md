@@ -5698,3 +5698,19 @@ précréation de `TASK-0038` par l'exécuteur.
 - Rust 550 PASS (+50), TypeScript 412 PASS; aucun fichier frontend, capability ni
   dépendance touché. Aucune TASK-0041, watcher, PR, fusion, étiquette ni release.
 
+
+
+## 2026-09-24 — TASK-0040 — Recontrôle canonique F-031 (ACTION-0066 P1)
+
+**Agent :** exécuteur Claude Code (Sonnet 5) · **Branche :** `build/v0.2-a24-v1-incremental-apply`
+**Statut à l'issue :** `IMPLEMENTED` (jamais auto-`VERIFIED`)
+
+- Mesure seulement : 5 campagnes indépendantes `opt-level=3`, 7 échantillons par cas, aucun
+  écarté; médianes sur 35 exécutions brutes. Ratio canonique 100k/1k = **1,533 → PASS**;
+  cibles absolues PASS.
+- Ajouts : `scripts/task0040-f031-canonical.ps1` (automatisation, séparée du noyau);
+  `runs/TASK-0040-incremental-apply-canonical-01..05.json` + `…-summary.json`;
+  `BASELINE_TARGETS §3.3` (mesure ajoutée, seuil et anciennes campagnes intacts);
+  `VALIDATION BU`.
+- Aucune ligne du noyau ni du harnais Rust modifiée. Aucune TASK-0041, watcher, PR, fusion,
+  étiquette ni release.

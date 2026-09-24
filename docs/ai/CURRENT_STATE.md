@@ -1,5 +1,22 @@
 # État courant
 
+## TASK-0040 — recontrôle canonique F-031 (ACTION-0066 P1) — IMPLEMENTED — 2026-09-24
+
+- **Statut : `TASK-0040` reste `IMPLEMENTED`**, jamais auto-`VERIFIED`. Passe de mesure
+  seulement : noyau, harnais Rust, réglages SQLite et seuil **inchangés**
+  (`git diff -- src-tauri` vide). Détail : [VALIDATION section BU](VALIDATION.md).
+- **Mesure canonique** (protocole figé par `ACTION-0066` : `opt-level=3`, WAL,
+  `synchronous=NORMAL`, cache par défaut, sans checkpoint; 5 campagnes × 7 échantillons,
+  aucun écarté; médiane sur les 35 exécutions brutes) : 1k/10 **0,964 ms**, 10k/10
+  **1,330 ms**, 100k/10 **1,478 ms**, 100k/1000 **260,3 ms**. Cibles absolues §3.3 : PASS.
+- **Ratio canonique 100k/1k = 1,533 ≤ 2 → PASS.** Ratios de campagne : 1,451 · 1,436 ·
+  1,588 · 1,537 · 1,558. La campagne à 2,11 reste publiée, non réinterprétée.
+- **P1 : candidat à fermeture.** Seul l'orchestrateur peut déclarer `VERIFIED`.
+- Ajouts : `scripts/task0040-f031-canonical.ps1`,
+  `runs/TASK-0040-incremental-apply-canonical-01..05.json` et `…-canonical-summary.json`,
+  `BASELINE_TARGETS §3.3` (ajout de la mesure).
+- **Action unique suivante : contrôle indépendant de la preuve canonique F-031.**
+
 ## TASK-0040 — V1 Incremental Update Application Kernel — IMPLEMENTED — 2026-09-24
 
 - **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche

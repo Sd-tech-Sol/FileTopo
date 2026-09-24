@@ -7434,3 +7434,69 @@ fusion, étiquette ni release.
 
 **Action unique suivante :** contrôle indépendant de `TASK-0040`.
 
+
+## BU. TASK-0040 — recontrôle canonique F-031 (`ACTION-0066` P1) — 2026-09-24
+
+**Statut : `TASK-0040` reste `IMPLEMENTED`.** Seul l'orchestrateur peut la déclarer
+`VERIFIED`. Branche `build/v0.2-a24-v1-incremental-apply`, partie de `e54c046`
+(contient `ACTION-0066`). Passe de **mesure seulement** : aucune ligne du noyau, aucun
+réglage SQLite produit, aucun seuil modifié.
+
+### BU.1 Préconditions
+
+`git checkout` explicite de la branche, `git fetch`, fast-forward `4725e47..e54c046`,
+arbre propre, `HEAD` contient `ACTION-0066` (lue en entier avant toute mesure).
+
+### BU.2 Protocole figé (avant la première exécution)
+
+Profil test `opt-level=3` (`CARGO_PROFILE_DEV_OPT_LEVEL=3`, `src-tauri/target/opt`); WAL,
+`synchronous=NORMAL`, cache SQLite par défaut; aucun checkpoint;
+`TASK0040_CHECKPOINT`, `TASK0040_CACHE_KIB`, `TASK0040_KEEP_SANDBOX` retirées de
+l'environnement; 5 campagnes indépendantes, index frais, 4 cas (1k/10, 10k/10, 100k/10,
+100k/1000), 7 échantillons par cas, aucun rejeté. Automatisé par
+`scripts/task0040-f031-canonical.ps1` (nouveau; le harnais Rust `incremental_bench.rs` est
+inchangé, il accepte déjà l'étiquette d'artefact `TASK0040_PROFILE_TAG`). Le script ne
+s'arrête pas tôt.
+
+### BU.3 Résultats (médianes sur 35 exécutions brutes)
+
+| Cas | Médiane | min | max | Cible §3.3 | Verdict |
+|---|---:|---:|---:|---:|---|
+| 1k / 10 | 0,964 ms | 0,844 | 1,326 | 200 ms | PASS |
+| 10k / 10 | 1,330 ms | 1,081 | 2,027 | 250 ms | PASS |
+| 100k / 10 | 1,478 ms | 1,339 | 2,846 | 400 ms | PASS |
+| 100k / 1000 | 260,332 ms | 248,004 | 323,236 | 3 000 ms | PASS |
+
+- **Ratio canonique = 1478 µs / 964 µs = 1,5332 ≤ 2,0 → PASS.**
+- Ratios de campagne (diagnostic) : 1,4513 · 1,4363 · 1,5879 · 1,5370 · 1,5576 — aucun > 2.
+- Configuration identique pour les 5 campagnes (comparaison du bloc `environment`),
+  `discardedRuns = 0`, 35 échantillons par cas, aucun exclu.
+- Artefacts : `docs/performance/runs/TASK-0040-incremental-apply-canonical-01..05.json` et
+  `…-canonical-summary.json` (35 échantillons bruts par cas, aussi par campagne).
+- Les campagnes antérieures (dont 2,11 FAIL) restent intactes et publiées.
+
+### BU.4 Non-régression
+
+| Contrôle | Résultat |
+|---|---|
+| `git diff --stat -- src-tauri` avant tout commit | **vide** : aucune ligne de `incremental.rs` (ni d'aucun fichier Rust) modifiée |
+| `cargo test --offline --lib the_bench_generator_produces_valid_batches` | 1 PASS (compilation + harnais) |
+| `git diff --check` | propre |
+| `scripts/audit-public-readiness.ps1 -AllowRemotes` | réussi (538 fichiers versionnés avant ajout); rejoué après commit, voir `RESULT.md`; allowlist non élargie |
+| WebView2 | non rejoué : aucun fichier frontend touché |
+
+La suite Rust complète n'a **pas** été relancée : seuls un script, des artefacts JSON et
+de la documentation changent (**non testé** au sens de cette passe).
+
+### BU.5 Limites
+
+Une machine, une session, corpus synthétique; application d'un lot seule (pas de
+détection ni de watcher); ces chiffres ne sont pas une acceptation « portable modeste ».
+Le ratio ~1,5 traduit un coût constant de ~1 ms plus une croissance faible avec la taille;
+les valeurs hautes (2,8 ms à 100k) rappellent la variance d'un échantillon isolé, d'où la
+médiane sur 35.
+
+**P1 : candidat à fermeture.** Aucune TASK-0041, aucun watcher, aucun branchement de
+`map_refresh`, aucune PR, fusion, étiquette ni release.
+
+**Action unique suivante :** contrôle indépendant de la preuve canonique F-031.
