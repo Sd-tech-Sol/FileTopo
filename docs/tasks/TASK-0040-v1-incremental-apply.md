@@ -1,7 +1,7 @@
 # TASK-0040 — V1 Incremental Update Application Kernel
 
 - **Date :** 2026-09-23
-- **Statut :** `IMPLEMENTED` (jamais auto-`VERIFIED`)
+- **Statut :** `VERIFIED` par `ACTION-0067`
 - **Branche :** `build/v0.2-a24-v1-incremental-apply`
 - **Décision :** `DEC-0038`
 - **Portée :** `F-031` / `DEC-0010 U-B`
@@ -220,3 +220,8 @@ surface UI est touchée, le rejeu devient obligatoire.
 - **Limites :** noyau seul (aucun producteur réel de lots); coût mesuré = application,
   pas réconciliation; non testé : 1 000 000 de nœuds, portable modeste, crash de
   processus, suppression d'un dossier de 100 000 enfants.
+
+
+## Clôture indépendante — ACTION-0067
+
+`TASK-0040` est **VERIFIED dans sa portée**. Le noyau U-B est accepté fonctionnellement et la preuve canonique F-031 ferme le blocage de performance : ratio médian 100k/1k = **1,533 ≤ 2** sur 35 exécutions brutes par cas. Le producteur réel de lots, `map_refresh`, le watcher et F-032 restent hors portée.
