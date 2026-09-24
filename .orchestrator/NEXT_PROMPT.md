@@ -1,165 +1,194 @@
-# NEXT_PROMPT — TASK-0039 — V1 Dynamic Filters
+# NEXT_PROMPT — TASK-0040 — V1 Incremental Update Application Kernel
 
 **TARGET_AGENT:** CLAUDE CODE  
 **RECOMMENDED_MODEL:** Sonnet 5, high effort  
 **STATUS:** READY  
-**BRANCH:** `build/v0.2-a23-v1-dynamic-filters`
+**BRANCH:** `build/v0.2-a24-v1-incremental-apply`
 
 ## /goal
 
 Implémenter intégralement
-`docs/tasks/TASK-0039-v1-dynamic-filters.md` selon
-`docs/decisions/DEC-0037-dynamic-filtered-projection.md`.
+`docs/tasks/TASK-0040-v1-incremental-apply.md` selon
+`docs/decisions/DEC-0038-incremental-application-kernel.md`.
 
-La tâche livre `F-022 / P-09` :
+La tâche construit le noyau `U-B` de `DEC-0010` : appliquer seulement un
+lot de changements déjà réconcilié, avec identité stable, journal et révision
+atomiques.
 
-- état Tout / Nouveaux / Non vus;
-- type;
-- disponibilité;
-- combinaisons;
-- total exact;
-- projection filtrée bornée;
-- match/contexte distingués;
-- pagination filtrée.
+**Ne pas construire le watcher. Ne pas remplacer encore `map_refresh`.**
 
-Ne pas construire le watcher, l’incrémental ni la persistance cross-restart des
-filtres.
-
-## 0 — Préconditions
+## 0 — Préconditions obligatoires
 
 1. Appliquer `AGENTS.md` et `CLAUDE.md`.
 2. Basculer explicitement sur
-   `build/v0.2-a23-v1-dynamic-filters`.
+   `build/v0.2-a24-v1-incremental-apply`.
 3. `git fetch origin`.
 4. Synchroniser uniquement en fast-forward avec
-   `origin/build/v0.2-a23-v1-dynamic-filters`.
+   `origin/build/v0.2-a24-v1-incremental-apply`.
 5. Vérifier arbre propre.
 6. Vérifier que HEAD contient :
-   - `ACTION-0064` — TASK-0038 VERIFIED;
-   - `DEC-0037`;
-   - `TASK-0039`.
-7. Lire en entier `DEC-0037` puis `TASK-0039` avant toute modification.
+   - `ACTION-0065` — TASK-0039 VERIFIED;
+   - `DEC-0038`;
+   - `TASK-0040`.
+7. Lire **en entier** `DEC-0038` puis `TASK-0040` avant modification.
+8. Lire `DEC-0010` et `BASELINE_TARGETS §3.3`.
 
-STOP/BLOCKED si le dépôt contredit ces préconditions.
+Si une précondition contredit le dépôt : STOP/BLOCKED. Ne pas improviser une
+autre architecture.
 
-## 1 — Audit / reuse-first
+## 1 — Audit reuse-first
 
-Avant de coder, auditer :
+Avant le code, auditer précisément :
 
-- `projection.rs`;
-- `hierarchy.rs`;
-- `Index::query_nodes` et les index SQLite existants;
-- `change_journal.rs` seen/unseen;
-- `MapApp.tsx` / `MapView.tsx`;
-- les curseurs déjà existants.
+- `Index::publish` actuel;
+- remapping d’identité stable / `next_node_id`;
+- journal TASK-0037;
+- seen-state TASK-0038;
+- hiérarchie et child_count;
+- les index SQLite disponibles;
+- busy timeout / concurrence existants.
 
-Le rapport doit distinguer :
+Dans `.orchestrator/RESULT.md`, distinguer **réutilisé / adapté / laissé
+historique**.
 
-- réutilisé;
-- adapté;
-- laissé historique.
+Ne dupliquer aucune règle d’identité si elle peut être extraite/réutilisée
+proprement.
 
-Interdictions :
+## 2 — Frontière interne seulement
 
-- aucun second Index;
-- aucun whole-corpus JSON;
-- aucun filtre calculé sur les seuls nœuds déjà rendus;
-- aucun usage de `nodes.seen` pour NEW/UNSEEN;
-- aucune réactivation de `query_collection_nodes`.
+Le lot incrémental est une API Rust privilégiée :
 
-## 2 — Exactitude avant UX
+- pas `Serialize`;
+- pas `#[tauri::command]`;
+- aucune stable key envoyée au WebView;
+- aucune commande debug publique pour contourner cette règle.
 
-La requête filtrée doit être une primitive SQLite bornée et paginée.
+Les tests peuvent construire des lots directement en Rust.
 
-Le total est calculé côté Rust/SQLite sur le corpus canonique, jamais au
-frontend.
+## 3 — U-B réel
 
-NEW / UNSEEN utilisent uniquement la vérité de DEC-0036.
+Le chemin incrémental ne doit jamais :
 
-Type et disponibilité utilisent uniquement les colonnes canoniques de
-`nodes`.
+- faire `DELETE FROM nodes` global;
+- réinsérer le corpus complet;
+- charger tout `nodes` en mémoire;
+- appeler le diff global de tout le journal;
+- corréler par nom/taille/date;
+- lire le contenu des fichiers.
 
-La racine n’est jamais un match.
+Il doit toucher seulement :
 
-## 3 — Projection filtrée
+- les nœuds du lot;
+- les parents/descendants explicitement nécessaires;
+- les métadonnées globales minimales.
 
-Préserver **strictement** le comportement de `map_view` quand aucun filtre
-n’est actif.
+## 4 — Préflight avant mutation
 
-Quand un filtre est actif :
+Refuser sans écrire :
 
-- construire une vue spécialisée à partir d’une page de matches;
-- ajouter seulement les ancêtres nécessaires;
-- distinguer matches et contexte;
-- conserver de vraies arêtes parent/enfant seulement;
-- ne pas transformer les agrégats enfants de la vue normale en résultats de
-  filtre;
-- conserver les budgets DEC-0031 / DEC-0034;
-- pagination sans accumulation.
+- doublons d’identité / token;
+- stable-key collision;
+- suppression inconnue;
+- suppression/réparentage de la racine;
+- parent absent;
+- cycle;
+- orphelin survivant;
+- lot de déplacement de sous-arbre incomplet.
 
-Si l’audit montre qu’un détail du DTO proposé par TASK-0039 doit être ajusté,
-adapter la forme, pas les invariants.
+PATH_FALLBACK reste delete+create.
 
-## 4 — Cursor
+## 5 — Transaction / journal
 
-Le cursor filtré doit être opaque/versionné et lié au minimum à :
+Un lot effectif = une transaction `IMMEDIATE`, une révision.
 
-- index_id;
-- index_revision;
-- filtre canonique;
-- dernier match.
+Dans la transaction :
 
-Refuser explicitement un cursor d’un autre index, d’une autre révision ou d’un
-autre filtre.
+- snapshot minimal des lignes touchées;
+- résolution/allocation d’identités;
+- mutations ciblées;
+- child_count/métadonnées ciblés;
+- événements exacts;
+- append journal;
+- revision +1;
+- commit.
 
-Pas d’OFFSET sur le hot path.
+No-op = aucune révision, aucun événement.
 
-## 5 — UI
+Toute erreur après mutation SQL doit prouver rollback exact.
 
-Le filtre actif doit être lisible sans couleur seule.
+## 6 — Parité avec le résultat d’un scan complet
 
-- État : Tout / Nouveaux / Non vus;
-- Type : dossiers / fichiers / ignorés;
-- Disponibilité : Tout / local / en ligne seulement;
-- Réinitialiser les filtres;
-- compteur exact;
-- match = « Correspondance »;
-- ancêtre = « Contexte »;
-- page suivante/précédente;
-- switch de cerveau : aucun état transporté.
+La preuve fonctionnelle centrale n’est pas seulement « les lignes attendues
+ont changé ».
 
-Après une mutation TASK-0038, si NEW ou UNSEEN est actif, relire la projection
-depuis le backend.
+Pour plusieurs lots synthétiques, construire le même état final par :
 
-## 6 — Preuves
+A. noyau incrémental;  
+B. pipeline de référence par scan/publication complète.
 
-Les tests listés dans TASK-0039 sont obligatoires.
+Comparer les invariants reconstruisibles pertinents : ids stables attendus,
+nœuds, parents, chemins relatifs, profondeurs, child_count, node_count,
+root_id, et événements attendus.
 
-Le test 100k doit prouver exactitude + sortie bornée, sans inventer de nouveau
-budget de performance.
+Les différences intentionnelles (par exemple révision/nombre d’étapes) doivent
+être expliquées, jamais masquées.
 
-Le WebView2 doit employer des données générées par la preuve uniquement.
-Ne pas fabriquer un vrai placeholder Cloud Files pour tester ONLINE_ONLY :
-cette branche peut rester prouvée au niveau Rust.
+## 7 — Performance obligatoire
 
-## 7 — Validation / confidentialité
+Mesurer le **vrai noyau produit** :
 
-Rejouer toutes les validations demandées, y compris :
+- 1k / 10 changements;
+- 10k / 10;
+- 100k / 10;
+- 100k / 1000.
 
-`scripts/audit-public-readiness.ps1 -AllowRemotes`
+Minimum 5 runs par cas, médiane + min/max.
 
-Ne pas élargir son allowlist.
+Le ratio médian `100k(10) / 1k(10)` doit être **≤ 2**. S’il échoue, écrire
+FAIL et ne pas prétendre F-031 satisfaite.
 
-## 8 — Gouvernance
+Rapporter les cibles absolues de §3.3 comme PASS/FAIL sur la machine mesurée,
+avec environnement déclaré.
+
+Ne pas optimiser le benchmark au détriment du chemin produit.
+
+## 8 — Non-régressions
+
+Prouver explicitement :
+
+- journal + seen-state;
+- filtres NEW/UNSEEN après commit;
+- cursors/revision;
+- deux cerveaux;
+- rollback;
+- aucun changement frontend;
+- aucune nouvelle permission/capability.
+
+## 9 — Validation
+
+Exécuter la fiche TASK-0040 complètement, incluant :
+
+- `cargo test --offline`;
+- `pnpm test`;
+- `pnpm check`;
+- `pnpm build`;
+- `cargo build --offline`;
+- Clippy avec dette historique distinguée;
+- `git diff --check`;
+- `scripts/audit-public-readiness.ps1 -AllowRemotes`.
+
+Pas de WebView2 si aucun code/UI frontend n’est touché.
+
+## 10 — Gouvernance
 
 À la fin :
 
-- TASK-0039 = `IMPLEMENTED`, jamais `VERIFIED`;
-- aucune TASK-0040;
-- pas de watcher/incrémental;
-- pas de PR/merge/tag/release;
-- durable docs à jour;
-- `.orchestrator/RESULT.md` complet;
-- `NEXT_ACTION` = contrôle indépendant de TASK-0039;
+- TASK-0040 = `IMPLEMENTED`, jamais `VERIFIED`;
+- aucune TASK-0041;
+- aucun watcher;
+- `map_refresh` reste sur son flux actuel;
+- aucun PR/merge/tag/release;
+- docs durables + `.orchestrator/RESULT.md` complets;
+- `NEXT_ACTION` = contrôle indépendant de TASK-0040;
 - push uniquement sur la branche;
 - arbre propre.
