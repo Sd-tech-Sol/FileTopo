@@ -1,4 +1,10 @@
-import type { ApplicationMode, ChangeSummary, MapBuildReport, MapOpenReport } from "./types";
+import type {
+  ApplicationMode,
+  ChangeSummary,
+  MapBuildReport,
+  MapOpenReport,
+  SourceObservation,
+} from "./types";
 
 export type LifecycleAction = "open" | "refresh" | "rebuild";
 export type LifecycleInvoke = <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
@@ -27,6 +33,25 @@ export async function runLifecycle(
   return build.applicationMode
     ? { ...opened, changeSummary: build.changeSummary, applicationMode: build.applicationMode }
     : { ...opened, changeSummary: build.changeSummary };
+}
+
+/**
+ * `TASK-0042` — the last observation of a brain's source, read **from FileTopo's
+ * own local state only**: the command takes the brain and nothing else, never
+ * resolves or stats the root, and never scans. Called after an **Actualiser** that
+ * failed, so the badge follows the backend without reopening the map. A failure to
+ * read it (an Index that does not exist yet, say) is `null` — it must never hide
+ * the error that made the caller ask.
+ */
+export async function readSourceObservation(
+  invoke: LifecycleInvoke,
+  brainId: string,
+): Promise<SourceObservation | null> {
+  try {
+    return await invoke<SourceObservation>("map_source_observation", { brainId });
+  } catch {
+    return null;
+  }
 }
 
 /** Proof setup only. Never used by the product's Open action. */

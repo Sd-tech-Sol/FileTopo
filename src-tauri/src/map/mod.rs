@@ -23,6 +23,8 @@ pub mod rule_engine;
 pub mod sandbox;
 /// Resolving a brain to the tree it actually reads — `DEC-0033` D and G.
 pub mod source;
+/// The last source observation of a brain — `TASK-0042`, `DEC-0040`.
+pub mod source_observation;
 pub mod store;
 
 use thiserror::Error;
@@ -163,6 +165,15 @@ pub enum MapError {
     /// path.
     #[error("map_refresh_reconcile_refused: {0}")]
     RefreshReconcileRefused(String),
+    /// `TASK-0042` — the one reconcile refusal that is an observation *of the
+    /// source* rather than of the scan: the scanned root is not the indexed root.
+    /// Its own variant so the pipeline classifies it (`SOURCE_CHANGED`) from the
+    /// structure, never from the text; the text is **identical** to the
+    /// `RefreshReconcileRefused` it replaces, so every caller reads the same message.
+    #[error(
+        "map_refresh_reconcile_refused: reconcile_root_identity_changed: the scanned root is not the indexed root"
+    )]
+    RefreshRootChanged,
     /// `TASK-0041` — the incremental kernel refused a batch, or a constraint
     /// failed inside its transaction (which then rolled back entirely). Same
     /// guarantee: the Index is exactly as it was, and no full path is tried.

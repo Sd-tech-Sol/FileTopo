@@ -962,7 +962,7 @@ impl Fixture {
 }
 
 /// Every table the Index owns, every column, in a stable order.
-fn dump_index_file(database: &Path) -> String {
+pub(super) fn dump_index_file(database: &Path) -> String {
     let connection =
         rusqlite::Connection::open_with_flags(database, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
             .unwrap();
@@ -1002,7 +1002,7 @@ fn dump_index_file(database: &Path) -> String {
 /// The structural guard: no row whose id already exists may be inserted. A full
 /// publication deletes and re-inserts every row and cannot pass it; the kernel
 /// inserts only ids it has just allocated.
-fn arm_guard(database: &Path) {
+pub(super) fn arm_guard(database: &Path) {
     rusqlite::Connection::open(database)
         .unwrap()
         .execute_batch(

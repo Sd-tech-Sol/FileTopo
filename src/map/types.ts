@@ -254,6 +254,69 @@ export interface MapOpenReport {
   sourceRead: false;
   indexReused: true;
   freshness: "UNKNOWN";
+  /**
+   * `TASK-0042` — the last observation of the source, as persisted. Read from
+   * local state only: opening never touches the source, so this says what the
+   * last explicit **Actualiser** saw, never what is true now.
+   */
+  sourceObservation: SourceObservation;
+}
+
+/**
+ * `TASK-0042`, `DEC-0040` §1 — the closed set of source states. Every failure
+ * state means the same thing for the map: **the last reliable Index keeps being
+ * served, untouched**.
+ *
+ * - `UNKNOWN` — no reliable observation is recorded;
+ * - `SYNCED` — the last complete source operation succeeded;
+ * - `UNAVAILABLE` — the root's own metadata could not be read;
+ * - `SOURCE_CHANGED` — the root is readable but is no longer an acceptable root;
+ * - `SCAN_INCOMPLETE` — the whole tree could not be established reliably;
+ * - `APPLY_FAILED` — a valid scan could not be applied to the Index.
+ */
+export type SourceState =
+  | "UNKNOWN"
+  | "SYNCED"
+  | "UNAVAILABLE"
+  | "SOURCE_CHANGED"
+  | "SCAN_INCOMPLETE"
+  | "APPLY_FAILED";
+
+/** The closed set of reasons — never formatted from an OS error, never a path. */
+export type SourceReason =
+  | "ROOT_NOT_FOUND"
+  | "ROOT_ACCESS_DENIED"
+  | "ROOT_METADATA_UNAVAILABLE"
+  | "ROOT_NOT_DIRECTORY"
+  | "ROOT_REPARSE_POINT"
+  | "ROOT_IDENTITY_CHANGED"
+  | "SCAN_DIAGNOSTICS"
+  | "FINGERPRINT_DRIFT"
+  | "FINGERPRINT_FAILED"
+  | "RECONCILE_REFUSED"
+  | "APPLY_REFUSED"
+  | "IDENTITY_REFUSED"
+  | "STORE_WRITE_FAILED";
+
+/**
+ * `TASK-0042` — **the last observation of a brain's source**, not a real-time
+ * availability. Closed words and numbers only: no path, no stable key, no file
+ * identity, no volume serial, no OS message.
+ */
+export interface SourceObservation {
+  state: SourceState;
+  reason: SourceReason | null;
+  /** When it was observed. `null` only for `UNKNOWN`. */
+  observedUnixMs: number | null;
+  /** The Index revision at the last successful synchronisation, if any. */
+  lastSuccessfulRevision: number | null;
+  lastSuccessfulUnixMs: number | null;
+  /**
+   * `true` when this is what the local state holds; `false` only when the write
+   * of this record failed (or it could not be read back): it is then the truth of
+   * the moment, not something that will survive a restart.
+   */
+  persisted: boolean;
 }
 
 /**
@@ -328,6 +391,8 @@ export interface MapBuildReport {
   changeSummary: ChangeSummary;
   /** `TASK-0041` — how the scan reached the Index. See {@link ApplicationMode}. */
   applicationMode: ApplicationMode;
+  /** `TASK-0042` — the observation this success recorded (always `SYNCED`). */
+  sourceObservation: SourceObservation;
 }
 
 /* --- TASK-0037 — journal de changements ---------------------------------- */

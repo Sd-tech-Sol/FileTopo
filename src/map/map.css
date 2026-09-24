@@ -1836,3 +1836,27 @@ input[type="text"] {
   fill: var(--ink);
   pointer-events: none;
 }
+
+/* `TASK-0042` — the source observation. A word and a symbol carry the state; the
+   colour only reinforces it, and is never the only signal. */
+.source-observation {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 8px;
+}
+
+.source-observation__symbol {
+  font-weight: 700;
+}
+
+.source-observation[data-state="UNAVAILABLE"],
+.source-observation[data-state="SOURCE_CHANGED"],
+.source-observation[data-state="SCAN_INCOMPLETE"],
+.source-observation[data-state="APPLY_FAILED"] {
+  color: var(--warn);
+}
+
+.source-observation__when {
+  opacity: 0.85;
+}

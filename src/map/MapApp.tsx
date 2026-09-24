@@ -1,4 +1,5 @@
-import { runLifecycle, type LifecycleAction } from "./lifecycle";
+import { readSourceObservation, runLifecycle, type LifecycleAction } from "./lifecycle";
+import SourceObservationBadge from "./SourceObservationBadge";
 import { prepareScenarioIndex } from "./lifecycle";
 import { canonicalizeSearchQuery, runCoordinatedSearch, SearchCoordinator } from "./searchCoordinator";
 import { invoke } from "@tauri-apps/api/core";
@@ -106,6 +107,7 @@ import type {
   RelationEngineStatus,
   SearchHit,
   SearchPage,
+  SourceObservation,
   SuggestionReviewQueue,
   UiPreferences,
 } from "./types";
@@ -438,6 +440,13 @@ export default function MapApp() {
   const [lastApplicationModes, setLastApplicationModes] = useState<
     ReadonlyMap<string, ApplicationMode>
   >(new Map());
+  // `TASK-0042` — the **last observation** of each brain's source. Read from the
+  // backend's own persisted record (with every `map_open`, and after a failed
+  // Actualiser through `map_source_observation`); never derived here, and never a
+  // claim about the source *now*.
+  const [sourceObservations, setSourceObservations] = useState<
+    ReadonlyMap<string, SourceObservation>
+  >(new Map());
 
   // The measurement loop drives the same state the interface does, so what it
   // times is what a person would experience — not a parallel code path.
@@ -731,7 +740,23 @@ export default function MapApp() {
       projectionRequest.current.set(brainId, (projectionRequest.current.get(brainId) ?? 0) + 1);
       const record = catalogRef.current?.brains.find((brain) => brain.brainId === brainId);
       if (!record) throw new Error(`cerveau absent du catalogue : ${brainId}`);
-      const report = await runLifecycle(invoke, brainId, action);
+      let report: Awaited<ReturnType<typeof runLifecycle>>;
+      try {
+        report = await runLifecycle(invoke, brainId, action);
+      } catch (error) {
+        // `TASK-0042` — a failed Actualiser/Reconstruire keeps the map that is
+        // already loaded (nothing below runs, so `loaded` is never replaced) and
+        // asks the backend, from its local state alone, what it just observed.
+        if (action !== "open") {
+          const observed = await readSourceObservation(invoke, brainId);
+          if (observed) setSourceObservations((current) => new Map(current).set(brainId, observed));
+        }
+        throw error;
+      }
+      if (report.sourceObservation) {
+        const observed = report.sourceObservation;
+        setSourceObservations((current) => new Map(current).set(brainId, observed));
+      }
       if (report.changeSummary) {
         const summary = report.changeSummary;
         setLastChanges((current) => new Map(current).set(brainId, summary));
@@ -2537,7 +2562,13 @@ export default function MapApp() {
           <span data-testid="layout-algorithm">
             schema {report.schemaVersion} · {focusedBrain?.snapshot.layoutAlgorithm}
           </span>
-          <span>Dernier index enregistré · source non vérifiée · fraîcheur inconnue</span>
+          <span>Dernier index enregistré</span>
+          <SourceObservationBadge
+            observation={
+              composed ? (sourceObservations.get(composed.focusedBrainId) ?? null) : null
+            }
+            locale="fr"
+          />
           {composed && lastChanges.has(composed.focusedBrainId) ? (
             <span data-testid="change-summary" data-summary={JSON.stringify(lastChanges.get(composed.focusedBrainId))}>
               {describeChangeSummary(lastChanges.get(composed.focusedBrainId)!)}

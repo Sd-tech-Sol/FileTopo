@@ -15,7 +15,10 @@ const FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS: u32 = 0x0040_0000;
 pub enum ScanError {
     #[error("root_not_directory")]
     RootNotDirectory,
-    #[error("root_metadata_failed: {0}")]
+    /// `TASK-0042` — the message carries the error's **kind** only. The operating
+    /// system's own text (and its code) can name a drive, a share or a path, and
+    /// this string reaches the interface's status line: it must stay a fixed word.
+    #[error("root_metadata_failed: {}", .0.kind())]
     RootMetadata(#[from] io::Error),
     #[error("root_reparse_point_not_allowed")]
     RootReparsePoint,

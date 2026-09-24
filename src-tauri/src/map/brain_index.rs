@@ -705,6 +705,7 @@ fn map_reconcile_error(error: crate::reconcile::ReconcileError) -> MapError {
         ReconcileError::Sqlite(sqlite) => MapError::from(sqlite),
         ReconcileError::IdentityCollision => MapError::IdentityCollision,
         ReconcileError::NotBijective => MapError::IdentityNotBijective,
+        ReconcileError::RootIdentityChanged => MapError::RefreshRootChanged,
         other => MapError::RefreshReconcileRefused(other.to_string()),
     }
 }

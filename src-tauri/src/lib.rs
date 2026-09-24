@@ -693,6 +693,26 @@ async fn map_open(
     .map_err(|_| "map_worker_failed".to_string())?
 }
 
+/// **The last observation of the source** — `TASK-0042`, `DEC-0040`.
+///
+/// Takes the brain and nothing else, and reads only FileTopo's own local state: it
+/// never resolves the root and never stats it. It is what the interface calls after
+/// a failed **Actualiser**, so the badge follows the backend without reopening the
+/// map and without a second scan. The answer is a closed state and a closed reason:
+/// no path, no key, no OS message.
+#[tauri::command]
+async fn map_source_observation(
+    app: tauri::AppHandle,
+    brain_id: String,
+) -> Result<map::source_observation::SourceObservation, String> {
+    let (paths, brain) = resolve_brain(&app, &brain_id)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        map::commands::read_source_observation(&paths, &brain).map_err(String::from)
+    })
+    .await
+    .map_err(|_| "map_worker_failed".to_string())?
+}
+
 #[tauri::command]
 async fn map_refresh(
     app: tauri::AppHandle,
@@ -1500,6 +1520,7 @@ pub fn run() {
             map_brain_update,
             map_brain_choose_real_root,
             map_open,
+            map_source_observation,
             map_refresh,
             map_rebuild,
             map_prepare_synthetic_source,
@@ -1674,6 +1695,57 @@ mod integration_tests {
                 .iter()
                 .any(|name| name.contains("content_suggestion"))
         );
+    }
+
+    /// `TASK-0042` — the source observation is readable by the WebView through one
+    /// command that takes **only a brain**, and the slice added **no watcher, no
+    /// polling and no notification command**: the only new surface is a read of
+    /// FileTopo's own local state (`F-030` is a later slice).
+    #[test]
+    fn the_source_observation_command_takes_only_a_brain_and_no_watcher_was_added() {
+        let exposed = registered_commands();
+        assert!(
+            exposed.iter().any(|name| name == "map_source_observation"),
+            "TASK-0042 needs `map_source_observation` reachable from the WebView"
+        );
+        for name in &exposed {
+            for forbidden in [
+                "watch",
+                "poll",
+                "notify",
+                "monitor",
+                "subscribe",
+                "observe_source",
+            ] {
+                assert!(
+                    !name.contains(forbidden),
+                    "`{name}` looks like a watcher; F-030 is not part of TASK-0042"
+                );
+            }
+        }
+        let start = THIS_SOURCE
+            .find("async fn map_source_observation(")
+            .expect("map_source_observation must be defined in this file");
+        let end = THIS_SOURCE[start..]
+            .find(") -> Result<map::source_observation::SourceObservation, String> {")
+            .expect("its signature must end where expected");
+        let signature = &THIS_SOURCE[start..start + end];
+        assert!(signature.contains("brain_id: String"), "{signature}");
+        for forbidden in ["path", "root", "folder", "directory", "Path"] {
+            assert!(
+                !signature.contains(forbidden),
+                "map_source_observation must not accept `{forbidden}`: {signature}"
+            );
+        }
+        // Its body reads FileTopo's own state and never the source.
+        let body_end = THIS_SOURCE[start..]
+            .find("\n}\n")
+            .expect("end of map_source_observation");
+        let body = &THIS_SOURCE[start..start + body_end];
+        assert!(body.contains("read_source_observation"));
+        for forbidden in ["refresh_map", "rebuild_map", "scan", "resolve(", "metadata"] {
+            assert!(!body.contains(forbidden), "{forbidden}");
+        }
     }
 
     #[test]

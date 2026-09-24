@@ -603,7 +603,16 @@ fn rr5_a_real_root_opens_from_its_index_with_the_source_gone() {
         let rebuild = commands::rebuild_map(&paths, &brain).expect_err("no source");
         assert!(rebuild.to_string().starts_with("map_scan_failed"));
 
-        assert_eq!(commands::open_map(&paths, &brain).unwrap(), before_open);
+        // The Index and its projection are exactly as they were. Since `TASK-0042`
+        // the two refusals above are also an *observation* of the source — the only
+        // thing that moved, and it says so without naming anything.
+        let mut reopened = commands::open_map(&paths, &brain).unwrap();
+        assert_eq!(
+            reopened.source_observation.state,
+            crate::map::source_observation::SourceState::Unavailable
+        );
+        reopened.source_observation = before_open.source_observation.clone();
+        assert_eq!(reopened, before_open);
         assert_eq!(
             commands::view(&paths, &brain, None, None).unwrap(),
             before_view

@@ -13,6 +13,7 @@ use super::brains::{BrainNodeRef, BrainRecord, SourceKind};
 use super::layout::{self, LAYOUT_ALGORITHM};
 use super::sandbox::{self, SandboxPaths};
 use super::source::BrainSource;
+use super::source_observation::{self, Failure, SourceObservation, SourceReason};
 use super::store::{MapSnapshot, NON_RECONSTRUCTIBLE_KEYS, NodeDetail};
 use super::{MAX_FIXTURE_DEPTH, MapError, fixtures};
 use crate::change_journal::{ChangeNature, JournalCursor};
@@ -99,6 +100,11 @@ pub struct MapBuildReport {
     /// **Actualiser** of an already-stamped Index went through the incremental
     /// kernel and not through a full replacement.
     pub application_mode: ApplicationMode,
+    /// **The last source observation, after this success** — `TASK-0042`,
+    /// `DEC-0040`: always `SYNCED` here, because a report only exists when the
+    /// operation succeeded. `persisted: false` says honestly that the Index was
+    /// applied but the small observation record could not be written.
+    pub source_observation: SourceObservation,
 }
 
 /// How a manual scan was applied to the canonical Index — `DEC-0039` §8.
@@ -148,6 +154,10 @@ pub struct MapOpenReport {
     pub source_read: bool,
     pub index_reused: bool,
     pub freshness: String,
+    /// **The last observation of the source, as persisted** — `TASK-0042`. Read
+    /// from local state only: `map_open` neither resolves nor stats the root, so
+    /// this says what the last explicit *Actualiser* saw, never what is true now.
+    pub source_observation: SourceObservation,
 }
 
 /// One search hit — `TASK-0034` A. Identity, a name and a **relative** path
@@ -229,6 +239,9 @@ pub fn open_map(paths: &SandboxPaths, brain: &BrainRecord) -> Result<MapOpenRepo
     let store = open_store(paths, brain)?;
     let _read = store.index.connection.unchecked_transaction()?;
     let identity = store.index.identity()?;
+    // Local state only: the catalogue's small record, never the source.
+    let source_observation =
+        source_observation::read(paths, &brain.brain_id, Some(identity.revision));
     Ok(MapOpenReport {
         brain_id: brain.brain_id.clone(),
         state: "OPENED_EXISTING".into(),
@@ -239,7 +252,31 @@ pub fn open_map(paths: &SandboxPaths, brain: &BrainRecord) -> Result<MapOpenRepo
         source_read: false,
         index_reused: true,
         freshness: "UNKNOWN".into(),
+        source_observation,
     })
+}
+
+/// **The last observation of the source, and nothing else** — `TASK-0042`, `DEC-0040`.
+///
+/// What the interface calls after a refresh that failed, so a badge can be
+/// updated without reopening the map. It takes only the brain, opens only FileTopo's
+/// own local state (the catalogue's record and the Index's revision), **never
+/// resolves the root and never calls `metadata`/`stat` on it**, and answers with the
+/// same bounded, path-free value `map_open` carries.
+///
+/// A brain that was never indexed has nothing to serve and answers `map_not_built`,
+/// like every other read.
+pub fn read_source_observation(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+) -> Result<SourceObservation, MapError> {
+    let store = open_store(paths, brain)?;
+    let revision = store.index.identity()?.revision;
+    Ok(source_observation::read(
+        paths,
+        &brain.brain_id,
+        Some(revision),
+    ))
 }
 
 /// Registers a folder the person chose as a new `REAL_ROOT` brain — and
@@ -422,19 +459,113 @@ static PUBLICATION_LOCK: Mutex<()> = Mutex::new(());
 /// corpus; **Actualiser** of a stamped Index reconciles and applies a minimal
 /// batch (`TASK-0041`, `DEC-0039`); a failure of that path is an error and never a
 /// full publication.
+///
+/// **The source observation moves here, and only here** (`TASK-0042`, `DEC-0040`):
+/// a success records `SYNCED`; a refusal that the *source* explains records the
+/// matching state — but only when an Index already exists, because "the last reliable
+/// Index is kept" would otherwise be a sentence about nothing. A cancellation is a
+/// gesture of the person and never an observation; a refusal that is not about the
+/// source (a binding mismatch, an unresolved catalogue entry) is not one either.
+/// **No failure touches the corpus, the journal, the revision, the seen state or a
+/// preference** — the observation is a separate, small, local record.
 pub(super) fn publish_map(
     paths: &SandboxPaths,
     brain: &BrainRecord,
     gesture: Gesture,
     cancelled: impl Fn() -> bool,
 ) -> Result<MapBuildReport, MapError> {
+    let _publication = PUBLICATION_LOCK
+        .lock()
+        .map_err(|_| MapError::View("publication lock".into()))?;
+    let had_index = paths.brain_map_database(&brain.brain_id).try_exists()?;
+    match publish_locked(paths, brain, gesture, cancelled) {
+        Ok(mut report) => {
+            report.source_observation = source_observation::record_success(
+                paths,
+                &brain.brain_id,
+                report.revision,
+                now_ms(),
+            );
+            Ok(report)
+        }
+        Err(Refused {
+            error,
+            observed: Some(failure),
+        }) if had_index => {
+            source_observation::record_failure(paths, &brain.brain_id, failure, now_ms());
+            Err(error)
+        }
+        Err(Refused { error, .. }) => Err(error),
+    }
+}
+
+/// A refusal of the pipeline, with — when the **source** explains it — the closed
+/// classification made where the structured error was still in hand. `?` on a plain
+/// [`MapError`] yields an unclassified refusal, which is the safe default: an
+/// unclassified failure records nothing.
+struct Refused {
+    error: MapError,
+    observed: Option<Failure>,
+}
+
+impl From<MapError> for Refused {
+    fn from(error: MapError) -> Self {
+        Self {
+            error,
+            observed: None,
+        }
+    }
+}
+
+impl From<std::io::Error> for Refused {
+    fn from(error: std::io::Error) -> Self {
+        MapError::from(error).into()
+    }
+}
+
+impl Refused {
+    fn observed(error: impl Into<MapError>, failure: Failure) -> Self {
+        Self {
+            error: error.into(),
+            observed: Some(failure),
+        }
+    }
+
+    /// A failure while applying a scan that had already been accepted as complete.
+    fn apply(error: MapError) -> Self {
+        let failure = match &error {
+            MapError::RefreshRootChanged => Failure::new(
+                source_observation::SourceState::SourceChanged,
+                SourceReason::RootIdentityChanged,
+            ),
+            MapError::IdentityCollision | MapError::IdentityNotBijective => {
+                Failure::apply_failed(SourceReason::IdentityRefused)
+            }
+            MapError::RefreshReconcileRefused(_) => {
+                Failure::apply_failed(SourceReason::ReconcileRefused)
+            }
+            MapError::RefreshIncrementalRefused(_) => {
+                Failure::apply_failed(SourceReason::ApplyRefused)
+            }
+            _ => Failure::apply_failed(SourceReason::StoreWriteFailed),
+        };
+        Self {
+            error,
+            observed: Some(failure),
+        }
+    }
+}
+
+fn publish_locked(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+    gesture: Gesture,
+    cancelled: impl Fn() -> bool,
+) -> Result<MapBuildReport, Refused> {
     let state = match gesture {
         Gesture::Refresh => "REFRESHED",
         Gesture::Rebuild => "REBUILT",
     };
-    let _publication = PUBLICATION_LOCK
-        .lock()
-        .map_err(|_| MapError::View("publication lock".into()))?;
     let started = Instant::now();
     let database = paths.brain_map_database(&brain.brain_id);
     let reused = database.try_exists()?;
@@ -456,71 +587,106 @@ pub(super) fn publish_map(
     // Fingerprinting is a **second full traversal**. It stays where it earns
     // its cost — on a frozen fixture whose size is known — and a real root is
     // reported as unfingerprinted rather than pretending: `DEC-0033` F.
+    //
+    // The root's own metadata is read first, so a vanished or replaced root is
+    // classified here exactly as the scanner would classify it, instead of
+    // surfacing as an anonymous I/O error from the traversal below.
     let fingerprint_before = if source.is_fingerprintable() {
-        Some(fixtures::fingerprint(&root)?)
+        source_observation::probe_root(&root).map_err(|failure| Refused {
+            error: MapError::Scan("root_metadata_failed".into()),
+            observed: Some(failure),
+        })?;
+        Some(fixtures::fingerprint(&root).map_err(|error| {
+            Refused::observed(
+                error,
+                Failure::scan_incomplete(SourceReason::FingerprintFailed),
+            )
+        })?)
     } else {
         None
     };
 
     let scan_started = Instant::now();
-    let scan = scan_tree_controlled(&root, &cancelled, |_| {})
-        .map_err(|error| MapError::Scan(error.to_string()))?;
+    // Classified from the scanner's **structured** error, before it becomes text.
+    let scan = scan_tree_controlled(&root, &cancelled, |_| {}).map_err(|error| Refused {
+        observed: source_observation::classify_scan_error(&error),
+        error: MapError::Scan(error.to_string()),
+    })?;
     let scan_ms = elapsed_ms(scan_started);
 
     if !scan.diagnostics.is_empty() {
-        return Err(MapError::Scan(
-            "incomplete scan; previous index retained".into(),
+        return Err(Refused::observed(
+            MapError::Scan("incomplete scan; previous index retained".into()),
+            Failure::scan_incomplete(SourceReason::ScanDiagnostics),
         ));
     }
     let fingerprint_after = if source.is_fingerprintable() {
-        Some(fixtures::fingerprint(&root)?)
+        Some(fixtures::fingerprint(&root).map_err(|error| {
+            Refused::observed(
+                error,
+                Failure::scan_incomplete(SourceReason::FingerprintFailed),
+            )
+        })?)
     } else {
         None
     };
     if fingerprint_before.is_some() && fingerprint_before != fingerprint_after {
-        return Err(MapError::Scan(
-            "source changed during scan; previous index retained".into(),
+        return Err(Refused::observed(
+            MapError::Scan("source changed during scan; previous index retained".into()),
+            Failure::scan_incomplete(SourceReason::FingerprintDrift),
         ));
     }
     if cancelled() {
-        return Err(MapError::Scan("scan_cancelled".into()));
+        // The person's own gesture: not an observation of the source.
+        return Err(MapError::Scan("scan_cancelled".into()).into());
     }
+    // From here on the scan is complete and accepted. Any refusal is about
+    // *applying* it (or, for a root that is no longer the indexed one, about the
+    // source) — and never a reason to touch the Index another way.
     let index_started = Instant::now();
     let mut store = if reused {
-        BrainIndex::open_existing(&database, true)?
+        BrainIndex::open_existing(&database, true)
     } else {
-        BrainIndex::open(&database)?
-    };
+        BrainIndex::open(&database)
+    }
+    .map_err(Refused::apply)?;
     let application_mode = match (reused, gesture) {
         (false, _) => ApplicationMode::BaselineFull,
         (true, Gesture::Rebuild) => ApplicationMode::ExplicitRebuildFull,
         // The one question asked of the Index before the scan is compared, and
         // never asked to recover from an error.
-        (true, Gesture::Refresh) if store.has_current_stamp()? => ApplicationMode::Incremental,
+        (true, Gesture::Refresh) if store.has_current_stamp().map_err(Refused::apply)? => {
+            ApplicationMode::Incremental
+        }
         (true, Gesture::Refresh) => ApplicationMode::IdentityRestampFull,
     };
     let change_summary = match application_mode {
         ApplicationMode::Incremental => {
-            store.refresh_incrementally(&scan.nodes, &scan.identities, now_ms())?
+            let detected = now_ms();
+            store
+                .refresh_incrementally(&scan.nodes, &scan.identities, detected)
+                .map_err(Refused::apply)?
         }
         ApplicationMode::BaselineFull
         | ApplicationMode::IdentityRestampFull
-        | ApplicationMode::ExplicitRebuildFull => store.replace_with_identity(
-            &brain.brain_id,
-            SourceStamp {
-                kind: brain.source_kind,
-                source_ref: &brain.source_ref,
-                label: &brain.source_label,
-            },
-            &scan.nodes,
-            &scan.identities,
-            &scan.diagnostics,
-            now_ms(),
-        )?,
+        | ApplicationMode::ExplicitRebuildFull => store
+            .replace_with_identity(
+                &brain.brain_id,
+                SourceStamp {
+                    kind: brain.source_kind,
+                    source_ref: &brain.source_ref,
+                    label: &brain.source_label,
+                },
+                &scan.nodes,
+                &scan.identities,
+                &scan.diagnostics,
+                now_ms(),
+            )
+            .map_err(Refused::apply)?,
     };
     let index_ms = elapsed_ms(index_started);
 
-    let identity = store.index.identity()?;
+    let identity = store.index.identity().map_err(MapError::from)?;
     let max_depth = scan.nodes.iter().map(|node| node.depth).max().unwrap_or(0);
 
     Ok(MapBuildReport {
@@ -567,6 +733,9 @@ pub(super) fn publish_map(
         diagnostics: scan.diagnostics,
         change_summary,
         application_mode,
+        // Placeholder: `publish_map` records the observation once the Index is
+        // committed and replaces this with what was actually persisted.
+        source_observation: SourceObservation::unknown(false),
     })
 }
 
@@ -2539,3 +2708,7 @@ mod incremental_apply_tests;
 #[cfg(test)]
 #[path = "refresh_incremental_tests.rs"]
 mod refresh_incremental_tests;
+
+#[cfg(test)]
+#[path = "source_availability_tests.rs"]
+mod source_availability_tests;
