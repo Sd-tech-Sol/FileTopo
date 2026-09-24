@@ -1,7 +1,7 @@
 # TASK-0042 — V1 Source Availability & Stale Index Foundation
 
 - **Date :** 2026-09-24
-- **Statut :** `IMPLEMENTED` (jamais auto-`VERIFIED`)
+- **Statut :** `VERIFIED` par `ACTION-0070`
 - **Branche :** `build/v0.2-a26-v1-source-availability`
 - **Décision :** `DEC-0040`
 - **Portée :** fondation de `F-032`, cycle manuel + persistance
@@ -319,3 +319,8 @@ avec un seul blocage : l'honnêteté de l'observation quand **son propre write**
 - **Limite.** Le fallback corrige la session, pas un crash ni un redémarrage; aucune atomicité
   Index / catalogue n'est prétendue. Preuves : `docs/ai/VALIDATION.md` section BX.
 - La tâche reste `IMPLEMENTED`; aucun watcher, polling, W-B/W-C, `TASK-0043`.
+
+
+## Clôture indépendante — ACTION-0070
+
+`TASK-0042` est **VERIFIED dans sa portée** après fermeture de P1/P1b par `ACTION-0069`. L'observation source est honnête même si son write échoue, les records stale sont neutralisés, le dernier Index fiable reste servi et aucune suppression n'est inventée. **F-032 reste toutefois une fondation** : la détection automatique par watcher n'est pas encore construite.
