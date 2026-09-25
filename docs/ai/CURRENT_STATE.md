@@ -3032,3 +3032,14 @@ est levée pour Claude Code**; elle **reste entière pour Codex**.
 - Audit F-030 : `windows-sys 0.61.2` est déjà présent avec FileSystem/System_IO; aucune crate watcher existante à réutiliser.
 - `DEC-0041` : **APPROVED** — événements OS = hints; W-B ciblé, repli W-C, U-B autoritaire; root guard et fallback périodique.
 - `TASK-0043` : **READY** sur `build/v0.2-a27-v1-watcher-reconciliation`.
+
+
+## Mise à jour 2026-09-25 — après TASK-0043
+
+- `TASK-0043` : **VERIFIED dans sa portée** par `ACTION-0072`.
+- `ACTION-0071` fermée : l'attente du `PUBLICATION_LOCK` est annulable côté watcher et le shutdown joint tous les workers; aucun thread watcher n'est détaché.
+- F-030/F-031/F-032 forment maintenant une chaîne automatique contrôlée : hints OS bornés → W-B/W-C → U-B, root guard et conservation du dernier Index fiable.
+- Audit de reprise : active brain et métadonnées brain sont déjà persistants; vu/non-vu aussi. Caméra/sélection et filtres restent session-only; le panneau Détails est global.
+- `DEC-0042` : **APPROVED** — état de reprise non sensible, versionné et brain-scoped dans le catalogue existant; aucun nouveau magasin.
+- `TASK-0044` : **READY** sur `build/v0.2-a28-v1-brain-resume-state`.
+- `P-19` ne sera pas déclaré complet dans cette tranche : langue, accessibilité et composition multi-brain persistante restent séparées.
