@@ -1,18 +1,32 @@
 # Action suivante
 
-## Contrôle indépendant du correctif ACTION-0071 (TASK-0043)
+## TASK-0044 — V1 Per-Brain Resume State
 
-Le correctif du blocage **P1** d'`ACTION-0071` est livré (commit `001f18f` sur
-`build/v0.2-a27-v1-watcher-reconciliation`). `TASK-0043` reste `IMPLEMENTED`, pas `VERIFIED`.
+`TASK-0043 — V1 Automatic Watcher & Reconciliation` est **VERIFIED dans sa
+portée** par
+[`ACTION-0072`](../reviews/ACTION-0072-task0043-final-control.md).
 
-Ce qui est à contrôler, sur preuves (`VALIDATION` section BZ, `.orchestrator/RESULT.md`) :
+Le watcher, W-B/W-C, U-B et F-032 forment maintenant une chaîne automatique
+contrôlée. Le prochain écart V1 est l'état utilisateur non reconstructible
+encore seulement en mémoire de session.
 
-- acquisition annulable du même `PUBLICATION_LOCK` pour W-C, W-B et l'enregistrement de la garde;
-- `WatchManager::shutdown` joint tous les workers, sans aucun détachement;
-- preuves avec le verrou tenu pendant le shutdown, et rien de tardif après sa libération;
-- handle natif fermé (test natif rejoué).
+Audit actuel :
 
-Action unique : contrôle indépendant du correctif `ACTION-0071`, par une instance distincte de
-l'exécuteur.
+- cerveau actif : déjà persistant;
+- nom/couleur/icône : déjà persistants par cerveau;
+- vu/non vu : déjà persistant par cerveau;
+- caméra + sélection : session-only via `CompositionSessionMemory`;
+- filtre : session-only via `useProjectionFilter`;
+- panneau Détails : persisté globalement, pas par cerveau;
+- langue/accessibilité : ne font pas partie de cette tranche.
 
-Aucune TASK-0044, aucun USN et aucun élargissement de portée avant ce contrôle.
+La prochaine tranche est
+[`TASK-0044 — V1 Per-Brain Resume State`](../tasks/TASK-0044-v1-per-brain-resume-state.md),
+encadrée par
+[`DEC-0042`](../decisions/DEC-0042-per-brain-resume-state.md).
+
+Action unique : exécuter `.orchestrator/NEXT_PROMPT.md` sur
+`build/v0.2-a28-v1-brain-resume-state`.
+
+Aucune TASK-0045, aucun travail FR/EN/accessibilité et aucun PR/merge/tag/release
+avant contrôle indépendant de TASK-0044.
