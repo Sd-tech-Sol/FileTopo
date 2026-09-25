@@ -1,5 +1,40 @@
 # État courant
 
+## TASK-0044 — V1 Per-Brain Resume State — IMPLEMENTED — 2026-09-25
+
+- **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche `build/v0.2-a28-v1-brain-resume-state`, partie de
+  `fff8732` (`ACTION-0072`, `DEC-0042`, `TASK-0044` présents); commit de travail `00743fb`. Décision :
+  [`DEC-0042`](../decisions/DEC-0042-per-brain-resume-state.md). Détail : [VALIDATION section CA](VALIDATION.md),
+  `.orchestrator/RESULT.md`.
+- **Ce qui existe.** Un cerveau rouvre **là où il a été laissé** : branche, sélection, caméra, filtre logique et panneau
+  Détails, depuis **son propre** enregistrement versionné dans `catalog_meta`
+  (`brain_resume.v1.<brainId>`, cinq clés fermées, aucune nouvelle base, aucun bump de schéma) — après une bascule
+  **et** après un vrai redémarrage. `restore()` valide chaque identifiant contre l'Index **courant du même
+  cerveau**, corrige et **stocke** la correction; un match sélectionné hors première page est restauré sur une
+  page reconstruite par le cœur (`Index::filter_anchor`, ordre canonique) avec un curseur **frais**, jamais un
+  curseur gardé. L'ancienne préférence globale du panneau n'est plus qu'un repli.
+- **Interface.** `ResumeWriter` (dernier gagnant, une écriture en vol par cerveau, debounce 250 ms, plafond
+  1,5 s, vidage avant une bascule); un filtre **par cerveau**, gardé quand un autre est au premier plan; caméra
+  appliquée seulement quand la fenêtre est mesurée, clampée, ré-appliquée depuis sa valeur d'origine tant que la
+  personne n'y touche pas; « Page reprise » au lieu d'un numéro de page inventé.
+- **Preuves.** Rust **750 PASS** (727 + 23), TypeScript **521 PASS** (471 + 50), `pnpm check` / `pnpm build` /
+  `cargo build --offline` PASS, Clippy identique à la référence (13 / 22), audit public vert. **WebView2 réel,
+  deux redémarrages réels**, trois cerveaux (`TASK-0044-webview2.json`) : vrais événements souris, valeurs
+  logiques comparées une à une (catalogue **et** écran), `docs` = même identifiant numérique dans les trois cerveaux,
+  rafale de 60 crans = 1 écriture, source modifiée fenêtre fermée (sélection supprimée, dossier supprimé),
+  0 erreur fatale, rejouée deux fois sur le binaire final. Falsification : 11 garanties cassées une à une, plus un
+  rejeu réel avec une clé partagée (la preuve échoue).
+- **Défauts trouvés et corrigés avant la preuve canonique.** Sélection racine écrite par-dessus la sélection
+  retenue; « suivre le focus » qui annulait une caméra restaurée; fenêtre non finale à la première mesure;
+  page canonique déplacée pour un match de la première page.
+- **Non testé / limites.** Fermeture normale seulement (aucune promesse sur crash); souris injectée par le
+  navigateur; composition de plusieurs cerveaux toujours **session seule**; après **Reconstruire**, un identifiant
+  stocké n'est vérifié que par existence; sélection de **contexte** dans une page filtrée = racine à la reprise;
+  volume NTFS local; scénarios réels antérieurs (K12, L12…) non rejoués.
+- **`P-19` reste partielle** : FR/EN, accessibilité, préférence de légende (aucune n'existe) et composition
+  multi-cerveaux persistante ne sont **pas** traités. `F-002` / `F-034` gardent leur statut jusqu'au contrôle.
+- **Action unique suivante : contrôle indépendant de `TASK-0044`.**
+
 ## TASK-0043 — correctif ACTION-0071 P1 (shutdown sans détachement) — toujours IMPLEMENTED — 2026-09-25
 
 - **Statut : `TASK-0043` reste `IMPLEMENTED`, jamais auto-`VERIFIED`.** Correctif étroit de

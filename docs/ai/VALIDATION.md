@@ -7978,3 +7978,172 @@ qu'un échec n'empoisonne jamais `PUBLICATION_LOCK` pour les autres tests du pro
 - Une machine, volume NTFS local; cadences produit non attendues en réel.
 
 **Action unique suivante :** contrôle indépendant du correctif `ACTION-0071`.
+
+
+## CA. TASK-0044 — État de reprise par cerveau (P-19 / P-20 partiels) — 2026-09-25
+
+**Statut : `TASK-0044` = `IMPLEMENTED`**, jamais auto-`VERIFIED`. Branche `build/v0.2-a28-v1-brain-resume-state`,
+partie de `fff8732` (`ACTION-0072`, `DEC-0042`, `TASK-0044` présents, arbre propre après `fetch` et fast-forward).
+Commit de travail : `00743fb`. Décision : [`DEC-0042`](../decisions/DEC-0042-per-brain-resume-state.md).
+
+### CA.1 Audit reuse-first (avant le code)
+
+| Surface existante | Ce qu'elle faisait | Ce qui a réellement changé |
+|---|---|---|
+| cerveau actif (`active_brain_id`, `set_active`, `activate`) | persistant, un seul cerveau au redémarrage | **rien** : le redémarrage ouvre toujours ce cerveau seul |
+| nom / couleur / icône (`brains`, `update_metadata`) | persistants par cerveau | **rien**, non dupliqués dans l'état de reprise |
+| `details_panel_visible` (`catalog_meta`, `map_ui_preferences*`) | préférence **globale** | conservée comme **repli** d'un cerveau sans enregistrement; le bouton écrit l'état du cerveau; commentaires « global » corrigés |
+| `CompositionSessionMemory` | vue + sélection par composition, session seule | reste la mémoire des compositions; pour **un** cerveau le catalogue passe devant (même clé), aucun second modèle |
+| `View` / `clampView` | arithmétique pure | inchangée, réutilisée; `sameView` importé |
+| `useProjectionFilter` | un filtre, abandonné au changement de cerveau | **étendu** : une session par cerveau, `adopt`, `onFilterChanged`, garde de révision |
+| `map_view` normal et filtré | projection bornée, curseur keyset | inchangés; **une** primitive ajoutée : `Index::filter_anchor` |
+| vu / non vu | Index et journal | **rien** |
+| rechargement du watcher | `reloadForWatch` + `loadBrain` | `loadBrain` restaure par le catalogue; le filtre est adopté; sélection de repli |
+
+Interdits tenus : aucun `localStorage` / `sessionStorage` (un test l'affirme sur la page montée **et** sur la
+source), aucune nouvelle base, aucun second registre, aucun second moteur de filtre, aucune projection ni page
+stockée, aucun curseur, aucun chemin / nom / clé stable / `FileId` stocké.
+
+### CA.2 Ce qui a changé
+
+| Fichier | Changement |
+|---|---|
+| `map/resume_state.rs` (nouveau) | `ResumeState` (5 clés), `ResumeView`, enveloppe versionnée, lecture tolérante, écriture validée, `restore()` (ids contre l'Index courant du même cerveau, correction stockée, curseur frais), `ResumeCorrection` |
+| `node_filter.rs` | `NodeFilter::match_one_sql` / `previous_match_sql`, `Index::filter_anchor`, `FilterAnchor::cursor` |
+| `lib.rs` | `map_brain_resume_state`, `map_brain_resume_update`, `map_brain_resume_restore` (identifiant seul) |
+| `map/mod.rs`, `map/brains.rs` | variante `MapError::ResumeRejected`; documentation « legacy, repli » de `UiPreferences` |
+| `resumeState.ts` (nouveau) | analyse défensive, `ResumeWriter` |
+| `useProjectionFilter.ts` | une session par cerveau, `adopt`, `onFilterChanged`, `resumed` |
+| `MapApp.tsx` | restauration dans `loadBrain`, écriture avant bascule, caméra mesurée / clampée / ré-appliquée, panneau par cerveau, sélection retenue au focus |
+| `FilterPanel.tsx`, `types.ts` | « Page reprise »; documentation « legacy » |
+
+Non touchés : watcher (`TASK-0043`), `incremental.rs`, parseur, journal, `graph/`, dépendances.
+
+### CA.3 Tests
+
+| Contrôle | Résultat |
+|---|---|
+| `cargo test --offline` | **750 PASS**, 0 FAIL, 6 ignorés (727 + **23**) |
+| `pnpm test` | **521 PASS**, 36 fichiers (471 + **50**) |
+| `pnpm check` / `pnpm build` / `cargo build --offline` | PASS |
+| `cargo clippy --offline --all-targets` | dette historique seule : lib **13**, lib-test **22** — **identique** à la référence (deux avertissements introduits par ce code ont été corrigés) |
+| `rustfmt --check` sur les fichiers ajoutés | propre |
+| `git diff --check` | propre |
+| `scripts/audit-public-readiness.ps1 -AllowRemotes` | vert |
+
+**Rust (23)** : clés exactes du DTO et du JSON stocké (aucun chemin, nom, clé, curseur; < 400 octets); défauts sans
+écriture; repli de l'ancienne clé panneau (ni supprimée, ni réécrite, ignorée dès qu'un enregistrement existe);
+trois cerveaux indépendants (réécrire l'un laisse les deux autres identiques octet pour octet); cerveau inconnu =
+erreur en lecture **et** en écriture; **20 formes d'enregistrement abîmé** (JSON invalide, vide, nombre nu,
+version future / zéro, état / type / disponibilité inconnus, échelle hors bornes / nulle / négative / illisible,
+translation hors bornes, caméra en chaîne, id négatif / nul / hors plage sûre / en chaîne, clé en trop,
+enregistrement trop gros) = **absent**; écriture refusée pour NaN, infini, échelle nulle / négative / énorme,
+id nul / négatif / hors plage, l'ancien enregistrement restant intact; filtre stocké sous forme canonique;
+primitive d'ancre (match précédent, seulement pour un match, prédicat d'état avec filigrane); restauration :
+rien de stocké, branche et sélection retenues, repli et correction **stockée**, sélection hors de la branche
+= la branche, **ids numériquement identiques dans deux cerveaux jamais croisés**; filtre : match **hors page 1**
+restauré sur une page qui commence par lui (curseur frais, jamais stocké, page suivante canonique), match de la
+page 1 ou racine = page canonique sans curseur, sélection qui ne correspond plus (`SELECTION_NOT_A_MATCH`),
+révision avancée (même match, ancien curseur réellement refusé), match supprimé par le watcher (repli, référence
+non périmée); index non construit = erreur habituelle sans écriture; restauration et mise à jour ne touchent ni
+la révision, ni les nœuds, ni le journal; garde structurelle (aucun `std::fs`, chemin, verrou de publication,
+journal, watcher); trois cerveaux dans quatre ordres différents.
+
+**TypeScript (50)** : analyse défensive (23 formes refusées), `ResumeWriter` (un glissement de 300 images n'écrit
+pas 300 fois, une interaction finie est persistée par le seul silence, un patch sans effet n'écrit rien, `flush`
+avant bascule, jamais deux écritures en vol, dernière valeur gagne, cerveau inconnu lu avant d'écrire, échec
+signalé sans boucle serrée); hook (filtre **gardé** au changement de cerveau, `adopt`, garde de révision, page
+reprise, annonce du filtre **logique** seulement); **`MapApp` réel** contre un catalogue scripté (22 tests) :
+reprise de la branche, de la sélection, du panneau et de la caméra depuis **son** enregistrement, caméra clampée,
+**pas de caméra contre un viewport non mesuré**, viewport non final qui ne déplace pas la caméra pour de bon,
+sélection ou branche supprimée = racine, réponse abîmée / absente / refusée = lecture simple, match hors page 1 sur
+la page fraîche du cœur sans curseur renvoyé, filtre écrit et retiré, filtre gardé par son cerveau, **A → B → C → A**,
+panneau par cerveau (aucune écriture globale), **redémarrage** de la page sur le même catalogue (cerveau actif seul,
+puis les deux autres), rafale de molette = 1 à 3 écritures, sélection écrite sous l'identifiant de son cerveau,
+**cerveau sortant écrit AVANT que le suivant soit lu**, caméra d'une composition jamais écrite pour un cerveau,
+aucun stockage du navigateur, watcher (sélection gardée, filtre relu sur la nouvelle révision, rien écrit par le
+watcher; sélection supprimée = racine).
+
+**Falsification** (une garantie cassée à la fois, tests ciblés, sources restaurées, `git diff` vérifié) :
+
+| Garantie cassée | Tests qui échouent |
+|---|---|
+| curseur d'ancre jamais fourni | 2 (match hors page 1; révision avancée) |
+| écriture sans validation | 2 (forme canonique; refus des états invalides) |
+| version future acceptée | 1 (formes abîmées) |
+| correction non stockée | 3 |
+| une écriture par patch (pas de debounce) | 2 unitaires + intégration |
+| pas de vidage avant de quitter | 1 (ordre écriture / lecture) |
+| sélection racine écrite par-dessus la sélection retenue | au moins 1 |
+| « suivre le focus » annule la caméra restaurée | au moins 1 |
+| caméra appliquée sans attendre un viewport mesuré | au moins 1 |
+| ré-application depuis la valeur d'origine retirée | 1 (viewport non final) |
+| garde de révision d'`adopt` retirée | 2 |
+| **rejeu réel** avec **une seule clé partagée** par les trois cerveaux | la preuve WebView2 **échoue** en passe 1 (le panneau de Y devient celui de X) |
+
+Un point que la falsification a montré, dit tel quel : retirer le `clampView` explicite de la restauration ne fait
+échouer aucun test, car l'effet existant qui re-clampe à chaque changement de viewport le couvre; le `clampView`
+explicite est une défense redondante voulue, pas une garantie distincte.
+
+### CA.4 Preuve WebView2 réelle avec redémarrages réels
+
+`scripts/task0044-{seed-proof.py,webview2.mjs,webview2.ps1}`; artefact
+`docs/performance/runs/TASK-0044-webview2.json` (`NONCANONICAL_ENGINEERING_EVIDENCE`). **Trois arbres synthétiques**
+générés sous la racine de preuve (rien de personnel); `docs` porte le **même identifiant numérique (2)** dans les trois
+cerveaux. Chaque geste est un **vrai événement souris** envoyé par l'entrée du navigateur (CDP
+`Input.dispatchMouseEvent` : clics, molette, glissement). Chaque valeur logique est relue dans le catalogue
+(`map_brain_resume_state`) **et** sur l'écran réel; les écritures que le produit fait lui-même sont comptées sur le
+fil (CDP Network) et **leur corps est lu** (aucun chemin, aucun curseur, cinq clés).
+
+| Cerveau | branche | sélection | filtre | panneau | caméra |
+|---|---|---|---|---|---|
+| X | `docs` (id 2) | 128, un match de la **page 3** | fichiers | masqué | zoom (molette) |
+| Y | racine | `docs` (**id 2**, celui que X utilise comme branche) | aucun | visible | glissement + molette |
+| Z | `salles` (id 3) | 72, un match de la **page 2** | dossiers | masqué | zoom (molette) |
+
+1. **Même session** : X -> Y -> Z -> X -> Z -> Y, chaque retour comparé valeur par valeur (identifiant et nom du
+   nœud, panneau, phrase et total du filtre, caméra à 1e-6, enregistrement complet), chaque étiquette de nœud à
+   l'écran commence par le nom **du** cerveau. Index et journal **inchangés** par les écritures de reprise
+   (révision et total du journal identiques). Rafale de **60 crans de molette en 1,8 s : 1 écriture** sur le fil.
+2. **Premier redémarrage réel** (fenêtre fermée, processus fermé) : un seul `map_brain_resume_restore` au
+   démarrage; **Y**, le dernier cerveau actif, revient **seul** avec son état; puis Z et X, **exactement** ce
+   qu'ils étaient (enregistrement de la caméra identique au bit près dans les deux exécutions finales, écran comparé à 1e-6); X retrouve **le même nœud 128**
+   sur une page reprise (« Page reprise »); **Actualiser** ne l'efface pas.
+3. **Source modifiée fenêtre fermée** : le fichier sélectionné de X et **tout le dossier `docs` de Y** sont supprimés
+   sur le disque. **Second redémarrage réel** : X converge par le watcher, sa sélection tombe sur une cible valide
+   (la racine), l'enregistrement est corrigé (aucun id périmé, le nœud supprimé est introuvable dans l'Index), le
+   filtre reste et se relit (**205** correspondances); Y tombe sur la racine **sans toucher à l'enregistrement de X**
+   (dont la branche est le même id 2); Z reste exactement ce qu'il était.
+4. **0 erreur fatale**, aucun chemin ni jargon dans la page, les charges ou les corps d'écriture.
+
+Exécutions : le harnais a d'abord échoué deux fois pour des raisons **de harnais** (une comparaison de sélections
+que la racine satisfaisait à vide; un clic sur une ligne « Contexte » de la liste au lieu d'une « Correspondance »),
+corrigé et durci (vérification que le clic touche bien l'élément, sélection qui doit changer et ne pas être la
+racine); puis le rejeu complet a passé; **puis deux exécutions complètes sur le binaire final** (après les derniers
+correctifs de code) : mêmes états logiques, écritures du produit 15 et 16 en passe 1 (dépend du temps).
+
+### CA.5 Limites
+
+- Volume NTFS local, poste de développement; pas un test sur portable modeste.
+- Fermeture **normale** seulement : aucune promesse de cohérence sur crash; une modification des 250 dernières
+  millisecondes d'un arrêt brutal n'est pas garantie (l'écriture est vidée à la bascule, à la fermeture de page
+  et au démontage).
+- Événements souris injectés par le navigateur, pas une souris physique ni un tactile.
+- Composition de plusieurs cerveaux : **session seule** (`DEC-0042` §7); la caméra d'une composition n'est stockée
+  pour aucun cerveau; le filtre d'un cerveau qui n'est pas au premier plan n'est relu que quand il y revient (sa
+  page affichée peut être celle d'avant).
+- Après **Reconstruire**, un identifiant stocké n'est vérifié que par existence (un Index reconstruit peut le
+  donner à un autre nœud); **Actualiser** garde les identités et est le chemin couvert.
+- Une sélection, dans une page filtrée, qui est un nœud de **contexte** (un ancêtre) retombe sur la racine à la
+  reprise : le filtre reste autoritaire (`SELECTION_NOT_A_MATCH`).
+- Les scénarios réels antérieurs (K12, L12, M12…) ne sont pas rejoués : le chemin de chargement d'un cerveau
+  passe désormais par la restauration; leur repli (lecture simple) est conservé.
+
+### CA.6 Ce que TASK-0044 ne ferme pas — `P-19` reste partielle
+
+Acquis de cette tranche : cerveau actif, métadonnées, caméra / focus / sélection, filtre, panneau Détails,
+vu / non vu (déjà acquis). **Encore hors portée** : FR/EN persistant dans le runtime V1, options d'accessibilité
+persistantes, toute préférence de légende (aucune n'existe), persistance d'une composition multi-cerveaux complète.
+Aucun statut ne monte sans contrôle indépendant.
+
+**Action unique suivante :** contrôle indépendant de `TASK-0044`.

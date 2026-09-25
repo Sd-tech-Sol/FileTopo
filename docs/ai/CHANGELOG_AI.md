@@ -5880,3 +5880,31 @@ changement frontend); `graph/` non touché.
 - TASK-0044 créée READY sur `build/v0.2-a28-v1-brain-resume-state`;
 - P-19 explicitement laissée partielle pour FR/EN, accessibilité et composition multi-brain persistante;
 - aucune TASK-0045, aucun code produit exécuté par l'orchestrateur.
+
+
+## 2026-09-25 — TASK-0044 — état de reprise par cerveau
+
+**Agent :** exécuteur Claude Code (Sonnet 5)
+**Statut à l'issue :** `TASK-0044` = `IMPLEMENTED`, jamais auto-`VERIFIED`
+
+### Fait
+
+- Audit reuse-first écrit (VALIDATION CA.1) : aucun nouveau magasin, aucune nouvelle base, aucun `localStorage`.
+- `map/resume_state.rs` : état fermé de cinq clés, enveloppe versionnée dans `catalog_meta`
+  (`brain_resume.v1.<brainId>`), lecture tolérante, écriture validée en Rust, `restore()` contre l'Index courant du
+  même cerveau avec correction stockée; `Index::filter_anchor` (primitive bornée, ordre canonique) pour un match
+  hors première page; trois commandes à identifiant seul.
+- `resumeState.ts` (écrivain borné, dernier gagnant), `useProjectionFilter` (un filtre par cerveau, `adopt`),
+  `MapApp` (restauration dans `loadBrain`, écriture avant bascule, caméra mesurée / clampée / ré-appliquée, panneau
+  par cerveau, sélection retenue au focus); l'ancienne préférence globale du panneau reste un repli.
+- Tests : Rust 727 -> **750**, TypeScript 471 -> **521**; falsification (garanties cassées une à une, plus un
+  rejeu réel avec une clé partagée); preuve WebView2 réelle, trois cerveaux, deux redémarrages réels, source
+  modifiée fenêtre fermée (`TASK-0044-webview2.json`), rejouée deux fois sur le binaire final.
+- Commit `00743fb`; `VALIDATION CA`, `CURRENT_STATE`, `HANDOFF`, `NEXT_ACTION`, `TASK-0044`, `FEATURE_MATRIX`,
+  `.orchestrator/RESULT.md`.
+
+### Non fait, volontairement
+
+Langue FR/EN, accessibilité, préférence de légende, composition multi-cerveaux persistante (`P-19` reste
+partielle); watcher, parseur, journal, `incremental.rs`, `graph/` non touchés; aucune TASK-0045; aucun PR /
+fusion / étiquette / release.

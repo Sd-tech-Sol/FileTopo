@@ -1,7 +1,7 @@
 # TASK-0044 — V1 Per-Brain Resume State
 
 - **Date :** 2026-09-25
-- **Statut :** `READY`
+- **Statut :** `IMPLEMENTED` (jamais auto-`VERIFIED` : contrôle indépendant requis)
 - **Branche :** `build/v0.2-a28-v1-brain-resume-state`
 - **Décision :** `DEC-0042`
 - **Portée :** reprise brain-scoped, `P-19 / P-20` partiels, `F-002 / F-034`
@@ -296,3 +296,48 @@ Au minimum :
 - `NEXT_ACTION = contrôle indépendant de TASK-0044`;
 - push uniquement sur la branche courante;
 - arbre propre à la fin.
+
+## Exécution — IMPLEMENTED — 2026-09-25
+
+Branche `build/v0.2-a28-v1-brain-resume-state`, partie de `fff8732`; commit de travail `00743fb`. Détail :
+[VALIDATION section CA](../ai/VALIDATION.md), `.orchestrator/RESULT.md`,
+`docs/performance/runs/TASK-0044-webview2.json`.
+
+**Livré (A à O).**
+
+- **B/C** — `map/resume_state.rs` : état fermé de cinq clés (`focusNodeId`, `selectedNodeId`, `view`, `filter`,
+  `detailsPanelVisible`), enveloppe versionnée `{version, state}` dans `catalog_meta` sous
+  `brain_resume.v1.<brainId>`; lecture tolérante (JSON invalide, version inconnue, mot de filtre inconnu, nombre
+  hors bornes, clé en trop, enregistrement > 2 Kio = **absent**); écriture validée côté Rust; un cerveau inconnu
+  est une erreur; aucun accès à la source, aucune écriture hors `catalog_meta`; pas de bump de schéma.
+- **D** — l'ancienne clé globale `details_panel_visible` n'est plus qu'un **repli** pour un cerveau sans
+  enregistrement (jamais supprimée ni réécrite); le bouton n'écrit plus que l'état du cerveau au premier plan.
+- **E** — `map_brain_resume_state`, `map_brain_resume_update`, `map_brain_resume_restore` : identifiant de
+  cerveau seul, aucun chemin.
+- **F** — `resumeState.ts` (`ResumeWriter` : dernier gagnant, une écriture en vol par cerveau, silence de 250 ms,
+  plafond de 1,5 s, vidage avant une bascule et à la fermeture); caméra appliquée seulement quand la fenêtre est
+  mesurée, après `clampView`, ré-appliquée **depuis la valeur d'origine** tant que la personne n'y a pas touché.
+- **G** — `restore()` valide focus et sélection contre l'Index **courant du même cerveau**, corrige et stocke;
+  une sélection non montrée par la branche devient la branche (même règle que sélectionner un nœud hors vue).
+- **H** — `useProjectionFilter` : un filtre par cerveau, gardé quand un autre cerveau est au premier plan;
+  `Index::filter_anchor` (prédicat et ordre canoniques de `filtered_matches`, deux sondes keyset) reconstruit un
+  curseur **frais** pour un match hors première page; une page reprise dit « Page reprise » (son rang réel est
+  inconnu) au lieu d'inventer un numéro.
+- **I** — un rechargement du watcher passe par la même restauration : filtre relu, sélection gardée si elle
+  existe encore, sinon repli sur la racine; aucun écrit du watcher, aucun événement du journal.
+- **J/K** — trois cerveaux, deux redémarrages réels de processus, valeurs logiques comparées une à une.
+- **L** — corruption, version, bornes, ids identiques entre cerveaux, état d'un autre cerveau, ancienne clé
+  globale : 23 tests Rust dédiés.
+
+**Défauts trouvés par les tests d'intégration et l'analyse, corrigés avant la preuve réelle canonique.** (1) l'ouverture d'un cerveau au premier
+plan sélectionnait sa **racine** et l'écrivait par-dessus la sélection retenue; (2) le déplacement « suivre le
+focus » annulait une caméra restaurée quand la sélection était hors champ; (3) la fenêtre n'est pas à sa taille
+finale à la première mesure (un panneau qui s'ouvre) : un `clampView` contre cette taille déplaçait la caméra
+pour de bon; (4) un match de la première page ne doit pas déplacer la page : la page canonique est gardée et
+seul un match au-delà reçoit un curseur reconstruit.
+
+**Hors de cette tranche, dit explicitement (`P-19` reste partielle).** Langue FR/EN, préférences
+d'accessibilité, préférence de légende (aucune n'existe) et persistance d'une composition multi-cerveaux
+complète : non traités. Une composition de plusieurs cerveaux reste session-only; la caméra d'une composition
+n'est stockée pour aucun cerveau. Après **Reconstruire**, un identifiant stocké n'est vérifié que par existence
+(un Index reconstruit peut donner un ancien identifiant à un autre nœud); **Actualiser** garde les identités.

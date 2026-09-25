@@ -1,5 +1,35 @@
 # HANDOFF — passage de relais
 
+## Relais actuel — TASK-0044, état de reprise par cerveau, en attente de contrôle — 2026-09-25
+
+- **Fait :** `TASK-0044` est implémentée sur `build/v0.2-a28-v1-brain-resume-state` (partie de `fff8732`, commit de
+  travail `00743fb`). Elle reste `IMPLEMENTED`. Aucune TASK-0045, aucun travail FR/EN / accessibilité, aucun PR,
+  fusion, étiquette ni release; `graph/`, watcher, parseur, journal et `incremental.rs` non touchés.
+- **Où regarder, dans l'ordre :** `DEC-0042`; `src-tauri/src/map/resume_state.rs` (modèle, stockage, `restore`) puis
+  `resume_state_tests.rs`; `node_filter.rs` (`filter_anchor`); `lib.rs` (trois commandes); côté interface
+  `resumeState.ts` (analyse + `ResumeWriter`), `useProjectionFilter.ts` (une session par cerveau, `adopt`),
+  `MapApp.tsx` (`loadBrain`, `applyComposition`, effet de positionnement, `captureLiveResume`),
+  `resumeMapApp.test.tsx` (le vrai `MapApp` contre un catalogue scripté); `scripts/task0044-*`.
+- **À savoir pour la reprise :**
+  1. Le catalogue est l'autorité de la reprise; **`ResumeWriter` en garde la copie** (un patch fusionne, ne fait
+     rien s'il ne change rien, est écrit après 250 ms de silence ou 1,5 s au plus). Ne pas ajouter un second
+     cache ni écrire depuis un autre endroit.
+  2. `loadBrain` **vide** l'écrivain du cerveau, puis restaure : ce que la personne vient de faire est dans le
+     catalogue avant d'être relu. Une restauration qui échoue retombe sur la lecture simple (`map_view`).
+  3. Pour **un** cerveau seul, l'état vient du catalogue (frais ou copie de l'écrivain); pour une composition de
+     plusieurs cerveaux, `CompositionSessionMemory` garde la main (`DEC-0042` §7).
+  4. La caméra n'est stockée que pour un cerveau **seul** à l'écran. Elle est appliquée quand la fenêtre est
+     mesurée, clampée, puis ré-appliquée **depuis la valeur d'origine** pendant 4 s tant qu'elle n'a pas été
+     touchée (la taille de la fenêtre n'est pas finale à la première mesure). L'effet « suivre le focus » saute
+     la projection sur laquelle une caméra vient d'être restaurée.
+  5. Une page filtrée **reprise** commence à la sélection retenue : son rang réel est inconnu, l'interface dit
+     « Page reprise ». Un match de la première page garde la page canonique.
+  6. `nodeId` n'est jamais une identité globale : chaque enregistrement est sous l'identifiant de son cerveau et
+     validé contre l'Index de ce cerveau. `docs` porte le même id dans les trois cerveaux de la preuve réelle.
+- **Non fait / non testé :** crash brutal (aucune promesse); Reconstruire (id vérifié par existence seulement);
+  composition multi-cerveaux persistante; FR/EN; accessibilité; scénarios réels antérieurs non rejoués.
+- **Action unique suivante :** contrôle indépendant de `TASK-0044`.
+
 ## Relais actuel — TASK-0043, correctif ACTION-0071 P1, en attente de contrôle — 2026-09-25
 
 - **Fait :** commit `001f18f` sur `build/v0.2-a27-v1-watcher-reconciliation` (partie de `8f02e34`).

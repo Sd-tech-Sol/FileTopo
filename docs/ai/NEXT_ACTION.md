@@ -1,32 +1,19 @@
 # Action suivante
 
-## TASK-0044 — V1 Per-Brain Resume State
+## Contrôle indépendant de TASK-0044 — V1 Per-Brain Resume State
 
-`TASK-0043 — V1 Automatic Watcher & Reconciliation` est **VERIFIED dans sa
-portée** par
-[`ACTION-0072`](../reviews/ACTION-0072-task0043-final-control.md).
+`TASK-0044 — V1 Per-Brain Resume State` est **`IMPLEMENTED`** sur
+`build/v0.2-a28-v1-brain-resume-state` (commit de travail `00743fb`), jamais auto-`VERIFIED`.
 
-Le watcher, W-B/W-C, U-B et F-032 forment maintenant une chaîne automatique
-contrôlée. Le prochain écart V1 est l'état utilisateur non reconstructible
-encore seulement en mémoire de session.
+Ce qui existe : un cerveau rouvre là où il a été laissé — branche, sélection, caméra, filtre logique et panneau
+Détails — depuis **son propre** enregistrement versionné du catalogue, après une bascule et après un vrai
+redémarrage; les identifiants sont validés contre l'Index courant du même cerveau; un match hors première page est
+restauré sur une page reconstruite avec un curseur frais. Preuves : Rust 750, TypeScript 521, rejeu WebView2 réel
+avec deux redémarrages réels et trois cerveaux ([VALIDATION CA](VALIDATION.md)).
 
-Audit actuel :
+Action unique : contrôle **indépendant, sur preuves,** de `TASK-0044` (instance distincte de l'exécuteur) — relire
+`DEC-0042`, le code (`resume_state.rs`, `resumeState.ts`, `MapApp.tsx`), rejouer les tests et, si utile, la preuve
+`scripts/task0044-webview2.ps1`.
 
-- cerveau actif : déjà persistant;
-- nom/couleur/icône : déjà persistants par cerveau;
-- vu/non vu : déjà persistant par cerveau;
-- caméra + sélection : session-only via `CompositionSessionMemory`;
-- filtre : session-only via `useProjectionFilter`;
-- panneau Détails : persisté globalement, pas par cerveau;
-- langue/accessibilité : ne font pas partie de cette tranche.
-
-La prochaine tranche est
-[`TASK-0044 — V1 Per-Brain Resume State`](../tasks/TASK-0044-v1-per-brain-resume-state.md),
-encadrée par
-[`DEC-0042`](../decisions/DEC-0042-per-brain-resume-state.md).
-
-Action unique : exécuter `.orchestrator/NEXT_PROMPT.md` sur
-`build/v0.2-a28-v1-brain-resume-state`.
-
-Aucune TASK-0045, aucun travail FR/EN/accessibilité et aucun PR/merge/tag/release
-avant contrôle indépendant de TASK-0044.
+`P-19` reste **partielle** : FR/EN, accessibilité, préférence de légende et persistance d'une composition
+multi-cerveaux ne sont pas traités. Aucune TASK-0045 et aucun PR/merge/tag/release avant ce contrôle.
