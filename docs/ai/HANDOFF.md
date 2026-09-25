@@ -1,9 +1,8 @@
 # HANDOFF — passage de relais
 
-## Relais actuel — TASK-0044, état de reprise par cerveau, en attente de contrôle — 2026-09-25
+## Relais — TASK-0044, état de reprise par cerveau, VERIFIED — 2026-09-25
 
-- **Fait :** `TASK-0044` est implémentée sur `build/v0.2-a28-v1-brain-resume-state` (partie de `fff8732`, commit de
-  travail `00743fb`). Elle reste `IMPLEMENTED`. Aucune TASK-0045, aucun travail FR/EN / accessibilité, aucun PR,
+- **Fait :** `TASK-0044` est **VERIFIED par `ACTION-0073`** sur `build/v0.2-a28-v1-brain-resume-state` (code `00743fb`). Aucune TASK-0045, aucun travail FR/EN / accessibilité, aucun PR,
   fusion, étiquette ni release; `graph/`, watcher, parseur, journal et `incremental.rs` non touchés.
 - **Où regarder, dans l'ordre :** `DEC-0042`; `src-tauri/src/map/resume_state.rs` (modèle, stockage, `restore`) puis
   `resume_state_tests.rs`; `node_filter.rs` (`filter_anchor`); `lib.rs` (trois commandes); côté interface
@@ -26,9 +25,9 @@
      « Page reprise ». Un match de la première page garde la page canonique.
   6. `nodeId` n'est jamais une identité globale : chaque enregistrement est sous l'identifiant de son cerveau et
      validé contre l'Index de ce cerveau. `docs` porte le même id dans les trois cerveaux de la preuve réelle.
-- **Non fait / non testé :** crash brutal (aucune promesse); Reconstruire (id vérifié par existence seulement);
+- **Non fait / non testé :** crash brutal (aucune promesse); Reconstruire sans rejeu WebView2 dédié (le contrôle confirme toutefois l'absence de recyclage silencieux d'id dans le chemin identity-aware actuel);
   composition multi-cerveaux persistante; FR/EN; accessibilité; scénarios réels antérieurs non rejoués.
-- **Action unique suivante :** contrôle indépendant de `TASK-0044`.
+- **Action suivante :** audit des écarts V1 restants; ne pas ouvrir automatiquement une nouvelle tâche sans ce contrôle.
 
 ## Relais actuel — TASK-0043, correctif ACTION-0071 P1, en attente de contrôle — 2026-09-25
 
