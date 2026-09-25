@@ -1,7 +1,7 @@
 # TASK-0044 — V1 Per-Brain Resume State
 
 - **Date :** 2026-09-25
-- **Statut :** `IMPLEMENTED` (jamais auto-`VERIFIED` : contrôle indépendant requis)
+- **Statut :** `VERIFIED` par `ACTION-0073`
 - **Branche :** `build/v0.2-a28-v1-brain-resume-state`
 - **Décision :** `DEC-0042`
 - **Portée :** reprise brain-scoped, `P-19 / P-20` partiels, `F-002 / F-034`
@@ -297,7 +297,7 @@ Au minimum :
 - push uniquement sur la branche courante;
 - arbre propre à la fin.
 
-## Exécution — IMPLEMENTED — 2026-09-25
+## Exécution — VERIFIED par ACTION-0073 — 2026-09-25
 
 Branche `build/v0.2-a28-v1-brain-resume-state`, partie de `fff8732`; commit de travail `00743fb`. Détail :
 [VALIDATION section CA](../ai/VALIDATION.md), `.orchestrator/RESULT.md`,
@@ -339,5 +339,13 @@ seul un match au-delà reçoit un curseur reconstruit.
 **Hors de cette tranche, dit explicitement (`P-19` reste partielle).** Langue FR/EN, préférences
 d'accessibilité, préférence de légende (aucune n'existe) et persistance d'une composition multi-cerveaux
 complète : non traités. Une composition de plusieurs cerveaux reste session-only; la caméra d'une composition
-n'est stockée pour aucun cerveau. Après **Reconstruire**, un identifiant stocké n'est vérifié que par existence
-(un Index reconstruit peut donner un ancien identifiant à un autre nœud); **Actualiser** garde les identités.
+n'est stockée pour aucun cerveau. Après **Reconstruire**, aucun rejeu WebView2 dédié n'a été ajouté dans cette tranche. Le contrôle
+indépendant `ACTION-0073` a toutefois vérifié le chemin produit actuel :
+`ExplicitRebuildFull -> publish_with_identity` conserve les ids des stable keys reconnues et attribue
+les nouveaux objets via le compteur durable monotone `next_node_id`; un id supprimé n'est donc pas
+silencieusement recyclé. La réserve est **non rejouée**, pas une faiblesse architecturale démontrée.
+
+
+## Clôture indépendante — ACTION-0073
+
+`TASK-0044` est **VERIFIED dans sa portée**. Le contrôle indépendant accepte la persistance brain-scoped de focus/sélection, caméra, filtre et panneau Détails, la reconstruction de page filtrée sans curseur persistant, l'isolation sur trois cerveaux et les deux redémarrages réels. `P-19` reste **PARTIELLE** : FR/EN, préférences d'accessibilité et composition multi-cerveaux persistante restent hors tranche.
