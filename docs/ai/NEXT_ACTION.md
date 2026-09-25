@@ -1,19 +1,26 @@
 # Action suivante
 
-## Contrôle indépendant de TASK-0044 — V1 Per-Brain Resume State
+## TASK-0045 — V1 Brain Identity Editor
 
-`TASK-0044 — V1 Per-Brain Resume State` est **`IMPLEMENTED`** sur
-`build/v0.2-a28-v1-brain-resume-state` (commit de travail `00743fb`), jamais auto-`VERIFIED`.
+`TASK-0044 — V1 Per-Brain Resume State` est **VERIFIED dans sa portée** par
+[`ACTION-0073`](../reviews/ACTION-0073-task0044-independent-control.md).
 
-Ce qui existe : un cerveau rouvre là où il a été laissé — branche, sélection, caméra, filtre logique et panneau
-Détails — depuis **son propre** enregistrement versionné du catalogue, après une bascule et après un vrai
-redémarrage; les identifiants sont validés contre l'Index courant du même cerveau; un match hors première page est
-restauré sur une page reconstruite avec un curseur frais. Preuves : Rust 750, TypeScript 521, rejeu WebView2 réel
-avec deux redémarrages réels et trois cerveaux ([VALIDATION CA](VALIDATION.md)).
+L'audit
+[`ACTION-0074`](../reviews/ACTION-0074-v1-gap-audit-after-task0044.md)
+confirme le prochain écart borné :
 
-Action unique : contrôle **indépendant, sur preuves,** de `TASK-0044` (instance distincte de l'exécuteur) — relire
-`DEC-0042`, le code (`resume_state.rs`, `resumeState.ts`, `MapApp.tsx`), rejouer les tests et, si utile, la preuve
-`scripts/task0044-webview2.ps1`.
+- le backend sait déjà modifier/persister nom, couleur et icône;
+- `map_brain_update` existe;
+- le runtime `MapApp` n'expose aucun geste utilisateur pour les modifier;
+- ce comportement est le dernier écart utilisateur nommé de `F-033 / P-20`.
 
-`P-19` reste **partielle** : FR/EN, accessibilité, préférence de légende et persistance d'une composition
-multi-cerveaux ne sont pas traités. Aucune TASK-0045 et aucun PR/merge/tag/release avant ce contrôle.
+La prochaine tranche est
+[`TASK-0045 — V1 Brain Identity Editor`](../tasks/TASK-0045-v1-brain-identity-editor.md),
+encadrée par
+[`DEC-0043`](../decisions/DEC-0043-brain-identity-editor-boundary.md).
+
+Action unique : exécuter `.orchestrator/NEXT_PROMPT.md` sur
+`build/v0.2-a29-v1-brain-identity-editor`.
+
+`F-035` FR/EN est confirmé manquant dans le runtime V1 courant, mais reste
+**hors TASK-0045**. Aucune TASK-0046 avant contrôle indépendant de TASK-0045.
