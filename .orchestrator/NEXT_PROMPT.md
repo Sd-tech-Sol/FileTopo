@@ -1,289 +1,167 @@
-# NEXT_PROMPT — TASK-0046 — V1 Complete FR/EN Runtime
-
-**TARGET_AGENT:** CLAUDE CODE  
-**RECOMMENDED_MODEL:** Sonnet 5, high effort  
-**STATUS:** READY  
-**BRANCH:** `build/v0.2-a30-v1-complete-fr-en-runtime`
-
-## /goal
-
-Implémenter intégralement
-`docs/tasks/TASK-0046-v1-complete-fr-en-runtime.md`
-selon
-`docs/decisions/DEC-0044-global-fr-en-runtime.md`.
-
-Le runtime produit réel est `src/map/MapApp.tsx`.
-Le vieux `src/App.tsx` n'est qu'une référence historique.
-
-Objectif : FR/EN complet du runtime courant, avec choix explicite persistant,
-sans nouveau backend de préférence et sans commencer l'audit WCAG global.
-
-## 0 — Préconditions
-
-1. Appliquer `AGENTS.md` et `CLAUDE.md`.
-2. Basculer explicitement sur
-   `build/v0.2-a30-v1-complete-fr-en-runtime`.
-3. `git fetch origin`.
-4. Synchroniser uniquement en fast-forward avec
-   `origin/build/v0.2-a30-v1-complete-fr-en-runtime`.
-5. Vérifier arbre propre.
-6. Vérifier que HEAD contient :
-   - `ACTION-0075`;
-   - `ACTION-0076`;
-   - `DEC-0044`;
-   - `TASK-0046`.
-7. Lire DEC-0044 et TASK-0046 en entier avant code.
-
-STOP/BLOCKED si une précondition est fausse.
-
-## 1 — Audit reuse-first AVANT code
-
-Écrire d'abord dans RESULT l'inventaire des chaînes utilisateur et des surfaces :
-
-- `src/main.tsx`;
-- `src/lib/locale.ts` + tests;
-- ancien `src/App.tsx` seulement comme exemple;
-- `MapApp.tsx`;
-- `ChangeJournalPanel.tsx`;
-- `CrossRelationsPanel.tsx`;
-- `ExactDuplicateExplorer.tsx`;
-- `FilterPanel.tsx`;
-- `MapView.tsx`;
-- `NodeChangeState.tsx`;
-- `RelationsPanel.tsx`;
-- `ReviewQueuePanel.tsx`;
-- `SourceObservationBadge.tsx`;
-- `WatchStatusBadge.tsx`;
-- `ContentObservationsPanel.tsx`;
-- `DetailsPanel.tsx`;
-- `relations.ts`;
-- `filters.ts`;
-- tout autre helper qui produit du texte visible/aria.
-
-Conclusion attendue si le code courant le confirme :
-`src/lib/locale.ts` est la source de vérité globale à réutiliser.
-
-## 2 — Locale globale MapApp
-
-Utiliser `Locale`, `resolveInitialLocale`, `storeLocale`.
-
-Le runtime doit :
-
-- résoudre la locale au démarrage;
-- rendre avec `strings[locale]`;
-- mettre `document.documentElement.lang = locale`;
-- offrir un contrôle FR/EN explicite;
-- appeler `storeLocale` uniquement sur choix humain;
-- continuer à fonctionner si le storage refuse.
-
-Aucune commande Tauri ne doit être émise par un changement de langue.
-
-## 3 — Pas de second système i18n
-
-Interdit :
-
-- package i18n;
-- backend de préférence;
-- table SQLite;
-- deuxième clé localStorage;
-- duplication de composants FR vs EN.
-
-Réutiliser la clé existante :
-`filetopo.locale`.
-
-## 4 — Compléter le dictionnaire principal
-
-Le dictionnaire de `MapApp` doit avoir exactement les deux locales avec un
-contrat commun typé.
-
-Extraire/localiser tous les textes produit encore codés en dur :
-
-- lifecycle / indexation;
-- recherche;
-- statuts;
-- erreurs produit;
-- rapports visibles;
-- boutons développeur visibles;
-- aria-labels;
-- compteurs;
-- éditeur d'identité;
-- actions reveal/copy;
-- labels de panneau.
-
-Un texte de diagnostic backend brut peut rester en détail secondaire seulement
-si aucune taxonomie fermée existante ne permet une traduction honnête; le
-préfixe produit reste localisé.
-
-## 5 — Localiser les panneaux enfants
-
-Rendre locale-aware, sans déplacer leur logique métier :
-
-- ChangeJournalPanel;
-- CrossRelationsPanel;
-- ExactDuplicateExplorer;
-- FilterPanel;
-- MapView;
-- NodeChangeState;
-- RelationsPanel;
-- ReviewQueuePanel.
-
-Réutiliser les composants déjà FR/EN :
-
-- SourceObservationBadge;
-- WatchStatusBadge;
-- ContentObservationsPanel;
-- DetailsPanel.
-
-Passer `locale` ou des dictionnaires typés depuis MapApp.
-
-## 6 — Helpers
-
-Tout helper qui produit du texte visible doit devenir locale-aware :
-
-- labels d'état/type/disponibilité des filtres;
-- `describeFilter`;
-- compteurs de correspondances;
-- provenance/type de relation;
-- descriptions relationnelles / aria;
-- agrégats de carte;
-- formats date/nombre si actuellement figés sur fr-CA.
-
-Ne jamais traduire les valeurs wire ou les enums avant un invoke.
-
-## 7 — Données utilisateur
-
-Ne jamais traduire :
-
-- nom d'un cerveau;
-- nom d'un fichier/dossier;
-- chemin relatif;
-- identifiants;
-- contenu.
-
-Seulement l'interface autour.
-
-## 8 — Contrôle automatique de complétude
-
-Obligatoire :
-
-- dictionnaires exhaustifs `Record<Locale, ...>` ou équivalent;
-- tests FR/EN des helpers refactorés;
-- test du vrai `MapApp` en FR;
-- test du vrai `MapApp` en EN;
-- source guard contre les anciens forçages :
-  - `const t = strings.fr`;
-  - `locale="fr"` dans le runtime;
-  - `document.documentElement.lang = "fr"`.
-
-Le test d'intégration doit couvrir un libellé unique de chaque grande surface,
-pas seulement le toggle.
-
-Si l'audit découvre une autre surface utilisateur française, elle entre dans
-TASK-0046. Ne laisse pas une phrase visible en français dans la vue anglaise.
-
-## 9 — Persistance
-
-Tester :
-
-- aucun choix + navigateur FR -> FR;
-- aucun choix + navigateur non-FR -> EN;
-- choix EN + système FR -> EN;
-- choix FR + système EN -> FR;
-- storage corrompu -> système/fallback;
-- storage refusé -> session continue sans crash.
-
-Ne pas écrire la locale au démarrage si aucun choix explicite n'est fait.
-
-## 10 — Non-régression d'état
-
-Une bascule de langue ne change pas :
-
-- cerveau actif;
-- catalogue;
-- composition;
-- sélection;
-- resume state;
-- Index/révision;
-- journal/seen;
-- relations;
-- watcher;
-- source.
-
-Sur le fil Tauri : **zéro commande causée par le toggle**.
-
-Attention aux effets React : n'ajoute pas `locale` à une dépendance qui ferait
-recharger des données si un dictionnaire/local formatting suffit.
-
-## 11 — WebView2 réel
-
-Preuve obligatoire sur le vrai runtime :
-
-### Processus 1
-1. ouvrir l'application;
-2. choisir EN par l'UI;
-3. vérifier `document.documentElement.lang === "en"`;
-4. vérifier des textes anglais dans chaque grande surface localisée;
-5. vérifier que noms de cerveaux/nœuds sont inchangés;
-6. vérifier zéro invoke causé par le changement;
-7. vérifier `localStorage["filetopo.locale"] === "en"`;
-8. fermer réellement.
-
-### Processus 2
-9. relancer le même profil;
-10. vérifier EN **avant interaction**;
-11. vérifier que le choix a survécu;
-12. basculer FR par l'UI;
-13. vérifier `document.lang === "fr"`;
-14. vérifier les mêmes surfaces en français;
-15. vérifier encore zéro invoke causé par le toggle.
-
-Publier les valeurs logiques observées dans l'artefact.
-
-## 12 — Ne pas casser TASK-0044
-
-Le test de TASK-0044 qui affirme que le **resume state** n'utilise pas le
-storage navigateur doit rester vrai dans son sens.
-
-Si son nom/commentaire devient ambigu maintenant qu'une locale globale utilise
-la clé déjà existante, clarifie le test sans affaiblir son assertion :
-
-- resume state -> catalogue;
-- locale -> seule clé `filetopo.locale`.
-
-Ne déplace jamais le resume state vers localStorage.
-
-## 13 — Validation complète
-
-- `pnpm test`;
-- `pnpm check`;
-- `pnpm build`;
-- `cargo test --offline`;
-- `cargo build --offline`;
-- Tauri debug;
-- vrai WebView2 avec redémarrage;
-- Clippy avec dette historique séparée;
-- `git diff --check`;
-- `scripts/audit-public-readiness.ps1 -AllowRemotes`.
-
-## 14 — Documentation
+# NEXT_PROMPT — TASK-0047 — V1 Accessibility Closure
+
+Tu es l'exécuteur de TASK-0047 pour FileTopo.
+
+## Autorité
+
+Lis d'abord, dans cet ordre :
+
+1. `docs/decisions/DEC-0045-accessibility-closure-boundary.md`
+2. `docs/tasks/TASK-0047-v1-accessibility-closure.md`
+3. `docs/reviews/ACTION-0077-task0046-independent-control.md`
+4. `docs/reviews/ACTION-0078-f036-accessibility-audit.md`
+5. `docs/product/CARTETOPO_FUNCTIONAL_PARITY.md` — surtout P-21
+6. `docs/product/FEATURE_MATRIX.md` — surtout F-036
+7. `docs/ai/CURRENT_STATE.md`
+8. `docs/ai/VALIDATION.md`
+9. `docs/ai/HANDOFF.md`
+
+Git et ces documents sont la source de vérité.
+
+## Objectif unique
+
+Implémenter **TASK-0047 — V1 Accessibility Closure** sur la branche courante,
+sans ouvrir TASK-0048.
+
+Le but n'est pas de refaire l'interface. Le runtime possède déjà plusieurs
+briques accessibles. Tu dois :
+
+- mesurer le vrai runtime;
+- réutiliser ces briques;
+- corriger seulement les écarts observés;
+- publier une preuve locale, falsifiable et suffisamment riche pour permettre
+  un contrôle indépendant.
+
+## Frontières non négociables
+
+- Tauri + Rust + SQLite + React/TypeScript inchangés comme architecture.
+- Aucun changement de source analysée.
+- Un seul Index canonique.
+- VIEW_BUDGET = 512.
+- Aucun whole-graph DTO.
+- Aucun nouveau store/base/catalogue.
+- Aucun provider/cloud/service d'accessibilité.
+- Aucun MCP Axe.
+- Aucun envoi de contenu, page ou capture à un tiers.
+- Pas de Rust sauf nécessité démontrée impossible à corriger côté frontend.
+- P-19 reste hors tranche.
+- Ne crée aucune préférence d'accessibilité FileTopo pour « compléter » le
+  produit artificiellement.
+- F-035/TASK-0046 ne doit pas régresser.
+- Aucune certification générale « WCAG compliant ».
+
+## Reuse-first / dépendance
+
+Avant d'installer quoi que ce soit, vérifie **axe-core@4.13.0** :
+
+- package `axe-core`;
+- repo officiel `dequelabs/axe-core`;
+- version exacte;
+- licence MPL-2.0;
+- mainteneur/auteur cohérent Deque;
+- dépendances déclarées;
+- intégrité publiée.
+
+Si ces faits ne concordent pas ou ne peuvent pas être vérifiés, STOP et écris
+un RESULT BLOCKED. Ne remplace pas par un autre package.
+
+Si validé, ajoute **seulement** :
+
+`axe-core@4.13.0` comme devDependency exacte.
+
+N'ajoute pas `@axe-core/playwright`, `jest-axe`, Playwright, Puppeteer ou un
+MCP/service si le core + le harnais WebView2 existant suffisent.
+
+## Méthode obligatoire
+
+1. Fais le baseline accessibilité **avant** les corrections.
+2. Injecte axe-core localement dans le vrai WebView2 Tauri.
+3. Ouvre les surfaces riches requises par TASK-0047.
+4. Publie violations + incomplete + contexte logique dans un artefact JSON.
+5. Corrige les causes minimales.
+6. Rejoue axe dans FR/EN et clair/sombre lorsque applicable.
+7. Fais le parcours clavier réel complet avec événements d'entrée navigateur.
+8. Vérifie focus visible, sortie sans piège, sémantique ARIA.
+9. Vérifie contraste de texte et non-textuel applicable.
+10. Vérifie qu'aucun sens n'est porté par la couleur seule.
+11. Émule `prefers-reduced-motion: reduce` et contrôle les styles calculés.
+12. Vérifie les invariants source/Index/journal/seen/resume/watcher et le
+    SHA-256 de la racine générée.
+13. Fais les sabotages demandés et prouve qu'ils échouent.
+14. Rejoue la validation canonique sur le code final.
+
+Un `axe.run()` vert seul n'est **pas** suffisant.
+
+## Règles axe
+
+- Ne désactive pas globalement une règle pour faire passer le build.
+- Un résultat `incomplete` doit être revu et classé.
+- Un faux positif/inapplicable doit être documenté par rule id, cible, raison et
+  preuve manuelle.
+- La preuve contraste autoritaire vient du vrai WebView2, pas de JSDOM.
+
+## Preuve réelle
+
+Crée un artefact :
+
+`docs/performance/runs/TASK-0047-webview2.json`
+
+Il doit au minimum contenir :
+
+- version axe-core;
+- version/moteur WebView2;
+- matrice des états audités;
+- violations finales (attendu : aucune non justifiée dans le scope);
+- incomplete + décisions;
+- parcours clavier avec focus avant/après;
+- focus visible;
+- contrastes mesurés/contrôlés;
+- inventaire des alternatives non colorées;
+- preuve reduced-motion;
+- FR/EN;
+- clair/sombre si servis;
+- invariants d'état;
+- SHA-256 source avant/après;
+- erreurs console fatales;
+- limites honnêtes.
+
+Aucune donnée personnelle. Utilise seulement des fixtures/racines générées par
+la preuve.
+
+## Validation complète
+
+Exécute tout ce que TASK-0047 §L exige. Les chiffres de tests finaux doivent
+être publiés dans VALIDATION et RESULT.
+
+S'il existe une dette Clippy historique, compare-la à une référence et ne la
+mélange pas au verdict de la tranche.
+
+## Documentation / fin de travail
+
+Mets à jour au minimum :
+
+- `.orchestrator/RESULT.md`;
+- `docs/tasks/TASK-0047-v1-accessibility-closure.md`;
+- `docs/ai/VALIDATION.md`;
+- `docs/ai/CURRENT_STATE.md`;
+- `docs/ai/HANDOFF.md`;
+- `docs/ai/NEXT_ACTION.md`;
+- `docs/ai/CHANGELOG_AI.md`;
+- `docs/product/FEATURE_MATRIX.md`.
 
 À la fin :
 
-- TASK-0046 = `IMPLEMENTED`, jamais auto-VERIFIED;
-- F-035 = `IMPLEMENTED`;
-- langue de P-19 = prête à contrôle indépendant;
-- langue de P-21 = prête à contrôle indépendant;
+- TASK-0047 = IMPLEMENTED, jamais auto-VERIFIED;
+- F-036 = IMPLEMENTED, jamais auto-VERIFIED;
+- P-21 reste PARTIELLE jusqu'au contrôle indépendant;
 - P-19 reste PARTIELLE;
-- P-21 reste PARTIELLE;
-- F-036 reste PROPOSED;
-- mettre à jour FEATURE_MATRIX, CURRENT_STATE, HANDOFF, VALIDATION,
-  CHANGELOG_AI et NEXT_ACTION.
+- aucune TASK-0048;
+- aucun PR / merge / tag / release;
+- commit + push;
+- arbre propre.
 
-## 15 — Gouvernance
-
-- aucune TASK-0047;
-- aucun audit WCAG global dans cette tranche;
-- aucun PR/merge/tag/release;
-- push uniquement sur la branche courante;
-- arbre propre;
-- NEXT_ACTION = contrôle indépendant de TASK-0046.
+Dans RESULT, sépare explicitement :
+1. preuves réellement exécutées;
+2. contrôles/falsifications;
+3. limites et éléments non testés;
+4. décision attendue de l'orchestrateur.

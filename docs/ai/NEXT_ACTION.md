@@ -1,19 +1,17 @@
 # Action suivante
 
-## Préparer TASK-0047 — V1 Accessibility Closure
+## Exécuter TASK-0047 — V1 Accessibility Closure
 
-`TASK-0046` et `F-035` sont **VERIFIED** par `ACTION-0077`.
-`ACTION-0078` a audité `F-036` et choisi la tranche suivante.
+Branche : `build/v0.2-a31-v1-accessibility-closure`.
 
-Action unique : créer `DEC-0045`, `TASK-0047` et
-`.orchestrator/NEXT_PROMPT.md` sur une nouvelle branche issue du HEAD de
-review, puis faire exécuter **uniquement** la fermeture accessibilité de
-`F-036` / partie accessibilité de `P-21`.
+`TASK-0047` est **READY** sous `DEC-0045`. Objectif unique : fermer la
+lacune accessibilité `F-036` / partie accessibilité de `P-21`, en conservant
+les primitives existantes et en corrigeant seulement les violations mesurées.
 
-Architecture retenue : conserver les primitives ARIA/clavier/focus/reduced
-motion existantes; ajouter au besoin `axe-core@4.13.0` en **devDependency
-épinglée seulement**, injectée localement dans le vrai WebView2; aucun MCP ou
-service Axe distant. Corriger seulement les violations réellement observées.
+Exécuteur recommandé : **Claude Code + Sonnet 5 — High effort**.
 
-`P-19` reste PARTIELLE et hors tranche. Aucune persistance ou préférence
-d'accessibilité nouvelle ne doit être inventée pour TASK-0047.
+Le prompt autoritaire est `.orchestrator/NEXT_PROMPT.md`.
+
+Reuse-first imposé : revalider puis, si conforme, utiliser uniquement
+`axe-core@4.13.0` en devDependency exacte et localement dans le vrai WebView2.
+Aucun MCP/service Axe distant. P-19 reste hors tranche. Aucune TASK-0048.

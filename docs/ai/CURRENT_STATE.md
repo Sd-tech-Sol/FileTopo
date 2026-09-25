@@ -1,5 +1,19 @@
 # État courant
 
+## TASK-0047 — V1 Accessibility Closure — READY — 2026-09-25
+
+- Branche : `build/v0.2-a31-v1-accessibility-closure`.
+- Décision : [DEC-0045](../decisions/DEC-0045-accessibility-closure-boundary.md).
+- Prérequis : TASK-0046 / F-035 VERIFIED (ACTION-0077), audit F-036
+  ACTION-0078.
+- Réutiliser les primitives clavier/ARIA/focus/reduced-motion existantes;
+  mesurer puis corriger, pas réécrire.
+- Outil choisi sous revalidation : `axe-core@4.13.0`, dev-only, local, version
+  exacte; aucun MCP/cloud Axe.
+- Preuve : axe dans vrai WebView2 + parcours clavier + contraste +
+  alternatives non colorées + reduced motion + invariants FileTopo.
+- P-19 hors tranche; aucune TASK-0048.
+
 ## ACTION-0077 / ACTION-0078 — TASK-0046 VERIFIED, audit accessibilité — 2026-09-25
 
 - **TASK-0046 = VERIFIED** et **F-035 = VERIFIED dans sa portée** par

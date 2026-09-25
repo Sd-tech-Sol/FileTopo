@@ -1,5 +1,18 @@
 # HANDOFF — passage de relais
 
+## Relais — TASK-0047 READY — 2026-09-25
+
+- Branche : `build/v0.2-a31-v1-accessibility-closure`.
+- Lire DEC-0045 puis TASK-0047 puis `.orchestrator/NEXT_PROMPT.md`.
+- La cible est F-036/P-21 accessibilité; F-035 est déjà VERIFIED et ne doit pas
+  être rouvert.
+- axe-core 4.13.0 est le choix reuse-first **sous revalidation**, dev-only et
+  local; aucun service/MCP Axe.
+- Le vrai WebView2 est autoritaire pour axe/contraste; JSDOM n'est pas une
+  preuve de contraste.
+- Ne pas créer de préférence d'accessibilité ni toucher P-19.
+- Après l'exécution : contrôle indépendant; aucune TASK-0048.
+
 ## Relais — TASK-0046 VERIFIED / prochaine tranche accessibilité — 2026-09-25
 
 - **TASK-0046 / F-035 sont VERIFIED** par ACTION-0077. Ne pas rouvrir la

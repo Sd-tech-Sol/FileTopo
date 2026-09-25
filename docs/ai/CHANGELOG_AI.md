@@ -6021,3 +6021,16 @@ fusion / étiquette / release.
 - reuse-first : axe-core 4.13.0, dev-only/local, retenu; MCP Axe distant écarté;
 - prochaine tranche choisie : TASK-0047 — V1 Accessibility Closure;
 - P-19 volontairement hors tranche.
+
+
+## 2026-09-25 — DEC-0045 / TASK-0047 READY
+
+**Orchestrateur :** ChatGPT
+
+- DEC-0045 approuvée : fermeture accessibilité mesurée, sans certification
+  générale ni nouvelle préférence;
+- axe-core 4.13.0 retenu sous revalidation, dev-only/local, sans MCP/service;
+- TASK-0047 créée READY sur `build/v0.2-a31-v1-accessibility-closure`;
+- preuve exigée : axe vrai WebView2, clavier, focus, contrastes, non-couleur,
+  reduced motion, invariants;
+- P-19 hors tranche; aucune TASK-0048.
