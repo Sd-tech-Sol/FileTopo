@@ -1,7 +1,7 @@
 # TASK-0043 — V1 Automatic Watcher & Reconciliation
 
 - **Date :** 2026-09-24
-- **Statut :** `IMPLEMENTED` — jamais auto-`VERIFIED`; contrôle indépendant attendu
+- **Statut :** `VERIFIED` par `ACTION-0072`
 - **Branche :** `build/v0.2-a27-v1-watcher-reconciliation`
 - **Décision :** `DEC-0041`
 - **Portée :** `F-030`, consommation automatique W-B/W-C + U-B + F-032
@@ -368,3 +368,8 @@ fonctionnellement, blocage unique : `shutdown` pouvait détacher un worker qui a
 - Preuves : shutdown avec le verrou tenu par un autre thread (W-C, W-B, garde), rien de tardif après
   libération; test natif de fermeture du handle rejoué.
 - La tâche **reste `IMPLEMENTED`**; contrôle indépendant du correctif attendu.
+
+
+## Clôture indépendante — ACTION-0072
+
+`TASK-0043` est **VERIFIED dans sa portée**. Le watcher natif, W-B/W-C, le fallback périodique, le root guard F-032, la convergence après pertes/restart et la fermeture propre du runtime ont été contrôlés indépendamment. `ACTION-0071` est fermée : aucun worker vivant n'est détaché au shutdown.
