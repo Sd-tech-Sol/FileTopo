@@ -5908,3 +5908,17 @@ changement frontend); `graph/` non touché.
 Langue FR/EN, accessibilité, préférence de légende, composition multi-cerveaux persistante (`P-19` reste
 partielle); watcher, parseur, journal, `incremental.rs`, `graph/` non touchés; aucune TASK-0045; aucun PR /
 fusion / étiquette / release.
+
+
+## 2026-09-25 — ACTION-0073 — TASK-0044 VERIFIED
+
+**Orchestrateur :** ChatGPT
+
+- contrôle indépendant du code, des tests et de la preuve WebView2 de TASK-0044;
+- resume state brain-scoped accepté : focus/sélection, caméra, filtre, panneau Détails;
+- stockage fermé/versionné dans `catalog_meta`, aucune nouvelle base ni stockage navigateur;
+- reconstruction de page filtrée acceptée sans persister de curseur;
+- isolation trois cerveaux et deux redémarrages réels acceptés;
+- réserve `Reconstruire` reclassée : aucun rejeu WebView2 dédié, mais le chemin produit identity-aware + compteur `next_node_id` monotone ne recycle pas silencieusement les ids supprimés;
+- `P-19` reste PARTIELLE;
+- `TASK-0044` = **VERIFIED dans sa portée** par `ACTION-0073`.
