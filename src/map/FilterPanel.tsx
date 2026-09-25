@@ -1,6 +1,9 @@
+import type { Locale } from "../lib/locale";
 import {
   AVAILABILITY_LABELS,
   describeFilter,
+  FILTER_GROUP_LABELS,
+  FILTER_PANEL_STRINGS,
   KIND_LABELS,
   KIND_ORDER,
   matchCountLabel,
@@ -31,9 +34,14 @@ import type {
  * filtrée du cœur et les nœuds de la projection bornée, et rend des
  * contrôles. Le compte, les correspondances et la pagination sont ceux de
  * l'Index.
+ *
+ * `TASK-0046` — les mots suivent la langue de l'interface (`locale`), jamais les
+ * valeurs : un changement de langue ne relit rien et ne renvoie aucun filtre.
  */
 
 interface Props {
+  /** La langue de l'interface. Seuls les mots changent. */
+  locale: Locale;
   /** Le filtre courant (le défaut quand aucun n'est actif). */
   filter: NodeFilter;
   active: boolean;
@@ -59,6 +67,7 @@ const STATES: readonly FilterState[] = ["ALL", "NEW", "UNSEEN"];
 const AVAILABILITIES: readonly FilterAvailability[] = ["ALL", "LOCAL", "ONLINE_ONLY"];
 
 export default function FilterPanel({
+  locale,
   filter,
   active,
   disabled = false,
@@ -74,6 +83,8 @@ export default function FilterPanel({
   onNext,
   onSelect,
 }: Props) {
+  const words = FILTER_PANEL_STRINGS[locale];
+  const groups = FILTER_GROUP_LABELS[locale];
   const roles = filterRoles(filtered);
   const listed = filtered ? nodes.filter((node) => roles.has(node.id)) : [];
   const nextCursor = filtered?.filterNextCursor ?? null;
@@ -81,14 +92,14 @@ export default function FilterPanel({
   return (
     <section
       className="filters"
-      aria-label="Filtres de la carte"
+      aria-label={words.panelLabel}
       data-testid="filter-panel"
       data-active={active ? "true" : "false"}
     >
-      <h2 className="filters__title">Filtres</h2>
+      <h2 className="filters__title">{words.title}</h2>
 
       <fieldset className="filters__group" disabled={disabled}>
-        <legend>État</legend>
+        <legend>{groups.state}</legend>
         {STATES.map((state) => (
           <label key={state} className="filters__choice">
             <input
@@ -99,13 +110,13 @@ export default function FilterPanel({
               checked={filter.state === state}
               onChange={() => onChange({ ...filter, state })}
             />
-            {STATE_LABELS[state]}
+            {STATE_LABELS[locale][state]}
           </label>
         ))}
       </fieldset>
 
       <fieldset className="filters__group" disabled={disabled}>
-        <legend>Type</legend>
+        <legend>{groups.kind}</legend>
         {KIND_ORDER.map((kind) => (
           <label key={kind} className="filters__choice">
             <input
@@ -116,13 +127,13 @@ export default function FilterPanel({
               checked={filter.kinds.includes(kind)}
               onChange={() => onChange(toggleKind(filter, kind))}
             />
-            {KIND_LABELS[kind]}
+            {KIND_LABELS[locale][kind]}
           </label>
         ))}
       </fieldset>
 
       <fieldset className="filters__group" disabled={disabled}>
-        <legend>Disponibilité</legend>
+        <legend>{groups.availability}</legend>
         {AVAILABILITIES.map((availability) => (
           <label key={availability} className="filters__choice">
             <input
@@ -133,19 +144,19 @@ export default function FilterPanel({
               checked={filter.availability === availability}
               onChange={() => onChange({ ...filter, availability })}
             />
-            {AVAILABILITY_LABELS[availability]}
+            {AVAILABILITY_LABELS[locale][availability]}
           </label>
         ))}
       </fieldset>
 
       <p>
         <button type="button" data-testid="filter-reset" disabled={!active} onClick={onReset}>
-          Réinitialiser les filtres
+          {words.reset}
         </button>
       </p>
 
       <p className="filters__active" data-testid="filter-active" role="status">
-        {active ? `Filtre actif — ${describeFilter(filter)}` : "Aucun filtre actif."}
+        {active ? words.active(describeFilter(filter, locale)) : words.none}
       </p>
 
       {active ? (
@@ -157,10 +168,11 @@ export default function FilterPanel({
               data-total={filtered.filteredTotal}
               aria-live="polite"
             >
-              {matchCountLabel(filtered.filteredTotal)}
+              {matchCountLabel(filtered.filteredTotal, locale)}
             </p>
             <p className="filters__page" data-testid="filter-page">
-              {resumed ? "Page reprise" : `Page ${pageNumber}`} · {matchCountLabel(filtered.materializedMatchCount)} sur cette page
+              {resumed ? words.pageResumed : words.page(pageNumber)} ·{" "}
+              {matchCountLabel(filtered.materializedMatchCount, locale)} {words.onThisPage}
             </p>
             <ul className="filters__results" data-testid="filter-results">
               {listed.map((node) => {
@@ -180,7 +192,7 @@ export default function FilterPanel({
                         data-testid="filter-role"
                       >
                         <span aria-hidden="true">{ROLE_SYMBOLS[role]} </span>
-                        {ROLE_LABELS[role]}
+                        {ROLE_LABELS[locale][role]}
                       </span>{" "}
                       {node.name || node.relativePath}
                     </button>
@@ -195,7 +207,7 @@ export default function FilterPanel({
                 disabled={!canPrevious}
                 onClick={onPrevious}
               >
-                Page précédente
+                {words.previous}
               </button>
               <button
                 type="button"
@@ -203,13 +215,13 @@ export default function FilterPanel({
                 disabled={nextCursor === null}
                 onClick={onNext}
               >
-                Page suivante
+                {words.next}
               </button>
             </p>
           </>
         ) : (
           <p data-testid="filter-loading" role="status">
-            Lecture du filtre…
+            {words.loading}
           </p>
         )
       ) : null}

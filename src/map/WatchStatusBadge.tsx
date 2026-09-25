@@ -1,3 +1,4 @@
+import type { Locale } from "../lib/locale";
 import type { WatchStatus } from "./types";
 import { WATCH_STRINGS, isWatchVisible, watchSymbol } from "./watchStatus";
 
@@ -26,7 +27,7 @@ export default function WatchStatusBadge({
 }: {
   /** `null` tant que rien n'est connu ; un cerveau non surveillé ne montre rien. */
   status: WatchStatus | null;
-  locale: "fr" | "en";
+  locale: Locale;
 }) {
   if (!isWatchVisible(status)) return null;
   const words = WATCH_STRINGS[locale];

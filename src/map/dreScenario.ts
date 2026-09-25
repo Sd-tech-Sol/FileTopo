@@ -1,3 +1,4 @@
+import { bilingual, type StatusMessage } from "./localeText";
 import { prepareScenarioIndex } from "./lifecycle";
 /** TASK-0024/DR15 — real Tauri/WebView2 deterministic-rule proof. */
 
@@ -24,7 +25,7 @@ export interface DreScenarioDeps {
   host: HostInfo | null;
   showOnly: (brainId: string) => Promise<void>;
   select: (reference: BrainNodeRef) => void;
-  setStatus: (message: string) => void;
+  setStatus: (message: StatusMessage) => void;
   log: ScenarioLog;
   pass: 1 | 2;
 }
@@ -261,9 +262,16 @@ export async function runDreScenario(deps: DreScenarioDeps): Promise<void> {
   try {
     const written = deps.pass === 1 ? await passOne(deps) : await passTwo(deps);
     deps.log("info", `DR15 passe ${deps.pass} écrite: ${written}`);
-    deps.setStatus(`DR15 passe ${deps.pass} écrite dans ${written}`);
+    deps.setStatus(
+      bilingual(
+        `DR15 passe ${deps.pass} écrite dans ${written}`,
+        `DR15 pass ${deps.pass} written to ${written}`,
+      ),
+    );
   } catch (error) {
     deps.log("error", `DR15 passe ${deps.pass} interrompue: ${String(error)}`);
-    deps.setStatus(`DR15 interrompu : ${String(error)}`);
+    deps.setStatus(
+      bilingual(`DR15 interrompu : ${String(error)}`, `DR15 interrupted: ${String(error)}`),
+    );
   }
 }

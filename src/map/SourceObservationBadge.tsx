@@ -19,7 +19,7 @@ import type { SourceObservation, SourceReason, SourceState } from "./types";
  * error, not a blank).
  */
 
-type Locale = "fr" | "en";
+import type { Locale } from "../lib/locale";
 
 export interface SourceObservationStrings {
   title: string;

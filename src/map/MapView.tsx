@@ -1,3 +1,4 @@
+import type { Locale } from "../lib/locale";
 import type { ViewAggregate } from "./types";
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { domNodeId, domTerritoryId } from "./composedView";
@@ -102,6 +103,11 @@ export interface RenderedBrain {
 }
 
 interface MapViewProps {
+  /**
+   * The interface language (`TASK-0046`). Only the words drawn or announced by the map
+   * follow it; no geometry, projection or selection depends on it.
+   */
+  locale: Locale;
   onExpand?: (brainId: string, aggregate: ViewAggregate) => void;
   brains: RenderedBrain[];
   /**
@@ -152,9 +158,18 @@ function arrowHead(x: number, y: number, ux: number, uy: number): string {
  * (`view_budget_or_focus`, `outside_current_projection`): a person reads a
  * count and an invitation to see more, not a projection mechanism.
  */
-export function aggregateLabel(omittedDirectChildren: number): string {
-  const count = `+${omittedDirectChildren} élément${omittedDirectChildren > 1 ? "s" : ""}`;
-  return `${count} — Voir la suite`;
+export function aggregateLabel(omittedDirectChildren: number, locale: Locale): string {
+  if (locale === "fr") {
+    const count = `+${omittedDirectChildren} élément${omittedDirectChildren > 1 ? "s" : ""}`;
+    return `${count} — Voir la suite`;
+  }
+  const count = `+${omittedDirectChildren} item${omittedDirectChildren > 1 ? "s" : ""}`;
+  return `${count} — See more`;
+}
+
+/** The word after a territory's node count, in its header. */
+function nodesWord(count: number, locale: Locale): string {
+  return locale === "fr" ? "nœuds" : count === 1 ? "node" : "nodes";
 }
 
 /** Below this, the compact pill would be too small to tap or to read. */
@@ -184,6 +199,7 @@ function nodeGlyph(node: MapNode): React.ReactElement {
 }
 
 export default function MapView({
+  locale,
   brains,
   crossSegments,
   composition,
@@ -303,7 +319,8 @@ export default function MapView({
             aria-level={node.depth + 1}
             aria-selected={isSelected}
             aria-label={
-              labelFor(node, brain.record) + (filterRole ? `, ${ROLE_LABELS[filterRole]}` : "")
+              labelFor(node, brain.record) +
+              (filterRole ? `, ${ROLE_LABELS[locale][filterRole]}` : "")
             }
             data-filter-role={filterRole}
             className={`map-node map-node--${node.kind} map-node--${state}${
@@ -333,7 +350,7 @@ export default function MapView({
                 y={node.rect.y + node.rect.h - 8}
                 aria-hidden="true"
               >
-                {ROLE_SYMBOLS[filterRole]} {ROLE_LABELS[filterRole]}
+                {ROLE_SYMBOLS[filterRole]} {ROLE_LABELS[locale][filterRole]}
               </text>
             ) : null}
             {node.accessDiagnostic ? (
@@ -350,7 +367,7 @@ export default function MapView({
 
       return { brain, territory, hierarchy, blocks };
     });
-  }, [brains, composition, labelFor, onSelect, selected]);
+  }, [brains, composition, labelFor, locale, onSelect, selected]);
 
   /**
    * Cross-cutting relations, in the screen-space layer.
@@ -556,7 +573,7 @@ export default function MapView({
             x={x}
             y={y + 22}
           >
-            {`${brain.record.icon} ${brain.record.displayName} · ${brain.nodeCount} nœuds`}
+            {`${brain.record.icon} ${brain.record.displayName} · ${brain.nodeCount} ${nodesWord(brain.nodeCount, locale)}`}
           </text>,
         );
       }
@@ -586,7 +603,7 @@ export default function MapView({
       }
     }
     return drawn;
-  }, [focusedBrainId, selected, territories, view, viewport.height, viewport.width]);
+  }, [focusedBrainId, locale, selected, territories, view, viewport.height, viewport.width]);
 
   const handleWheel = useCallback(
     (event: React.WheelEvent<SVGSVGElement>) => {
@@ -893,7 +910,7 @@ export default function MapView({
                   );
                   const pillX = a.rect.x + (a.rect.w - pillWidth) / 2;
                   const pillY = a.rect.y + (a.rect.h - AGGREGATE_PILL_HEIGHT) / 2;
-                  const label = aggregateLabel(a.omittedDirectChildren);
+                  const label = aggregateLabel(a.omittedDirectChildren, locale);
                   return (
                     <g
                       key={`aggregate:${a.parentId}`}

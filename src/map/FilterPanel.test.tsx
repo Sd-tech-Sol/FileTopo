@@ -51,6 +51,7 @@ function panel(props: Partial<React.ComponentProps<typeof FilterPanel>> = {}) {
   };
   const utils = render(
     <FilterPanel
+      locale="fr"
       filter={DEFAULT_FILTER}
       active={false}
       filtered={null}
@@ -205,6 +206,7 @@ describe("TASK-0039 E — les contrôles de filtre", () => {
 
     rerender(
       <FilterPanel
+        locale="fr"
         filter={{ ...DEFAULT_FILTER, state: "NEW" }}
         active
         filtered={filtered({ filterNextCursor: null })}

@@ -1,3 +1,4 @@
+import { withHostLanguages } from "../test/hostLanguage";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import MapApp from "./MapApp";
@@ -215,6 +216,9 @@ const calls = () => invokeMock.mock.calls.map(([command, args]) => ({ command: S
 const called = (command: string, brainId?: string) =>
   calls().filter((call) => call.command === command && (brainId === undefined || call.args.brainId === brainId));
 const updates = (brainId: string) => called("map_brain_resume_update", brainId).map((call) => call.args.state as Stored);
+
+// `TASK-0046` — these suites assert the French wording: they run on a French host.
+withHostLanguages(["fr-CA"]);
 
 beforeEach(() => {
   bus.handlers.clear();
@@ -687,7 +691,12 @@ describe("what is written, and when", () => {
     }
   });
 
-  it("the state is never written through the browser's own storage", async () => {
+  // `TASK-0046` — the wording is scoped, the assertion is not weakened: the **resume state**
+  // (branch, selection, filter, panel, camera) goes to the catalogue and to nothing else. The one
+  // key the browser's storage may hold is the interface language (`filetopo.locale`), and only
+  // after an explicit choice — this test makes none, so the storage stays completely empty; the
+  // language itself is exercised in `localeRuntime.test.tsx`.
+  it("the resume state is never written through the browser's own storage (the language key is the only one that may be, and only on a choice)", async () => {
     const setItem = vi.spyOn(Storage.prototype, "setItem");
     await boot();
     fireEvent.pointerDown(document.querySelector('[data-node-id="6"]')!);

@@ -1,3 +1,4 @@
+import type { Locale } from "../lib/locale";
 import type { ReactNode } from "react";
 import type { BrainNodeRef, MapNode, NodeChildrenPage, NodeDetail } from "./types";
 import ContentObservationsPanel from "./ContentObservationsPanel";
@@ -15,7 +16,7 @@ interface DetailsPanelProps {
   detail: NodeDetail | null;
   loading: boolean;
   onSelect: (nodeId: number) => void;
-  locale: "fr" | "en";
+  locale: Locale;
   strings: PanelStrings;
   contentObservation?: ContentObservation | null;
   contentSummary?: ContentObservationSummary | null;
@@ -86,7 +87,29 @@ export interface PanelStrings {
   kinds: Record<MapNode["kind"], string>;
 }
 
-export function formatBytes(bytes: number, locale: "fr" | "en"): string {
+/**
+ * `TASK-0046` — the wording of the two actions when the caller does not pass its own.
+ * There is no default in one language: whichever the locale is, the label is that one.
+ */
+const ACTION_LABELS: Record<
+  Locale,
+  { reveal: string; revealBusy: string; copy: string; copyBusy: string }
+> = {
+  fr: {
+    reveal: "Ouvrir dans l'Explorateur",
+    revealBusy: "Ouverture…",
+    copy: "Copier le chemin",
+    copyBusy: "Copie…",
+  },
+  en: {
+    reveal: "Open in Explorer",
+    revealBusy: "Opening…",
+    copy: "Copy path",
+    copyBusy: "Copying…",
+  },
+};
+
+export function formatBytes(bytes: number, locale: Locale): string {
   const units = ["B", "kB", "MB", "GB", "TB"];
   if (bytes <= 0) return `0 ${units[0]}`;
   const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
@@ -96,7 +119,7 @@ export function formatBytes(bytes: number, locale: "fr" | "en"): string {
   }).format(value)} ${units[exponent]}`;
 }
 
-export function formatInstant(unixMs: number | null, locale: "fr" | "en"): string {
+export function formatInstant(unixMs: number | null, locale: Locale): string {
   if (unixMs === null) return "—";
   return new Intl.DateTimeFormat(locale === "fr" ? "fr-CA" : "en-CA", {
     dateStyle: "medium",
@@ -119,8 +142,8 @@ export default function DetailsPanel({
   onReveal,
   revealBusy = false,
   revealError = null,
-  revealActionLabel = "Ouvrir dans l'Explorateur",
-  revealBusyLabel = "Ouverture…",
+  revealActionLabel = ACTION_LABELS[locale].reveal,
+  revealBusyLabel = ACTION_LABELS[locale].revealBusy,
   childrenPage = null,
   childrenLoading = false,
   onNextChildrenPage,
@@ -129,8 +152,8 @@ export default function DetailsPanel({
   onCopyPath,
   copyBusy = false,
   copyError = null,
-  copyActionLabel = "Copier le chemin",
-  copyBusyLabel = "Copie…",
+  copyActionLabel = ACTION_LABELS[locale].copy,
+  copyBusyLabel = ACTION_LABELS[locale].copyBusy,
   changeState = null,
 }: DetailsPanelProps) {
   if (loading) {

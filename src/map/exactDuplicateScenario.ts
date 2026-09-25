@@ -1,3 +1,4 @@
+import { bilingual, type StatusMessage } from "./localeText";
 import { prepareScenarioIndex } from "./lifecycle";
 import { settle, waitForCompositionReady } from "./compositionDriver";
 import { afterPaint } from "./measure";
@@ -28,7 +29,7 @@ export interface ExactDuplicateScenarioDeps {
   host: HostInfo | null;
   refreshContent: () => void;
   readSelection: () => BrainNodeRef | null;
-  setStatus: (message: string) => void;
+  setStatus: (message: StatusMessage) => void;
   log: ScenarioLog;
 }
 
@@ -386,9 +387,13 @@ export async function runExactDuplicateScenario(
     await settle();
     const written = pass === 1 ? await passOne(deps) : await passTwo(deps);
     await afterPaint();
-    deps.setStatus(`ED15 passe ${pass} écrite dans ${written}`);
+    deps.setStatus(
+      bilingual(`ED15 passe ${pass} écrite dans ${written}`, `ED15 pass ${pass} written to ${written}`),
+    );
   } catch (error) {
     deps.log("error", `ED15 passe ${pass} interrompue: ${String(error)}`);
-    deps.setStatus(`ED15 interrompu : ${String(error)}`);
+    deps.setStatus(
+      bilingual(`ED15 interrompu : ${String(error)}`, `ED15 interrupted: ${String(error)}`),
+    );
   }
 }

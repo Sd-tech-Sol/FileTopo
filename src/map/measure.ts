@@ -18,6 +18,8 @@
  *   chained animation frames.
  */
 
+import { LocalizedError } from "./localeText";
+
 export interface Stat {
   count: number;
   median: number;
@@ -89,11 +91,14 @@ export function aggregate(
  * will never come, and an unattended run hangs looking exactly like a slow one.
  * A measurement that cannot happen has to say so.
  */
-export class FramesSuspended extends Error {
+export class FramesSuspended extends LocalizedError {
   constructor(waitedMs: number) {
-    super(
-      `aucune image pendant ${waitedMs} ms : la fenêtre n'est pas composée ` +
-        `(masquée, réduite ou entièrement recouverte). Mesure abandonnée.`,
+    super((locale) =>
+      locale === "fr"
+        ? `aucune image pendant ${waitedMs} ms : la fenêtre n'est pas composée ` +
+          `(masquée, réduite ou entièrement recouverte). Mesure abandonnée.`
+        : `no frame for ${waitedMs} ms: the window is not composited ` +
+          `(hidden, minimized or fully covered). Measurement abandoned.`,
     );
     this.name = "FramesSuspended";
   }
@@ -159,9 +164,12 @@ export async function awaitLaidOutViewport(
     const viewport = read();
     if (viewport.width > 2 && viewport.height > 2) return viewport;
     if (performance.now() - started > deadlineMs) {
-      throw new Error(
-        `la carte n'a pas de taille après ${deadlineMs} ms ` +
-          `(${viewport.width}x${viewport.height}) : mesure abandonnée`,
+      throw new LocalizedError((locale) =>
+        locale === "fr"
+          ? `la carte n'a pas de taille après ${deadlineMs} ms ` +
+            `(${viewport.width}x${viewport.height}) : mesure abandonnée`
+          : `the map has no size after ${deadlineMs} ms ` +
+            `(${viewport.width}x${viewport.height}): measurement abandoned`,
       );
     }
     await nextFrame();

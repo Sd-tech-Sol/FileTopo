@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useRef, useState } from "react";
+import type { Locale } from "../lib/locale";
 import type { BrainNodeRef, MarkNodeSeenResult, NodeChangeState as NodeChangeStateDto } from "./types";
 
 /**
@@ -21,6 +22,11 @@ import type { BrainNodeRef, MarkNodeSeenResult, NodeChangeState as NodeChangeSta
  */
 
 interface Props {
+  /**
+   * The interface language (`TASK-0046`). Not a dependency of the effect that reads
+   * the state: a switch changes the words, never the read.
+   */
+  locale: Locale;
   /** The current selection; `null` renders nothing. */
   reference: BrainNodeRef | null;
   /** The brain's current Index revision: a change of it re-reads the state. */
@@ -34,11 +40,32 @@ interface Props {
   onSeenChange?: () => void;
 }
 
-const STATE_LABELS = {
-  new: "Nouveau",
-  unseen: "Non vu",
-  seen: "Vu",
-} as const;
+const STATE_LABELS: Record<Locale, Record<"new" | "unseen" | "seen", string>> = {
+  fr: { new: "Nouveau", unseen: "Non vu", seen: "Vu" },
+  en: { new: "New", unseen: "Unseen", seen: "Seen" },
+};
+
+const NODE_CHANGE_STRINGS = {
+  fr: {
+    unseenCount: (count: number) => ` · ${count} changement(s) non vu(s)`,
+    marking: "Marquage…",
+    markSeen: "Marquer cet élément vu",
+    unavailable: "État de changement indisponible :",
+    otherNode: "état d'un autre élément refusé",
+    otherAnswer: "réponse d'un autre élément refusée",
+  },
+  en: {
+    unseenCount: (count: number) => ` · ${count} unseen change(s)`,
+    marking: "Marking…",
+    markSeen: "Mark this item as seen",
+    unavailable: "Change state unavailable:",
+    otherNode: "state of another item refused",
+    otherAnswer: "answer from another item refused",
+  },
+} satisfies Record<Locale, unknown>;
+
+/** What went wrong, kept as a fact so it is said in the language of the moment. */
+type StateError = { kind: "mismatch"; on: "state" | "answer" } | { kind: "backend"; detail: string };
 
 const STATE_SYMBOLS = { new: "★", unseen: "●", seen: "✓" } as const;
 
@@ -48,13 +75,15 @@ export function nodeStateKind(state: Pick<NodeChangeStateDto, "isNew" | "isUnsee
 }
 
 export default function NodeChangeState({
+  locale,
   reference,
   revision,
   seenRevision = 0,
   onSeenChange,
 }: Props) {
+  const words = NODE_CHANGE_STRINGS[locale];
   const [state, setState] = useState<NodeChangeStateDto | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<StateError | null>(null);
   const [busy, setBusy] = useState(false);
   const [reload, setReload] = useState(0);
   const ticket = useRef(0);
@@ -78,7 +107,7 @@ export default function NodeChangeState({
         if (mine !== ticket.current) return;
         if (next.brainId !== brainId || next.nodeId !== nodeId) {
           setState(null);
-          setError("état d'un autre élément refusé");
+          setError({ kind: "mismatch", on: "state" });
           return;
         }
         setError(null);
@@ -87,7 +116,7 @@ export default function NodeChangeState({
       .catch((reason) => {
         if (mine !== ticket.current) return;
         setState(null);
-        setError(String(reason));
+        setError({ kind: "backend", detail: String(reason) });
       });
   }, [brainId, nodeId, revision, seenRevision, reload]);
 
@@ -103,7 +132,7 @@ export default function NodeChangeState({
         reference: { brainId, nodeId },
       });
       if (result.brainId !== brainId || result.nodeId !== nodeId) {
-        if (mine === ticket.current) setError("réponse d'un autre élément refusée");
+        if (mine === ticket.current) setError({ kind: "mismatch", on: "answer" });
         return;
       }
       // The backend did acknowledge *this* element, even if the selection has
@@ -112,7 +141,7 @@ export default function NodeChangeState({
       setReload((current) => current + 1);
       onSeenChange?.();
     } catch (reason) {
-      if (mine === ticket.current) setError(String(reason));
+      if (mine === ticket.current) setError({ kind: "backend", detail: String(reason) });
     } finally {
       setBusy(false);
     }
@@ -129,10 +158,8 @@ export default function NodeChangeState({
           data-state={kind}
           data-unseen-count={state.unseenChangeCount}
         >
-          <span aria-hidden="true">{STATE_SYMBOLS[kind]}</span> {STATE_LABELS[kind]}
-          {state.isUnseen
-            ? ` · ${state.unseenChangeCount} changement(s) non vu(s)`
-            : ""}
+          <span aria-hidden="true">{STATE_SYMBOLS[kind]}</span> {STATE_LABELS[locale][kind]}
+          {state.isUnseen ? words.unseenCount(state.unseenChangeCount) : ""}
         </p>
       ) : null}
       {state?.isUnseen ? (
@@ -142,12 +169,17 @@ export default function NodeChangeState({
           disabled={busy}
           onClick={() => void markSeen()}
         >
-          {busy ? "Marquage…" : "Marquer cet élément vu"}
+          {busy ? words.marking : words.markSeen}
         </button>
       ) : null}
       {error ? (
         <p role="alert" data-testid="node-state-error">
-          État de changement indisponible : {error}
+          {words.unavailable}{" "}
+          {error.kind === "backend"
+            ? error.detail
+            : error.on === "state"
+              ? words.otherNode
+              : words.otherAnswer}
         </p>
       ) : null}
     </div>

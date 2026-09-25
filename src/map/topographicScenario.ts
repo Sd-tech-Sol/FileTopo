@@ -1,3 +1,4 @@
+import { bilingual, type StatusMessage } from "./localeText";
 import { prepareScenarioIndex } from "./lifecycle";
 /** `N15` — TASK-0022's topographic node graph in the real Tauri host. */
 
@@ -36,7 +37,7 @@ export interface TopographicScenarioDeps {
   select: (reference: BrainNodeRef) => void;
   readComposition: () => ComposedView | null;
   readView: () => View;
-  setStatus: (message: string) => void;
+  setStatus: (message: StatusMessage) => void;
   log: ScenarioLog;
 }
 
@@ -705,12 +706,22 @@ export async function runTopographicScenario(
       contents: JSON.stringify(evidence, null, 2),
     });
     log("info", `N15: passe ${pass} ecrite: ${written}`);
-    setStatus(`Scénario N15 passe ${pass} écrit dans ${written}`);
+    setStatus(
+      bilingual(
+        `Scénario N15 passe ${pass} écrit dans ${written}`,
+        `Scenario N15 pass ${pass} written to ${written}`,
+      ),
+    );
   } catch (error) {
     evidence.failedAt = new Date().toISOString();
     evidence.error = String(error);
     log("error", `N15: passe ${pass} interrompue: ${String(error)}`);
-    setStatus(`Scénario N15 interrompu : ${String(error)}`);
+    setStatus(
+      bilingual(
+        `Scénario N15 interrompu : ${String(error)}`,
+        `Scenario N15 interrupted: ${String(error)}`,
+      ),
+    );
     try {
       await invoke<string>("map_write_run_artifact", {
         name: n15Artifact(pass, "abandoned"),

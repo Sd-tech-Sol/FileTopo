@@ -1,3 +1,4 @@
+import { withHostLanguages } from "../test/hostLanguage";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import MapApp from "./MapApp";
@@ -127,6 +128,9 @@ const called = (command: string, brainId?: string) =>
       call.command === command &&
       (brainId === undefined || (call.args as { brainId?: string } | undefined)?.brainId === brainId),
   );
+
+// `TASK-0046` — these suites assert the French wording: they run on a French host.
+withHostLanguages(["fr-CA"]);
 
 beforeEach(() => {
   bus.handlers.clear();

@@ -1,3 +1,4 @@
+import { bilingual, type StatusMessage } from "./localeText";
 import { prepareScenarioIndex } from "./lifecycle";
 /** `EC15` — exact content observations in the real Tauri/WebView2 host. */
 
@@ -37,7 +38,7 @@ export interface ContentScenarioDeps {
   showOnly: (brainId: string) => Promise<void>;
   select: (reference: BrainNodeRef) => void;
   readComposition: () => ComposedView | null;
-  setStatus: (message: string) => void;
+  setStatus: (message: StatusMessage) => void;
   log: ScenarioLog;
 }
 
@@ -458,9 +459,13 @@ export async function runContentScenario(
       contents: JSON.stringify(evidence, null, 2),
     });
     deps.log("info", `EC15: passe ${pass} écrite: ${written}`);
-    deps.setStatus(`EC15 passe ${pass} écrit dans ${written}`);
+    deps.setStatus(
+      bilingual(`EC15 passe ${pass} écrit dans ${written}`, `EC15 pass ${pass} written to ${written}`),
+    );
   } catch (error) {
     deps.log("error", `EC15: passe ${pass} interrompue: ${String(error)}`);
-    deps.setStatus(`EC15 interrompu : ${String(error)}`);
+    deps.setStatus(
+      bilingual(`EC15 interrompu : ${String(error)}`, `EC15 interrupted: ${String(error)}`),
+    );
   }
 }

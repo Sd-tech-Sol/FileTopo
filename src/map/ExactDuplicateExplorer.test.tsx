@@ -105,7 +105,7 @@ describe("TASK-0026 exact duplicate explorer", () => {
       groupedOccurrenceCount: 0,
       emptyGroupCount: 0,
     });
-    render(<ExactDuplicateExplorer brainId="brain-alpha" revision={0} onSelect={vi.fn()} />);
+    render(<ExactDuplicateExplorer locale="fr" brainId="brain-alpha" revision={0} onSelect={vi.fn()} />);
     expect(await screen.findByText("Observer le contenu d’abord")).toBeVisible();
     expect(screen.queryByText(/0 doublon/i)).not.toBeInTheDocument();
     expect(screen.getByTestId("duplicate-boundary")).toHaveTextContent(
@@ -121,7 +121,7 @@ describe("TASK-0026 exact duplicate explorer", () => {
       if (command === "map_exact_duplicate_members") return Promise.resolve(memberPage(args?.offset ?? 0));
       return Promise.reject(new Error(`unexpected command ${command}`));
     });
-    render(<ExactDuplicateExplorer brainId="brain-alpha" revision={0} onSelect={selected} />);
+    render(<ExactDuplicateExplorer locale="fr" brainId="brain-alpha" revision={0} onSelect={selected} />);
     fireEvent.click(await screen.findByTestId("open-duplicate-explorer"));
     expect(await screen.findByTestId("duplicate-group-page")).toHaveTextContent("1–50 sur 51");
     fireEvent.click(screen.getByTestId("duplicate-group"));
@@ -146,11 +146,11 @@ describe("TASK-0026 exact duplicate explorer", () => {
   it("reloads the focused brain summary when a content campaign changes revision", async () => {
     invokeMock.mockResolvedValue(summary);
     const rendered = render(
-      <ExactDuplicateExplorer brainId="brain-alpha" revision={0} onSelect={vi.fn()} />,
+      <ExactDuplicateExplorer locale="fr" brainId="brain-alpha" revision={0} onSelect={vi.fn()} />,
     );
     await screen.findByTestId("open-duplicate-explorer");
     rendered.rerender(
-      <ExactDuplicateExplorer brainId="brain-alpha" revision={1} onSelect={vi.fn()} />,
+      <ExactDuplicateExplorer locale="fr" brainId="brain-alpha" revision={1} onSelect={vi.fn()} />,
     );
     await waitFor(() => {
       expect(

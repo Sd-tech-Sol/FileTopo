@@ -109,7 +109,7 @@ function Harness({ budget, corpus }: { budget: number; corpus: number }) {
   const [view, setView] = useState<View>(() => fitView(composition.world, viewport));
   const [selected, setSelected] = useState<BrainNodeRef | null>({ brainId: BRAIN, nodeId: 1 });
   return (
-    <MapView
+    <MapView locale="fr"
       brains={[
         {
           brainId: BRAIN,

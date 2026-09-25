@@ -162,7 +162,7 @@ export async function subscribeToWatchStatus(
   }
 }
 
-type Locale = "fr" | "en";
+import type { Locale } from "../lib/locale";
 
 export interface WatchStrings {
   title: string;

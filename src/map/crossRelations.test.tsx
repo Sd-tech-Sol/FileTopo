@@ -195,7 +195,7 @@ describe("M6 — inter-brain segments really join two brains", () => {
     // projection that took the wrong map would still produce a segment — with
     // the wrong coordinates. The rectangles differ, so the coordinates say
     // which map was actually read.
-    const [segment] = crossSegments(overview, twoBrains(), null);
+    const [segment] = crossSegments(overview, twoBrains(), null, "fr");
     expect(segment.fromBrainId).toBe(ALPHA);
     expect(segment.toBrainId).toBe(GAMMA);
     expect(segment.fromBrainId).not.toBe(segment.toBrainId);
@@ -209,7 +209,7 @@ describe("M6 — inter-brain segments really join two brains", () => {
     // `M9` keeps such a relation visible IN THE PANEL. It does not ask for a
     // line towards a territory that is not on screen.
     const alphaOnly = new Map([[ALPHA, hierarchy.byId]]);
-    expect(crossSegments(overview, alphaOnly, null)).toHaveLength(0);
+    expect(crossSegments(overview, alphaOnly, null, "fr")).toHaveLength(0);
   });
 
   it("produces nothing for an endpoint the index does not resolve", () => {
@@ -218,11 +218,11 @@ describe("M6 — inter-brain segments really join two brains", () => {
       established: [crossEdge(ALPHA, 2, GAMMA, null, "DETERMINISTIC", false)],
       pendingSuggestions: [],
     };
-    expect(crossSegments(unresolved, twoBrains(), null)).toHaveLength(0);
+    expect(crossSegments(unresolved, twoBrains(), null, "fr")).toHaveLength(0);
   });
 
   it("keeps a suggestion as its own kind, never as an established edge", () => {
-    const segments = crossSegments(overview, twoBrains(), null);
+    const segments = crossSegments(overview, twoBrains(), null, "fr");
     expect(segments.map((segment) => segment.kind).sort()).toEqual([
       "established",
       "suggestion",
@@ -234,12 +234,12 @@ describe("M6 — inter-brain segments really join two brains", () => {
   });
 
   it("marks the segments that touch the selection, and only those", () => {
-    const touching = crossSegments(overview, twoBrains(), { brainId: ALPHA, nodeId: 2 });
+    const touching = crossSegments(overview, twoBrains(), { brainId: ALPHA, nodeId: 2 }, "fr");
     expect(touching.find((segment) => segment.kind === "established")!.touchesSelection).toBe(
       true,
     );
     // The same row number in the OTHER brain must not count as the selection.
-    const elsewhere = crossSegments(overview, twoBrains(), { brainId: GAMMA, nodeId: 2 });
+    const elsewhere = crossSegments(overview, twoBrains(), { brainId: GAMMA, nodeId: 2 }, "fr");
     expect(elsewhere.find((segment) => segment.kind === "established")!.touchesSelection).toBe(
       false,
     );
@@ -279,10 +279,10 @@ function MapHarness({ displayGamma = true }: { displayGamma?: boolean }) {
   );
   const [view, setView] = useState<View>(() => fitView(composition.world, viewport));
   const byBrain = new Map(displayed.map((brainId) => [brainId, hierarchy.byId] as const));
-  const segments = crossSegments(overview, byBrain, { brainId: ALPHA, nodeId: 2 });
+  const segments = crossSegments(overview, byBrain, { brainId: ALPHA, nodeId: 2 }, "fr");
   const neighbours = crossNeighbours(overview, { brainId: ALPHA, nodeId: 2 });
   return (
-    <MapView
+    <MapView locale="fr"
       brains={displayed.map((brainId) => ({
         brainId,
         record: brainId === ALPHA ? alphaRecord : gammaRecord,
@@ -422,7 +422,7 @@ function renderPanel(displayedBrainIds: string[], overrides: Partial<NodeCrossRe
   const onNavigate = vi.fn();
   const onApprove = vi.fn();
   render(
-    <CrossRelationsPanel
+    <CrossRelationsPanel locale="fr"
       relations={{ ...nodeCross, ...overrides }}
       loading={false}
       displayedBrainIds={displayedBrainIds}

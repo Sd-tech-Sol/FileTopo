@@ -9,7 +9,6 @@ import {
   relationKey,
   relationSegments,
   relationTypeLabel,
-  RELATION_TYPE_LABELS_EN,
 } from "./relations";
 import { composeTerritories } from "./territories";
 import type {
@@ -171,7 +170,7 @@ describe("J6 — le panneau des relations", () => {
     const onSelect = vi.fn();
     const onApprove = vi.fn();
     render(
-      <RelationsPanel
+      <RelationsPanel locale="fr"
         relations={nodeRelations}
         loading={false}
         available
@@ -310,7 +309,7 @@ describe("J7 — activer une relation sélectionne son autre extrémité", () =>
   it("sélectionne exactement l'autre extrémité, sortante comme entrante", () => {
     const onSelect = vi.fn();
     render(
-      <RelationsPanel
+      <RelationsPanel locale="fr"
         relations={nodeRelations}
         loading={false}
         available
@@ -334,7 +333,7 @@ describe("J7 — activer une relation sélectionne son autre extrémité", () =>
   it("porte sur l'entrée elle-même l'extrémité qu'elle vise", () => {
     const onSelect = vi.fn();
     render(
-      <RelationsPanel
+      <RelationsPanel locale="fr"
         relations={nodeRelations}
         loading={false}
         available
@@ -388,7 +387,7 @@ describe("J7 — activer une relation sélectionne son autre extrémité", () =>
     };
     const onSelect = vi.fn();
     render(
-      <RelationsPanel
+      <RelationsPanel locale="fr"
         relations={orphan}
         loading={false}
         available
@@ -414,9 +413,9 @@ function MapHarness({ selectedId }: { selectedId: number }) {
   ]);
   const [view, setView] = useState<View>(() => fitView(composition.world, viewport));
   const neighbours = establishedNeighbours(overview, selectedId);
-  const segments = relationSegments(overview, hierarchy.byId, selectedId);
+  const segments = relationSegments(overview, hierarchy.byId, selectedId, "fr");
   return (
-    <MapView
+    <MapView locale="fr"
       brains={[
         {
           brainId: BRAIN,
@@ -544,11 +543,11 @@ describe("projection des relations", () => {
       ],
       pendingSuggestions: [],
     };
-    expect(relationSegments(orphaned, hierarchy.byId, 2)).toHaveLength(0);
+    expect(relationSegments(orphaned, hierarchy.byId, 2, "fr")).toHaveLength(0);
   });
 
   it("relie les bords des rectangles déjà persistés, sans recalcul de calepinage", () => {
-    const segments = relationSegments(overview, hierarchy.byId, null);
+    const segments = relationSegments(overview, hierarchy.byId, null, "fr");
     const first = segments.find((segment) => segment.fromNodeId === 2 && segment.toNodeId === 3);
     expect(first).toBeDefined();
     // Right edge of `note-1.txt` and left edge of `note-2.txt`.
@@ -556,7 +555,7 @@ describe("projection des relations", () => {
   });
 
   it("marque les segments qui touchent la sélection", () => {
-    const segments = relationSegments(overview, hierarchy.byId, 5);
+    const segments = relationSegments(overview, hierarchy.byId, 5, "fr");
     const touching = segments.filter((segment) => segment.touchesSelection);
     // The APPROVED relation `racine-2.txt` → `note-1.txt` and the suggestion
     // `note-1.txt` ⇢ `racine-2.txt` both touch node 5.
@@ -588,14 +587,14 @@ describe("TASK-0024 — deterministic relation engine UI", () => {
   };
 
   it("publie les libellés bilingues exacts de content-identical", () => {
-    expect(relationTypeLabel("content-identical")).toBe("contenu identique");
-    expect(RELATION_TYPE_LABELS_EN["content-identical"]).toBe("identical content");
+    expect(relationTypeLabel("content-identical", "fr")).toBe("contenu identique");
+    expect(relationTypeLabel("content-identical", "en")).toBe("identical content");
   });
 
   it("affiche fraîcheur, action clavier, règle et signaux sans score", () => {
     const onAnalyze = vi.fn();
     render(
-      <RelationsPanel
+      <RelationsPanel locale="fr"
         relations={{ ...nodeRelations, suggestions: [coreSuggestion] }}
         loading={false}
         available

@@ -16,7 +16,7 @@ import app from "./MapApp.tsx?raw";
 describe("TASK-0035 A — details-panel preference", () => {
   it("loads the preference once at boot, alongside fixtures/host/catalog", () => {
     const bootstrapBlock = app.slice(
-      app.indexOf('document.documentElement.lang = "fr";'),
+      app.indexOf('hostLog("info", "interface montée, lecture des fixtures et de l\'hôte");'),
       app.indexOf("// Unattended runs:"),
     );
     expect(bootstrapBlock).toContain('invoke<UiPreferences>("map_ui_preferences")');
@@ -103,6 +103,7 @@ describe("TASK-0035 C — Copier le chemin", () => {
   it("clears a stale copy error the instant the selection changes, same as reveal's own guard", () => {
     const afterCopy = app.slice(app.indexOf("const copyNodePath = useCallback("));
     const clearBlock = afterCopy.slice(0, afterCopy.indexOf("const fetchChildrenPage ="));
-    expect(clearBlock).toContain("setCopyError(null);\n  }, [selected]);");
+    // `TASK-0046` — the state holds the wire CODE; the words are picked at render.
+    expect(clearBlock).toContain("setCopyErrorCode(null);\n  }, [selected]);");
   });
 });

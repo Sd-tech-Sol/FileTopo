@@ -81,7 +81,7 @@ interface HarnessProps {
 function Harness({ initial, onConfirm, onReject }: HarnessProps) {
   const [cursor, setCursor] = useState(0);
   return (
-    <ReviewQueuePanel
+    <ReviewQueuePanel locale="fr"
       queue={initial}
       loading={false}
       cursor={cursor}
@@ -98,7 +98,7 @@ function Harness({ initial, onConfirm, onReject }: HarnessProps) {
 describe("SR4 — the entry and the count come from the backend", () => {
   it("names the pending total the backend published, and only the pending one", () => {
     render(
-      <ReviewQueuePanel
+      <ReviewQueuePanel locale="fr"
         queue={queue([item("dre1:aaa"), item("dre1:bbb")], { totalPending: 5, hasMore: true })}
         loading={false}
         cursor={0}
@@ -146,8 +146,9 @@ describe("SR5 — every item is explainable where it is decided", () => {
     );
     expect(screen.getByTestId("review-rule").textContent).toContain("v1");
     expect(screen.getByTestId("review-key").textContent).toBe("dre1:aaa");
+    // `TASK-0046` — one explanation, in the interface language (French here).
     expect(screen.getByTestId("review-why").textContent).toContain("numéro final consécutif");
-    expect(screen.getByTestId("review-why-en").textContent).toContain("consecutive trailing");
+    expect(screen.queryByTestId("review-why-en")).toBeNull();
     const signals = screen.getByTestId("review-signals");
     expect(signals.textContent).toContain("same-parent");
     expect(signals.textContent).toContain("same-extension");
@@ -265,7 +266,7 @@ describe("SR6, SR7, SR8 — three actions, three different meanings", () => {
 
   it("a decision in flight disables the two mutating controls and not the third", () => {
     render(
-      <ReviewQueuePanel
+      <ReviewQueuePanel locale="fr"
         queue={queue([item("dre1:aaa")])}
         loading={false}
         cursor={0}

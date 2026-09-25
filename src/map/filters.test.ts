@@ -54,20 +54,20 @@ describe("TASK-0039 — le modèle de filtre (aucun calcul de correspondance)", 
   });
 
   it("décrit le filtre actif en mots, groupe par groupe, sans nommer les groupes libres", () => {
-    expect(describeFilter(DEFAULT_FILTER)).toBe("");
-    expect(describeFilter({ state: "NEW", kinds: [], availability: "ALL" })).toBe("État : Nouveaux");
+    expect(describeFilter(DEFAULT_FILTER, "fr")).toBe("");
+    expect(describeFilter({ state: "NEW", kinds: [], availability: "ALL" }, "fr")).toBe("État : Nouveaux");
     expect(
-      describeFilter({ state: "UNSEEN", kinds: ["FILE", "DIRECTORY"], availability: "LOCAL" }),
+      describeFilter({ state: "UNSEEN", kinds: ["FILE", "DIRECTORY"], availability: "LOCAL" }, "fr"),
     ).toBe("État : Non vus · Type : dossiers, fichiers · Disponibilité : local");
-    expect(describeFilter({ state: "ALL", kinds: ["SKIPPED"], availability: "ONLINE_ONLY" })).toBe(
+    expect(describeFilter({ state: "ALL", kinds: ["SKIPPED"], availability: "ONLINE_ONLY" }, "fr")).toBe(
       "Type : ignorés · Disponibilité : en ligne seulement",
     );
   });
 
   it("écrit le compte exact en toutes lettres", () => {
-    expect(matchCountLabel(0)).toBe("0 correspondance");
-    expect(matchCountLabel(1)).toBe("1 correspondance");
-    expect(matchCountLabel(12345)).toBe("12345 correspondances");
+    expect(matchCountLabel(0, "fr")).toBe("0 correspondance");
+    expect(matchCountLabel(1, "fr")).toBe("1 correspondance");
+    expect(matchCountLabel(12345, "fr")).toBe("12345 correspondances");
   });
 
   it("le rôle d'un nœud vient de la page du cœur : correspondance, sinon contexte", () => {

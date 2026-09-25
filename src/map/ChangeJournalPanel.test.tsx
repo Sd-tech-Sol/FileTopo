@@ -64,7 +64,7 @@ afterEach(cleanup);
 describe("TASK-0037 F — the Changements panel", () => {
   it("reads nothing until it is opened, then asks the named brain for a bounded first page", async () => {
     invokeMock.mockResolvedValue(page([event(1, "CREATED")]));
-    render(<ChangeJournalPanel brainId={BRAIN} revision={3} onSelect={vi.fn()} />);
+    render(<ChangeJournalPanel locale="fr" brainId={BRAIN} revision={3} onSelect={vi.fn()} />);
     expect(invokeMock).not.toHaveBeenCalled();
 
     await openPanel();
@@ -78,7 +78,7 @@ describe("TASK-0037 F — the Changements panel", () => {
   });
 
   it("states the two honesty limits: detection date, and no real chronology", () => {
-    render(<ChangeJournalPanel brainId={BRAIN} revision={3} onSelect={vi.fn()} />);
+    render(<ChangeJournalPanel locale="fr" brainId={BRAIN} revision={3} onSelect={vi.fn()} />);
     const boundary = screen.getByTestId("journal-boundary").textContent ?? "";
     expect(boundary).toMatch(/détection par FileTopo/);
     expect(boundary).toMatch(/pas celle de la modification sur le disque/);
@@ -87,7 +87,7 @@ describe("TASK-0037 F — the Changements panel", () => {
 
   it("offers five visible, combinable and revocable nature filters and sends them to the backend", async () => {
     invokeMock.mockResolvedValue(page([event(1, "CREATED")]));
-    render(<ChangeJournalPanel brainId={BRAIN} revision={3} onSelect={vi.fn()} />);
+    render(<ChangeJournalPanel locale="fr" brainId={BRAIN} revision={3} onSelect={vi.fn()} />);
     await openPanel();
 
     for (const nature of ["CREATED", "MODIFIED", "RENAMED", "MOVED", "DELETED"]) {
@@ -135,7 +135,7 @@ describe("TASK-0037 F — the Changements panel", () => {
             : page([event(1, "CREATED")], { total: 3 }),
       ),
     );
-    render(<ChangeJournalPanel brainId={BRAIN} revision={3} onSelect={vi.fn()} />);
+    render(<ChangeJournalPanel locale="fr" brainId={BRAIN} revision={3} onSelect={vi.fn()} />);
     await openPanel();
 
     const prev = screen.getByTestId("journal-prev") as HTMLButtonElement;
@@ -180,7 +180,7 @@ describe("TASK-0037 F — the Changements panel", () => {
         }),
       ]),
     );
-    render(<ChangeJournalPanel brainId={BRAIN} revision={3} onSelect={onSelect} />);
+    render(<ChangeJournalPanel locale="fr" brainId={BRAIN} revision={3} onSelect={onSelect} />);
     await openPanel();
 
     const events = screen.getAllByTestId("journal-event");
@@ -210,7 +210,7 @@ describe("TASK-0037 F — the Changements panel", () => {
         event(1, "CREATED", { detectedRevision: 4 }),
       ]),
     );
-    render(<ChangeJournalPanel brainId={BRAIN} revision={5} onSelect={vi.fn()} />);
+    render(<ChangeJournalPanel locale="fr" brainId={BRAIN} revision={5} onSelect={vi.fn()} />);
     await openPanel();
     const groups = screen.getAllByTestId("journal-group");
     expect(groups.map((g) => g.getAttribute("data-revision"))).toEqual(["5", "4"]);
@@ -222,7 +222,7 @@ describe("TASK-0037 F — the Changements panel", () => {
 
   it("says why an empty journal is empty, and distinguishes a filter with no match", async () => {
     invokeMock.mockResolvedValue(page([]));
-    render(<ChangeJournalPanel brainId={BRAIN} revision={1} onSelect={vi.fn()} />);
+    render(<ChangeJournalPanel locale="fr" brainId={BRAIN} revision={1} onSelect={vi.fn()} />);
     await openPanel();
     expect(screen.getByTestId("journal-empty").textContent).toMatch(/établit la référence/);
 
@@ -234,7 +234,7 @@ describe("TASK-0037 F — the Changements panel", () => {
 
   it("reloads from the newest page when the index revision moves, keeping the filters", async () => {
     invokeMock.mockResolvedValue(page([event(1, "CREATED")], { nextCursor: "fjc1.index-a.1", total: 2 }));
-    const { rerender } = render(<ChangeJournalPanel brainId={BRAIN} revision={3} onSelect={vi.fn()} />);
+    const { rerender } = render(<ChangeJournalPanel locale="fr" brainId={BRAIN} revision={3} onSelect={vi.fn()} />);
     await openPanel();
     fireEvent.click(screen.getByTestId("journal-filter-CREATED"));
     await waitFor(() => expect(invokeMock).toHaveBeenLastCalledWith("map_change_journal", expect.objectContaining({ natures: ["CREATED"] })));
@@ -247,7 +247,7 @@ describe("TASK-0037 F — the Changements panel", () => {
     );
 
     invokeMock.mockClear();
-    rerender(<ChangeJournalPanel brainId={BRAIN} revision={4} onSelect={vi.fn()} />);
+    rerender(<ChangeJournalPanel locale="fr" brainId={BRAIN} revision={4} onSelect={vi.fn()} />);
     await waitFor(() =>
       expect(invokeMock).toHaveBeenLastCalledWith("map_change_journal", {
         brainId: BRAIN,
@@ -260,14 +260,14 @@ describe("TASK-0037 F — the Changements panel", () => {
 
   it("carries nothing over to another brain and refuses a page that names a different one", async () => {
     invokeMock.mockResolvedValue(page([event(1, "CREATED")]));
-    const { rerender } = render(<ChangeJournalPanel brainId={BRAIN} revision={3} onSelect={vi.fn()} />);
+    const { rerender } = render(<ChangeJournalPanel locale="fr" brainId={BRAIN} revision={3} onSelect={vi.fn()} />);
     await openPanel();
     fireEvent.click(screen.getByTestId("journal-filter-CREATED"));
     await waitFor(() => expect(invokeMock).toHaveBeenLastCalledWith("map_change_journal", expect.objectContaining({ natures: ["CREATED"] })));
 
     invokeMock.mockClear();
     invokeMock.mockResolvedValue(page([event(1, "CREATED")], { brainId: "brain-intrus" }));
-    rerender(<ChangeJournalPanel brainId="brain-beta" revision={1} onSelect={vi.fn()} />);
+    rerender(<ChangeJournalPanel locale="fr" brainId="brain-beta" revision={1} onSelect={vi.fn()} />);
     await waitFor(() => expect(screen.queryByTestId("journal-error")).not.toBeNull());
     expect(invokeMock).toHaveBeenLastCalledWith("map_change_journal", {
       brainId: "brain-beta",
@@ -281,7 +281,7 @@ describe("TASK-0037 F — the Changements panel", () => {
 
   it("shows a backend refusal without pretending the journal is empty", async () => {
     invokeMock.mockRejectedValue("journal_cursor_foreign: the cursor belongs to another index");
-    render(<ChangeJournalPanel brainId={BRAIN} revision={3} onSelect={vi.fn()} />);
+    render(<ChangeJournalPanel locale="fr" brainId={BRAIN} revision={3} onSelect={vi.fn()} />);
     fireEvent.click(screen.getByTestId("journal-toggle"));
     await waitFor(() => expect(screen.getByTestId("journal-error").textContent).toMatch(/journal_cursor_foreign/));
     expect(screen.queryByTestId("journal-empty")).toBeNull();
@@ -292,7 +292,7 @@ describe("TASK-0041 — how the last scan reached the Index", () => {
   it("names each of the four closed modes in a distinct, fixed sentence", () => {
     const words = (
       ["BASELINE_FULL", "INCREMENTAL", "IDENTITY_RESTAMP_FULL", "EXPLICIT_REBUILD_FULL"] as const
-    ).map(describeApplicationMode);
+    ).map((mode) => describeApplicationMode(mode, "fr"));
     expect(words).toEqual([
       "Première indexation",
       "Mise à jour incrémentale",
@@ -313,10 +313,13 @@ describe("TASK-0041 — how the last scan reached the Index", () => {
 describe("TASK-0037 — report counters and wiring", () => {
   it("describes an established baseline, a quiet refresh and exact counters", () => {
     const base = { created: 0, modified: 0, renamed: 0, moved: 0, deleted: 0, total: 0 };
-    expect(describeChangeSummary({ ...base, baselineEstablished: true })).toMatch(/Référence établie/);
-    expect(describeChangeSummary({ ...base, baselineEstablished: false })).toBe("Aucun changement détecté.");
+    expect(describeChangeSummary({ ...base, baselineEstablished: true }, "fr")).toMatch(/Référence établie/);
+    expect(describeChangeSummary({ ...base, baselineEstablished: false }, "fr")).toBe("Aucun changement détecté.");
     expect(
-      describeChangeSummary({ ...base, baselineEstablished: false, created: 1, renamed: 2, total: 3 }),
+      describeChangeSummary(
+        { ...base, baselineEstablished: false, created: 1, renamed: 2, total: 3 },
+        "fr",
+      ),
     ).toBe(
       "3 changement(s) détecté(s) : 1 créé(s) · 0 modifié(s) · 2 renommé(s) · 0 déplacé(s) · 0 supprimé(s)",
     );

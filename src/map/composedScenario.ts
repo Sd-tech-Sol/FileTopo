@@ -1,3 +1,4 @@
+import { bilingual, type StatusMessage } from "./localeText";
 import { prepareScenarioIndex } from "./lifecycle";
 /**
  * `L12` — the composed view in the **real host**, unattended.
@@ -80,7 +81,7 @@ export interface ComposedScenarioDeps {
   /** What the page currently holds, read at the moment it is asked for. */
   readSession: () => CompositionSessionState;
   readComposition: () => ComposedView | null;
-  setStatus: (message: string) => void;
+  setStatus: (message: StatusMessage) => void;
   log: ScenarioLog;
 }
 
@@ -649,11 +650,21 @@ export async function runComposedScenario(
       ),
     });
     log("info", `L12: passe ${pass} terminee, artefact ecrit: ${written}`);
-    setStatus(`Scénario L12 (passe ${pass}) écrit dans ${written}`);
+    setStatus(
+      bilingual(
+        `Scénario L12 (passe ${pass}) écrit dans ${written}`,
+        `Scenario L12 (pass ${pass}) written to ${written}`,
+      ),
+    );
   } catch (error) {
     // A failed pass is still a result, and it is written down.
     log("error", `L12: passe ${pass} interrompue: ${String(error)}`);
-    setStatus(`Scénario L12 interrompu : ${String(error)}`);
+    setStatus(
+      bilingual(
+        `Scénario L12 interrompu : ${String(error)}`,
+        `Scenario L12 interrupted: ${String(error)}`,
+      ),
+    );
     try {
       await invoke<string>("map_write_run_artifact", {
         name: l12Artifact(pass, "abandoned"),

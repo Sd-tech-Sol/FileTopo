@@ -17,7 +17,7 @@ const viewport={width:1200,height:800};
 afterEach(cleanup);
 function mount() {
   const select=vi.fn(); const expand=vi.fn(); const change=vi.fn();
-  render(<MapView brains={[{brainId,record,hierarchy,segments:[],relationNeighbours:new Set(),crossNeighbours:new Set(),nodeCount:projection.materializedCount,aggregates:projection.aggregates}]}
+  render(<MapView locale="fr" brains={[{brainId,record,hierarchy,segments:[],relationNeighbours:new Set(),crossNeighbours:new Set(),nodeCount:projection.materializedCount,aggregates:projection.aggregates}]}
     crossSegments={[]} composition={composition} view={fitView(composition.world,viewport)} viewport={viewport}
     selected={{brainId,nodeId:projection.rootId}} focusedBrainId={brainId}
     onSelect={select} onExpand={expand} onViewChange={change} onViewportChange={() => {}}

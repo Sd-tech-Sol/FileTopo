@@ -7,6 +7,7 @@ import {
   normalizeFilter,
   sameFilter,
 } from "./filters";
+import { bilingual, describeError, type StatusMessage } from "./localeText";
 import type { MapProjection, NodeFilter } from "./types";
 
 /**
@@ -64,7 +65,8 @@ interface Options {
   onProjection: (brainId: string, projection: MapProjection) => void;
   /** Relit la projection **normale** d'un cerveau (filtre retiré par un geste). */
   onRestore: (brainId: string) => void;
-  onError: (message: string) => void;
+  /** `TASK-0046` — a line that says itself in whichever language is current when shown. */
+  onError: (message: StatusMessage) => void;
   /**
    * Le filtre **logique** d'un cerveau a changé par un geste (jamais par `adopt`) :
    * l'état de reprise le retient. Un filtre inactif arrive comme le filtre par défaut.
@@ -232,14 +234,23 @@ export function useProjectionFilter({
           !sameFilter(projection.filtered.filter, filter)
         ) {
           callbacks.current.onError(
-            "Projection filtrée refusée : la réponse n'est pas celle du filtre demandé.",
+            bilingual(
+              "Projection filtrée refusée : la réponse n'est pas celle du filtre demandé.",
+              "Filtered projection refused: the answer is not the one for the requested filter.",
+            ),
           );
           return;
         }
         callbacks.current.onProjection(target, projection);
       })
       .catch((error) => {
-        if (!cancelled) callbacks.current.onError(`Filtre refusé : ${String(error)}`);
+        if (!cancelled) {
+          callbacks.current.onError((locale) =>
+            locale === "fr"
+              ? `Filtre refusé : ${describeError(error, locale)}`
+              : `Filter refused: ${describeError(error, locale)}`,
+          );
+        }
       });
     return () => {
       cancelled = true;

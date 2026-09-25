@@ -1,3 +1,4 @@
+import { withHostLanguages } from "../test/hostLanguage";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import MapApp from "./MapApp";
@@ -66,6 +67,9 @@ const projectionOf = (brainId: string): MapProjection =>
 const calls = () =>
   invokeMock.mock.calls.map(([command, args]) => ({ command: String(command), args: (args ?? {}) as Record<string, unknown> }));
 const called = (command: string) => calls().filter((call) => call.command === command);
+
+// `TASK-0046` — these suites assert the French wording: they run on a French host.
+withHostLanguages(["fr-CA"]);
 
 beforeEach(() => {
   backend.brains = seed();

@@ -3,6 +3,7 @@ import app from "./MapApp.tsx?raw";
 import lifecycleSource from "./lifecycle.ts?raw";
 import { readSourceObservation, runLifecycle, type LifecycleInvoke } from "./lifecycle";
 import type { SourceObservation } from "./types";
+import { strings } from "./mapStrings";
 
 const UNAVAILABLE: SourceObservation = {
   state: "UNAVAILABLE",
@@ -78,7 +79,10 @@ describe("TASK-0042 — the lifecycle after a source failure", () => {
     );
     expect(failureBranch).not.toContain("setLoaded");
     expect(failureBranch).toContain("setComposed(next)");
-    expect(failureBranch).toContain("reste disponible");
+    // `TASK-0046` — the sentence lives in the dictionary; the branch says it through it.
+    expect(failureBranch).toContain("t.status.failed");
+    expect(strings.fr.status.failed("x")).toContain("reste disponible");
+    expect(strings.en.status.failed("x")).toContain("remains available");
   });
 
   it("shows the badge for the focused brain and no longer the static freshness sentence", () => {

@@ -85,6 +85,34 @@ body {
   color: var(--ink-soft);
 }
 
+/* TASK-0046 — the interface-language control: two native buttons, the pressed one filled. */
+.app__language {
+  display: inline-flex;
+  gap: 0;
+  align-self: flex-start;
+}
+
+.app__language button {
+  border-radius: 0;
+  margin: 0;
+}
+
+.app__language button:first-child {
+  border-radius: 8px 0 0 8px;
+}
+
+.app__language button:last-child {
+  border-radius: 0 8px 8px 0;
+  border-left-width: 0;
+}
+
+.app__language button[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--paper);
+  font-weight: 600;
+}
+
 .app__host {
   display: flex;
   flex-wrap: wrap;

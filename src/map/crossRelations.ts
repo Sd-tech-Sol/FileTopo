@@ -15,6 +15,7 @@
  * exactly how an edge would end up drawn inside the wrong brain.
  */
 
+import type { Locale } from "../lib/locale";
 import type {
   CrossRelationEdge,
   CrossRelationsOverview,
@@ -72,24 +73,40 @@ export function crossEntryKey(entry: NodeCrossRelationEntry): string {
  * accessible and semantic, and words are the one channel no colour setting can
  * take away.
  */
-export function crossRelationSummary(edge: CrossRelationEdge): string {
+export function crossRelationSummary(edge: CrossRelationEdge, locale: Locale): string {
+  const type = relationTypeLabel(edge.relationType, locale);
+  const provenance = PROVENANCE_LABELS[locale][edge.provenance];
+  if (locale === "fr") {
+    return (
+      `relation INTER-CERVEAUX établie, ${type}, ` +
+      `de ${edge.source.brainDisplayName} · ${edge.source.name} ` +
+      `vers ${edge.target.brainDisplayName} · ${edge.target.name}, ` +
+      `provenance ${provenance}` +
+      (edge.provenance === "DETERMINISTIC"
+        ? `, règle ${edge.ruleName} version ${edge.ruleVersion}`
+        : ", approuvée par une action explicite")
+    );
+  }
   return (
-    `relation INTER-CERVEAUX établie, ${relationTypeLabel(edge.relationType)}, ` +
-    `de ${edge.source.brainDisplayName} · ${edge.source.name} ` +
-    `vers ${edge.target.brainDisplayName} · ${edge.target.name}, ` +
-    `provenance ${PROVENANCE_LABELS[edge.provenance]}` +
+    `INTER-BRAIN relation established, ${type}, ` +
+    `from ${edge.source.brainDisplayName} · ${edge.source.name} ` +
+    `to ${edge.target.brainDisplayName} · ${edge.target.name}, ` +
+    `provenance ${provenance}` +
     (edge.provenance === "DETERMINISTIC"
-      ? `, règle ${edge.ruleName} version ${edge.ruleVersion}`
-      : ", approuvée par une action explicite")
+      ? `, rule ${edge.ruleName} version ${edge.ruleVersion}`
+      : ", approved by an explicit action")
   );
 }
 
-export function crossSuggestionSummary(suggestion: CrossSuggestionEdge): string {
-  return (
-    `SUGGESTION inter-cerveaux non établie, ${relationTypeLabel(suggestion.relationType)}, ` +
-    `de ${suggestion.source.brainDisplayName} · ${suggestion.source.name} ` +
-    `vers ${suggestion.target.brainDisplayName} · ${suggestion.target.name}`
-  );
+export function crossSuggestionSummary(suggestion: CrossSuggestionEdge, locale: Locale): string {
+  const type = relationTypeLabel(suggestion.relationType, locale);
+  return locale === "fr"
+    ? `SUGGESTION inter-cerveaux non établie, ${type}, ` +
+        `de ${suggestion.source.brainDisplayName} · ${suggestion.source.name} ` +
+        `vers ${suggestion.target.brainDisplayName} · ${suggestion.target.name}`
+    : `SUGGESTION inter-brain not established, ${type}, ` +
+        `from ${suggestion.source.brainDisplayName} · ${suggestion.source.name} ` +
+        `to ${suggestion.target.brainDisplayName} · ${suggestion.target.name}`;
 }
 
 /**
@@ -143,6 +160,7 @@ export function crossSegments(
   overview: CrossRelationsOverview | null,
   byBrain: BrainNodeIndex,
   selected: { brainId: string; nodeId: number } | null,
+  locale: Locale,
 ): CrossSegment[] {
   if (!overview) return [];
   const segments: CrossSegment[] = [];
@@ -197,7 +215,7 @@ export function crossSegments(
       edge.relationType,
       { brainId: edge.source.brainId, nodeId: edge.source.nodeId },
       { brainId: edge.target.brainId, nodeId: edge.target.nodeId },
-      crossRelationSummary(edge),
+      crossRelationSummary(edge, locale),
     );
   }
   for (const suggestion of overview.pendingSuggestions) {
@@ -208,7 +226,7 @@ export function crossSegments(
       suggestion.relationType,
       { brainId: suggestion.source.brainId, nodeId: suggestion.source.nodeId },
       { brainId: suggestion.target.brainId, nodeId: suggestion.target.nodeId },
-      crossSuggestionSummary(suggestion),
+      crossSuggestionSummary(suggestion, locale),
     );
   }
   return segments;
@@ -259,7 +277,7 @@ export function groupCrossByType(
     if (bucket) bucket.push(entry);
     else groups.set(entry.relationType, [entry]);
   }
-  return [...groups.entries()].sort(([left], [right]) => left.localeCompare(right, "fr"));
+  return [...groups.entries()].sort(([left], [right]) => left.localeCompare(right, "en"));
 }
 
 /**

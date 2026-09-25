@@ -8,6 +8,7 @@
  * given.
  */
 
+import type { Locale } from "../lib/locale";
 import type {
   MapNode,
   NodeRelationEntry,
@@ -18,26 +19,32 @@ import type {
 } from "./types";
 import { edgeAnchors } from "./geometry";
 
-/** Machine value → the two things the interface must be able to say about it. */
-export const PROVENANCE_LABELS: Record<RelationProvenance, string> = {
-  DETERMINISTIC: "déterministe",
-  APPROVED: "approuvée",
+/**
+ * Machine value → the words the interface says about it, in each language
+ * (`TASK-0046`). The wire value (`DETERMINISTIC`, `APPROVED`) is what travels; the
+ * word is only what a person reads.
+ */
+export const PROVENANCE_LABELS: Record<Locale, Record<RelationProvenance, string>> = {
+  fr: { DETERMINISTIC: "déterministe", APPROVED: "approuvée" },
+  en: { DETERMINISTIC: "deterministic", APPROVED: "approved" },
 };
 
-export const RELATION_TYPE_LABELS: Record<string, string> = {
-  reference: "référence",
-  revision: "révision de",
-  "content-identical": "contenu identique",
+export const RELATION_TYPE_LABELS: Record<Locale, Record<string, string>> = {
+  fr: {
+    reference: "référence",
+    revision: "révision de",
+    "content-identical": "contenu identique",
+  },
+  en: {
+    reference: "reference",
+    revision: "revision of",
+    "content-identical": "identical content",
+  },
 };
 
-export const RELATION_TYPE_LABELS_EN: Record<string, string> = {
-  reference: "reference",
-  revision: "revision",
-  "content-identical": "identical content",
-};
-
-export function relationTypeLabel(relationType: string): string {
-  return RELATION_TYPE_LABELS[relationType] ?? relationType;
+/** An unknown relation type is shown as it is: a wire value is never made up a word. */
+export function relationTypeLabel(relationType: string, locale: Locale): string {
+  return RELATION_TYPE_LABELS[locale][relationType] ?? relationType;
 }
 
 /**
@@ -108,6 +115,7 @@ export function relationSegments(
   overview: RelationsOverview | null,
   byId: Map<number, MapNode>,
   selectedId: number | null,
+  locale: Locale,
 ): RelationSegment[] {
   if (!overview) return [];
   const segments: RelationSegment[] = [];
@@ -150,9 +158,13 @@ export function relationSegments(
       edge.relationType,
       edge.source.nodeId,
       edge.target.nodeId,
-      `relation établie, ${relationTypeLabel(edge.relationType)}, provenance ${
-        PROVENANCE_LABELS[edge.provenance]
-      }, de ${edge.source.name} vers ${edge.target.name}`,
+      locale === "fr"
+        ? `relation établie, ${relationTypeLabel(edge.relationType, locale)}, provenance ${
+            PROVENANCE_LABELS[locale][edge.provenance]
+          }, de ${edge.source.name} vers ${edge.target.name}`
+        : `established relation, ${relationTypeLabel(edge.relationType, locale)}, provenance ${
+            PROVENANCE_LABELS[locale][edge.provenance]
+          }, from ${edge.source.name} to ${edge.target.name}`,
     );
   }
   for (const suggestion of overview.pendingSuggestions) {
@@ -163,15 +175,24 @@ export function relationSegments(
       suggestion.relationType,
       suggestion.source.nodeId,
       suggestion.target.nodeId,
-      `SUGGESTION non établie, ${relationTypeLabel(suggestion.relationType)}, de ${
-        suggestion.source.name
-      } vers ${suggestion.target.name}`,
+      locale === "fr"
+        ? `SUGGESTION non établie, ${relationTypeLabel(suggestion.relationType, locale)}, de ${
+            suggestion.source.name
+          } vers ${suggestion.target.name}`
+        : `SUGGESTION not established, ${relationTypeLabel(suggestion.relationType, locale)}, from ${
+            suggestion.source.name
+          } to ${suggestion.target.name}`,
     );
   }
   return segments;
 }
 
-/** Groups a direction's entries by relation type, in a stable order. */
+/**
+ * Groups a direction's entries by relation type, in a stable order.
+ *
+ * The order is that of the **wire keys** (`reference`, `revision`, …), not of the words
+ * shown for them, so it is the same in both languages and never moves on a switch.
+ */
 export function groupByType(entries: NodeRelationEntry[]): [string, NodeRelationEntry[]][] {
   const groups = new Map<string, NodeRelationEntry[]>();
   for (const entry of entries) {
@@ -179,7 +200,7 @@ export function groupByType(entries: NodeRelationEntry[]): [string, NodeRelation
     if (bucket) bucket.push(entry);
     else groups.set(entry.relationType, [entry]);
   }
-  return [...groups.entries()].sort(([left], [right]) => left.localeCompare(right, "fr"));
+  return [...groups.entries()].sort(([left], [right]) => left.localeCompare(right, "en"));
 }
 
 /**
@@ -189,8 +210,26 @@ export function groupByType(entries: NodeRelationEntry[]): [string, NodeRelation
  * an established relation, and words are the one channel no colour setting can
  * take away.
  */
-export function suggestionSummary(suggestion: SuggestionEdge): string {
-  return `Suggestion non établie — ${suggestion.source.name} → ${suggestion.target.name}, ${relationTypeLabel(
-    suggestion.relationType,
-  )}`;
+export function suggestionSummary(suggestion: SuggestionEdge, locale: Locale): string {
+  const type = relationTypeLabel(suggestion.relationType, locale);
+  return locale === "fr"
+    ? `Suggestion non établie — ${suggestion.source.name} → ${suggestion.target.name}, ${type}`
+    : `Suggestion not established — ${suggestion.source.name} → ${suggestion.target.name}, ${type}`;
+}
+
+/**
+ * The backend's own explanation of a suggestion or a relation, in the language asked
+ * for — `TASK-0046`. The core ships both (`explanationFr`, `explanationEn`); this only
+ * picks. When the language asked for is missing it says so through `lang`, rather than
+ * pass one language off as the other.
+ */
+export function explanationFor(
+  source: { explanationFr?: string | null; explanationEn?: string | null },
+  locale: Locale,
+): { text: string; lang: Locale } | null {
+  const wanted = locale === "fr" ? source.explanationFr : source.explanationEn;
+  if (wanted) return { text: wanted, lang: locale };
+  const other = locale === "fr" ? source.explanationEn : source.explanationFr;
+  if (other) return { text: other, lang: locale === "fr" ? "en" : "fr" };
+  return null;
 }

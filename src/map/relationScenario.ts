@@ -24,6 +24,7 @@
  * falls back to a synthetic click.
  */
 
+import { bilingual, type StatusMessage } from "./localeText";
 import { domNodeId } from "./composedView";
 import { afterPaint } from "./measure";
 import { pressRealKey, waitUntil } from "./realInput";
@@ -52,7 +53,7 @@ export interface ScenarioDeps {
    */
   showOnly: (brainId: string) => void;
   setSelected: (reference: BrainNodeRef) => void;
-  setStatus: (message: string) => void;
+  setStatus: (message: StatusMessage) => void;
   log: (level: "info" | "error", message: string) => void;
 }
 
@@ -467,13 +468,18 @@ export async function runRelationScenario(deps: ScenarioDeps): Promise<void> {
       ),
     });
     log("info", `J12: scenario termine, artefact ecrit: ${written}`);
-    setStatus(`Scénario J12 écrit dans ${written}`);
+    setStatus(bilingual(`Scénario J12 écrit dans ${written}`, `Scenario J12 written to ${written}`));
   } catch (error) {
     // A failed scenario is still a result, and it is written down: an artefact
     // saying why nothing was proved beats a missing file somebody has to guess
     // about.
     log("error", `J12: scenario interrompu: ${String(error)}`);
-    setStatus(`Scénario J12 interrompu : ${String(error)}`);
+    setStatus(
+      bilingual(
+        `Scénario J12 interrompu : ${String(error)}`,
+        `Scenario J12 interrupted: ${String(error)}`,
+      ),
+    );
     try {
       await invoke<string>("map_write_run_artifact", {
         name: J12_REGRESSION_ABANDON_ARTIFACT,

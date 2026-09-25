@@ -1,6 +1,7 @@
+import type { Locale } from "../lib/locale";
 import type { ContentObservation, ContentObservationSummary } from "./types";
 
-function formatObservedInstant(unixMs: number, locale: "fr" | "en"): string {
+function formatObservedInstant(unixMs: number, locale: Locale): string {
   return new Intl.DateTimeFormat(locale === "fr" ? "fr-CA" : "en-CA", {
     dateStyle: "medium",
     timeStyle: "short",
@@ -23,7 +24,7 @@ export interface ContentObservationStrings {
   loading: string;
 }
 
-export const CONTENT_OBSERVATION_STRINGS: Record<"fr" | "en", ContentObservationStrings> = {
+export const CONTENT_OBSERVATION_STRINGS: Record<Locale, ContentObservationStrings> = {
   fr: {
     title: "Observations de contenu",
     none: "Contenu non observé",
@@ -63,7 +64,7 @@ interface Props {
   identicalMemberCount: number;
   loading: boolean;
   observedThisSession: boolean;
-  locale: "fr" | "en";
+  locale: Locale;
 }
 
 export default function ContentObservationsPanel({

@@ -46,7 +46,7 @@ afterEach(cleanup);
 
 describe("TASK-0038 E — the selected element's state", () => {
   it("renders nothing and reads nothing without a selection", () => {
-    const { container } = render(<NodeChangeState reference={null} revision={1} />);
+    const { container } = render(<NodeChangeState locale="fr" reference={null} revision={1} />);
     expect(container.textContent).toBe("");
     expect(invokeMock).not.toHaveBeenCalled();
   });
@@ -63,7 +63,7 @@ describe("TASK-0038 E — the selected element's state", () => {
     ] as const) {
       cleanup();
       backend({ map_node_change_state: () => dto(flags) });
-      render(<NodeChangeState reference={REF} revision={1} />);
+      render(<NodeChangeState locale="fr" reference={REF} revision={1} />);
       const badge = await screen.findByTestId("node-state-badge");
       expect(badge.textContent).toMatch(word);
     }
@@ -73,7 +73,7 @@ describe("TASK-0038 E — the selected element's state", () => {
     backend({
       map_node_change_state: () => dto({ isNew: true, isUnseen: true, unseenChangeCount: 1 }),
     });
-    render(<NodeChangeState reference={REF} revision={1} />);
+    render(<NodeChangeState locale="fr" reference={REF} revision={1} />);
     await screen.findByTestId("node-state-badge");
     expect(invokeMock).toHaveBeenCalledTimes(1);
     expect(invokeMock).toHaveBeenCalledWith("map_node_change_state", { reference: REF });
@@ -85,7 +85,7 @@ describe("TASK-0038 E — the selected element's state", () => {
 
   it("a seen element offers no mutation", async () => {
     backend({ map_node_change_state: () => dto() });
-    render(<NodeChangeState reference={REF} revision={1} />);
+    render(<NodeChangeState locale="fr" reference={REF} revision={1} />);
     await screen.findByTestId("node-state-badge");
     expect(screen.queryByTestId("node-mark-seen")).toBeNull();
   });
@@ -101,7 +101,7 @@ describe("TASK-0038 E — the selected element's state", () => {
       },
     });
     const onSeenChange = vi.fn();
-    render(<NodeChangeState reference={REF} revision={1} onSeenChange={onSeenChange} />);
+    render(<NodeChangeState locale="fr" reference={REF} revision={1} onSeenChange={onSeenChange} />);
     fireEvent.click(await screen.findByTestId("node-mark-seen"));
 
     await waitFor(() =>
@@ -114,12 +114,12 @@ describe("TASK-0038 E — the selected element's state", () => {
 
   it("re-reads when the index revision or the seen revision moves, and only reads", async () => {
     backend({ map_node_change_state: () => dto() });
-    const { rerender } = render(<NodeChangeState reference={REF} revision={1} seenRevision={0} />);
+    const { rerender } = render(<NodeChangeState locale="fr" reference={REF} revision={1} seenRevision={0} />);
     await screen.findByTestId("node-state-badge");
     expect(invokeMock).toHaveBeenCalledTimes(1);
-    rerender(<NodeChangeState reference={REF} revision={2} seenRevision={0} />);
+    rerender(<NodeChangeState locale="fr" reference={REF} revision={2} seenRevision={0} />);
     await waitFor(() => expect(invokeMock).toHaveBeenCalledTimes(2));
-    rerender(<NodeChangeState reference={REF} revision={2} seenRevision={1} />);
+    rerender(<NodeChangeState locale="fr" reference={REF} revision={2} seenRevision={1} />);
     await waitFor(() => expect(invokeMock).toHaveBeenCalledTimes(3));
     expect(commandsCalled().every((c) => c === "map_node_change_state")).toBe(true);
   });
@@ -128,11 +128,11 @@ describe("TASK-0038 E — the selected element's state", () => {
     backend({
       map_node_change_state: () => dto({ isNew: true, isUnseen: true, unseenChangeCount: 1 }),
     });
-    const { rerender } = render(<NodeChangeState reference={REF} revision={1} />);
+    const { rerender } = render(<NodeChangeState locale="fr" reference={REF} revision={1} />);
     await screen.findByTestId("node-state-badge");
 
     // Same node number, another brain — and a backend that (wrongly) answers for the old one.
-    rerender(<NodeChangeState reference={{ brainId: "brain-beta", nodeId: 42 }} revision={1} />);
+    rerender(<NodeChangeState locale="fr" reference={{ brainId: "brain-beta", nodeId: 42 }} revision={1} />);
     await waitFor(() => expect(screen.queryByTestId("node-state-error")).not.toBeNull());
     expect(screen.queryByTestId("node-state-badge")).toBeNull();
     expect(screen.queryByTestId("node-mark-seen")).toBeNull();
@@ -143,7 +143,7 @@ describe("TASK-0038 E — the selected element's state", () => {
     backend({
       map_node_change_state: () => dto({ nodeId: 99, isUnseen: true, unseenChangeCount: 1 }),
     });
-    render(<NodeChangeState reference={REF} revision={1} />);
+    render(<NodeChangeState locale="fr" reference={REF} revision={1} />);
     await waitFor(() => expect(screen.queryByTestId("node-state-error")).not.toBeNull());
     expect(screen.queryByTestId("node-state-badge")).toBeNull();
   });
@@ -153,9 +153,9 @@ describe("TASK-0038 E — the selected element's state", () => {
     invokeMock.mockImplementationOnce(
       () => new Promise<Dto>((resolve) => (resolveFirst = resolve)),
     );
-    const { rerender } = render(<NodeChangeState reference={REF} revision={1} />);
+    const { rerender } = render(<NodeChangeState locale="fr" reference={REF} revision={1} />);
     invokeMock.mockResolvedValueOnce(dto({ nodeId: 43 }));
-    rerender(<NodeChangeState reference={{ brainId: BRAIN, nodeId: 43 }} revision={1} />);
+    rerender(<NodeChangeState locale="fr" reference={{ brainId: BRAIN, nodeId: 43 }} revision={1} />);
     await screen.findByTestId("node-state-badge");
     resolveFirst(dto({ isNew: true, isUnseen: true, unseenChangeCount: 5 }));
     await new Promise((resolve) => setTimeout(resolve, 30));
@@ -168,7 +168,7 @@ describe("TASK-0038 E — the selected element's state", () => {
       map_node_mark_seen: () => ({ brainId: BRAIN, nodeId: 7, newlySeenCount: 1 }),
     });
     const onSeenChange = vi.fn();
-    render(<NodeChangeState reference={REF} revision={1} onSeenChange={onSeenChange} />);
+    render(<NodeChangeState locale="fr" reference={REF} revision={1} onSeenChange={onSeenChange} />);
     fireEvent.click(await screen.findByTestId("node-mark-seen"));
     await waitFor(() =>
       expect(screen.getByTestId("node-state-error").textContent).toMatch(/autre élément refusée/),
@@ -183,7 +183,7 @@ describe("TASK-0038 E — the selected element's state", () => {
         throw "map_node_missing: 42";
       },
     });
-    render(<NodeChangeState reference={REF} revision={1} />);
+    render(<NodeChangeState locale="fr" reference={REF} revision={1} />);
     await waitFor(() =>
       expect(screen.getByTestId("node-state-error").textContent).toMatch(/map_node_missing/),
     );

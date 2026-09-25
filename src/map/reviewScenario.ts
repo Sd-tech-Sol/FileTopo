@@ -1,3 +1,4 @@
+import { bilingual, type StatusMessage } from "./localeText";
 import { prepareScenarioIndex } from "./lifecycle";
 /**
  * `TASK-0026` / `SR15` — the review queue and the memory of a human decision,
@@ -41,7 +42,7 @@ export interface ReviewScenarioDeps {
   host: HostInfo | null;
   showOnly: (brainId: string) => Promise<void>;
   select: (reference: BrainNodeRef) => void;
-  setStatus: (message: string) => void;
+  setStatus: (message: StatusMessage) => void;
   log: ScenarioLog;
   pass: 1 | 2;
 }
@@ -600,9 +601,16 @@ export async function runReviewScenario(deps: ReviewScenarioDeps): Promise<void>
   try {
     const written = deps.pass === 1 ? await passOne(deps) : await passTwo(deps);
     deps.log("info", `SR15 passe ${deps.pass} écrite: ${written}`);
-    deps.setStatus(`SR15 passe ${deps.pass} écrite dans ${written}`);
+    deps.setStatus(
+      bilingual(
+        `SR15 passe ${deps.pass} écrite dans ${written}`,
+        `SR15 pass ${deps.pass} written to ${written}`,
+      ),
+    );
   } catch (error) {
     deps.log("error", `SR15 passe ${deps.pass} interrompue: ${String(error)}`);
-    deps.setStatus(`SR15 interrompu : ${String(error)}`);
+    deps.setStatus(
+      bilingual(`SR15 interrompu : ${String(error)}`, `SR15 interrupted: ${String(error)}`),
+    );
   }
 }

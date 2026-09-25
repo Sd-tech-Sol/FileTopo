@@ -30,6 +30,7 @@
  * keystroke never arrives, the pass fails; it never falls back to a click.
  */
 
+import { bilingual, type StatusMessage } from "./localeText";
 import {
   compositionText,
   displayedBrainIds,
@@ -72,7 +73,7 @@ export interface BrainScenarioDeps {
   setView: (view: View) => void;
   /** What the page currently holds, read at the moment it is asked for. */
   readSession: () => CompositionSessionState;
-  setStatus: (message: string) => void;
+  setStatus: (message: StatusMessage) => void;
   log: ScenarioLog;
 }
 
@@ -443,11 +444,21 @@ export async function runBrainScenario(
       ),
     });
     log("info", `K12: passe ${pass} terminee, artefact ecrit: ${written}`);
-    setStatus(`Scénario K12 (passe ${pass}) écrit dans ${written}`);
+    setStatus(
+      bilingual(
+        `Scénario K12 (passe ${pass}) écrit dans ${written}`,
+        `Scenario K12 (pass ${pass}) written to ${written}`,
+      ),
+    );
   } catch (error) {
     // A failed pass is still a result, and it is written down.
     log("error", `K12: passe ${pass} interrompue: ${String(error)}`);
-    setStatus(`Scénario K12 interrompu : ${String(error)}`);
+    setStatus(
+      bilingual(
+        `Scénario K12 interrompu : ${String(error)}`,
+        `Scenario K12 interrupted: ${String(error)}`,
+      ),
+    );
     try {
       await invoke<string>("map_write_run_artifact", {
         name: k12Artifact(pass, "abandoned"),

@@ -11,9 +11,12 @@ import { prepareScenarioIndex } from "./lifecycle";
 import { canonicalizeSearchQuery, runCoordinatedSearch, SearchCoordinator } from "./searchCoordinator";
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { resolveInitialLocale, storeLocale, type Locale } from "../lib/locale";
+import { LocalizedError, describeError, resolveStatus, type StatusMessage } from "./localeText";
+import { strings, type MapStrings } from "./mapStrings";
 import BrainIdentityEditor, { type BrainIdentityValues } from "./BrainIdentityEditor";
 import CompositionBar from "./CompositionBar";
-import DetailsPanel, { type PanelStrings } from "./DetailsPanel";
+import DetailsPanel from "./DetailsPanel";
 import FilterPanel from "./FilterPanel";
 import { filterRoles } from "./filters";
 import MapView, { aggregateLabel, type RenderedBrain } from "./MapView";
@@ -57,7 +60,7 @@ import {
 } from "./compositionSession";
 import { composeTerritories, placeRect, territoryOf, type Composition } from "./territories";
 import { buildHierarchy, type Hierarchy } from "./hierarchy";
-import { establishedNeighbours, relationSegments } from "./relations";
+import { establishedNeighbours, relationKey, relationSegments } from "./relations";
 import {
   crossNeighbours as crossNeighboursOf,
   crossSegments as crossSegmentsOf,
@@ -154,144 +157,15 @@ import {
  * nobody exercises is the one that rots.
  */
 
-const strings = {
-  fr: {
-    appTitle: "FileTopo — carte de blocs",
-    subtitle: "Tranche verticale TASK-0019 · vue composée, cerveaux synthétiques seulement",
-    composition: "Cerveaux affichés",
-    compositionFocused: "actif",
-    compositionFocus: "rendre actif",
-    compositionAdd: "Ajouter",
-    compositionAddEmpty: "Tous les cerveaux du catalogue sont déjà affichés",
-    compositionRemove: "Retirer de la vue",
-    compositionRemoveRefused: "Impossible de retirer le dernier cerveau affiché",
-    compositionSource: "source",
-    compositionBusy: "Chargement…",
-    identity: {
-      open: "Personnaliser le cerveau",
-      title: "Personnaliser le cerveau",
-      name: "Nom",
-      color: "Couleur",
-      icon: "Icône",
-      iconHint: "1 ou 2 caractères, affichés à côté du nom.",
-      save: "Enregistrer",
-      saving: "Enregistrement…",
-      cancel: "Annuler",
-      nameInvalid: "Le nom doit compter de 1 à 80 caractères.",
-      colorInvalid: "La couleur doit avoir la forme #RRGGBB.",
-      iconInvalid: "L'icône doit compter 1 ou 2 caractères.",
-      unchanged: "Aucun changement : le cerveau reste tel quel.",
-      refused: "Enregistrement refusé :",
-    },
-    addRealRoot: "Ajouter un dossier",
-    addRealRootBusy: "Sélection…",
-    addRealRootCancelled: "Aucun dossier choisi. Rien n'a été créé.",
-    indexBrain: "Indexer",
-    notBuilt:
-      "Ce cerveau n'est pas encore indexé. Choisissez Indexer pour lire le dossier " +
-      "une première fois; FileTopo ne lit jamais la source sans cette action.",
-    brainsDiagnostic: "Diagnostic développeur · sources synthétiques",
-    fixtures: "Fixtures synthétiques",
-    open: "Ouvrir",
-    rebuild: "Reconstruire l'index",
-    building: "Construction…",
-    map: "Graphique composé",
-    zoomIn: "Zoom avant",
-    zoomOut: "Zoom arrière",
-    fit: "Ajuster",
-    fitSelection: "Cadrer la sélection",
-    reset: "Réinitialiser la vue",
-    selectRoot: "Sélectionner la racine",
-    measure: "Mesurer dans WebView2",
-    measuring: "Mesure en cours…",
-    selfCheck: "Contrôler H1–H5",
-    relationsCheck: "Contrôler J1–J5, J10",
-    crossCheck: "Contrôler M1–M5",
-    relations: "Relations",
-    territory: "territoire",
-    nodesWord: "nœuds",
-    keyboardTitle: "Clavier",
-    keyboard:
-      "Flèches : parent, enfant, frères · N / P : territoire suivant, précédent · " +
-      "Alt+flèches : panoramique · + / − : zoom · F : ajuster · R : réinitialiser · Origine : racine",
-    nodes: "nœuds",
-    depth: "profondeur",
-    ceiling: "plafond",
-    readOnly: "Empreinte identique avant et après le scan",
-    readOnlyFailed: "EMPREINTE DIFFÉRENTE — la source a changé",
-    noArtifacts: "Aucun fichier de FileTopo dans la racine analysée",
-    artifactsFound: "Fichiers de FileTopo trouvés dans la racine analysée",
-    scan: "scan",
-    layout: "calepinage",
-    index: "index",
-    engine: "Moteur de rendu",
-    sandbox: "Bac à sable",
-    searchLabel: "Rechercher un dossier ou fichier",
-    searchPlaceholder: "Nom ou chemin relatif…",
-    searchClear: "Effacer",
-    searchEmpty: "Aucun résultat.",
-    searchTotal: (total: number) => `${total} résultat${total > 1 ? "s" : ""}`,
-    searchPrevious: "Page précédente",
-    searchNext: "Page suivante",
-    searchStale: "Résultats périmés après une actualisation — relancez la recherche.",
-    revealAction: "Ouvrir dans l'Explorateur",
-    revealBusy: "Ouverture…",
-    revealError: {
-      indexed_target_unavailable: "Cet élément est introuvable ou inaccessible.",
-      indexed_target_reparse_point: "Cet élément est un lien et ne peut pas être ouvert ainsi.",
-      indexed_target_not_openable: "Cet élément ne peut pas être ouvert.",
-      explorer_launch_failed: "Impossible de lancer l'Explorateur Windows.",
-      platform_not_supported: "Cette action n'est disponible que sous Windows.",
-    } as Record<string, string>,
-    revealErrorGeneric: "Impossible d'ouvrir cet élément.",
-    // `TASK-0035` C. Same wire codes and the same underlying resolution as
-    // `revealError` above (both actions share `map_reveal_refused: <code>`,
-    // reusing one confinement walk rather than two) — only the wording
-    // differs, since "ouvrir" and "copier" are different verbs for the
-    // person reading the message.
-    copyAction: "Copier le chemin",
-    copyBusy: "Copie…",
-    copyError: {
-      indexed_target_unavailable: "Cet élément est introuvable ou inaccessible.",
-      indexed_target_reparse_point: "Cet élément est un lien et son chemin ne peut pas être copié.",
-      indexed_target_not_openable: "Le chemin de cet élément ne peut pas être copié.",
-      indexed_target_not_representable: "Le nom de cet élément ne peut pas être copié tel quel.",
-      clipboard_write_failed: "Impossible de copier dans le presse-papiers.",
-      platform_not_supported: "Cette action n'est disponible que sous Windows.",
-    } as Record<string, string>,
-    copyErrorGeneric: "Impossible de copier le chemin.",
-    // `TASK-0035` A.
-    detailsPanelHide: "Masquer les détails",
-    detailsPanelShow: "Afficher les détails",
-    panel: {
-      title: "Détails de la sélection",
-      empty: "Sélectionnez un bloc sur la carte, ou appuyez sur Origine.",
-      loading: "Lecture de l'index…",
-      name: "Nom",
-      kind: "Type",
-      path: "Chemin relatif",
-      size: "Taille",
-      modified: "Modifié",
-      parent: "Parent",
-      children: "Enfants directs",
-      diagnostic: "Diagnostic d'accès",
-      noDiagnostic: "aucun",
-      noParent: "Ce nœud est la racine.",
-      noChildren: "Aucun enfant direct.",
-      childrenPrevious: "Page précédente",
-      childrenNext: "Page suivante",
-      rootPath: "(racine)",
-      kinds: {
-        root: "racine",
-        directory: "dossier",
-        file: "fichier",
-        skipped: "ignoré",
-      },
-    } satisfies PanelStrings,
-  },
-} as const;
-
-const t = strings.fr;
+/**
+ * `TASK-0046` — the words of this screen live in `mapStrings.ts`, one typed contract with
+ * exactly two implementations. What is said in the status area is kept as a **function of
+ * the locale** and resolved when it is rendered, so a line said in French reads in English
+ * the moment the person switches, without anything being read or said again.
+ */
+function say(compose: (t: MapStrings, locale: Locale) => string): StatusMessage {
+  return (locale) => compose(strings[locale], locale);
+}
 
 /**
  * One brain, fully loaded and kept **separate** — `TASK-0019` §4.1 rule 3.
@@ -325,11 +199,39 @@ function hostLog(level: "info" | "error", message: string): void {
   void invoke("map_log", { level, message }).catch(() => {});
 }
 
-function fixtureLabel(fixture: FixtureSummary): string {
-  return `${fixture.labelFr} · ${fixture.plannedNodes} ${t.nodes} (${t.ceiling} ${fixture.maxNodes})`;
+/**
+ * The backend labels a sandbox path with a token standing for the repository (`<dépôt>`),
+ * a closed marker and not a path: it is said in the current language, and the rest of the
+ * path — a folder name — is shown as it is.
+ */
+function sandboxDisplay(sandboxRoot: string, t: MapStrings): string {
+  return sandboxRoot.startsWith("<dépôt>")
+    ? t.sandboxRepoToken + sandboxRoot.slice("<dépôt>".length)
+    : sandboxRoot;
+}
+
+function fixtureLabel(fixture: FixtureSummary, t: MapStrings, locale: Locale): string {
+  const label = locale === "fr" ? fixture.labelFr : fixture.labelEn;
+  return `${label} · ${fixture.plannedNodes} ${t.nodes} (${t.ceiling} ${fixture.maxNodes})`;
 }
 
 export default function MapApp() {
+  // `TASK-0046` — the interface language is one global preference (`DEC-0044`): resolved
+  // once at start by `resolveInitialLocale` (explicit choice, then system, then English),
+  // and written by `storeLocale` **only** when the person chooses. Nothing is written at
+  // start, and changing it reaches no backend command.
+  const [locale, setLocale] = useState<Locale>(() => resolveInitialLocale());
+  const t = strings[locale];
+  const chooseLocale = useCallback((next: Locale) => {
+    setLocale(next);
+    // A refused write (blocked or full storage) is not an error: the choice still holds
+    // for this session, and the next start resolves the normal way.
+    storeLocale(next);
+  }, []);
+  useEffect(() => {
+    document.documentElement.lang = locale;
+  }, [locale]);
+
   const [fixtures, setFixtures] = useState<FixtureSummary[]>([]);
   const [host, setHost] = useState<HostInfo | null>(null);
   // `TASK-0018`. The catalogue is the source of a brain's identity; a displayed
@@ -372,7 +274,9 @@ export default function MapApp() {
       return next;
     });
     const total = snapshot.filtered?.filteredTotal ?? 0;
-    setStatus(`${total} correspondance${total > 1 ? "s" : ""} — ${snapshot.materializedCount} éléments visibles sur ${snapshot.nodeCount}`);
+    setStatus(
+      say((t) => t.status.matches(total, snapshot.materializedCount, snapshot.nodeCount)),
+    );
   }, []);
   // The filter was dropped: read that brain's **normal** projection again, unless
   // a filter was applied to it again in the meantime.
@@ -391,7 +295,9 @@ export default function MapApp() {
           return next;
         });
       })
-      .catch((error) => setStatus(`Projection normale illisible : ${String(error)}`));
+      .catch((error) =>
+        setStatus(say((t, l) => t.status.normalProjectionUnreadable(describeError(error, l)))),
+      );
   }, []);
   // `TASK-0044` — the per-brain resume state (`DEC-0042`): one writer for the whole page,
   // latest-wins and bounded, that talks to the catalogue and to nothing else.
@@ -419,7 +325,13 @@ export default function MapApp() {
   const [viewport, setViewport] = useState<Viewport>({ width: 1, height: 1 });
   const [view, setView] = useState<View>({ scale: 1, tx: 0, ty: 0 });
   const [busy, setBusy] = useState(false);
-  const [status, setStatus] = useState<string | null>(null);
+  const [statusMessage, setStatusMessage] = useState<StatusMessage | null>(null);
+  // A function is stored as a value, never run as an updater — hence the wrapper.
+  const setStatus = useCallback(
+    (message: StatusMessage | null) => setStatusMessage(() => message),
+    [],
+  );
+  const status = statusMessage === null ? null : resolveStatus(statusMessage, locale);
   const [measurement, setMeasurement] = useState<FixtureMeasurement[] | null>(null);
   const [measuring, setMeasuring] = useState(false);
   const [nodeRelations, setNodeRelations] = useState<NodeRelations | null>(null);
@@ -468,7 +380,8 @@ export default function MapApp() {
   // `ACTION-0053`.
   const searchCoordinator = useRef(new SearchCoordinator()).current;
   const [revealBusy, setRevealBusy] = useState(false);
-  const [revealError, setRevealError] = useState<string | null>(null);
+  // The wire code, not a sentence: the words are picked at render, in the current language.
+  const [revealErrorCode, setRevealErrorCode] = useState<string | null>(null);
   // `TASK-0035` A — visible by default until the real preference loads, so a
   // fresh profile never flashes hidden before the bootstrap effect answers. Since
   // `TASK-0044` the value is the **foreground brain's own**: the legacy global
@@ -485,7 +398,7 @@ export default function MapApp() {
   const [childrenCursorStack, setChildrenCursorStack] = useState<(string | null)[]>([null]);
   const childrenRequestTicket = useRef(0);
   const [copyBusy, setCopyBusy] = useState(false);
-  const [copyError, setCopyError] = useState<string | null>(null);
+  const [copyErrorCode, setCopyErrorCode] = useState<string | null>(null);
   // `TASK-0037` — the change counters of each brain's **last** Actualiser or
   // Reconstruire in this session. Counters only: the events themselves are
   // read page by page from the brain's journal (`ChangeJournalPanel`).
@@ -650,8 +563,8 @@ export default function MapApp() {
 
   /** Inter-brain segments — `M6`. Only pairs whose two ends are displayed. */
   const crossSegments = useMemo(
-    () => crossSegmentsOf(crossOverview, nodesByBrain, selected),
-    [crossOverview, nodesByBrain, selected],
+    () => crossSegmentsOf(crossOverview, nodesByBrain, selected, locale),
+    [crossOverview, nodesByBrain, selected, locale],
   );
 
   /** Inter-brain neighbours of the selection, per brain — `M`. */
@@ -676,7 +589,7 @@ export default function MapApp() {
           // Projected from this brain's own projection rectangles. Rebuilt when
           // its tree, its relations or the selection change — never for a pan
           // or a zoom, and never by recomputing a layout.
-          segments: relationSegments(brain.relations, brain.hierarchy.byId, localSelection),
+          segments: relationSegments(brain.relations, brain.hierarchy.byId, localSelection, locale),
           relationNeighbours: establishedNeighbours(brain.relations, localSelection),
           crossNeighbours: crossNeighbours.get(brainId) ?? new Set<number>(),
           nodeCount: brain.snapshot.materializedCount,
@@ -686,7 +599,7 @@ export default function MapApp() {
         },
       ];
     });
-  }, [composed, crossNeighbours, loaded, selected]);
+  }, [composed, crossNeighbours, loaded, locale, selected]);
 
   // Anything the page throws becomes a line in the host log, so an unattended
   // run leaves a trace instead of a silent stall.
@@ -704,7 +617,6 @@ export default function MapApp() {
   }, []);
 
   useEffect(() => {
-    document.documentElement.lang = "fr";
     hostLog("info", "interface montée, lecture des fixtures et de l'hôte");
     Promise.all([
       invoke<FixtureSummary[]>("map_fixtures"),
@@ -727,7 +639,7 @@ export default function MapApp() {
       })
       .catch((error) => {
         hostLog("error", `hôte indisponible: ${String(error)}`);
-        setStatus(`Hôte indisponible : ${String(error)}`);
+        setStatus(say((t, l) => t.status.hostUnavailable(describeError(error, l))));
       });
   }, []);
 
@@ -824,7 +736,9 @@ export default function MapApp() {
     async (brainId: string, action: LifecycleAction, focusId?: number): Promise<LoadedBrain> => {
       projectionRequest.current.set(brainId, (projectionRequest.current.get(brainId) ?? 0) + 1);
       const record = catalogRef.current?.brains.find((brain) => brain.brainId === brainId);
-      if (!record) throw new Error(`cerveau absent du catalogue : ${brainId}`);
+      if (!record) {
+        throw new LocalizedError((l) => strings[l].invariants.brainMissingFromCatalogue(brainId));
+      }
       let report: Awaited<ReturnType<typeof runLifecycle>>;
       try {
         report = await runLifecycle(invoke, brainId, action);
@@ -895,7 +809,9 @@ export default function MapApp() {
       // would be exactly the leak `K3` and `L2` forbid, so it is refused
       // rather than displayed.
       if (snapshot.brainId !== brainId || report.brainId !== brainId) {
-        throw new Error(`incohérence de cerveau: demandé ${brainId}, reçu ${snapshot.brainId}`);
+        throw new LocalizedError((l) =>
+          strings[l].invariants.brainMismatch(brainId, snapshot.brainId),
+        );
       }
 
       // Relations are opened separately. Since `TASK-0024` this succeeds for
@@ -1180,7 +1096,7 @@ export default function MapApp() {
                 nextLoaded.set(reference.brainId,{...brain,snapshot,hierarchy:buildHierarchy(snapshot.nodes,snapshot.rootId)});
               }
               forced=reference;
-            } else setStatus("Extrémité absente de l'index courant.");
+            } else setStatus(say((t) => t.status.endpointAbsent));
           }
         }
 
@@ -1255,9 +1171,11 @@ export default function MapApp() {
         setMeasurement(null);
       } catch (error) {
         setComposed(next);
-        setStatus(String(error).includes("map_not_built")
-          ? "Index absent. Préparez l’exemple synthétique si nécessaire, puis choisissez Actualiser pour construire l’index."
-          : `Échec : ${String(error)}. Le dernier index enregistré reste disponible via Ouvrir.`);
+        setStatus(
+          String(error).includes("map_not_built")
+            ? say((t) => t.status.indexMissing)
+            : say((t, l) => t.status.failed(describeError(error, l))),
+        );
         hostLog("info", `composition refusée: ${String(error)}`);
       } finally {
         setBusy(false);
@@ -1274,11 +1192,19 @@ export default function MapApp() {
    */
   const refuse = useCallback((error: unknown) => {
     if (error instanceof ComposedViewError) {
-      setStatus(`Composition refusée — ${error.message}`);
+      // The closed code is what is translated; the brain it is about, an identifier, is
+      // shown as it is.
+      setStatus(
+        say((t) =>
+          t.status.compositionRefused(
+            t.compositionRefusals[error.code] + (error.brainId ? ` (${error.brainId})` : ""),
+          ),
+        ),
+      );
       hostLog("info", `composition refusée: ${error.code}`);
       return;
     }
-    setStatus(`Composition refusée — ${String(error)}`);
+    setStatus(say((t, l) => t.status.compositionRefused(describeError(error, l))));
   }, []);
 
   const onAddBrain = useCallback(
@@ -1311,7 +1237,7 @@ export default function MapApp() {
     try {
       const record = await invoke<BrainRecord | null>("map_brain_choose_real_root");
       if (!record) {
-        setStatus(t.addRealRootCancelled);
+        setStatus(say((t) => t.addRealRootCancelled));
         return;
       }
       hostLog("info", `cerveau REAL_ROOT enregistré: ${record.brainId}, aucun scan`);
@@ -1324,9 +1250,9 @@ export default function MapApp() {
           ? addBrain(current, nextOrder, record.brainId)
           : singleBrainView(nextOrder, record.brainId),
       );
-      setStatus(t.notBuilt);
+      setStatus(say((t) => t.notBuilt));
     } catch (error) {
-      setStatus(`Ajout refusé : ${String(error)}`);
+      setStatus(say((t, l) => t.status.addRefused(describeError(error, l))));
       hostLog("info", `ajout de dossier refusé: ${String(error)}`);
     } finally {
       setBusy(false);
@@ -1372,7 +1298,7 @@ export default function MapApp() {
         }
         // The focused brain is the active brain, and that is persisted.
         void activate(brainId).catch((error) =>
-          setStatus(`Cerveau actif non enregistré : ${String(error)}`),
+          setStatus(say((t, l) => t.status.activeBrainNotSaved(describeError(error, l)))),
         );
       } catch (error) {
         refuse(error);
@@ -1398,7 +1324,7 @@ export default function MapApp() {
     try {
       const snapshot = await invoke<MapProjection>("map_view", { brainId, focusId, after });
       if (projectionRequest.current.get(brainId) !== ticket || !loadedRef.current.has(brainId)) return;
-      if (snapshot.brainId !== brainId) throw new Error("projection d'un autre cerveau refusée");
+      if (snapshot.brainId !== brainId) throw new LocalizedError((l) => strings[l].invariants.projectionOfAnotherBrain);
       setLoaded(current => {
         const previous = current.get(brainId);
         if (!previous) return current;
@@ -1417,9 +1343,11 @@ export default function MapApp() {
         await activate(brainId);
       }
       setSelected({ brainId, nodeId: focusId });
-      setStatus(`${snapshot.materializedCount} éléments visibles sur ${snapshot.nodeCount}`);
+      setStatus(say((t) => t.status.visible(snapshot.materializedCount, snapshot.nodeCount)));
     } catch (error) {
-      if (projectionRequest.current.get(brainId) === ticket) setStatus(`Projection refusée : ${String(error)}`);
+      if (projectionRequest.current.get(brainId) === ticket) {
+        setStatus(say((t, l) => t.status.projectionRefused(describeError(error, l))));
+      }
     }
   }, [activate, filter.dropForNavigation, order]);
 
@@ -1439,7 +1367,7 @@ export default function MapApp() {
       searchCoordinator.invalidate();
       setComposed(focusBrain(current, order, reference.brainId));
       void activate(reference.brainId).catch((error) =>
-        setStatus(`Cerveau actif non enregistré : ${String(error)}`),
+        setStatus(say((t, l) => t.status.activeBrainNotSaved(describeError(error, l)))),
       );
     },
     [activate, order, changeProjection],
@@ -1698,7 +1626,10 @@ export default function MapApp() {
     // rule 5, `TASK-0019` `L3`.
     invoke<NodeDetail>("map_node_detail", { reference: selected })
       .then((next) => live && setDetail(next))
-      .catch((error) => live && setStatus(`Détail indisponible : ${String(error)}`))
+      .catch(
+        (error) =>
+          live && setStatus(say((t, l) => t.status.detailUnavailable(describeError(error, l)))),
+      )
       .finally(() => live && setDetailLoading(false));
     return () => {
       live = false;
@@ -1766,10 +1697,12 @@ export default function MapApp() {
       setContentObservedBrains((current) => new Set([...current, brainId]));
       setContentRevision((current) => current + 1);
       setStatus(
-        `${report.hashedCount}/${report.indexedFileCount} fichiers observés · ${report.generationId}`,
+        say((t) =>
+          t.status.contentObserved(report.hashedCount, report.indexedFileCount, report.generationId),
+        ),
       );
     } catch (error) {
-      setStatus(`Observation de contenu impossible : ${String(error)}`);
+      setStatus(say((t, l) => t.status.contentObservationFailed(describeError(error, l))));
     } finally {
       setContentCampaignRunning(false);
     }
@@ -1819,10 +1752,16 @@ export default function MapApp() {
         return updated;
       });
       setStatus(
-        `${report.engineVersion} : ${report.deterministicRelationsProduced} relation(s), ${report.suggestionsProduced} suggestion(s).`,
+        say((t) =>
+          t.status.analysisDone(
+            report.engineVersion,
+            report.deterministicRelationsProduced,
+            report.suggestionsProduced,
+          ),
+        ),
       );
     } catch (error) {
-      setStatus(`Analyse des relations impossible : ${String(error)}`);
+      setStatus(say((t, l) => t.status.analysisFailed(describeError(error, l))));
     } finally {
       setRelationEngineRunning(false);
     }
@@ -1890,11 +1829,9 @@ export default function MapApp() {
           updated.set(brainId, { ...brain, relations: next });
           return updated;
         });
-        setStatus(
-          `Suggestion ${suggestionKey} approuvée dans ${brainId} : elle est désormais une relation APPROVED.`,
-        );
+        setStatus(say((t) => t.status.approved(suggestionKey, brainId)));
       } catch (error) {
-        setStatus(`Approbation refusée : ${String(error)}`);
+        setStatus(say((t, l) => t.status.approvalRefused(describeError(error, l))));
       } finally {
         setApproving(null);
       }
@@ -1990,11 +1927,9 @@ export default function MapApp() {
         // the top after every decision would make a queue of any length
         // unusable.
         await loadReviewQueue(brainId);
-        setStatus(
-          `Suggestion ${suggestionKey} confirmée dans ${brainId} : une relation APPROVED existe désormais.`,
-        );
+        setStatus(say((t) => t.status.confirmed(suggestionKey, brainId)));
       } catch (error) {
-        setStatus(`Confirmation refusée : ${String(error)}`);
+        setStatus(say((t, l) => t.status.confirmationRefused(describeError(error, l))));
       } finally {
         setDeciding(null);
       }
@@ -2027,11 +1962,9 @@ export default function MapApp() {
           return updated;
         });
         await loadReviewQueue(brainId);
-        setStatus(
-          `Suggestion ${suggestionKey} rejetée dans ${brainId} : aucune relation créée, la décision est conservée.`,
-        );
+        setStatus(say((t) => t.status.rejected(suggestionKey, brainId)));
       } catch (error) {
-        setStatus(`Rejet refusé : ${String(error)}`);
+        setStatus(say((t, l) => t.status.rejectionRefused(describeError(error, l))));
       } finally {
         setDeciding(null);
       }
@@ -2049,7 +1982,7 @@ export default function MapApp() {
    */
   const laterFromQueue = useCallback(() => {
     setReviewCursor((cursor) => cursor + 1);
-    setStatus("Suggestion laissée en attente : aucune décision enregistrée.");
+    setStatus(say((t) => t.status.later));
   }, []);
 
   /**
@@ -2067,11 +2000,9 @@ export default function MapApp() {
         suggestionKey,
       });
       setCrossOverview(next);
-      setStatus(
-        `Suggestion inter-cerveaux ${suggestionKey} approuvée : elle est désormais une relation APPROVED.`,
-      );
+      setStatus(say((t) => t.status.crossApproved(suggestionKey)));
     } catch (error) {
-      setStatus(`Approbation inter-cerveaux refusée : ${String(error)}`);
+      setStatus(say((t, l) => t.status.crossApprovalRefused(describeError(error, l))));
     } finally {
       setApprovingCross(null);
     }
@@ -2104,8 +2035,8 @@ export default function MapApp() {
         // hand rather than reloading the composition for nothing.
         const parsed = splitCrossEndpointKey(target.endpointKey);
         if (parsed) void invoke<BrainNodeRef | null>("map_resolve_node", {brainId,relativePath:parsed.relativePath})
-          .then(reference => { if (reference) selectNode(reference); else setStatus("Extrémité absente de l'index courant."); })
-          .catch(error => setStatus(`Résolution refusée : ${String(error)}`));
+          .then(reference => { if (reference) selectNode(reference); else setStatus(say((t) => t.status.endpointAbsent)); })
+          .catch(error => setStatus(say((t, l) => t.status.resolutionRefused(describeError(error, l)))));
         return;
       }
 
@@ -2126,10 +2057,7 @@ export default function MapApp() {
         // by the very act it describes — which is what the first real M12 run
         // published, as an empty string.
         void applyComposition(next, { selectEndpoint: { brainId, endpointKey } }).then(() =>
-          setStatus(
-            `Navigation inter-cerveaux : ${brainId} rejoint la vue. ` +
-              `Aucune relation n'est créée, modifiée ni approuvée.`,
-          ),
+          setStatus(say((t) => t.status.crossNavigation(brainId))),
         );
       } catch (error) {
         refuse(error);
@@ -2142,7 +2070,7 @@ export default function MapApp() {
     try {
       setCrossCheck(await invoke<CrossRelationsSelfCheck>("map_cross_relations_self_check"));
     } catch (error) {
-      setStatus(`Contrôle inter-cerveaux impossible : ${String(error)}`);
+      setStatus(say((t, l) => t.status.crossCheckFailed(describeError(error, l))));
     }
   }, []);
 
@@ -2154,7 +2082,7 @@ export default function MapApp() {
         await invoke<RelationsSelfCheck>("map_relations_self_check", { brainId }),
       );
     } catch (error) {
-      setStatus(`Contrôle des relations impossible : ${String(error)}`);
+      setStatus(say((t, l) => t.status.relationsCheckFailed(describeError(error, l))));
     }
   }, [composed]);
 
@@ -2164,7 +2092,7 @@ export default function MapApp() {
     try {
       setSelfCheck(await invoke<MapSelfCheck>("map_self_check", { brainId }));
     } catch (error) {
-      setStatus(`Contrôle impossible : ${String(error)}`);
+      setStatus(say((t, l) => t.status.checkFailed(describeError(error, l))));
     }
   }, [composed]);
 
@@ -2285,10 +2213,10 @@ export default function MapApp() {
         ),
       });
       hostLog("info", `vérification terminée, artefact écrit: ${written}`);
-      setStatus(`Vérification écrite dans ${written}`);
+      setStatus(say((t) => t.status.verificationWritten(written)));
     } catch (error) {
       hostLog("error", `vérification interrompue: ${String(error)}`);
-      setStatus(`Vérification interrompue : ${String(error)}`);
+      setStatus(say((t, l) => t.status.verificationInterrupted(describeError(error, l))));
     }
   }, [catalog, fixtures, host]);
 
@@ -2316,7 +2244,9 @@ export default function MapApp() {
         await afterPaint();
         const measuredViewport = await awaitLaidOutViewport(() => viewportRef.current);
         const loadedBrain = loadedRef.current.get(brain.brainId);
-        if (!loadedBrain) throw new Error(`cerveau non chargé : ${brain.brainId}`);
+        if (!loadedBrain) {
+          throw new LocalizedError((l) => strings[l].invariants.brainNotLoaded(brain.brainId));
+        }
 
         const box = { x: 0, y: 0, w: world.w, h: world.h };
         const targets = selectionTargets(
@@ -2387,11 +2317,11 @@ export default function MapApp() {
         contents: JSON.stringify(artifact, null, 2),
       });
       setMeasurement(results);
-      setStatus(`Mesures écrites dans ${written}`);
+      setStatus(say((t) => t.status.measurementWritten(written)));
       hostLog("info", `campagne terminée, artefact écrit: ${written}`);
     } catch (error) {
       // A failed campaign is still a result, and it is written down.
-      setStatus(`Mesure interrompue : ${String(error)}`);
+      setStatus(say((t, l) => t.status.measurementInterrupted(describeError(error, l))));
       hostLog("error", `campagne interrompue: ${String(error)}`);
       try {
         await invoke<string>("map_write_run_artifact", {
@@ -2731,7 +2661,7 @@ export default function MapApp() {
       const currentRevision = loadedRef.current.get(hit.brainId)?.snapshot.indexRevision;
       if (searchPage && currentRevision !== undefined && currentRevision !== searchPage.indexRevision) {
         setSearchPage(null);
-        setStatus(t.searchStale);
+        setStatus(say((t) => t.searchStale));
         return;
       }
       void changeProjection(hit.brainId, hit.nodeId);
@@ -2742,19 +2672,18 @@ export default function MapApp() {
   // `TASK-0034` C/D — "Ouvrir dans l'Explorateur", from the details panel.
   const revealInExplorer = useCallback(async (reference: BrainNodeRef) => {
     setRevealBusy(true);
-    setRevealError(null);
+    setRevealErrorCode(null);
     try {
       await invoke("map_reveal_node", { reference });
     } catch (error) {
-      const code = String(error).replace(/^map_reveal_refused:\s*/, "").trim();
-      setRevealError(t.revealError[code] ?? t.revealErrorGeneric);
+      setRevealErrorCode(String(error).replace(/^map_reveal_refused:\s*/, "").trim());
     } finally {
       setRevealBusy(false);
     }
   }, []);
 
   useEffect(() => {
-    setRevealError(null);
+    setRevealErrorCode(null);
   }, [selected]);
 
   // `TASK-0035` C — "Copier le chemin", from the details panel. Same
@@ -2764,19 +2693,18 @@ export default function MapApp() {
   // definition above for why the displayed wording still differs.
   const copyNodePath = useCallback(async (reference: BrainNodeRef) => {
     setCopyBusy(true);
-    setCopyError(null);
+    setCopyErrorCode(null);
     try {
       await invoke("map_copy_node_path", { reference });
     } catch (error) {
-      const code = String(error).replace(/^map_reveal_refused:\s*/, "").trim();
-      setCopyError(t.copyError[code] ?? t.copyErrorGeneric);
+      setCopyErrorCode(String(error).replace(/^map_reveal_refused:\s*/, "").trim());
     } finally {
       setCopyBusy(false);
     }
   }, []);
 
   useEffect(() => {
-    setCopyError(null);
+    setCopyErrorCode(null);
   }, [selected]);
 
   // `TASK-0035` B — the dedicated, exact and paginated page of the current
@@ -2794,7 +2722,7 @@ export default function MapApp() {
       })
       .catch((error) => {
         if (childrenRequestTicket.current !== ticket) return;
-        setStatus(`Enfants indisponibles : ${String(error)}`);
+        setStatus(say((t, l) => t.status.childrenUnavailable(describeError(error, l))));
         setChildrenPage(null);
       })
       .finally(() => {
@@ -2865,7 +2793,7 @@ export default function MapApp() {
       icon: values.icon,
     });
     if (record.brainId !== brainId) {
-      throw new Error(`incohérence de cerveau: demandé ${brainId}, reçu ${record.brainId}`);
+      throw new LocalizedError((l) => strings[l].invariants.brainMismatch(brainId, record.brainId));
     }
     const current = catalogRef.current;
     if (current) {
@@ -2880,25 +2808,27 @@ export default function MapApp() {
       const brain = previous.get(brainId);
       return brain ? new Map(previous).set(brainId, { ...brain, record }) : previous;
     });
-    setStatus(`Cerveau personnalisé : ${record.icon} ${record.displayName}`);
+    setStatus(say((t) => t.status.identitySaved(record.icon, record.displayName)));
   }, []);
 
+  // Both depend on the locale and on nothing that is read: a switch only rebuilds the words.
   const labelFor = useCallback(
     (node: MapNode, brain: BrainRecord) =>
-      // The brain's name is part of every node's accessible name: in a composed
-      // graph, "dossier-b" alone does not say which brain it belongs to, and
-      // `L4` asks that origin never rest on colour.
-      `${brain.displayName} · ${node.name}, ${t.panel.kinds[node.kind]}, ${t.depth} ${node.depth}, ` +
-      `${node.childCount} ${t.panel.children.toLowerCase()}` +
-      (node.accessDiagnostic ? `, ${t.panel.diagnostic} ${node.accessDiagnostic}` : ""),
-    [],
+      t.nodeLabel(
+        brain.displayName,
+        node.name,
+        t.panel.kinds[node.kind],
+        node.depth,
+        node.childCount,
+        node.accessDiagnostic ?? null,
+      ),
+    [t],
   );
 
   const territoryLabelFor = useCallback(
     (brain: BrainRecord, nodeCount: number, isFocused: boolean) =>
-      `${t.territory} ${brain.displayName}, icône ${brain.icon}, ${nodeCount} ${t.nodesWord}` +
-      (isFocused ? `, ${t.compositionFocused}` : ""),
-    [],
+      t.territoryLabel(brain.displayName, brain.icon, nodeCount, isFocused),
+    [t],
   );
 
   return (
@@ -2907,6 +2837,28 @@ export default function MapApp() {
         <div>
           <h1 className="app__title">{t.appTitle}</h1>
           <p className="app__subtitle">{t.subtitle}</p>
+        </div>
+        {/* `TASK-0046` — the one explicit choice of the interface language. A native
+            button per language, so it is in the keyboard order because of what it is;
+            `aria-pressed` says which one holds; each carries its own `lang`. */}
+        <div
+          className="app__language"
+          role="group"
+          aria-label={t.language.label}
+          data-testid="language-switch"
+        >
+          {(["fr", "en"] as const).map((option) => (
+            <button
+              key={option}
+              type="button"
+              lang={option}
+              data-testid={`language-${option}`}
+              aria-pressed={locale === option}
+              onClick={() => chooseLocale(option)}
+            >
+              {t.language[option]}
+            </button>
+          ))}
         </div>
         {host ? (
           <dl className="app__host">
@@ -2924,7 +2876,7 @@ export default function MapApp() {
             </div>
             <div>
               <dt>{t.sandbox}</dt>
-              <dd className="app__sandbox">{host.sandboxRoot}</dd>
+              <dd className="app__sandbox">{sandboxDisplay(host.sandboxRoot, t)}</dd>
             </div>
           </dl>
         ) : null}
@@ -2960,7 +2912,7 @@ export default function MapApp() {
             focusedBrainId={composed.focusedBrainId}
             disabled={busy || measuring}
             onSave={saveBrainIdentity}
-            onNotice={setStatus}
+            onNotice={() => setStatus(say((words) => words.identity.unchanged))}
             strings={t.identity}
           />
         ) : null}
@@ -2976,13 +2928,13 @@ export default function MapApp() {
             {busy ? t.addRealRootBusy : t.addRealRoot}
           </button>
           <button type="button" data-testid="lifecycle-open" disabled={!composed || busy || measuring}
-            onClick={() => composed && void applyComposition(composed, { action: "open" })}>Ouvrir</button>
+            onClick={() => composed && void applyComposition(composed, { action: "open" })}>{t.open}</button>
           {/* One action, two names for one honest reason: on a brain that has
               never been indexed this **is** the first indexing, and calling it
               "Actualiser" there would describe something that never happened. */}
           <button type="button" data-testid="lifecycle-refresh" disabled={!composed || busy || measuring}
             onClick={() => composed && void applyComposition(composed, { action: "refresh" })}>
-            {focusedNeedsIndex ? t.indexBrain : "Actualiser"}
+            {focusedNeedsIndex ? t.indexBrain : t.refresh}
           </button>
           <button type="button" data-testid="lifecycle-prepare" disabled={!composed || busy || measuring}
             onClick={async () => {
@@ -2990,10 +2942,10 @@ export default function MapApp() {
               setBusy(true);
               try {
                 for (const brainId of composed.displayedBrainIds) await invoke("map_prepare_synthetic_source", { brainId });
-                setStatus("Exemple synthétique préparé. Choisissez Actualiser pour construire l’index.");
-              } catch (error) { setStatus(`Préparation refusée : ${String(error)}`); }
+                setStatus(say((words) => words.status.syntheticPrepared));
+              } catch (error) { setStatus(say((words, l) => words.status.syntheticRefused(describeError(error, l)))); }
               finally { setBusy(false); }
-            }}>Préparer l’exemple synthétique</button>
+            }}>{t.prepareSynthetic}</button>
           <button
             type="button"
             disabled={!composed || busy || measuring}
@@ -3043,41 +2995,39 @@ export default function MapApp() {
           <span className="app__sources-title">{t.brainsDiagnostic}</span>
           <ul>
             {fixtures.map((fixture) => (
-              <li key={fixture.id}>{fixtureLabel(fixture)}</li>
+              <li key={fixture.id}>{fixtureLabel(fixture, t, locale)}</li>
             ))}
           </ul>
         </section>
       ) : null}
 
       {report ? (
-        <section className="app__report" aria-label="Dernier index enregistré">
-          <span data-testid="report-brain">
-            {report.brainId} · révision {report.revision}
-          </span>
+        <section className="app__report" aria-label={t.report.label}>
+          <span data-testid="report-brain">{t.report.revision(report.brainId, report.revision)}</span>
           <span data-testid="composed-total">
-            {renderedBrains.length} territoire(s) ·{" "}
-            {renderedBrains.reduce((total, brain) => total + brain.nodeCount, 0)} {t.nodes}
+            {t.report.territories(
+              renderedBrains.length,
+              renderedBrains.reduce((total, brain) => total + brain.nodeCount, 0),
+            )}
           </span>
-          <span>
-            {report.nodeCount} éléments indexés
-          </span>
+          <span>{t.report.indexed(report.nodeCount)}</span>
           <span data-testid="layout-algorithm">
             schema {report.schemaVersion} · {focusedBrain?.snapshot.layoutAlgorithm}
           </span>
-          <span>Dernier index enregistré</span>
+          <span>{t.report.lastRecorded}</span>
           <SourceObservationBadge
             observation={
               composed ? (sourceObservations.get(composed.focusedBrainId) ?? null) : null
             }
-            locale="fr"
+            locale={locale}
           />
           <WatchStatusBadge
             status={composed ? (watchStatuses.get(composed.focusedBrainId) ?? null) : null}
-            locale="fr"
+            locale={locale}
           />
           {composed && lastChanges.has(composed.focusedBrainId) ? (
             <span data-testid="change-summary" data-summary={JSON.stringify(lastChanges.get(composed.focusedBrainId))}>
-              {describeChangeSummary(lastChanges.get(composed.focusedBrainId)!)}
+              {describeChangeSummary(lastChanges.get(composed.focusedBrainId)!, locale)}
             </span>
           ) : null}
           {composed && lastApplicationModes.has(composed.focusedBrainId) ? (
@@ -3085,7 +3035,7 @@ export default function MapApp() {
               data-testid="application-mode"
               data-application-mode={lastApplicationModes.get(composed.focusedBrainId)}
             >
-              {describeApplicationMode(lastApplicationModes.get(composed.focusedBrainId)!)}
+              {describeApplicationMode(lastApplicationModes.get(composed.focusedBrainId)!, locale)}
             </span>
           ) : null}
           {integrity ? (
@@ -3097,74 +3047,79 @@ export default function MapApp() {
       ) : null}
 
       {selfCheck ? (
-        <section className="app__report" aria-label="Contrôle H1 à H5">
+        <section className="app__report" aria-label={t.checks.h.label}>
           <span className={selfCheck.pathsAgree ? "ok" : "ko"}>
-            H1 · plan {selfCheck.plannedPaths} / disque {selfCheck.observedPaths} / index{" "}
-            {selfCheck.indexedPaths}
+            {t.checks.h.paths(selfCheck.plannedPaths, selfCheck.observedPaths, selfCheck.indexedPaths)}
           </span>
           <span className={selfCheck.layoutViolations.length === 0 ? "ok" : "ko"}>
-            N3 · {selfCheck.layoutViolations.length} violation(s)
+            {t.checks.h.violations(selfCheck.layoutViolations.length)}
           </span>
           <span className={selfCheck.hierarchyMismatches.length === 0 ? "ok" : "ko"}>
-            H3 · {selfCheck.hierarchyMismatches.length} écart(s)
+            {t.checks.h.mismatches(selfCheck.hierarchyMismatches.length, "H3")}
           </span>
           <span className={selfCheck.detailMismatches.length === 0 ? "ok" : "ko"}>
-            H5 · {selfCheck.detailMismatches.length} écart(s)
+            {t.checks.h.mismatches(selfCheck.detailMismatches.length, "H5")}
           </span>
         </section>
       ) : null}
 
       {relationsCheck ? (
-        <section className="app__report" aria-label="Contrôle J1 à J5 et J10">
+        <section className="app__report" aria-label={t.checks.j.label}>
           <span className={relationsCheck.allRejected ? "ok" : "ko"}>
-            J1–J3 · {relationsCheck.rejections.filter((entry) => entry.rejected).length}/
-            {relationsCheck.rejections.length} tentative(s) invalide(s) rejetée(s)
+            {t.checks.j.rejected(
+              relationsCheck.rejections.filter((entry) => entry.rejected).length,
+              relationsCheck.rejections.length,
+            )}
           </span>
           <span className={relationsCheck.suggestionsInEstablished.length === 0 ? "ok" : "ko"}>
-            J2 · {relationsCheck.pendingSuggestionTotal} suggestion(s) en attente, hors des comptes
+            {t.checks.j.pending(relationsCheck.pendingSuggestionTotal)}
           </span>
           <span className={relationsCheck.replayStable ? "ok" : "ko"}>
-            J3 · rejeu {relationsCheck.replayStable ? "identique" : "DIVERGENT"}
+            {t.checks.j.replay(relationsCheck.replayStable)}
           </span>
           <span className={relationsCheck.countsAgree ? "ok" : "ko"}>
-            J5 · {relationsCheck.counts.filter((entry) => entry.matches).length}/
-            {relationsCheck.counts.length} nœud(s) conformes à l'attendu gelé
+            {t.checks.j.conform(
+              relationsCheck.counts.filter((entry) => entry.matches).length,
+              relationsCheck.counts.length,
+            )}
           </span>
           <span className={relationsCheck.inventedInverses.length === 0 ? "ok" : "ko"}>
-            J5 · {relationsCheck.inventedInverses.length} inverse(s) inventé(s)
+            {t.checks.j.inverses(relationsCheck.inventedInverses.length)}
           </span>
           <span className={relationsCheck.unresolvedEndpoints.length === 0 ? "ok" : "ko"}>
-            J10 · {relationsCheck.unresolvedEndpoints.length} extrémité(s) non résolue(s)
+            {t.checks.j.unresolved(relationsCheck.unresolvedEndpoints.length)}
           </span>
         </section>
       ) : null}
 
       {crossCheck ? (
-        <section className="app__report" aria-label="Contrôle M1 à M5">
+        <section className="app__report" aria-label={t.checks.m.label}>
           <span className={crossCheck.allRejected ? "ok" : "ko"}>
-            M1–M3 · {crossCheck.rejections.filter((entry) => entry.rejected).length}/
-            {crossCheck.rejections.length} tentative(s) invalide(s) rejetée(s)
+            {t.checks.m.rejected(
+              crossCheck.rejections.filter((entry) => entry.rejected).length,
+              crossCheck.rejections.length,
+            )}
           </span>
           <span className={crossCheck.sameBrainRelations.length === 0 ? "ok" : "ko"}>
-            M1 · {crossCheck.sameBrainRelations.length} relation(s) à un seul cerveau
+            {t.checks.m.singleBrain(crossCheck.sameBrainRelations.length)}
           </span>
           <span className={crossCheck.replayStable ? "ok" : "ko"}>
-            M2 · {crossCheck.deterministicTotal} déterministe(s), rejeu{" "}
-            {crossCheck.replayStable ? "identique" : "DIVERGENT"}
+            {t.checks.m.deterministic(crossCheck.deterministicTotal, crossCheck.replayStable)}
           </span>
           <span className={crossCheck.suggestionsInEstablished.length === 0 ? "ok" : "ko"}>
-            M3 · {crossCheck.approvedTotal} approuvée(s),{" "}
-            {crossCheck.pendingSuggestionTotal} suggestion(s) hors des comptes
+            {t.checks.m.approved(crossCheck.approvedTotal, crossCheck.pendingSuggestionTotal)}
           </span>
           <span className={crossCheck.countsAgree ? "ok" : "ko"}>
-            M4 · {crossCheck.counts.filter((entry) => entry.matches).length}/
-            {crossCheck.counts.length} extrémité(s) conformes à l'attendu gelé
+            {t.checks.m.conform(
+              crossCheck.counts.filter((entry) => entry.matches).length,
+              crossCheck.counts.length,
+            )}
           </span>
           <span className={crossCheck.inventedInverses.length === 0 ? "ok" : "ko"}>
-            M2 · {crossCheck.inventedInverses.length} inverse(s) inventé(s)
+            {t.checks.m.inverses(crossCheck.inventedInverses.length)}
           </span>
           <span className={crossCheck.unresolvedEndpoints.length === 0 ? "ok" : "ko"}>
-            M5 · {crossCheck.unresolvedEndpoints.length} extrémité(s) non résolue(s)
+            {t.checks.m.unresolved(crossCheck.unresolvedEndpoints.length)}
           </span>
           <span data-testid="cross-store-path">{crossCheck.storePath}</span>
         </section>
@@ -3264,7 +3219,7 @@ export default function MapApp() {
               disabled={!focusedBrain || contentCampaignRunning}
               onClick={() => void observeFocusedContent()}
             >
-              {contentCampaignRunning ? "Observation…" : "Observer le contenu"}
+              {contentCampaignRunning ? t.observing : t.observe}
             </button>
           </div>
 
@@ -3363,6 +3318,7 @@ export default function MapApp() {
           ) : null}
 
           <FilterPanel
+            locale={locale}
             filter={filter.filter}
             active={filter.active}
             disabled={!focusedBrain}
@@ -3384,20 +3340,27 @@ export default function MapApp() {
           />
 
           {focusedBrain ? (
-            <section aria-label="Navigation progressive" data-testid="projection-controls">
-              <p>{focusedBrain.snapshot.materializedCount} éléments visibles sur {focusedBrain.snapshot.nodeCount}; {focusedBrain.snapshot.nonMaterializedCount} hors de la vue courante.</p>
+            <section aria-label={t.projection.label} data-testid="projection-controls">
+              <p>
+                {t.projection.summary(
+                  focusedBrain.snapshot.materializedCount,
+                  focusedBrain.snapshot.nodeCount,
+                  focusedBrain.snapshot.nonMaterializedCount,
+                )}
+              </p>
               <button type="button" disabled={!selected || selected.brainId !== focusedBrain.record.brainId}
-                onClick={() => selected && void changeProjection(selected.brainId, selected.nodeId)}>Explorer la sélection</button>
-              <button type="button" onClick={() => void changeProjection(focusedBrain.record.brainId, focusedBrain.snapshot.rootId)}>Revenir à la racine</button>
+                onClick={() => selected && void changeProjection(selected.brainId, selected.nodeId)}>{t.projection.exploreSelection}</button>
+              <button type="button" onClick={() => void changeProjection(focusedBrain.record.brainId, focusedBrain.snapshot.rootId)}>{t.projection.backToRoot}</button>
               {focusedBrain.snapshot.aggregates.map(a => <button type="button" key={a.parentId}
                 data-testid="expand-aggregate" data-parent-id={a.parentId}
                 onClick={() => void changeProjection(focusedBrain.record.brainId, a.parentId, a.nextCursor)}>
-                {aggregateLabel(a.omittedDirectChildren)}
+                {aggregateLabel(a.omittedDirectChildren, locale)}
               </button>)}
             </section>
           ) : null}
           {renderedBrains.length > 0 && composed ? (
             <MapView
+              locale={locale}
               brains={renderedBrains}
               crossSegments={crossSegments}
               composition={composition}
@@ -3428,12 +3391,14 @@ export default function MapApp() {
 
         <aside className="app__aside">
           <ExactDuplicateExplorer
+            locale={locale}
             brainId={composed?.focusedBrainId ?? null}
             revision={contentRevision}
             onSelect={selectNode}
           />
 
           <ChangeJournalPanel
+            locale={locale}
             brainId={composed?.focusedBrainId ?? null}
             revision={focusedBrain?.report.revision ?? null}
             onSelect={selectNode}
@@ -3454,7 +3419,7 @@ export default function MapApp() {
               detail={detail}
               loading={detailLoading}
               onSelect={selectInSelectedBrain}
-              locale="fr"
+              locale={locale}
               strings={t.panel}
               contentObservation={contentObservation}
               contentSummary={contentSummary}
@@ -3466,7 +3431,11 @@ export default function MapApp() {
               reference={selected}
               onReveal={revealInExplorer}
               revealBusy={revealBusy}
-              revealError={revealError}
+              revealError={
+                revealErrorCode === null
+                  ? null
+                  : (t.revealError[revealErrorCode] ?? t.revealErrorGeneric)
+              }
               revealActionLabel={t.revealAction}
               revealBusyLabel={t.revealBusy}
               childrenPage={childrenPage}
@@ -3476,11 +3445,14 @@ export default function MapApp() {
               hasPreviousChildrenPage={hasPreviousChildrenPage}
               onCopyPath={copyNodePath}
               copyBusy={copyBusy}
-              copyError={copyError}
+              copyError={
+                copyErrorCode === null ? null : (t.copyError[copyErrorCode] ?? t.copyErrorGeneric)
+              }
               copyActionLabel={t.copyAction}
               copyBusyLabel={t.copyBusy}
               changeState={
                 <NodeChangeState
+                  locale={locale}
                   reference={selected}
                   revision={focusedBrain?.report.revision ?? null}
                   seenRevision={seenRevision}
@@ -3490,19 +3462,22 @@ export default function MapApp() {
             />
           ) : null}
 
-          <section aria-label="Extrémités hors de la vue courante">
+          <section aria-label={t.offscreen.label}>
             {renderedBrains.flatMap(b => (loaded.get(b.brainId)?.relations?.established ?? []).flatMap(edge =>
               [edge.source, edge.target].filter(e => e.nodeId !== null && !b.hierarchy.byId.has(e.nodeId)).map((e, i) =>
-                <p key={`${b.brainId}:${edge.id}:${i}`}>{e.name} — relation hors de la vue courante.
-                  <button type="button" onClick={() => selectNode({brainId:b.brainId,nodeId:e.nodeId!})}>Afficher {e.name}</button>
+                // Keyed by the relation's own identity, not by its row id: two tables each number their
+                // rows from 1, and two lines with one key are updated as one (a stale line survives).
+                <p key={`${b.brainId}:${relationKey(edge)}:${i}`}>{t.offscreen.relation(e.name)}
+                  <button type="button" onClick={() => selectNode({brainId:b.brainId,nodeId:e.nodeId!})}>{t.offscreen.show(e.name)}</button>
                 </p>)))}
             {(nodeCross ? [...nodeCross.outgoing, ...nodeCross.incoming] : []).filter(e => e.other.nodeId !== null && !loaded.get(e.other.brainId)?.hierarchy.byId.has(e.other.nodeId)).map((e,i) =>
-              <p key={`cross:${i}`}>{e.other.name} — relation hors de la vue courante.
-                <button type="button" onClick={() => navigateCross({brainId:e.other.brainId,endpointKey:e.other.key})}>Afficher {e.other.name}</button>
+              <p key={`cross:${i}`}>{t.offscreen.relation(e.other.name)}
+                <button type="button" onClick={() => navigateCross({brainId:e.other.brainId,endpointKey:e.other.key})}>{t.offscreen.show(e.other.name)}</button>
               </p>)}
           </section>
 
           <RelationsPanel
+            locale={locale}
             relations={nodeRelations}
             loading={relationsLoading}
             available={selectedOverview !== null}
@@ -3520,6 +3495,7 @@ export default function MapApp() {
           />
 
           <ReviewQueuePanel
+            locale={locale}
             queue={reviewQueue}
             loading={reviewLoading}
             cursor={reviewCursor}
@@ -3532,6 +3508,7 @@ export default function MapApp() {
           />
 
           <CrossRelationsPanel
+            locale={locale}
             relations={nodeCross}
             loading={crossLoading}
             // What is on screen, so the panel can say « hors de la vue ». The
@@ -3544,15 +3521,15 @@ export default function MapApp() {
           />
 
           {measurement ? (
-            <section className="measure" aria-label="Mesures H9 — régression du runtime composé">
-              <h2>H9 · WebView2 · régression du runtime composé</h2>
+            <section className="measure" aria-label={t.measureReport.label}>
+              <h2>{t.measureReport.title}</h2>
               <table>
                 <thead>
                   <tr>
-                    <th scope="col">Cerveau</th>
-                    <th scope="col">Image méd.</th>
-                    <th scope="col">Image min–max</th>
-                    <th scope="col">Sélection méd.</th>
+                    <th scope="col">{t.measureReport.brain}</th>
+                    <th scope="col">{t.measureReport.frameMedian}</th>
+                    <th scope="col">{t.measureReport.frameRange}</th>
+                    <th scope="col">{t.measureReport.selectionMedian}</th>
                   </tr>
                 </thead>
                 <tbody>

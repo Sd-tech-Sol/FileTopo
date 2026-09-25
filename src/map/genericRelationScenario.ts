@@ -24,6 +24,7 @@
  * that the panel, the engine and the reads work generically.
  */
 
+import { bilingual, type StatusMessage } from "./localeText";
 import { settle, waitForCompositionReady } from "./compositionDriver";
 import { pressRealKey, waitUntil, type ScenarioLog } from "./realInput";
 import { PROTECTED_RUN_ARTIFACTS, X11_GENERIC_ARTIFACT, runtimeWriteOwnership } from "./runArtifacts";
@@ -47,7 +48,7 @@ export interface GenericRelationScenarioDeps {
   host: HostInfo | null;
   showOnly: (brainId: string) => void;
   select: (reference: BrainNodeRef) => void;
-  setStatus: (message: string) => void;
+  setStatus: (message: StatusMessage) => void;
   log: ScenarioLog;
 }
 
@@ -310,11 +311,16 @@ export async function runGenericRelationScenario(
     deps.log("info", `X11: artefact écrit: ${written}`);
     deps.setStatus(
       outcome === "written"
-        ? `X11 écrit dans ${written}`
-        : `X11 interrompu, abandon écrit dans ${written}`,
+        ? bilingual(`X11 écrit dans ${written}`, `X11 written to ${written}`)
+        : bilingual(
+            `X11 interrompu, abandon écrit dans ${written}`,
+            `X11 interrupted, abandonment written to ${written}`,
+          ),
     );
   } catch (error) {
     deps.log("error", `X11: artefact non écrit: ${String(error)}`);
-    deps.setStatus(`X11 interrompu : ${String(error)}`);
+    deps.setStatus(
+      bilingual(`X11 interrompu : ${String(error)}`, `X11 interrupted: ${String(error)}`),
+    );
   }
 }

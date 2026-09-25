@@ -46,7 +46,7 @@ function renderView(roles: ReturnType<typeof filterRoles> | undefined) {
   const viewport = { width: 800, height: 600 };
   const composition = composeTerritories([{ brainId: BRAIN, layoutWidth: 960, layoutHeight: 110 }]);
   return render(
-    <MapView
+    <MapView locale="fr"
       brains={[
         {
           brainId: BRAIN,

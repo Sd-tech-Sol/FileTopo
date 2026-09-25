@@ -1,3 +1,4 @@
+import { bilingual, type StatusMessage } from "./localeText";
 import { prepareScenarioIndex } from "./lifecycle";
 /**
  * `M12` — inter-brain relations in the **real host**, unattended.
@@ -55,7 +56,7 @@ export interface CrossScenarioDeps {
   /** The product's own selection, which moves the focus with it. */
   select: (reference: BrainNodeRef) => void;
   readComposition: () => ComposedView | null;
-  setStatus: (message: string) => void;
+  setStatus: (message: StatusMessage) => void;
   log: ScenarioLog;
 }
 
@@ -938,11 +939,21 @@ export async function runCrossScenario(
       ),
     });
     log("info", `M12: passe ${pass} terminee, artefact ecrit: ${written}`);
-    setStatus(`Scénario M12 (passe ${pass}) écrit dans ${written}`);
+    setStatus(
+      bilingual(
+        `Scénario M12 (passe ${pass}) écrit dans ${written}`,
+        `Scenario M12 (pass ${pass}) written to ${written}`,
+      ),
+    );
   } catch (error) {
     // A failed pass is still a result, and it is written down.
     log("error", `M12: passe ${pass} interrompue: ${String(error)}`);
-    setStatus(`Scénario M12 interrompu : ${String(error)}`);
+    setStatus(
+      bilingual(
+        `Scénario M12 interrompu : ${String(error)}`,
+        `Scenario M12 interrupted: ${String(error)}`,
+      ),
+    );
     try {
       await invoke<string>("map_write_run_artifact", {
         name: m12Artifact(pass, "abandoned"),

@@ -86,7 +86,7 @@ describe("TASK-0038 E — Vu / Non vu on each change", () => {
     invokeMock.mockResolvedValue(
       page([event(2, "CREATED", { seen: false }), event(1, "MODIFIED", { seen: true })]),
     );
-    render(<ChangeJournalPanel brainId={BRAIN} revision={3} onSelect={vi.fn()} />);
+    render(<ChangeJournalPanel locale="fr" brainId={BRAIN} revision={3} onSelect={vi.fn()} />);
     await openPanel();
 
     const [unseen, seen] = screen.getAllByTestId("journal-event");
@@ -113,7 +113,7 @@ describe("TASK-0038 E — Vu / Non vu on each change", () => {
     });
     const onSeenChange = vi.fn();
     render(
-      <ChangeJournalPanel brainId={BRAIN} revision={3} onSelect={vi.fn()} onSeenChange={onSeenChange} />,
+      <ChangeJournalPanel locale="fr" brainId={BRAIN} revision={3} onSelect={vi.fn()} onSeenChange={onSeenChange} />,
     );
     await openPanel();
 
@@ -139,7 +139,7 @@ describe("TASK-0038 E — Vu / Non vu on each change", () => {
         }),
     });
     const { rerender } = render(
-      <ChangeJournalPanel brainId={BRAIN} revision={3} onSelect={vi.fn()} />,
+      <ChangeJournalPanel locale="fr" brainId={BRAIN} revision={3} onSelect={vi.fn()} />,
     );
     await openPanel();
     fireEvent.click(screen.getByTestId("journal-filter-CREATED"));
@@ -156,7 +156,7 @@ describe("TASK-0038 E — Vu / Non vu on each change", () => {
         expect.objectContaining({ after: "fjc1.index-a.3" }),
       ),
     );
-    rerender(<ChangeJournalPanel brainId={BRAIN} revision={4} onSelect={vi.fn()} />);
+    rerender(<ChangeJournalPanel locale="fr" brainId={BRAIN} revision={4} onSelect={vi.fn()} />);
     await waitFor(() =>
       expect(invokeMock).toHaveBeenLastCalledWith(
         "map_change_journal",
@@ -175,7 +175,7 @@ describe("TASK-0038 E — « Tout marquer vu » is confirmed inline", () => {
       map_change_journal: () =>
         page([event(2, "CREATED", { seen: false }), event(1, "MODIFIED", { seen: false })]),
     });
-    render(<ChangeJournalPanel brainId={BRAIN} revision={3} onSelect={vi.fn()} />);
+    render(<ChangeJournalPanel locale="fr" brainId={BRAIN} revision={3} onSelect={vi.fn()} />);
     await openPanel();
     expect(screen.queryByTestId("journal-mark-all-confirm")).toBeNull();
 
@@ -189,7 +189,7 @@ describe("TASK-0038 E — « Tout marquer vu » is confirmed inline", () => {
 
   it("« Annuler » closes the confirmation and never calls a mutating command", async () => {
     backend({ map_change_journal: () => page([event(1, "CREATED", { seen: false })]) });
-    render(<ChangeJournalPanel brainId={BRAIN} revision={3} onSelect={vi.fn()} />);
+    render(<ChangeJournalPanel locale="fr" brainId={BRAIN} revision={3} onSelect={vi.fn()} />);
     await openPanel();
 
     fireEvent.click(screen.getByTestId("journal-mark-all"));
@@ -212,7 +212,7 @@ describe("TASK-0038 E — « Tout marquer vu » is confirmed inline", () => {
     });
     const onSeenChange = vi.fn();
     render(
-      <ChangeJournalPanel brainId={BRAIN} revision={3} onSelect={vi.fn()} onSeenChange={onSeenChange} />,
+      <ChangeJournalPanel locale="fr" brainId={BRAIN} revision={3} onSelect={vi.fn()} onSeenChange={onSeenChange} />,
     );
     await openPanel();
 
@@ -234,7 +234,7 @@ describe("TASK-0038 E — « Tout marquer vu » is confirmed inline", () => {
     invokeMock.mockResolvedValue(
       page([event(1, "CREATED", { seen: true })], { total: 1, unseenTotal: 4 }),
     );
-    render(<ChangeJournalPanel brainId={BRAIN} revision={3} onSelect={vi.fn()} />);
+    render(<ChangeJournalPanel locale="fr" brainId={BRAIN} revision={3} onSelect={vi.fn()} />);
     await openPanel();
     expect(screen.getByTestId("journal-unseen-total").getAttribute("data-unseen-total")).toBe("4");
     expect((screen.getByTestId("journal-mark-all") as HTMLButtonElement).disabled).toBe(false);
@@ -253,7 +253,7 @@ describe("TASK-0038 E — brains stay apart, refusals are shown", () => {
     });
     const onSeenChange = vi.fn();
     render(
-      <ChangeJournalPanel brainId={BRAIN} revision={3} onSelect={vi.fn()} onSeenChange={onSeenChange} />,
+      <ChangeJournalPanel locale="fr" brainId={BRAIN} revision={3} onSelect={vi.fn()} onSeenChange={onSeenChange} />,
     );
     await openPanel();
     fireEvent.click(screen.getByTestId("journal-mark-seen"));
@@ -271,7 +271,7 @@ describe("TASK-0038 E — brains stay apart, refusals are shown", () => {
         throw "journal_event_missing: 7";
       },
     });
-    render(<ChangeJournalPanel brainId={BRAIN} revision={3} onSelect={vi.fn()} />);
+    render(<ChangeJournalPanel locale="fr" brainId={BRAIN} revision={3} onSelect={vi.fn()} />);
     await openPanel();
     fireEvent.click(screen.getByTestId("journal-mark-seen"));
     await waitFor(() =>
@@ -283,7 +283,7 @@ describe("TASK-0038 E — brains stay apart, refusals are shown", () => {
   it("drops a pending confirmation when the brain changes and shares nothing across brains", async () => {
     backend({ map_change_journal: () => page([event(1, "CREATED", { seen: false })]) });
     const { rerender } = render(
-      <ChangeJournalPanel brainId={BRAIN} revision={3} onSelect={vi.fn()} />,
+      <ChangeJournalPanel locale="fr" brainId={BRAIN} revision={3} onSelect={vi.fn()} />,
     );
     await openPanel();
     fireEvent.click(screen.getByTestId("journal-mark-all"));
@@ -295,7 +295,7 @@ describe("TASK-0038 E — brains stay apart, refusals are shown", () => {
           brainId: String(args.brainId),
         }),
     });
-    rerender(<ChangeJournalPanel brainId="brain-beta" revision={1} onSelect={vi.fn()} />);
+    rerender(<ChangeJournalPanel locale="fr" brainId="brain-beta" revision={1} onSelect={vi.fn()} />);
     await waitFor(() => expect(screen.queryByTestId("journal-mark-all")).not.toBeNull());
     expect(screen.queryByTestId("journal-mark-all-confirm")).toBeNull();
     expect(markCalls()).toHaveLength(0);
@@ -304,11 +304,11 @@ describe("TASK-0038 E — brains stay apart, refusals are shown", () => {
   it("re-reads the page when another surface acknowledged something (seenRevision moved)", async () => {
     backend({ map_change_journal: () => page([event(1, "CREATED", { seen: false })]) });
     const { rerender } = render(
-      <ChangeJournalPanel brainId={BRAIN} revision={3} seenRevision={0} onSelect={vi.fn()} />,
+      <ChangeJournalPanel locale="fr" brainId={BRAIN} revision={3} seenRevision={0} onSelect={vi.fn()} />,
     );
     await openPanel();
     backend({ map_change_journal: () => page([event(1, "CREATED", { seen: true })]) });
-    rerender(<ChangeJournalPanel brainId={BRAIN} revision={3} seenRevision={1} onSelect={vi.fn()} />);
+    rerender(<ChangeJournalPanel locale="fr" brainId={BRAIN} revision={3} seenRevision={1} onSelect={vi.fn()} />);
     await waitFor(() =>
       expect(screen.getByTestId("journal-event").getAttribute("data-seen")).toBe("true"),
     );

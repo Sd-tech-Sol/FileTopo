@@ -180,7 +180,10 @@ describe("TASK-0039 — l'état des filtres et ses lectures", () => {
     const { result, onProjection, onError } = setup({ brainId: "a", revision: 3, seenRevision: 0 });
     act(() => result.current.change(NEW));
     await waitFor(() => expect(onError).toHaveBeenCalledTimes(1));
-    expect(onError.mock.calls[0][0]).toContain("filter_cursor_stale");
+    // `TASK-0046` — the line says itself in the language of the moment it is shown.
+    const line = onError.mock.calls[0][0] as string | ((locale: "fr" | "en") => string);
+    expect(typeof line === "function" ? line("fr") : line).toContain("filter_cursor_stale");
+    expect(typeof line === "function" ? line("en") : line).toContain("filter_cursor_stale");
     expect(onProjection).not.toHaveBeenCalled();
   });
 
