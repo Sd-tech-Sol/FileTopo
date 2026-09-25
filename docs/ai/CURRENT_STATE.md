@@ -3126,3 +3126,14 @@ est levée pour Claude Code**; elle **reste entière pour Codex**.
 - Preuve réelle : trois cerveaux, deux sur le même dossier, édition + fermeture + relance réelles; métadonnées persistantes et états TASK-0044 intacts.
 - Limite connue non bloquante : le backend accepte encore une icône espace; aucune règle produit n'a été inventée dans TASK-0045.
 - `P-19` reste PARTIELLE; `F-035` et `F-036` restent ouvertes.
+
+
+## TASK-0046 — V1 Complete FR/EN Runtime — READY — 2026-09-25
+
+- `TASK-0045` est **VERIFIED** par `ACTION-0075`.
+- `P-20` est **CLOSED / VERIFIED**.
+- `ACTION-0076` confirme que F-035 reste manquante dans le runtime réellement lancé : `MapApp` force encore le français.
+- Infrastructure à réutiliser : `src/lib/locale.ts` (`Locale`, détection système, `filetopo.locale`, fallback EN).
+- `DEC-0044` : **APPROVED** — une locale globale UI, aucun nouveau backend de préférence.
+- `TASK-0046` : **READY** sur `build/v0.2-a30-v1-complete-fr-en-runtime`.
+- Portée : F-035 complet + portions langue de P-19/P-21. F-036 hors tranche; P-19/P-21 restent partielles.
