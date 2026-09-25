@@ -3079,3 +3079,15 @@ est levée pour Claude Code**; elle **reste entière pour Codex**.
 - `DEC-0042` : **APPROVED** — état de reprise non sensible, versionné et brain-scoped dans le catalogue existant; aucun nouveau magasin.
 - `TASK-0044` : **READY** sur `build/v0.2-a28-v1-brain-resume-state`.
 - `P-19` ne sera pas déclaré complet dans cette tranche : langue, accessibilité et composition multi-brain persistante restent séparées.
+
+
+## Mise à jour 2026-09-25 — après ACTION-0073 / ACTION-0074
+
+- `TASK-0044` : **VERIFIED dans sa portée** par `ACTION-0073`.
+- `P-19` reste **PARTIELLE** : FR/EN, préférences d'accessibilité et composition multi-cerveaux persistante restent ouvertes.
+- `ACTION-0074` : audit des écarts V1 terminé.
+- `F-002`, `F-013` et `F-034` sont réconciliées avec les preuves actuelles; les filtres `F-022` sont maintenant persistants par cerveau.
+- `F-035` est corrigée à **PROPOSED pour le runtime V1 courant** : le vieux `src/App.tsx` est bilingue, mais `MapApp` reste français seulement.
+- Écart suivant sélectionné : `F-033`. Le backend `map_brain_update` existe déjà, mais `MapApp` n'offre aucun éditeur nom/couleur/icône.
+- `DEC-0043` : **APPROVED** — l'édition change seulement les métadonnées FileTopo du cerveau, jamais la source.
+- `TASK-0045` : **READY** sur `build/v0.2-a29-v1-brain-identity-editor`.
