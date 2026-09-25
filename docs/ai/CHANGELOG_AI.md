@@ -5866,3 +5866,17 @@ Aucune TASK-0044, aucun USN, aucun PR / fusion / étiquette / release; `graph/` 
 Parseur, hints, W-B / W-C fonctionnels, interface, cadences, `incremental.rs`, dépendances : non touchés.
 Aucune TASK-0044, aucun USN, aucun PR / fusion / étiquette / release; pas de rejeu WebView2 (aucun
 changement frontend); `graph/` non touché.
+
+
+## 2026-09-25 — ACTION-0072 / préparation TASK-0044
+
+**Orchestrateur :** ChatGPT
+
+- recontrôle indépendant ACTION-0071 : fermeture propre du watcher acceptée;
+- TASK-0043 VERIFIED dans sa portée par ACTION-0072;
+- FEATURE_MATRIX réconciliée pour F-030/F-031/F-032;
+- audit de reprise : active brain, metadata brain et seen/unseen déjà persistants; caméra/sélection, filtre et panneau brain-scoped restent à fermer;
+- DEC-0042 approuvée : resume state versionné dans le catalogue existant, sans nouveau magasin;
+- TASK-0044 créée READY sur `build/v0.2-a28-v1-brain-resume-state`;
+- P-19 explicitement laissée partielle pour FR/EN, accessibilité et composition multi-brain persistante;
+- aucune TASK-0045, aucun code produit exécuté par l'orchestrateur.
