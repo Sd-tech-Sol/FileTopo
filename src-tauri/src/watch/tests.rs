@@ -1502,6 +1502,221 @@ fn a_shutdown_during_a_full_verification_cancels_it_and_leaves_the_index_untouch
 }
 
 // ==========================================================================
+// ACTION-0071 — a shutdown never detaches a worker, even one waiting for the lock
+// ==========================================================================
+//
+// Before `ACTION-0071`, a watcher took `PUBLICATION_LOCK` with a blocking `Mutex::lock`, and
+// `shutdown(patience)` dropped — **detached** — any `JoinHandle` still running at its
+// deadline. With a manual gesture holding the lock, the worker never reached a point that
+// looks at its stop flag: `shutdown` returned with the worker alive (no `STOPPED` announced,
+// its reader still open), and once the lock was released the detached worker published a
+// late revision and late statuses. Each proof below reproduces exactly that situation and
+// fails on that code at "the last status at return is STOPPED", "the reader is released",
+// and "nothing late".
+
+/// What a shutdown looked like while a "manual gesture" held the publication lock. Captured
+/// with the lock held and asserted only **after** it is released: a failing assertion must not
+/// poison the process-wide lock for every other test.
+struct HeldLockShutdown {
+    reached: bool,
+    status_while_waiting: Option<WatchStatus>,
+    metrics_while_waiting: super::types::WatchMetrics,
+    report: super::ShutdownReport,
+    took: Duration,
+    last_at_return: Option<WatchState>,
+    history_at_return: usize,
+    live_at_return: usize,
+    file_at_return: String,
+}
+
+/// Arms the hook `point`, runs `trigger`, waits until the worker has reached the hook — after
+/// which nothing stands between it and the wait for the publication lock — lets it wait,
+/// then shuts the manager down with a **very short patience, the lock still held**. The lock
+/// is released only after `shutdown` has returned.
+fn shutdown_while_the_lock_is_held(
+    rig: &Rig,
+    point: &'static str,
+    trigger: impl FnOnce(),
+) -> HeldLockShutdown {
+    let armed = Arc::new(AtomicBool::new(false));
+    let reached = Arc::new(AtomicBool::new(false));
+    {
+        let armed = armed.clone();
+        let reached = reached.clone();
+        rig.run.manager.set_hook(move |at| {
+            if at == point && armed.load(Ordering::SeqCst) {
+                reached.store(true, Ordering::SeqCst);
+            }
+        });
+    }
+    // "A manual Actualiser is running": it holds the one publication lock.
+    let manual = crate::map::watch_ops::hold_publication_lock();
+    armed.store(true, Ordering::SeqCst);
+    trigger();
+    let deadline = Instant::now() + Duration::from_secs(20);
+    while !reached.load(Ordering::SeqCst) && Instant::now() < deadline {
+        sleep(10);
+    }
+    // Inside the wait for the lock, and staying there.
+    sleep(300);
+    let status_while_waiting = rig.history().last().cloned();
+    let metrics_while_waiting = rig.metrics();
+
+    let started = Instant::now();
+    let report = rig.run.manager.shutdown(Duration::from_millis(1));
+    let took = started.elapsed();
+    let history = rig.history();
+    let outcome = HeldLockShutdown {
+        reached: reached.load(Ordering::SeqCst),
+        status_while_waiting,
+        metrics_while_waiting,
+        report,
+        took,
+        last_at_return: history.last().map(|status| status.state),
+        history_at_return: history.len(),
+        live_at_return: rig.script.live(),
+        file_at_return: rig.fx.dump_file(),
+    };
+    // Only now does the "manual gesture" finish.
+    drop(manual);
+    outcome
+}
+
+/// After the lock is released, a detached worker would have gone on: wait well beyond every
+/// cadence and check that nothing happened.
+fn assert_nothing_late(rig: &Rig, outcome: &HeldLockShutdown, revision: u64, file: &str) {
+    sleep(1_000);
+    assert_eq!(
+        rig.history().len(),
+        outcome.history_at_return,
+        "no status after shutdown returned: {:?}",
+        rig.trail()
+    );
+    assert_eq!(rig.fx.revision(), revision, "no late revision");
+    assert_eq!(rig.fx.dump_file(), file, "no late write, no partial batch");
+    assert_eq!(rig.script.live(), 0, "the reader stays released");
+    assert_eq!(rig.status().state, WatchState::Stopped);
+}
+
+fn assert_joined_while_held(outcome: &HeldLockShutdown, file: &str) {
+    assert!(
+        outcome.reached,
+        "the worker reached the publication attempt"
+    );
+    assert_eq!(
+        outcome.report.joined, 1,
+        "the worker was joined, not detached"
+    );
+    assert!(
+        outcome.took < Duration::from_secs(3),
+        "bounded without releasing the lock: {:?}",
+        outcome.took
+    );
+    assert_eq!(
+        outcome.last_at_return,
+        Some(WatchState::Stopped),
+        "the worker announced STOPPED before shutdown returned"
+    );
+    assert_eq!(
+        outcome.live_at_return, 0,
+        "the reader was released before return"
+    );
+    assert_eq!(outcome.file_at_return, file, "nothing was written");
+}
+
+/// `T1` — a full verification (`W-C`) waiting for a lock a manual gesture holds.
+#[test]
+fn a_shutdown_while_a_full_verification_waits_for_the_publication_lock_joins_the_worker() {
+    let rig = Rig::scripted("racine-verrou-wc");
+    rig.start();
+    rig.wait_watching();
+    // A change only a publication would record: a late one would show.
+    fs::write(rig.fx.path("alpha/tardif.txt"), b"ecrit pendant le verrou").unwrap();
+    let revision = rig.fx.revision();
+    let file = rig.fx.dump_file();
+
+    let outcome = shutdown_while_the_lock_is_held(&rig, "before_wc", || {
+        rig.run.manager.inject_loss(&rig.fx.brain.brain_id);
+    });
+
+    let waiting = outcome.status_while_waiting.clone().expect("a status");
+    assert_eq!(
+        (waiting.state, waiting.reason),
+        (WatchState::Verifying, Some(WatchReason::SignalsLost)),
+        "the worker was inside the loss's W-C, waiting"
+    );
+    assert_eq!(
+        outcome.metrics_while_waiting.wc_cycles, 2,
+        "the initial W-C, then the loss's"
+    );
+    assert_joined_while_held(&outcome, &file);
+    assert_nothing_late(&rig, &outcome, revision, &file);
+
+    // Control: the change was real — the manual gesture does publish it.
+    refresh_map(&rig.fx.paths, &rig.fx.brain).unwrap();
+    assert!(rig.fx.revision() > revision);
+}
+
+/// `T2` — a targeted reconciliation (`W-B`) takes the **same** cancellable acquisition: a
+/// hint while the lock is held, then a shutdown. No batch, partial or whole.
+#[test]
+fn a_shutdown_while_a_targeted_reconciliation_waits_for_the_publication_lock_joins_the_worker() {
+    let rig = Rig::scripted("racine-verrou-wb");
+    rig.start();
+    rig.wait_watching();
+    fs::write(rig.fx.path("alpha/tardif.txt"), b"ecrit pendant le verrou").unwrap();
+    let revision = rig.fx.revision();
+    let file = rig.fx.dump_file();
+
+    let outcome = shutdown_while_the_lock_is_held(&rig, "before_wb", || {
+        rig.script.hints(&["alpha/tardif.txt"]);
+    });
+
+    let waiting = outcome.status_while_waiting.clone().expect("a status");
+    assert_eq!(
+        (waiting.state, waiting.reason),
+        (WatchState::Verifying, None),
+        "the worker was inside the hint's W-B, waiting"
+    );
+    let metrics = outcome.metrics_while_waiting;
+    assert_eq!(
+        (metrics.wc_cycles, metrics.wb_cycles, metrics.wb_escalations),
+        (1, 1, 0),
+        "a targeted reconciliation, not an escalation: {metrics:?}"
+    );
+    assert_joined_while_held(&outcome, &file);
+    assert_nothing_late(&rig, &outcome, revision, &file);
+    assert_eq!(rig.observation(), SourceState::Synced, "no observation");
+
+    refresh_map(&rig.fx.paths, &rig.fx.brain).unwrap();
+    assert!(rig.fx.revision() > revision, "control: the change was real");
+}
+
+/// The root guard's record takes the lock too, and just as cancellably: a root that leaves
+/// while the lock is held, then a shutdown — no observation is written afterwards.
+#[test]
+fn a_shutdown_while_the_root_guard_waits_for_the_publication_lock_joins_the_worker() {
+    let rig = Rig::scripted("racine-verrou-garde");
+    rig.start();
+    rig.wait_watching();
+    let revision = rig.fx.revision();
+    let file = rig.fx.dump_file();
+    let moved = rig.fx._temp.path().join("racine-emportee");
+
+    let outcome = shutdown_while_the_lock_is_held(&rig, "before_guard_record", || {
+        fs::rename(&rig.fx.root, &moved).unwrap();
+    });
+
+    assert_joined_while_held(&outcome, &file);
+    assert_nothing_late(&rig, &outcome, revision, &file);
+    assert_eq!(
+        rig.observation(),
+        SourceState::Synced,
+        "the cancelled guard recorded nothing, now or later"
+    );
+}
+
+// ==========================================================================
 // Nothing sensitive leaves, and nothing is logged
 // ==========================================================================
 

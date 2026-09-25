@@ -2,7 +2,10 @@
 //!
 //! The watcher (`crate::watch`) decides *when*; this module does *the work*, through
 //! the same pipeline **Actualiser** uses and under the **same write lock**
-//! ([`PUBLICATION_LOCK`]): two logical writers never compete for an Index.
+//! ([`PUBLICATION_LOCK`](super::commands::PUBLICATION_LOCK)): two logical writers never
+//! compete for an Index. The watcher takes that lock **cancellably** (`ACTION-0071`): a
+//! watcher asked to stop while a manual gesture holds it gives up before acquiring it, so
+//! a shutdown can always join it.
 //!
 //! * [`verify_full`] is **`W-C`**: `full scan -> reconcile_full_scan -> U-B`, the very
 //!   function behind the manual **Actualiser** (`publish_map`, gesture `Refresh`). The
@@ -24,7 +27,7 @@
 use super::MapError;
 use super::brains::BrainRecord;
 use super::commands::{
-    self, Gesture, MapBuildReport, PUBLICATION_LOCK, now_ms, open_store_writable,
+    self, Gesture, MapBuildReport, PublicationCancelled, now_ms, open_store_writable,
 };
 use super::sandbox::SandboxPaths;
 use super::source::BrainSource;
@@ -35,10 +38,18 @@ use crate::scope::{self, ScopeCounts, ScopeLimits, ScopeRefusal, ScopeRequest};
 use std::path::{Path, PathBuf};
 use std::sync::MutexGuard;
 
-/// The write lock, tolerant of a poisoned state: a panic elsewhere must not stop the
-/// watcher from ever writing again.
-fn lock_publication() -> MutexGuard<'static, ()> {
-    PUBLICATION_LOCK
+/// The write lock, taken **only if the watcher is not stopping** — `cancelled` is looked at
+/// while waiting, never an unbounded `Mutex::lock` — and tolerant of a poisoned state.
+fn lock_publication(
+    cancelled: &dyn Fn() -> bool,
+) -> Result<MutexGuard<'static, ()>, PublicationCancelled> {
+    commands::lock_publication_cancellable(cancelled)
+}
+
+/// A proof's way to be "a manual gesture that holds the publication lock".
+#[cfg(test)]
+pub(crate) fn hold_publication_lock() -> MutexGuard<'static, ()> {
+    super::commands::PUBLICATION_LOCK
         .lock()
         .unwrap_or_else(std::sync::PoisonError::into_inner)
 }
@@ -106,15 +117,28 @@ pub(crate) fn observation(paths: &SandboxPaths, brain: &BrainRecord) -> SourceOb
 // W-C
 // ---------------------------------------------------------------------------------
 
+/// Why a full verification did not publish.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum FullFailure {
+    /// The watcher is stopping and gave up **while waiting for the publication lock**:
+    /// nothing was read, written or observed.
+    Cancelled,
+    /// The pipeline refused (a cancelled scan included) — as the manual gesture would,
+    /// and with the same source observation already recorded by it.
+    Refused,
+}
+
 /// **`W-C`** — a complete verification: the manual **Actualiser**'s pipeline, run by
-/// the watcher. `cancelled` stops the scan (the watcher is shutting down); a
-/// cancellation is not an observation of the source.
+/// the watcher. `cancelled` stops the wait for the publication lock and then the scan
+/// (the watcher is shutting down); a cancellation is not an observation of the source.
 pub(crate) fn verify_full(
     paths: &SandboxPaths,
     brain: &BrainRecord,
     cancelled: impl Fn() -> bool,
-) -> Result<MapBuildReport, MapError> {
-    commands::publish_map(paths, brain, Gesture::Refresh, cancelled)
+) -> Result<MapBuildReport, FullFailure> {
+    let publication = lock_publication(&cancelled).map_err(|_| FullFailure::Cancelled)?;
+    commands::publish_map_with_lock(&publication, paths, brain, Gesture::Refresh, cancelled)
+        .map_err(|_| FullFailure::Refused)
 }
 
 // ---------------------------------------------------------------------------------
@@ -179,7 +203,8 @@ pub(crate) struct ScopedApplied {
 /// **`W-B`** — re-reads only what the hints point at (`requests`: directories to re-list and
 /// entries to observe alone; see `crate::scope::resolve_scopes`), derives
 /// the minimal batch, and applies it with the `TASK-0040` kernel — **under the same
-/// lock as Actualiser and Reconstruire**.
+/// lock as Actualiser and Reconstruire**, taken cancellably: a stop that arrives while
+/// the lock is held elsewhere is [`ScopedFailure::Cancelled`] before anything is read.
 ///
 /// The source observation follows the Index: a commit that advances the revision while
 /// the observation said `SYNCED` re-records `SYNCED` at the new revision (otherwise it
@@ -193,7 +218,9 @@ pub(crate) fn apply_scopes(
     max_nodes: usize,
     cancelled: &dyn Fn() -> bool,
 ) -> Result<ScopedApplied, ScopedFailure> {
-    let _publication = lock_publication();
+    let Ok(_publication) = lock_publication(cancelled) else {
+        return Err(ScopedFailure::Cancelled);
+    };
     // Never the one that migrates: an older schema waits for the person's Ouvrir.
     if !is_stamped(paths, brain).unwrap_or(false) {
         return Err(ScopedFailure::NeedsManualRefresh);
@@ -324,14 +351,18 @@ fn stored_root_identity(
 /// Records what the guard found as the current observation — **only when it differs**
 /// from the one already recorded, so a source that stays absent does not rewrite the
 /// catalogue every few seconds. Never touches the Index, the journal, a revision or a
-/// preference. Returns whether a record was written.
+/// preference. Returns whether a record was written — never one once `cancelled` holds
+/// while the publication lock is being waited for.
 pub(crate) fn record_guard_failure(
     paths: &SandboxPaths,
     brain: &BrainRecord,
     state: SourceState,
     reason: SourceReason,
+    cancelled: &dyn Fn() -> bool,
 ) -> bool {
-    let _publication = lock_publication();
+    let Ok(_publication) = lock_publication(cancelled) else {
+        return false;
+    };
     // No Index, nothing to keep serving: no observation (the same rule as
     // `publish_map`).
     if !is_indexed(paths, brain) {

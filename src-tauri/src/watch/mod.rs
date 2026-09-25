@@ -74,6 +74,16 @@ struct Entry {
     join: Option<JoinHandle<()>>,
 }
 
+/// What [`WatchManager::shutdown`] did. Every worker it owned was joined — there is no
+/// "abandoned" count, because there is no such branch.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ShutdownReport {
+    /// Worker threads joined.
+    pub joined: usize,
+    /// Whether joining them took longer than the caller's `patience` (diagnostic only).
+    pub beyond_patience: bool,
+}
+
 /// The process-wide owner of the watchers. Idempotent to start, stop and ask.
 pub struct WatchManager {
     inner: Arc<ManagerInner>,
@@ -230,29 +240,37 @@ impl WatchManager {
         }
     }
 
-    /// Stops every watcher — the application is closing. Waits, but never forever: a
-    /// worker that is inside a long manual publication is abandoned after `patience`
-    /// rather than holding the process open.
-    pub fn shutdown(&self, patience: Duration) {
+    /// Stops every watcher — the application is closing — and **joins every worker it
+    /// owned** (`ACTION-0071`): no `JoinHandle` of a live worker is ever dropped, so no
+    /// worker is detached, and once this returns no watcher emits a status or moves an
+    /// Index again, and every native handle is closed.
+    ///
+    /// The wait is bounded by construction, not by a deadline: the native reader looks
+    /// at its stop flag every slice, a watcher waiting for the publication lock gives up
+    /// on the stop flag (`watch_ops`), and the watcher's scans carry the same flag.
+    /// `patience` is only a **diagnostic threshold**: the report says whether it was
+    /// exceeded; it never authorises leaving a worker behind.
+    pub fn shutdown(&self, patience: Duration) -> ShutdownReport {
+        let started = Instant::now();
         let drained: Vec<(String, Entry)> = self.entries().drain().collect();
         for (_, entry) in &drained {
             entry.shared.request_stop();
         }
-        let deadline = Instant::now() + patience;
+        let mut joined = 0;
         for (_, mut entry) in drained {
             if let Some(join) = entry.join.take() {
-                while !join.is_finished() && Instant::now() < deadline {
-                    std::thread::sleep(Duration::from_millis(10));
-                }
-                if join.is_finished() {
-                    let _ = join.join();
-                }
+                let _ = join.join();
+                joined += 1;
             }
+        }
+        ShutdownReport {
+            joined,
+            beyond_patience: started.elapsed() > patience,
         }
     }
 
     /// Proof hook: runs `hook` at the named points of the worker loop
-    /// (`before_wb`, `after_wb`, `before_wc`, `after_wc`).
+    /// (`before_wb`, `after_wb`, `before_wc`, `after_wc`, `before_guard_record`).
     #[cfg(test)]
     pub(crate) fn set_hook(&self, hook: impl Fn(&'static str) + Send + Sync + 'static) {
         *self

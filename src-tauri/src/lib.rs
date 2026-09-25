@@ -1572,8 +1572,9 @@ pub fn run() {
             Ok(())
         })
         // Closing the last window releases every native handle and joins every watcher
-        // thread (bounded: a worker inside a long manual publication is not waited for
-        // beyond a few seconds).
+        // thread — never detaches one (`ACTION-0071`). The wait is bounded because a
+        // watcher waiting for a manual publication's lock gives up on its stop flag; the
+        // duration is only a diagnostic threshold.
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::Destroyed = event
                 && let Some(manager) = window.app_handle().try_state::<watch::WatchManager>()

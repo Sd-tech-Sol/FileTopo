@@ -21,7 +21,7 @@ use crate::domain::ScanDiagnostic;
 use crate::scanner::scan_tree_controlled;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
-use std::sync::Mutex;
+use std::sync::{Mutex, MutexGuard, TryLockError};
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -454,6 +454,45 @@ pub fn build_map(
 // logical writers never compete for the Index. Nothing else is a second mechanism.
 pub(super) static PUBLICATION_LOCK: Mutex<()> = Mutex::new(());
 
+/// How often a watcher waiting for [`PUBLICATION_LOCK`] looks at its stop flag.
+const PUBLICATION_POLL: std::time::Duration = std::time::Duration::from_millis(10);
+
+/// The watcher stopped while it was waiting for the publication lock: nothing was read,
+/// nothing was written, nothing was observed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) struct PublicationCancelled;
+
+/// **The watcher's** way to take [`PUBLICATION_LOCK`] (`ACTION-0071`): the same lock as
+/// Actualiser and Reconstruire, but never an unbounded wait in `Mutex::lock`. `cancelled`
+/// is consulted before every attempt, so a watcher that is asked to stop while a manual
+/// gesture holds the lock gives up **before** acquiring it — and a shutdown can always
+/// join it. A poisoned lock is taken anyway: a panic elsewhere must not stop the watcher
+/// from ever writing again.
+///
+/// The manual gestures keep their blocking `lock()`: a person waits for their own click.
+pub(super) fn lock_publication_cancellable(
+    cancelled: &dyn Fn() -> bool,
+) -> Result<MutexGuard<'static, ()>, PublicationCancelled> {
+    lock_cancellable(&PUBLICATION_LOCK, cancelled, PUBLICATION_POLL)
+}
+
+fn lock_cancellable<'a>(
+    lock: &'a Mutex<()>,
+    cancelled: &dyn Fn() -> bool,
+    poll: std::time::Duration,
+) -> Result<MutexGuard<'a, ()>, PublicationCancelled> {
+    loop {
+        if cancelled() {
+            return Err(PublicationCancelled);
+        }
+        match lock.try_lock() {
+            Ok(guard) => return Ok(guard),
+            Err(TryLockError::Poisoned(poisoned)) => return Ok(poisoned.into_inner()),
+            Err(TryLockError::WouldBlock) => std::thread::sleep(poll),
+        }
+    }
+}
+
 /// The one lifecycle entry behind **Actualiser** and **Reconstruire**.
 ///
 /// Everything up to and including the scan is common: binding checked before the
@@ -478,9 +517,23 @@ pub(super) fn publish_map(
     gesture: Gesture,
     cancelled: impl Fn() -> bool,
 ) -> Result<MapBuildReport, MapError> {
-    let _publication = PUBLICATION_LOCK
+    let publication = PUBLICATION_LOCK
         .lock()
         .map_err(|_| MapError::View("publication lock".into()))?;
+    publish_map_with_lock(&publication, paths, brain, gesture, cancelled)
+}
+
+/// [`publish_map`] for a caller that **already holds** [`PUBLICATION_LOCK`] — the guard is
+/// the proof — so the watcher's `W-C` can take the lock cancellably
+/// ([`lock_publication_cancellable`]) and still run the very same pipeline: the same
+/// application mode, the same source observation, the same journal.
+pub(super) fn publish_map_with_lock(
+    _publication: &MutexGuard<'static, ()>,
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+    gesture: Gesture,
+    cancelled: impl Fn() -> bool,
+) -> Result<MapBuildReport, MapError> {
     let had_index = paths.brain_map_database(&brain.brain_id).try_exists()?;
     match publish_locked(paths, brain, gesture, cancelled) {
         Ok(mut report) => {
@@ -2725,3 +2778,79 @@ pub(crate) mod watch_scope_tests;
 #[cfg(test)]
 #[path = "source_availability_tests.rs"]
 mod source_availability_tests;
+
+/// `ACTION-0071` — the watcher's acquisition of the publication lock, on a local mutex so
+/// that holding or poisoning it never touches the process-wide [`PUBLICATION_LOCK`].
+#[cfg(test)]
+mod publication_lock_tests {
+    use super::{PublicationCancelled, lock_cancellable};
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::{Arc, Mutex};
+    use std::time::Duration;
+
+    const POLL: Duration = Duration::from_millis(5);
+
+    #[test]
+    fn a_free_lock_is_taken_at_once() {
+        let lock = Mutex::new(());
+        assert!(lock_cancellable(&lock, &|| false, POLL).is_ok());
+    }
+
+    #[test]
+    fn a_stop_already_requested_gives_up_without_acquiring_even_a_free_lock() {
+        let lock = Mutex::new(());
+        assert_eq!(
+            lock_cancellable(&lock, &|| true, POLL).err(),
+            Some(PublicationCancelled)
+        );
+    }
+
+    /// The case `Mutex::lock` could not handle: another holder never lets go, and the stop
+    /// arrives during the wait.
+    #[test]
+    fn a_stop_during_the_wait_gives_up_while_the_lock_is_still_held() {
+        let lock = Arc::new(Mutex::new(()));
+        let held = lock.lock().unwrap();
+        let stop = Arc::new(AtomicBool::new(false));
+        let waiter = {
+            let lock = lock.clone();
+            let stop = stop.clone();
+            std::thread::spawn(move || {
+                lock_cancellable(&lock, &|| stop.load(Ordering::SeqCst), POLL).map(|_| ())
+            })
+        };
+        std::thread::sleep(Duration::from_millis(100));
+        assert!(!waiter.is_finished(), "it waits while the lock is held");
+        stop.store(true, Ordering::SeqCst);
+        assert_eq!(waiter.join().unwrap(), Err(PublicationCancelled));
+        drop(held);
+    }
+
+    #[test]
+    fn a_released_lock_is_taken_by_a_waiter_that_was_not_stopped() {
+        let lock = Arc::new(Mutex::new(()));
+        let held = lock.lock().unwrap();
+        let waiter = {
+            let lock = lock.clone();
+            std::thread::spawn(move || lock_cancellable(&lock, &|| false, POLL).map(|_| ()))
+        };
+        std::thread::sleep(Duration::from_millis(50));
+        drop(held);
+        assert_eq!(waiter.join().unwrap(), Ok(()));
+    }
+
+    #[test]
+    fn a_poisoned_lock_is_not_a_permanent_failure() {
+        let lock = Arc::new(Mutex::new(()));
+        {
+            let lock = lock.clone();
+            let _ = std::thread::spawn(move || {
+                let _guard = lock.lock().unwrap();
+                panic!("a panic while holding the lock poisons it");
+            })
+            .join();
+        }
+        assert!(lock.is_poisoned());
+        assert!(lock_cancellable(&lock, &|| false, POLL).is_ok());
+    }
+}

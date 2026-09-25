@@ -42,7 +42,7 @@ use super::types::{
 use super::{ManagerInner, Notifier};
 use crate::map::brains::BrainRecord;
 use crate::map::source_observation::SourceState;
-use crate::map::watch_ops::{self, GuardOutcome, ScopedFailure};
+use crate::map::watch_ops::{self, FullFailure, GuardOutcome, ScopedFailure};
 use crate::scope::ScopeRequest;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
@@ -406,7 +406,15 @@ impl Machine {
                 }
             }
             GuardOutcome::Down { state, reason } => {
-                watch_ops::record_guard_failure(&self.inner.paths, &self.brain, state, reason);
+                self.hook("before_guard_record");
+                let shared = self.shared.clone();
+                watch_ops::record_guard_failure(
+                    &self.inner.paths,
+                    &self.brain,
+                    state,
+                    reason,
+                    &move || shared.stopped(),
+                );
                 if !self.root_down {
                     self.root_down = true;
                     self.close_reader();
@@ -592,8 +600,9 @@ impl Machine {
         }
         match result {
             Ok(report) => self.after_success(report.revision, Some(report.revision) != before),
-            Err(_) if self.stopped() => {}
-            Err(_) => self.after_failure(),
+            Err(FullFailure::Cancelled) => {}
+            Err(FullFailure::Refused) if self.stopped() => {}
+            Err(FullFailure::Refused) => self.after_failure(),
         }
     }
 
