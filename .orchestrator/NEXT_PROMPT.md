@@ -1,4 +1,4 @@
-# NEXT_PROMPT — TASK-0043 — V1 Automatic Watcher & Reconciliation
+# NEXT_PROMPT — TASK-0043 — corrective shutdown pass after ACTION-0071
 
 **TARGET_AGENT:** CLAUDE CODE  
 **RECOMMENDED_MODEL:** Opus, high effort  
@@ -7,19 +7,14 @@
 
 ## /goal
 
-Implémenter intégralement
-`docs/tasks/TASK-0043-v1-automatic-watcher.md` selon
-`docs/decisions/DEC-0041-watcher-signals-and-reconciliation.md`.
+Fermer uniquement le blocage **P1** de
+`docs/reviews/ACTION-0071-task0043-shutdown-recontrol.md`.
 
-Principe non négociable :
+La surveillance F-030 est acceptée fonctionnellement. Cette passe ne doit pas
+refaire le watcher. Elle doit garantir qu'un shutdown **ne détache jamais un
+worker encore vivant**, même si celui-ci attend le `PUBLICATION_LOCK`.
 
-`événement OS = hint, jamais vérité`
-
-Le journal et l'Index viennent uniquement de :
-
-`réénumération W-B/W-C -> reconcile -> apply_update_batch`.
-
-Cette tranche est la première vraie surveillance automatique V1.
+Aucune TASK-0044. Aucun USN. Aucun changement frontend.
 
 ## 0 — Préconditions obligatoires
 
@@ -30,238 +25,178 @@ Cette tranche est la première vraie surveillance automatique V1.
 4. Synchroniser uniquement en fast-forward avec
    `origin/build/v0.2-a27-v1-watcher-reconciliation`.
 5. Vérifier arbre propre.
-6. Vérifier que HEAD contient :
-   - `ACTION-0070` — TASK-0042 VERIFIED;
-   - `DEC-0041`;
-   - `TASK-0043`.
-7. Lire en entier `DEC-0041` puis `TASK-0043` avant toute modification.
-8. Lire `DEC-0010` et ses preuves Microsoft avant de choisir l'API native.
+6. Vérifier que HEAD contient `ACTION-0071`.
+7. Lire ACTION-0071 en entier avant toute modification.
 
-STOP/BLOCKED si une précondition contredit le dépôt.
+STOP/BLOCKED si une précondition ne tient pas.
 
-## 1 — Audit reuse-first avant code
+## 1 — Portée strictement backend shutdown/cancellation
 
-Auditer et écrire dans RESULT :
+Interdictions :
 
-- bindings exacts disponibles dans `windows-sys = 0.61.2`;
-- possibilité d'utiliser `ReadDirectoryChangesExW` avec les features déjà
-  présentes;
-- cancellation/fermeture d'un read bloquant;
-- PUBLICATION_LOCK et frontières d'écriture;
-- scanner complet, reconcile_full_scan, apply_update_batch;
-- machine SourceObservation;
-- Tauri setup / managed state / events;
-- anciens IndexJobs du prototype.
+- ne pas modifier le parser;
+- ne pas modifier coalesce/sémantique des hints;
+- ne pas modifier W-B/W-C fonctionnellement;
+- ne pas modifier l'UI;
+- ne pas modifier les cadences;
+- ne pas ajouter de crate;
+- ne pas toucher `incremental.rs`;
+- ne pas ajouter de TASK-0044.
 
-Règle :
+## 2 — Publication lock annulable côté watcher
 
-- réutiliser `windows-sys` si suffisant;
-- **ne pas ajouter `notify` par confort**;
-- ne pas réactiver IndexJobs/collection comme architecture V1.
+Le problème à fermer :
 
-Si une API Win32 nécessaire n'est réellement pas exposée avec les features
-actuelles, documenter le manque exact avant d'ajouter la feature minimale.
-Aucune nouvelle crate sans preuve.
+un worker peut attendre `PUBLICATION_LOCK` pendant qu'un geste manuel le tient,
+et son callback `cancelled` n'est alors jamais consulté.
 
-## 2 — Séparer lecture OS et réconciliation
+Construire une acquisition **watcher-only** qui :
 
-Le lecteur OS :
+- utilise toujours le même `PUBLICATION_LOCK`;
+- teste régulièrement `cancelled()`;
+- n'attend jamais indéfiniment dans `Mutex::lock()`;
+- retourne une issue distincte `Cancelled` si le watcher est arrêté;
+- ne transforme pas un mutex empoisonné en panne permanente.
 
-- ne touche jamais SQLite;
-- ne journalise jamais;
-- n'interprète jamais ADDED/REMOVED/RENAMED comme un ChangeEvent FileTopo;
-- pousse seulement des hints bornés / LOST.
+Une boucle `try_lock` + attente courte est acceptable.
 
-Le worker de réconciliation :
+Le chemin manuel peut garder son `.lock()` bloquant.
 
-- coalesce;
-- choisit W-B ou W-C;
-- passe par U-B;
-- est le seul à faire évoluer l'Index.
+## 3 — Brancher les DEUX chemins watcher
 
-Cette séparation doit être visible dans les types et les tests.
+### W-B
 
-## 3 — Queue bornée et perte explicite
+`watch_ops::apply_scopes` doit abandonner proprement si le stop arrive pendant
+l'attente du lock.
 
-Aucune structure de hints non bornée.
+Aucune lecture/source/SQLite mutation avant d'avoir acquis le lock.
 
-Prouver :
+### W-C
 
-- overflow OS;
-- bytes returned = 0;
-- ERROR_NOTIFY_ENUM_DIR;
-- parser invalide;
-- queue interne saturée;
+`watch_ops::verify_full` doit avoir la même propriété.
 
-=> **LOST**, puis W-C.
+Attention : aujourd'hui il appelle `commands::publish_map`, qui acquiert lui-même
+le lock avant d'exécuter le callback `cancelled`.
 
-Il est interdit de dropper silencieusement un événement quand une borne est
-atteinte.
+Refactorer **le minimum** pour permettre au watcher d'obtenir le même pipeline
+de publication sans attendre un lock non annulable.
 
-## 4 — W-B ciblé réel
+Formes acceptables :
 
-Le point critique de cette tâche est de ne pas remplacer « watcher » par « full
-scan après chaque événement ».
+- helper `publish_map_with_lock(...)` + variante watcher;
+- exposition interne minimale de `publish_locked`;
+- autre structure équivalente.
 
-Pour un changement profond dans une petite branche :
+Ne pas dupliquer la logique source observation / application mode / journal.
 
-- le gros sibling non concerné ne doit pas être énuméré;
-- seuls les scopes sûrs réduits sont parcourus;
-- l'Index final doit être identique à un scan complet de référence.
+## 4 — Shutdown sans détachement
 
-Les actions OS restent des hints. Une disparition remonte au parent existant.
+Après `request_stop()`, `WatchManager::shutdown` doit **rejoindre tous les
+workers qu'il possédait**.
 
-Si l'honnêteté du scope ne peut pas être démontrée : W-C.
+Il ne doit plus exister de branche où un `JoinHandle` encore vivant est simplement
+jeté/détaché.
 
-## 5 — W-C et convergence
+La fermeture doit rester bornée en pratique grâce à :
 
-W-C réutilise :
+- stop du reader natif;
+- acquisition du publication lock annulable;
+- callbacks d'annulation déjà utilisés par les scans watcher.
 
-`scan complet -> reconcile_full_scan -> U-B`.
+Le paramètre `patience` peut :
 
-L'ancien Index reste servi pendant le scan.
+- disparaître si devenu inutile; ou
+- rester comme métrique/seuil diagnostique;
 
-Le lecteur continue de recevoir les événements pendant W-B/W-C. S'il arrive
-quelque chose pendant la réconciliation, un nouveau cycle doit suivre avant de
-déclarer WATCHING/PERIODIC.
+mais il ne peut plus autoriser le détachement.
 
-Aucune « mise à jour terminée » sur un cycle qui sait déjà qu'il a reçu de
-nouveaux signaux.
+## 5 — Preuve déterministe obligatoire T1
 
-## 6 — Root guard / F-032
+Créer un test qui aurait échoué avec le code actuel :
 
-Ne fais jamais dépendre la détection de disparition de la racine uniquement du
-handle ouvert sur la racine : un dossier peut être renommé/déplacé tout en
-laissant le handle valide.
+1. démarrer un watcher jusqu'à WATCHING;
+2. faire tenir `PUBLICATION_LOCK` par un autre thread;
+3. injecter LOST pour forcer W-C;
+4. attendre que le worker soit dans la tentative de publication;
+5. appeler `shutdown` avec une patience très courte;
+6. **ne pas libérer le lock avant le retour de shutdown**;
+7. shutdown doit retourner;
+8. status final STOPPED;
+9. reader/handle libéré;
+10. capturer revision + longueur historique;
+11. libérer ensuite le lock;
+12. attendre un intervalle significatif;
+13. aucune révision tardive, aucun nouvel événement tardif.
 
-Implémenter le root guard de DEC-0041 :
+Le test doit clairement documenter qu'il falsifie l'ancien comportement de
+détachement.
 
-- 5 s produit;
-- injectable en test;
-- métadonnée/identité seulement;
-- pas de scan complet.
+## 6 — Preuve W-B également
 
-Disparition => UNAVAILABLE.  
-Racine remplacée => SOURCE_CHANGED.  
-Aucun DELETED.
+Ajouter une preuve analogue ou un test structurel fort démontrant que le chemin
+W-B utilise **la même acquisition annulable**.
 
-Même racine revenue => W-C avant retour stable.
+Préférence : test réel avec un hint ciblé et lock retenu.
 
-## 7 — Startup/restart
+Aucun batch partiel.
 
-Un watcher qui vient de démarrer n'a aucun droit d'afficher WATCHING avant une
-W-C initiale.
+## 7 — Test natif existant
 
-C'est cette W-C qui rattrape :
+Rejouer et conserver :
 
-- changements survenus pendant que FileTopo était fermé;
-- événements perdus avant l'ouverture du handle;
-- état précédemment UNAVAILABLE revenu.
+`shutdown_closes_the_native_handle_and_the_operating_system_agrees`
 
-## 8 — Native unsupported / fallback périodique
+Windows doit encore permettre une ouverture exclusive de la racine après shutdown.
 
-Si le mécanisme natif est indisponible :
+## 8 — Non-régressions
 
-- ne pas mentir;
-- mode PERIODIC;
-- W-C automatique 30 s;
-- cadence injectable en test;
-- UI distincte de WATCHING.
+Rejouer au minimum les tests watcher qui couvrent :
 
-Ne pas utiliser le fallback périodique sur un watcher natif sain.
+- initial W-C;
+- changements natifs;
+- signal pendant W-B;
+- signal pendant W-C;
+- perte forcée;
+- root absent/revenu;
+- Actualiser concurrent;
+- shutdown pendant W-C.
 
-## 9 — Coordination manuelle
+Si la logique de réconciliation elle-même n'est pas modifiée, la rafale 10k
+complète n'est pas obligatoire dans cette passe; expliquer pourquoi.
 
-`Actualiser`, `Reconstruire` et watcher doivent partager une coordination
-d'écriture.
+## 9 — Validation
 
-Pas deux writers logiques en compétition.
+- tests ciblés ACTION-0071;
+- `cargo test --offline`;
+- `pnpm test`;
+- `pnpm check`;
+- `pnpm build`;
+- `cargo build --offline`;
+- Clippy avec dette historique séparée;
+- `git diff --check`;
+- `scripts/audit-public-readiness.ps1 -AllowRemotes`.
 
-Les hints reçus pendant une opération manuelle restent à réconcilier ensuite;
-ne pas les vider arbitrairement.
+Pas de WebView2 requis si aucun code frontend et aucune sémantique produit visible
+ne changent.
 
-## 10 — Événement frontend sans fuite
+## 10 — Mémoire durable
 
-Le backend peut émettre seulement une enveloppe fermée du genre :
+Mettre à jour :
 
-- brainId;
-- WatchStatus;
-- revision.
+- `.orchestrator/RESULT.md`;
+- `docs/ai/CURRENT_STATE.md`;
+- `docs/ai/HANDOFF.md`;
+- `docs/ai/NEXT_ACTION.md`;
+- `docs/ai/VALIDATION.md`;
+- `docs/ai/CHANGELOG_AI.md`;
+- TASK-0043 reste `IMPLEMENTED`, jamais auto-`VERIFIED`.
 
-Jamais :
+`NEXT_ACTION` = contrôle indépendant du correctif ACTION-0071.
 
-- relative path;
-- absolute path;
-- event file name;
-- stable key;
-- FileId;
-- volume;
-- erreur OS brute.
+## 11 — Gouvernance
 
-Le frontend n'emploie pas de polling.
-
-## 11 — Tests de rejet obligatoires
-
-Ne considère pas TASK-0043 terminée sans :
-
-### Rafale 10 000
-Mutation externe rapide d'un arbre synthétique réel Windows; convergence exacte
-vers scan complet.
-
-### Perte forcée
-Injecter LOST dans le vrai moteur de réconciliation; W-C puis parité scan
-complet.
-
-### Interruption
-Arrêter réellement FileTopo, muter la source, relancer; W-C initiale récupère
-les changements avant statut stable.
-
-### Source entière absente
-Racine déplacée hors chemin; aucun DELETED, Index intact, UNAVAILABLE; remise
-de la même racine => W-C + SYNCED.
-
-## 12 — WebView2
-
-Le rejeu doit démontrer **sans cliquer Actualiser** :
-
-- watcher démarre automatiquement;
-- mutations externes apparaissent;
-- journal/new-unseen se mettent à jour;
-- source absente garde la carte;
-- récupération automatique;
-- arrêt réel + mutation offline + restart;
-- deuxième cerveau isolé.
-
-Ne pas fabriquer les résultats via commandes de test qui appliquent
-directement un lot.
-
-Les helpers de preuve peuvent créer/muter les arbres synthétiques **hors du
-processus** et lire l'état pour assertions.
-
-## 13 — Performance / bornes
-
-Ne réouvre pas F-031 sauf modification fonctionnelle d'`incremental.rs`.
-
-Mesurer néanmoins et rapporter pour la preuve watcher :
-
-- taille max observée de queue;
-- nombre de W-B;
-- nombre de W-C;
-- nombre de signaux coalescés;
-- temps de convergence de la rafale 10k sur la machine d'essai.
-
-Ce sont des mesures d'ingénierie, pas des SLA universels.
-
-## 14 — Gouvernance
-
-À la fin :
-
-- TASK-0043 = `IMPLEMENTED`, jamais `VERIFIED`;
 - aucune TASK-0044;
 - aucun USN;
 - aucun PR/merge/tag/release;
-- docs durables + FEATURE_MATRIX honnêtes;
-- `.orchestrator/RESULT.md` complet;
-- `NEXT_ACTION = contrôle indépendant de TASK-0043`;
-- push uniquement sur la branche;
-- arbre propre.
+- push uniquement sur la branche actuelle;
+- arbre propre à la fin.
