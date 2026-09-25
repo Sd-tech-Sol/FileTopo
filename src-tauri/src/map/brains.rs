@@ -1013,6 +1013,126 @@ mod tests {
         assert_eq!(alpha.icon, "▲");
     }
 
+    /// `TASK-0045` — the bounds the identity editor's form mirrors, at their exact edges. The
+    /// count is in Unicode scalar values (`chars()`), and the name is trimmed before it is
+    /// counted and before it is stored.
+    #[test]
+    fn identity_bounds_hold_at_their_exact_edges() {
+        let mut catalog = BrainCatalog::in_memory().expect("catalog");
+        catalog.seed_frozen().expect("seed");
+        let name_80 = "n".repeat(80);
+        let name_81 = "n".repeat(81);
+
+        let ok = catalog
+            .update_metadata("brain-alpha", &format!("  {name_80}  "), "#abcdef", "😀😀")
+            .expect("80 characters (trimmed) and a two-scalar icon are accepted");
+        assert_eq!(
+            ok.display_name, name_80,
+            "the stored name is the trimmed one"
+        );
+        assert_eq!(ok.color, "#abcdef");
+        assert_eq!(ok.icon, "😀😀");
+
+        for (name, icon, why) in [
+            (name_81.as_str(), "▲", "81 characters"),
+            ("Alpha", "😀😀😀", "three scalar values"),
+            (
+                "Alpha",
+                "ab\u{0301}",
+                "two letters and a combining mark are three scalars",
+            ),
+        ] {
+            catalog
+                .update_metadata("brain-alpha", name, "#123456", icon)
+                .expect_err(why);
+        }
+        // The refusals left the last accepted row exactly as it was.
+        let alpha = catalog.require("brain-alpha").expect("alpha");
+        assert_eq!(
+            (alpha.display_name.as_str(), alpha.icon.as_str()),
+            (name_80.as_str(), "😀😀")
+        );
+    }
+
+    /// `TASK-0045` — an unknown brain is refused by name and nothing is written.
+    #[test]
+    fn updating_an_unknown_brain_is_refused_and_writes_nothing() {
+        let mut catalog = BrainCatalog::in_memory().expect("catalog");
+        catalog.seed_frozen().expect("seed");
+        let before = catalog.list().expect("before");
+
+        let error = catalog
+            .update_metadata("brain-inconnu", "Nom", "#123456", "★")
+            .expect_err("unknown brain");
+        assert_eq!(error.to_string(), "map_unknown_brain: brain-inconnu");
+        assert_eq!(catalog.list().expect("after"), before);
+    }
+
+    /// `TASK-0045` / `DEC-0043` — an identity edit changes three columns of one row and
+    /// **nothing else**: not the brain's identity, its source, its position, the active
+    /// brain, and not one row of `catalog_meta` (where the per-brain resume state lives).
+    /// Two brains that share a source stay exactly as they were.
+    #[test]
+    fn an_identity_edit_moves_three_columns_of_one_row_and_nothing_else() {
+        let mut catalog = BrainCatalog::in_memory().expect("catalog");
+        catalog.seed_frozen().expect("seed");
+        catalog.set_active("brain-gamma").expect("activate");
+        catalog
+            .put_meta("brain_resume.v1.brain-alpha", "{\"synthetic\":\"alpha\"}")
+            .expect("resume alpha");
+        catalog
+            .put_meta("brain_resume.v1.brain-gamma", "{\"synthetic\":\"gamma\"}")
+            .expect("resume gamma");
+        let meta_of = |catalog: &BrainCatalog| -> Vec<(String, String)> {
+            let mut statement = catalog
+                .connection
+                .prepare("SELECT key, value FROM catalog_meta ORDER BY key")
+                .expect("prepare");
+            statement
+                .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+                .expect("query")
+                .collect::<Result<_, _>>()
+                .expect("rows")
+        };
+        let meta_before = meta_of(&catalog);
+        let before = catalog.list().expect("before");
+        let alpha_before = before
+            .iter()
+            .find(|b| b.brain_id == "brain-alpha")
+            .expect("alpha")
+            .clone();
+        let gamma_before = before
+            .iter()
+            .find(|b| b.brain_id == "brain-gamma")
+            .expect("gamma")
+            .clone();
+        assert_eq!(
+            alpha_before.source_ref, gamma_before.source_ref,
+            "they share a source"
+        );
+
+        let returned = catalog
+            .update_metadata("brain-alpha", "Alpha édité", "#0A0B0C", "●")
+            .expect("update");
+
+        // The record handed back is the stored row, not an echo of the arguments.
+        assert_eq!(returned, catalog.require("brain-alpha").expect("alpha"));
+        let expected = BrainRecord {
+            display_name: "Alpha édité".to_string(),
+            color: "#0A0B0C".to_string(),
+            icon: "●".to_string(),
+            ..alpha_before
+        };
+        assert_eq!(
+            returned, expected,
+            "brain_id, source and position are unchanged"
+        );
+        // The brain that shares the source is bit for bit itself, and remains the active one.
+        assert_eq!(catalog.require("brain-gamma").expect("gamma"), gamma_before);
+        assert_eq!(catalog.active().expect("active").brain_id, "brain-gamma");
+        assert_eq!(meta_of(&catalog), meta_before, "no catalog_meta row moved");
+    }
+
     #[test]
     fn an_unsupported_source_kind_is_refused_rather_than_guessed() {
         let error = SourceKind::parse("USER_ROOT").expect_err("unsupported");

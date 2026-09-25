@@ -1,0 +1,174 @@
+{
+  "task": "TASK-0045",
+  "status": "NONCANONICAL_ENGINEERING_EVIDENCE",
+  "engine": "Windows Tauri / real WebView2",
+  "source": "three REAL_ROOT brains registered internally (task0045-seed-proof.py), brains A and C reading the SAME folder. Mouse and key events are dispatched through the browser input pipeline (CDP Input.dispatchMouseEvent / Input.dispatchKeyEvent); the save of edit 1 is a key sent through the operating system when the window could be brought forward. Every logical value is read back from the catalogue (map_brains, map_brain_resume_state) and from the real screen; the product's own IPC calls are read from the wire (CDP Network). One REAL close of the process.",
+  "realProcessRestarts": 1,
+  "tree": {
+    "generatedByTheProofNotByTheUser": true,
+    "personalDataUsed": false,
+    "brains": 3,
+    "brainsSharingOneFolder": "A and C (same sourceRef, same sourceLabel, different brainId)"
+  },
+  "identitiesBefore": {
+    "A": {
+      "displayName": "Arbre Alix",
+      "color": "#2F6DA8",
+      "icon": "▣"
+    },
+    "B": {
+      "displayName": "Arbre Basile",
+      "color": "#A85D2F",
+      "icon": "▤"
+    },
+    "C": {
+      "displayName": "Arbre Camille",
+      "color": "#3E6B2A",
+      "icon": "▥"
+    }
+  },
+  "identitiesAtClose": {
+    "A": {
+      "displayName": "Alix révisée",
+      "color": "#c0392b",
+      "icon": "★"
+    },
+    "B": {
+      "displayName": "Basile bis",
+      "color": "#16a085",
+      "icon": "◈"
+    },
+    "C": {
+      "displayName": "Arbre Camille",
+      "color": "#3E6B2A",
+      "icon": "▥"
+    }
+  },
+  "edit1": {
+    "how": "brain A, the form walked with Tab and saved with Enter; name and icon typed with real key events",
+    "saveKeyPath": "operating-system key (WScript.Shell SendKeys, window brought forward)",
+    "osKeyOutput": "sent",
+    "colourSetThrough": "the page's value setter plus the real input event (a native colour picker cannot be driven)",
+    "wire": [
+      "map_brain_update",
+      "map_cross_relations_open",
+      "map_cross_relations_for_node"
+    ],
+    "result": {
+      "displayName": "Alix révisée",
+      "color": "#c0392b",
+      "icon": "★"
+    }
+  },
+  "edit2": {
+    "how": "brain B, mouse and typed text, saved with the Enregistrer button",
+    "wire": [
+      "map_brain_update",
+      "map_cross_relations_open",
+      "map_cross_relations_for_node"
+    ],
+    "result": {
+      "displayName": "Basile bis",
+      "color": "#16a085",
+      "icon": "◈"
+    }
+  },
+  "cancelAndRefusedEntry": {
+    "updatesOnTheWire": 0,
+    "wire": [],
+    "catalogueUnchanged": true
+  },
+  "backendRefusalsProbedDirectly": [
+    "unknown brain",
+    "empty name",
+    "81-character name",
+    "colour without #",
+    "colour not hexadecimal",
+    "three-scalar icon",
+    "empty icon"
+  ],
+  "resumeStatesGivenThroughTheRealUi": {
+    "A": {
+      "focusNodeId": null,
+      "selectedNodeId": 4,
+      "view": {
+        "scale": 1.197055911107901,
+        "tx": -67.39312159890227,
+        "ty": -10.049851466502965
+      },
+      "filter": {
+        "state": "ALL",
+        "kinds": [],
+        "availability": "ALL"
+      },
+      "detailsPanelVisible": false
+    },
+    "B": {
+      "focusNodeId": null,
+      "selectedNodeId": 3,
+      "view": {
+        "scale": 1,
+        "tx": -70,
+        "ty": 0
+      },
+      "filter": {
+        "state": "ALL",
+        "kinds": [],
+        "availability": "ALL"
+      },
+      "detailsPanelVisible": true
+    },
+    "C": {
+      "focusNodeId": null,
+      "selectedNodeId": 3,
+      "view": {
+        "scale": 0.6978645358999239,
+        "tx": 95.95120382304566,
+        "ty": 114.31289473915784
+      },
+      "filter": {
+        "state": "ALL",
+        "kinds": [],
+        "availability": "ALL"
+      },
+      "detailsPanelVisible": true
+    }
+  },
+  "afterTheRealClose": {
+    "reopenedAlone": "A",
+    "screen": {
+      "A": {
+        "name": "Alix révisée",
+        "icon": "★",
+        "swatch": "rgb(192, 57, 43)"
+      },
+      "selectedNodeId": 4,
+      "panelVisible": false
+    },
+    "editorReopensOnPersistedValues": true,
+    "afterVisitingTheOtherBrains": {
+      "sourceUnchanged": true,
+      "indexAndJournalUnchanged": true,
+      "identitiesUnchanged": true
+    },
+    "productSentNoIdentityWriteInPhase2": true
+  },
+  "checkedAfterEveryEdit": [
+    "the other brains: the whole catalogue record, bit for bit (including the brain that shares the source)",
+    "the edited brain: brainId, sourceKind, sourceRef, sourceLabel and position unchanged",
+    "the source: name, size, date and SHA-256 of every file and directory under both roots",
+    "the Index and the journal: revision, node count and journal total of every brain",
+    "the resume record of every brain, and the active brain",
+    "the product's own IPC calls: exactly one map_brain_update, no map_open / map_view / map_refresh / map_rebuild / resume write / journal call"
+  ],
+  "fatalConsoleErrors": 0,
+  "limits": [
+    "No personal brain: the analysed trees were generated by task0045-seed-proof.py and die with the proof root",
+    "The native colour picker is an operating-system dialog that neither the page nor CDP can drive: the colour is set through the page's value setter and the real input event; name and icon are typed with real key events",
+    "Mouse and key events are dispatched through the browser input pipeline by the harness (CDP); only the edit-1 save may be an operating-system key, as edit1.saveKeyPath states",
+    "The close is a normal one (the window is asked to close); no claim about a crash of the process",
+    "F-036 / WCAG 2.2 AA is not claimed: this proves the form works with the keyboard and that the name and the icon stay visible with the colour, nothing more",
+    "F-035 FR/EN is not started; P-19 stays partial",
+    "Development workstation, local NTFS disk; not a modest-laptop acceptance test"
+  ]
+}

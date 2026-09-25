@@ -1881,3 +1881,46 @@ input[type="text"] {
 .watch-status[data-state="DEGRADED"] {
   color: var(--warn);
 }
+
+/* TASK-0045 — l'éditeur d'identité d'un cerveau : un formulaire ordinaire, sous la barre. */
+
+.identity {
+  flex: 1 0 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+}
+
+.identity__title {
+  flex: 1 0 100%;
+  margin: 0;
+  font-size: 14px;
+}
+
+.identity__field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.identity__field small {
+  color: var(--ink-soft);
+}
+
+.identity__problem {
+  flex: 1 0 100%;
+  margin: 0;
+  color: var(--warn);
+  font-size: 12px;
+}
+
+.identity__actions {
+  display: flex;
+  gap: 8px;
+}

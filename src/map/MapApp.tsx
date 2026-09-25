@@ -11,6 +11,7 @@ import { prepareScenarioIndex } from "./lifecycle";
 import { canonicalizeSearchQuery, runCoordinatedSearch, SearchCoordinator } from "./searchCoordinator";
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import BrainIdentityEditor, { type BrainIdentityValues } from "./BrainIdentityEditor";
 import CompositionBar from "./CompositionBar";
 import DetailsPanel, { type PanelStrings } from "./DetailsPanel";
 import FilterPanel from "./FilterPanel";
@@ -166,6 +167,22 @@ const strings = {
     compositionRemoveRefused: "Impossible de retirer le dernier cerveau affiché",
     compositionSource: "source",
     compositionBusy: "Chargement…",
+    identity: {
+      open: "Personnaliser le cerveau",
+      title: "Personnaliser le cerveau",
+      name: "Nom",
+      color: "Couleur",
+      icon: "Icône",
+      iconHint: "1 ou 2 caractères, affichés à côté du nom.",
+      save: "Enregistrer",
+      saving: "Enregistrement…",
+      cancel: "Annuler",
+      nameInvalid: "Le nom doit compter de 1 à 80 caractères.",
+      colorInvalid: "La couleur doit avoir la forme #RRGGBB.",
+      iconInvalid: "L'icône doit compter 1 ou 2 caractères.",
+      unchanged: "Aucun changement : le cerveau reste tel quel.",
+      refused: "Enregistrement refusé :",
+    },
     addRealRoot: "Ajouter un dossier",
     addRealRootBusy: "Sélection…",
     addRealRootCancelled: "Aucun dossier choisi. Rien n'a été créé.",
@@ -893,7 +910,8 @@ export default function MapApp() {
       }
 
       return {
-        record,
+        // Read again: an identity saved while this load was in flight is the catalogue's.
+        record: catalogRef.current?.brains.find((brain) => brain.brainId === brainId) ?? record,
         report,
         snapshot,
         integrity,
@@ -2832,6 +2850,39 @@ export default function MapApp() {
     if (brainId) resumeWriter.patch(brainId, { detailsPanelVisible: next }, { immediate: true });
   }, [resumeWriter]);
 
+  /**
+   * `TASK-0045` — saves the identity of **one** brain through the only command that
+   * exists for it, waits for the answer, and publishes **the record it returned**: never
+   * the form's values. The catalogue and the loaded brain are replaced in place; nothing
+   * is opened, read, refreshed or rebuilt, and neither the resume state nor the journal
+   * is touched. A refusal throws before any state changes.
+   */
+  const saveBrainIdentity = useCallback(async (brainId: string, values: BrainIdentityValues) => {
+    const record = await invoke<BrainRecord>("map_brain_update", {
+      brainId,
+      displayName: values.displayName,
+      color: values.color,
+      icon: values.icon,
+    });
+    if (record.brainId !== brainId) {
+      throw new Error(`incohérence de cerveau: demandé ${brainId}, reçu ${record.brainId}`);
+    }
+    const current = catalogRef.current;
+    if (current) {
+      const next = {
+        ...current,
+        brains: current.brains.map((brain) => (brain.brainId === brainId ? record : brain)),
+      };
+      catalogRef.current = next;
+      setCatalog(next);
+    }
+    setLoaded((previous) => {
+      const brain = previous.get(brainId);
+      return brain ? new Map(previous).set(brainId, { ...brain, record }) : previous;
+    });
+    setStatus(`Cerveau personnalisé : ${record.icon} ${record.displayName}`);
+  }, []);
+
   const labelFor = useCallback(
     (node: MapNode, brain: BrainRecord) =>
       // The brain's name is part of every node's accessible name: in a composed
@@ -2901,6 +2952,16 @@ export default function MapApp() {
               busy: t.compositionBusy,
             }}
             showSource
+          />
+        ) : null}
+        {composed ? (
+          <BrainIdentityEditor
+            brains={catalog?.brains ?? []}
+            focusedBrainId={composed.focusedBrainId}
+            disabled={busy || measuring}
+            onSave={saveBrainIdentity}
+            onNotice={setStatus}
+            strings={t.identity}
           />
         ) : null}
         <div className="app__actions">
