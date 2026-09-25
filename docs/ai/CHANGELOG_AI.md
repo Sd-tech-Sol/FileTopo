@@ -5922,3 +5922,17 @@ fusion / étiquette / release.
 - réserve `Reconstruire` reclassée : aucun rejeu WebView2 dédié, mais le chemin produit identity-aware + compteur `next_node_id` monotone ne recycle pas silencieusement les ids supprimés;
 - `P-19` reste PARTIELLE;
 - `TASK-0044` = **VERIFIED dans sa portée** par `ACTION-0073`.
+
+
+## 2026-09-25 — ACTION-0074 / préparation TASK-0045
+
+**Orchestrateur :** ChatGPT
+
+- FEATURE_MATRIX réconciliée après ACTION-0073;
+- F-035 corrigée : le runtime MapApp courant est français seulement malgré le prototype historique bilingue;
+- audit P-20 : backend metadata déjà acquis, mais aucun éditeur utilisateur dans MapApp;
+- ACTION-0074 choisit F-033 comme prochaine tranche bornée;
+- DEC-0043 approuvée : nom/couleur/icône sont des métadonnées FileTopo, jamais une modification de source;
+- TASK-0045 créée READY sur `build/v0.2-a29-v1-brain-identity-editor`;
+- FR/EN et accessibilité restent séparés;
+- aucune TASK-0046, aucun code produit exécuté par l'orchestrateur.
