@@ -2666,3 +2666,6 @@ chiffres ou en lettres.
 
 
 > **Relais 2026-09-25 — TASK-0044 prête.** TASK-0043 est VERIFIED par ACTION-0072. Le prochain écart est la reprise par cerveau : caméra/focus/sélection, filtre et panneau Détails. Réutiliser BrainCatalog/catalog_meta, CompositionSessionMemory, viewState/clampView et useProjectionFilter; aucune nouvelle DB ni localStorage. P-19 reste partielle : FR/EN, accessibilité et composition multi-brain persistante sont hors tranche. Lire DEC-0042, TASK-0044 puis `.orchestrator/NEXT_PROMPT.md` sur `build/v0.2-a28-v1-brain-resume-state`.
+
+
+> **Relais 2026-09-25 — TASK-0045 prête.** TASK-0044 est VERIFIED par ACTION-0073. ACTION-0074 choisit le dernier écart utilisateur nommé de P-20 : le catalogue et `map_brain_update` savent déjà persister nom/couleur/icône, mais `MapApp` ne permet pas de les éditer. TASK-0045 doit réutiliser ce backend, sans nouveau store, sans toucher la source, le watcher, l'Index ou le resume state. FR/EN est confirmé manquant mais reste hors tranche. Lire DEC-0043, TASK-0045 puis `.orchestrator/NEXT_PROMPT.md` sur `build/v0.2-a29-v1-brain-identity-editor`.
