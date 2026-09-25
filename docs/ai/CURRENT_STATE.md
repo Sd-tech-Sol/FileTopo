@@ -1,8 +1,8 @@
 # État courant
 
-## TASK-0044 — V1 Per-Brain Resume State — IMPLEMENTED — 2026-09-25
+## TASK-0044 — V1 Per-Brain Resume State — VERIFIED — 2026-09-25
 
-- **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche `build/v0.2-a28-v1-brain-resume-state`, partie de
+- **Statut : `VERIFIED` par `ACTION-0073`.** Branche `build/v0.2-a28-v1-brain-resume-state`, partie de
   `fff8732` (`ACTION-0072`, `DEC-0042`, `TASK-0044` présents); commit de travail `00743fb`. Décision :
   [`DEC-0042`](../decisions/DEC-0042-per-brain-resume-state.md). Détail : [VALIDATION section CA](VALIDATION.md),
   `.orchestrator/RESULT.md`.
@@ -28,12 +28,13 @@
   retenue; « suivre le focus » qui annulait une caméra restaurée; fenêtre non finale à la première mesure;
   page canonique déplacée pour un match de la première page.
 - **Non testé / limites.** Fermeture normale seulement (aucune promesse sur crash); souris injectée par le
-  navigateur; composition de plusieurs cerveaux toujours **session seule**; après **Reconstruire**, un identifiant
-  stocké n'est vérifié que par existence; sélection de **contexte** dans une page filtrée = racine à la reprise;
+  navigateur; composition de plusieurs cerveaux toujours **session seule**; **Reconstruire n'a pas de rejeu
+  WebView2 dédié dans TASK-0044**, mais `ACTION-0073` confirme que le chemin identity-aware + `next_node_id`
+  monotone ne recycle pas silencieusement les ids supprimés; sélection de **contexte** dans une page filtrée = racine à la reprise;
   volume NTFS local; scénarios réels antérieurs (K12, L12…) non rejoués.
 - **`P-19` reste partielle** : FR/EN, accessibilité, préférence de légende (aucune n'existe) et composition
   multi-cerveaux persistante ne sont **pas** traités. `F-002` / `F-034` gardent leur statut jusqu'au contrôle.
-- **Action unique suivante : contrôle indépendant de `TASK-0044`.**
+- **Contrôle indépendant :** `ACTION-0073` = CLOSED / VERIFIED. La prochaine action doit être choisie par audit des écarts V1 restants.
 
 ## TASK-0043 — correctif ACTION-0071 P1 (shutdown sans détachement) — toujours IMPLEMENTED — 2026-09-25
 
