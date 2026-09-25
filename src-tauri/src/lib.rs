@@ -1001,6 +1001,47 @@ fn map_ui_preferences_update(
         .map_err(String::from)
 }
 
+/// `TASK-0044` — the resume state of **one** brain: branch, selection, camera,
+/// filter, details panel. Brain id only; nothing here reads the source or the
+/// Index, and a stored record that is damaged reads as "nothing stored".
+#[tauri::command]
+fn map_brain_resume_state(
+    app: tauri::AppHandle,
+    brain_id: String,
+) -> Result<map::resume_state::ResumeState, String> {
+    let catalog = map_catalog(&app)?;
+    catalog.resume_state(&brain_id).map_err(String::from)
+}
+
+/// `TASK-0044` — stores the resume state of **one** brain, validated in Rust.
+/// Catalogue only: no publication lock, no watcher, no Index, no journal.
+#[tauri::command]
+fn map_brain_resume_update(
+    app: tauri::AppHandle,
+    brain_id: String,
+    state: map::resume_state::ResumeState,
+) -> Result<map::resume_state::ResumeState, String> {
+    let catalog = map_catalog(&app)?;
+    catalog
+        .set_resume_state(&brain_id, &state)
+        .map_err(String::from)
+}
+
+/// `TASK-0044` — reopens a brain where it was left: the stored state validated
+/// against the brain's **current** Index, the bounded projection it opens on,
+/// and a fresh filter cursor when the selected match is beyond the first page.
+/// Reads the Index only; the source is never touched.
+#[tauri::command]
+fn map_brain_resume_restore(
+    app: tauri::AppHandle,
+    brain_id: String,
+) -> Result<map::resume_state::ResumeRestore, String> {
+    let (paths, catalog) = map_brain(&app)?;
+    let brain = catalog.require(&brain_id).map_err(String::from)?;
+    let store = map::commands::open_store(&paths, &brain).map_err(String::from)?;
+    map::resume_state::restore(&catalog, &brain, &store).map_err(String::from)
+}
+
 #[tauri::command]
 fn map_integrity(
     app: tauri::AppHandle,
@@ -1609,6 +1650,9 @@ pub fn run() {
             map_copy_node_path,
             map_ui_preferences,
             map_ui_preferences_update,
+            map_brain_resume_state,
+            map_brain_resume_update,
+            map_brain_resume_restore,
             map_integrity,
             map_self_check,
             map_content_observe,

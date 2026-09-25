@@ -19,6 +19,8 @@ mod legacy_store;
 pub mod projection;
 pub mod relation_commands;
 pub mod relations;
+/// Per-brain resume state in the catalogue — `TASK-0044`, `DEC-0042`.
+pub mod resume_state;
 pub mod rule_engine;
 pub mod sandbox;
 /// Resolving a brain to the tree it actually reads — `DEC-0033` D and G.
@@ -55,6 +57,11 @@ pub enum MapError {
     Filter(#[from] crate::node_filter::FilterError),
     #[error("map_view_rejected: {0}")]
     View(String),
+    /// `TASK-0044` — a resume state the catalogue refuses to store. The inner
+    /// code is a fixed word (`node_id_out_of_bounds`, `view_out_of_bounds`, …),
+    /// never a value.
+    #[error("map_resume_rejected: {0}")]
+    ResumeRejected(String),
     #[error("map_io_failed: {0}")]
     Io(#[from] std::io::Error),
     #[error("map_sqlite_failed: {0}")]

@@ -23,14 +23,20 @@ describe("TASK-0035 A — details-panel preference", () => {
     expect(bootstrapBlock).toContain("setDetailsPanelVisible(nextPreferences.detailsPanelVisible)");
   });
 
-  it("toggling the panel touches nothing but the one preference — no selection, search, projection, relations or composition", () => {
+  it("toggling the panel touches nothing but the foreground brain's own panel choice — no selection, search, projection, relations or composition", () => {
     const toggleBlock = app.slice(
       app.indexOf("const toggleDetailsPanel = useCallback("),
       app.indexOf("const toggleDetailsPanel = useCallback(") +
-        app.slice(app.indexOf("const toggleDetailsPanel = useCallback(")).indexOf("}, []);"),
+        app.slice(app.indexOf("const toggleDetailsPanel = useCallback(")).indexOf("}, [resumeWriter]);"),
     );
     expect(toggleBlock).toContain("setDetailsPanelVisible(");
-    expect(toggleBlock).toContain('invoke("map_ui_preferences_update", { detailsPanelVisible: next })');
+    // `TASK-0044` — the choice is the foreground brain's, written through the resume writer;
+    // the legacy global write is gone from the toggle.
+    expect(toggleBlock).toContain("composedRef.current?.focusedBrainId");
+    expect(toggleBlock).toContain(
+      "resumeWriter.patch(brainId, { detailsPanelVisible: next }, { immediate: true })",
+    );
+    expect(toggleBlock).not.toContain("map_ui_preferences_update");
     for (const forbidden of [
       "setSelected(",
       "setSearchQuery(",

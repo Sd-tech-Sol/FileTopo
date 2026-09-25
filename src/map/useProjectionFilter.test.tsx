@@ -41,12 +41,13 @@ function setup(initial: { brainId: string | null; revision: number | null; seenR
   const onProjection = vi.fn();
   const onRestore = vi.fn();
   const onError = vi.fn();
+  const onFilterChanged = vi.fn();
   const view = renderHook(
     (props: typeof initial) =>
-      useProjectionFilter({ ...props, onProjection, onRestore, onError }),
+      useProjectionFilter({ ...props, onProjection, onRestore, onError, onFilterChanged }),
     { initialProps: initial },
   );
-  return { ...view, onProjection, onRestore, onError };
+  return { ...view, onProjection, onRestore, onError, onFilterChanged };
 }
 
 beforeEach(() => {
@@ -183,26 +184,53 @@ describe("TASK-0039 — l'état des filtres et ses lectures", () => {
     expect(onProjection).not.toHaveBeenCalled();
   });
 
-  it("un changement de cerveau abandonne le filtre : rien n'est transporté", async () => {
+  it("un changement de cerveau GARDE le filtre de l'ancien et ne transporte rien au nouveau", async () => {
+    const A_FILTER: NodeFilter = { state: "NEW", kinds: ["FILE"], availability: "LOCAL" };
     const { result, rerender, onProjection, onRestore } = setup({
       brainId: "a",
       revision: 3,
       seenRevision: 0,
     });
-    act(() => result.current.change({ state: "NEW", kinds: ["FILE"], availability: "LOCAL" }));
+    act(() => result.current.change(A_FILTER));
     await waitFor(() => expect(onProjection).toHaveBeenCalledTimes(1));
     act(() => result.current.next("cursor-2"));
     await waitFor(() => expect(onProjection).toHaveBeenCalledTimes(2));
     invokeMock.mockClear();
 
+    // Le cerveau b n'a aucun filtre : il ne reçoit rien, et la projection normale de a n'est pas relue.
     rerender({ brainId: "b", revision: 9, seenRevision: 0 });
-    await waitFor(() => expect(onRestore).toHaveBeenCalledWith("a"));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(onRestore).not.toHaveBeenCalled();
     expect(result.current.active).toBe(false);
     expect(result.current.filter).toEqual({ state: "ALL", kinds: [], availability: "ALL" });
     expect(result.current.pageNumber).toBe(1);
     expect(result.current.session).toBeNull();
-    // Le second cerveau n'a reçu aucune lecture filtrée.
     expect(mapViewCalls()).toHaveLength(0);
+
+    // Le retour à a retrouve son filtre et sa page — relue depuis le cœur, jamais recopiée.
+    rerender({ brainId: "a", revision: 3, seenRevision: 0 });
+    await waitFor(() => expect(mapViewCalls()).toHaveLength(1));
+    expect(result.current.active).toBe(true);
+    expect(result.current.filter).toEqual({ state: "NEW", kinds: ["FILE"], availability: "LOCAL" });
+    expect(result.current.pageNumber).toBe(2);
+    expect(mapViewCalls()[0]).toEqual({ brainId: "a", after: "cursor-2", filter: A_FILTER });
+  });
+
+  it("chaque cerveau garde son propre filtre : a et b alternent sans se mélanger", async () => {
+    const { result, rerender, onProjection } = setup({ brainId: "a", revision: 3, seenRevision: 0 });
+    act(() => result.current.change(NEW));
+    await waitFor(() => expect(onProjection).toHaveBeenCalledTimes(1));
+    rerender({ brainId: "b", revision: 9, seenRevision: 0 });
+    act(() => result.current.change(FILES_ONLY));
+    await waitFor(() => expect(onProjection).toHaveBeenCalledTimes(2));
+    rerender({ brainId: "a", revision: 3, seenRevision: 0 });
+    await waitFor(() => expect(result.current.filter).toEqual(NEW));
+    rerender({ brainId: "b", revision: 9, seenRevision: 0 });
+    await waitFor(() => expect(result.current.filter).toEqual(FILES_ONLY));
+    // Un filtre retiré sur b laisse celui de a.
+    act(() => result.current.reset());
+    rerender({ brainId: "a", revision: 3, seenRevision: 0 });
+    await waitFor(() => expect(result.current.filter).toEqual(NEW));
   });
 
   it("un filtre posé sur le second cerveau ne porte que sur lui", async () => {
@@ -267,7 +295,13 @@ describe("TASK-0039 — l'état des filtres et ses lectures", () => {
     const { result, onProjection } = setup({ brainId: "a", revision: 3, seenRevision: 0 });
     act(() => result.current.change(NEW));
     await waitFor(() => expect(onProjection).toHaveBeenCalledTimes(1));
-    expect(Object.keys(result.current.session!).sort()).toEqual(["brainId", "cursors", "filter"]);
+    expect(Object.keys(result.current.session!).sort()).toEqual([
+      "brainId",
+      "cursorRevision",
+      "cursors",
+      "filter",
+      "resumed",
+    ]);
     expect(hookSource).not.toMatch(/\bnodes\b|MapNode|hierarchy|setLoaded/);
     // Ni chemin absolu, ni clé stable, ni identité système.
     expect(hookSource).not.toMatch(/absolutePath|stableKey|fileId|volumeSerial|localPath/i);
@@ -298,5 +332,115 @@ describe("TASK-0039 — câblage dans MapApp", () => {
     expect(source).not.toMatch(/invoke|absolutePath|stableKey|fileId/);
     // Il ne garde que les nœuds déjà dans la projection bornée, pour les nommer.
     expect(source).toContain("nodes.filter((node) => roles.has(node.id))");
+  });
+});
+
+describe("TASK-0044 — le filtre appartient au cerveau et survit à la reprise", () => {
+  const INACTIVE: NodeFilter = { state: "ALL", kinds: [], availability: "ALL" };
+
+  it("un geste de filtre est annoncé pour la reprise : normalisé, et inactif = le filtre par défaut", async () => {
+    const { result, onProjection, onFilterChanged } = setup({ brainId: "a", revision: 3, seenRevision: 0 });
+    act(() =>
+      result.current.change({ state: "ALL", kinds: ["FILE", "DIRECTORY", "FILE"], availability: "ALL" }),
+    );
+    await waitFor(() => expect(onProjection).toHaveBeenCalledTimes(1));
+    expect(onFilterChanged).toHaveBeenLastCalledWith("a", {
+      state: "ALL",
+      kinds: ["DIRECTORY", "FILE"],
+      availability: "ALL",
+    });
+    act(() => result.current.reset());
+    expect(onFilterChanged).toHaveBeenLastCalledWith("a", INACTIVE);
+    expect(onFilterChanged).toHaveBeenCalledTimes(2);
+    // Rien à retirer : aucun nouvel événement.
+    act(() => result.current.reset());
+    expect(onFilterChanged).toHaveBeenCalledTimes(2);
+  });
+
+  it("naviguer dans le cerveau retire le filtre ET l'apprend à la reprise", async () => {
+    const { result, onProjection, onFilterChanged } = setup({ brainId: "a", revision: 3, seenRevision: 0 });
+    act(() => result.current.change(NEW));
+    await waitFor(() => expect(onProjection).toHaveBeenCalledTimes(1));
+    onFilterChanged.mockClear();
+    act(() => result.current.dropForNavigation("b")); // pas de filtre sur b : rien à dire
+    expect(onFilterChanged).not.toHaveBeenCalled();
+    act(() => result.current.dropForNavigation("a"));
+    expect(onFilterChanged).toHaveBeenCalledWith("a", INACTIVE);
+  });
+
+  it("adopt reprend le filtre restauré SANS le persister une seconde fois", async () => {
+    const { result, onProjection, onFilterChanged } = setup({ brainId: "a", revision: 5, seenRevision: 0 });
+    act(() => result.current.adopt("a", { ...FILES_ONLY }, "ftf1.idx.5.FILE.40", 5));
+    await waitFor(() => expect(onProjection).toHaveBeenCalledTimes(1));
+    expect(onFilterChanged).not.toHaveBeenCalled();
+    expect(result.current.active).toBe(true);
+    expect(result.current.resumed).toBe(true);
+    expect(result.current.canPrevious).toBe(true);
+    // La page lue est celle du curseur frais du cœur, jamais un curseur gardé d'avant.
+    expect(mapViewCalls()).toEqual([{ brainId: "a", after: "ftf1.idx.5.FILE.40", filter: FILES_ONLY }]);
+
+    // « Précédente » revient à la vraie première page : plus de « reprise ».
+    act(() => result.current.previous());
+    await waitFor(() => expect(onProjection).toHaveBeenCalledTimes(2));
+    expect(result.current.resumed).toBe(false);
+    expect(result.current.pageNumber).toBe(1);
+    expect(mapViewCalls()[1]).toEqual({ brainId: "a", after: null, filter: FILES_ONLY });
+  });
+
+  it("adopt sans curseur (sélection en première page) ouvre la première page, sans « reprise »", async () => {
+    const { result, onProjection } = setup({ brainId: "a", revision: 5, seenRevision: 0 });
+    act(() => result.current.adopt("a", NEW, null, 5));
+    await waitFor(() => expect(onProjection).toHaveBeenCalledTimes(1));
+    expect(result.current.resumed).toBe(false);
+    expect(result.current.pageNumber).toBe(1);
+    expect(mapViewCalls()).toEqual([{ brainId: "a", after: null, filter: NEW }]);
+  });
+
+  it("adopt d'un filtre inactif ou absent retire la session, sans lire ni annoncer", async () => {
+    const { result, onProjection, onFilterChanged } = setup({ brainId: "a", revision: 5, seenRevision: 0 });
+    act(() => result.current.change(NEW));
+    await waitFor(() => expect(onProjection).toHaveBeenCalledTimes(1));
+    onFilterChanged.mockClear();
+    invokeMock.mockClear();
+    act(() => result.current.adopt("a", INACTIVE, null, 5));
+    expect(result.current.active).toBe(false);
+    act(() => result.current.adopt("a", null, null, 5));
+    expect(onFilterChanged).not.toHaveBeenCalled();
+    expect(mapViewCalls()).toHaveLength(0);
+  });
+
+  it("le curseur reconstruit pour la révision courante survit à l'arrivée de cette révision, un ancien non", async () => {
+    // Le watcher avance la révision de 3 à 4 ; le cœur restaure et fournit un curseur frais de 4.
+    const { result, rerender, onProjection } = setup({ brainId: "a", revision: 3, seenRevision: 0 });
+    act(() => result.current.adopt("a", FILES_ONLY, "ftf1.idx.4.FILE.40", 4));
+    rerender({ brainId: "a", revision: 4, seenRevision: 0 });
+    await waitFor(() => expect(onProjection).toHaveBeenCalled());
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(result.current.pageNumber).toBe(2);
+    expect(result.current.resumed).toBe(true);
+    expect(last(mapViewCalls())).toEqual({ brainId: "a", after: "ftf1.idx.4.FILE.40", filter: FILES_ONLY });
+
+    // Une révision de plus, sans nouvelle restauration : ce curseur est périmé, retour page 1.
+    rerender({ brainId: "a", revision: 5, seenRevision: 0 });
+    await waitFor(() => expect(result.current.pageNumber).toBe(1));
+    expect(result.current.resumed).toBe(false);
+    await waitFor(() => expect((last(mapViewCalls()) as { after: string | null }).after).toBeNull());
+  });
+
+  it("un changement de révision d'un AUTRE cerveau ne remet pas ce cerveau à la page 1", async () => {
+    const { result, rerender, onProjection } = setup({ brainId: "a", revision: 3, seenRevision: 0 });
+    act(() => result.current.change(UNSEEN));
+    await waitFor(() => expect(onProjection).toHaveBeenCalledTimes(1));
+    act(() => result.current.next("cursor-2"));
+    await waitFor(() => expect(onProjection).toHaveBeenCalledTimes(2));
+    rerender({ brainId: "b", revision: 9, seenRevision: 0 });
+    rerender({ brainId: "a", revision: 3, seenRevision: 0 });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(result.current.pageNumber).toBe(2);
+  });
+
+  it("la source du hook ne persiste ni curseur ni chemin : elle n'annonce que le filtre logique", () => {
+    expect(hookSource).not.toMatch(/localStorage|sessionStorage|indexedDB/);
+    expect(hookSource).toContain("onFilterChanged?.(brainId, filter)");
   });
 });

@@ -198,9 +198,13 @@ export interface SearchPage {
 
 /**
  * Non-sensitive, persisted UI preferences — stored in the catalogue's
- * `catalog_meta` table, never a new store. Global, not per-brain: which
- * brain is shown is composition state, but whether the details panel is
- * shown at all is a preference about the interface itself.
+ * `catalog_meta` table, never a new store.
+ *
+ * **Legacy since `TASK-0044`.** This was the one global "is the details panel
+ * shown" value. The panel is now part of each brain's own resume state
+ * (`resumeState.ts`): a brain **without** a resume record inherits this value as
+ * its starting point, and a brain with one ignores it. The key is neither
+ * deleted nor rewritten by the per-brain state.
  */
 export interface UiPreferences {
   detailsPanelVisible: boolean;

@@ -44,6 +44,8 @@ interface Props {
   /** Les nœuds matérialisés de la projection courante (bornés par le cœur). */
   nodes: readonly MapNode[];
   pageNumber: number;
+  /** La page a été reprise à la sélection retenue : son numéro réel n'est pas connu. */
+  resumed?: boolean;
   canPrevious: boolean;
   selectedNodeId?: number | null;
   onChange: (next: NodeFilter) => void;
@@ -63,6 +65,7 @@ export default function FilterPanel({
   filtered,
   nodes,
   pageNumber,
+  resumed = false,
   canPrevious,
   selectedNodeId = null,
   onChange,
@@ -157,7 +160,7 @@ export default function FilterPanel({
               {matchCountLabel(filtered.filteredTotal)}
             </p>
             <p className="filters__page" data-testid="filter-page">
-              Page {pageNumber} · {matchCountLabel(filtered.materializedMatchCount)} sur cette page
+              {resumed ? "Page reprise" : `Page ${pageNumber}`} · {matchCountLabel(filtered.materializedMatchCount)} sur cette page
             </p>
             <ul className="filters__results" data-testid="filter-results">
               {listed.map((node) => {

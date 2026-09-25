@@ -40,8 +40,9 @@ pub const CATALOG_SCHEMA_VERSION: i64 = 2;
 const ACTIVE_BRAIN_KEY: &str = "active_brain_id";
 
 /// Key under which the catalogue remembers whether the details panel is
-/// shown — `TASK-0035` A. Same `catalog_meta` table as [`ACTIVE_BRAIN_KEY`];
-/// no new store, no new file, no schema change.
+/// shown — `TASK-0035` A. **Legacy since `TASK-0044`**: the panel is now stored
+/// per brain in the resume state, and this global value only seeds a brain that
+/// has no record yet. Same `catalog_meta` table as [`ACTIVE_BRAIN_KEY`].
 const DETAILS_PANEL_VISIBLE_KEY: &str = "details_panel_visible";
 
 /// Where a brain's content comes from.
@@ -285,11 +286,14 @@ pub struct BrainCatalogView {
 
 /// Non-sensitive, persisted UI preferences — `TASK-0035` A.
 ///
-/// Global, not per-brain: which brain is shown is composition state, but
-/// whether the details panel is shown at all is a preference about the
-/// interface itself. Stored in `catalog_meta`, the same table
-/// [`ACTIVE_BRAIN_KEY`] already uses — no new store, no new file, and
-/// nothing here may ever carry a path, a file name or brain content.
+/// **Legacy, and only a fallback since `TASK-0044`.** This was the one global
+/// "is the details panel shown" value. The panel is now part of each brain's own
+/// resume state (`super::resume_state`, `DEC-0042` §3): a brain **without** a
+/// resume record inherits this value as its starting point, and a brain with one
+/// ignores it. The key is neither deleted nor rewritten by the per-brain state,
+/// so a profile that predates it keeps opening exactly as it did. Same
+/// `catalog_meta` table as [`ACTIVE_BRAIN_KEY`]; nothing here may ever carry a
+/// path, a file name or brain content.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct UiPreferences {

@@ -22,7 +22,7 @@ use crate::change_journal::{seen_watermark, unseen_predicate};
 use crate::domain::NodeDto;
 use crate::hierarchy::{HierarchyError, IndexIdentity};
 use crate::index::{Index, NODE_COLUMNS, node_from_row};
-use rusqlite::{Connection, ToSql};
+use rusqlite::{Connection, OptionalExtension, ToSql};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -190,6 +190,30 @@ impl NodeFilter {
     }
 }
 
+impl NodeFilter {
+    /// `TASK-0044` — "does this one node satisfy the filter?": the **same**
+    /// predicate the total and the page use, restricted to one primary key.
+    fn match_one_sql(&self) -> (String, bool) {
+        let (predicate, needs_watermark) = self.predicate();
+        (
+            format!("SELECT 1 FROM nodes n WHERE n.id = :id AND {predicate} LIMIT 1"),
+            needs_watermark,
+        )
+    }
+
+    /// `TASK-0044` — the match that comes **just before** a given id in the
+    /// canonical order (`ORDER BY n.id`). One keyset probe, no `OFFSET`.
+    fn previous_match_sql(&self) -> (String, bool) {
+        let (predicate, needs_watermark) = self.predicate();
+        (
+            format!(
+                "SELECT n.id FROM nodes n WHERE n.id < :id AND {predicate}                  ORDER BY n.id DESC LIMIT 1"
+            ),
+            needs_watermark,
+        )
+    }
+}
+
 /// [`NODE_COLUMNS`] with the historical `seen` column replaced by a constant:
 /// the row shape [`node_from_row`] expects, without the query ever naming
 /// `nodes.seen` (`DEC-0037` §1). The DTO built from it says nothing about
@@ -278,6 +302,37 @@ pub struct FilteredMatches {
 /// The largest page any caller can ask a filter for.
 pub const MAX_FILTER_PAGE: usize = 256;
 
+/// Where a filtered page must resume so that it **starts at** one given match —
+/// `TASK-0044`, `DEC-0042` §6.
+///
+/// A resume state persists the *logical* filter and the selected node, never a
+/// keyset cursor: a cursor is bound to one revision and is refused after any
+/// other. This is the bounded primitive that rebuilds a valid one from the
+/// **current** Index: the match itself is checked with the filter's own
+/// predicate, and the match just before it (in the canonical `id` order) is one
+/// keyset probe. Nothing is scanned, nothing is stored.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FilterAnchor {
+    pub identity: IndexIdentity,
+    /// The match just before the anchored one; `None` when it is the first
+    /// match of the brain (the first page already starts with it).
+    pub previous_match: Option<i64>,
+}
+
+impl FilterAnchor {
+    /// The cursor of the page that begins with the anchored match, or `None`
+    /// when that page is simply the first one. Bound to the identity and
+    /// revision read **with** the anchor, and to the normalised filter.
+    pub fn cursor(&self, filter: &NodeFilter) -> Option<FilterCursor> {
+        self.previous_match.map(|after_id| FilterCursor {
+            index_id: self.identity.index_id.clone(),
+            revision: self.identity.revision,
+            canonical: filter.canonical(),
+            after_id,
+        })
+    }
+}
+
 impl Index {
     /// The exact total and one keyset page of matches, from **one** read
     /// snapshot — `DEC-0037` §3. Inside a caller's transaction it joins it;
@@ -289,6 +344,18 @@ impl Index {
         after: Option<&FilterCursor>,
     ) -> Result<FilteredMatches, FilterError> {
         filtered_matches(&self.connection, filter, limit, after)
+    }
+
+    /// `TASK-0044` — `Some` when `node_id` satisfies `filter` in the **current**
+    /// Index, with what is needed to rebuild the page that starts at it; `None`
+    /// when it does not (absent, the root, or filtered out). One read snapshot,
+    /// two keyset probes.
+    pub fn filter_anchor(
+        &self,
+        filter: &NodeFilter,
+        node_id: i64,
+    ) -> Result<Option<FilterAnchor>, FilterError> {
+        filter_anchor(&self.connection, filter, node_id)
     }
 }
 
@@ -352,6 +419,48 @@ pub(crate) fn filtered_matches(
         rows,
         limit,
     })
+}
+
+pub(crate) fn filter_anchor(
+    connection: &Connection,
+    filter: &NodeFilter,
+    node_id: i64,
+) -> Result<Option<FilterAnchor>, FilterError> {
+    let snapshot = connection
+        .is_autocommit()
+        .then(|| connection.unchecked_transaction())
+        .transpose()?;
+    let identity = crate::hierarchy::identity(connection)?;
+    let (match_sql, needs_watermark) = filter.match_one_sql();
+    let watermark = if needs_watermark {
+        Some(seen_watermark(connection)?)
+    } else {
+        None
+    };
+    let mut params: Vec<(&str, &dyn ToSql)> = vec![(":id", &node_id)];
+    if let Some(watermark) = watermark.as_ref() {
+        params.push((":wm", watermark));
+    }
+    let is_match = connection
+        .query_row(&match_sql, params.as_slice(), |_| Ok(()))
+        .optional()?
+        .is_some();
+    let anchor = if is_match {
+        let (previous_sql, _) = filter.previous_match_sql();
+        let previous_match = connection
+            .query_row(&previous_sql, params.as_slice(), |row| row.get::<_, i64>(0))
+            .optional()?;
+        Some(FilterAnchor {
+            identity,
+            previous_match,
+        })
+    } else {
+        None
+    };
+    if let Some(snapshot) = snapshot {
+        snapshot.commit()?;
+    }
+    Ok(anchor)
 }
 
 /// `EXPLAIN QUERY PLAN` of the page query, verbatim — the plan is a structural

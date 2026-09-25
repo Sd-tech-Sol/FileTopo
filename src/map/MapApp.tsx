@@ -17,6 +17,13 @@ import FilterPanel from "./FilterPanel";
 import { filterRoles } from "./filters";
 import MapView, { aggregateLabel, type RenderedBrain } from "./MapView";
 import { useProjectionFilter } from "./useProjectionFilter";
+import {
+  ResumeWriter,
+  isStorableView,
+  parseResumeRestore,
+  parseResumeState,
+  type ResumeState,
+} from "./resumeState";
 import CrossRelationsPanel from "./CrossRelationsPanel";
 import RelationsPanel from "./RelationsPanel";
 import ReviewQueuePanel from "./ReviewQueuePanel";
@@ -126,6 +133,7 @@ import {
   panBy,
   readableView,
   recenterOnFocus,
+  sameView,
   zoomAbout,
   type View,
   type Viewport,
@@ -282,6 +290,13 @@ export interface LoadedBrain {
   integrity: FixtureIntegrity | null;
   relations: RelationsOverview | null;
   hierarchy: Hierarchy;
+  /**
+   * `TASK-0044` — the resume state the backend restored this brain from, validated
+   * against its **current** Index, and the fresh filter cursor of the page the
+   * selection sits on. Absent when the projection was read the plain way.
+   */
+  resume?: ResumeState | null;
+  filterCursor?: string | null;
 }
 
 /**
@@ -361,6 +376,17 @@ export default function MapApp() {
       })
       .catch((error) => setStatus(`Projection normale illisible : ${String(error)}`));
   }, []);
+  // `TASK-0044` — the per-brain resume state (`DEC-0042`): one writer for the whole page,
+  // latest-wins and bounded, that talks to the catalogue and to nothing else.
+  const resumeWriter = useRef(
+    new ResumeWriter({
+      write: (brainId, state) => invoke("map_brain_resume_update", { brainId, state }),
+      read: async (brainId) =>
+        parseResumeState(await invoke<unknown>("map_brain_resume_state", { brainId })),
+      onError: (brainId, error) =>
+        hostLog("error", `état de reprise non enregistré pour ${brainId}: ${String(error)}`),
+    }),
+  ).current;
   const filter = useProjectionFilter({
     brainId: filterBrainId,
     revision: filterRevision,
@@ -368,6 +394,7 @@ export default function MapApp() {
     onProjection: acceptFilteredProjection,
     onRestore: restoreNormalProjection,
     onError: (message) => setStatus(message),
+    onFilterChanged: (brainId, next) => resumeWriter.patch(brainId, { filter: next }, { immediate: true }),
   });
   activeFilterBrain.current = filter.session?.brainId ?? null;
   const [contentObservedBrains, setContentObservedBrains] = useState<ReadonlySet<string>>(new Set());
@@ -426,7 +453,9 @@ export default function MapApp() {
   const [revealBusy, setRevealBusy] = useState(false);
   const [revealError, setRevealError] = useState<string | null>(null);
   // `TASK-0035` A — visible by default until the real preference loads, so a
-  // fresh profile never flashes hidden before the bootstrap effect answers.
+  // fresh profile never flashes hidden before the bootstrap effect answers. Since
+  // `TASK-0044` the value is the **foreground brain's own**: the legacy global
+  // preference only seeds a brain that has no resume state yet.
   const [detailsPanelVisible, setDetailsPanelVisible] = useState(true);
   // `TASK-0035` B — the dedicated, exact and paginated page of the current
   // selection's direct children; independent of `detail.children`, which
@@ -488,6 +517,25 @@ export default function MapApp() {
   sessionsRef.current = sessions;
   /** A view to restore once the next composition has landed — `L9`. */
   const restoreViewRef = useRef<View | null>(null);
+  /**
+   * `TASK-0044` — a camera the **catalogue** remembered, waiting for a measured
+   * viewport: it is clamped against the real world and viewport, never applied blind.
+   */
+  const resumeViewRef = useRef<View | null>(null);
+  /**
+   * The composition whose camera is worth persisting, and the view object that was on
+   * screen just before it was positioned (`stale`): the render that still shows it
+   * writes nothing.
+   */
+  const viewArmedRef = useRef<{ key: string; stale: View | null } | null>(null);
+  /**
+   * The camera the catalogue remembered, kept for a short while after it was applied.
+   * The viewport is not final the first time it is measured (a panel opens or closes, a
+   * row grows), and a `clampView` against a transient viewport would move the camera for
+   * good: while the person has not touched the camera, it is applied again from the
+   * ORIGINAL remembered value each time the viewport changes.
+   */
+  const resumeTargetRef = useRef<{ key: string; view: View; applied: View | null; at: number } | null>(null);
   /** Which composition the current view was positioned for, and at which size. */
   const positionedRef = useRef<CompositionPositioning | null>(null);
   // Declared before the runners exist so the auto-start effect can reach them
@@ -785,17 +833,44 @@ export default function MapApp() {
         const mode = report.applicationMode;
         setLastApplicationModes((current) => new Map(current).set(brainId, mode));
       }
+      // `TASK-0044` — the catalogue says where this brain was left and the backend checks
+      // it against the brain's **current** Index: the branch, the selection, the filter
+      // (and, past the first page, a fresh cursor). Anything that cannot be restored falls
+      // back to the plain read below; a damaged record never keeps a brain from opening.
+      let snapshot: MapProjection | null = null;
+      let resume: ResumeState | null = null;
+      let filterCursor: string | null = null;
+      try {
+        // What the person just did is in the catalogue before it is read back.
+        await resumeWriter.flush(brainId);
+        const restored = parseResumeRestore(
+          await invoke<unknown>("map_brain_resume_restore", { brainId }),
+          brainId,
+        );
+        if (restored) {
+          snapshot = restored.projection;
+          resume = restored.resume;
+          filterCursor = restored.filterCursor;
+          resumeWriter.seed(brainId, restored.resume);
+          if (restored.corrections.length > 0) {
+            hostLog("info", `état de reprise corrigé pour ${brainId}: ${restored.corrections.join(",")}`);
+          }
+        }
+      } catch (error) {
+        hostLog("info", `reprise indisponible pour ${brainId}, lecture simple: ${String(error)}`);
+      }
       // A reload the watcher asked for keeps the branch the person is on; when that
       // branch no longer exists the root is read instead, never an error.
-      let snapshot: MapProjection;
-      try {
-        snapshot = await invoke<MapProjection>(
-          "map_view",
-          focusId === undefined ? { brainId } : { brainId, focusId },
-        );
-      } catch (error) {
-        if (focusId === undefined) throw error;
-        snapshot = await invoke<MapProjection>("map_view", { brainId });
+      if (!snapshot) {
+        try {
+          snapshot = await invoke<MapProjection>(
+            "map_view",
+            focusId === undefined ? { brainId } : { brainId, focusId },
+          );
+        } catch (error) {
+          if (focusId === undefined) throw error;
+          snapshot = await invoke<MapProjection>("map_view", { brainId });
+        }
       }
       const integrity = null; // Opening must never read or fingerprint the source.
 
@@ -824,6 +899,8 @@ export default function MapApp() {
         integrity,
         relations,
         hierarchy: buildHierarchy(snapshot.nodes, snapshot.rootId),
+        resume,
+        filterCursor,
       };
     },
     [],
@@ -861,9 +938,22 @@ export default function MapApp() {
       // The brain may have left the view while it was being read.
       if (!loadedRef.current.has(brainId)) return;
       setLoaded((current) => (current.has(brainId) ? new Map(current).set(brainId, fresh) : current));
+      // `TASK-0044` — the catalogue's state was checked against the **new** revision: a
+      // filter is read again (a selected match past the first page comes back on its own
+      // fresh page), and a selection that is gone falls back to what the backend kept.
+      if (fresh.resume) {
+        filter.adopt(brainId, fresh.resume.filter, fresh.filterCursor ?? null, fresh.snapshot.indexRevision);
+      }
       setSelected((current) =>
         current && current.brainId === brainId && !fresh.hierarchy.byId.has(current.nodeId)
-          ? { brainId, nodeId: fresh.snapshot.rootId }
+          ? {
+              brainId,
+              nodeId:
+                fresh.resume?.selectedNodeId != null &&
+                fresh.hierarchy.byId.has(fresh.resume.selectedNodeId)
+                  ? fresh.resume.selectedNodeId
+                  : fresh.snapshot.rootId,
+            }
           : current,
       );
       setDetailRefresh((count) => count + 1);
@@ -871,7 +961,7 @@ export default function MapApp() {
       // active filter re-reads its page on the same change.
       setSeenRevision((count) => count + 1);
     },
-    [loadBrain],
+    [filter.adopt, loadBrain],
   );
 
   /** One closed event of the backend watcher, or one read of its state. */
@@ -950,6 +1040,33 @@ export default function MapApp() {
   }, [shownRealRootsKey, watchTracker]);
 
   /**
+   * `TASK-0044` — writes down what is on screen for the brain about to be left, so the
+   * outgoing state is in the catalogue **before** the focus changes. The camera is a
+   * brain's own only while that brain is alone on screen: in a composition the pan and
+   * zoom belong to the composition, whose coordinates mean nothing to a single brain.
+   */
+  const captureLiveResume = useCallback(() => {
+    const chosen = selectedRef.current;
+    if (chosen && resumeWriter.isKnown(chosen.brainId)) {
+      resumeWriter.patch(chosen.brainId, { selectedNodeId: chosen.nodeId });
+    }
+    const current = composedRef.current;
+    if (current && current.displayedBrainIds.length === 1) {
+      const brainId = current.displayedBrainIds[0];
+      const armed = viewArmedRef.current;
+      if (
+        armed &&
+        armed.stale === null &&
+        armed.key === compositionKey(current.displayedBrainIds) &&
+        resumeWriter.isKnown(brainId) &&
+        isStorableView(viewRef.current)
+      ) {
+        resumeWriter.patch(brainId, { view: { ...viewRef.current } });
+      }
+    }
+  }, [resumeWriter]);
+
+  /**
    * Applies a composition: loads what is missing, drops what left, restores.
    *
    * Deliberately dependency-free over the mutable state — everything it reads
@@ -1006,10 +1123,19 @@ export default function MapApp() {
           }
         }
 
+        // `TASK-0044` — what is on screen goes into the catalogue before anything changes.
+        captureLiveResume();
+        await resumeWriter.flushAll();
+
         const nextLoaded = new Map(loadedRef.current);
+        // The brains this very call read from the catalogue's state: only those carry a
+        // restored state that is newer than anything this page remembers.
+        const loadedNow = new Map<string, LoadedBrain>();
         for (const brainId of next.displayedBrainIds) {
           if (options.action || !nextLoaded.has(brainId)) {
-            nextLoaded.set(brainId, await loadBrain(brainId, options.action ?? "open"));
+            const brain = await loadBrain(brainId, options.action ?? "open");
+            nextLoaded.set(brainId, brain);
+            loadedNow.set(brainId, brain);
           }
         }
         // A brain removed from the view keeps nothing on screen. Its index,
@@ -1042,7 +1168,17 @@ export default function MapApp() {
 
         const restored = recallComposition(sessionsRef.current, nextKey);
         const focusedRoot = nextLoaded.get(next.focusedBrainId)?.snapshot.rootId ?? null;
-        const restoredSelection =
+        // `TASK-0044` — a composition of ONE brain is where the catalogue says that brain was
+        // left: the same memory `L9` keeps (a composition of one has the key of its brain) with
+        // the catalogue behind it, not a second one beside it. A brain read by this very call
+        // brings its restored state; one already on screen (it was in a composition of several,
+        // where only the focused brain's selection is on screen) has it in the writer's memory,
+        // which every restore seeds and every change updates.
+        const single = next.displayedBrainIds.length === 1 ? next.displayedBrainIds[0] : null;
+        const fromCatalogue = single
+          ? (loadedNow.get(single)?.resume ?? resumeWriter.current(single))
+          : null;
+        const memorySelection =
           restored && selectionIsStillValid(next, restored.selected) && restored.selected
             ? nextLoaded
                 .get(restored.selected.brainId)
@@ -1050,13 +1186,48 @@ export default function MapApp() {
               ? restored.selected
               : null
             : null;
+        const catalogueSelection: BrainNodeRef | null =
+          single && fromCatalogue && fromCatalogue.selectedNodeId !== null
+            ? nextLoaded.get(single)?.hierarchy.byId.has(fromCatalogue.selectedNodeId)
+              ? { brainId: single, nodeId: fromCatalogue.selectedNodeId }
+              : null
+            : null;
+        const restoredSelection = fromCatalogue ? catalogueSelection : memorySelection;
+        // A focused brain never falls back to its root while the catalogue remembers a
+        // selection the map still shows: that root would be written over it.
+        const focusedRemembered = loadedNow.get(next.focusedBrainId)?.resume ?? resumeWriter.current(next.focusedBrainId);
+        const rememberedSelection: BrainNodeRef | null =
+          focusedRemembered && focusedRemembered.selectedNodeId !== null &&
+          nextLoaded.get(next.focusedBrainId)?.hierarchy.byId.has(focusedRemembered.selectedNodeId)
+            ? { brainId: next.focusedBrainId, nodeId: focusedRemembered.selectedNodeId }
+            : null;
 
+        const compositionChanged = !current || compositionKey(current.displayedBrainIds) !== nextKey;
         restoreViewRef.current = restored ? { ...restored.view } : null;
+        if (compositionChanged) {
+          // A camera from the catalogue waits for a measured viewport (see the positioning
+          // effect); it replaces the session memory's for a brain read from the catalogue.
+          resumeViewRef.current = fromCatalogue?.view ? { ...fromCatalogue.view } : null;
+          if (resumeViewRef.current) restoreViewRef.current = null;
+          resumeTargetRef.current = null;
+          viewArmedRef.current = null;
+        }
         setLoaded(nextLoaded);
         setComposed(next);
+        // The foreground brain's own panel choice is on screen from the first layout, so the
+        // viewport a restored camera meets is the final one, not one that moves a moment later.
+        const focusedPanel = (loadedNow.get(next.focusedBrainId)?.resume ?? resumeWriter.current(next.focusedBrainId))
+          ?.detailsPanelVisible;
+        if (focusedPanel !== undefined) setDetailsPanelVisible(focusedPanel);
+        for (const [brainId, brain] of loadedNow) {
+          if (brain.resume) {
+            filter.adopt(brainId, brain.resume.filter, brain.filterCursor ?? null, brain.snapshot.indexRevision);
+          }
+        }
         setSelected(
           forced ??
             restoredSelection ??
+            rememberedSelection ??
             (focusedRoot === null
               ? null
               : { brainId: next.focusedBrainId, nodeId: focusedRoot }),
@@ -1074,7 +1245,7 @@ export default function MapApp() {
         setBusy(false);
       }
     },
-    [activate, loadBrain],
+    [activate, captureLiveResume, filter.adopt, loadBrain, resumeWriter],
   );
 
   /**
@@ -1169,8 +1340,18 @@ export default function MapApp() {
       try {
         const next = focusBrain(current, order, brainId);
         setComposed(next);
-        const root = loadedRef.current.get(brainId)?.snapshot.rootId ?? null;
-        if (root !== null) setSelected({ brainId, nodeId: root });
+        // `TASK-0044` — each brain comes back with **its own** selection when the map
+        // still shows it; the root only when it does not.
+        const shownBrain = loadedRef.current.get(brainId);
+        const root = shownBrain?.snapshot.rootId ?? null;
+        const remembered = resumeWriter.current(brainId)?.selectedNodeId ?? null;
+        if (root !== null) {
+          setSelected({
+            brainId,
+            nodeId:
+              remembered !== null && shownBrain?.hierarchy.byId.has(remembered) ? remembered : root,
+          });
+        }
         // The focused brain is the active brain, and that is persisted.
         void activate(brainId).catch((error) =>
           setStatus(`Cerveau actif non enregistré : ${String(error)}`),
@@ -1179,7 +1360,7 @@ export default function MapApp() {
         refuse(error);
       }
     },
-    [activate, order, refuse],
+    [activate, order, refuse, resumeWriter],
   );
 
   /**
@@ -1280,8 +1461,54 @@ export default function MapApp() {
   // viewport settles a frame later, and that second move erased the view a
   // composition had just been given back.
   const compositionId = composed ? compositionKey(composed.displayedBrainIds) : null;
+  const projectionKey = renderedBrains.map(b => `${b.brainId}:${loaded.get(b.brainId)?.snapshot.focusId}:${loaded.get(b.brainId)?.snapshot.indexRevision}:${b.hierarchy.drawOrder.map(n => n.id).join(",")}`).join("|");
+  /**
+   * `TASK-0044` — the projection the camera was just restored for. The follow-the-focus pan
+   * below reveals a selection that is out of view; for a camera the person left exactly as it
+   * was, that pan would undo the restore, so it skips the one projection the restore landed on.
+   */
+  const restoredProjectionRef = useRef<string | null>(null);
   useEffect(() => {
     if (!compositionId || composition.territories.length === 0) return;
+    // `TASK-0044` — a camera the catalogue remembered is applied only once **both** the
+    // world and the viewport are known, and only after `clampView`: a window that changed
+    // size since it was saved, or a corrupted number, can never leave the map unreachable.
+    const measured = viewport.width > 1 && viewport.height > 1;
+    const remembered = resumeViewRef.current;
+    if (remembered) {
+      if (!measured) return;
+      resumeViewRef.current = null;
+      positionedRef.current = {
+        key: compositionId,
+        width: viewport.width,
+        height: viewport.height,
+      };
+      viewArmedRef.current = { key: compositionId, stale: viewRef.current };
+      restoredProjectionRef.current = projectionKey;
+      const placed = clampView(remembered, world, viewport);
+      resumeTargetRef.current = { key: compositionId, view: { ...remembered }, applied: placed, at: Date.now() };
+      setView(placed);
+      return;
+    }
+    const target = resumeTargetRef.current;
+    if (target && target.applied) {
+      // Untouched since it was applied, and only for a few seconds: the same remembered
+      // camera, clamped against the viewport as it is now.
+      if (
+        target.key === compositionId &&
+        measured &&
+        viewRef.current === target.applied &&
+        Date.now() - target.at < 4000
+      ) {
+        const again = clampView(target.view, world, viewport);
+        if (!sameView(again, viewRef.current)) {
+          target.applied = again;
+          setView(again);
+        }
+        return;
+      }
+      resumeTargetRef.current = null;
+    }
     const restored = restoreViewRef.current;
     if (restored) {
       restoreViewRef.current = null;
@@ -1290,6 +1517,7 @@ export default function MapApp() {
         width: viewport.width,
         height: viewport.height,
       };
+      viewArmedRef.current = measured ? { key: compositionId, stale: viewRef.current } : null;
       setView(restored);
       return;
     }
@@ -1300,6 +1528,7 @@ export default function MapApp() {
       height: viewport.height,
     };
     const anchor = focusAnchorRect(composition);
+    viewArmedRef.current = measured ? { key: compositionId, stale: viewRef.current } : null;
     setView(anchor ? readableView(anchor, world, viewport) : fitView(world, viewport));
     // `world`/`focusAnchorRect` are derived from the composition, so they
     // change exactly when the composition does; listing them would reopen on
@@ -1307,6 +1536,77 @@ export default function MapApp() {
     // already cover.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [compositionId, composition.territories.length, viewport.width, viewport.height]);
+
+  // `TASK-0044` — the camera of a brain that is alone on screen is written to the catalogue,
+  // through the bounded writer (never one write per frame). The render that still shows the
+  // camera from before the positioning writes nothing.
+  useEffect(() => {
+    const armed = viewArmedRef.current;
+    const shown = composedRef.current;
+    if (!armed || !shown || shown.displayedBrainIds.length !== 1) return;
+    if (armed.key !== compositionKey(shown.displayedBrainIds)) return;
+    if (armed.stale !== null) {
+      if (view === armed.stale) return;
+      armed.stale = null;
+    }
+    const brainId = shown.displayedBrainIds[0];
+    if (!resumeWriter.isKnown(brainId) || !isStorableView(view)) return;
+    resumeWriter.patch(brainId, { view: { ...view } });
+  }, [view, resumeWriter]);
+
+  // `TASK-0044` — the selection of a brain is its own: it goes to the catalogue under that
+  // brain's id, never as a bare number.
+  useEffect(() => {
+    if (!selected || !resumeWriter.isKnown(selected.brainId)) return;
+    resumeWriter.patch(selected.brainId, { selectedNodeId: selected.nodeId });
+  }, [selected, resumeWriter]);
+
+  // `TASK-0044` — the branch each brain is on. A filtered page carries no branch: the one
+  // the person was on stays as it was until the filter is dropped.
+  useEffect(() => {
+    for (const [brainId, brain] of loaded) {
+      if (!resumeWriter.isKnown(brainId) || brain.snapshot.filtered) continue;
+      const branch = brain.snapshot.focusId === brain.snapshot.rootId ? null : brain.snapshot.focusId;
+      resumeWriter.patch(brainId, { focusNodeId: branch });
+    }
+  }, [loaded, resumeWriter]);
+
+  // The panel belongs to the brain in the foreground: read from what the catalogue holds for
+  // it, so switching brains shows each one's own choice.
+  useEffect(() => {
+    if (!filterBrainId) return;
+    let live = true;
+    void resumeWriter.load(filterBrainId).then((state) => {
+      if (live && composedRef.current?.focusedBrainId === filterBrainId) {
+        setDetailsPanelVisible(state.detailsPanelVisible);
+      }
+    });
+    return () => {
+      live = false;
+    };
+  }, [filterBrainId, resumeWriter]);
+
+  // Best effort on a normal close: whatever is still waiting goes to the catalogue. It is
+  // not a promise about a crash — the debounce keeps the wait short, nothing more.
+  useEffect(() => {
+    const flush = () => {
+      captureLiveResume();
+      void resumeWriter.flushAll();
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
+    window.addEventListener("pagehide", flush);
+    window.addEventListener("beforeunload", flush);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      window.removeEventListener("beforeunload", flush);
+      document.removeEventListener("visibilitychange", onVisibility);
+      // The page goes away: nothing waits behind a timer that will never be read.
+      flush();
+    };
+  }, [captureLiveResume, resumeWriter]);
 
   // `.map-view` can grow after this composition was already positioned — the
   // aside panel filling in with real data (relations, content observations)
@@ -1318,21 +1618,27 @@ export default function MapApp() {
   // canvas.
   useEffect(() => {
     if (composition.territories.length === 0) return;
-    setView((current) => clampView(current, world, viewport));
+    // The same object when nothing moves: a camera that was just restored is recognised as
+    // untouched by its identity.
+    setView((current) => {
+      const clamped = clampView(current, world, viewport);
+      return sameView(clamped, current) ? current : clamped;
+    });
     // `world` changes with the composition, not the viewport; reacting to it
     // here too would refire this for reasons `shouldFitComposition` above
     // already owns.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewport.width, viewport.height]);
 
-  const projectionKey = renderedBrains.map(b => `${b.brainId}:${loaded.get(b.brainId)?.snapshot.focusId}:${loaded.get(b.brainId)?.snapshot.indexRevision}:${b.hierarchy.drawOrder.map(n => n.id).join(",")}`).join("|");
   // A branch navigation, an expanded indicator or a refresh replaces the
   // projection under the same budget — `DEC-0034` C — and the camera follows
   // the new focus without shrinking the map to fit it: no `fitView` here any
   // more, only a pan that keeps the user's own zoom when it is still
   // spatially coherent — `DEC-0034` E.
   useEffect(() => {
-    if (!projectionKey) return;
+    const restoredHere = restoredProjectionRef.current === projectionKey;
+    restoredProjectionRef.current = null;
+    if (!projectionKey || restoredHere) return;
     const anchor = focusAnchorRect(composition);
     if (!anchor) return;
     setView((current) => recenterOnFocus(anchor, current, world, viewportRef.current));
@@ -2514,18 +2820,17 @@ export default function MapApp() {
 
   const hasPreviousChildrenPage = childrenCursorStack.length > 1;
 
-  // `TASK-0035` A — masking/showing never touches selection, search,
-  // projection, relations or composition: this handler reaches nothing but
-  // the one preference, both in state and on the wire.
+  // `TASK-0035` A, per brain since `TASK-0044` — masking/showing never touches selection,
+  // search, projection, relations or composition: this handler reaches nothing but the
+  // foreground brain's own panel choice, both in state and in the catalogue.
+  const detailsPanelVisibleRef = useRef(detailsPanelVisible);
+  detailsPanelVisibleRef.current = detailsPanelVisible;
   const toggleDetailsPanel = useCallback(() => {
-    setDetailsPanelVisible((current) => {
-      const next = !current;
-      void invoke("map_ui_preferences_update", { detailsPanelVisible: next }).catch((error) =>
-        setStatus(`Préférence non enregistrée : ${String(error)}`),
-      );
-      return next;
-    });
-  }, []);
+    const next = !detailsPanelVisibleRef.current;
+    setDetailsPanelVisible(next);
+    const brainId = composedRef.current?.focusedBrainId ?? null;
+    if (brainId) resumeWriter.patch(brainId, { detailsPanelVisible: next }, { immediate: true });
+  }, [resumeWriter]);
 
   const labelFor = useCallback(
     (node: MapNode, brain: BrainRecord) =>
@@ -3007,6 +3312,7 @@ export default function MapApp() {
             }
             nodes={focusedBrain?.snapshot.nodes ?? []}
             pageNumber={filter.pageNumber}
+            resumed={filter.resumed}
             canPrevious={filter.canPrevious}
             selectedNodeId={selected && selected.brainId === focusedBrain?.record.brainId ? selected.nodeId : null}
             onChange={filter.change}
