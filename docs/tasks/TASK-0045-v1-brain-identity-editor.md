@@ -1,7 +1,7 @@
 # TASK-0045 — V1 Brain Identity Editor
 
 - **Date :** 2026-09-25
-- **Statut :** `IMPLEMENTED`
+- **Statut :** `VERIFIED` par `ACTION-0075`
 - **Branche :** `build/v0.2-a29-v1-brain-identity-editor`
 - **Décision :** `DEC-0043`
 - **Portée :** `F-033`, fermeture candidate de `P-20`
@@ -200,7 +200,7 @@ Preuve compacte :
 - arbre propre.
 
 
-## Exécution — IMPLEMENTED — 2026-09-25
+## Exécution — VERIFIED par ACTION-0075 — 2026-09-25
 
 - **Statut : `IMPLEMENTED`**, jamais auto-`VERIFIED`. Code `9e951d2` sur `build/v0.2-a29-v1-brain-identity-editor`.
   Audit reuse-first, changements, preuves et limites : [VALIDATION section CB](../ai/VALIDATION.md).
@@ -210,3 +210,8 @@ Preuve compacte :
   édition au clavier avec `Entrée` système, édition à la souris, annulation, fermeture et relance réelles).
 - **P-20 : READY FOR INDEPENDENT CLOSURE** (jamais `VERIFIED` ici). F-033 : `IMPLEMENTED`. F-035 et F-036 non touchés.
 - **Action suivante : contrôle indépendant de `TASK-0045`.**
+
+
+## Clôture indépendante — ACTION-0075
+
+`TASK-0045` est **VERIFIED**. Le contrôle indépendant accepte l'éditeur Nom / Couleur / Icône, l'usage exclusif de `map_brain_update`, la publication du `BrainRecord` retourné, l'isolation entre cerveaux partageant la même source et la persistance après redémarrage réel. `P-20` est **CLOSED / VERIFIED** par composition des preuves `ACTION-0029`, `ACTION-0064`, `ACTION-0073` et `ACTION-0075`.
