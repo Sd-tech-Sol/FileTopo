@@ -5949,3 +5949,15 @@ fusion / étiquette / release.
   fermeture et relance réelles, source / Index / journal / reprise inchangés;
 - `F-033` = IMPLEMENTED; `P-20` = candidate à la clôture indépendante; `F-035` et `P-19` inchangés;
 - `TASK-0045` = IMPLEMENTED, jamais auto-VERIFIED; aucune TASK-0046; NEXT_ACTION = contrôle indépendant.
+
+
+## 2026-09-25 — ACTION-0075 — TASK-0045 VERIFIED / P-20 CLOSED
+
+**Orchestrateur :** ChatGPT
+
+- contrôle indépendant du formulaire, de `saveBrainIdentity`, des gardes Rust/TS et de la preuve WebView2;
+- TASK-0045 = VERIFIED;
+- F-033 = VERIFIED dans sa portée;
+- P-20 = CLOSED / VERIFIED par composition des preuves ACTION-0029, ACTION-0064, ACTION-0073 et ACTION-0075;
+- aucune source, aucun Index, aucun journal et aucun resume state modifiés par l'édition;
+- F-035 et F-036 restent ouvertes; P-19 reste PARTIELLE.
