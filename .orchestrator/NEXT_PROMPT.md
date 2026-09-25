@@ -1,219 +1,289 @@
-# NEXT_PROMPT — TASK-0045 — V1 Brain Identity Editor
+# NEXT_PROMPT — TASK-0046 — V1 Complete FR/EN Runtime
 
 **TARGET_AGENT:** CLAUDE CODE  
-**RECOMMENDED_MODEL:** Sonnet 5, medium effort  
+**RECOMMENDED_MODEL:** Sonnet 5, high effort  
 **STATUS:** READY  
-**BRANCH:** `build/v0.2-a29-v1-brain-identity-editor`
+**BRANCH:** `build/v0.2-a30-v1-complete-fr-en-runtime`
 
 ## /goal
 
 Implémenter intégralement
-`docs/tasks/TASK-0045-v1-brain-identity-editor.md` selon
-`docs/decisions/DEC-0043-brain-identity-editor-boundary.md`.
+`docs/tasks/TASK-0046-v1-complete-fr-en-runtime.md`
+selon
+`docs/decisions/DEC-0044-global-fr-en-runtime.md`.
 
-Le but est volontairement petit : rendre **éditables dans le runtime V1** les
-trois métadonnées que le catalogue sait déjà modifier et persister :
+Le runtime produit réel est `src/map/MapApp.tsx`.
+Le vieux `src/App.tsx` n'est qu'une référence historique.
 
-- nom;
-- couleur;
-- icône.
-
-Ne pas créer un nouveau store. Ne pas commencer FR/EN. Ne pas modifier la
-source.
+Objectif : FR/EN complet du runtime courant, avec choix explicite persistant,
+sans nouveau backend de préférence et sans commencer l'audit WCAG global.
 
 ## 0 — Préconditions
 
 1. Appliquer `AGENTS.md` et `CLAUDE.md`.
 2. Basculer explicitement sur
-   `build/v0.2-a29-v1-brain-identity-editor`.
+   `build/v0.2-a30-v1-complete-fr-en-runtime`.
 3. `git fetch origin`.
 4. Synchroniser uniquement en fast-forward avec
-   `origin/build/v0.2-a29-v1-brain-identity-editor`.
+   `origin/build/v0.2-a30-v1-complete-fr-en-runtime`.
 5. Vérifier arbre propre.
 6. Vérifier que HEAD contient :
-   - `ACTION-0073`;
-   - `ACTION-0074`;
-   - `DEC-0043`;
-   - `TASK-0045`.
-7. Lire DEC-0043 et TASK-0045 en entier avant code.
+   - `ACTION-0075`;
+   - `ACTION-0076`;
+   - `DEC-0044`;
+   - `TASK-0046`.
+7. Lire DEC-0044 et TASK-0046 en entier avant code.
 
 STOP/BLOCKED si une précondition est fausse.
 
-## 1 — Audit reuse-first, puis code
+## 1 — Audit reuse-first AVANT code
 
-Commence par écrire dans RESULT l'audit de :
+Écrire d'abord dans RESULT l'inventaire des chaînes utilisateur et des surfaces :
 
-- `BrainRecord`;
-- `BrainCatalog::update_metadata`;
-- `validate_metadata`;
-- commande `map_brain_update`;
-- `CompositionBar`;
-- `MapApp`;
-- rendu courant de displayName/color/icon;
-- TASK-0018 K7/K9;
-- TASK-0044 resume state.
+- `src/main.tsx`;
+- `src/lib/locale.ts` + tests;
+- ancien `src/App.tsx` seulement comme exemple;
+- `MapApp.tsx`;
+- `ChangeJournalPanel.tsx`;
+- `CrossRelationsPanel.tsx`;
+- `ExactDuplicateExplorer.tsx`;
+- `FilterPanel.tsx`;
+- `MapView.tsx`;
+- `NodeChangeState.tsx`;
+- `RelationsPanel.tsx`;
+- `ReviewQueuePanel.tsx`;
+- `SourceObservationBadge.tsx`;
+- `WatchStatusBadge.tsx`;
+- `ContentObservationsPanel.tsx`;
+- `DetailsPanel.tsx`;
+- `relations.ts`;
+- `filters.ts`;
+- tout autre helper qui produit du texte visible/aria.
 
 Conclusion attendue si le code courant le confirme :
-**le backend nécessaire existe déjà**.
+`src/lib/locale.ts` est la source de vérité globale à réutiliser.
 
-Aucune seconde commande d'édition, aucune nouvelle table, aucun nouveau fichier
-de préférences.
+## 2 — Locale globale MapApp
 
-## 2 — Geste utilisateur
+Utiliser `Locale`, `resolveInitialLocale`, `storeLocale`.
 
-Ajouter une action explicite pour le cerveau focalisé, par exemple
-« Personnaliser le cerveau ».
+Le runtime doit :
 
-Le formulaire doit montrer exactement :
+- résoudre la locale au démarrage;
+- rendre avec `strings[locale]`;
+- mettre `document.documentElement.lang = locale`;
+- offrir un contrôle FR/EN explicite;
+- appeler `storeLocale` uniquement sur choix humain;
+- continuer à fonctionner si le storage refuse.
 
-- Nom;
-- Couleur;
-- Icône;
-- Enregistrer;
-- Annuler.
+Aucune commande Tauri ne doit être émise par un changement de langue.
 
-Le nom du cerveau en cours d'édition doit être clair.
-
-Aucun champ `brain_id`, source, `sourceRef`, `sourceLabel` ou path.
-
-Le formulaire doit fonctionner au clavier avec HTML sémantique normal.
-
-## 3 — Réutiliser le backend autoritaire
-
-Au save :
-
-`invoke("map_brain_update", { brainId, displayName, color, icon })`
-
-ou la forme exacte déjà exposée.
-
-Attendre la réponse.
-
-Seulement après succès :
-
-- prendre **le BrainRecord retourné**;
-- remplacer ce record dans `catalog`;
-- remplacer le record de ce cerveau dans `loaded`;
-- laisser React propager nom/couleur/icône à CompositionBar et MapView.
+## 3 — Pas de second système i18n
 
 Interdit :
 
-- reconstruire le record depuis les valeurs du formulaire;
-- appeler `map_open`, `map_view`, Actualiser ou Reconstruire pour une
-  métadonnée;
-- écrire le resume state pour ce changement;
-- toucher journal/seen state.
+- package i18n;
+- backend de préférence;
+- table SQLite;
+- deuxième clé localStorage;
+- duplication de composants FR vs EN.
 
-## 4 — Validation et erreurs
+Réutiliser la clé existante :
+`filetopo.locale`.
 
-Garder la validation Rust comme vérité.
+## 4 — Compléter le dictionnaire principal
 
-Le frontend peut empêcher les cas manifestement invalides pour une meilleure
-UX, mais un refus backend doit :
+Le dictionnaire de `MapApp` doit avoir exactement les deux locales avec un
+contrat commun typé.
 
-- être affiché;
-- garder le formulaire ouvert;
-- ne pas changer le catalogue;
-- ne pas changer le LoadedBrain;
-- ne pas fermer l'éditeur comme si le save avait réussi.
+Extraire/localiser tous les textes produit encore codés en dur :
 
-Tester les bornes réellement définies par `validate_metadata`; ne pas inventer
-d'autres règles produit.
+- lifecycle / indexation;
+- recherche;
+- statuts;
+- erreurs produit;
+- rapports visibles;
+- boutons développeur visibles;
+- aria-labels;
+- compteurs;
+- éditeur d'identité;
+- actions reveal/copy;
+- labels de panneau.
 
-## 5 — Couleur / icône
+Un texte de diagnostic backend brut peut rester en détail secondaire seulement
+si aucune taxonomie fermée existante ne permet une traduction honnête; le
+préfixe produit reste localisé.
 
-La couleur ne doit jamais être le seul signal.
+## 5 — Localiser les panneaux enfants
 
-Après édition :
+Rendre locale-aware, sans déplacer leur logique métier :
 
-- nom visible;
-- icône visible;
-- couleur appliquée là où elle l'est déjà.
+- ChangeJournalPanel;
+- CrossRelationsPanel;
+- ExactDuplicateExplorer;
+- FilterPanel;
+- MapView;
+- NodeChangeState;
+- RelationsPanel;
+- ReviewQueuePanel.
 
-Ne transforme pas cette tranche en design system.
+Réutiliser les composants déjà FR/EN :
 
-Un `<input type="color">` est acceptable si cohérent avec la validation
-`#RRGGBB`. Pour l'icône, choisir le contrôle minimal qui respecte la borne
-backend et reste utilisable au clavier.
+- SourceObservationBadge;
+- WatchStatusBadge;
+- ContentObservationsPanel;
+- DetailsPanel.
 
-## 6 — Isolation dure
+Passer `locale` ou des dictionnaires typés depuis MapApp.
 
-Cas à falsifier :
+## 6 — Helpers
 
-- A et C partagent la même source;
-- éditer A;
-- C reste bit-for-bit identique pour ses métadonnées;
-- source de A inchangée;
-- `brain_id` inchangé;
-- index/journal/seen/resume inchangés.
+Tout helper qui produit du texte visible doit devenir locale-aware :
 
-Le test ne doit pas seulement vérifier l'écran : inspecter aussi les appels
-émis.
+- labels d'état/type/disponibilité des filtres;
+- `describeFilter`;
+- compteurs de correspondances;
+- provenance/type de relation;
+- descriptions relationnelles / aria;
+- agrégats de carte;
+- formats date/nombre si actuellement figés sur fr-CA.
 
-## 7 — Restart réel et P-20
+Ne jamais traduire les valeurs wire ou les enums avant un invoke.
 
-WebView2 réel obligatoire.
+## 7 — Données utilisateur
 
-Scénario minimal :
+Ne jamais traduire :
 
-1. trois cerveaux de preuve;
-2. donner un resume state distinct à chacun ou réutiliser le harness TASK-0044;
-3. éditer nom/couleur/icône d'au moins un cerveau via l'UI;
-4. effectuer au moins un save au clavier réel;
-5. confirmer que les autres cerveaux n'ont pas changé;
-6. fermer réellement le processus;
-7. relancer;
-8. confirmer métadonnées exactes;
-9. confirmer cerveau actif + resume state toujours exacts;
-10. confirmer aucune source modifiée et aucun événement de journal inventé.
+- nom d'un cerveau;
+- nom d'un fichier/dossier;
+- chemin relatif;
+- identifiants;
+- contenu.
 
-Le rapport peut dire **P-20 READY FOR INDEPENDENT CLOSURE**, jamais VERIFIED.
+Seulement l'interface autour.
 
-## 8 — Régressions obligatoires
-
-La tranche ne doit pas casser :
-
-- TASK-0044 resume state;
-- TASK-0043 watcher;
-- sélection/composition multi-brain;
-- relations;
-- real-root privacy;
-- public-readiness.
-
-Ne modifie pas le comportement source.
-
-## 9 — Validation
+## 8 — Contrôle automatique de complétude
 
 Obligatoire :
 
-- tests Rust ciblés si nécessaire;
-- tests TypeScript ciblés;
-- `cargo test --offline`;
+- dictionnaires exhaustifs `Record<Locale, ...>` ou équivalent;
+- tests FR/EN des helpers refactorés;
+- test du vrai `MapApp` en FR;
+- test du vrai `MapApp` en EN;
+- source guard contre les anciens forçages :
+  - `const t = strings.fr`;
+  - `locale="fr"` dans le runtime;
+  - `document.documentElement.lang = "fr"`.
+
+Le test d'intégration doit couvrir un libellé unique de chaque grande surface,
+pas seulement le toggle.
+
+Si l'audit découvre une autre surface utilisateur française, elle entre dans
+TASK-0046. Ne laisse pas une phrase visible en français dans la vue anglaise.
+
+## 9 — Persistance
+
+Tester :
+
+- aucun choix + navigateur FR -> FR;
+- aucun choix + navigateur non-FR -> EN;
+- choix EN + système FR -> EN;
+- choix FR + système EN -> FR;
+- storage corrompu -> système/fallback;
+- storage refusé -> session continue sans crash.
+
+Ne pas écrire la locale au démarrage si aucun choix explicite n'est fait.
+
+## 10 — Non-régression d'état
+
+Une bascule de langue ne change pas :
+
+- cerveau actif;
+- catalogue;
+- composition;
+- sélection;
+- resume state;
+- Index/révision;
+- journal/seen;
+- relations;
+- watcher;
+- source.
+
+Sur le fil Tauri : **zéro commande causée par le toggle**.
+
+Attention aux effets React : n'ajoute pas `locale` à une dépendance qui ferait
+recharger des données si un dictionnaire/local formatting suffit.
+
+## 11 — WebView2 réel
+
+Preuve obligatoire sur le vrai runtime :
+
+### Processus 1
+1. ouvrir l'application;
+2. choisir EN par l'UI;
+3. vérifier `document.documentElement.lang === "en"`;
+4. vérifier des textes anglais dans chaque grande surface localisée;
+5. vérifier que noms de cerveaux/nœuds sont inchangés;
+6. vérifier zéro invoke causé par le changement;
+7. vérifier `localStorage["filetopo.locale"] === "en"`;
+8. fermer réellement.
+
+### Processus 2
+9. relancer le même profil;
+10. vérifier EN **avant interaction**;
+11. vérifier que le choix a survécu;
+12. basculer FR par l'UI;
+13. vérifier `document.lang === "fr"`;
+14. vérifier les mêmes surfaces en français;
+15. vérifier encore zéro invoke causé par le toggle.
+
+Publier les valeurs logiques observées dans l'artefact.
+
+## 12 — Ne pas casser TASK-0044
+
+Le test de TASK-0044 qui affirme que le **resume state** n'utilise pas le
+storage navigateur doit rester vrai dans son sens.
+
+Si son nom/commentaire devient ambigu maintenant qu'une locale globale utilise
+la clé déjà existante, clarifie le test sans affaiblir son assertion :
+
+- resume state -> catalogue;
+- locale -> seule clé `filetopo.locale`.
+
+Ne déplace jamais le resume state vers localStorage.
+
+## 13 — Validation complète
+
 - `pnpm test`;
 - `pnpm check`;
 - `pnpm build`;
+- `cargo test --offline`;
 - `cargo build --offline`;
 - Tauri debug;
-- preuve WebView2 réelle avec restart;
-- Clippy, dette historique séparée;
+- vrai WebView2 avec redémarrage;
+- Clippy avec dette historique séparée;
 - `git diff --check`;
 - `scripts/audit-public-readiness.ps1 -AllowRemotes`.
 
-## 10 — Documentation
+## 14 — Documentation
 
 À la fin :
 
-- TASK-0045 = `IMPLEMENTED`, jamais auto-`VERIFIED`;
-- F-033 peut passer à `IMPLEMENTED` avec preuve, pas VERIFIED;
-- P-20 = candidate à clôture indépendante seulement;
-- F-035 reste `PROPOSED` : ne touche pas FR/EN;
+- TASK-0046 = `IMPLEMENTED`, jamais auto-VERIFIED;
+- F-035 = `IMPLEMENTED`;
+- langue de P-19 = prête à contrôle indépendant;
+- langue de P-21 = prête à contrôle indépendant;
 - P-19 reste PARTIELLE;
-- mettre à jour CURRENT_STATE/HANDOFF/NEXT_ACTION/VALIDATION/CHANGELOG_AI;
-- `.orchestrator/RESULT.md` = rapport compact de cette exécution.
+- P-21 reste PARTIELLE;
+- F-036 reste PROPOSED;
+- mettre à jour FEATURE_MATRIX, CURRENT_STATE, HANDOFF, VALIDATION,
+  CHANGELOG_AI et NEXT_ACTION.
 
-## 11 — Gouvernance
+## 15 — Gouvernance
 
-- aucune TASK-0046;
+- aucune TASK-0047;
+- aucun audit WCAG global dans cette tranche;
 - aucun PR/merge/tag/release;
-- push seulement sur la branche courante;
+- push uniquement sur la branche courante;
 - arbre propre;
-- NEXT_ACTION = contrôle indépendant de TASK-0045.
+- NEXT_ACTION = contrôle indépendant de TASK-0046.
