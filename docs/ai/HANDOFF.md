@@ -2634,3 +2634,6 @@ chiffres ou en lettres.
 
 
 > **Relais 2026-09-24 — TASK-0043 prête.** TASK-0042 est VERIFIED par ACTION-0070. Tous les prérequis watcher sont en place. La prochaine tranche implémente F-030 selon DEC-0010/DEC-0041 : lecteur Windows natif borné, événements seulement comme hints, W-B ciblé, W-C sur perte/restart/doute, U-B pour appliquer, root guard F-032, fallback périodique si native indisponible. Lire DEC-0041, TASK-0043 puis `.orchestrator/NEXT_PROMPT.md` sur `build/v0.2-a27-v1-watcher-reconciliation`.
+
+
+> **Relais 2026-09-25 — TASK-0044 prête.** TASK-0043 est VERIFIED par ACTION-0072. Le prochain écart est la reprise par cerveau : caméra/focus/sélection, filtre et panneau Détails. Réutiliser BrainCatalog/catalog_meta, CompositionSessionMemory, viewState/clampView et useProjectionFilter; aucune nouvelle DB ni localStorage. P-19 reste partielle : FR/EN, accessibilité et composition multi-brain persistante sont hors tranche. Lire DEC-0042, TASK-0044 puis `.orchestrator/NEXT_PROMPT.md` sur `build/v0.2-a28-v1-brain-resume-state`.
