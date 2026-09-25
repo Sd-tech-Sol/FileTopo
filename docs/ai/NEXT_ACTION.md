@@ -1,21 +1,19 @@
 # Action suivante
 
-## Contrôle indépendant de TASK-0046
+## Préparer TASK-0047 — V1 Accessibility Closure
 
-`TASK-0046 — V1 Complete FR/EN Runtime` est **IMPLEMENTED** (code `678c417`) sur
-`build/v0.2-a30-v1-complete-fr-en-runtime`, jamais auto-`VERIFIED`.
+`TASK-0046` et `F-035` sont **VERIFIED** par `ACTION-0077`.
+`ACTION-0078` a audité `F-036` et choisi la tranche suivante.
 
-Action unique : contrôler **indépendamment, sur preuves**, `TASK-0046` — `DEC-0044`,
-[VALIDATION section CC](VALIDATION.md), `.orchestrator/RESULT.md`,
-`docs/performance/runs/TASK-0046-webview2.json`, `src/map/mapStrings.ts`, `chooseLocale` dans `MapApp.tsx`,
-`localeCompleteness.test.tsx` et `localeRuntime.test.tsx` — puis décider de `VERIFIED` pour `TASK-0046` / `F-035` et de
-l'acquisition de la **partie langue** de `P-19` et de `P-21`.
+Action unique : créer `DEC-0045`, `TASK-0047` et
+`.orchestrator/NEXT_PROMPT.md` sur une nouvelle branche issue du HEAD de
+review, puis faire exécuter **uniquement** la fermeture accessibilité de
+`F-036` / partie accessibilité de `P-21`.
 
-Points à regarder en priorité : la locale est écrite **seulement** sur un choix explicite, sous l'unique clé
-`filetopo.locale`; la bascule n'envoie **aucune** commande et ne déplace aucun état (catalogue, reprise, Index, journal,
-source, sélection); aucun forçage `strings.fr` / `locale="fr"` / `lang = "fr"` ne subsiste; le balayage du français
-résiduel de la vue anglaise (texte et noms accessibles) est probant; l'anglais revient **avant toute interaction** après
-une fermeture réelle; les données utilisateur ne sont jamais traduites; les limites : hôte simulé par `--lang`, scénarios
-historiques supposant une locale française, panneaux « indisponible » des cerveaux adossés à un dossier.
+Architecture retenue : conserver les primitives ARIA/clavier/focus/reduced
+motion existantes; ajouter au besoin `axe-core@4.13.0` en **devDependency
+épinglée seulement**, injectée localement dans le vrai WebView2; aucun MCP ou
+service Axe distant. Corriger seulement les violations réellement observées.
 
-`P-19` et `P-21` restent **PARTIELLES**; `F-036` (accessibilité WCAG globale) reste `PROPOSED`. Aucune TASK-0047 avant ce contrôle.
+`P-19` reste PARTIELLE et hors tranche. Aucune persistance ou préférence
+d'accessibilité nouvelle ne doit être inventée pour TASK-0047.

@@ -1,7 +1,7 @@
 # TASK-0046 — V1 Complete FR/EN Runtime
 
 - **Date :** 2026-09-25
-- **Statut :** `IMPLEMENTED`
+- **Statut :** `VERIFIED`
 - **Branche :** `build/v0.2-a30-v1-complete-fr-en-runtime`
 - **Décision :** `DEC-0044`
 - **Portée :** `F-035`, langue de `P-19` / `P-21`
@@ -210,3 +210,12 @@ Ne pas commencer F-036.
 - **F-035 : `IMPLEMENTED`.** Langue de `P-19` et de `P-21` : prête pour contrôle indépendant. `P-19` / `P-21` PARTIELLES;
   `F-036` PROPOSED, non commencée.
 - **Action suivante : contrôle indépendant de `TASK-0046`.**
+
+
+## Contrôle indépendant — ACTION-0077 — VERIFIED — 2026-09-25
+
+- HEAD contrôlé : `15163a01dffcb287b2cf2bd686368612f26cb59b`; code : `678c417`.
+- `locale.ts` et `package.json` inchangés depuis la base; aucun second système i18n.
+- Chemin runtime, zéro commande à la bascule, dictionnaires typés, persistance, données utilisateur inchangées et artefact WebView2 recoupés indépendamment.
+- **TASK-0046 = VERIFIED; F-035 = VERIFIED dans sa portée.** Partie langue de P-19/P-21 acquise; P-19/P-21 restent PARTIELLES pour leurs autres critères.
+- Détail : [ACTION-0077](../reviews/ACTION-0077-task0046-independent-control.md).

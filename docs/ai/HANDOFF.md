@@ -1,5 +1,20 @@
 # HANDOFF — passage de relais
 
+## Relais — TASK-0046 VERIFIED / prochaine tranche accessibilité — 2026-09-25
+
+- **TASK-0046 / F-035 sont VERIFIED** par ACTION-0077. Ne pas rouvrir la
+  localisation sauf régression.
+- ACTION-0078 a audité le vrai runtime : arbre/map, CompositionBar, formulaires,
+  focus visible et reduced-motion possèdent déjà des fondations d'accessibilité.
+  Le manque est la preuve globale + les corrections révélées par cet audit.
+- Architecture retenue pour TASK-0047 : **axe-core 4.13.0**, dev-only, local,
+  injecté dans le vrai WebView2; pas de MCP/service Axe externe; parcours
+  clavier manuel automatisé par le harnais, contrastes et non-color codings
+  vérifiés explicitement.
+- `P-21` reste PARTIELLE avant TASK-0047. `P-19` reste PARTIELLE et ne doit
+  pas être mélangée à cette tranche.
+- Références : ACTION-0077, ACTION-0078, F-036 et P-21.
+
 ## Relais — TASK-0046, FR/EN complet du runtime, IMPLEMENTED — 2026-09-25
 
 - **Fait :** `TASK-0046` est **IMPLEMENTED** sur `build/v0.2-a30-v1-complete-fr-en-runtime` (code `678c417`), jamais

@@ -1,5 +1,25 @@
 # État courant
 
+## ACTION-0077 / ACTION-0078 — TASK-0046 VERIFIED, audit accessibilité — 2026-09-25
+
+- **TASK-0046 = VERIFIED** et **F-035 = VERIFIED dans sa portée** par
+  [ACTION-0077](../reviews/ACTION-0077-task0046-independent-control.md). La
+  partie langue de P-19/P-21 est acquise; P-19/P-21 restent partielles.
+- Contrôle indépendant : `locale.ts` et `package.json` inchangés, chemin
+  `resolveInitialLocale -> strings[locale] -> storeLocale sur choix` recoupé,
+  aucune commande pendant la bascule, WebView2/restart et invariants d'état
+  recoupés. Les 582/753 tests restent des preuves de l'exécuteur faute de CI
+  attachée au HEAD.
+- [ACTION-0078](../reviews/ACTION-0078-f036-accessibility-audit.md) constate que
+  les primitives clavier/ARIA/focus/reduced-motion existent déjà mais que la
+  fermeture F-036 manque de preuve globale.
+- Prochaine tranche choisie : **TASK-0047 — V1 Accessibility Closure**. Audit
+  axe-core local dans WebView2 réel + parcours clavier + contrastes +
+  alternatives non colorées + reduced motion; aucune nouvelle préférence,
+  aucun backend et aucune persistance inventés.
+- P-19 restera partielle après cette tranche; P-21 pourra être fermée seulement
+  après contrôle indépendant de TASK-0047.
+
 ## TASK-0046 — V1 Complete FR/EN Runtime — IMPLEMENTED — 2026-09-25
 
 - **Statut : `IMPLEMENTED`** (jamais auto-`VERIFIED`). Branche `build/v0.2-a30-v1-complete-fr-en-runtime`, partie de

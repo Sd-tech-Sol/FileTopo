@@ -5996,3 +5996,28 @@ fusion / étiquette / release.
   0 commande à la bascule, une seule clé de storage, état inchangé;
 - `F-035` = IMPLEMENTED; langue de `P-19` / `P-21` prête pour contrôle indépendant; `P-19` / `P-21` PARTIELLES;
   `F-036` PROPOSED; `TASK-0046` = IMPLEMENTED, jamais auto-VERIFIED; aucune TASK-0047; NEXT_ACTION = contrôle indépendant.
+
+
+## 2026-09-25 — ACTION-0077 — TASK-0046 VERIFIED / F-035 VERIFIED
+
+**Orchestrateur :** ChatGPT
+
+- contrôle indépendant du runtime de locale, des gardes de tests et de
+  l'artefact WebView2;
+- `locale.ts` et `package.json` confirmés inchangés depuis la base;
+- TASK-0046 = VERIFIED; F-035 = VERIFIED dans sa portée;
+- partie langue de P-19/P-21 acquise; P-19/P-21 restent PARTIELLES;
+- suites 582/753 distinguées comme preuves de l'exécuteur faute de CI/rejeu
+  indépendant disponible.
+
+## 2026-09-25 — ACTION-0078 — audit F-036 / choix TASK-0047
+
+**Orchestrateur :** ChatGPT
+
+- audit du vrai `MapApp` : clavier/ARIA/focus/reduced-motion déjà partiellement
+  présents, donc pas de réécriture from-scratch;
+- manque : audit WCAG réel, parcours clavier global, contrastes et alternatives
+  non colorées systématiquement prouvés;
+- reuse-first : axe-core 4.13.0, dev-only/local, retenu; MCP Axe distant écarté;
+- prochaine tranche choisie : TASK-0047 — V1 Accessibility Closure;
+- P-19 volontairement hors tranche.

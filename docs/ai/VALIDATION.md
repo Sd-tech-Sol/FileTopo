@@ -8353,3 +8353,48 @@ storage refusé ou corrompu toléré; ses tests existants couvrent déjà la ré
 - **Grammaire** : le français conserve « 1 nœuds » (comportement antérieur, non modifié); l'anglais dit « 1 node ».
 - **`F-036` / WCAG 2.2 AA non revendiqué** ni commencé. `P-19` et `P-21` restent **PARTIELLES**; seule leur **partie
   langue** est prête pour un contrôle indépendant. Aucune `TASK-0047`, aucun PR / fusion / étiquette / release.
+
+
+## CD. ACTION-0077 — contrôle indépendant TASK-0046 — 2026-09-25
+
+**Verdict : TASK-0046 = VERIFIED; F-035 = VERIFIED dans sa portée.**
+
+Contrôle indépendant sur HEAD `15163a01dffcb287b2cf2bd686368612f26cb59b`
+et code `678c417` :
+
+- blob `src/lib/locale.ts` identique à la base `52c348c`; `package.json`
+  identique : aucune deuxième couche i18n;
+- `MapApp` : `resolveInitialLocale()`, `strings[locale]`,
+  `chooseLocale -> setLocale + storeLocale`, `html.lang = locale`;
+- tests/gardes : aucune commande autour de la bascule, aucune lecture/écriture
+  autre que la clé `filetopo.locale`, pas de forçage FR, parité des
+  dictionnaires;
+- artefact WebView2 relu : hôte fr-CA simulé, fermeture réelle, même profil,
+  EN restauré avant interaction, retour FR, commandes de bascule vides,
+  catalogue/resume/index/journal/source/sélection inchangés;
+- aucun fichier produit Rust dans la tranche.
+
+Les suites 582 TypeScript / 753 Rust, builds et audit public sont des **preuves
+de l'exécuteur**. Aucun workflow CI n'est attaché au HEAD et le runner de
+contrôle ne pouvait pas cloner GitHub pour les rejouer; elles ne sont pas
+présentées comme une seconde exécution indépendante.
+
+Détail et limites : `docs/reviews/ACTION-0077-task0046-independent-control.md`.
+
+## CE. ACTION-0078 — audit F-036 / P-21 — 2026-09-25
+
+Audit statique du runtime courant :
+
+- primitives existantes : `role=tree/treeitem`, `aria-activedescendant`,
+  handlers clavier de `MapView`, menu clavier de `CompositionBar`, alertes
+  et labels, `:focus-visible`, `prefers-reduced-motion: reduce`;
+- principaux tokens texte/fond examinés dépassent 4,5:1 en clair et en sombre;
+- manque réel : aucun rapport axe/WebView2 global, aucun parcours clavier
+  complet, aucun inventaire systématique des contrastes et alternatives
+  non-colorées.
+
+Reuse-first : `axe-core` 4.13.0 retenu **dev-only**, local, version épinglée;
+organisation Deque active/vérifiée, MPL-2.0, paquet npm sans dépendance déclarée.
+Le MCP/service externe Axe est écarté : inutile et moins local.
+
+Décision : prochaine tranche = **TASK-0047 — V1 Accessibility Closure**.
