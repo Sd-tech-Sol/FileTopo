@@ -5936,3 +5936,16 @@ fusion / étiquette / release.
 - TASK-0045 créée READY sur `build/v0.2-a29-v1-brain-identity-editor`;
 - FR/EN et accessibilité restent séparés;
 - aucune TASK-0046, aucun code produit exécuté par l'orchestrateur.
+
+
+## 2026-09-25 — TASK-0045 — éditeur d'identité d'un cerveau (IMPLEMENTED)
+
+**Agent :** Claude Code
+
+- audit reuse-first : le backend existait (`map_brain_update` → `update_metadata` → `validate_metadata`), seul le geste manquait;
+- `BrainIdentityEditor` + `saveBrainIdentity` : le `BrainRecord` renvoyé remplace catalogue et cerveau chargé;
+- 3 tests Rust (bornes, cerveau inconnu, trois colonnes d'une ligne et rien d'autre), 16 tests TypeScript;
+- preuve WebView2 réelle : trois cerveaux dont deux sur un même dossier, édition clavier (`Entrée` système) et souris,
+  fermeture et relance réelles, source / Index / journal / reprise inchangés;
+- `F-033` = IMPLEMENTED; `P-20` = candidate à la clôture indépendante; `F-035` et `P-19` inchangés;
+- `TASK-0045` = IMPLEMENTED, jamais auto-VERIFIED; aucune TASK-0046; NEXT_ACTION = contrôle indépendant.

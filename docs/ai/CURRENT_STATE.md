@@ -1,5 +1,29 @@
 # État courant
 
+## TASK-0045 — V1 Brain Identity Editor — IMPLEMENTED — 2026-09-25
+
+- **Statut : `IMPLEMENTED`** (jamais auto-`VERIFIED`). Branche `build/v0.2-a29-v1-brain-identity-editor`, partie de `8dc3c31`;
+  commit de travail `9e951d2`. Décision : [`DEC-0043`](../decisions/DEC-0043-brain-identity-editor-boundary.md).
+  Détail : [VALIDATION section CB](VALIDATION.md), `.orchestrator/RESULT.md`.
+- **Ce qui existe.** Le cerveau focalisé offre **« Personnaliser le cerveau »** : nom, couleur, icône, Enregistrer,
+  Annuler, formulaire HTML natif, lié au cerveau ouvert. Sauvegarde par la commande **déjà existante**
+  `map_brain_update`; le `BrainRecord` **renvoyé** remplace le catalogue et le cerveau chargé (puce, étiquette de la
+  carte, aperçu inter-cerveaux). Aucune seconde commande, aucun stockage, aucune relecture d'Index, aucune écriture
+  d'état de reprise ni de journal. Un refus du backend est affiché, le formulaire reste ouvert, rien ne change.
+- **Preuves.** Rust **753 PASS**, TypeScript **537 PASS**, `pnpm check` / `pnpm build` / `cargo build --offline` PASS,
+  Clippy identique à la référence (13 / 22). **WebView2 réel, un redémarrage réel** : trois cerveaux, A et C sur le
+  **même dossier**; édition au clavier (`Entrée` du système), à la souris, annulation, nom vide; après chaque étape
+  les autres cerveaux bit pour bit, la source (SHA-256), l'Index, le journal et les enregistrements de reprise
+  inchangés; un seul `map_brain_update` sur le fil; après relance l'identité modifiée revient, le seed ne la
+  remplace pas, la reprise `TASK-0044` est intacte. Sabotage réel détecté, rejeu canonique PASS.
+- **`P-20 : READY FOR INDEPENDENT CLOSURE`** — jamais `VERIFIED` par cette exécution. `F-033` = `IMPLEMENTED`.
+- **Non testé / limites.** Couleur posée sans le sélecteur natif (dialogue système); entrées par le pipeline du
+  navigateur sauf l'`Entrée` de l'édition 1; fermeture normale seulement; une icône d'un espace reste acceptée par
+  la borne backend existante; un échec ponctuel non identifié d'un test TypeScript, puis cinq passages complets verts.
+- **Hors portée, inchangés :** `F-035` FR/EN reste `PROPOSED`, `F-036` accessibilité complète non revendiquée,
+  `P-19` reste **PARTIELLE**. Aucune TASK-0046, aucun PR / fusion / étiquette / release.
+- **Action unique suivante : contrôle indépendant de `TASK-0045`.**
+
 ## TASK-0044 — V1 Per-Brain Resume State — VERIFIED — 2026-09-25
 
 - **Statut : `VERIFIED` par `ACTION-0073`.** Branche `build/v0.2-a28-v1-brain-resume-state`, partie de

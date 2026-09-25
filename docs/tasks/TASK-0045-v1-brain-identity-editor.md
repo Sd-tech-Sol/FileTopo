@@ -1,7 +1,7 @@
 # TASK-0045 — V1 Brain Identity Editor
 
 - **Date :** 2026-09-25
-- **Statut :** `READY`
+- **Statut :** `IMPLEMENTED`
 - **Branche :** `build/v0.2-a29-v1-brain-identity-editor`
 - **Décision :** `DEC-0043`
 - **Portée :** `F-033`, fermeture candidate de `P-20`
@@ -198,3 +198,15 @@ Preuve compacte :
 - `NEXT_ACTION = contrôle indépendant de TASK-0045`;
 - push uniquement sur la branche courante;
 - arbre propre.
+
+
+## Exécution — IMPLEMENTED — 2026-09-25
+
+- **Statut : `IMPLEMENTED`**, jamais auto-`VERIFIED`. Code `9e951d2` sur `build/v0.2-a29-v1-brain-identity-editor`.
+  Audit reuse-first, changements, preuves et limites : [VALIDATION section CB](../ai/VALIDATION.md).
+- Le backend existait (`map_brain_update` → `update_metadata` → `validate_metadata`); seul le geste utilisateur manquait.
+  Aucune seconde commande, aucun stockage.
+- Preuve réelle : `docs/performance/runs/TASK-0045-webview2.json` (trois cerveaux dont deux sur un même dossier,
+  édition au clavier avec `Entrée` système, édition à la souris, annulation, fermeture et relance réelles).
+- **P-20 : READY FOR INDEPENDENT CLOSURE** (jamais `VERIFIED` ici). F-033 : `IMPLEMENTED`. F-035 et F-036 non touchés.
+- **Action suivante : contrôle indépendant de `TASK-0045`.**

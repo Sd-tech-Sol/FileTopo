@@ -8147,3 +8147,87 @@ persistantes, toute préférence de légende (aucune n'existe), persistance d'un
 Aucun statut ne monte sans contrôle indépendant.
 
 **Action unique suivante :** contrôle indépendant de `TASK-0044`.
+
+
+## CB. TASK-0045 — Éditeur d'identité d'un cerveau (F-033, P-20 candidate) — 2026-09-25
+
+**Statut : `TASK-0045` = `IMPLEMENTED`**, jamais auto-`VERIFIED`. Branche `build/v0.2-a29-v1-brain-identity-editor`,
+partie de `8dc3c31` (`ACTION-0073`, `ACTION-0074`, `DEC-0043`, `TASK-0045` présents; `fetch`, fast-forward, arbre propre).
+Commit de travail : `9e951d2`. Décision : [`DEC-0043`](../decisions/DEC-0043-brain-identity-editor-boundary.md).
+
+### CB.1 Audit reuse-first (avant le code) — le backend nécessaire existait déjà
+
+| Surface | Constat | Changement |
+|---|---|---|
+| `BrainRecord` (`brains.rs`) | `brainId`, `displayName`, `color`, `icon`, `sourceKind`, `sourceRef`, `sourceLabel`, `position`; **aucun champ chemin** | aucun |
+| `BrainCatalog::update_metadata` | un seul `UPDATE brains SET display_name, color, icon WHERE brain_id = ?`, cerveau inconnu refusé **avant** l'écriture, renvoie la **ligne relue** | aucun |
+| `validate_metadata` | nom trimé, 1 à 80 caractères (`chars()`); couleur `#RRGGBB` (7 caractères, hexadécimal); icône 1 ou 2 caractères (valeurs scalaires Unicode) | aucun |
+| commande `map_brain_update` | existe (`lib.rs`, enregistrée), `brainId`, `displayName`, `color`, `icon`; **appelée seulement par `brainScenario.ts`** (`K7`), jamais par `MapApp` | aucune seconde commande |
+| `CompositionBar` | affiche icône, nom, pastille, mot « actif » depuis les `BrainRecord` du catalogue; ne modifie rien | inchangée |
+| `MapApp` | `catalog` (état) + `LoadedBrain.record` alimentent puce, étiquette de territoire, `labelFor`; **aucune** écriture d'identité; l'aperçu inter-cerveaux (`map_cross_relations_*`) **embarque** nom et icône renvoyés par le backend | ajout d'un geste + `saveBrainIdentity` |
+| `TASK-0018` `K7` / `K9` | `K7` : modification par le chemin applicatif, autres cerveaux inchangés, conservée au redémarrage; `K9` : cerveau actif persistant après redémarrage réel — tous deux **TENU** | tests Rust `K7` réutilisés, complétés aux bornes |
+| état de reprise `TASK-0044` | dans `catalog_meta` (`brain_resume.v1.<brainId>`), séparé de `brains` | non touché; un test Rust affirme qu'aucune ligne de `catalog_meta` ne bouge |
+
+**Conclusion : le backend nécessaire existe déjà.** Aucune nouvelle commande, table, base ni fichier de préférences.
+
+### CB.2 Ce qui a changé
+
+| Fichier | Changement |
+|---|---|
+| `src/map/BrainIdentityEditor.tsx` (nouveau) | formulaire natif : Nom, Couleur (`<input type="color">`), Icône, Enregistrer, Annuler; lié au cerveau **ouvert** (titre + `data-brain-id`), pas au focus suivant; mêmes bornes que Rust, comptées en valeurs scalaires; refus backend affiché, formulaire ouvert; focus → champ Nom à l'ouverture, retour au geste à la fermeture; `Échap` annule; « aucun changement » ne fait aucun appel |
+| `src/map/MapApp.tsx` | `saveBrainIdentity` : `invoke("map_brain_update")`, attend, publie **le `BrainRecord` renvoyé** dans `catalog` et dans `loaded`; `loadBrain` relit le record au retour pour qu'un chargement commencé avant la sauvegarde ne remette pas l'ancien nom |
+| `src/map/map.css` | mise en page du formulaire |
+| `src-tauri/src/map/brains.rs` | **tests seulement** : bornes exactes, cerveau inconnu, « trois colonnes d'une ligne et rien d'autre » (identité, source, position, cerveau actif, `catalog_meta`, cerveau partageant la source) |
+| `src/map/brainIdentity.test.tsx` | 16 tests du vrai `MapApp` contre un backend scripté qui applique `validate_metadata` |
+| `scripts/task0045-*` | preuve WebView2 réelle |
+
+Propagation : **rien n'est relu** pour une métadonnée, sauf une relecture **en lecture seule** du magasin
+inter-cerveaux (`map_cross_relations_open`, puis `map_cross_relations_for_node`), déjà déclenchée par tout remplacement
+de `loaded`, et nécessaire : ses réponses embarquent le nom et l'icône. Elle est nommée et bornée dans les tests et
+dans la preuve réelle.
+
+### CB.3 Preuves
+
+- **Rust : 753 PASS** (750 + 3), 6 ignorés. **TypeScript : 537 PASS** (521 + 16), 37 fichiers. `pnpm check`, `pnpm build`,
+  `cargo build --offline`, build Tauri debug : PASS. `rustfmt` propre sur les fichiers touchés. Clippy identique à la
+  référence (lib 13 / lib-test 22). `git diff --check` propre. Audit public (`-AllowRemotes`) : voir RESULT.
+- **Falsification unitaire** : quatre sabotages de `saveBrainIdentity` (publier les valeurs du formulaire au lieu du
+  record; ne pas remplacer `loaded`; appeler `map_view`; remplacer le nom de tous les cerveaux) — chacun est attrapé.
+- **WebView2 réel, un redémarrage réel** (`docs/performance/runs/TASK-0045-webview2.json`) : trois cerveaux, **A et C
+  sur le même dossier** (même `sourceRef`, même `sourceLabel`, `brainId` différents); état de reprise distinct donné à
+  chacun par de vrais clics; les trois composés.
+  - **Édition 1 (A, clavier)** : ouverture par la souris, `Tab` parcourt Nom → Couleur → Icône (focus vérifié), texte
+    tapé en événements clavier réels, **sauvegarde par un `Entrée` du système d'exploitation** (`WScript.Shell`,
+    fenêtre mise au premier plan), rien de publié avant l'`Entrée`. **Édition 2 (B, souris)**. **C** : annulation par
+    `Échap`, réouverture sur le catalogue (pas le brouillon), nom vide expliqué sans aller-retour.
+  - Après **chaque** étape : autres cerveaux **bit pour bit** (enregistrement complet), `brainId`/source/position de
+    l'édité inchangés, empreinte SHA-256 (nom, taille, date, contenu) de **tous** les fichiers et dossiers des deux
+    racines, révision + nombre de nœuds + total du journal des trois cerveaux, enregistrement de reprise des trois,
+    cerveau actif — tous inchangés; le fil réel ne montre qu'**un** `map_brain_update` (corps : quatre clés, le seul
+    `brainId` édité) plus les deux lectures inter-cerveaux.
+  - Sept refus du backend sondés directement (cerveau inconnu, nom vide, 81 caractères, couleur sans `#`, non
+    hexadécimale, icône de trois caractères, icône vide) : chacun refusé, catalogue identique.
+  - **Fermeture réelle, relance** : A revient **seul** avec « Alix révisée / ★ / #c0392b », mot « actif » présent;
+    les trois enregistrements complets identiques à ceux de la fermeture (donc le seed n'a rien remis); l'éditeur se
+    rouvre sur les valeurs persistées; sélection et panneau de A restaurés (`TASK-0044`); B et C visités, chacun sa
+    propre identité et sa propre reprise; aucun `map_brain_update` émis par le produit après le redémarrage; source,
+    Index et journal inchangés; **0 erreur fatale**.
+  - Sabotage réel : le produit modifié pour lire `map_view` à la sauvegarde **fait échouer** la preuve
+    (« the product sent map_view during the edit »); rejeu canonique ensuite sur le binaire final : PASS.
+- **`P-20 : READY FOR INDEPENDENT CLOSURE`** — jamais `VERIFIED` par cette exécution.
+
+### CB.4 Non testé / limites
+
+- La **couleur** n'est pas saisie par le sélecteur natif (boîte de dialogue du système, hors de portée de la page et de
+  CDP) : valeur posée par le setter de la page + l'événement `input` réel. Nom et icône : événements clavier réels.
+- Souris et clavier de la plupart des étapes passent par le pipeline d'entrée du navigateur (CDP); seul l'`Entrée` de
+  l'édition 1 est une touche du système. Ni souris physique ni écran tactile.
+- Aucun refus du backend n'est provoqué **par le formulaire** en hôte réel (le formulaire reflète les bornes et les
+  arrête avant); les refus ont été sondés directement (sept cas) et, côté interface, par un test à backend refusant.
+- Le backend accepte une icône faite d'un espace (1 caractère) : la borne existante n'est pas durcie ici (« ne pas
+  inventer d'autres règles produit »); une icône invisible reste possible tant que cette règle n'est pas décidée.
+- Fermeture normale seulement; volume NTFS local; scénarios réels antérieurs non rejoués.
+- **Un échec ponctuel** de la suite TypeScript (1 test sur 537) a été vu une fois, juste après la preuve réelle, non
+  identifié (sortie perdue); cinq exécutions complètes suivantes : 537 / 537.
+- **F-036 / WCAG 2.2 AA non revendiqué** : le formulaire s'utilise au clavier et le nom comme l'icône restent visibles
+  avec la couleur, rien de plus. **F-035 FR/EN non commencé** (chaînes en français). `P-19` reste partielle.

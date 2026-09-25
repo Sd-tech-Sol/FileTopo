@@ -1,42 +1,39 @@
-TASK_ID: TASK-0044 — V1 Per-Brain Resume State
+TASK_ID: TASK-0045 — V1 Brain Identity Editor
 AGENT: CLAUDE
 RESULT: DONE
-BRANCH: build/v0.2-a28-v1-brain-resume-state
-FINAL_HEAD: 00743fb
+BRANCH: build/v0.2-a29-v1-brain-identity-editor
+FINAL_HEAD: see `git log -1` (code commit 9e951d2; the documentation commit follows it)
 
 SUMMARY:
-- TASK-0044 = IMPLEMENTED (never self-VERIFIED). A brain reopens where it was left — branch, selection, camera, logical filter, details panel — from ITS OWN versioned record in catalog_meta (`brain_resume.v1.<brainId>`, five closed keys, no new store, no schema bump), after a brain switch and after a real process restart.
-- REUSE-FIRST AUDIT (written before the code, VALIDATION CA.1): active brain, brain name/colour/icon and seen/unseen already persisted -> untouched; `details_panel_visible` was a GLOBAL preference -> kept only as the fallback of a brain with no record (wording fixed); `CompositionSessionMemory` -> stays the memory of compositions, the catalogue sits in front of it for one brain; `View`/`clampView` -> reused unchanged; `useProjectionFilter` -> extended to one filter per brain (+ adopt); `map_view` normal/filtered -> unchanged plus ONE bounded primitive `Index::filter_anchor` (canonical predicate and order); watcher reload -> `loadBrain` restores through the catalogue. No localStorage, no new SQLite, no second registry or filter engine, nothing stored that names a place (no path/name/stable key/FileId/cursor/page).
-- Backend: `map/resume_state.rs` (tolerant read: damaged/unknown version/out-of-bounds = nothing stored; Rust-validated write; `restore()` checks every id against the brain's CURRENT Index, stores the correction, rebuilds a FRESH cursor for a selected match past page one); commands `map_brain_resume_state|update|restore`, brain id only.
-- Frontend: `ResumeWriter` (latest-wins, one write in flight per brain, 250 ms debounce / 1.5 s cap, flushed before a switch); filter kept per brain; camera applied only on a measured viewport, clamped, re-applied from the original value while untouched; "Page reprise" instead of an invented page number.
-- Real WebView2 proof, three synthetic brains, two REAL process restarts, real mouse events: X (branch docs, FILE filter, match of page 3, panel hidden, zoom) / Y (selection = the SAME numeric id as X's branch, panned) / Z (branch salles, DIRECTORY filter, match of page 2). X-Y-Z-X-Z-Y in one session then restart: each brain exactly its own (catalogue AND screen), last active brain back alone; 60 wheel notches = 1 write; offline deletion of X's selected file and Y's docs -> valid fallback, filter kept and re-read (205), no stale id, Z untouched; 0 fatal errors; replayed twice on the final binary. A real-host replay with ONE shared key for all brains FAILS the proof (harness discriminates).
-- Defects found by the integration tests and analysis, fixed before the canonical proof: root selection written over the remembered selection; follow-focus pan undoing a restored camera; non-final viewport clamping the camera for good; canonical page 1 displaced for a page-1 match.
-- P-19 stays PARTIAL: FR/EN, accessibility preferences, legend preference (none exists) and multi-brain composition persistence are NOT done. No status in FEATURE_MATRIX rises (F-002/F-034 stay PROPOSED, gaps annotated).
+- TASK-0045 = IMPLEMENTED (never self-VERIFIED). The focused brain offers "Personnaliser le cerveau": Nom / Couleur / Icône / Enregistrer / Annuler, a native HTML form bound to the brain it was opened on. Save = the EXISTING `map_brain_update`; the `BrainRecord` it RETURNS replaces the catalogue entry and the loaded brain. No second command, no store, no preference file, no Index read, no resume write, no journal touch.
+- REUSE-FIRST AUDIT (VALIDATION CB.1, done before the code) — conclusion confirmed: THE BACKEND ALREADY EXISTED. `BrainRecord` (no path field); `update_metadata` = one UPDATE of three columns, unknown brain refused before writing, returns the re-read row; `validate_metadata` = trimmed name 1..80 chars, `#RRGGBB`, icon 1..2 scalar values; `map_brain_update` was called only by the K7 scenario, never by `MapApp`; `CompositionBar`/`MapApp` already render name/icon/swatch from the catalogue records; TASK-0018 K7 (edit isolated, persisted) and K9 (active brain) held; TASK-0044 resume state lives in `catalog_meta`, separate from `brains`.
+- Validation: the form mirrors the Rust bounds (scalar values, trimmed name) only to explain an entry early; a backend refusal is shown, the form stays open, nothing changes anywhere. "No change" makes no call.
+- Propagation: only a read-only re-read of the inter-brain store (`map_cross_relations_open`, then `..._for_node`), triggered by any replacement of `loaded` and needed because its answers embed each brain's name/icon. Named and bounded in tests and in the real-host proof. `loadBrain` re-reads the record on return so a load in flight cannot put the old name back.
+- Real WebView2 proof, ONE real restart, three synthetic brains, A and C on the SAME folder (same sourceRef/sourceLabel, different brainId), each with its own resume state given by real clicks: edit 1 on A with the keyboard (Tab walks Nom → Couleur → Icône; text typed as key events; save = an OPERATING-SYSTEM Enter via WScript.Shell), edit 2 on B with the mouse, C cancelled with Escape then an empty name refused by the form. After every step: other brains bit for bit, edited brain's brainId/source/position unchanged, SHA-256 of every file/dir under both roots, revision + node count + journal total of all three, all three resume records, active brain — unchanged; the wire shows exactly one `map_brain_update` (four keys, only the edited brainId) plus the two cross reads. Seven backend refusals probed directly: all refused, catalogue identical. After the real close: A back alone with the new identity, all three catalogue records identical to close (the seed put nothing back), editor reopens on persisted values, A's selection/panel restored (TASK-0044), B and C visited with their own identity and resume, no `map_brain_update` from the product after restart, 0 fatal errors. Real-host sabotage (save also reads `map_view`) FAILS the proof; canonical replay on the final binary PASSES.
+- P-20 : READY FOR INDEPENDENT CLOSURE (never VERIFIED here). F-033 = IMPLEMENTED. F-035 (FR/EN) untouched, PROPOSED. F-036 not claimed. P-19 stays PARTIAL.
 
 VALIDATIONS:
-- cargo test --offline: 750 PASS, 0 FAIL, 6 ignored (727 + 23).
-- pnpm test: 521 PASS (471 + 50), 36 files; pnpm check, pnpm build, cargo build --offline: PASS; tauri debug build: PASS.
-- clippy --all-targets: lib 13 / lib-test 22 = historical debt, identical to the reference (two warnings introduced by this code were fixed); rustfmt clean on the added files.
-- Falsification: 11 guarantees broken one at a time under the tests (each caught) + the real-host shared-key sabotage. One honest finding: removing the explicit clampView on restore fails no test because the existing viewport re-clamp covers it (redundant defence kept).
-- git diff --check clean; scripts/audit-public-readiness.ps1 -AllowRemotes green.
-- WebView2 replay: docs/performance/runs/TASK-0044-webview2.json (two identical logical runs on the final binary).
+- cargo test --offline: 753 PASS, 0 FAIL, 6 ignored (750 + 3 new). Targeted `map::brains`: 17 PASS.
+- pnpm test: 537 PASS (521 + 16), 37 files. ONE transient failure of 1 test was seen once right after the real-host run, not identified (output lost); five later complete runs: 537/537.
+- pnpm check, pnpm build, cargo build --offline, `pnpm tauri build --debug --no-bundle`: PASS.
+- Clippy --all-targets: lib 13 / lib-test 22 = historical debt, identical to the reference; rustfmt clean on brains.rs (edition 2024).
+- Falsification: 4 sabotages of `saveBrainIdentity` under the unit tests (publish form values, do not replace `loaded`, extra `map_view`, rename every brain) — each caught; 1 sabotage under the real host — caught.
+- git diff --check clean; scripts/audit-public-readiness.ps1 -AllowRemotes green (608 files).
+- WebView2: docs/performance/runs/TASK-0045-webview2.json.
 
 IMPORTANT_FILES:
-- src-tauri/src/map/resume_state.rs (+ resume_state_tests.rs), src-tauri/src/node_filter.rs, src-tauri/src/lib.rs
-- src/map/resumeState.ts, src/map/useProjectionFilter.ts, src/map/MapApp.tsx, src/map/resumeMapApp.test.tsx
-- scripts/task0044-seed-proof.py, scripts/task0044-webview2.mjs, scripts/task0044-webview2.ps1
-- docs/performance/runs/TASK-0044-webview2.json, docs/ai/VALIDATION.md (section CA), docs/tasks/TASK-0044-v1-per-brain-resume-state.md
+- src/map/BrainIdentityEditor.tsx (new), src/map/MapApp.tsx (`saveBrainIdentity`, `loadBrain` record re-read), src/map/map.css, src/map/brainIdentity.test.tsx
+- src-tauri/src/map/brains.rs (tests only)
+- scripts/task0045-seed-proof.py, scripts/task0045-webview2.mjs, scripts/task0045-webview2.ps1
+- docs/performance/runs/TASK-0045-webview2.json, docs/ai/VALIDATION.md (section CB), docs/tasks/TASK-0045-v1-brain-identity-editor.md, docs/product/FEATURE_MATRIX.md (F-033)
 
-COMMIT: 00743fb (code, tests, scripts, real-host artefact); the documentation commit follows it.
-PUSHED: yes (branch build/v0.2-a28-v1-brain-resume-state only)
+COMMIT: 9e951d2 (code, tests, scripts, real-host artefact); the documentation commit follows it.
+PUSHED: yes (branch build/v0.2-a29-v1-brain-identity-editor only) — see below.
 
 LIMITS_OR_BLOCKERS:
-- Normal close only: no crash-consistency promise (a change in the last 250 ms of a hard kill is not guaranteed).
-- Mouse events are injected by the browser input pipeline, not a physical mouse or touch; local NTFS development workstation.
-- A composition of several brains is still session-only; the filter of a brain not in the foreground is re-read only when it returns.
-- After Reconstruire a stored node id is checked for existence only (Actualiser keeps identities and is the covered path).
-- A context (ancestor) selection inside a filtered page falls back to the root on resume: the filter stays authoritative.
-- Earlier real-host scenarios (K12, L12, M12...) were not replayed; their plain-read fallback is preserved.
-
-NEXT_ORCHESTRATOR_DECISION:
-- Order the independent control of TASK-0044 (distinct instance, on evidence). No TASK-0045, no PR/merge/tag/release before it.
+- The colour is set through the page's value setter + the real `input` event: the native colour picker is an OS dialog neither the page nor CDP can drive. Name and icon are typed with real key events.
+- Mouse and keys go through the browser input pipeline (CDP) except the edit-1 save (OS key). No physical mouse, no touch.
+- The real host never provokes a backend refusal THROUGH the form (the form stops those first); refusals were probed directly (7 cases) and, in the UI, by a unit test with a refusing backend.
+- The existing backend bound accepts a one-space icon (1 char): not hardened here (no invented product rule); an invisible icon stays possible until a rule is decided.
+- Normal close only; local NTFS development workstation; earlier real-host scenarios not replayed.
+- NEXT_ACTION = independent control of TASK-0045. No TASK-0046, no PR / merge / tag / release.

@@ -1,5 +1,26 @@
 # HANDOFF — passage de relais
 
+## Relais — TASK-0045, éditeur d'identité d'un cerveau, IMPLEMENTED — 2026-09-25
+
+- **Fait :** `TASK-0045` est **IMPLEMENTED** sur `build/v0.2-a29-v1-brain-identity-editor` (code `9e951d2`), jamais
+  auto-`VERIFIED`. Aucune TASK-0046, aucun travail FR/EN / accessibilité, aucun PR, fusion, étiquette ni release;
+  backend, parseur, watcher, journal, `graph/` non touchés (Rust : tests ajoutés seulement).
+- **Où regarder, dans l'ordre :** `DEC-0043`; `src/map/BrainIdentityEditor.tsx` (formulaire, bornes, focus);
+  `saveBrainIdentity` dans `MapApp.tsx` (et la relecture du record à la fin de `loadBrain`);
+  `brainIdentity.test.tsx` (le vrai `MapApp` contre un backend scripté qui applique `validate_metadata`);
+  les trois tests Rust en fin de `brains.rs`; `scripts/task0045-*` et `docs/performance/runs/TASK-0045-webview2.json`.
+- **À savoir pour la reprise :**
+  1. **Ne jamais reconstruire une identité depuis le formulaire** : la réponse de `map_brain_update` est l'autorité.
+  2. Le formulaire reste lié au cerveau **ouvert**, pas au focus qui bouge ensuite.
+  3. Remplacer `loaded` relance, en **lecture seule**, `map_cross_relations_open` puis `..._for_node` : c'est voulu,
+     leurs réponses embarquent nom et icône. Toute autre commande pendant une édition est une régression.
+  4. Le harnais réel compare, après chaque édition, autres cerveaux, source (SHA-256), Index, journal, reprise et fil
+     IPC; il **échoue** si le produit lit `map_view` à la sauvegarde (sabotage vérifié).
+  5. La couleur ne peut pas être saisie par le sélecteur natif en preuve; nom et icône sont tapés en événements clavier.
+- **Non fait / non testé :** `F-035` FR/EN, `F-036` accessibilité complète, icône « espace » (règle produit à décider),
+  crash brutal, scénarios réels antérieurs.
+- **Action suivante :** contrôle indépendant de `TASK-0045`.
+
 ## Relais — TASK-0044, état de reprise par cerveau, VERIFIED — 2026-09-25
 
 - **Fait :** `TASK-0044` est **VERIFIED par `ACTION-0073`** sur `build/v0.2-a28-v1-brain-resume-state` (code `00743fb`). Aucune TASK-0045, aucun travail FR/EN / accessibilité, aucun PR,
