@@ -2690,3 +2690,6 @@ chiffres ou en lettres.
 
 
 > **Relais 2026-09-25 — TASK-0045 prête.** TASK-0044 est VERIFIED par ACTION-0073. ACTION-0074 choisit le dernier écart utilisateur nommé de P-20 : le catalogue et `map_brain_update` savent déjà persister nom/couleur/icône, mais `MapApp` ne permet pas de les éditer. TASK-0045 doit réutiliser ce backend, sans nouveau store, sans toucher la source, le watcher, l'Index ou le resume state. FR/EN est confirmé manquant mais reste hors tranche. Lire DEC-0043, TASK-0045 puis `.orchestrator/NEXT_PROMPT.md` sur `build/v0.2-a29-v1-brain-identity-editor`.
+
+
+> **Relais 2026-09-25 — ACTION-0075.** TASK-0045 est VERIFIED et P-20 est CLOSED / VERIFIED. Le prochain écart V1 déjà confirmé est F-035 : le runtime courant `MapApp` reste français seulement alors que le prototype historique possède `src/lib/locale.ts`. Ne pas rouvrir P-20 sans nouvelle preuve.
