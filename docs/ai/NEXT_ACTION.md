@@ -1,28 +1,21 @@
 # Action suivante
 
-## TASK-0046 — V1 Complete FR/EN Runtime
+## Contrôle indépendant de TASK-0046
 
-`TASK-0045` est **VERIFIED** par
-[`ACTION-0075`](../reviews/ACTION-0075-task0045-independent-control-and-p20-closure.md).
+`TASK-0046 — V1 Complete FR/EN Runtime` est **IMPLEMENTED** (code `678c417`) sur
+`build/v0.2-a30-v1-complete-fr-en-runtime`, jamais auto-`VERIFIED`.
 
-`P-20` est **CLOSED / VERIFIED**.
+Action unique : contrôler **indépendamment, sur preuves**, `TASK-0046` — `DEC-0044`,
+[VALIDATION section CC](VALIDATION.md), `.orchestrator/RESULT.md`,
+`docs/performance/runs/TASK-0046-webview2.json`, `src/map/mapStrings.ts`, `chooseLocale` dans `MapApp.tsx`,
+`localeCompleteness.test.tsx` et `localeRuntime.test.tsx` — puis décider de `VERIFIED` pour `TASK-0046` / `F-035` et de
+l'acquisition de la **partie langue** de `P-19` et de `P-21`.
 
-L'audit
-[`ACTION-0076`](../reviews/ACTION-0076-f035-runtime-localization-audit.md)
-confirme le prochain écart V1 :
+Points à regarder en priorité : la locale est écrite **seulement** sur un choix explicite, sous l'unique clé
+`filetopo.locale`; la bascule n'envoie **aucune** commande et ne déplace aucun état (catalogue, reprise, Index, journal,
+source, sélection); aucun forçage `strings.fr` / `locale="fr"` / `lang = "fr"` ne subsiste; le balayage du français
+résiduel de la vue anglaise (texte et noms accessibles) est probant; l'anglais revient **avant toute interaction** après
+une fermeture réelle; les données utilisateur ne sont jamais traduites; les limites : hôte simulé par `--lang`, scénarios
+historiques supposant une locale française, panneaux « indisponible » des cerveaux adossés à un dossier.
 
-- le runtime réellement lancé est `src/map/MapApp.tsx`;
-- `src/lib/locale.ts` existe déjà et doit être réutilisé;
-- MapApp force encore le français;
-- plusieurs panneaux/helpers portent des chaînes françaises codées en dur.
-
-La prochaine tranche est
-[`TASK-0046 — V1 Complete FR/EN Runtime`](../tasks/TASK-0046-v1-complete-fr-en-runtime.md),
-encadrée par
-[`DEC-0044`](../decisions/DEC-0044-global-fr-en-runtime.md).
-
-Action unique : exécuter `.orchestrator/NEXT_PROMPT.md` sur
-`build/v0.2-a30-v1-complete-fr-en-runtime`.
-
-Cette tranche vise F-035 et les portions langue de P-19 / P-21.
-Elle ne ferme pas P-19 ni P-21 et ne commence pas F-036.
+`P-19` et `P-21` restent **PARTIELLES**; `F-036` (accessibilité WCAG globale) reste `PROPOSED`. Aucune TASK-0047 avant ce contrôle.

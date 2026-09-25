@@ -1,7 +1,7 @@
 # TASK-0046 — V1 Complete FR/EN Runtime
 
 - **Date :** 2026-09-25
-- **Statut :** `READY`
+- **Statut :** `IMPLEMENTED`
 - **Branche :** `build/v0.2-a30-v1-complete-fr-en-runtime`
 - **Décision :** `DEC-0044`
 - **Portée :** `F-035`, langue de `P-19` / `P-21`
@@ -196,3 +196,17 @@ Ne pas commencer F-036.
 - `NEXT_ACTION = contrôle indépendant de TASK-0046`;
 - push uniquement sur la branche courante;
 - arbre propre.
+
+
+## Exécution — IMPLEMENTED — 2026-09-25
+
+- **Statut : `IMPLEMENTED`**, jamais auto-`VERIFIED`. Code `678c417` sur `build/v0.2-a30-v1-complete-fr-en-runtime`.
+  Audit reuse-first, changements, preuves et limites : [VALIDATION section CC](../ai/VALIDATION.md).
+- `src/lib/locale.ts` réutilisé sans modification; locale globale dans `MapApp`, contrôle Français / English, `storeLocale`
+  seulement sur choix; dictionnaire de `MapApp` en `Record<Locale, MapStrings>`; panneaux et helpers localisés; aucune
+  commande, aucune table, aucun fichier, aucune seconde clé, aucun paquet.
+- Preuve réelle : `docs/performance/runs/TASK-0046-webview2.json` (hôte français simulé, un redémarrage réel, même profil,
+  choix EN puis FR par de vrais clics, zéro commande à la bascule).
+- **F-035 : `IMPLEMENTED`.** Langue de `P-19` et de `P-21` : prête pour contrôle indépendant. `P-19` / `P-21` PARTIELLES;
+  `F-036` PROPOSED, non commencée.
+- **Action suivante : contrôle indépendant de `TASK-0046`.**

@@ -1,5 +1,33 @@
 # HANDOFF — passage de relais
 
+## Relais — TASK-0046, FR/EN complet du runtime, IMPLEMENTED — 2026-09-25
+
+- **Fait :** `TASK-0046` est **IMPLEMENTED** sur `build/v0.2-a30-v1-complete-fr-en-runtime` (code `678c417`), jamais
+  auto-`VERIFIED`. Aucune TASK-0047, aucun audit WCAG, aucun PR, fusion, étiquette ni release; `locale.ts`, le backend,
+  le parseur, le watcher, `graph/` non touchés.
+- **Où regarder, dans l'ordre :** `DEC-0044`; `src/map/mapStrings.ts` (contrat + deux langues de `MapApp`);
+  `chooseLocale` et `say(...)` dans `MapApp.tsx`; le dictionnaire `Record<Locale, …>` de chaque panneau (en tête de
+  son fichier); `localeText.ts`; `localeCompleteness.test.tsx` (parité, liste revue des feuilles identiques, gardes de
+  source); `localeRuntime.test.tsx` (le vrai `MapApp` en FR / EN, zéro commande à la bascule);
+  `scripts/task0046-*` et `docs/performance/runs/TASK-0046-webview2.json`.
+- **À savoir pour la reprise :**
+  1. **Ne jamais écrire la locale au démarrage** et ne jamais l'ajouter aux dépendances d'un effet qui invoque : la
+     bascule ne lit rien. Deux tests et un garde de source le vérifient; le sabotage réel (`chooseLocale` qui appelle
+     `map_brains`) fait échouer la preuve.
+  2. Un statut est une **fonction de la locale** (`say((t, l) => …)`), jamais une phrase stockée; un détail d'erreur passe
+     par `describeError` (invariants internes = `LocalizedError`, diagnostic brut du backend = tel quel).
+  3. **Une valeur de fil n'est jamais traduite** (`DETERMINISTIC`, `map_not_built`, clés, enums de filtre); on traduit
+     l'étiquette au rendu. Les noms de cerveaux / fichiers non plus.
+  4. Une liste React à clé partagée garde une ligne périmée à la bascule : toute clé dupliquée fait échouer
+     `localeRuntime.test.tsx`.
+  5. Les scénarios historiques `FILETOPO_AUTO_*` comparent des libellés français : à rejouer sous locale française.
+  6. Le harnais réel simule l'hôte français avec `--lang=fr-CA` et vérifie **deux étapes** (cerveau adossé à un dossier,
+     cerveau synthétique) parce que les deux n'offrent pas les mêmes panneaux aujourd'hui.
+- **Non fait / non testé :** `F-036` accessibilité complète, hôte réellement configuré en anglais, crash brutal, scénarios
+  réels antérieurs, relations / contenu / doublons pour un cerveau adossé à un dossier (le backend répond « source non
+  synthétique » : décision produit hors tranche).
+- **Action suivante :** contrôle indépendant de `TASK-0046`.
+
 ## Relais — TASK-0045, éditeur d'identité d'un cerveau, IMPLEMENTED — 2026-09-25
 
 - **Fait :** `TASK-0045` est **IMPLEMENTED** sur `build/v0.2-a29-v1-brain-identity-editor` (code `9e951d2`), jamais

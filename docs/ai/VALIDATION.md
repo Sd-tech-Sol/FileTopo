@@ -8231,3 +8231,125 @@ dans la preuve réelle.
   identifié (sortie perdue); cinq exécutions complètes suivantes : 537 / 537.
 - **F-036 / WCAG 2.2 AA non revendiqué** : le formulaire s'utilise au clavier et le nom comme l'icône restent visibles
   avec la couleur, rien de plus. **F-035 FR/EN non commencé** (chaînes en français). `P-19` reste partielle.
+
+
+## CC. TASK-0046 — FR/EN complet du runtime V1 (F-035, langue de P-19 / P-21) — 2026-09-25
+
+**Statut : `TASK-0046` = `IMPLEMENTED`**, jamais auto-`VERIFIED`. Branche `build/v0.2-a30-v1-complete-fr-en-runtime`,
+partie de `52c348c` (`ACTION-0075`, `ACTION-0076`, `DEC-0044`, `TASK-0046` présents; `fetch`, fast-forward, arbre propre).
+Commit de travail : `678c417`. Décision : [`DEC-0044`](../decisions/DEC-0044-global-fr-en-runtime.md).
+
+### CC.1 Audit reuse-first (avant le code)
+
+Conclusion confirmée : **`src/lib/locale.ts` est la source de vérité globale et suffit.** `Locale`, `detectLocale`,
+`hostLanguages`, `readStoredLocale`, `storeLocale`, `resolveInitialLocale`, une seule clé `filetopo.locale`, repli EN,
+storage refusé ou corrompu toléré; ses tests existants couvrent déjà la résolution. Il n'a **pas** été modifié.
+
+| Surface | Constat avant | Changement |
+|---|---|---|
+| `src/main.tsx` | monte `MapApp` (le runtime réellement lancé) | aucun |
+| `src/lib/locale.ts` + `locale.test.ts` | infrastructure complète, non utilisée par `MapApp` | **réutilisée telle quelle** |
+| `src/App.tsx` (historique) | seul exemple d'intégration; pas le produit | non touché |
+| `MapApp.tsx` | `const t = strings.fr` (≈130 clés FR), `lang = "fr"`, `locale="fr"` × 3, ≈45 `setStatus` à phrases françaises figées, rapports H / J / M et mesures H9, navigation progressive, extrémités hors vue, boutons développeur, `fixture.labelFr`, erreurs reveal / copy gardées **en phrases** | dictionnaire externalisé, contrat typé, statuts en fonctions de la locale |
+| `ChangeJournalPanel` | `NATURE_LABELS`, `describeChangeSummary`, `describeApplicationMode`, dates `fr-CA`, ≈30 phrases | dictionnaire FR/EN, helpers à locale |
+| `CrossRelationsPanel` | ≈25 phrases et aria-labels | dictionnaire FR/EN |
+| `RelationsPanel` | ≈35 phrases; deux `sr-only lang="en"` de contournement | dictionnaire FR/EN (contournements retirés) |
+| `ReviewQueuePanel` | ≈25 phrases; un `sr-only lang="en"` | dictionnaire FR/EN |
+| `ExactDuplicateExplorer` | ≈25 phrases, dates et nombres `fr-CA` | dictionnaire FR/EN |
+| `FilterPanel` + `filters.ts` | étiquettes d'état / type / disponibilité / rôle, `describeFilter`, `matchCountLabel` | `Record<Locale, …>`, helpers à locale |
+| `MapView` | `aggregateLabel`, « nœuds », rôles de filtre | prop `locale` |
+| `NodeChangeState` | Nouveau / Non vu / Vu et ses phrases | dictionnaire FR/EN |
+| `relations.ts`, `crossRelations.ts` | `PROVENANCE_LABELS`, `RELATION_TYPE_LABELS` (+ `_EN` orphelin), résumés servant d'**aria** | `Record<Locale, …>`; `locale` en paramètre |
+| `useProjectionFilter.ts`, `measure.ts` | messages d'erreur français affichés | fonctions de la locale / `LocalizedError` |
+| scénarios historiques (10) | phrases d'état françaises | `bilingual(fr, en)` |
+| `SourceObservationBadge`, `WatchStatusBadge`, `ContentObservationsPanel`, `DetailsPanel` | **déjà FR/EN** | réutilisés; le type `Locale` local dupliqué remplacé par celui de `locale.ts`; libellés par défaut de `DetailsPanel` plus jamais français en dur |
+| `CompositionBar`, `BrainIdentityEditor` | dictionnaires passés en props, rien en dur | réutilisés |
+
+### CC.2 Ce qui a changé
+
+- `MapApp` : `useState<Locale>(() => resolveInitialLocale())`; `t = strings[locale]`; `<html lang>` suit; **un contrôle
+  explicite** Français / English (deux boutons natifs, `aria-pressed`, `lang` propre); `storeLocale` appelé **à un seul
+  endroit** (le choix). Rien n'est écrit au démarrage. Aucune commande Tauri, aucune table, aucun fichier, aucune
+  seconde clé, aucun paquet i18n.
+- `mapStrings.ts` (nouveau) : le dictionnaire de `MapApp`, `Record<Locale, MapStrings>` — une clé présente d'un côté et
+  pas de l'autre ne compile pas. Les lignes d'état sont des **fonctions de la locale** résolues au rendu : une ligne
+  dite en français se lit en anglais après la bascule, sans être redite ni relue.
+- `localeText.ts` (nouveau) : `intlTag`, `formatDateTime`, `formatInteger`, `StatusMessage`, `LocalizedError`.
+  Ce n'est pas un second système : la locale et sa clé restent dans `locale.ts`.
+- Les erreurs reveal / copy gardent le **code** de fil; les mots sont choisis au rendu. Les refus de composition sont
+  traduits par leur code fermé. Les diagnostics bruts du backend restent un détail secondaire après un préfixe localisé
+  (`DEC-0044` §7).
+- Deux défauts trouvés par la preuve : (1) des lignes « hors de la vue » étaient clées par un identifiant de ligne
+  que deux tables se partagent — deux lignes, une clé, une ligne périmée survivait à la bascule (corrigé : clé par
+  l'identité de la relation; les tests échouent désormais sur toute clé dupliquée); (2) le jeton `<dépôt>` du chemin du
+  bac à sable, produit par le backend, apparaissait en français (localisé côté interface, le reste du chemin intact).
+
+### CC.3 Preuves
+
+- **TypeScript : 582 PASS** (537 + 45), 39 fichiers. `pnpm check`, `pnpm build`, `cargo build --offline`,
+  `pnpm tauri build --debug --no-bundle` : PASS. **Rust : 753 PASS**, 6 ignorés (aucun fichier Rust modifié).
+  Clippy `--all-targets` : lib **13** / lib-test **22** = dette historique, identique à la référence. `git diff --check`
+  propre. Audit public `-AllowRemotes` : PASS (621 fichiers).
+- **Complétude automatique** (`localeCompleteness.test.tsx`, 34 tests) : les dictionnaires de `MapApp`, des filtres, des
+  relations, de l'inter-cerveaux, de la file de revue, de l'explorateur, des natures de changement **et** des trois
+  composants déjà bilingues ont les mêmes clés en FR et en EN; toute feuille identique dans les deux langues doit figurer
+  sur une **liste revue, par dictionnaire et chemin** (quatorze feuilles réellement identiques : noms de langues, « source », « Type », « Parent », « local », « suggestion », « Occurrences », « Page n », « règle version n », « n violation(s) ») — sinon échec. Les helpers
+  refactorés sont testés dans les deux langues. Gardes de source contre `const t = strings.fr`, `strings.fr`,
+  `locale="fr"`, `lang = "fr"` / `"en"`, contre toute seconde clé ou tout stockage navigateur hors `locale.ts`, contre un
+  paquet i18n ou une commande de langue, contre un `locale` dans un effet qui invoque, et vérification que chaque panneau
+  reçoit `locale={locale}`.
+- **Vrai `MapApp` en FR et en EN** (`localeRuntime.test.tsx`, 11 tests) : un libellé **unique à chaque langue** pour
+  chacune de 39 surfaces (en-tête, contrôle de langue, barre de composition, éditeur d'identité, actions du cycle de vie,
+  rapport, compteurs, mode d'application, badge de source, surveillance, barre d'outils, recherche, filtres, rôles,
+  navigation progressive, agrégat, carte, nœud, territoire, doublons, membres, journal, événement, détails, observation
+  de contenu, état de l'élément, relations, règle, file de revue, pourquoi, inter-cerveaux, hors de la vue, diagnostic
+  développeur…); en EN, **aucun accent ni mot français** dans les nœuds de texte **et** les noms accessibles (données
+  utilisateur exceptées, contrôlées identiques); la **bascule** n'envoie **aucune commande**, ne change ni sélection,
+  ni compte, ni cerveau, écrit seulement `filetopo.locale`, suit `<html lang>`; ligne d'état re-dite; redémarrage; storage
+  refusé; valeur corrompue; toute clé React dupliquée fait échouer le test.
+- **Persistance** (six cas exigés) : sans choix + hôte français → FR; sans choix + hôte non français → EN; choix EN sur
+  hôte FR → EN; choix FR sur hôte EN → FR; valeur corrompue → hôte puis EN (et jamais réécrite); storage refusé → session
+  utilisable. **Le test TASK-0044** « l'état de reprise n'utilise pas le storage du navigateur » garde **la même
+  assertion** (aucun `setItem`, `localStorage` et `sessionStorage` vides); seul son nom / commentaire est précisé :
+  reprise → catalogue; langue → la seule clé `filetopo.locale`, et seulement sur choix.
+- **Falsification unitaire** : cinq sabotages de `MapApp` — langue forcée en français; langue écrite au démarrage; `locale`
+  ajouté à un effet qui lit le détail; `<html lang>` non suivi; ligne d'état figée en texte — chacun attrapé (2 à 8 tests).
+  **Sabotage réel** : `chooseLocale` qui appelle aussi `map_brains` **fait échouer** la preuve WebView2
+  (« the switch caused backend commands: map_brains »); rejeu canonique ensuite sur le binaire final : PASS.
+- **WebView2 réel, un redémarrage réel** (`docs/performance/runs/TASK-0046-webview2.json`), profil WebView2 **réutilisé**,
+  hôte français simulé (`--lang=fr-CA`; la page voit `fr-CA, fr, fr-FR, en-CA, en…`), deux cerveaux d'un dossier généré
+  (noms français exprès : `Arbre Alix`, `Arbre Basile`) et les cerveaux synthétiques du catalogue :
+  - **Processus 1** : storage vide au démarrage, `lang = fr`, contrôle FR pressé; cerveau adossé à un dossier (badge de
+    source, surveillance, journal, état de l'élément, filtres, recherche, file de revue vide, relations et explorateur
+    indisponibles / non observés) puis cerveau synthétique (observation de contenu, moteur de relations lancé, file de
+    revue, explorateur, journal) amenés à l'écran par de vrais clics, **34 + 30 surfaces lues en français**; **choix EN
+    par un vrai clic** : `lang = en`, **0 commande** du produit sur le fil pendant la bascule, `localStorage` = une seule clé
+    `filetopo.locale = "en"`, `sessionStorage` vide, catalogue, enregistrements de reprise, révisions et totaux de journal,
+    SHA-256 des deux arbres, sélection, cerveau et compteurs **identiques avant / après**; noms de cerveaux et de
+    nœuds affichés exactement autant de fois qu'avant; toutes les surfaces en anglais, **aucun français restant**;
+    passage à l'autre cerveau : l'anglais reste, rien n'est écrit.
+  - **Fermeture réelle**, puis **relance sur le même profil**, hôte encore français : **avant toute interaction**
+    `lang = en`, `localStorage["filetopo.locale"] = "en"`, bouton EN pressé, libellés anglais d'en-tête, contrôle de
+    langue, barre, éditeur, barre d'outils, détails, relations, inter-cerveaux, diagnostic; même cerveau, même
+    élément sélectionné, même Index. Surfaces rouvertes : toutes en anglais. **Bascule FR par un vrai clic** : `lang = fr`,
+    **0 commande**, clé = `fr`, rien d'autre ne bouge; les deux cerveaux disent le français. **0 erreur fatale** sur
+    les deux processus. Deux exécutions complètes consécutives PASS (avant et après le sabotage).
+
+### CC.4 Non testé / limites
+
+- **Scénarios de preuve historiques** (`K12`…`SR15`, lancés par `FILETOPO_AUTO_*`) : leurs assertions comparent des
+  libellés français; ils supposent une locale française (hôte ou choix). Ils n'ont pas été rejoués ici et leurs
+  artefacts ne sont pas remplacés. Leurs lignes d'état sont bilingues.
+- La langue de l'hôte est **simulée** par `--lang` sur le processus WebView2 (la page voit bien `fr-CA`); aucune
+  machine réellement configurée en anglais n'a été essayée. Clics par le pipeline du navigateur (CDP), pas d'entrée du
+  système ni de souris physique. Fermeture normale seulement; volume NTFS local d'un poste de développement.
+- **Les données utilisateur ne sont jamais traduites** : noms de cerveaux (y compris les noms par défaut
+  `Cerveau Alpha…` du catalogue synthétique, éditables), de dossiers et de fichiers, chemins relatifs, identifiants.
+  Un diagnostic brut du backend peut suivre un message localisé; **aucun n'est apparu** pendant la preuve.
+- Les cerveaux adossés à un dossier n'offrent pas encore relations / contenu / doublons (le backend répond « source non
+  synthétique ») : leurs panneaux disent **indisponible / non observé** dans les deux langues; c'est cet état qui est
+  prouvé en réel pour eux, les états riches l'étant sur le cerveau synthétique.
+- Le titre natif de la fenêtre reste « FileTopo » dans les deux langues (pas une chaîne de la page).
+- **Grammaire** : le français conserve « 1 nœuds » (comportement antérieur, non modifié); l'anglais dit « 1 node ».
+- **`F-036` / WCAG 2.2 AA non revendiqué** ni commencé. `P-19` et `P-21` restent **PARTIELLES**; seule leur **partie
+  langue** est prête pour un contrôle indépendant. Aucune `TASK-0047`, aucun PR / fusion / étiquette / release.

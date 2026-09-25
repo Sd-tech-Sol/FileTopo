@@ -5974,3 +5974,25 @@ fusion / étiquette / release.
 - TASK-0046 créée READY sur `build/v0.2-a30-v1-complete-fr-en-runtime`;
 - objectif : F-035 complet et portions langue de P-19/P-21; P-19/P-21 restent partielles;
 - F-036 / WCAG global hors tranche; aucune TASK-0047.
+
+
+## 2026-09-25 — TASK-0046 — FR/EN complet du runtime V1 (IMPLEMENTED)
+
+**Agent :** Claude Code
+
+- audit reuse-first : `src/lib/locale.ts` (`Locale`, `resolveInitialLocale`, `storeLocale`, clé `filetopo.locale`) est la source
+  de vérité globale, non modifiée; inventaire des chaînes de `MapApp`, des huit panneaux et des helpers avant le code;
+- `MapApp` : locale globale, contrôle Français / English, `<html lang>`, `storeLocale` seulement sur choix; `mapStrings.ts`
+  (contrat typé, deux langues); lignes d'état en fonctions de la locale; erreurs reveal / copy gardent le code de fil;
+- panneaux et helpers localisés (journal, état de l'élément, relations, inter-cerveaux, file de revue, doublons, filtres,
+  carte, agrégats, résumés d'aria, erreurs du hook de filtre et de la mesure, scénarios); composants déjà bilingues
+  réutilisés, type `Locale` unifié;
+- deux défauts trouvés en réel puis corrigés : clé React partagée (ligne périmée à la bascule), jeton `<dépôt>` du chemin du
+  bac à sable; toute clé dupliquée fait désormais échouer les tests;
+- 45 tests TypeScript (582 au total) : parité et feuilles identiques justifiées, gardes de source, vrai `MapApp` FR / EN sur
+  39 surfaces, balayage du français résiduel, bascule sans commande, redémarrage, storage refusé / corrompu; 5 sabotages
+  attrapés en unitaire, 1 en réel;
+- preuve WebView2 réelle : hôte français simulé, un redémarrage réel, même profil, choix EN puis FR par de vrais clics,
+  0 commande à la bascule, une seule clé de storage, état inchangé;
+- `F-035` = IMPLEMENTED; langue de `P-19` / `P-21` prête pour contrôle indépendant; `P-19` / `P-21` PARTIELLES;
+  `F-036` PROPOSED; `TASK-0046` = IMPLEMENTED, jamais auto-VERIFIED; aucune TASK-0047; NEXT_ACTION = contrôle indépendant.

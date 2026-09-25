@@ -1,5 +1,37 @@
 # État courant
 
+## TASK-0046 — V1 Complete FR/EN Runtime — IMPLEMENTED — 2026-09-25
+
+- **Statut : `IMPLEMENTED`** (jamais auto-`VERIFIED`). Branche `build/v0.2-a30-v1-complete-fr-en-runtime`, partie de
+  `52c348c`; commit de travail `678c417`. Décision : [`DEC-0044`](../decisions/DEC-0044-global-fr-en-runtime.md).
+  Détail : [VALIDATION section CC](VALIDATION.md), `.orchestrator/RESULT.md`.
+- **Ce qui existe.** Le runtime réellement lancé (`MapApp`) est **intégralement FR/EN**. La locale est **une préférence
+  globale** : `resolveInitialLocale` au démarrage (choix explicite, puis langue de l'hôte, puis anglais), `storeLocale`
+  **seulement** sur un choix humain, sous l'**unique clé existante** `filetopo.locale`. Un contrôle explicite
+  Français / English (deux boutons natifs) est dans l'en-tête; `<html lang>` suit. **Aucune commande Tauri**, aucune table,
+  aucun fichier de préférences, aucune seconde clé, aucun paquet i18n. Les panneaux ont chacun leur dictionnaire
+  `Record<Locale, …>`; les lignes d'état sont des fonctions de la locale (une ligne dite en français se lit en anglais
+  après la bascule). Les noms de cerveaux, de dossiers et de fichiers, les chemins et les identifiants ne sont **jamais**
+  traduits.
+- **Preuves.** TypeScript **582 PASS** (537 + 45), Rust **753 PASS** (aucun fichier Rust modifié), `pnpm check` /
+  `pnpm build` / `cargo build --offline` / Tauri debug PASS, Clippy identique à la référence (13 / 22), audit public PASS.
+  Complétude **automatique** (mêmes clés FR/EN, toute feuille identique doit être justifiée, gardes de source contre le
+  retour du français forcé), vrai `MapApp` dans les deux langues sur 39 surfaces avec balayage du français résiduel
+  (texte **et** noms accessibles), bascule sans **aucune** commande, redémarrage, storage refusé, valeur corrompue;
+  cinq sabotages attrapés en test unitaire et un en hôte réel. **WebView2 réel, un redémarrage réel, même profil, hôte
+  français simulé** (`TASK-0046-webview2.json`) : choix EN par un vrai clic → `lang = en`, **0 commande**, une seule clé
+  de storage, état (catalogue, reprise, Index, journal, SHA-256 des arbres, sélection) identique; relance → l'anglais
+  revient **avant toute interaction**; retour au français par un vrai clic.
+- **`F-035` = `IMPLEMENTED`.** **Langue de `P-19` : prête pour un contrôle indépendant. Langue de `P-21` : prête pour un
+  contrôle indépendant.** `P-19` et `P-21` restent **PARTIELLES**; `F-036` reste `PROPOSED`.
+- **Non testé / limites.** Hôte simulé par `--lang`; clics par le pipeline du navigateur; fermeture normale seulement;
+  scénarios de preuve historiques (`K12`…`SR15`) supposent une locale française et n'ont pas été rejoués; cerveaux adossés
+  à un dossier : panneaux relations / contenu / doublons « indisponible / non observé » (prouvés dans cet état), états riches
+  prouvés sur le cerveau synthétique; le français garde « 1 nœuds ».
+- **Hors portée, inchangés :** accessibilité WCAG globale (`F-036`), thèmes, troisième langue, persistance d'une composition
+  multi-cerveaux. Aucune TASK-0047, aucun PR / fusion / étiquette / release.
+- **Action unique suivante : contrôle indépendant de `TASK-0046`.**
+
 ## TASK-0045 — V1 Brain Identity Editor — IMPLEMENTED — 2026-09-25
 
 - **Statut : `IMPLEMENTED`** (jamais auto-`VERIFIED`). Branche `build/v0.2-a29-v1-brain-identity-editor`, partie de `8dc3c31`;
