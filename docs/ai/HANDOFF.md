@@ -2693,3 +2693,6 @@ chiffres ou en lettres.
 
 
 > **Relais 2026-09-25 — ACTION-0075.** TASK-0045 est VERIFIED et P-20 est CLOSED / VERIFIED. Le prochain écart V1 déjà confirmé est F-035 : le runtime courant `MapApp` reste français seulement alors que le prototype historique possède `src/lib/locale.ts`. Ne pas rouvrir P-20 sans nouvelle preuve.
+
+
+> **Relais 2026-09-25 — TASK-0046 prête.** TASK-0045 est VERIFIED; P-20 est CLOSED / VERIFIED. ACTION-0076 confirme que le runtime courant `MapApp` reste français seulement. Réutiliser `src/lib/locale.ts` et localiser toute chaîne produit visible/aria sans nouveau backend ni système i18n. F-036 / WCAG global reste hors tranche. Lire DEC-0044, TASK-0046 puis `.orchestrator/NEXT_PROMPT.md` sur `build/v0.2-a30-v1-complete-fr-en-runtime`.
