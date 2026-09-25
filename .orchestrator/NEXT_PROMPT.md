@@ -1,202 +1,241 @@
-# NEXT_PROMPT — TASK-0043 — corrective shutdown pass after ACTION-0071
+# NEXT_PROMPT — TASK-0044 — V1 Per-Brain Resume State
 
 **TARGET_AGENT:** CLAUDE CODE  
-**RECOMMENDED_MODEL:** Opus, high effort  
+**RECOMMENDED_MODEL:** Sonnet 5, high effort  
 **STATUS:** READY  
-**BRANCH:** `build/v0.2-a27-v1-watcher-reconciliation`
+**BRANCH:** `build/v0.2-a28-v1-brain-resume-state`
 
 ## /goal
 
-Fermer uniquement le blocage **P1** de
-`docs/reviews/ACTION-0071-task0043-shutdown-recontrol.md`.
+Implémenter intégralement
+`docs/tasks/TASK-0044-v1-per-brain-resume-state.md` selon
+`docs/decisions/DEC-0042-per-brain-resume-state.md`.
 
-La surveillance F-030 est acceptée fonctionnellement. Cette passe ne doit pas
-refaire le watcher. Elle doit garantir qu'un shutdown **ne détache jamais un
-worker encore vivant**, même si celui-ci attend le `PUBLICATION_LOCK`.
+Le but est étroit : **un cerveau retrouve son état propre après une bascule et
+un vrai redémarrage**, sans nouveau magasin et sans dupliquer les vérités déjà
+persistées.
 
-Aucune TASK-0044. Aucun USN. Aucun changement frontend.
+Ne pas ouvrir TASK-0045. Ne pas ajouter FR/EN ou une couche accessibilité ici.
 
-## 0 — Préconditions obligatoires
+## 0 — Préconditions
 
 1. Appliquer `AGENTS.md` et `CLAUDE.md`.
 2. Basculer explicitement sur
-   `build/v0.2-a27-v1-watcher-reconciliation`.
+   `build/v0.2-a28-v1-brain-resume-state`.
 3. `git fetch origin`.
 4. Synchroniser uniquement en fast-forward avec
-   `origin/build/v0.2-a27-v1-watcher-reconciliation`.
+   `origin/build/v0.2-a28-v1-brain-resume-state`.
 5. Vérifier arbre propre.
-6. Vérifier que HEAD contient `ACTION-0071`.
-7. Lire ACTION-0071 en entier avant toute modification.
+6. Vérifier que HEAD contient :
+   - `ACTION-0072`;
+   - `DEC-0042`;
+   - `TASK-0044`.
+7. Lire DEC-0042 et TASK-0044 en entier avant le premier changement.
 
-STOP/BLOCKED si une précondition ne tient pas.
+STOP/BLOCKED si le dépôt contredit les préconditions.
 
-## 1 — Portée strictement backend shutdown/cancellation
+## 1 — Audit reuse-first avant code
 
-Interdictions :
+Écrire d'abord dans RESULT ce qui existe déjà et ce qui doit réellement
+changer :
 
-- ne pas modifier le parser;
-- ne pas modifier coalesce/sémantique des hints;
-- ne pas modifier W-B/W-C fonctionnellement;
-- ne pas modifier l'UI;
-- ne pas modifier les cadences;
-- ne pas ajouter de crate;
-- ne pas toucher `incremental.rs`;
-- ne pas ajouter de TASK-0044.
+- active brain persistant;
+- metadata brain nom/couleur/icône;
+- ancien `details_panel_visible`;
+- `CompositionSessionMemory`;
+- `View` / `clampView`;
+- `useProjectionFilter`;
+- `map_view` normal et filtré;
+- seen/unseen;
+- watcher reload.
 
-## 2 — Publication lock annulable côté watcher
+Le correctif doit **étendre** ces mécanismes, pas en créer des concurrents.
 
-Le problème à fermer :
+Interdits :
 
-un worker peut attendre `PUBLICATION_LOCK` pendant qu'un geste manuel le tient,
-et son callback `cancelled` n'est alors jamais consulté.
+- `localStorage` / `sessionStorage`;
+- nouvelle SQLite;
+- second brain registry;
+- second filter engine;
+- stockage d'une projection ou d'une page complète;
+- stockage d'un cursor keyset;
+- stockage d'un path / name / stable key / FileId.
 
-Construire une acquisition **watcher-only** qui :
+## 2 — Record versionné et brain-scoped
 
-- utilise toujours le même `PUBLICATION_LOCK`;
-- teste régulièrement `cancelled()`;
-- n'attend jamais indéfiniment dans `Mutex::lock()`;
-- retourne une issue distincte `Cancelled` si le watcher est arrêté;
-- ne transforme pas un mutex empoisonné en panne permanente.
+Réutiliser le catalogue.
 
-Une boucle `try_lock` + attente courte est acceptable.
+Le record persistant doit être petit, fermé et versionné. Il contient seulement
+les données autorisées par DEC-0042.
 
-Le chemin manuel peut garder son `.lock()` bloquant.
+La lecture doit être tolérante :
 
-## 3 — Brancher les DEUX chemins watcher
+- absent/corrompu/version inconnue => defaults sûrs;
+- aucune lecture source;
+- aucun échec de `map_open`.
 
-### W-B
+La mise à jour doit être validée côté Rust, même si TypeScript normalise déjà.
 
-`watch_ops::apply_scopes` doit abandonner proprement si le stop arrive pendant
-l'attente du lock.
+## 3 — Panneau Détails devient réellement par cerveau
 
-Aucune lecture/source/SQLite mutation avant d'avoir acquis le lock.
+Ne pas supprimer l'ancienne clé globale.
 
-### W-C
+Elle sert uniquement de fallback à un brain sans resume record.
 
-`watch_ops::verify_full` doit avoir la même propriété.
+Après qu'un cerveau possède son propre état :
 
-Attention : aujourd'hui il appelle `commands::publish_map`, qui acquiert lui-même
-le lock avant d'exécuter le callback `cancelled`.
+- A caché, B visible doit rester A caché / B visible;
+- restart identique.
 
-Refactorer **le minimum** pour permettre au watcher d'obtenir le même pipeline
-de publication sans attendre un lock non annulable.
+Mettre à jour les types/commentaires qui disent encore « global » : ne pas
+laisser une documentation fausse.
 
-Formes acceptables :
+## 4 — Caméra sans write storm
 
-- helper `publish_map_with_lock(...)` + variante watcher;
-- exposition interne minimale de `publish_locked`;
-- autre structure équivalente.
+Conserver l'arithmétique `viewState.ts`.
 
-Ne pas dupliquer la logique source observation / application mode / journal.
+Exigences :
 
-## 4 — Shutdown sans détachement
+- restore seulement quand world + viewport sont connus;
+- `clampView` obligatoire;
+- finite only;
+- changement de viewport après restart = état valide;
+- pas de write SQLite par frame.
 
-Après `request_stop()`, `WatchManager::shutdown` doit **rejoindre tous les
-workers qu'il possédait**.
+Construire une stratégie latest-wins/coalescée testable. Une interaction
+terminée doit finir persistée, et une bascule de cerveau doit sauvegarder
+l'état sortant avant de changer de focus.
 
-Il ne doit plus exister de branche où un `JoinHandle` encore vivant est simplement
-jeté/détaché.
+Ne pas inventer une promesse de crash-consistency. La preuve porte sur une
+fermeture normale réelle.
 
-La fermeture doit rester bornée en pratique grâce à :
+## 5 — Focus / sélection
 
-- stop du reader natif;
-- acquisition du publication lock annulable;
-- callbacks d'annulation déjà utilisés par les scans watcher.
+Le backend doit valider un id sauvegardé contre **ce brain** et l'Index courant.
 
-Le paramètre `patience` peut :
+Normal view :
 
-- disparaître si devenu inutile; ou
-- rester comme métrique/seuil diagnostique;
+- focus encore valide => projection focus correspondante;
+- sélection encore valide => sélection restaurée;
+- disparu => fallback root/focus + correction persistée.
 
-mais il ne peut plus autoriser le détachement.
+Tester le piège : A et B ont tous deux `nodeId = 12`; l'état de A ne peut
+jamais sélectionner B:12.
 
-## 5 — Preuve déterministe obligatoire T1
+## 6 — Filtre et sélection au-delà de page 1
 
-Créer un test qui aurait échoué avec le code actuel :
+Le filtre logique survit. Le cursor non.
 
-1. démarrer un watcher jusqu'à WATCHING;
-2. faire tenir `PUBLICATION_LOCK` par un autre thread;
-3. injecter LOST pour forcer W-C;
-4. attendre que le worker soit dans la tentative de publication;
-5. appeler `shutdown` avec une patience très courte;
-6. **ne pas libérer le lock avant le retour de shutdown**;
-7. shutdown doit retourner;
-8. status final STOPPED;
-9. reader/handle libéré;
-10. capturer revision + longueur historique;
-11. libérer ensuite le lock;
-12. attendre un intervalle significatif;
-13. aucune révision tardive, aucun nouvel événement tardif.
+Cas de rejet obligatoire :
 
-Le test doit clairement documenter qu'il falsifie l'ancien comportement de
-détachement.
+- filtre > une page;
+- page 2 ou plus;
+- sélectionner un match;
+- restart;
+- révision identique OU avancée par watcher;
+- si le match existe et satisfait toujours le filtre, **le même nœud doit être
+  restauré** dans une page bornée calculée depuis l'Index courant.
 
-## 6 — Preuve W-B également
+Ne triche pas en sauvegardant le cursor ancien.
 
-Ajouter une preuve analogue ou un test structurel fort démontrant que le chemin
-W-B utilise **la même acquisition annulable**.
+Si l'API courante ne sait pas retrouver une page contenant un match, ajouter
+la primitive backend **minimale et bornée**, en réutilisant l'ordre canonique de
+`filtered_matches`.
 
-Préférence : test réel avec un hint ciblé et lock retenu.
+Pas de scan frontend du corpus.
 
-Aucun batch partiel.
+## 7 — Watcher
 
-## 7 — Test natif existant
+TASK-0043 est acquis : ne le réécris pas.
 
-Rejouer et conserver :
+Prouver seulement l'intégration :
 
-`shutdown_closes_the_native_handle_and_the_operating_system_agrees`
+- watcher avance revision;
+- resume state reste;
+- filtre est relu sur nouvelle revision;
+- sélection existante survit;
+- sélection supprimée retombe proprement;
+- aucun événement du journal pour un changement de resume state.
 
-Windows doit encore permettre une ouverture exclusive de la racine après shutdown.
+## 8 — Trois cerveaux et vrai restart
 
-## 8 — Non-régressions
+C'est la preuve centrale.
 
-Rejouer au minimum les tests watcher qui couvrent :
+A / B / C doivent avoir des états volontairement différents :
 
-- initial W-C;
-- changements natifs;
-- signal pendant W-B;
-- signal pendant W-C;
-- perte forcée;
-- root absent/revenu;
-- Actualiser concurrent;
-- shutdown pendant W-C.
+- focus/sélection;
+- camera;
+- filter;
+- panel.
 
-Si la logique de réconciliation elle-même n'est pas modifiée, la rafale 10k
-complète n'est pas obligatoire dans cette passe; expliquer pourquoi.
+Dans la même session : A→B→C→A restaure chaque état.
 
-## 9 — Validation
+Puis :
 
-- tests ciblés ACTION-0071;
-- `cargo test --offline`;
-- `pnpm test`;
+1. dernier brain actif connu;
+2. fermer **le vrai processus**;
+3. relancer le même state root;
+4. le dernier brain revient seul avec son état;
+5. visiter les deux autres;
+6. chacun retrouve son état propre.
+
+Le harnais doit comparer les **valeurs logiques exactes**.
+
+## 9 — Corruption
+
+Avant de dire DONE, couvrir au minimum :
+
+- JSON invalide;
+- version future;
+- enum filter inconnue;
+- nombres NaN/Infinity/hors borne;
+- ids absents;
+- ids numériquement identiques entre brains;
+- state d'un autre brain;
+- ancienne clé globale panneau.
+
+Aucun de ces cas ne doit empêcher l'ouverture.
+
+## 10 — Ce que TASK-0044 ne ferme pas
+
+Les docs finales doivent dire explicitement que `P-19` reste partielle :
+
+- langue FR/EN V1 non traitée;
+- préférences accessibilité non traitées;
+- composition multi-brain persistante non traitée;
+- aucune préférence de légende inventée.
+
+Ne monte pas ces fonctions par déduction.
+
+## 11 — Validation
+
+Obligatoire :
+
+- tests Rust ciblés + full `cargo test --offline`;
+- tests TS ciblés + full `pnpm test`;
 - `pnpm check`;
 - `pnpm build`;
 - `cargo build --offline`;
-- Clippy avec dette historique séparée;
+- Tauri debug;
+- WebView2 réel avec **vrai restart** et 3 brains;
+- Clippy, dette historique séparée;
 - `git diff --check`;
 - `scripts/audit-public-readiness.ps1 -AllowRemotes`.
 
-Pas de WebView2 requis si aucun code frontend et aucune sémantique produit visible
-ne changent.
+Si une preuve trouve un défaut produit, corrige le produit puis rejoue la preuve
+sur le binaire final; ne publie pas un artefact contradictoire comme preuve
+canonique.
 
-## 10 — Mémoire durable
+## 12 — Gouvernance
 
-Mettre à jour :
+À la fin :
 
-- `.orchestrator/RESULT.md`;
-- `docs/ai/CURRENT_STATE.md`;
-- `docs/ai/HANDOFF.md`;
-- `docs/ai/NEXT_ACTION.md`;
-- `docs/ai/VALIDATION.md`;
-- `docs/ai/CHANGELOG_AI.md`;
-- TASK-0043 reste `IMPLEMENTED`, jamais auto-`VERIFIED`.
-
-`NEXT_ACTION` = contrôle indépendant du correctif ACTION-0071.
-
-## 11 — Gouvernance
-
-- aucune TASK-0044;
-- aucun USN;
+- TASK-0044 = `IMPLEMENTED`, jamais auto-`VERIFIED`;
+- aucune TASK-0045;
 - aucun PR/merge/tag/release;
-- push uniquement sur la branche actuelle;
-- arbre propre à la fin.
+- `.orchestrator/RESULT.md` = rapport compact de cette exécution;
+- mettre à jour CURRENT_STATE/HANDOFF/NEXT_ACTION/VALIDATION/CHANGELOG_AI;
+- FEATURE_MATRIX honnête, sans déclarer P-19 complète;
+- NEXT_ACTION = contrôle indépendant de TASK-0044;
+- push uniquement sur cette branche;
+- arbre propre.
