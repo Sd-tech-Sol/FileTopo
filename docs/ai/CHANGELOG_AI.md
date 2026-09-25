@@ -5961,3 +5961,16 @@ fusion / étiquette / release.
 - P-20 = CLOSED / VERIFIED par composition des preuves ACTION-0029, ACTION-0064, ACTION-0073 et ACTION-0075;
 - aucune source, aucun Index, aucun journal et aucun resume state modifiés par l'édition;
 - F-035 et F-036 restent ouvertes; P-19 reste PARTIELLE.
+
+
+## 2026-09-25 — ACTION-0076 / préparation TASK-0046
+
+**Orchestrateur :** ChatGPT
+
+- audit du runtime réellement lancé : `src/main.tsx -> MapApp`;
+- infrastructure locale existante `src/lib/locale.ts` retenue; aucune nouvelle dépendance ni préférence backend;
+- surfaces françaises codées en dur inventoriées dans MapApp, panneaux et helpers;
+- DEC-0044 approuvée : locale globale FR/EN, persistance via l'unique clé existante `filetopo.locale`;
+- TASK-0046 créée READY sur `build/v0.2-a30-v1-complete-fr-en-runtime`;
+- objectif : F-035 complet et portions langue de P-19/P-21; P-19/P-21 restent partielles;
+- F-036 / WCAG global hors tranche; aucune TASK-0047.
