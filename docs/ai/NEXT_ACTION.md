@@ -1,23 +1,18 @@
 # Action suivante
 
-## Recontrôle TASK-0043 — ACTION-0071 P1
+## Contrôle indépendant du correctif ACTION-0071 (TASK-0043)
 
-La surveillance automatique `TASK-0043` est fonctionnellement acceptée, mais
-reste `IMPLEMENTED`, pas `VERIFIED`.
+Le correctif du blocage **P1** d'`ACTION-0071` est livré (commit `001f18f` sur
+`build/v0.2-a27-v1-watcher-reconciliation`). `TASK-0043` reste `IMPLEMENTED`, pas `VERIFIED`.
 
-Blocage unique : `WatchManager::shutdown` peut atteindre son délai puis
-détacher un worker encore vivant. Si ce worker attend `PUBLICATION_LOCK`, le
-flag d'annulation n'est pas encore consulté.
+Ce qui est à contrôler, sur preuves (`VALIDATION` section BZ, `.orchestrator/RESULT.md`) :
 
-`ACTION-0071` exige donc :
+- acquisition annulable du même `PUBLICATION_LOCK` pour W-C, W-B et l'enregistrement de la garde;
+- `WatchManager::shutdown` joint tous les workers, sans aucun détachement;
+- preuves avec le verrou tenu pendant le shutdown, et rien de tardif après sa libération;
+- handle natif fermé (test natif rejoué).
 
-- acquisition du publication lock annulable côté watcher pour W-B et W-C;
-- aucun détachement de `JoinHandle` vivant au shutdown;
-- preuve déterministe avec `PUBLICATION_LOCK` retenu pendant shutdown;
-- handle natif fermé et aucun write/event tardif après retour.
+Action unique : contrôle indépendant du correctif `ACTION-0071`, par une instance distincte de
+l'exécuteur.
 
-Action unique : exécuter `.orchestrator/NEXT_PROMPT.md` sur
-`build/v0.2-a27-v1-watcher-reconciliation`.
-
-Aucune TASK-0044, aucun USN et aucun élargissement de portée avant fermeture de
-P1.
+Aucune TASK-0044, aucun USN et aucun élargissement de portée avant ce contrôle.

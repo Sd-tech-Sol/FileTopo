@@ -1,5 +1,26 @@
 # HANDOFF — passage de relais
 
+## Relais actuel — TASK-0043, correctif ACTION-0071 P1, en attente de contrôle — 2026-09-25
+
+- **Fait :** commit `001f18f` sur `build/v0.2-a27-v1-watcher-reconciliation` (partie de `8f02e34`).
+  `TASK-0043` reste `IMPLEMENTED`. Aucune TASK-0044, USN, PR, fusion, étiquette ni release; `graph/` et
+  `incremental.rs` non touchés; aucun changement frontend.
+- **Où regarder :** `map/commands.rs` (`lock_publication_cancellable`, `lock_cancellable`,
+  `publish_map_with_lock`, module `publication_lock_tests`); `map/watch_ops.rs` (`verify_full` et
+  `FullFailure`, `apply_scopes`, `record_guard_failure`); `watch/mod.rs` (`shutdown`, `ShutdownReport`);
+  `watch/tests.rs`, section « ACTION-0071 » (`shutdown_while_the_lock_is_held` et les trois preuves).
+- **À savoir pour la reprise :**
+  1. Plus aucun `Mutex::lock` côté watcher : les trois chemins passent par la même acquisition annulable.
+     Le geste manuel garde `lock()` (et son refus historique d'un verrou empoisonné, non modifié).
+  2. Les preuves tiennent le verrou **global** quelques centaines de ms et n'affirment qu'après l'avoir
+     relâché, pour ne jamais l'empoisonner pour le reste de la suite.
+  3. Nouveau point d'observation de test `before_guard_record` (`#[cfg(test)]`).
+  4. La falsification (ancien comportement rétabli temporairement sous les nouveaux tests) est décrite en
+     VALIDATION BZ.3; elle n'a laissé aucune trace dans le dépôt.
+- **Non fait / non testé :** durée d'un commit déjà commencé que le shutdown attend, sur un gros arbre;
+  WebView2 non rejoué (non requis).
+- **Action unique suivante :** contrôle indépendant du correctif `ACTION-0071`.
+
 ## Relais actuel — TASK-0043, watcher automatique, en attente de contrôle — 2026-09-24
 
 - **Fait :** `TASK-0043` est implémentée sur `build/v0.2-a27-v1-watcher-reconciliation` (partie de

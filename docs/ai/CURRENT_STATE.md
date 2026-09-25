@@ -1,5 +1,28 @@
 # État courant
 
+## TASK-0043 — correctif ACTION-0071 P1 (shutdown sans détachement) — toujours IMPLEMENTED — 2026-09-25
+
+- **Statut : `TASK-0043` reste `IMPLEMENTED`, jamais auto-`VERIFIED`.** Correctif étroit de
+  [`ACTION-0071`](../reviews/ACTION-0071-task0043-shutdown-recontrol.md) (F-030 accepté fonctionnellement,
+  blocage unique P1), commit `001f18f` sur `build/v0.2-a27-v1-watcher-reconciliation`. Détail :
+  [VALIDATION section BZ](VALIDATION.md).
+- **P1 fermé.** Le watcher prend le **même** `PUBLICATION_LOCK` de façon **annulable**
+  (`lock_publication_cancellable` : `try_lock` + 10 ms, arrêt consulté avant chaque tentative, verrou
+  empoisonné repris) pour W-C (`publish_map_with_lock`, le même pipeline qu'Actualiser), W-B et
+  l'enregistrement de la garde de racine. Le geste manuel garde son verrou bloquant.
+  `WatchManager::shutdown` **joint tous les workers**; `patience` n'est plus qu'un seuil diagnostique
+  (`ShutdownReport`).
+- **Preuves.** Shutdown avec `PUBLICATION_LOCK` tenu par un autre thread pendant un W-C (T1), un W-B (T2)
+  et un enregistrement de garde : worker joint, `STOPPED` avant le retour, lecteur libéré, rien de tardif
+  après libération du verrou. Ancien comportement falsifié par ces tests. Test natif de fermeture du
+  handle rejoué. Rust **727 PASS** (719 + 8), TypeScript 471 PASS, `pnpm check` / `pnpm build` /
+  `cargo build --offline` PASS, Clippy identique à la référence (13 / 22).
+- **Non touchés.** Parseur, hints, W-B / W-C fonctionnels, interface, cadences, `incremental.rs`,
+  dépendances. Pas de rejeu WebView2 (aucun changement frontend).
+- **Limite.** Un commit déjà commencé (application après un scan accepté, lot W-B) n'est pas interrompu :
+  le shutdown l'attend au lieu de détacher le worker.
+- **Action unique suivante : contrôle indépendant du correctif `ACTION-0071`.**
+
 ## TASK-0043 — V1 Automatic Watcher & Reconciliation — IMPLEMENTED — 2026-09-24
 
 - **Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Branche `build/v0.2-a27-v1-watcher-reconciliation`,

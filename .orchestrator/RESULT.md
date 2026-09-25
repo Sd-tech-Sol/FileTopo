@@ -1,75 +1,53 @@
-TASK_ID: TASK-0043 — V1 Automatic Watcher & Reconciliation
-AGENT: CLAUDE (Sonnet 5)
-RESULT: DONE — TASK-0043 = IMPLEMENTED (never self-VERIFIED)
+TASK_ID: TASK-0043 — corrective pass for ACTION-0071 P1 (shutdown never detaches a worker)
+AGENT: CLAUDE (Opus 5.5)
+RESULT: DONE — TASK-0043 stays IMPLEMENTED (never self-VERIFIED)
 BRANCH: build/v0.2-a27-v1-watcher-reconciliation
-BASE: 5b752be (fast-forward from origin; tree was clean; HEAD contains ACTION-0070, DEC-0041, TASK-0043)
-COMMITS: d9e45ac (backend), ba879bb (interface), the UI observation fix, the docs/proof commit (branch HEAD)
+BASE: 8f02e34 (fast-forward b848a8a..8f02e34 from origin; tree was clean; HEAD contains ACTION-0071)
+COMMITS: 001f18f (code + tests), then the docs commit (branch HEAD)
 
-PRINCIPLE KEPT: OS event = hint, never truth. ReadDirectoryChangesExW -> bounded hints -> W-B/W-C ->
-apply_update_batch. The OS action is dropped at the parser; the journal comes from a re-enumeration.
+P1 CLOSED:
+- map/commands.rs: lock_publication_cancellable = the SAME PUBLICATION_LOCK, try_lock loop with a 10 ms
+  wait, cancelled() checked BEFORE every attempt, distinct outcome PublicationCancelled, poisoned lock
+  taken via into_inner. No second mutex. Manual gestures keep their blocking lock().
+- publish_map = blocking lock + publish_map_with_lock(&guard, ...): the one pipeline (application mode,
+  source observation, journal) with the guard as proof of holding the lock. No duplication.
+- map/watch_ops.rs: W-C verify_full takes the lock cancellably then publish_map_with_lock
+  (FullFailure::{Cancelled, Refused}); W-B apply_scopes takes it cancellably BEFORE any source read or
+  SQLite open (ScopedFailure::Cancelled); record_guard_failure (root guard) too — nothing written if
+  cancelled. No Mutex::lock left on the watcher side.
+- watch/mod.rs: WatchManager::shutdown joins EVERY worker it owned; no branch drops a live JoinHandle.
+  patience is a diagnostic threshold only (ShutdownReport { joined, beyond_patience }).
+- Not touched: parser, hint coalescing/semantics, W-B/W-C work after acquisition, UI, cadences,
+  incremental.rs, dependencies.
 
-REUSE-FIRST AUDIT (written before code):
-- windows-sys 0.61.2, features ALREADY enabled (Foundation, Storage_FileSystem, System_IO) expose
-  ReadDirectoryChangesExW, ReadDirectoryNotifyInformation, OVERLAPPED, GetOverlappedResultEx, CancelIoEx,
-  ERROR_NOTIFY_ENUM_DIR: NO crate, NO feature added, no `notify`. (Read from the cached crate sources: a
-  targeted read of tooling metadata, outside the repository, nothing else.)
-- Cancel of a blocking call: 100 ms wait slices, then CancelIoEx AND await completion before freeing the
-  buffer / closing the handle. Proven by the OS itself (exclusive open refused while the reader lives).
-- PUBLICATION_LOCK reused (now pub(super)): Actualiser, Reconstruire, W-B, W-C, root-guard writes share it.
-- scanner / reconcile_full_scan / apply_update_batch reused; scanner::observe_entry is the ONE
-  classification for the full scan and W-B. incremental.rs NOT modified (F-031 threshold untouched).
-- SourceObservation machine consumed unchanged. Tauri: managed state, one closed event, one read command.
-- Old prototype IndexJobs/collections NOT reactivated.
+PROOFS:
+- T1 a_shutdown_while_a_full_verification_waits_for_the_publication_lock_joins_the_worker: WATCHING, file
+  added, another thread holds PUBLICATION_LOCK, LOST injected -> W-C, worker at before_wc then waiting
+  (VERIFYING/SIGNALS_LOST); shutdown(1 ms) WITH THE LOCK STILL HELD returns < 3 s, joined = 1, last status
+  STOPPED before return, reader released; lock released afterwards, 1 s later: no status, no revision, no
+  write. Control: a manual Actualiser then does publish the change.
+- T2 same via a targeted hint -> W-B (wc 1 / wb 1 / escalation 0): same assertions, no batch at all,
+  observation still SYNCED.
+- Root guard record waiting on the held lock: same assertions, no observation written.
+- 5 unit tests of the primitive on a LOCAL mutex (free, stop before, stop during wait, released, poisoned).
+- Falsification: old behaviour temporarily restored under the new tests (blocking lock + detaching
+  shutdown): all 3 fail (joined 0); with dropped handles counted as joined, all 3 fail on "STOPPED before
+  shutdown returned" (last status VERIFYING / WATCHING). Sources restored.
+- T3 shutdown_closes_the_native_handle_and_the_operating_system_agrees: PASS (exclusive open granted).
 
-WHAT WAS BUILT: src-tauri/src/watch/ (types, queue, parser, backend, native, coalesce, worker, manager),
-src-tauri/src/scope.rs (W-B), src-tauri/src/map/watch_ops.rs; lib.rs wiring (map_watch_status,
-map-watch-status event, hook after Actualiser/Reconstruire, clean shutdown); UI WatchStatusBadge,
-watchStatus.ts, in-place reload on a new revision.
+VALIDATIONS:
+- targeted 11 tests: PASS 3 consecutive runs.
+- cargo test --offline: 727 PASS, 0 FAIL, 6 ignored (719 + 8); includes all 72 watch:: tests (initial W-C,
+  native changes, signal during W-B/W-C, forced loss, root absent/returned, concurrent Actualiser,
+  shutdown during W-C) and both 10k tests (not required: reconciliation unchanged).
+- pnpm test 471 PASS; pnpm check, pnpm build, cargo build --offline: PASS.
+- clippy --all-targets: lib 13 / lib-test 22, diagnostics identical with and without the fix (git stash).
+- git diff --check clean; audit-public-readiness -AllowRemotes green (586 files).
+- WebView2 not replayed: no frontend code or visible semantics changed.
 
-DECISIONS FOR THE INDEPENDENT CONTROL (also DEC-0041 section 13):
-1. A scope is ONE DIRECTORY + its direct entries, entering only NEW or MOVED child directories — not the
-   whole subtree of DEC-0041 section 3. Reads less, same honesty (each changed entry has its own hint;
-   otherwise W-C). "An ancestor covers its descendant" is realised at apply time: hints whose directory is
-   not (yet) safe rise to the same ancestor and become one scope.
-2. A hint carries ONE CLOSED BIT: membership of the entry in its directory may have changed (added, removed,
-   both halves of a rename) vs only the entry itself moved (modified). It cannot become a journal nature.
-   Without it every "directory modified" notification of a top-level directory would be a full scan (found
-   by the first real-OS test). Top-level ADD/REMOVE/RENAME keep the root as scope = W-C, as specified.
-3. Root-level scope = W-C exactly as TASK-0043 section E says.
-4. W-B never promotes a failure observation; it re-records SYNCED at the new revision only if it was SYNCED.
-5. NEEDS_MANUAL_REFRESH: an Index without durable identities/binding, or at an older schema, is never
-   written or migrated by the watcher (only the person's Actualiser restamps).
-6. Guard identity: only SYSTEM vs SYSTEM mismatch is SOURCE_CHANGED; an uncomparable identity is no evidence.
-7. A root refused by a W-C (SOURCE_CHANGED) is not re-scanned in a loop (growing wait) until Reconstruire.
-8. Development-only env overrides (FILETOPO_WATCH_GUARD_MS, _COALESCE_MS, _CALM_MS, _PERIODIC_MS,
-   _FORCE_PERIODIC) exist under debug_assertions only; a release build ignores them.
-
-TESTS / VALIDATIONS:
-- cargo test --offline: 719 PASS, 0 FAIL, 6 ignored (629 before + 90).
-- pnpm test: 471 PASS (439 + 32); pnpm check, pnpm build, cargo build --offline, pnpm tauri build --debug
-  --no-bundle: PASS.
-- cargo clippy: lib 13 / lib-test 22 = historical debt, unchanged; none in created files.
-- git diff --check clean; scripts/audit-public-readiness.ps1 -AllowRemotes: green (585 versioned files, no sensitive pattern, none over 5 MiB).
-- 10 000 external operations, real NTFS, real reader, product engine, Index == full scan:
-  targeted path (3 isolated runs): mutate ~2.1 s, converge 0.94-0.95 s, queue max 1 270-1 325, 12-13 W-B,
-  0 escalation, 1 W-C (initial), 22 100 signals / ~15 700 coalesced, 0 loss.
-  overflow path (queue 64): queue max 64, 4 losses, 6 W-C, converge 1.35 s, equally exact.
-  Under the load of the full suite the numbers degrade (up to 3 W-C, ~4.3 s): assertions are on exactness.
-- Rejection tests: burst 10 000 OK; forced loss injected into the product engine OK; interruption (stop,
-  mutate, relaunch, Index captured INSIDE the notifier at the WATCHING announcement == full scan) OK; whole
-  root moved away (scripted AND native handle): DEGRADED, zero DELETED, Index/journal intact, return = W-C
-  then SYNCED OK.
-- Real WebView2 (two real launches, real close between, source changed while closed; run twice, concordant):
-  docs/performance/runs/TASK-0043-webview2.json — one click (baseline) then everything without a click;
-  watcher starts by itself; 1 380-operation burst converges (~1.5 s); root moved away/back; second brain
-  isolated; relaunch: Index == disk (5 376 nodes) at the first stable state, second brain caught up; 19+4
-  backend events recorded from the page, closed envelope only; 0 fatal console errors, 0 leak.
-- The real replay FOUND a UI defect (source badge stuck UNAVAILABLE after the root returned with an
-  unchanged revision); fixed, regression test added, replay rerun.
-
-NOT TESTED / LIMITS: network share, FAT, cloud-synced folder, USN; PERIODIC fallback in the host (Rust only:
-an "unsupported" backend); product cadences (5 s / 30 s) not waited for in the host; two processes on one
-brain; hard process crash; relaunch replay races the page load (see artefact limits); one dev machine.
+LIMITS: a commit already in progress (apply after an accepted scan, a W-B batch) is not interrupted — the
+shutdown waits for it instead of detaching; its duration on a large tree is not measured. The notifier runs
+on the worker thread (product one does not block). One machine, local NTFS.
 
 GOVERNANCE: TASK-0043 = IMPLEMENTED; no TASK-0044; no USN; no PR / merge / tag / release; graph/ untouched;
-push only to the task branch; NEXT_ACTION = independent control of TASK-0043.
+push only to the task branch; NEXT_ACTION = independent control of the ACTION-0071 fix.

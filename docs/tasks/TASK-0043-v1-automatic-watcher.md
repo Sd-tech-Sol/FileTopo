@@ -355,3 +355,16 @@ dans [`VALIDATION` section BY](../ai/VALIDATION.md), le rapport compact dans
   révision, aucun polling.
 - **Non fait, voulu** : aucune TASK-0044, aucun USN, aucune PR / fusion / étiquette / release,
   `graph/` non touché, seuil `F-031` non touché (`incremental.rs` **non modifié**).
+
+## Correctif `ACTION-0071` P1 (`IMPLEMENTED`, 2026-09-25)
+
+Recontrôle : [`ACTION-0071`](../reviews/ACTION-0071-task0043-shutdown-recontrol.md) — F-030 accepté
+fonctionnellement, blocage unique : `shutdown` pouvait détacher un worker qui attendait
+`PUBLICATION_LOCK`. Correctif `001f18f`, détail dans [`VALIDATION` section BZ](../ai/VALIDATION.md).
+
+- Le watcher prend le **même** `PUBLICATION_LOCK` de façon **annulable** (W-C, W-B, enregistrement de la
+  garde de racine); le geste manuel garde son acquisition bloquante.
+- `WatchManager::shutdown` joint tous les workers; `patience` n'autorise plus aucun détachement.
+- Preuves : shutdown avec le verrou tenu par un autre thread (W-C, W-B, garde), rien de tardif après
+  libération; test natif de fermeture du handle rejoué.
+- La tâche **reste `IMPLEMENTED`**; contrôle indépendant du correctif attendu.

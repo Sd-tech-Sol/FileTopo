@@ -5839,3 +5839,30 @@ précréation de `TASK-0038` par l'exécuteur.
 ### Non fait, volontairement
 
 Aucune TASK-0044, aucun USN, aucun PR / fusion / étiquette / release; `graph/` et `incremental.rs` non touchés.
+
+---
+
+## 2026-09-25 — TASK-0043 — correctif ACTION-0071 P1 (shutdown sans détachement)
+
+**Agent :** exécuteur Claude Code (Opus 5.5)
+**Statut à l'issue :** `TASK-0043` reste `IMPLEMENTED`, jamais auto-`VERIFIED`
+
+### Fait
+
+- `map/commands.rs` : `lock_publication_cancellable` (même `PUBLICATION_LOCK`, `try_lock` + 10 ms, arrêt
+  consulté avant chaque tentative, verrou empoisonné repris) et `publish_map_with_lock` (le même pipeline,
+  pour un appelant qui tient déjà le verrou).
+- `map/watch_ops.rs` : W-C, W-B et l'enregistrement de la garde de racine prennent le verrou de façon
+  annulable; plus aucun `Mutex::lock` côté watcher.
+- `watch/mod.rs` : `shutdown` joint tous les workers; `patience` n'est plus qu'un seuil diagnostique
+  (`ShutdownReport`).
+- Tests : 3 preuves avec `PUBLICATION_LOCK` tenu pendant le shutdown (W-C, W-B, garde) et 5 tests de la
+  primitive; l'ancien comportement est falsifié par les nouveaux tests. Rust 719 -> 727.
+- Commit `001f18f`; `VALIDATION BZ`, `CURRENT_STATE`, `HANDOFF`, `NEXT_ACTION`, `TASK-0043`,
+  `.orchestrator/RESULT.md`.
+
+### Non fait, volontairement
+
+Parseur, hints, W-B / W-C fonctionnels, interface, cadences, `incremental.rs`, dépendances : non touchés.
+Aucune TASK-0044, aucun USN, aucun PR / fusion / étiquette / release; pas de rejeu WebView2 (aucun
+changement frontend); `graph/` non touché.

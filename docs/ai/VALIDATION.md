@@ -7901,3 +7901,80 @@ page; la transition a été vue à l'écran dans les deux exécutions). Une mach
 acceptation « portable modeste ». Aucune donnée personnelle; `origin/main` inchangé.
 
 **Action unique suivante :** contrôle indépendant de `TASK-0043`.
+
+## BZ. TASK-0043 — correctif ACTION-0071 P1 : shutdown sans détachement — 2026-09-25
+
+**Statut : `TASK-0043` reste `IMPLEMENTED`**, jamais auto-`VERIFIED`. Branche
+`build/v0.2-a27-v1-watcher-reconciliation`, partie de `8f02e34` (`HEAD` contenant `ACTION-0071`).
+Commit du correctif : `001f18f`. Portée : mécanique backend d'arrêt et d'annulation **seulement**.
+
+### BZ.1 Préconditions
+
+`git switch` explicite (déjà sur la branche), `git fetch origin`, fast-forward `b848a8a..8f02e34`, arbre
+propre; `HEAD` contient `ACTION-0071` (`8f02e34`); `ACTION-0071` lu en entier avant toute modification.
+
+### BZ.2 Ce qui a changé
+
+| Fichier | Changement |
+|---|---|
+| `map/commands.rs` | `lock_publication_cancellable` : **même** `PUBLICATION_LOCK`, boucle `try_lock` + attente de 10 ms, `cancelled()` consulté **avant chaque tentative**, issue distincte `PublicationCancelled`, verrou empoisonné repris (`into_inner`). `publish_map` = verrou bloquant (geste manuel, inchangé) + `publish_map_with_lock(&guard, …)`, le **même** pipeline (mode d'application, observation de source, journal) — aucune duplication |
+| `map/watch_ops.rs` | W-C `verify_full` : acquisition annulable puis `publish_map_with_lock`; résultat `FullFailure::{Cancelled, Refused}`. W-B `apply_scopes` : acquisition annulable **avant** toute lecture de source ou ouverture SQLite, sinon `ScopedFailure::Cancelled`. `record_guard_failure` (garde de racine) : même acquisition, rien d'écrit si annulé. Plus aucun `Mutex::lock` côté watcher |
+| `watch/mod.rs` | `WatchManager::shutdown` **joint tous les workers** qu'il possédait; aucune branche ne jette un `JoinHandle` vivant. `patience` n'est plus qu'un seuil diagnostique rapporté dans `ShutdownReport { joined, beyond_patience }` |
+| `watch/worker.rs` | branche `FullFailure::Cancelled`; passe le drapeau d'arrêt à `record_guard_failure`; point d'observation de test `before_guard_record` (`#[cfg(test)]`, absent du produit) |
+| `lib.rs` | commentaire de l'arrêt à la fermeture de fenêtre (aucun changement de code) |
+
+Non touchés : parseur, coalescence et sémantique des hints, W-B / W-C fonctionnels (le travail fait
+**après** l'acquisition est identique), interface, cadences, `incremental.rs`, dépendances.
+
+### BZ.3 Preuves ACTION-0071
+
+| Test | Ce qu'il établit |
+|---|---|
+| `a_shutdown_while_a_full_verification_waits_for_the_publication_lock_joins_the_worker` (**T1**) | watcher `WATCHING`; un fichier ajouté (seule une publication l'enregistrerait); un autre thread tient `PUBLICATION_LOCK`; perte injectée -> W-C; le worker atteint `before_wc` puis attend (statut `VERIFYING / SIGNALS_LOST`, `wc_cycles = 2`); `shutdown(1 ms)` **verrou toujours tenu** : `joined = 1`, retour < 3 s, dernier statut `STOPPED` **avant** le retour, lecteur libéré (`live = 0`), fichier d'Index identique. Verrou libéré **après** : 1 s d'attente, aucun statut, aucune révision, aucune écriture tardive. Contrôle : un Actualiser manuel publie ensuite bien le changement |
+| `a_shutdown_while_a_targeted_reconciliation_waits_for_the_publication_lock_joins_the_worker` (**T2**) | même scénario par un hint ciblé -> W-B (`wc 1 / wb 1 / escalade 0`, statut `VERIFYING`); mêmes assertions; **aucun lot, partiel ou entier**; observation `SYNCED` inchangée; contrôle manuel ensuite |
+| `a_shutdown_while_the_root_guard_waits_for_the_publication_lock_joins_the_worker` | racine déplacée pendant que le verrou est tenu : la garde attend dans `record_guard_failure`; mêmes assertions; aucune observation écrite, ni avant ni après libération |
+| `publication_lock_tests` (5, sur un mutex **local**) | verrou libre pris; arrêt déjà demandé = abandon sans acquérir, même un verrou libre; arrêt pendant l'attente = `PublicationCancelled`, verrou toujours tenu; verrou relâché pris par un attendeur non arrêté; verrou empoisonné repris |
+
+**Falsification de l'ancien comportement.** Sous les nouveaux tests, l'ancien comportement a été rétabli
+temporairement (verrou bloquant + boucle de `shutdown` qui abandonne le `JoinHandle` à l'échéance), puis
+retiré (sources restaurées, `git diff` vérifié) :
+
+1. tel quel : les **3** tests échouent (`joined` = 0 : le handle a été abandonné);
+2. en comptant aussi les handles abandonnés dans `joined`, pour atteindre les assertions de comportement :
+   les **3** échouent sur « the worker announced STOPPED before shutdown returned » — dernier statut
+   `VERIFYING` (T1, T2) ou `WATCHING` (garde) : `shutdown` est revenu avec le worker vivant.
+
+Les tests tiennent le verrou global environ 0,3 à 0,5 s et n'affirment qu'**après** l'avoir relâché, pour
+qu'un échec n'empoisonne jamais `PUBLICATION_LOCK` pour les autres tests du processus.
+
+### BZ.4 Suites
+
+| Contrôle | Résultat |
+|---|---|
+| Tests ciblés (11 : 5 primitives + 3 ACTION-0071 + 3 shutdown dont natif) | PASS, **3 exécutions consécutives** |
+| `shutdown_closes_the_native_handle_and_the_operating_system_agrees` (**T3**) | PASS : ouverture exclusive de la racine accordée par Windows après shutdown |
+| `cargo test --offline` | **727 PASS**, 0 FAIL, 6 ignorés (campagnes d'échelle historiques `TASK-0028/0029/0040`) — 719 + 8 |
+| Non-régressions watcher (**T4**) dans cette suite | W-C initial, fermé puis relancé, changements natifs réels, signal pendant W-B, signal pendant W-C, perte forcée, toutes pertes, lecteur mort, racine partie / revenue (scriptée et native), racine remplacée, racine absente au lancement, Actualiser concurrent, shutdown pendant W-C, deux cerveaux : PASS (72 tests `watch::`) |
+| Rafale 10 000 | les deux tests (voie ciblée, voie débordement) font partie de la suite ordinaire et ont passé. Pas exigée ici : la réconciliation n'est pas modifiée (seule l'acquisition du verrou change; le travail fait après est identique) |
+| `pnpm test` | **471 PASS** (34 fichiers) |
+| `pnpm check` / `pnpm build` / `cargo build --offline` | PASS |
+| `cargo clippy --offline --all-targets` | dette historique seule : lib **13**, lib-test **22**; diagnostics **identiques** avec et sans le correctif (`git stash`) |
+| avertissements `cargo build` / `cargo test` | `SUGGESTION_STATES`, `to_json` : historiques, présents sans le correctif |
+| `rustfmt --check` | aucun écart sur une ligne ajoutée (écarts historiques de `lib.rs` l. 10/21 et d'autres fichiers, non reformatés) |
+| `git diff --check` | propre |
+| `scripts/audit-public-readiness.ps1 -AllowRemotes` | vert : 586 fichiers versionnés, aucun motif sensible, aucun fichier > 5 Mio |
+| WebView2 | **non rejoué**, non requis : aucun code frontend ni sémantique visible modifiés |
+
+### BZ.5 Limites
+
+- La borne de fermeture vient de la construction : tranches de 100 ms du lecteur natif, attente du verrou
+  par pas de 10 ms, annulation des scans watcher. **Une phase d'application déjà commencée** (après un
+  scan complet accepté, ou un lot W-B) n'est pas interrompue : le shutdown attend ce commit atomique au
+  lieu de détacher le worker. Sa durée n'est pas mesurée ici sur un gros arbre.
+- Le notificateur est appelé sur le thread du worker; un notificateur qui bloquerait retarderait le
+  shutdown (celui du produit émet un événement Tauri et rend la main).
+- Un geste manuel peut tenir le verrou aussi longtemps que dure sa publication : le watcher attend sans
+  bloquer l'arrêt et sans priorité; c'est voulu.
+- Une machine, volume NTFS local; cadences produit non attendues en réel.
+
+**Action unique suivante :** contrôle indépendant du correctif `ACTION-0071`.
