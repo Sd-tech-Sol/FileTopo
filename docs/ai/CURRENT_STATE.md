@@ -3115,3 +3115,14 @@ est levée pour Claude Code**; elle **reste entière pour Codex**.
 - Écart suivant sélectionné : `F-033`. Le backend `map_brain_update` existe déjà, mais `MapApp` n'offre aucun éditeur nom/couleur/icône.
 - `DEC-0043` : **APPROVED** — l'édition change seulement les métadonnées FileTopo du cerveau, jamais la source.
 - `TASK-0045` : **READY** sur `build/v0.2-a29-v1-brain-identity-editor`.
+
+
+## ACTION-0075 — TASK-0045 / P-20 — 2026-09-25
+
+- `TASK-0045` : **VERIFIED**.
+- `F-033` : **VERIFIED dans sa portée** nom/couleur/icône.
+- `P-20` : **CLOSED / VERIFIED**.
+- Édition : réutilise `map_brain_update`; aucun nouveau store, aucune modification de source/Index/journal/resume.
+- Preuve réelle : trois cerveaux, deux sur le même dossier, édition + fermeture + relance réelles; métadonnées persistantes et états TASK-0044 intacts.
+- Limite connue non bloquante : le backend accepte encore une icône espace; aucune règle produit n'a été inventée dans TASK-0045.
+- `P-19` reste PARTIELLE; `F-035` et `F-036` restent ouvertes.
