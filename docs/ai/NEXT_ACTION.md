@@ -1,12 +1,17 @@
 # Action suivante
 
-## Contrôle indépendant de TASK-0048 — V1 Safe Exclusion Policy
+## Corrective pass ACTION-0081 — TASK-0048
 
-Contrôler sur `build/v0.2-a32-v1-safe-exclusion-policy` le diff, l'architecture
-politique désirée / estampille appliquée, les preuves Rust/TypeScript/WebView2,
-les sept falsifications, l'absence de faux événements de source et l'isolation
-A/C sur une même source.
+TASK-0048 reste **IMPLEMENTED, non VERIFIED**.
 
-Attribuer ou refuser `VERIFIED` sur preuves. F-005 reste `IMPLEMENTED` jusque-là.
-F-006, F-014 et P-19 restent inchangés. Ne créer aucune TASK-0049 avant ce
-contrôle.
+Le contrôle indépendant a trouvé un défaut d'isolation async dans
+`ExclusionsPanel` : un `map_brain_exclusions_replace` démarré sur A peut
+publier son retour dans le panneau B si le focus change avant la résolution.
+
+Action unique : exécuter
+`.orchestrator/NEXT_PROMPT.md` sur
+`build/v0.2-a32-v1-safe-exclusion-policy`.
+
+**Exécuteur : Codex + GPT-5.6 Sol — Medium effort.**
+
+Aucun changement backend attendu. Aucune TASK-0049 avant nouveau contrôle.

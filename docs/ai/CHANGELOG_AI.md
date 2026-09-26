@@ -6126,3 +6126,15 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
   revendiquée pour une mutation physique strictement concurrente.
 - F-005 = `IMPLEMENTED`; F-006, F-014 et P-19 inchangés. Action suivante :
   contrôle indépendant de TASK-0048; aucune TASK-0049.
+
+
+## 2026-09-26 — ACTION-0081 — corrective TASK-0048 requise
+
+**Orchestrateur :** ChatGPT
+
+- contrôle du commit produit 8783201 et des preuves TASK-0048;
+- backend policy/scanner/W-B/rebase journal cohérent;
+- défaut P1 frontend identifié : retour stale d'un replace A après switch B;
+- isolation brain-scoped non suffisamment garantie;
+- TASK-0048 non VERIFIED;
+- corrective pass Codex ciblée, aucun Rust attendu, aucune TASK-0049.

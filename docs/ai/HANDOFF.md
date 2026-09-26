@@ -1,5 +1,14 @@
 # HANDOFF — passage de relais
 
+## Relais — ACTION-0081 / corrective TASK-0048 — 2026-09-26
+
+- Ne pas créer TASK-0049.
+- Brancher Codex sur la même branche TASK-0048.
+- Seul défaut ouvert : isolation async du panneau Exclusions lors d'un switch
+  A -> B pendant un replace A en vol.
+- Lire ACTION-0081 et exécuter NEXT_PROMPT.
+- Aucun backend/Rust attendu.
+
 ## Relais — TASK-0048 IMPLEMENTED / contrôle indépendant requis — 2026-09-26
 
 - Branche `build/v0.2-a32-v1-safe-exclusion-policy`; F-005 et TASK-0048 sont

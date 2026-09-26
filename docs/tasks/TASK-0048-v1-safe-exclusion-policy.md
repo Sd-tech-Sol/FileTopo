@@ -277,3 +277,14 @@ Aucun sabotage dans le commit final.
   concurrente au rebase de politique ne peut pas être distinguée atomiquement
   entre catalogue et Index.
 - **État : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Contrôle indépendant requis.
+
+
+## Contrôle indépendant — ACTION-0081 — corrective requise
+
+TASK-0048 **n'est pas VERIFIED** au HEAD `3a820179...`.
+
+Le backend et les preuves scanner/watcher/journal sont acceptables, mais
+`ExclusionsPanel.replace()` laisse un retour asynchrone d'un cerveau A agir
+sur le composant après passage au cerveau B. Corrective pass ciblée exigée,
+sans TASK-0049. Voir
+`docs/reviews/ACTION-0081-task0048-async-brain-isolation-corrective.md`.

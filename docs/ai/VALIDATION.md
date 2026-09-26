@@ -8637,3 +8637,35 @@ Aucun sabotage ne subsiste dans le diff final.
   d'une politique ne peut pas être séparée atomiquement de ce rebase; le
   watcher converge ensuite.
 - F-006, F-014 et P-19 restent inchangés; aucune TASK-0049.
+
+
+## CJ. ACTION-0081 — contrôle indépendant TASK-0048 — 2026-09-26
+
+**Verdict : TASK-0048 reste IMPLEMENTED, non VERIFIED.**
+
+Éléments acceptés du contrôle :
+
+- policy désirée brain-scoped/versionnée dans `catalog_meta`;
+- policy appliquée estampillée dans l'Index;
+- `PolicyRebaseFull` remplace corpus + stamp dans une transaction Index avec
+  `journal_source_changes=false`; le journal existant n'est pas effacé;
+- full scan filtre avant `symlink_metadata` et avant descente;
+- W-B lit la policy **appliquée** de l'Index servi et filtre les requests avant
+  scope scan;
+- absence de source conserve l'Index et expose `applicationRequired`;
+- feature `Win32_Globalization` ajoutée à `windows-sys` existant : aucune
+  nouvelle dépendance;
+- artefact WebView2 : A/C même source, watcher inclus/exclus, restart, source
+  absente/restaurée, aucune fuite de chemin absolu déclarée.
+
+**P1 ouvert : isolation async frontend.**
+
+`ExclusionsPanel` protège la lecture initiale par ticket mais pas
+`replace()`. Si un replace A se résout après un rerender B, le callback
+capture encore le vieux `brainId=A`; son garde `record.brainId !== brainId`
+passe et il peut faire `setPolicy(recordA)` dans le composant affichant B.
+Une édition suivante B peut alors utiliser les règles A. Les retours stale
+peuvent aussi écrire error/busy, appeler `onApplied(A)` ou vider le draft B.
+
+Correction et preuves R1–R4 définies dans
+`docs/reviews/ACTION-0081-task0048-async-brain-isolation-corrective.md`.

@@ -1,5 +1,17 @@
 # État courant
 
+## ACTION-0081 — TASK-0048 corrective pass requise — 2026-09-26
+
+- TASK-0048 reste IMPLEMENTED, non VERIFIED.
+- Backend/scanner/watcher/journal : contrôle statique cohérent.
+- Défaut trouvé : retour async stale de `ExclusionsPanel.replace()` après
+  changement de cerveau peut republier policy/error/busy de A dans B et faire
+  réutiliser les règles A lors d'une édition suivante B.
+- Correctif demandé : ticket/génération brain-scoped couvrant tous les effets
+  du replace, avec tests à Promises différées.
+- Exécuteur : Codex + GPT-5.6 Sol — Medium effort.
+- Aucun Rust attendu; aucune TASK-0049.
+
 ## TASK-0048 — V1 Safe Exclusion Policy — IMPLEMENTED — 2026-09-26
 
 - Branche : `build/v0.2-a32-v1-safe-exclusion-policy`; décision `DEC-0046`;
