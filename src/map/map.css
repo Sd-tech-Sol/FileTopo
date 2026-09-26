@@ -43,6 +43,12 @@
     --warn: #e0a26a;
     --map-grid-bg: #16211e;
     --map-grid-line: #24322d;
+    /* `TASK-0047` — the cards carry `--ink` (light here) for their names and tags, so their
+       fills must be dark enough for it: >= 4.5:1 at every card opacity, measured in the real
+       engine. The kinds stay told apart by hue family, glyph and dash, never by fill alone. */
+    --directory: #456332;
+    --file: #705a26;
+    --skipped: #56635e;
   }
 }
 
@@ -413,6 +419,12 @@ button:disabled {
   cursor: grabbing;
 }
 
+/* `TASK-0047` — the canvas fills its \`overflow: hidden\` host, so the global outline (drawn outside
+   the box) was clipped away entirely: focusing the map changed no pixel. Drawn inside instead. */
+.map-view__canvas:focus-visible {
+  outline-offset: -3px;
+}
+
 /* Fill carries the kind; stroke weight and opacity carry the state, so nothing
    is encoded by colour alone. */
 .map-node rect {
@@ -526,6 +538,29 @@ button:disabled {
   stroke-linejoin: round;
 }
 
+/* `TASK-0047` — the territory title had no rule at all, so it was the browser's default black:
+   unreadable on the dark ground. It reads `--ink`, and the focused territory is heavier. */
+.map-territory__title {
+  fill: var(--ink);
+}
+
+.map-territory__title--focused {
+  font-weight: 700;
+}
+
+/* `TASK-0047` — the root card is dark in BOTH schemes (`--root`), so its name is always light:
+   the shared `--ink` was dark on it in the light scheme (1.5:1, measured in the real engine). */
+.map-node__label--root {
+  fill: #f5f7f4;
+  stroke: var(--root);
+}
+
+/* The root stays as dark as its light name needs whatever its state: at the attenuated opacity of an
+   unselected card (0.66) it turned mid-grey and that name fell to 2.9:1 (measured). */
+.map-node.map-node--root rect {
+  fill-opacity: 0.95;
+}
+
 .map-node__label--selected {
   fill-opacity: 1;
   font-weight: 700;
@@ -636,9 +671,17 @@ button:disabled {
 }
 
 /* `TASK-0034` A/B — bounded local search, in the focused brain's toolbar area. */
+input::placeholder {
+  /* `TASK-0047` — the engine's default placeholder is 3.6:1 on the dark panel: text, so 4.5:1. */
+  color: var(--ink-soft);
+  opacity: 1;
+}
+
 input[type="text"] {
   padding: 6px 10px;
-  border: 1px solid var(--line);
+  /* `TASK-0047` — WCAG 1.4.11: a text field is identified by its boundary, which must reach 3:1
+     against what surrounds it (`--line` is a hairline for decoration only, 1.4:1). */
+  border: 1px solid var(--ink-soft);
   border-radius: 8px;
   background: var(--panel);
   color: inherit;
@@ -1863,6 +1906,11 @@ input[type="text"] {
   font-weight: 700;
   fill: var(--ink);
   pointer-events: none;
+}
+
+/* `TASK-0047` — on the (always dark) root card the tag reads light, like the root's name. */
+.map-node--root .map-node__filter-tag {
+  fill: #f5f7f4;
 }
 
 /* `TASK-0042` — the source observation. A word and a symbol carry the state; the

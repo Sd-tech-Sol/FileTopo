@@ -592,7 +592,9 @@ export default function MapView({
         drawn.push(
           <text
             key={`${brain.brainId}|${node.id}`}
-            className={`map-node__label${isSelected ? " map-node__label--selected" : ""}`}
+            className={`map-node__label${node.kind === "root" ? " map-node__label--root" : ""}${
+              isSelected ? " map-node__label--selected" : ""
+            }`}
             data-full-name={node.name}
             x={sx + labelInset}
             y={sy + Math.min(22, Math.max(13, sh / 2 + 4))}
@@ -702,8 +704,28 @@ export default function MapView({
     [brains, onSelect, selected],
   );
 
+  /**
+   * `TASK-0047` — activating an aggregate by keyboard replaces the projection, and the aggregate that
+   * had the focus is unmounted: the focus would fall to `<body>` and a keyboard user would have to
+   * Tab in again from the top. The tree, which now names the parent the activation selected through
+   * `aria-activedescendant`, takes the focus instead — only when it was actually lost, and only
+   * until the person presses another key.
+   */
+  const refocusTree = useRef(false);
+  useEffect(() => {
+    if (!refocusTree.current) return;
+    const active = document.activeElement;
+    if (active !== null && active !== document.body) return;
+    const canvas = hostRef.current?.querySelector<SVGSVGElement>('[data-testid="composed-canvas"]');
+    if (canvas) {
+      canvas.focus();
+      refocusTree.current = false;
+    }
+  }, [brains]);
+
   const handleKeyDown = useCallback(
     (event: React.KeyboardEvent<SVGSVGElement>) => {
+      refocusTree.current = false;
       const centre = { x: viewport.width / 2, y: viewport.height / 2 };
       const panning = event.altKey;
       let handled = true;
@@ -812,8 +834,12 @@ export default function MapView({
         role="tree"
         tabIndex={0}
         aria-label={ariaLabel}
+        // `TASK-0047` — an id reference must name an element that exists: a selection whose
+        // card is not drawn (found by search, outside the bounded view) has no active descendant.
         aria-activedescendant={
-          selected === null ? undefined : domNodeId(selected.brainId, selected.nodeId)
+          selected === null || selectedNode === null
+            ? undefined
+            : domNodeId(selected.brainId, selected.nodeId)
         }
         width="100%"
         height="100%"
@@ -917,15 +943,32 @@ export default function MapView({
                       data-aggregate="true"
                       data-testid="map-aggregate-indicator"
                       data-parent-id={a.parentId}
-                      role="button"
+                      // `TASK-0047` — the map is a `role="tree"`, which may own only tree items and
+                      // groups: a `role="button"` inside it is an ARIA violation (axe
+                      // `aria-required-children`). The aggregate stands for the children a parent
+                      // does not show, so it is a tree item one level below the parent, still a
+                      // focusable control that Enter and Space activate.
+                      role="treeitem"
+                      aria-level={(entry.brain.hierarchy.byId.get(a.parentId)?.depth ?? 0) + 2}
                       tabIndex={0}
                       aria-label={label}
                       className="map-aggregate"
+                      // Focus must never land on an aggregate the pan has left outside the canvas.
+                      onFocus={() => {
+                        const next = ensureRectVisible(
+                          placeRect(entry.territory, a.rect),
+                          view,
+                          world,
+                          viewport,
+                        );
+                        if (!sameView(next, view)) onViewChange(next);
+                      }}
                       onClick={() => onExpand?.(entry.brain.brainId, a)}
                       onKeyDown={(event) => {
                         if (event.key === "Enter" || event.key === " ") {
                           event.preventDefault();
                           event.stopPropagation();
+                          refocusTree.current = true;
                           onExpand?.(entry.brain.brainId, a);
                         }
                       }}

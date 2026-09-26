@@ -27,7 +27,9 @@ function mount() {
 it("renders the product 100k projection within its total entity budget, including aggregates", () => {
   mount();
   expect(projection.nodeCount).toBe(100000);
-  expect(screen.getAllByRole("treeitem")).toHaveLength(projection.materializedCount);
+  // `TASK-0047`: an aggregate is a tree item too (a `role="button"` cannot sit inside a `role="tree"`).
+  expect(screen.getAllByRole("treeitem")).toHaveLength(projection.materializedCount + projection.aggregates.length);
+  expect(document.querySelectorAll('[role="treeitem"][data-node-id]')).toHaveLength(projection.materializedCount);
   expect(document.querySelectorAll("[data-aggregate]")).toHaveLength(projection.aggregates.length);
   expect(projection.materializedCount+projection.aggregates.length).toBeLessThanOrEqual(projection.viewBudget);
   expect(document.body.textContent).not.toContain("synthetic-099999");
@@ -35,7 +37,7 @@ it("renders the product 100k projection within its total entity budget, includin
 });
 it("expands an exact aggregate with Enter and Space without inventing a node selection", () => {
   const {expand,select}=mount();
-  const button=screen.getByRole("button",{name:/Voir la suite/});
+  const button=screen.getByRole("treeitem",{name:/Voir la suite/});
   button.focus();
   fireEvent.keyDown(button,{key:"Enter"});
   fireEvent.keyDown(button,{key:" "});

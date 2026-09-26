@@ -95,6 +95,7 @@ import {
   type FixtureMeasurement,
   type RunSample,
 } from "./measure";
+import { useRestoreFocusAfterDisabled } from "./focusRestore";
 import "./map.css";
 import type {
   WatchStatus,
@@ -221,6 +222,8 @@ export default function MapApp() {
   // and written by `storeLocale` **only** when the person chooses. Nothing is written at
   // start, and changing it reaches no backend command.
   const [locale, setLocale] = useState<Locale>(() => resolveInitialLocale());
+  // `TASK-0047` — a control disabled while its action runs must not strand the keyboard on <body>.
+  useRestoreFocusAfterDisabled();
   const t = strings[locale];
   const chooseLocale = useCallback((next: Locale) => {
     setLocale(next);

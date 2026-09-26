@@ -224,7 +224,20 @@ export default function CompositionBar({
                 disabled={disabled}
                 aria-label={`${removable ? strings.remove : strings.removeRefused} — ${brain.displayName}`}
                 title={removable ? strings.remove : strings.removeRefused}
-                onClick={() => onRemove(brain.brainId)}
+                onClick={() => {
+                  onRemove(brain.brainId);
+                  // `TASK-0047` — this chip is about to disappear with the focus on it, which would drop
+                  // the focus on <body>. It goes to the chip that stays: the focused brain's, else the first.
+                  // A refused removal (the last brain) keeps it where it is.
+                  if (!removable) return;
+                  const staying = displayed.filter((other) => other.brainId !== brain.brainId);
+                  const target = staying.find((other) => other.brainId === view.focusedBrainId) ?? staying[0];
+                  if (target) {
+                    containerRef.current
+                      ?.querySelector<HTMLElement>(`[data-testid="composition-chip-${target.brainId}"]`)
+                      ?.focus();
+                  }
+                }}
               >
                 <span aria-hidden="true">×</span>
               </button>
