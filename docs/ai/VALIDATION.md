@@ -8516,3 +8516,25 @@ Plus : contre le code de base `29170ec`, **15 des 29** tests de `accessibilityCl
   poste de développement, disque NTFS local.
 - Le contrôle de la boîte de dialogue native de couleur (dialogue système) est hors portée.
 - P-19 reste **PARTIELLE**; P-21 reste **PARTIELLE** jusqu'au contrôle indépendant; F-036 = `IMPLEMENTED`.
+
+
+## CG. ACTION-0079 — contrôle indépendant TASK-0047 — 2026-09-26
+
+**Verdict : TASK-0047 = VERIFIED; F-036 = VERIFIED dans sa portée; P-21 = CLOSED / VERIFIED par ACTION-0077 + ACTION-0079.**
+
+Contrôle sur HEAD `5d6a88036eac0a6b23564c677021e868b91d5cb4`, produit `ec22b07` :
+
+- diff frontend/harness seulement; `src-tauri/src/lib.rs` et `Cargo.toml` inchangés;
+- baseline 36 cellules : 16 violations axe / 212 problèmes;
+- final 36 cellules : 0 violation / 0 problème;
+- 74 cibles distinctes issues des `incomplete` axe : 74 PASS, 0 FAIL, preuves/mesures publiées;
+- clavier : 9 marches, 646 arrêts, 0 problème; 12 parcours, 101 étapes, 0 problème; focus min 4,71:1;
+- contraste final : 6 420 éléments texte, 416 glyphes, 52 contrôles, 144 graphiques, 32 pseudo; 0 échec; ratio texte minimal 5,09:1;
+- 13 codages avec alternative non colorée;
+- reduced-motion : sonde 5 s -> 0 s / animation none;
+- VIEW_BUDGET 512 et empreintes source invariants;
+- axe-core 4.13.0 exact, dev-only, lockfile intègre.
+
+Les 618 tests TypeScript, 753 Rust et builds restent des preuves de l'exécuteur faute de CI attachée au HEAD. Le contrôle indépendant a porté sur code, gardes et artefacts.
+
+Détail : `docs/reviews/ACTION-0079-task0047-independent-control.md`.

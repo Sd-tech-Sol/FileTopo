@@ -1,7 +1,7 @@
 # TASK-0047 — V1 Accessibility Closure
 
 - **Date :** 2026-09-25
-- **Statut :** `IMPLEMENTED` (2026-09-26; jamais auto-`VERIFIED` — contrôle indépendant attendu)
+- **Statut :** `VERIFIED` (2026-09-26; ACTION-0079)
 - **Branche :** `build/v0.2-a31-v1-accessibility-closure`
 - **Décision :** `DEC-0045`
 - **Portée :** `F-036`, partie accessibilité de `P-21`
@@ -328,3 +328,12 @@ unitaires qui échouent contre le code de base. Aucun sabotage ne reste dans le 
   aucune sélection inventée) est inchangé.
 - Le harnais garde une option `TASK0047_FAIL_FAST` (arrêt au premier constat) utilisée pour les
   falsifications; elle ne modifie aucun produit.
+
+
+## Contrôle indépendant — ACTION-0079 — VERIFIED — 2026-09-26
+
+- HEAD contrôlé : `5d6a88036eac0a6b23564c677021e868b91d5cb4`; commit produit : `ec22b07`.
+- Baseline 16 violations / 212 problèmes et final 0 / 0 recoupés; 74/74 cibles axe incomplete revues PASS.
+- Clavier, focus, contrastes, alternatives non colorées, reduced motion, invariants et frontière frontend recoupés indépendamment.
+- **TASK-0047 = VERIFIED; F-036 = VERIFIED dans sa portée; P-21 = CLOSED / VERIFIED par ACTION-0077 + ACTION-0079.**
+- P-19 reste PARTIELLE. Détail : [ACTION-0079](../reviews/ACTION-0079-task0047-independent-control.md).

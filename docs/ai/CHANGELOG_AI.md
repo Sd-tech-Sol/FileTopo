@@ -6060,3 +6060,17 @@ fusion / étiquette / release.
 
 Lecteur d'écran, zoom / reflow, contrôles de navigation absents des données synthétiques, pagination, marquer vu / confirmer /
 rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; aucun PR / fusion / étiquette / release.
+
+
+## 2026-09-26 — ACTION-0079 — TASK-0047 / F-036 VERIFIED, P-21 CLOSED
+
+**Orchestrateur :** ChatGPT
+
+- diff et onze corrections accessibilité recoupés indépendamment;
+- baseline 16 violations / 212 problèmes -> final 0 / 0;
+- 74/74 cibles axe incomplete revues PASS;
+- clavier, focus, contrastes, non-couleur, reduced-motion et invariants acceptés;
+- TASK-0047 = VERIFIED; F-036 = VERIFIED dans sa portée;
+- P-21 = CLOSED / VERIFIED par composition avec ACTION-0077;
+- P-19 reste PARTIELLE;
+- prochaine action : audit réel du repo avant TASK-0048.

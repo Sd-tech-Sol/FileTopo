@@ -1,5 +1,18 @@
 # État courant
 
+## ACTION-0079 — TASK-0047 / F-036 VERIFIED, P-21 CLOSED — 2026-09-26
+
+- Contrôle indépendant du diff, du code, des gardes et des artefacts WebView2.
+- Baseline : 16 violations axe / 212 problèmes; final : 0 / 0.
+- 74/74 cibles `incomplete` revues PASS; aucun FAIL ni règle globalement désactivée.
+- 646 arrêts Tab/Shift+Tab et 101 étapes fonctionnelles, zéro problème; focus min 4,71:1.
+- Contraste final : 6 420 textes + glyphes/contrôles/graphiques/pseudo, zéro échec; plus faible texte 5,09:1.
+- 13 codages avec alternative non colorée; reduced-motion prouvé.
+- Aucun Rust/backend; source générée inchangée; aucune donnée personnelle.
+- **TASK-0047 = VERIFIED; F-036 = VERIFIED dans sa portée; P-21 = CLOSED / VERIFIED** par ACTION-0077 + ACTION-0079.
+- P-19 reste PARTIELLE.
+- Action suivante : audit repo / FEATURE_MATRIX avant toute TASK-0048.
+
 ## TASK-0047 — V1 Accessibility Closure — IMPLEMENTED — 2026-09-26
 
 - **Statut : `IMPLEMENTED`** (jamais auto-`VERIFIED`). Branche `build/v0.2-a31-v1-accessibility-closure`, partie de

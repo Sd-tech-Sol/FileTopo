@@ -1,5 +1,14 @@
 # HANDOFF — passage de relais
 
+## Relais — ACTION-0079, accessibilité VERIFIED — 2026-09-26
+
+- TASK-0047 / F-036 : VERIFIED.
+- P-21 : CLOSED / VERIFIED par ACTION-0077 + ACTION-0079.
+- Ne pas rouvrir FR/EN ou l'accessibilité sans régression concrète.
+- P-19 reste PARTIELLE.
+- Prochaine action : auditer les vrais écarts V1 et la FEATURE_MATRIX avant de créer TASK-0048.
+- Les prochaines exécutions doivent utiliser **Codex** jusqu'au retour des tokens Claude; l'orchestration reste dans ChatGPT.
+
 ## Relais — TASK-0047, fermeture accessibilité, IMPLEMENTED — 2026-09-26
 
 - **Fait :** `TASK-0047` est **IMPLEMENTED** sur `build/v0.2-a31-v1-accessibility-closure` (code `ec22b07`), jamais auto-`VERIFIED`.

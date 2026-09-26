@@ -1,13 +1,17 @@
 # Action suivante
 
-## Contrôle indépendant de TASK-0047 — V1 Accessibility Closure
+## Audit des écarts V1 restants avant TASK-0048
 
-Branche : `build/v0.2-a31-v1-accessibility-closure`.
+TASK-0047 / F-036 sont **VERIFIED** par ACTION-0079.
+P-21 est **CLOSED / VERIFIED** par ACTION-0077 + ACTION-0079.
+P-19 reste **PARTIELLE**.
 
-`TASK-0047` est **IMPLEMENTED** (commit produit `ec22b07`), jamais auto-`VERIFIED`. Une instance distincte de
-l'exécuteur doit se prononcer **sur preuves** : `docs/performance/runs/TASK-0047-webview2.json` (0 violation axe,
-0 constat) et `TASK-0047-baseline-webview2.json` (16 violations, 212 constats avant corrections), VALIDATION CF,
-la table « Corrections » de la fiche, et le code (`MapView.tsx`, `map.css`, `focusRestore.ts`, `CompositionBar.tsx`).
+Action unique : auditer le runtime courant, la FEATURE_MATRIX et le contrat de
+parité afin d'identifier la prochaine lacune V1 réelle. Ne pas créer TASK-0048
+par simple continuité numérique.
 
-Si le contrôle passe : `TASK-0047` et `F-036` = `VERIFIED` dans leur portée, `P-21` = `CLOSED / VERIFIED` par composition
-avec ACTION-0077, `P-19` reste `PARTIELLE`. Aucune TASK-0048 avant ce contrôle. Aucun PR / fusion / étiquette / release.
+Priorité de l'audit : P-19 et toute ligne MVP encore réellement non acquise,
+en distinguant les statuts historiques périmés de l'état du code courant.
+
+Prochaine exécution produit : **Codex**, pas Claude, jusqu'au retour du quota
+Claude.
