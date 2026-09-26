@@ -45,6 +45,16 @@ export interface BrainCatalogView {
   seeded: number;
 }
 
+/** `TASK-0048` — canonical backend-owned exact-subtree policy. */
+export interface ExclusionPolicyState {
+  brainId: string;
+  version: 1;
+  /** Relative paths only; never an absolute source path. */
+  rules: string[];
+  /** The catalogue is ahead of the last reliable Index. */
+  applicationRequired: boolean;
+}
+
 /**
  * The logical boundary of every node operation — `TASK-0018` §4.1 rule 4.
  *
@@ -396,7 +406,9 @@ export interface WatchStatus {
  * - `IDENTITY_RESTAMP_FULL` — **Actualiser** of a legacy Index that lacks a
  *   durable stamp: one explicit full restamp, after which it is `INCREMENTAL`;
  * - `EXPLICIT_REBUILD_FULL` — **Reconstruire**: the person asked for a full
- *   replacement.
+ *   replacement;
+ * - `POLICY_REBASE_FULL` — the Index was rebased under a changed exclusion
+ *   policy without source journal events.
  *
  * A failed incremental refresh is an error, never one of the full modes.
  */
@@ -404,7 +416,8 @@ export type ApplicationMode =
   | "BASELINE_FULL"
   | "INCREMENTAL"
   | "IDENTITY_RESTAMP_FULL"
-  | "EXPLICIT_REBUILD_FULL";
+  | "EXPLICIT_REBUILD_FULL"
+  | "POLICY_REBASE_FULL";
 
 export interface MapBuildReport {
   state: "REFRESHED" | "REBUILT";

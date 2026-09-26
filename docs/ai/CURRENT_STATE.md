@@ -1,18 +1,27 @@
 # État courant
 
-## TASK-0048 — V1 Safe Exclusion Policy — READY — 2026-09-26
+## TASK-0048 — V1 Safe Exclusion Policy — IMPLEMENTED — 2026-09-26
 
-- Branche : `build/v0.2-a32-v1-safe-exclusion-policy`.
-- Décision : `DEC-0046`.
-- Exécuteur : **Codex + GPT-5.6 Sol — High effort**.
-- F-005 seulement : politique d'exclusion brain-scoped, visible/configurable,
-  sous-arbres relatifs exacts, sans glob et sans nouvelle dépendance.
-- Même policy pour full scan / refresh / rebuild / W-B / W-C / watcher.
-- Une modification de policy ne doit jamais être journalisée comme un
-  changement physique de la source.
-- Preuve WebView2 : A/C même source avec policies différentes, watcher
-  inclus/exclus, restart, source absente, journal et SHA source.
-- F-006, F-014 et P-19 restent séparés. Aucune TASK-0049.
+- Branche : `build/v0.2-a32-v1-safe-exclusion-policy`; décision `DEC-0046`;
+  exécuteur Codex. Jamais auto-`VERIFIED`.
+- F-005 seulement : politique V1 brain-scoped/versionnée dans `catalog_meta`,
+  sous-arbres relatifs exacts, validation backend fermée et canonique, sans glob,
+  nouvelle dépendance, table, base ou store.
+- Scanner complet, Actualiser, Reconstruire, W-B, W-C et watcher partagent la
+  politique effective; reparse/symlink reste une sécurité non désactivable.
+- Estampille de politique appliquée dans l'Index; rebase d'Index atomique et
+  silencieux pour le journal. Sur échec, politique désirée persistée,
+  `applicationRequired`, dernier Index fiable conservé.
+- UI minimale FR/EN accessible, réponse backend seule publiée, aucun état
+  optimiste durable après refus.
+- Preuves finales : Rust 766 PASS / 6 ignorés; TypeScript 622 PASS; Tauri debug,
+  Clippy à la référence 13/22, audit public; vrai WebView2 avec trois cerveaux,
+  A/C même source, redémarrage, watcher, source absente/restaurée, SHA inchangé.
+  Sept sabotages attrapés. Artefact `TASK-0048-webview2.json`.
+- Limites : fermeture normale; preuve de casse Windows/NTFS; aucune atomicité
+  inter-base revendiquée pour une mutation physique strictement concurrente.
+- **F-005 = IMPLEMENTED.** F-006, F-014 et P-19 inchangés. Aucune TASK-0049.
+- Action unique suivante : contrôle indépendant de TASK-0048.
 
 ## ACTION-0080 — matrice V1 réconciliée / F-005 choisi — 2026-09-26
 

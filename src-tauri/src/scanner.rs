@@ -1,5 +1,6 @@
 use crate::domain::{NodeDto, NodeKind, ScanDiagnostic};
 use crate::identity::{self, NodeIdentity};
+use crate::map::exclusion_policy::ExclusionPolicy;
 use std::collections::{HashMap, VecDeque};
 use std::fs;
 use std::io;
@@ -54,6 +55,24 @@ pub fn scan_tree(root: &Path) -> Result<ScanResult, ScanError> {
 
 pub fn scan_tree_controlled(
     root: &Path,
+    is_cancelled: impl Fn() -> bool,
+    mut report_progress: impl FnMut(usize),
+) -> Result<ScanResult, ScanError> {
+    scan_tree_controlled_with_policy(
+        root,
+        &ExclusionPolicy::default(),
+        is_cancelled,
+        &mut report_progress,
+    )
+}
+
+/// The production scanner with the brain's effective exact-subtree policy.
+/// The exclusion decision is made from the relative name yielded by the
+/// parent directory **before** metadata is read and before a directory can be
+/// queued, so no content inside an excluded subtree is enumerated.
+pub fn scan_tree_controlled_with_policy(
+    root: &Path,
+    policy: &ExclusionPolicy,
     is_cancelled: impl Fn() -> bool,
     mut report_progress: impl FnMut(usize),
 ) -> Result<ScanResult, ScanError> {
@@ -129,6 +148,9 @@ pub fn scan_tree_controlled(
                 return Err(ScanError::Cancelled);
             }
             let relative = directory.relative.join(entry.file_name());
+            if policy.excludes(&relative) {
+                continue;
+            }
             let metadata = match fs::symlink_metadata(entry.path()) {
                 Ok(metadata) => metadata,
                 Err(_) => {
@@ -326,5 +348,29 @@ mod tests {
             fs::read(temp.path().join("synthetic.txt")).expect("unchanged"),
             b"synthetic-only"
         );
+    }
+
+    #[test]
+    fn exact_subtree_policy_skips_before_descent_without_text_prefix_matching() {
+        let temp = tempfile::tempdir().expect("tempdir");
+        fs::create_dir_all(temp.path().join("foo").join("deep")).expect("excluded tree");
+        fs::write(temp.path().join("foo").join("deep").join("secret.txt"), b"synthetic")
+            .expect("excluded file");
+        fs::create_dir(temp.path().join("foobar")).expect("included sibling");
+        fs::write(temp.path().join("foobar").join("visible.txt"), b"synthetic")
+            .expect("included file");
+        let policy = ExclusionPolicy::canonical(&["foo".to_string()]).expect("policy");
+
+        let result = scan_tree_controlled_with_policy(temp.path(), &policy, || false, |_| {})
+            .expect("scan");
+        let paths = result
+            .nodes
+            .iter()
+            .map(|node| node.relative_path.as_str())
+            .collect::<Vec<_>>();
+
+        assert!(!paths.iter().any(|path| *path == "foo" || path.starts_with("foo/")));
+        assert!(paths.contains(&"foobar"));
+        assert!(paths.contains(&"foobar/visible.txt"));
     }
 }

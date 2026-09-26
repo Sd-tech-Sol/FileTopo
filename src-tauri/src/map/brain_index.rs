@@ -1,5 +1,6 @@
 //! Brain metadata and operations over the one canonical Index. No node table or layout cache.
 use super::brains::{BrainRecord, SourceKind};
+use super::exclusion_policy::{ExclusionPolicy, INDEX_POLICY_META_KEY};
 use super::layout::{LAYOUT_ALGORITHM, Rect};
 use super::store::{MapNode, MapSnapshot, NodeDetail};
 use super::{MapError, fnv1a64};
@@ -395,6 +396,7 @@ impl BrainIndex {
     /// (`TASK-0037`): exact counters by nature, or "baseline established".
     /// The events themselves were written in the same transaction as the
     /// corpus.
+    #[allow(dead_code)]
     pub fn replace_with_identity(
         &mut self,
         brain: &str,
@@ -404,13 +406,38 @@ impl BrainIndex {
         diagnostics: &[ScanDiagnostic],
         built: i64,
     ) -> Result<crate::change_journal::ChangeSummary, MapError> {
+        self.replace_with_identity_and_policy(
+            brain,
+            source,
+            nodes,
+            identities,
+            diagnostics,
+            built,
+            &ExclusionPolicy::default(),
+        )
+    }
+
+    /// Full identity-aware publication with the effective exclusion policy
+    /// stamped in the same transaction as the corpus.
+    #[allow(clippy::too_many_arguments)]
+    pub fn replace_with_identity_and_policy(
+        &mut self,
+        brain: &str,
+        source: SourceStamp<'_>,
+        nodes: &[NodeDto],
+        identities: &[NodeIdentity],
+        diagnostics: &[ScanDiagnostic],
+        built: i64,
+        policy: &ExclusionPolicy,
+    ) -> Result<crate::change_journal::ChangeSummary, MapError> {
         Self::validate_single_root(nodes)?;
+        let metadata = Self::build_metadata_with_policy(brain, source, built, policy)?;
         let outcome = self
             .index
             .publish_with_identity(
                 nodes,
                 identities,
-                &Self::build_metadata(brain, source, built),
+                &metadata,
                 diagnostics,
             )
             .map_err(|error| match error {
@@ -419,6 +446,41 @@ impl BrainIndex {
                 crate::index::PublishError::IdentityNotBijective => MapError::IdentityNotBijective,
             })?;
         Ok(outcome.journal)
+    }
+
+    /// `TASK-0048` policy rebase: same canonical identity remap, corpus and
+    /// policy stamp transaction, but no source journal diff.
+    #[allow(clippy::too_many_arguments)]
+    pub fn rebase_with_identity_and_policy(
+        &mut self,
+        brain: &str,
+        source: SourceStamp<'_>,
+        nodes: &[NodeDto],
+        identities: &[NodeIdentity],
+        diagnostics: &[ScanDiagnostic],
+        built: i64,
+        policy: &ExclusionPolicy,
+    ) -> Result<crate::change_journal::ChangeSummary, MapError> {
+        Self::validate_single_root(nodes)?;
+        let metadata = Self::build_metadata_with_policy(brain, source, built, policy)?;
+        let outcome = self
+            .index
+            .rebase_with_identity(nodes, identities, &metadata, diagnostics)
+            .map_err(|error| match error {
+                crate::index::PublishError::Sqlite(sqlite) => MapError::from(sqlite),
+                crate::index::PublishError::IdentityCollision => MapError::IdentityCollision,
+                crate::index::PublishError::IdentityNotBijective => MapError::IdentityNotBijective,
+            })?;
+        Ok(outcome.journal)
+    }
+
+    /// Policy that produced the corpus currently served. A pre-TASK-0048
+    /// Index has no stamp and therefore means the historical empty policy.
+    pub fn applied_exclusion_policy(&self) -> Result<ExclusionPolicy, MapError> {
+        match self.meta(INDEX_POLICY_META_KEY)? {
+            Some(raw) => ExclusionPolicy::decode(&raw),
+            None => Ok(ExclusionPolicy::default()),
+        }
     }
 
     /// One bounded, filtered, keyset-paged page of this brain's change
@@ -579,6 +641,17 @@ impl BrainIndex {
             ("build_complete", "1".into()),
             ("projection_contract", "DEC-0031".into()),
         ]
+    }
+
+    fn build_metadata_with_policy<'a>(
+        brain: &'a str,
+        source: SourceStamp<'a>,
+        built: i64,
+        policy: &ExclusionPolicy,
+    ) -> Result<Vec<(&'a str, String)>, MapError> {
+        let mut metadata = Self::build_metadata(brain, source, built);
+        metadata.push((INDEX_POLICY_META_KEY, policy.encode()?));
+        Ok(metadata)
     }
 
     pub fn count(&self) -> Result<usize, MapError> {

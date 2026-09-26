@@ -50,6 +50,7 @@ use crate::domain::{NodeKind, ScanDiagnostic};
 use crate::identity::NodeIdentity;
 use crate::incremental::{ObservedNode, ParentRef, UpdateBatch};
 use crate::index::Index;
+use crate::map::exclusion_policy::ExclusionPolicy;
 use crate::scanner::{display_relative, observe_entry};
 use rusqlite::OptionalExtension;
 use std::collections::{BTreeSet, HashMap, HashSet, VecDeque};
@@ -369,6 +370,7 @@ pub(crate) fn scan_scopes(
     index: &Index,
     root: &Path,
     scopes: &ResolvedScopes,
+    policy: &ExclusionPolicy,
     limits: ScopeLimits,
     is_cancelled: &dyn Fn() -> bool,
 ) -> Result<ScopeScan, ScopeRefusal> {
@@ -419,6 +421,11 @@ pub(crate) fn scan_scopes(
                 let file_name = entry.file_name();
                 let relative = Path::new(&directory).join(&file_name);
                 let relative_text = display_relative(&relative);
+                // Decide from the parent listing before metadata is read. An
+                // excluded entry is neither materialised nor descended into.
+                if policy.excludes_text(&relative_text) {
+                    continue;
+                }
                 let entry_path = entry.path();
                 let Ok(child_metadata) = fs::symlink_metadata(&entry_path) else {
                     scan.diagnostics.push(ScanDiagnostic {
@@ -445,6 +452,9 @@ pub(crate) fn scan_scopes(
     // Entries observed alone: no listing, so nothing is entered and nothing is deleted from
     // their subtree — only their own row can move.
     for path in &scopes.points {
+        if policy.excludes_text(path) {
+            continue;
+        }
         if seen_paths.contains(path) {
             continue;
         }

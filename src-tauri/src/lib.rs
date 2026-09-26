@@ -645,6 +645,41 @@ fn map_brain_update(
         .map_err(String::from)
 }
 
+/// Canonical brain-scoped exact-subtree exclusions. Reads FileTopo state only;
+/// it never resolves or touches the source.
+#[tauri::command]
+async fn map_brain_exclusions(
+    app: tauri::AppHandle,
+    brain_id: String,
+) -> Result<map::exclusion_policy::ExclusionPolicyState, String> {
+    let (paths, brain) = resolve_brain(&app, &brain_id)?;
+    tauri::async_runtime::spawn_blocking(move || {
+        map::commands::exclusion_policy_state(&paths, &brain).map_err(String::from)
+    })
+    .await
+    .map_err(|_| "map_worker_failed".to_string())?
+}
+
+/// Replaces the whole desired policy. The returned record is the canonical
+/// backend value; when application cannot complete it says so explicitly and
+/// the last reliable Index remains served.
+#[tauri::command]
+async fn map_brain_exclusions_replace(
+    app: tauri::AppHandle,
+    brain_id: String,
+    rules: Vec<String>,
+) -> Result<map::exclusion_policy::ExclusionPolicyState, String> {
+    let (paths, brain) = resolve_brain(&app, &brain_id)?;
+    let watched = brain.clone();
+    let state = tauri::async_runtime::spawn_blocking(move || {
+        map::commands::replace_exclusion_policy(&paths, &brain, &rules).map_err(String::from)
+    })
+    .await
+    .map_err(|_| "map_worker_failed".to_string())??;
+    watch_after_manual_gesture(&app, &watched);
+    Ok(state)
+}
+
 /// **Ajouter un dossier** — the only way a real root enters FileTopo.
 ///
 /// Takes **no argument**, deliberately. `DEC-0033` A forbids an exposed
@@ -1628,6 +1663,8 @@ pub fn run() {
             map_brains,
             map_brain_activate,
             map_brain_update,
+            map_brain_exclusions,
+            map_brain_exclusions_replace,
             map_brain_choose_real_root,
             map_open,
             map_source_observation,

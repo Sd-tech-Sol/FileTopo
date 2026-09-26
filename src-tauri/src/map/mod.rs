@@ -11,6 +11,8 @@ pub mod commands;
 pub mod content_signals;
 pub mod cross_commands;
 pub mod cross_relations;
+/// Brain-scoped exact-subtree exclusions — `TASK-0048`, `DEC-0046`.
+pub mod exclusion_policy;
 pub mod filtered_projection;
 pub mod fixtures;
 pub mod layout;
@@ -62,6 +64,9 @@ pub enum MapError {
     /// never a value.
     #[error("map_resume_rejected: {0}")]
     ResumeRejected(String),
+    /// `TASK-0048` — fixed refusal codes only; never the rejected path.
+    #[error("map_exclusion_policy_rejected: {0}")]
+    ExclusionPolicyRejected(String),
     #[error("map_io_failed: {0}")]
     Io(#[from] std::io::Error),
     #[error("map_sqlite_failed: {0}")]

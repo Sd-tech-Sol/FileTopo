@@ -8548,3 +8548,92 @@ Détail : `docs/reviews/ACTION-0079-task0047-independent-control.md`.
 - F-005 : scanner sûr pour reparse/symlink, mais aucune exclusion utilisateur configurable/listable; lacune P0 confirmée.
 - Reuse-first F-005 : ignore 0.4.33 et globset 0.4.20 audités; aucun crate ajouté. Sous-arbres relatifs exacts avec std::path retenus.
 - Décision : TASK-0048 = F-005.
+
+## CI. TASK-0048 — V1 Safe Exclusion Policy — 2026-09-26
+
+**Verdict de l'exécuteur : `IMPLEMENTED`, contrôle indépendant requis.**
+
+### CI.1 Audit et architecture
+
+- L'audit avant code a tracé création initiale, Actualiser, Reconstruire,
+  scanner, `observe_entry`, W-B, W-C, hints, publication/journal et
+  `catalog_meta`. Reconstruire journalisait le diff : il n'a donc pas été
+  réutilisé tel quel pour une modification de politique.
+- La politique désirée V1 est un enregistrement brain-scoped/versionné de
+  `catalog_meta`; l'Index porte l'enveloppe canonique effectivement appliquée.
+  Aucun nouveau store, base, table, glob ou paquet.
+- Quand désirée et appliquée diffèrent, le scan utilise la désirée puis un
+  rebase identity-aware remplace corpus, métadonnées et estampille dans une
+  transaction d'Index, sans produire de diff de source. Sur refus, le dernier
+  Index fiable reste servi et `applicationRequired` est vrai.
+- W-B filtre avec l'estampille de l'Index servi; W-C repasse par le pipeline
+  complet. Le scan exclut avant `symlink_metadata` et avant descente.
+- Limites fermées : 128 règles, 512 scalaires par règle, enveloppe 256 KiB;
+  `..`, racine, absolu, UNC, préfixe de lecteur, NUL et version inconnue refusés
+  en bloc; normalisation, tri, déduplication et suppression des descendants
+  redondants. Comparaison de composants, casse Windows via
+  `CompareStringOrdinal`; pas de sémantique portable inventée.
+
+### CI.2 Preuve WebView2 réelle
+
+`docs/performance/runs/TASK-0048-webview2.json` est une preuve d'ingénierie
+synthétique sur deux processus Tauri / vrai WebView2 :
+
+- trois cerveaux, A/C sur la même source et B sur une autre; politiques A/B/C
+  isolées et persistées après redémarrage;
+- ajout au clavier, retrait à la souris, texte de sécurité FR/EN, refus de
+  `../secret` sans publication optimiste;
+- contenu exclu absent de l'Index, mutation exclue ignorée par A et observée
+  par C, mutation incluse observée normalement, retrait réindexé sans événement
+  artificiel de politique;
+- source absente : politique lisible/modifiable, application requise, dernier
+  Index ouvrable; après restauration, le watcher applique la politique;
+- SHA-256 de la source inchangé par la configuration, zéro chemin absolu dans
+  DTO/artefact/log public, zéro erreur console fatale, fermeture puis relance
+  réelles.
+
+### CI.3 Validations finales
+
+| Commande | Résultat |
+|---|---|
+| `cargo test --offline exclusion_policy -- --nocapture` | **12 PASS** |
+| `cargo test --offline` | **766 PASS**, 0 échec, 6 campagnes lourdes ignorées |
+| `pnpm test -- ExclusionsPanel.test.tsx` | **4 PASS** |
+| `pnpm test` | **622 PASS** dans 42 fichiers |
+| `pnpm check` | PASS |
+| `pnpm build` | PASS; avertissement Vite historique du chunk > 500 kB |
+| `cargo build --offline` | PASS via build Tauri debug |
+| `pnpm tauri build --debug --no-bundle` | PASS |
+| Clippy `--offline --all-targets` | PASS; dette historique inchangée : lib 13 / lib-test 22, aucun avertissement TASK-0048 |
+| `git diff --check` | PASS; avertissement de conversion CRLF/LF sur `scanner.rs` seulement |
+| `scripts/audit-public-readiness.ps1 -AllowRemotes` | PASS, 646 fichiers, aucun motif sensible, aucun fichier > 5 Mio |
+| `scripts/task0048-webview2.ps1` | PASS phases 1 et 2, redémarrage réel |
+
+Le contrôle `cargo fmt --all --check` n'est pas un verdict exploitable : il
+signale un passif massif dans des fichiers historiques hors tâche. Les deux
+nouveaux fichiers Rust TASK-0048 passent `rustfmt --check`; aucun reformatage
+hors portée n'a été commis.
+
+### CI.4 Falsifications exécutées puis restaurées
+
+| # | Sabotage temporaire | Preuve qui casse |
+|---|---|---|
+| 1 | matcher par préfixe texte | `matches_components_not_text_prefixes` (`foobar`) |
+| 2 | accepter `ParentDir` | `rejects_root_parent_absolute_unc_and_drive_prefixes` |
+| 3 | supprimer le filtre W-B | scénario rafale mixte, escalade `RootScope` |
+| 4 | désactiver l'exclusion du scan complet | `exact_subtree_policy_skips_before_descent_without_text_prefix_matching` |
+| 5 | partager la clé catalogue A/C | relecture persistée A retourne la politique C |
+| 6 | publier au lieu de rebaser silencieusement | cinq faux événements `DELETED` détectés |
+| 7 | publier optimistiquement côté frontend | règle `../secret` refusée visible dans la liste |
+
+Aucun sabotage ne subsiste dans le diff final.
+
+### CI.5 Limites
+
+- Fermeture normale seulement; pas de crash brutal.
+- Preuve de casse et watcher sur Windows/NTFS local uniquement.
+- Le catalogue et l'Index sont deux bases : aucune transaction inter-base
+  fictive. Une mutation physique strictement concurrente au scan d'application
+  d'une politique ne peut pas être séparée atomiquement de ce rebase; le
+  watcher converge ensuite.
+- F-006, F-014 et P-19 restent inchangés; aucune TASK-0049.

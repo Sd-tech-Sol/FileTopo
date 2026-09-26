@@ -410,7 +410,7 @@ impl Index {
         metadata: &[(&str, String)],
         diagnostics: &[ScanDiagnostic],
     ) -> Result<()> {
-        match self.publish(nodes, None, metadata, diagnostics) {
+        match self.publish(nodes, None, metadata, diagnostics, false) {
             Ok(_) => Ok(()),
             Err(PublishError::Sqlite(error)) => Err(error),
             Err(PublishError::IdentityCollision | PublishError::IdentityNotBijective) => {
@@ -437,7 +437,22 @@ impl Index {
         metadata: &[(&str, String)],
         diagnostics: &[ScanDiagnostic],
     ) -> PublishResult<PublishOutcome> {
-        self.publish(nodes, Some(identities), metadata, diagnostics)
+        self.publish(nodes, Some(identities), metadata, diagnostics, true)
+    }
+
+    /// Replaces the derived corpus with the same identity remap and the same
+    /// single transaction as [`Self::publish_with_identity`], but deliberately
+    /// records **no source events**. `TASK-0048` uses this only when the input
+    /// policy changed: rows absent because configuration now excludes them are
+    /// not files that were deleted from the source.
+    pub(crate) fn rebase_with_identity(
+        &mut self,
+        nodes: &[NodeDto],
+        identities: &[NodeIdentity],
+        metadata: &[(&str, String)],
+        diagnostics: &[ScanDiagnostic],
+    ) -> PublishResult<PublishOutcome> {
+        self.publish(nodes, Some(identities), metadata, diagnostics, false)
     }
 
     /// The one publication path, shared by both modes above.
@@ -473,6 +488,7 @@ impl Index {
         identities: Option<&[NodeIdentity]>,
         metadata: &[(&str, String)],
         diagnostics: &[ScanDiagnostic],
+        journal_source_changes: bool,
     ) -> PublishResult<PublishOutcome> {
         let mut seen_paths = HashSet::<String>::new();
         let mut seen_ids = HashSet::<i64>::new();
@@ -582,7 +598,7 @@ impl Index {
         // without durable identities a corpus has nothing whose `id` means
         // "the same object", and a diff on caller-chosen ids would be noise.
         let mut events = Vec::new();
-        let previous = if identities.is_some() {
+        let previous = if identities.is_some() && journal_source_changes {
             change_journal::load_previous(&transaction)?
         } else {
             None
@@ -608,7 +624,7 @@ impl Index {
                 change_journal::previous_relative_path(&transaction, id)
             })?;
             outcome.journal = change_journal::summarize(&events);
-        } else if identities.is_some() {
+        } else if identities.is_some() && journal_source_changes {
             // First build of a brain, or a file whose previous rows carry no
             // durable identity: the reference is established, no event is
             // invented for it.

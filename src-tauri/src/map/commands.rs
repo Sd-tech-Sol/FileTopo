@@ -10,6 +10,7 @@
 use super::MAX_NODES_PER_MAP;
 use super::brain_index::{BrainIndex, IndexBinding, SourceStamp};
 use super::brains::{BrainNodeRef, BrainRecord, SourceKind};
+use super::exclusion_policy::ExclusionPolicyState;
 use super::layout::{self, LAYOUT_ALGORITHM};
 use super::sandbox::{self, SandboxPaths};
 use super::source::BrainSource;
@@ -18,7 +19,9 @@ use super::store::{MapSnapshot, NON_RECONSTRUCTIBLE_KEYS, NodeDetail};
 use super::{MAX_FIXTURE_DEPTH, MapError, fixtures};
 use crate::change_journal::{ChangeNature, JournalCursor};
 use crate::domain::ScanDiagnostic;
+#[cfg(test)]
 use crate::scanner::scan_tree_controlled;
+use crate::scanner::scan_tree_controlled_with_policy;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard, TryLockError};
@@ -131,6 +134,10 @@ pub enum ApplicationMode {
     /// **Reconstruire** on an existing Index: the person asked for a full
     /// replacement.
     ExplicitRebuildFull,
+    /// The desired exclusion policy differs from the one stamped in the
+    /// served Index. The corpus is rebased under that policy without source
+    /// journal events; policy configuration is not a disk change.
+    PolicyRebaseFull,
 }
 
 /// The gesture that started a publication. `Refresh` may end up incremental;
@@ -311,6 +318,61 @@ pub fn refresh_map(paths: &SandboxPaths, brain: &BrainRecord) -> Result<MapBuild
 }
 pub fn rebuild_map(paths: &SandboxPaths, brain: &BrainRecord) -> Result<MapBuildReport, MapError> {
     publish_map(paths, brain, Gesture::Rebuild, || false)
+}
+
+/// Reads the canonical desired policy and compares it with the policy stamped
+/// in the served Index. No source is resolved or read.
+pub fn exclusion_policy_state(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+) -> Result<ExclusionPolicyState, MapError> {
+    let catalog = super::brains::BrainCatalog::open(&paths.catalog_database())?;
+    let desired = catalog.exclusion_policy(&brain.brain_id)?;
+    let database = paths.brain_map_database(&brain.brain_id);
+    if !database.try_exists()? {
+        return Ok(desired.state(&brain.brain_id, !desired.rules().is_empty()));
+    }
+    let applied = match open_store(paths, brain)
+        .and_then(|store| store.applied_exclusion_policy())
+    {
+        Ok(applied) => applied,
+        Err(_) => return Ok(desired.state(&brain.brain_id, true)),
+    };
+    Ok(desired.state(&brain.brain_id, applied != desired))
+}
+
+/// Replaces the complete desired policy, then tries to apply it immediately
+/// when an Index exists. A scan/application refusal is represented by
+/// `applicationRequired` in the returned canonical record: the catalogue write
+/// remains valid and the last reliable Index stays served.
+pub fn replace_exclusion_policy(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+    rules: &[String],
+) -> Result<ExclusionPolicyState, MapError> {
+    let catalog = super::brains::BrainCatalog::open(&paths.catalog_database())?;
+    let desired = catalog.replace_exclusion_policy(&brain.brain_id, rules)?;
+    let database = paths.brain_map_database(&brain.brain_id);
+    if !database.try_exists()? {
+        return Ok(desired.state(&brain.brain_id, !desired.rules().is_empty()));
+    }
+    let applied = match open_store(paths, brain)
+        .and_then(|store| store.applied_exclusion_policy())
+    {
+        Ok(applied) => applied,
+        Err(_) => return Ok(desired.state(&brain.brain_id, true)),
+    };
+    if applied == desired {
+        return Ok(desired.state(&brain.brain_id, false));
+    }
+
+    // `publish_map` owns the publication lock and records a source observation
+    // on failure. When it sees the stamp mismatch it selects PolicyRebaseFull.
+    let _ = publish_map(paths, brain, Gesture::Refresh, || false);
+    match exclusion_policy_state(paths, brain) {
+        Ok(state) => Ok(state),
+        Err(_) => Ok(desired.state(&brain.brain_id, true)),
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -635,6 +697,9 @@ fn publish_locked(
     if reused {
         check_publishable(paths, brain)?;
     }
+    // Desired policy is catalogue state. A damaged/unknown envelope refuses
+    // the operation before the source is resolved, never as a partial policy.
+    let policy = desired_exclusion_policy(paths, brain)?;
     // Resolving the source is what separates refresh and rebuild from open:
     // this is the line `map_open` does not have — `DEC-0032` A, `DEC-0033` E.
     // It comes after the check so a brain whose binding already disagrees is
@@ -648,7 +713,12 @@ fn publish_locked(
     // The root's own metadata is read first, so a vanished or replaced root is
     // classified here exactly as the scanner would classify it, instead of
     // surfacing as an anonymous I/O error from the traversal below.
-    let fingerprint_before = if source.is_fingerprintable() {
+    // The historical synthetic fingerprint reads every file's bytes. Once a
+    // subtree is excluded, running it would violate the policy before the
+    // scanner even starts, so that legacy proof is omitted just as it is for a
+    // real root. TASK-0048's acceptance proof hashes the source externally.
+    let fingerprintable = source.is_fingerprintable() && policy.rules().is_empty();
+    let fingerprint_before = if fingerprintable {
         source_observation::probe_root(&root).map_err(|failure| Refused {
             error: MapError::Scan("root_metadata_failed".into()),
             observed: Some(failure),
@@ -665,10 +735,11 @@ fn publish_locked(
 
     let scan_started = Instant::now();
     // Classified from the scanner's **structured** error, before it becomes text.
-    let scan = scan_tree_controlled(&root, &cancelled, |_| {}).map_err(|error| Refused {
-        observed: source_observation::classify_scan_error(&error),
-        error: MapError::Scan(error.to_string()),
-    })?;
+    let scan = scan_tree_controlled_with_policy(&root, &policy, &cancelled, |_| {})
+        .map_err(|error| Refused {
+            observed: source_observation::classify_scan_error(&error),
+            error: MapError::Scan(error.to_string()),
+        })?;
     let scan_ms = elapsed_ms(scan_started);
 
     if !scan.diagnostics.is_empty() {
@@ -677,7 +748,7 @@ fn publish_locked(
             Failure::scan_incomplete(SourceReason::ScanDiagnostics),
         ));
     }
-    let fingerprint_after = if source.is_fingerprintable() {
+    let fingerprint_after = if fingerprintable {
         Some(fixtures::fingerprint(&root).map_err(|error| {
             Refused::observed(
                 error,
@@ -707,15 +778,20 @@ fn publish_locked(
         BrainIndex::open(&database)
     }
     .map_err(Refused::apply)?;
-    let application_mode = match (reused, gesture) {
-        (false, _) => ApplicationMode::BaselineFull,
-        (true, Gesture::Rebuild) => ApplicationMode::ExplicitRebuildFull,
+    let policy_changed =
+        reused && store.applied_exclusion_policy().map_err(Refused::apply)? != policy;
+    let application_mode = match (reused, gesture, policy_changed) {
+        (false, _, _) => ApplicationMode::BaselineFull,
+        (true, _, true) => ApplicationMode::PolicyRebaseFull,
+        (true, Gesture::Rebuild, false) => ApplicationMode::ExplicitRebuildFull,
         // The one question asked of the Index before the scan is compared, and
         // never asked to recover from an error.
-        (true, Gesture::Refresh) if store.has_current_stamp().map_err(Refused::apply)? => {
+        (true, Gesture::Refresh, false)
+            if store.has_current_stamp().map_err(Refused::apply)? =>
+        {
             ApplicationMode::Incremental
         }
-        (true, Gesture::Refresh) => ApplicationMode::IdentityRestampFull,
+        (true, Gesture::Refresh, false) => ApplicationMode::IdentityRestampFull,
     };
     let change_summary = match application_mode {
         ApplicationMode::Incremental => {
@@ -724,10 +800,8 @@ fn publish_locked(
                 .refresh_incrementally(&scan.nodes, &scan.identities, detected)
                 .map_err(Refused::apply)?
         }
-        ApplicationMode::BaselineFull
-        | ApplicationMode::IdentityRestampFull
-        | ApplicationMode::ExplicitRebuildFull => store
-            .replace_with_identity(
+        ApplicationMode::PolicyRebaseFull => store
+            .rebase_with_identity_and_policy(
                 &brain.brain_id,
                 SourceStamp {
                     kind: brain.source_kind,
@@ -738,6 +812,24 @@ fn publish_locked(
                 &scan.identities,
                 &scan.diagnostics,
                 now_ms(),
+                &policy,
+            )
+            .map_err(Refused::apply)?,
+        ApplicationMode::BaselineFull
+        | ApplicationMode::IdentityRestampFull
+        | ApplicationMode::ExplicitRebuildFull => store
+            .replace_with_identity_and_policy(
+                &brain.brain_id,
+                SourceStamp {
+                    kind: brain.source_kind,
+                    source_ref: &brain.source_ref,
+                    label: &brain.source_label,
+                },
+                &scan.nodes,
+                &scan.identities,
+                &scan.diagnostics,
+                now_ms(),
+                &policy,
             )
             .map_err(Refused::apply)?,
     };
@@ -794,6 +886,27 @@ fn publish_locked(
         // committed and replaces this with what was actually persisted.
         source_observation: SourceObservation::unknown(false),
     })
+}
+
+fn desired_exclusion_policy(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+) -> Result<super::exclusion_policy::ExclusionPolicy, MapError> {
+    #[cfg(test)]
+    if !paths.catalog_database().exists() {
+        return Ok(super::exclusion_policy::ExclusionPolicy::default());
+    }
+    let catalog = super::brains::BrainCatalog::open(&paths.catalog_database())?;
+    match catalog.exclusion_policy(&brain.brain_id) {
+        Ok(policy) => Ok(policy),
+        // Historical unit and integration harnesses exercise the publication
+        // pipeline with a synthetic BrainRecord that deliberately bypasses the
+        // catalogue. Keep that test-only seam without weakening production:
+        // real commands always resolve a registered brain first.
+        #[cfg(test)]
+        Err(MapError::UnknownBrain(_)) => Ok(super::exclusion_policy::ExclusionPolicy::default()),
+        Err(error) => Err(error),
+    }
 }
 
 /// Removes the index database and its WAL companions, and nothing else.
@@ -2778,6 +2891,10 @@ pub(crate) mod watch_scope_tests;
 #[cfg(test)]
 #[path = "source_availability_tests.rs"]
 mod source_availability_tests;
+
+#[cfg(test)]
+#[path = "exclusion_policy_tests.rs"]
+mod exclusion_policy_tests;
 
 /// `ACTION-0071` — the watcher's acquisition of the publication lock, on a local mutex so
 /// that holding or poisoning it never touches the process-wide [`PUBLICATION_LOCK`].

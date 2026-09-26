@@ -1,0 +1,77 @@
+{
+    "task":  "TASK-0048",
+    "status":  "NONCANONICAL_ENGINEERING_EVIDENCE",
+    "engine":  "Windows Tauri / real WebView2",
+    "realProcessRestarts":  1,
+    "syntheticOnly":  true,
+    "personalDataUsed":  false,
+    "brains":  {
+                   "count":  3,
+                   "sharedSource":  "A and C",
+                   "independentSource":  "B"
+               },
+    "policiesAfterRestart":  {
+                                 "A":  {
+                                           "brainId":  "real-6c17bc84-1451-4ae2-8cb8-0ee22d3038c8",
+                                           "version":  1,
+                                           "rules":  [
+                                                         "pending"
+                                                     ],
+                                           "applicationRequired":  false
+                                       },
+                                 "B":  {
+                                           "brainId":  "real-6ecb7689-4ba8-4034-a9f6-045de91403a8",
+                                           "version":  1,
+                                           "rules":  [
+
+                                                     ],
+                                           "applicationRequired":  false
+                                       },
+                                 "C":  {
+                                           "brainId":  "real-3d7b9e95-6e38-41d3-9b78-56c8befc21e7",
+                                           "version":  1,
+                                           "rules":  [
+                                                         "other"
+                                                     ],
+                                           "applicationRequired":  false
+                                       }
+                             },
+    "ui":  {
+               "keyboardAdd":  true,
+               "mouseRemove":  true,
+               "fr":  true,
+               "en":  true,
+               "rejectedRuleStayedDraftOnly":  true,
+               "ruleVisibleAfterRestart":  true
+           },
+    "scannerAndJournal":  {
+                              "sourceSha256UnchangedByPolicy":  true,
+                              "removedContentReindexedWithoutPolicyEvent":  true,
+                              "journalAfterRestart":  {
+                                                          "A":  1,
+                                                          "B":  0,
+                                                          "C":  2
+                                                      }
+                          },
+    "watcher":  {
+                    "excludedMutationIgnoredByA":  true,
+                    "includedMutationObservedByA":  true,
+                    "sharedMutationObservedByC":  true
+                },
+    "sourceAbsent":  {
+                         "policyRemainedReadableAndWritable":  true,
+                         "lastIndexRemainedOpen":  true,
+                         "sourceRestored":  true,
+                         "pendingPolicyAppliedWhenSourceReturned":  true
+                     },
+    "restartPersistence":  true,
+    "noAbsolutePathInPolicyDtoOrProofLogs":  true,
+    "fatalConsoleErrors":  0,
+    "limits":  [
+                   "All analysed trees are generated below a fresh proof directory inside the repository; no personal data.",
+                   "Mouse and keyboard events use the browser input pipeline through CDP.",
+                   "The close is normal; crash recovery is not claimed.",
+                   "Windows local filesystem only; case behaviour is proved on this platform.",
+                   "The policy rebase intentionally journals no source diff; a physical mutation strictly concurrent with that scan cannot be separated atomically across catalogue and Index databases."
+               ]
+}

@@ -236,6 +236,31 @@ pub(crate) fn apply_scopes(
     {
         return Err(ScopedFailure::NeedsManualRefresh);
     }
+    let policy = store
+        .applied_exclusion_policy()
+        .map_err(|_| ScopedFailure::NeedsManualRefresh)?;
+    let requests = requests
+        .iter()
+        .filter(|request| match request {
+            ScopeRequest::List(path) | ScopeRequest::Point(path) => {
+                !policy.excludes_text(path)
+            }
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+    let before = store
+        .index
+        .identity()
+        .map_err(|_| ScopedFailure::Unusable)?
+        .revision;
+    if requests.is_empty() {
+        return Ok(ScopedApplied {
+            revision: before,
+            applied: false,
+            counts: ScopeCounts::default(),
+            listed: 0,
+        });
+    }
     let root = resolve_root(paths, brain).map_err(|_| ScopedFailure::Unusable)?;
     // The root's own metadata first, so a vanished or replaced root is the full
     // verification's business (and its observation), not a scope that "sees nothing".
@@ -243,19 +268,15 @@ pub(crate) fn apply_scopes(
         return Err(ScopedFailure::Escalate(Escalation::RootUnreadable));
     }
 
-    let before = store
-        .index
-        .identity()
-        .map_err(|_| ScopedFailure::Unusable)?
-        .revision;
     let was_synced =
         source_observation::read(paths, &brain.brain_id, Some(before)).state == SourceState::Synced;
 
-    let scopes = scope::resolve_scopes(&store.index, &root, requests)?;
+    let scopes = scope::resolve_scopes(&store.index, &root, &requests)?;
     let scan = scope::scan_scopes(
         &store.index,
         &root,
         &scopes,
+        &policy,
         ScopeLimits { max_nodes },
         cancelled,
     )?;

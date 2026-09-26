@@ -1,7 +1,7 @@
 # TASK-0048 — V1 Safe Exclusion Policy
 
 - **Date :** 2026-09-26
-- **Statut :** `READY`
+- **Statut :** `IMPLEMENTED`
 - **Branche :** `build/v0.2-a32-v1-safe-exclusion-policy`
 - **Décision :** `DEC-0046`
 - **Portée :** `F-005`
@@ -256,3 +256,24 @@ Aucun sabotage dans le commit final.
 - commit + push uniquement sur cette branche;
 - arbre propre;
 - remplir `.orchestrator/RESULT.md`.
+
+## Résultat d'exécution — 2026-09-26
+
+- Politique V1 versionnée et brain-scoped dans `catalog_meta`, règles exactes
+  relatives canoniques, sans glob, nouvelle table, base ou dépendance.
+- Scanner complet, Actualiser, Reconstruire, W-B, W-C et watcher partagent la
+  politique effective. Reparse et liens symboliques restent toujours fermés.
+- L'Index porte l'estampille de la politique appliquée. Une modification de
+  politique passe par un rebase atomique de l'Index sans diff de source ni
+  événement de journal; en cas d'échec, la politique désirée reste lisible,
+  `applicationRequired` est vrai et le dernier Index fiable reste ouvert.
+- Surface MapApp FR/EN accessible, backend autoritaire, ajout clavier et retrait
+  souris prouvés dans le vrai WebView2 avec trois cerveaux, redémarrage, watcher
+  et source absente/restaurée.
+- Preuves : `VALIDATION.md` section CI et
+  `docs/performance/runs/TASK-0048-webview2.json`.
+- Limites : fermeture normale seulement; NTFS/Windows pour la preuve de casse;
+  aucune transaction inter-base inventée; une mutation physique strictement
+  concurrente au rebase de politique ne peut pas être distinguée atomiquement
+  entre catalogue et Index.
+- **État : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Contrôle indépendant requis.

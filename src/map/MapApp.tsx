@@ -15,6 +15,7 @@ import { resolveInitialLocale, storeLocale, type Locale } from "../lib/locale";
 import { LocalizedError, describeError, resolveStatus, type StatusMessage } from "./localeText";
 import { strings, type MapStrings } from "./mapStrings";
 import BrainIdentityEditor, { type BrainIdentityValues } from "./BrainIdentityEditor";
+import ExclusionsPanel from "./ExclusionsPanel";
 import CompositionBar from "./CompositionBar";
 import DetailsPanel from "./DetailsPanel";
 import FilterPanel from "./FilterPanel";
@@ -2917,6 +2918,14 @@ export default function MapApp() {
             onSave={saveBrainIdentity}
             onNotice={() => setStatus(say((words) => words.identity.unchanged))}
             strings={t.identity}
+          />
+        ) : null}
+        {composed ? (
+          <ExclusionsPanel
+            brainId={composed.focusedBrainId}
+            locale={locale}
+            disabled={busy || measuring}
+            onApplied={reloadForWatch}
           />
         ) : null}
         <div className="app__actions">

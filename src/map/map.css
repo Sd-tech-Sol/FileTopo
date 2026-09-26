@@ -2000,3 +2000,69 @@ input[type="text"] {
   display: flex;
   gap: 8px;
 }
+
+/* TASK-0048 — one compact, brain-scoped exact-subtree policy surface. */
+.exclusions {
+  flex: 1 0 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+}
+
+.exclusions h2,
+.exclusions p {
+  margin: 0 0 6px;
+}
+
+.exclusions h2 {
+  font-size: 14px;
+}
+
+.exclusions__safety,
+.exclusions__empty {
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+.exclusions__pending,
+.exclusions__error {
+  color: var(--warn);
+  font-size: 12px;
+}
+
+.exclusions__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.exclusions__list li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 6px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.exclusions__form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 6px 12px;
+  font-size: 12px;
+}
+
+.exclusions__form label {
+  flex: 1 0 100%;
+}
+
+.exclusions__form > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

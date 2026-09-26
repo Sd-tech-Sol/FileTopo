@@ -1,5 +1,25 @@
 # HANDOFF — passage de relais
 
+## Relais — TASK-0048 IMPLEMENTED / contrôle indépendant requis — 2026-09-26
+
+- Branche `build/v0.2-a32-v1-safe-exclusion-policy`; F-005 et TASK-0048 sont
+  `IMPLEMENTED`, jamais auto-`VERIFIED`.
+- Contrôler d'abord `DEC-0046`, la fiche TASK-0048, `VALIDATION.md` section CI,
+  `.orchestrator/RESULT.md` et `TASK-0048-webview2.json`.
+- Architecture : politique désirée brain-scoped/versionnée dans `catalog_meta`;
+  estampille appliquée dans chaque Index; rebase complet atomique de l'Index
+  sans écrire de faux événements source. Une application impossible laisse le
+  dernier Index fiable ouvert et rend `applicationRequired` explicite.
+- Même matcher de composants pour scan complet, Actualiser, Reconstruire, W-B,
+  W-C et watcher; `foo` ne couvre pas `foobar`; reparse/symlink reste fermé.
+- Preuve réelle : A/C partagent une source avec politiques différentes, B en a
+  une autre; UI clavier/souris FR/EN, watcher inclus/exclus, retrait, redémarrage,
+  source absente/restaurée, SHA inchangé et zéro erreur console fatale.
+- À surveiller : aucune transaction catalogue/Index inter-base n'est prétendue;
+  la policy désirée peut donc précéder son application. Mutation physique
+  strictement concurrente au rebase non séparable atomiquement.
+- F-006, F-014 et P-19 inchangés; aucune TASK-0049 avant verdict indépendant.
+
 ## Relais — TASK-0048 READY / Codex — 2026-09-26
 
 - Branche : `build/v0.2-a32-v1-safe-exclusion-policy`.

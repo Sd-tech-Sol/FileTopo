@@ -6102,3 +6102,27 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
   `build/v0.2-a32-v1-safe-exclusion-policy`;
 - exécuteur : Codex + GPT-5.6 Sol — High effort;
 - aucune TASK-0049.
+
+## 2026-09-26 — TASK-0048 — politique d'exclusions sûres V1 (F-005)
+
+**Agent :** Codex
+**Statut à l'issue :** `IMPLEMENTED` (jamais auto-`VERIFIED`)
+
+- Ajout d'une politique brain-scoped/versionnée de sous-arbres relatifs exacts
+  dans `catalog_meta`, sans glob, dépendance, table, base ni store.
+- Validation backend canonique et fermée; commandes Tauri de lecture et de
+  remplacement complet; UI MapApp FR/EN accessible et non optimiste.
+- Scanner, Actualiser, Reconstruire, W-B, W-C et watcher alignés; reparse et
+  symlink restent toujours non suivis.
+- Estampille appliquée dans l'Index et rebase atomique sans faux événements de
+  source; `applicationRequired` explicite avec conservation du dernier Index
+  fiable si la source est indisponible.
+- Preuve Tauri/WebView2 réelle sur trois cerveaux dont A/C même source,
+  redémarrage, watcher, retrait, source absente/restaurée et SHA inchangé.
+- Validations : Rust 766 PASS / 6 ignorés; frontend 622 PASS; Tauri debug,
+  TypeScript, build, Clippy à la référence 13/22, audit public et sept
+  falsifications PASS.
+- Limites : fermeture normale; Windows/NTFS; aucune atomicité inter-base
+  revendiquée pour une mutation physique strictement concurrente.
+- F-005 = `IMPLEMENTED`; F-006, F-014 et P-19 inchangés. Action suivante :
+  contrôle indépendant de TASK-0048; aucune TASK-0049.
