@@ -1,7 +1,7 @@
 # TASK-0047 — V1 Accessibility Closure
 
 - **Date :** 2026-09-25
-- **Statut :** `READY`
+- **Statut :** `IMPLEMENTED` (2026-09-26; jamais auto-`VERIFIED` — contrôle indépendant attendu)
 - **Branche :** `build/v0.2-a31-v1-accessibility-closure`
 - **Décision :** `DEC-0045`
 - **Portée :** `F-036`, partie accessibilité de `P-21`
@@ -251,3 +251,80 @@ Les sabotages ne restent pas dans le commit final.
 - remplir `.orchestrator/RESULT.md`;
 - `NEXT_ACTION = contrôle indépendant de TASK-0047`;
 - arbre propre.
+
+---
+
+## Exécution — 2026-09-26 (exécuteur Claude Code, Sonnet 5)
+
+Commit produit `ec22b07`; preuves `docs/performance/runs/TASK-0047-baseline-webview2.json` (avant
+corrections, code de base `29170ec`) et `docs/performance/runs/TASK-0047-webview2.json` (code final).
+Détail chiffré : `docs/ai/VALIDATION.md` section CF.
+
+### A — existant réutilisé / à corriger / hors portée
+
+- **Réutilisé tel quel :** l'arbre `role=tree` + `aria-activedescendant` + `handleKeyDown` de `MapView`, le
+  menu clavier de `CompositionBar`, les labels/alertes/`aria-invalid` du formulaire d'identité, le
+  `:focus-visible` global, le bloc `prefers-reduced-motion`, les mots + symboles de tous les codages
+  (états, filtres, source, watcher, relations, revue). Aucun composant réécrit, aucun framework.
+- **Corrigé (chaque écart est mesuré dans le baseline, jamais supposé) :** voir « Corrections » ci-dessous.
+- **Hors portée, inchangé :** P-19; toute préférence d'accessibilité; Rust; source/Index/journal/seen/resume/
+  watcher; la boîte de dialogue native de couleur (dialogue système).
+
+### B — dépendance
+
+`axe-core@4.13.0` revalidé avant installation : paquet npm officiel, dépôt `dequelabs/axe-core`
+(actif, non archivé), licence **MPL-2.0**, mainteneurs Deque (`dqlabs`, `npmdeque`), publié par GitHub Actions
+avec provenance SLSA, **0 dépendance**, intégrité `sha512-UzGt8zg7…HKcy0A==` identique au lockfile.
+Ajouté **seulement** comme devDependency exacte; jamais importé par le bundle produit; chargé localement
+dans WebView2 par le harnais. Ni `@axe-core/playwright`, ni `jest-axe`, ni MCP/service.
+
+### C/D — baseline (avant corrections) puis corrections
+
+Baseline, 36 cellules (9 états × FR/EN × clair/sombre) : **16 violations axe** (2 règles) et **212 constats**
+au total, dont : contraste de texte 58, contraste non textuel (bordure des champs) 44, `incomplete` axe
+mesurés en échec 54, focus invisible sur la carte 11, focus hors du canevas sur un agrégat 20, focus perdu
+sur `<body>` 7, agrégat non conforme 2.
+
+| # | Écart mesuré (WebView2 réel) | Cause minimale | Correction |
+|---|---|---|---|
+| 1 | axe `aria-valid-attr-value` (critique) : `aria-activedescendant` nommait une carte non dessinée (sélection trouvée par recherche, hors vue bornée) | référence d'id vers un élément absent | `MapView` : pas d'`aria-activedescendant` si la carte n'est pas dessinée |
+| 2 | axe `aria-required-children` : `role=button` (agrégat « +N éléments ») dans `role=tree` | un arbre ne possède que des `treeitem` / `group` | l'agrégat devient `role=treeitem` + `aria-level` (parent + 2), toujours focalisable, Entrée/Espace inchangés |
+| 3 | focus sur un agrégat que le pan a laissé hors du canevas (invisible, non atteignable à l'œil) | aucun recadrage au focus | `onFocus` → `ensureRectVisible` (mécanisme existant de la sélection) |
+| 4 | focus perdu sur `<body>` après Entrée sur un agrégat (l'élément est remplacé) | élément démonté | le focus revient à l'arbre (dont `aria-activedescendant` nomme la sélection), seulement s'il est réellement perdu |
+| 5 | le contour de focus de la carte ne change **aucun pixel** | contour extérieur rogné par `.map-view { overflow: hidden }` | `.map-view__canvas:focus-visible { outline-offset: -3px }` |
+| 6 | sombre : noms de cartes (`--ink` clair) sur cartes claires (1,4–2,2:1) | `--directory` / `--file` / `--skipped` non redéfinis en sombre | 3 jetons sombres (≥ 4,5:1 à toutes les opacités, calculé par test et mesuré) |
+| 7 | sombre : titre de territoire noir sur fond sombre (1,16:1) | `.map-territory__title` sans aucune règle | `fill: var(--ink)`; le territoire focalisé en gras |
+| 8 | clair : nom et étiquette de filtre de la racine (1,5:1) sur carte racine sombre; 2,9:1 quand la racine est atténuée (0,66) | `--ink` sombre sur `--root`; opacité d'état | `.map-node__label--root` / `.map-node--root .map-node__filter-tag` en clair; racine à 0,95 quel que soit l'état |
+| 9 | bordure des champs texte 1,4:1 (WCAG 1.4.11); *placeholder* 3,6:1 en sombre | `--line` (filet décoratif); défaut du moteur | bordure `--ink-soft`; `input::placeholder { color: var(--ink-soft); opacity: 1 }` |
+| 10 | Entrée sur un contrôle qui se désactive pendant son action (Analyser, Observer, Actualiser, ajout d'un cerveau) : focus sur `<body>`, non rendu | `disabled` pendant l'action | `useRestoreFocusAfterDisabled` (`focusRestore.ts`) : rend le focus au contrôle réactivé (ou à son remplaçant de même `data-testid`), sans commande ni état |
+| 11 | retrait d'une pastille (×) : le focus tombe sur `<body>` | l'élément disparaît avec le focus | le focus passe à la pastille qui reste (cerveau focalisé) |
+
+### E–I — parcours clavier, focus, contraste, non-couleur, mouvement
+
+Voir VALIDATION CF (chiffres) et l'artefact. Séquences Tab / Shift+Tab sur 9 états (646 arrêts), focus
+prouvé visible **par pixels** (capture de l'élément focalisé vs flou), contraste de l'indicateur ≥ 4,71:1,
+12 parcours (101 pas) d'événements clavier réels, contraste texte / glyphes / champs / pseudo-éléments /
+objets graphiques calculé sur les styles réels (6 420 éléments de texte), 13 codages avec alternative non
+colorée, `prefers-reduced-motion` avec sonde.
+
+### J–K — matrice et invariants
+
+Matrice : 9 états × FR/EN × clair/sombre (36 cellules), dont l'écran initial, le menu, l'éditeur (avec
+refus), le cerveau adossé à un dossier riche, le cerveau synthétique riche, deux et trois cerveaux composés
+(agrégat) et le mouvement réduit. VIEW_BUDGET 512 : 10 cartes dessinées au plus; le cerveau large (127
+nœuds) n'en dessine que 4. Neuf fenêtres passives (marches Tab) : **0 commande** du produit, catalogue,
+reprise, Index, journal, seen et SHA-256 de la source inchangés; SHA-256 des deux racines identique avant /
+après (le harnais ajoute un seul fichier, documenté, avant la référence).
+
+### M — falsification
+
+Six sabotages du produit réel, chacun **attrapé** en WebView2 (voir VALIDATION CF.7), plus 15 tests
+unitaires qui échouent contre le code de base. Aucun sabotage ne reste dans le commit.
+
+### Écarts d'exécution assumés
+
+- L'agrégat passe de `role=button` à `role=treeitem` : `projection.test.tsx` a été mis à jour (nombre de
+  `treeitem` = cartes + agrégats; recherche par rôle `treeitem`). Le comportement (Entrée / Espace,
+  aucune sélection inventée) est inchangé.
+- Le harnais garde une option `TASK0047_FAIL_FAST` (arrêt au premier constat) utilisée pour les
+  falsifications; elle ne modifie aucun produit.

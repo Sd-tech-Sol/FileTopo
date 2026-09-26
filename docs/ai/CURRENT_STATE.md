@@ -1,6 +1,31 @@
 # État courant
 
-## TASK-0047 — V1 Accessibility Closure — READY — 2026-09-25
+## TASK-0047 — V1 Accessibility Closure — IMPLEMENTED — 2026-09-26
+
+- **Statut : `IMPLEMENTED`** (jamais auto-`VERIFIED`). Branche `build/v0.2-a31-v1-accessibility-closure`, partie de
+  `29170ec`; commit produit `ec22b07`. Décision [DEC-0045](../decisions/DEC-0045-accessibility-closure-boundary.md);
+  détail [VALIDATION CF](VALIDATION.md), `.orchestrator/RESULT.md`.
+- **Ce qui existe.** Le runtime `MapApp` a été **audité dans le vrai WebView2** avec `axe-core@4.13.0` (devDependency exacte,
+  injecté localement) sur 36 cellules (9 états × FR/EN × clair/sombre) : baseline avant corrections **16 violations
+  axe / 212 constats**, état final **0 violation, 0 constat**. Onze causes corrigées, chacune mesurée : ARIA de la carte
+  (`aria-activedescendant` vers une carte absente; agrégat `role=button` dans un `role=tree` → `treeitem`), focus invisible
+  sur la carte (contour rogné) et focus hors canevas / perdu (agrégat, contrôles désactivés pendant leur action,
+  retrait de pastille), contrastes en sombre (cartes, titre de territoire, placeholder), racine en clair, bordure des champs.
+- **Preuves.** Marches Tab / Shift+Tab réelles (646 arrêts, ordre DOM, sortie sans piège, focus **visible par pixels**),
+  12 parcours clavier (101 pas), contraste calculé sur 6 420 éléments + glyphes + champs + objets graphiques (0 échec),
+  13 codages avec alternative non colorée, `prefers-reduced-motion` avec sonde, invariants (0 commande passive, SHA-256 des
+  racines, VIEW_BUDGET 512). TypeScript **618 PASS**, Rust **753 PASS**, Clippy 13 / 22 = référence. Six sabotages du produit
+  réel attrapés. Artefacts : `docs/performance/runs/TASK-0047-baseline-webview2.json`, `TASK-0047-webview2.json`.
+- **`F-036` = `IMPLEMENTED`; accessibilité de `P-21` : prête pour un contrôle indépendant.** `P-21` reste **PARTIELLE**
+  (fermeture par composition ACTION-0077 + contrôle de TASK-0047), `P-19` reste **PARTIELLE**.
+- **Non testé / limites.** Pas de lecteur d'écran réel; pas de zoom / reflow; contrôles de navigation absents des données
+  synthétiques non exercés au clavier réel (doublons, relations inter-cerveaux); pagination non exercée; « marquer comme vu » /
+  confirmer / rejeter non exercés; clavier par CDP; aucune certification WCAG générale.
+- **Hors portée, inchangés :** P-19, préférences d'accessibilité, Rust, source / Index / journal / seen / resume / watcher.
+  Aucune TASK-0048, aucun PR / fusion / étiquette / release.
+- **Action unique suivante : contrôle indépendant de `TASK-0047`.**
+
+## TASK-0047 — V1 Accessibility Closure — READY (remplacé par l'exécution ci-dessus) — 2026-09-25
 
 - Branche : `build/v0.2-a31-v1-accessibility-closure`.
 - Décision : [DEC-0045](../decisions/DEC-0045-accessibility-closure-boundary.md).

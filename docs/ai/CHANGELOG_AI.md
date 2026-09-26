@@ -6034,3 +6034,29 @@ fusion / étiquette / release.
 - preuve exigée : axe vrai WebView2, clavier, focus, contrastes, non-couleur,
   reduced motion, invariants;
 - P-19 hors tranche; aucune TASK-0048.
+
+
+---
+
+## 2026-09-26 — TASK-0047 — Fermeture accessibilité du runtime V1 (F-036)
+
+**Agent :** exécuteur Claude Code (Sonnet 5)
+**Statut à l'issue :** `IMPLEMENTED` (jamais auto-`VERIFIED`)
+
+### Fait
+
+- Revalidé puis installé `axe-core@4.13.0` (devDependency exacte, MPL-2.0, Deque, 0 dépendance, intégrité = lockfile).
+- Harnais réel `scripts/task0047-*` : axe injecté localement dans WebView2, matrice 9 états × FR/EN × clair/sombre (36
+  cellules), marches Tab / Shift+Tab réelles avec focus prouvé visible par pixels, 12 parcours clavier, contraste calculé
+  (texte, glyphes, champs, objets graphiques, pseudo-éléments), inventaire des alternatives non colorées, sonde de mouvement
+  réduit, invariants (0 commande passive, SHA-256 des racines, VIEW_BUDGET).
+- Baseline avant corrections (16 violations axe, 212 constats), puis 11 causes corrigées : ARIA de la carte (`aria-activedescendant`,
+  agrégat `treeitem`), focus (contour du canevas, agrégat recadré / refocalisé, contrôles désactivés pendant leur action, retrait de
+  pastille), contrastes en sombre (cartes, titre, placeholder), racine en clair, bordure des champs.
+- 36 tests ajoutés (gardes de feuille de style, de source clavier, d'ARIA de l'arbre, de focus); 1 test mis à jour.
+- Six sabotages du produit réel attrapés en WebView2.
+
+### Non fait / limites
+
+Lecteur d'écran, zoom / reflow, contrôles de navigation absents des données synthétiques, pagination, marquer vu / confirmer /
+rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; aucun PR / fusion / étiquette / release.

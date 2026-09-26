@@ -1,5 +1,30 @@
 # HANDOFF — passage de relais
 
+## Relais — TASK-0047, fermeture accessibilité, IMPLEMENTED — 2026-09-26
+
+- **Fait :** `TASK-0047` est **IMPLEMENTED** sur `build/v0.2-a31-v1-accessibility-closure` (code `ec22b07`), jamais auto-`VERIFIED`.
+  F-036 = IMPLEMENTED; P-21 / P-19 PARTIELLES. Aucun Rust, aucune commande, aucun stockage, aucune préférence; aucune TASK-0048.
+- **Où regarder, dans l'ordre :** `DEC-0045`; la table « Corrections » de `docs/tasks/TASK-0047-…md`; VALIDATION CF;
+  `MapView.tsx` (`aria-activedescendant`, agrégat `treeitem`, `refocusTree`), `map.css` (jetons sombres, `.map-territory__title`,
+  `.map-node--root`, contour du canevas, `input::placeholder`), `focusRestore.ts`, `CompositionBar.tsx` (focus au retrait);
+  `accessibilityClosure.test.tsx` et `focusRestore.test.tsx`; `scripts/task0047-*` et les deux artefacts.
+- **À savoir pour la reprise :**
+  1. **Un `role=button` ne va pas dans le `role=tree`** de la carte (axe `aria-required-children`) : l'agrégat est un `treeitem`.
+     Le test de source refuse tout `role="button"` dans `MapView.tsx`.
+  2. **Une référence d'id doit nommer un élément dessiné** : pas d'`aria-activedescendant` pour une sélection hors vue bornée.
+  3. **Les jetons `--directory` / `--file` / `--skipped` ont des valeurs sombres** parce que les noms de cartes sont en `--ink` :
+     un test calcule ≥ 4,5:1 à chaque opacité de carte, et la racine reste à 0,95 dans tous les états.
+  4. **Le contour de focus du canevas est intérieur** (`outline-offset: -3px`) : l'hôte a `overflow: hidden`.
+  5. **`useRestoreFocusAfterDisabled`** ne lit aucun état et n'appelle aucune commande; il rend le focus à un contrôle réactivé
+     (ou à son remplaçant de même `data-testid`, revenu sous 15 s). Ne pas remplacer `disabled` par `aria-disabled` ailleurs sans
+     décision : ce hook est la réponse retenue.
+  6. **La preuve** : `pnpm build && pnpm tauri build --debug --no-bundle`, puis `scripts/task0047-webview2.ps1 -Mode final`
+     (≈ 12 min, fenêtre non masquée; `-Mode baseline` publie sans juger; `TASK0047_FAIL_FAST=1` s'arrête au premier constat).
+     Vérifier le **journal de build** avant de conclure d'un sabotage : un build en échec laisse l'ancien binaire.
+- **Non fait / non testé :** lecteur d'écran, zoom / reflow, contrôles de navigation absents des données synthétiques,
+  pagination, « marquer comme vu » / confirmer / rejeter, clavier système.
+- **Action suivante :** contrôle indépendant de `TASK-0047`.
+
 ## Relais — TASK-0047 READY — 2026-09-25
 
 - Branche : `build/v0.2-a31-v1-accessibility-closure`.

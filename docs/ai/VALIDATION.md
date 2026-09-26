@@ -8398,3 +8398,121 @@ organisation Deque active/vérifiée, MPL-2.0, paquet npm sans dépendance décl
 Le MCP/service externe Axe est écarté : inutile et moins local.
 
 Décision : prochaine tranche = **TASK-0047 — V1 Accessibility Closure**.
+
+
+## CF. TASK-0047 — Fermeture accessibilité du runtime V1 (F-036, accessibilité de P-21) — 2026-09-26
+
+**Statut : `IMPLEMENTED`** (jamais auto-`VERIFIED`). Branche `build/v0.2-a31-v1-accessibility-closure`,
+partie de `29170ec`; commit produit `ec22b07`. Décision `DEC-0045`. Fiche : `docs/tasks/TASK-0047-v1-accessibility-closure.md`.
+Aucune certification « WCAG compliant » : le contrat produit F-036 / P-21 est fermé **dans la portée mesurée**.
+
+### CF.1 Dépendance (reuse-first)
+
+`axe-core@4.13.0` : registre npm (`MPL-2.0`, dépôt `dequelabs/axe-core`, mainteneurs `dqlabs` / `npmdeque`,
+publié par GitHub Actions avec provenance SLSA, 0 dépendance, `sha512-UzGt8zg7…HKcy0A==`), dépôt GitHub actif et
+non archivé (MPL-2.0). Installé **seulement** en devDependency exacte; `pnpm-lock.yaml` porte la même
+intégrité. `axe.min.js` (SHA-256 `c24f097b…`) est évalué dans la page par le harnais; jamais importé par le bundle.
+Aucun `@axe-core/playwright`, `jest-axe`, MCP ni service. Nota : `pnpm add` a trié `@tauri-apps/cli` (même version
+`^2`) dans `devDependencies` — sans effet.
+
+### CF.2 Ce qui a été réellement exécuté
+
+Un seul lancement réel de `filetopo.exe` (Edg/153.0.4234.48, WebView2), hôte français simulé (`--lang=fr-CA`),
+racines générées par `task0047-seed-proof.py` (dossier de preuve supprimé avec elle; aucune donnée personnelle).
+`scripts/task0047-webview2.{ps1,mjs}`, `task0047-page-lib.js`, `task0047-seed-proof.py`.
+
+| Volet | Exécuté | Résultat (artefact final) |
+|---|---|---|
+| axe-core, WCAG 2.0/2.1/2.2 A + AA (`wcag2a`, `wcag2aa`, `wcag21a`, `wcag21aa`, `wcag22aa`) | 9 états × FR/EN × clair/sombre = **36 cellules** | **0 violation** |
+| `incomplete` axe | 40 occurrences, **74 cibles distinctes revues** une à une | 74 `PASS` par mesure (voir CF.5) |
+| Parcours Tab / Shift+Tab (événements CDP réels) | 9 marches, **646 arrêts** | chaque élément tabulable atteint une fois, ordre = ordre du DOM, retour arrière identique, sortie de page sans piège |
+| Focus visible | chaque arrêt : capture de l'élément focalisé vs flou | changement de pixels à **chaque** arrêt; contraste de l'indicateur ≥ **4,71:1**; jamais masqué |
+| Parcours clavier fonctionnels | 12 parcours, **101 pas** | langue, menu de composition, arbre de la carte, recherche / filtres / journal / détails, éditeur d'identité, revue / doublons / analyse / observation, contrôles de navigation, agrégat, focus après action |
+| Contraste calculé (styles réels, indépendant d'axe) | 36 cellules | **6 420** éléments de texte, 416 glyphes (≥ 3:1), 52 champs, 144 objets graphiques, 32 pseudo-éléments / placeholders : **0 échec**; marge la plus faible 5,09:1 pour 4,5 requis |
+| Alternatives non colorées | 13 codages lus à l'écran | mots + symboles / formes présents pour chacun; deux états d'un même codage disent des mots différents |
+| `prefers-reduced-motion` | émulé dans le moteur | 0 élément animé, dans les deux modes; sonde inline (transition 5 s + animation) : `5s / task0047-probe` en normal → `0s / none` en réduit |
+| Invariants | 9 fenêtres passives | **0 commande** du produit; catalogue, reprise, Index, journal, seen, SHA-256 des racines inchangés |
+| VIEW_BUDGET | cerveau large (127 nœuds) | 4 cartes dessinées; ≤ 10 cartes au total (< 512); aucun DTO complet |
+| Console | — | **0** erreur fatale |
+
+### CF.3 Baseline avant corrections (code `29170ec`) — `TASK-0047-baseline-webview2.json`
+
+36 cellules, **16 violations axe** : `aria-valid-attr-value` (4 nœuds, `aria-activedescendant` vers une carte non
+dessinée) et `aria-required-children` (12 nœuds, `role=button` dans `role=tree`); **212 constats** au total.
+Détail par cause : tableau « Corrections » de la fiche de tâche (11 causes). Ce baseline rejoue **les mêmes
+états et les mêmes contrôles** que la preuve finale, sans les juger.
+
+### CF.4 Corrections (uniquement les écarts observés)
+
+`MapView.tsx` (activedescendant, agrégat treeitem, focus), `map.css` (jetons sombres, titre, racine, champs,
+placeholder, contour du canevas), `CompositionBar.tsx` (focus après retrait), `focusRestore.ts` (nouveau,
+appelé une fois par `MapApp`). Aucun Rust, aucun fichier de `graph/`, aucune commande, aucun stockage, aucune
+préférence, aucun changement de source / Index / journal / seen / resume / watcher.
+
+### CF.5 `incomplete`, exceptions et faux positifs
+
+Les 40 occurrences `incomplete` se ramènent à deux règles, toutes classées **PASS avec preuve** :
+- `color-contrast` — « le contenu de l'élément ne contient que des caractères non textuels » (glyphes
+  `aria-hidden` : icônes, ✓ ● ◇ →) et « l'arrière-plan ne peut être déterminé car chevauché » (texte SVG de la
+  carte). Chacun est mesuré par le calcul de contraste sur les styles réels (pile `elementsFromPoint`, motif du
+  quadrillage, opacités, halo); les glyphes sont jugés à 3:1 (non textuel), le texte à 4,5:1. Un élément dont
+  **aucun** point n'est à l'écran (territoire panoramiqué hors du canevas) est classé « rien à lire ici »; la
+  même classe est mesurée partout où elle est visible.
+- `aria-valid-attr-value` sur `.composition__add` (`aria-controls` + `aria-haspopup`, message axe
+  `controlsWithinPopup`) — la cible `role=menu` existe dans la page pendant que le déclencheur est étendu.
+Aucune règle n'est désactivée; aucune liste d'exceptions globale. Les contrôles désactivés sont exemptés du 1.4.3
+par WCAG et **enregistrés** (nom + rapport) dans chaque cellule (`exemptInactive`), jamais ignorés en silence.
+
+### CF.6 Validation canonique (code final `ec22b07`)
+
+| Commande | Résultat |
+|---|---|
+| `pnpm test` | **618 PASS** (41 fichiers) = 582 + 36 (29 `accessibilityClosure`, 7 `focusRestore`); 1 test existant mis à jour (`projection.test.tsx`) |
+| `pnpm check` / `pnpm build` | PASS |
+| `cargo test --offline` | **753 PASS**, 0 échec, 6 ignorés (aucun fichier Rust modifié) |
+| `cargo build --offline` | PASS |
+| `pnpm tauri build --debug --no-bundle` | PASS |
+| Clippy `--all-targets` | lib **13** / lib-test **22** avertissements = référence historique, 0 erreur; dette non mêlée au verdict |
+| `git diff --check` | propre |
+| `scripts/audit-public-readiness.ps1 -AllowRemotes` | PASS |
+| WebView2 réel | `TASK-0047-webview2.json` : 0 violation, 0 constat |
+
+### CF.7 Falsification
+
+**Sabotages du produit réel** (modifiés, reconstruits, exécutés en WebView2 avec `TASK0047_FAIL_FAST`, puis
+restaurés par `git checkout -- src`; rien n'est commité) :
+
+| # | Sabotage | Attrapé par |
+|---|---|---|
+| 1 | l'agrégat perd son `onKeyDown` (souris seulement) | parcours « agrégat » : Entrée ne l'active pas (`timeout: the aggregate answered`) |
+| 2 | `:focus-visible { outline: none }` | marche Tab : l'élément focalisé ne change aucun pixel (dès le 1er arrêt) |
+| 3 | `--ink-soft` clair `#4a5c56` → `#9aa8a2` | balayage de contraste : `p.app__subtitle` sous 4,5:1 (dès la 1re cellule) |
+| 4 | le mot de l'état d'un élément retiré (symbole + couleur restent) | inventaire non coloré : « l'état d'un élément » sans mots |
+| 5 | bloc `prefers-reduced-motion` vidé | sonde de mouvement : « a transition survives … (5s) » |
+| 6 | `aria-labelledby` vers un id inexistant sur les boutons de langue | axe (`aria-valid-attr-value`) dès la 1re cellule |
+
+(Le sabotage 4 a dû être rejoué : sa première tentative ne compilait pas et le harnais avait tourné sur le
+binaire précédent — constaté par le journal de build, corrigé, rejoué.)
+Plus : contre le code de base `29170ec`, **15 des 29** tests de `accessibilityClosure.test.tsx` échouent.
+
+### CF.8 Non testé / limites honnêtes
+
+- Pas de lecteur d'écran réel (NVDA, Narrateur…) : la sémantique est vérifiée par axe et par les attributs, pas
+  par une annonce vocale. Pas de test avec agrandissement / zoom du texte, ni de fenêtre étroite (reflow).
+- Contrastes calculés sur le moteur réel avec un modèle de composition des couches (opacités, motif, halo) :
+  c'est une mesure, pas un pipeline de rendu; les couleurs de cerveaux choisies par l'utilisateur ne sont jamais
+  l'unique porteur d'information (nom + icône + mot « actif »), donc non mesurées.
+- Contrôles de navigation absents des données synthétiques (donc **non exercés** au clavier réel, seulement
+  natifs `<button>` gardés par le test de source) : membres de doublons (0 groupe dans les fixtures), relations
+  inter-cerveaux, liens de relations d'un nœud, enfants du dossier sélectionné pour le cerveau synthétique.
+  La pagination (suivant / précédent) n'est pas exercée : un bouton qui se désactive en fin de liste laisse le
+  focus sur la page (le sortir n'est pas un piège; non corrigé, hors écart mesuré).
+- « Marquer comme vu », « Tout marquer comme vu », confirmer / rejeter une suggestion : non exercés (ils
+  modifient l'état vu / la revue); « Plus tard » est exercé (Espace).
+- Le territoire focalisé peut être panoramiqué hors du canevas quand la sélection suit une recherche : ce n'est pas un
+  écart de contraste ni d'ARIA; non traité.
+- Clavier par CDP (pipeline du navigateur), pas par le système d'exploitation; fermeture normale seulement
+  (à la fermeture du baseline, la fenêtre n'a pas répondu et le processus démarré par le script a été arrêté);
+  poste de développement, disque NTFS local.
+- Le contrôle de la boîte de dialogue native de couleur (dialogue système) est hors portée.
+- P-19 reste **PARTIELLE**; P-21 reste **PARTIELLE** jusqu'au contrôle indépendant; F-036 = `IMPLEMENTED`.
