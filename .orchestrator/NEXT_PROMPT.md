@@ -1,167 +1,186 @@
-# NEXT_PROMPT — TASK-0047 — V1 Accessibility Closure
+# NEXT_PROMPT — TASK-0048 — V1 Safe Exclusion Policy
 
-Tu es l'exécuteur de TASK-0047 pour FileTopo.
-
-## Autorité
-
-Lis d'abord, dans cet ordre :
-
-1. `docs/decisions/DEC-0045-accessibility-closure-boundary.md`
-2. `docs/tasks/TASK-0047-v1-accessibility-closure.md`
-3. `docs/reviews/ACTION-0077-task0046-independent-control.md`
-4. `docs/reviews/ACTION-0078-f036-accessibility-audit.md`
-5. `docs/product/CARTETOPO_FUNCTIONAL_PARITY.md` — surtout P-21
-6. `docs/product/FEATURE_MATRIX.md` — surtout F-036
-7. `docs/ai/CURRENT_STATE.md`
-8. `docs/ai/VALIDATION.md`
-9. `docs/ai/HANDOFF.md`
-
-Git et ces documents sont la source de vérité.
+**TARGET_AGENT:** CODEX
+**RECOMMENDED_MODEL:** GPT-5.6 Sol
+**RECOMMENDED_EFFORT:** High
+**STATUS:** READY
+**BRANCH:** `build/v0.2-a32-v1-safe-exclusion-policy`
 
 ## Objectif unique
 
-Implémenter **TASK-0047 — V1 Accessibility Closure** sur la branche courante,
-sans ouvrir TASK-0048.
+Exécute intégralement
+`docs/tasks/TASK-0048-v1-safe-exclusion-policy.md`
+selon
+`docs/decisions/DEC-0046-safe-exclusion-policy-boundary.md`.
 
-Le but n'est pas de refaire l'interface. Le runtime possède déjà plusieurs
-briques accessibles. Tu dois :
+F-005 seulement. Aucune TASK-0049.
 
-- mesurer le vrai runtime;
-- réutiliser ces briques;
-- corriger seulement les écarts observés;
-- publier une preuve locale, falsifiable et suffisamment riche pour permettre
-  un contrôle indépendant.
+## 0 — préconditions
 
-## Frontières non négociables
+1. Applique `AGENTS.md` et les instructions Codex du repo.
+2. Basculer explicitement sur
+   `build/v0.2-a32-v1-safe-exclusion-policy`.
+3. `git fetch origin`.
+4. Synchroniser uniquement en fast-forward avec
+   `origin/build/v0.2-a32-v1-safe-exclusion-policy`.
+5. Vérifier arbre propre.
+6. Vérifier présence de :
+   - ACTION-0079;
+   - ACTION-0080;
+   - DEC-0046;
+   - TASK-0048.
+7. Lire DEC-0046, TASK-0048, ACTION-0080 et RESULT actuel.
 
-- Tauri + Rust + SQLite + React/TypeScript inchangés comme architecture.
-- Aucun changement de source analysée.
-- Un seul Index canonique.
-- VIEW_BUDGET = 512.
-- Aucun whole-graph DTO.
-- Aucun nouveau store/base/catalogue.
-- Aucun provider/cloud/service d'accessibilité.
-- Aucun MCP Axe.
-- Aucun envoi de contenu, page ou capture à un tiers.
-- Pas de Rust sauf nécessité démontrée impossible à corriger côté frontend.
-- P-19 reste hors tranche.
-- Ne crée aucune préférence d'accessibilité FileTopo pour « compléter » le
-  produit artificiellement.
-- F-035/TASK-0046 ne doit pas régresser.
-- Aucune certification générale « WCAG compliant ».
+STOP/BLOCKED si une précondition est fausse.
 
-## Reuse-first / dépendance
+## 1 — audit avant code
 
-Avant d'installer quoi que ce soit, vérifie **axe-core@4.13.0** :
+Ne code rien avant d'avoir tracé :
 
-- package `axe-core`;
-- repo officiel `dequelabs/axe-core`;
-- version exacte;
-- licence MPL-2.0;
-- mainteneur/auteur cohérent Deque;
-- dépendances déclarées;
-- intégrité publiée.
+- initial build;
+- Actualiser;
+- Reconstruire;
+- `scan_tree_controlled`;
+- `observe_entry`;
+- W-B;
+- W-C;
+- hints watcher;
+- publication + journal;
+- stockage `catalog_meta`.
 
-Si ces faits ne concordent pas ou ne peuvent pas être vérifiés, STOP et écris
-un RESULT BLOCKED. Ne remplace pas par un autre package.
+Écris la conclusion dans RESULT avant de choisir le chemin d'application d'une
+nouvelle politique.
 
-Si validé, ajoute **seulement** :
+Point critique : **un changement de politique d'exclusion n'est pas un
+changement de la source**. Il ne doit jamais produire de faux événements
+CREATED/DELETED/etc.
 
-`axe-core@4.13.0` comme devDependency exacte.
+Ne présume pas que Reconstruire a déjà cette propriété : prouve-la dans le code
+et les tests.
 
-N'ajoute pas `@axe-core/playwright`, `jest-axe`, Playwright, Puppeteer ou un
-MCP/service si le core + le harnais WebView2 existant suffisent.
+## 2 — architecture imposée
 
-## Méthode obligatoire
+- aucune dépendance `ignore` / `globset`;
+- aucune wildcard;
+- règles = sous-arbres relatifs exacts;
+- stockage brain-scoped/versionné dans `catalog_meta`;
+- backend autoritaire;
+- lecture + remplacement complet de policy;
+- scanner/refresh/rebuild/W-B/W-C/watcher = même policy;
+- reparse/symlink = sécurité intégrée toujours active;
+- aucun chemin absolu dans DTO/UI/logs publics;
+- aucune nouvelle base/table/store.
 
-1. Fais le baseline accessibilité **avant** les corrections.
-2. Injecte axe-core localement dans le vrai WebView2 Tauri.
-3. Ouvre les surfaces riches requises par TASK-0047.
-4. Publie violations + incomplete + contexte logique dans un artefact JSON.
-5. Corrige les causes minimales.
-6. Rejoue axe dans FR/EN et clair/sombre lorsque applicable.
-7. Fais le parcours clavier réel complet avec événements d'entrée navigateur.
-8. Vérifie focus visible, sortie sans piège, sémantique ARIA.
-9. Vérifie contraste de texte et non-textuel applicable.
-10. Vérifie qu'aucun sens n'est porté par la couleur seule.
-11. Émule `prefers-reduced-motion: reduce` et contrôle les styles calculés.
-12. Vérifie les invariants source/Index/journal/seen/resume/watcher et le
-    SHA-256 de la racine générée.
-13. Fais les sabotages demandés et prouve qu'ils échouent.
-14. Rejoue la validation canonique sur le code final.
+## 3 — cohérence policy / Index
 
-Un `axe.run()` vert seul n'est **pas** suffisant.
+C'est la partie la plus risquée.
 
-## Règles axe
+Tu dois choisir le plus petit mécanisme qui garantit :
 
-- Ne désactive pas globalement une règle pour faire passer le build.
-- Un résultat `incomplete` doit être revu et classé.
-- Un faux positif/inapplicable doit être documenté par rule id, cible, raison et
-  preuve manuelle.
-- La preuve contraste autoritaire vient du vrai WebView2, pas de JSDOM.
+- politique persistée;
+- Index correspondant ou état explicitement « application requise »;
+- dernier Index fiable conservé sur échec;
+- aucune fausse entrée de journal lors d'un changement de policy;
+- watcher cohérent avec la policy effective.
 
-## Preuve réelle
+N'invente pas une transaction inter-DB inexistante.
 
-Crée un artefact :
+Si une application immédiate propre nécessite une grosse architecture,
+implémente plutôt une sémantique explicite et testée de policy enregistrée /
+application requise, visible dans l'UI. Mais essaie d'abord de réutiliser le
+chemin Reconstruire/rebase existant si sa sémantique réelle convient.
 
-`docs/performance/runs/TASK-0047-webview2.json`
+Documente la décision dans RESULT.
 
-Il doit au minimum contenir :
+## 4 — UI minimale
 
-- version axe-core;
-- version/moteur WebView2;
-- matrice des états audités;
-- violations finales (attendu : aucune non justifiée dans le scope);
-- incomplete + décisions;
-- parcours clavier avec focus avant/après;
-- focus visible;
-- contrastes mesurés/contrôlés;
-- inventaire des alternatives non colorées;
-- preuve reduced-motion;
+Surface brain-scoped dans MapApp :
+
+- Exclusions;
+- liste;
+- champ chemin relatif;
+- Ajouter;
+- Retirer;
+- explication sous-arbre;
+- note reparse/symlink;
 - FR/EN;
-- clair/sombre si servis;
-- invariants d'état;
-- SHA-256 source avant/après;
-- erreurs console fatales;
-- limites honnêtes.
+- clavier/focus/contraste conformes TASK-0047.
 
-Aucune donnée personnelle. Utilise seulement des fixtures/racines générées par
-la preuve.
+Pas de gros écran Settings.
 
-## Validation complète
+## 5 — preuves obligatoires
 
-Exécute tout ce que TASK-0047 §L exige. Les chiffres de tests finaux doivent
-être publiés dans VALIDATION et RESULT.
+Rust + TypeScript + vrai WebView2.
 
-S'il existe une dette Clippy historique, compare-la à une référence et ne la
-mélange pas au verdict de la tranche.
+Le vrai scénario doit prouver :
 
-## Documentation / fin de travail
+- A/C même source, policy différente;
+- B autre source;
+- persistance au restart;
+- add/remove par UI;
+- règle refusée = aucun optimistic state durable;
+- modification sous exclusion ignorée par watcher;
+- modification hors exclusion réconciliée normalement;
+- politique modifiée = aucun faux événement journal source;
+- source absente = policy toujours gérable, dernier Index fiable;
+- SHA-256 source inchangé;
+- aucune fuite de chemin absolu.
 
-Mets à jour au minimum :
+Artefact :
+`docs/performance/runs/TASK-0048-webview2.json`.
 
-- `.orchestrator/RESULT.md`;
-- `docs/tasks/TASK-0047-v1-accessibility-closure.md`;
-- `docs/ai/VALIDATION.md`;
-- `docs/ai/CURRENT_STATE.md`;
-- `docs/ai/HANDOFF.md`;
-- `docs/ai/NEXT_ACTION.md`;
-- `docs/ai/CHANGELOG_AI.md`;
-- `docs/product/FEATURE_MATRIX.md`.
+## 6 — tests de falsification
+
+Exécute les sabotages TASK-0048 §M. Le test `foo` vs `foobar` est obligatoire :
+aucun préfixe texte naïf.
+
+## 7 — dépendances et sécurité
+
+N'ajoute aucune dépendance externe pour cette tranche.
+
+Si tu crois qu'une dépendance est réellement nécessaire, STOP et écris BLOCKED
+avec justification au lieu de l'ajouter.
+
+## 8 — non-régression
+
+Ne touche pas hors nécessité démontrée :
+
+- identité stable;
+- bounded projection;
+- resume;
+- FR/EN;
+- accessibilité;
+- content signals/relations;
+- watcher hors intégration policy;
+- journal hors mécanisme nécessaire pour distinguer policy vs source.
+
+Pas de refactor opportuniste.
+
+## 9 — validation
+
+Exécute tout TASK-0048 §L.
+
+Clippy : distingue dette historique et nouvelle dette.
+
+Audit public obligatoire.
+
+## 10 — gouvernance
 
 À la fin :
 
-- TASK-0047 = IMPLEMENTED, jamais auto-VERIFIED;
-- F-036 = IMPLEMENTED, jamais auto-VERIFIED;
-- P-21 reste PARTIELLE jusqu'au contrôle indépendant;
-- P-19 reste PARTIELLE;
-- aucune TASK-0048;
-- aucun PR / merge / tag / release;
+- TASK-0048 = IMPLEMENTED, jamais auto-VERIFIED;
+- F-005 = IMPLEMENTED, jamais auto-VERIFIED;
+- F-006/F-014/P-19 inchangés;
+- aucune TASK-0049;
+- NEXT_ACTION = contrôle indépendant de TASK-0048;
 - commit + push;
 - arbre propre.
 
-Dans RESULT, sépare explicitement :
-1. preuves réellement exécutées;
-2. contrôles/falsifications;
-3. limites et éléments non testés;
-4. décision attendue de l'orchestrateur.
+`.orchestrator/RESULT.md` doit être compact mais contenir :
+- audit avant code;
+- architecture réellement retenue;
+- preuves exécutées;
+- falsifications;
+- limites;
+- HEAD final;
+- décision attendue de l'orchestrateur.

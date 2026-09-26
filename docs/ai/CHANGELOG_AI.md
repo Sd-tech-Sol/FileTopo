@@ -6085,3 +6085,20 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
 - F-005 confirmée comme lacune produit P0;
 - ignore et globset audités, non retenus : exact relative subtree rules suffisent sans dépendance;
 - prochaine tranche : TASK-0048, exécution Codex.
+
+
+## 2026-09-26 — DEC-0046 / TASK-0048 READY
+
+**Orchestrateur :** ChatGPT
+
+- TASK-0047/F-036/P-21 confirmés fermés par ACTION-0079;
+- ACTION-0080 recoupée avec scanner/catalog/watcher : F-005 confirmé comme
+  prochaine lacune P0;
+- DEC-0046 approuvée : règles exactes de sous-arbres relatifs, policy
+  brain-scoped/versionnée dans catalog_meta, pas de glob/dépendance;
+- contrainte : changement de policy != changement source, donc aucun faux
+  événement journal;
+- TASK-0048 créée READY sur
+  `build/v0.2-a32-v1-safe-exclusion-policy`;
+- exécuteur : Codex + GPT-5.6 Sol — High effort;
+- aucune TASK-0049.

@@ -1,5 +1,18 @@
 # HANDOFF — passage de relais
 
+## Relais — TASK-0048 READY / Codex — 2026-09-26
+
+- Branche : `build/v0.2-a32-v1-safe-exclusion-policy`.
+- Lire DEC-0046, TASK-0048, ACTION-0080 puis
+  `.orchestrator/NEXT_PROMPT.md`.
+- Exécuteur : Codex, GPT-5.6 Sol, High effort.
+- Aucun glob/ignore : règles exactes relatives, backend autoritaire,
+  `catalog_meta` brain-scoped.
+- Le point le plus important à auditer avant code est la cohérence policy/Index
+  et l'absence de faux événements du journal lorsque seule la policy change.
+- Reparse/symlink reste non désactivable.
+- F-006/F-014/P-19 hors tranche; aucune TASK-0049.
+
 ## Relais — ACTION-0080 / prochaine exécution Codex — 2026-09-26
 
 - ACTION-0079 a fermé TASK-0047/F-036/P-21.

@@ -1,5 +1,19 @@
 # État courant
 
+## TASK-0048 — V1 Safe Exclusion Policy — READY — 2026-09-26
+
+- Branche : `build/v0.2-a32-v1-safe-exclusion-policy`.
+- Décision : `DEC-0046`.
+- Exécuteur : **Codex + GPT-5.6 Sol — High effort**.
+- F-005 seulement : politique d'exclusion brain-scoped, visible/configurable,
+  sous-arbres relatifs exacts, sans glob et sans nouvelle dépendance.
+- Même policy pour full scan / refresh / rebuild / W-B / W-C / watcher.
+- Une modification de policy ne doit jamais être journalisée comme un
+  changement physique de la source.
+- Preuve WebView2 : A/C même source avec policies différentes, watcher
+  inclus/exclus, restart, source absente, journal et SHA source.
+- F-006, F-014 et P-19 restent séparés. Aucune TASK-0049.
+
 ## ACTION-0080 — matrice V1 réconciliée / F-005 choisi — 2026-09-26
 
 - F-009/F-010/F-011/F-012 réconciliées avec TASK-0033/ACTION-0051 : IMPLEMENTED.
