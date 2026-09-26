@@ -8538,3 +8538,13 @@ Contrôle sur HEAD `5d6a88036eac0a6b23564c677021e868b91d5cb4`, produit `ec22b07`
 Les 618 tests TypeScript, 753 Rust et builds restent des preuves de l'exécuteur faute de CI attachée au HEAD. Le contrôle indépendant a porté sur code, gardes et artefacts.
 
 Détail : `docs/reviews/ACTION-0079-task0047-independent-control.md`.
+
+## CH. ACTION-0080 — audit des écarts V1 — 2026-09-26
+
+- F-009..F-012 : fonctionnalités présentes et contrôlées par TASK-0033/ACTION-0051; statuts corrigés en IMPLEMENTED.
+- F-023/F-024/F-026 : contrôlées par TASK-0035/ACTION-0056; statuts corrigés en IMPLEMENTED.
+- F-014 : l'ancien App possède une légende historique mais MapApp n'en a aucune; statut corrigé à PROPOSED.
+- F-006 : cycle reconstructible/rollback acquis par TASK-0031/ACTION-0048, mais preuve propre « index supprimé -> reconstruction équivalente » non retrouvée; reste ouverte.
+- F-005 : scanner sûr pour reparse/symlink, mais aucune exclusion utilisateur configurable/listable; lacune P0 confirmée.
+- Reuse-first F-005 : ignore 0.4.33 et globset 0.4.20 audités; aucun crate ajouté. Sous-arbres relatifs exacts avec std::path retenus.
+- Décision : TASK-0048 = F-005.

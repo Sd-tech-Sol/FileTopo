@@ -1,5 +1,15 @@
 # État courant
 
+## ACTION-0080 — matrice V1 réconciliée / F-005 choisi — 2026-09-26
+
+- F-009/F-010/F-011/F-012 réconciliées avec TASK-0033/ACTION-0051 : IMPLEMENTED.
+- F-023/F-024/F-026 réconciliées avec TASK-0035/ACTION-0056 : IMPLEMENTED; fiche TASK-0035 corrigée en VERIFIED.
+- F-014 corrigée à PROPOSED : la légende n'existe que dans l'ancien prototype, pas dans MapApp.
+- F-006 garde un socle reconstructible vérifié mais reste ouverte pour son critère exact de suppression/reconstruction équivalente.
+- F-005 est la prochaine vraie lacune P0 : reparse points sûrs, mais aucune politique utilisateur configurable/listable.
+- Reuse-first : ignore/globset audités; aucune nouvelle dépendance retenue. Règles V1 = sous-arbres relatifs exacts + sécurité reparse intégrée.
+- Prochaine tranche : TASK-0048 — V1 Safe Exclusion Policy, exécutée par Codex.
+- P-19 reste PARTIELLE; P-10/F-014 restent ouvertes et ne sont pas mélangées à TASK-0048.
 ## ACTION-0079 — TASK-0047 / F-036 VERIFIED, P-21 CLOSED — 2026-09-26
 
 - Contrôle indépendant du diff, du code, des gardes et des artefacts WebView2.

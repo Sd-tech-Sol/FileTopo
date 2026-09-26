@@ -1,7 +1,7 @@
 # TASK-0035 — V1 Context Panel, Direct Children & Safe Copy
 
 - Date : 2026-09-11
-- Statut : `READY`
+- Statut : `VERIFIED` dans sa portée par `ACTION-0056`
 - Branche : `build/v0.2-a19-v1-context-panel`
 - Prérequis : `TASK-0034 = VERIFIED` par `ACTION-0055`
 - Décisions applicables : `DEC-0031`, `DEC-0033`, `DEC-0034`

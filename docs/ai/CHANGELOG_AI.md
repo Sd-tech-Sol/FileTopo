@@ -6074,3 +6074,14 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
 - P-21 = CLOSED / VERIFIED par composition avec ACTION-0077;
 - P-19 reste PARTIELLE;
 - prochaine action : audit réel du repo avant TASK-0048.
+
+## 2026-09-26 — ACTION-0080 — réconciliation V1 / choix F-005
+
+**Orchestrateur :** ChatGPT
+
+- statuts périmés F-009..F-012 et F-023/F-024/F-026 réconciliés avec leurs ACTION indépendantes;
+- F-014 corrigée à PROPOSED pour le runtime MapApp courant;
+- F-006 documentée comme socle présent mais critère de reconstruction exacte encore ouvert;
+- F-005 confirmée comme lacune produit P0;
+- ignore et globset audités, non retenus : exact relative subtree rules suffisent sans dépendance;
+- prochaine tranche : TASK-0048, exécution Codex.

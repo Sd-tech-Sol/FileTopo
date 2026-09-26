@@ -1,5 +1,14 @@
 # HANDOFF — passage de relais
 
+## Relais — ACTION-0080 / prochaine exécution Codex — 2026-09-26
+
+- ACTION-0079 a fermé TASK-0047/F-036/P-21.
+- ACTION-0080 a réconcilié les statuts historiques périmés.
+- Prochaine lacune choisie : F-005, exclusions sûres et configurables.
+- Ne pas introduire `ignore` ou `globset` sans nouvelle preuve qu'un glob est nécessaire : le contrat V1 utilise des sous-arbres relatifs exacts et `std::path`.
+- Reparse/symlink reste une règle de sécurité intégrée non désactivable.
+- F-014 (légende), F-006 (preuve reconstructible exacte) et P-19 restent ouvertes, séparées.
+- Exécuteur suivant : Codex jusqu'au retour du quota Claude.
 ## Relais — ACTION-0079, accessibilité VERIFIED — 2026-09-26
 
 - TASK-0047 / F-036 : VERIFIED.
