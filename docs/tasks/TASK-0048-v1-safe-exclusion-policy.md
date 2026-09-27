@@ -1,7 +1,7 @@
 # TASK-0048 — V1 Safe Exclusion Policy
 
 - **Date :** 2026-09-26
-- **Statut :** `IMPLEMENTED`
+- **Statut :** `VERIFIED` par ACTION-0082
 - **Branche :** `build/v0.2-a32-v1-safe-exclusion-policy`
 - **Décision :** `DEC-0046`
 - **Portée :** `F-005`
@@ -304,3 +304,12 @@ sans TASK-0049. Voir
 - Aucun Rust/backend, package, artefact de données ou TASK-0049 modifié.
 - **État : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Nouveau contrôle
   indépendant requis.
+
+
+## Verdict final indépendant — ACTION-0082
+
+La corrective ACTION-0081 est acceptée. La génération brain-scoped neutralise
+tous les effets frontend d'un replace stale après changement de cerveau; R1–R4
+couvrent la course et le payload de l'édition suivante.
+
+**TASK-0048 = VERIFIED dans sa portée F-005.**
