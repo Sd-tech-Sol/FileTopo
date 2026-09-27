@@ -288,3 +288,19 @@ Le backend et les preuves scanner/watcher/journal sont acceptables, mais
 sur le composant après passage au cerveau B. Corrective pass ciblée exigée,
 sans TASK-0049. Voir
 `docs/reviews/ACTION-0081-task0048-async-brain-isolation-corrective.md`.
+
+## Corrective ACTION-0081 exécutée — 2026-09-26
+
+- Une génération brain-scoped est invalidée dès qu'un nouveau `brainId` est
+  rendu. Tous les effets du `replace` stale sont neutralisés, y compris son
+  résultat booléen vers `add/remove`.
+- Tests différés R1–R4 : succès stale A sans effet sur B, édition suivante B
+  sans règle A, rejet stale A invisible et replace courant canonique normal.
+- Falsification : sans le garde de génération, R1–R3 échouent; aucun sabotage
+  ne subsiste.
+- Frontend 625 PASS, check/build, Tauri debug, diff check et audit public PASS.
+  WebView2 final PASS phases 1/2 après une première campagne expirée sur
+  l'attente source absente, indépendante de la course corrigée.
+- Aucun Rust/backend, package, artefact de données ou TASK-0049 modifié.
+- **État : `IMPLEMENTED`, jamais auto-`VERIFIED`.** Nouveau contrôle
+  indépendant requis.

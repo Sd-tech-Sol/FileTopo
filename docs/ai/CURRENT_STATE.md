@@ -1,16 +1,18 @@
 # État courant
 
-## ACTION-0081 — TASK-0048 corrective pass requise — 2026-09-26
+## ACTION-0081 — corrective TASK-0048 exécutée — 2026-09-26
 
-- TASK-0048 reste IMPLEMENTED, non VERIFIED.
-- Backend/scanner/watcher/journal : contrôle statique cohérent.
-- Défaut trouvé : retour async stale de `ExclusionsPanel.replace()` après
-  changement de cerveau peut republier policy/error/busy de A dans B et faire
-  réutiliser les règles A lors d'une édition suivante B.
-- Correctif demandé : ticket/génération brain-scoped couvrant tous les effets
-  du replace, avec tests à Promises différées.
-- Exécuteur : Codex + GPT-5.6 Sol — Medium effort.
-- Aucun Rust attendu; aucune TASK-0049.
+- TASK-0048 reste IMPLEMENTED, non VERIFIED; nouveau contrôle indépendant requis.
+- `ExclusionsPanel.replace()` capture maintenant une génération brain-scoped
+  invalidée dès le rendu d'un autre cerveau. Un retour stale ne publie plus
+  policy/error/busy, n'appelle plus `onApplied` et retourne échec à l'ancien
+  `add/remove`, qui ne peut donc vider/refocaliser le draft courant.
+- R1–R4 à Promises différées couvrent succès stale A, payload B isolé, rejet
+  stale A et comportement courant canonique. Sans correctif, R1–R3 échouent.
+- Frontend : 625 PASS; check/build et Tauri debug PASS; WebView2 final phases
+  1/2 PASS au second bac frais; audit public PASS. Une première campagne a
+  expiré sur l'attente source absente, sans toucher la course corrigée.
+- Aucun Rust, backend, artefact de données, package ou TASK-0049 modifié.
 
 ## TASK-0048 — V1 Safe Exclusion Policy — IMPLEMENTED — 2026-09-26
 

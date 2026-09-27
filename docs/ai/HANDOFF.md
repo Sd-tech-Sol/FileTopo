@@ -1,13 +1,16 @@
 # HANDOFF — passage de relais
 
-## Relais — ACTION-0081 / corrective TASK-0048 — 2026-09-26
+## Relais — ACTION-0081 corrigée / contrôle indépendant requis — 2026-09-26
 
-- Ne pas créer TASK-0049.
-- Brancher Codex sur la même branche TASK-0048.
-- Seul défaut ouvert : isolation async du panneau Exclusions lors d'un switch
-  A -> B pendant un replace A en vol.
-- Lire ACTION-0081 et exécuter NEXT_PROMPT.
-- Aucun backend/Rust attendu.
+- TASK-0048 reste `IMPLEMENTED`, jamais auto-`VERIFIED`; aucune TASK-0049.
+- Contrôler la génération brain-scoped ajoutée à `ExclusionsPanel.replace()` :
+  après A -> B, aucun retour A ne peut publier state/error/busy, appeler
+  `onApplied` ni signaler succès à l'ancien `add/remove`.
+- R1–R4 emploient des Promises différées. La falsification sans correctif fait
+  échouer R1–R3; avec correctif, ciblé 7/7 et suite frontend 625/625.
+- Tauri debug PASS. WebView2 : première campagne expirée sur l'attente source
+  absente, seconde campagne fraîche PASS phases 1/2 avec redémarrage réel.
+- Aucun fichier Rust/backend, package ni artefact de données modifié.
 
 ## Relais — TASK-0048 IMPLEMENTED / contrôle indépendant requis — 2026-09-26
 

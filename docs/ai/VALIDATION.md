@@ -8669,3 +8669,45 @@ peuvent aussi écrire error/busy, appeler `onApplied(A)` ou vider le draft B.
 
 Correction et preuves R1–R4 définies dans
 `docs/reviews/ACTION-0081-task0048-async-brain-isolation-corrective.md`.
+
+
+## CK. ACTION-0081 — corrective isolation async TASK-0048 — 2026-09-26
+
+### CK.1 Cause et correction
+
+`replace()` capturait le `brainId` de son ancien rendu mais ne vérifiait pas
+que ce rendu était encore la génération affichée après son `await`. Une
+génération brain-scoped, invalidée dès le rendu d'un nouveau `brainId`, garde
+maintenant `setPolicy`, `setError`, `setBusy`, `onApplied` et le succès retourné
+à `add/remove`. Le backend A termine normalement; le frontend B reste isolé.
+
+### CK.2 R1–R4 et falsification
+
+| Preuve | Résultat final |
+|---|---|
+| R1 succès A après rerender B | policy/draft/busy/error B intacts; aucun `onApplied(A)` |
+| R2 édition suivante B | payload exact `beta-cache + beta-new`, aucune règle A |
+| R3 rejet A après rerender B | aucune erreur A; B reste éditable |
+| R4 replace courant | réponse canonique publiée; `onApplied` normal |
+
+Correctif temporairement retiré puis remis : R1, R2 et R3 échouent exactement
+sur la fuite attendue; R4 reste le témoin nominal. Aucun sabotage ne subsiste.
+
+### CK.3 Validations
+
+| Commande | Résultat |
+|---|---|
+| `pnpm test -- src/map/ExclusionsPanel.test.tsx` | **7 PASS** |
+| `pnpm test` | **625 PASS** dans 42 fichiers; avertissements `act(...)` historiques seulement |
+| `pnpm check` | PASS |
+| `pnpm build` | PASS; avertissement Vite historique du chunk > 500 kB |
+| `pnpm tauri build --debug --no-bundle` | PASS; deux avertissements Rust historiques |
+| `scripts/task0048-webview2.ps1` | première campagne FAIL par timeout « pending policy visible while source absent »; seconde campagne fraîche **PASS phases 1/2**, redémarrage réel |
+| `git diff --check` | PASS |
+| `scripts/audit-public-readiness.ps1 -AllowRemotes` | PASS, 647 fichiers, aucun motif sensible, aucun fichier > 5 Mio |
+
+Le harnais a réécrit son artefact avec des identifiants aléatoires; ce fichier
+a été restauré à son contenu versionné conformément à la frontière corrective
+qui interdit toute modification d'artefact de données. Aucun test Rust n'a été
+rejoué : aucun fichier Rust/backend n'a changé. La course R1–R3 est prouvée de
+façon déterministe en composant, pas rejouée explicitement par le harnais réel.

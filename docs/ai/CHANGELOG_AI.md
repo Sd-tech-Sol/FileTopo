@@ -6138,3 +6138,21 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
 - isolation brain-scoped non suffisamment garantie;
 - TASK-0048 non VERIFIED;
 - corrective pass Codex ciblée, aucun Rust attendu, aucune TASK-0049.
+
+
+## 2026-09-26 — ACTION-0081 — corrective isolation async exécutée
+
+**Agent :** Codex
+**Statut à l'issue :** `IMPLEMENTED` (jamais auto-`VERIFIED`)
+
+- ajout d'une génération brain-scoped à `ExclusionsPanel.replace()`;
+- neutralisation complète des retours A stale après affichage de B : aucun
+  state/error/busy, `onApplied` ou succès vers l'ancien `add/remove`;
+- quatre preuves différées R1–R4; falsification sans correctif : R1–R3 FAIL;
+- ciblé 7 PASS, frontend 625 PASS, check/build et Tauri debug PASS;
+- WebView2 : première campagne expirée sur l'attente source absente; seconde
+  campagne fraîche PASS phases 1/2 avec redémarrage réel;
+- diff check et audit public PASS; aucun Rust/backend, package ou artefact de
+  données modifié;
+- TASK-0048 reste `IMPLEMENTED`, non `VERIFIED`; action suivante : nouveau
+  contrôle indépendant; aucune TASK-0049.

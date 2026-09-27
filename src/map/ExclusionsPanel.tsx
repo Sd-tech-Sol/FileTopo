@@ -53,12 +53,18 @@ export default function ExclusionsPanel({ brainId, locale, disabled, onApplied }
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const request = useRef(0);
+  const generation = useRef({ brainId, value: 0 });
   const input = useRef<HTMLInputElement | null>(null);
+
+  if (generation.current.brainId !== brainId) {
+    generation.current = { brainId, value: generation.current.value + 1 };
+  }
 
   useEffect(() => {
     const ticket = ++request.current;
     setPolicy(null);
     setDraft("");
+    setBusy(false);
     setError(null);
     void invoke<ExclusionPolicyState>("map_brain_exclusions", { brainId })
       .then((record) => {
@@ -70,6 +76,8 @@ export default function ExclusionsPanel({ brainId, locale, disabled, onApplied }
   }, [brainId]);
 
   const replace = async (rules: string[]) => {
+    const operation = generation.current;
+    const isCurrent = () => generation.current === operation;
     setBusy(true);
     setError(null);
     try {
@@ -77,15 +85,17 @@ export default function ExclusionsPanel({ brainId, locale, disabled, onApplied }
         brainId,
         rules,
       });
+      if (!isCurrent()) return false;
       if (record.brainId !== brainId) throw new Error("map_exclusion_policy_brain_mismatch");
       setPolicy(record);
       if (!record.applicationRequired) await onApplied(brainId);
+      if (!isCurrent()) return false;
       return true;
     } catch (reason) {
-      setError(String(reason));
+      if (isCurrent()) setError(String(reason));
       return false;
     } finally {
-      setBusy(false);
+      if (isCurrent()) setBusy(false);
     }
   };
 
