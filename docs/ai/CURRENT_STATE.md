@@ -1,5 +1,16 @@
 # État courant
 
+## ACTION-0084 / ACTION-0085 / TASK-0050 READY — 2026-09-26
+
+- TASK-0049 / F-006 : **VERIFIED** par ACTION-0084.
+- Génération resume liée à `index_id`, digest logique inter-génération et
+  inventaire non reconstructible acceptés; preuve WebView2 trois processus.
+- F-014/P-10 audités par ACTION-0085 : aucune légende runtime, mais les
+  codages visuels actuels sont déjà identifiés et accessibles.
+- Prochaine tranche : TASK-0050 — Runtime Legend / P-10 Closure.
+- Exécuteur : Codex + GPT-5.6 Sol — Medium effort.
+- P-19 reste PARTIELLE; aucune TASK-0051 avant contrôle indépendant.
+
 ## TASK-0049 — V1 Reconstructibility & Index-Generation Safety — IMPLEMENTED — 2026-09-26
 
 - Branche `build/v0.2-a33-v1-reconstructibility-closure`; F-006 seulement;
