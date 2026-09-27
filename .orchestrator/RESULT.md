@@ -2,27 +2,25 @@ TASK_ID: TASK-0048
 AGENT: CODEX
 RESULT: DONE
 BRANCH: build/v0.2-a32-v1-safe-exclusion-policy
-FINAL_HEAD: 878320129760e2a9d9b4f536afa6c186d1df3e8c
+FINAL_HEAD: 00b1017fbdd263b0f0950aacb80315fe3480cd1f
 
 SUMMARY:
-- F-005 IMPLEMENTED: policy V1 brain-scoped/versioned, exact relative subtrees, shared by full scan/refresh/rebuild/W-B/W-C/watcher, with accessible FR/EN UI and no false source journal events.
-- Desired policy persists in catalog_meta; the applied envelope is stamped atomically with the Index. Failed application stays explicit and preserves the last reliable Index.
+- Cause: `replace()` ne vérifiait pas que son ancien rendu A appartenait encore à la génération affichée après `await`.
+- Correction: génération brain-scoped invalidée dès le rendu B; aucun retour stale ne publie state/error/busy, n'appelle `onApplied` ni ne signale succès à l'ancien `add/remove`.
 
 VALIDATIONS:
-- Rust 766 passed, 0 failed, 6 ignored; TypeScript 622 passed; pnpm check/build and Tauri debug PASS.
-- Real WebView2 two-phase restart PASS with three brains, A/C shared source, watcher, absent/restored source, unchanged source SHA and zero fatal console errors.
-- Seven required sabotages detected then restored; Clippy historical baseline 13/22; diff check and public audit PASS.
+- R1–R4 différés PASS; falsification sans correctif: R1–R3 FAIL. Ciblé 7/7, frontend 625/625, check/build et Tauri debug PASS.
+- WebView2 final PASS phases 1/2 au second bac frais; diff check et audit public (647 fichiers) PASS.
 
 IMPORTANT_FILES:
-- src-tauri/src/map/exclusion_policy.rs; src-tauri/src/map/exclusion_policy_tests.rs; src/map/ExclusionsPanel.tsx.
-- docs/performance/runs/TASK-0048-webview2.json; docs/ai/VALIDATION.md; docs/tasks/TASK-0048-v1-safe-exclusion-policy.md.
+- src/map/ExclusionsPanel.tsx; src/map/ExclusionsPanel.test.tsx.
+- docs/ai/VALIDATION.md; docs/tasks/TASK-0048-v1-safe-exclusion-policy.md.
 
-COMMIT:
-- 878320129760e2a9d9b4f536afa6c186d1df3e8c feat: implement safe exclusion policy
+COMMIT: 00b1017fbdd263b0f0950aacb80315fe3480cd1f fix: isolate stale exclusion updates by brain
 PUSHED: yes
 
 LIMITS_OR_BLOCKERS:
-- No blocker. Normal close only; Windows/NTFS case proof; no cross-database atomicity is claimed for a physical mutation strictly concurrent with a policy rebase.
+- Aucun blocage. Première campagne WebView2 expirée sur l'attente source absente, puis relance fraîche PASS; la course A→B est prouvée en composant, pas explicitement dans le harnais réel. Aucun Rust rejoué car aucun Rust/backend modifié.
 
 NEXT_ORCHESTRATOR_DECISION:
-- Independently control TASK-0048 and assign or refuse VERIFIED. F-006, F-014 and P-19 remain unchanged; no TASK-0049 before that control.
+- Contrôler indépendamment la corrective ACTION-0081 et attribuer ou refuser VERIFIED à TASK-0048. Aucune TASK-0049 avant ce verdict.
