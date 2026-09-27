@@ -1,11 +1,15 @@
 # Action suivante
 
-## Nouveau contrôle indépendant — TASK-0048
+## Préparer / exécuter TASK-0049 — V1 Reconstructibility & Index-Generation Safety
 
-TASK-0048 reste **IMPLEMENTED, non VERIFIED**.
+TASK-0048 / F-005 sont **VERIFIED** par ACTION-0082.
 
-Action unique : contrôler indépendamment la corrective ACTION-0081 au HEAD de
-`build/v0.2-a32-v1-safe-exclusion-policy`, notamment la génération
-brain-scoped de `ExclusionsPanel.replace()` et les preuves R1–R4.
+ACTION-0083 confirme F-006 comme prochaine lacune P0. Le pipeline de rebuild
+existe déjà; la tranche doit fermer deux écarts actuels :
 
-Aucune TASK-0049 avant ce verdict.
+1. inventaire `nonReconstructible` devenu incomplet depuis journal/seen;
+2. resume focus/sélection lié seulement à `nodeId`, donc potentiellement
+   recollé au mauvais nœud après perte complète et recréation d'Index.
+
+Préparer TASK-0049 sur une nouvelle branche. Exécuteur prévu : **Codex +
+GPT-5.6 Sol — High effort**.
