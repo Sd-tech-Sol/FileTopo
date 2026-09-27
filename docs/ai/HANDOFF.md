@@ -1,5 +1,16 @@
 # HANDOFF — passage de relais
 
+## Relais — TASK-0050 READY — 2026-09-26
+
+- ACTION-0084 ferme TASK-0049/F-006.
+- ACTION-0085 choisit F-014/P-10.
+- Branche : `build/v0.2-a34-v1-runtime-legend`.
+- Lire DEC-0048, TASK-0050 puis `.orchestrator/NEXT_PROMPT.md`.
+- Frontend uniquement; aucun Rust attendu.
+- Réutiliser les classes/glyphes réels de MapView et prouver la couverture
+  sémantique par rendu riche.
+- Persistance ouvert/fermé de la légende hors tranche, rattachée à P-19.
+
 ## Relais — TASK-0049 IMPLEMENTED / contrôle indépendant requis — 2026-09-26
 
 - Branche `build/v0.2-a33-v1-reconstructibility-closure`; TASK-0049 et F-006
