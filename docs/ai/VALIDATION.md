@@ -8778,3 +8778,34 @@ Limites : Windows/NTFS local, fermeture normale seulement; crash recovery et
 inter-volume non revendiqués. La reconstruction réelle utilise l'IPC Tauri de
 la commande produit, pas un clic physique. Aucun bouton/commande de suppression,
 aucune DB/table/génération parallèle, aucun glob et aucune donnée personnelle.
+
+
+## CN. ACTION-0084 — contrôle indépendant TASK-0049 — 2026-09-26
+
+**Verdict : TASK-0049 / F-006 VERIFIED dans leur portée V1.**
+
+Contrôle indépendant :
+
+- resume v2 lié à l'`index_id` backend-owned;
+- génération étrangère/legacy : refs node-scoped effacées avant lookup;
+- même génération : comportement conservé;
+- test déterministe : `b=3` historique, `b=2` frais, ancien id 3 -> `c`;
+- digest logique sans node_id/parent_id;
+- inventaire non reconstructible exact à neuf entrées;
+- publication fraîche = baseline sans faux historique;
+- source absente après perte : le scan/refus précède toute création d'Index;
+- preuve WebView2 : trois processus, deux redémarrages, stores externes et
+  source inchangés.
+
+Aucun CI/status GitHub attaché au HEAD. Les 770 Rust / 625 TypeScript restent
+des preuves d'exécuteur; le verdict indépendant repose sur inspection du diff,
+des tests, du harnais et de l'ordre d'exécution.
+
+## CO. ACTION-0085 — audit F-014/P-10 — 2026-09-26
+
+Le runtime MapView n'a aucune légende. Les familles sémantiques réelles ont été
+inventoriées : types et états de nœuds, filtre, diagnostic, cerveau focalisé,
+hiérarchie, relations intra/inter (direction/provenance/suggestion) et agrégat.
+
+TASK-0050 doit réutiliser les mêmes classes/glyphes et fournir une garde de
+couverture rendue; P-19 reste séparée pour la persistance de la légende.
