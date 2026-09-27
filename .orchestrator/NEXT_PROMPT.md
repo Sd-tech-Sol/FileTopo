@@ -1,97 +1,222 @@
-# NEXT_PROMPT — ACTION-0081 corrective pass TASK-0048
+# NEXT_PROMPT — TASK-0049 — V1 Reconstructibility & Index-Generation Safety
 
 **TARGET_AGENT:** CODEX
 **RECOMMENDED_MODEL:** GPT-5.6 Sol
-**RECOMMENDED_EFFORT:** Medium
-**BRANCH:** `build/v0.2-a32-v1-safe-exclusion-policy`
+**RECOMMENDED_EFFORT:** High
+**STATUS:** READY
+**BRANCH:** `build/v0.2-a33-v1-reconstructibility-closure`
 
-Tu corriges **un seul défaut** trouvé par le contrôle indépendant de TASK-0048.
+## Objectif unique
 
-## Préconditions
+Exécute intégralement
+`docs/tasks/TASK-0049-v1-reconstructibility-index-generation.md`
+selon
+`docs/decisions/DEC-0047-reconstructibility-index-generation-boundary.md`.
 
-1. Bascule explicitement sur
-   `build/v0.2-a32-v1-safe-exclusion-policy`.
-2. `git fetch origin`.
-3. Synchronise en fast-forward avec
-   `origin/build/v0.2-a32-v1-safe-exclusion-policy`.
-4. Vérifie arbre propre.
-5. Lis intégralement :
-   - `docs/reviews/ACTION-0081-task0048-async-brain-isolation-corrective.md`;
-   - `docs/tasks/TASK-0048-v1-safe-exclusion-policy.md`;
-   - `src/map/ExclusionsPanel.tsx`;
-   - `src/map/ExclusionsPanel.test.tsx`.
+F-006 seulement. Aucune TASK-0050.
 
-## Défaut à corriger
+## 0 — préconditions
 
-Un `map_brain_exclusions_replace` démarré sur A peut se résoudre après que
-le composant affiche B. Le vieux callback peut alors publier policy/error/busy
-de A dans B, appeler `onApplied(A)` et faire qu'une édition suivante de B
-réutilise les règles A.
+1. Applique `AGENTS.md` et les instructions Codex du repo.
+2. Bascule explicitement sur
+   `build/v0.2-a33-v1-reconstructibility-closure`.
+3. `git fetch origin`.
+4. Synchronise uniquement en fast-forward avec
+   `origin/build/v0.2-a33-v1-reconstructibility-closure`.
+5. Vérifie arbre propre.
+6. Lis :
+   - ACTION-0082;
+   - ACTION-0083;
+   - DEC-0047;
+   - TASK-0049;
+   - TASK-0031 / DEC-0032;
+   - resume_state.rs;
+   - brain_index.rs;
+   - index.rs;
+   - change_journal.rs.
+7. Vérifie que TASK-0048/F-005 sont bien VERIFIED et que F-006 reste ouvert.
 
-La lecture initiale possède un ticket; les mutations n'en ont pas.
+STOP/BLOCKED si une précondition est fausse.
 
-## Correction
+## 1 — audit avant code
 
-Implémente une génération/ticket brain-scoped robuste.
+Ne code rien avant d'avoir établi :
 
-Après un changement de `brainId`, tout retour async d'une ancienne
-génération doit être **sans effet frontend** :
+- comment un Index frais reçoit son index_id;
+- comment next_node_id est alloué;
+- comment un rebuild normal conserve les IDs;
+- comment un Index frais peut réattribuer les node_id après historique;
+- comment resume est sauvegardé/restauré;
+- tous les consommateurs de reconstructible_digest et nonReconstructible;
+- quels stores hors Index utilisent node_id vs chemin/stable identity.
 
-- pas de `setPolicy`;
-- pas de `setError`;
-- pas de `setBusy`;
-- pas de `onApplied`;
-- pas de succès retourné au vieux `add/remove` qui pourrait vider/refocaliser
-  le nouveau draft.
+Écris cette conclusion dans RESULT.
 
-Le backend A peut finir son opération A : ne tente pas d'annuler ou de
-compenser le backend.
+## 2 — génération : réutiliser index_id
 
-Le cerveau B doit charger et fonctionner indépendamment.
+Aucun nouveau generation_id.
 
-## Tests obligatoires
+Le backend doit lier les refs node-scoped du resume à l'index_id sur lequel
+elles ont été enregistrées.
 
-Utilise des Promises différées et couvre exactement R1–R4 de ACTION-0081 :
+Le frontend ne fournit pas une génération qu'il pourrait falsifier si le
+backend peut la lire lui-même.
 
-- stale succès A après rerender B;
-- édition B suivante avec payload B uniquement;
-- stale rejet A après rerender B;
-- comportement normal du replace courant.
+## 3 — resume génération-safe
 
-Les tests doivent échouer sur le code actuel.
+Même index_id : aucun changement de comportement.
 
-## Frontières
+Index_id différent :
 
-- **aucun changement Rust attendu**;
-- aucune modification de policy backend, scanner, watcher, journal, SQLite ou
-  artefact de données;
-- aucun nouveau package;
-- pas de refactor opportuniste;
-- aucune TASK-0049.
+- ne jamais valider l'ancien focus/selected par simple exists(node_id);
+- corriger/effacer les refs node-scoped avant usage;
+- garder view/filter/details si leur contrat ne dépend pas du node id;
+- persister la correction.
 
-## Validation
+Record legacy sans génération :
 
-1. tests ciblés ExclusionsPanel;
-2. `pnpm test`;
-3. `pnpm check`;
-4. `pnpm build`;
-5. rejoue `scripts/task0048-webview2.ps1` sur le produit final;
-6. `git diff --check`;
-7. audit public.
+- ne prétends pas que ses IDs sont liés;
+- applique la politique sûre de DEC-0047;
+- couvre la transition par tests.
 
-Si le harnais WebView2 échoue pour une raison indépendante du correctif, ne
-masque rien : documente précisément.
+Le test le plus important doit démontrer qu'un ancien numéro **existe encore
+mais pointe vers un autre chemin** après reconstruction fraîche, et que le
+resume ne choisit pas ce mauvais chemin.
 
-## Fin
+## 4 — digest/comparateur inter-génération
 
-- commit + push sur la branche courante;
-- arbre propre;
-- TASK-0048 reste `IMPLEMENTED`, jamais auto-VERIFIED;
-- NEXT_ACTION = nouveau contrôle indépendant TASK-0048;
-- aucune TASK-0049;
-- mets `.orchestrator/RESULT.md` à jour avec :
-  - cause;
-  - correction;
-  - tests R1–R4;
-  - validations;
-  - HEAD final.
+L'actuel reconstructible_digest inclut parent_id numérique.
+
+N'en déduis pas qu'il convient à F-006.
+
+Après audit des consommateurs :
+
+- rends la preuve logique indépendante des IDs numériques;
+- compare parenté par identité logique/chemin;
+- ne change l'ancien digest que si ses consommateurs restent corrects;
+- sinon ajoute le plus petit digest/comparateur distinct.
+
+Pas de whole-graph DTO frontend.
+
+## 5 — inventaire nonReconstructible
+
+L'inventaire built_unix_ms seul est périmé.
+
+Audite et classe exactement :
+
+- built_unix_ms;
+- index_id;
+- revision;
+- journal;
+- seen/unseen acknowledgements/watermark;
+- next_node_id;
+- allocation node_id;
+- nodes.seen legacy.
+
+Tests exacts et ordre déterministe.
+
+N'ajoute pas à la liste ce qui survit réellement dans catalogue/relations/
+content-signals.
+
+## 6 — preuve de perte complète
+
+La suppression de l'Index est **harness-only, processus fermé**.
+
+Aucun bouton ni commande produit de suppression.
+
+Scénario WebView2 obligatoire, trois processus, racine REAL_ROOT générée :
+
+1. construire état + historique + policy + journal/seen + resume;
+2. fermer;
+3. hors produit, supprimer uniquement Index + sidecars;
+4. relancer : Open => NotBuilt;
+5. Reconstruire via pipeline existant;
+6. nouveau index_id;
+7. équivalence corpus/hiérarchie logique;
+8. divergence réelle de node_id;
+9. resume corrigé, jamais mauvais chemin;
+10. journal historique non recréé;
+11. policy et stores externes inchangés;
+12. source SHA inchangé;
+13. troisième relance : correction resume persistée.
+
+Artefact :
+`docs/performance/runs/TASK-0049-webview2.json`.
+
+## 7 — scénario d'IDs divergents
+
+Force le cas, ne compte pas sur le hasard :
+
+- source ordonnée a,b,c,d;
+- premier Index;
+- supprimer a côté harness/test puis appliquer;
+- sélectionner un survivant dont l'ancien ID sera réutilisé/décalé dans un
+  Index frais;
+- prouver le mapping avant/après.
+
+## 8 — journal / seen
+
+Une nouvelle génération établit une nouvelle baseline.
+
+Interdit :
+
+- recréer artificiellement l'ancien journal;
+- produire des CREATED/DELETED pour simuler le passé;
+- transporter des acknowledgements seen vers des event IDs qui n'existent plus.
+
+Déclare honnêtement cette perte dans nonReconstructible.
+
+## 9 — falsification
+
+Exécute les huit sabotages de TASK-0049 §J.
+
+En particulier, retire temporairement la garde de génération resume et montre
+que le test attrape une sélection valide numériquement mais fausse
+sémantiquement.
+
+## 10 — non-régression
+
+Préserve :
+
+- F-005 exclusions;
+- TASK-0031 rollback;
+- F-032 source absente;
+- stable identity normal;
+- watcher;
+- bounded projection 512;
+- FR/EN;
+- accessibilité;
+- relations/content-signals/décisions hors Index.
+
+Pas de refactor opportuniste.
+
+## 11 — validation
+
+Exécute TASK-0049 §K.
+
+Clippy : dette historique séparée.
+
+Audit public obligatoire.
+
+## 12 — gouvernance
+
+À la fin :
+
+- TASK-0049 = IMPLEMENTED, jamais auto-VERIFIED;
+- F-006 = IMPLEMENTED, jamais auto-VERIFIED;
+- F-014/P-19 inchangés;
+- aucune TASK-0050;
+- NEXT_ACTION = contrôle indépendant TASK-0049;
+- commit + push;
+- arbre propre.
+
+RESULT doit contenir :
+- audit avant code;
+- design de génération resume choisi;
+- inventaire reconstructible/non-reconstructible;
+- preuve IDs divergents;
+- WebView2 3 processus;
+- falsifications;
+- validations;
+- limites;
+- HEAD final.
