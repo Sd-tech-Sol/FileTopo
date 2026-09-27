@@ -1,7 +1,7 @@
 # TASK-0049 — V1 Reconstructibility & Index-Generation Safety
 
 - **Date :** 2026-09-26
-- **Statut :** `IMPLEMENTED` — contrôle indépendant requis
+- **Statut :** `VERIFIED` par ACTION-0084
 - **Branche :** `build/v0.2-a33-v1-reconstructibility-closure`
 - **Décision :** `DEC-0047`
 - **Portée :** `F-006`
@@ -306,3 +306,13 @@ Aucun sabotage final.
 
 **Verdict exécuteur : TASK-0049 et F-006 sont `IMPLEMENTED`, jamais
 auto-`VERIFIED`. F-014 et P-19 restent inchangés.**
+
+
+## Verdict final indépendant — ACTION-0084
+
+Le contrôle indépendant accepte la génération `index_id` backend-owned, la
+correction sûre des resumes inter-génération, le digest logique indépendant
+des IDs, l'inventaire fermé des états non reconstructibles et la preuve
+WebView2 trois processus.
+
+**TASK-0049 = VERIFIED dans sa portée F-006.**
