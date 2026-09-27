@@ -6180,3 +6180,16 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
   que clic physique.
 - TASK-0049 = `IMPLEMENTED`; F-006 = `IMPLEMENTED`; F-014/P-19 inchangés.
   Action suivante unique : contrôle indépendant de TASK-0049; aucune TASK-0050.
+
+
+## 2026-09-26 — ACTION-0084 / ACTION-0085 / TASK-0050 READY
+
+**Orchestrateur :** ChatGPT
+
+- TASK-0049 / F-006 contrôlés et VERIFIED;
+- absence de CI GitHub attaché au HEAD distinguée des preuves Codex;
+- audit F-014/P-10 : codages réels MapView inventoriés, aucune légende runtime;
+- décision DEC-0048 : légende frontend réutilisant styles/glyphes existants,
+  garde de couverture, FR/EN et clavier;
+- TASK-0050 créée READY pour Codex + GPT-5.6 Sol Medium;
+- P-19 reste séparée; aucune TASK-0051.
