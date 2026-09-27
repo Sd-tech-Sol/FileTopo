@@ -1,0 +1,219 @@
+# TASK-0050 — V1 Runtime Legend / P-10 Closure
+
+- **Date :** 2026-09-26
+- **Statut :** `READY`
+- **Branche :** `build/v0.2-a34-v1-runtime-legend`
+- **Décision :** `DEC-0048`
+- **Portée :** `F-014`, `P-10`
+- **Exécuteur prévu :** Codex
+- **Prérequis :** ACTION-0084, ACTION-0085
+
+## But
+
+Ajouter au runtime actuel une légende complète, FR/EN, clavier-accessible et
+non color-only qui explique **tous les codages visuels porteurs de sens de la
+carte**, en réutilisant les primitives visuelles réelles de MapView.
+
+## A — audit avant code
+
+Avant toute modification :
+
+1. lire DEC-0048 et ACTION-0085;
+2. tracer dans `MapView.tsx`, `map.css`, `relations.ts`,
+   `crossRelations.ts` et les filtres :
+   - types de nœuds;
+   - états de nœuds;
+   - territoire focalisé;
+   - hiérarchie;
+   - relations intra/inter;
+   - provenance;
+   - suggestion vs relation établie;
+   - filtre match/context;
+   - diagnostic;
+   - agrégat;
+3. vérifier les preuves TASK-0047 non-colour;
+4. chercher toute surface de légende existante avant d'en créer une;
+5. écrire dans RESULT la liste finale des familles et ce qui est réutilisé.
+
+## B — composant de légende
+
+Créer une surface frontend simple, par exemple `MapLegend`/nom cohérent.
+
+Elle doit être ouvrable depuis le runtime MapApp par un contrôle explicite :
+
+- `Légende` / `Legend`;
+- état ouvert/fermé session-only;
+- `aria-expanded`;
+- relation au panneau;
+- même contrôle pour fermer;
+- pas de modal ni focus trap inutile.
+
+Ne pas ajouter de préférence persistante dans cette tranche.
+
+## C — partage visuel réel
+
+Les échantillons doivent réutiliser les classes CSS / glyphes / helpers réels.
+
+Autorisé :
+
+- extraire un helper de glyphes de nœud partagé;
+- extraire une petite primitive SVG de relation si nécessaire;
+- factoriser un nom de classe sémantique.
+
+Interdit :
+
+- copier une couleur ou dash pattern dans un style inline de légende;
+- recréer à la main un faux dossier/fichier dont la forme diverge de MapView;
+- dépendance externe;
+- nouvelle architecture de design tokens.
+
+## D — couverture sémantique obligatoire
+
+La légende couvre au minimum toutes les familles DEC-0048 §C.
+
+Ajouter un contrat de clé sémantique vérifiable. Exemple acceptable :
+
+- MapView expose `data-legend-keys` dérivé des mêmes états qu'il rend;
+- chaque item de légende porte `data-legend-key`;
+- le test de carte riche compare l'union réelle aux items.
+
+Une autre solution est acceptable si elle prouve mieux la même propriété.
+
+Le test doit échouer si une famille sémantique exercée par la carte n'a plus
+d'explication.
+
+## E — contenu produit
+
+Les mots doivent expliquer l'effet, pas le code interne.
+
+Exemples de sens à exprimer :
+
+- racine / dossier / fichier / élément ignoré;
+- sélection;
+- parent ou enfant direct;
+- relié dans le même cerveau;
+- relié à un autre cerveau;
+- correspond au filtre / contexte nécessaire;
+- diagnostic d'accès;
+- cerveau actif;
+- hiérarchie;
+- relation établie dirigée;
+- suggestion à confirmer;
+- provenance approuvée;
+- relation inter-cerveaux;
+- agrégat « éléments non affichés ».
+
+Ne pas montrer des termes `map-node--linked`, `DETERMINISTIC` bruts si le
+produit possède déjà un libellé humain FR/EN.
+
+## F — relations
+
+Les exemples doivent distinguer sans couleur seule :
+
+### Intra
+
+- hiérarchie;
+- relation établie + direction;
+- suggestion;
+- provenance approuvée;
+- accent « touche la sélection ».
+
+### Inter
+
+- double trait/casing inter-cerveaux;
+- direction flèche/chevron;
+- suggestion;
+- provenance approuvée;
+- accent sélection.
+
+Pas besoin d'expliquer des combinaisons cartésiennes si les primitives sont
+expliquées séparément et sans ambiguïté.
+
+## G — tests ciblés
+
+Au minimum :
+
+1. bouton fermé -> ouvert -> fermé;
+2. aria-expanded correct;
+3. FR/EN;
+4. toutes les clés de la carte riche ont une entrée;
+5. aucun item obligatoire absent;
+6. mêmes classes/helpers de rendu entre carte et échantillon;
+7. aucune commande Tauri lors des gestes de légende;
+8. clavier : Tab + Enter/Space, focus visible;
+9. aucune dépendance à la seule couleur.
+
+## H — WebView2 réel
+
+Publier `docs/performance/runs/TASK-0050-webview2.json`.
+
+Scénario riche avec au moins deux cerveaux et des relations :
+
+- ouvrir la légende au clavier;
+- vérifier FR;
+- changer EN;
+- vérifier toutes les familles;
+- vérifier computed styles/classes des échantillons vs éléments carte
+  correspondants quand applicable;
+- axe sur légende fermée et ouverte;
+- tab traversal sans piège;
+- fermer/réouvrir dans la même session;
+- confirmer zéro commande backend propre à la légende;
+- source SHA / Index / journal / resume inchangés autour de ces gestes.
+
+La persistance après restart est explicitement **NON TESTED / P-19**, pas un
+échec de TASK-0050.
+
+## I — non-régression
+
+Préserver :
+
+- VIEW_BUDGET 512;
+- MapView bounded;
+- TASK-0047 accessibilité;
+- TASK-0046 FR/EN;
+- TASK-0049 resume v2;
+- F-005;
+- watcher/journal/seen;
+- aucune source modifiée.
+
+## J — falsifications
+
+Au moins :
+
+1. retirer une entrée node-kind -> couverture échoue;
+2. retirer linked/cross-linked -> couverture échoue;
+3. retirer suggestion relation -> couverture échoue;
+4. utiliser une classe de relation inventée dans la légende -> garde de partage échoue;
+5. retirer texte et garder couleur seule -> accessibilité/contrat échoue;
+6. casser aria-expanded -> test échoue.
+
+Aucun sabotage final.
+
+## K — validation
+
+- tests TypeScript ciblés;
+- `pnpm test`;
+- `pnpm check`;
+- `pnpm build`;
+- Tauri debug;
+- WebView2;
+- axe local existant;
+- git diff --check;
+- audit public.
+
+Aucun Rust attendu. Si Rust change : STOP sauf justification impérative.
+
+## L — clôture
+
+À la fin :
+
+- TASK-0050 = IMPLEMENTED, jamais auto-VERIFIED;
+- F-014 = IMPLEMENTED;
+- P-10 = IMPLEMENTED/candidate à clôture indépendante;
+- P-19 reste PARTIELLE;
+- aucune TASK-0051;
+- NEXT_ACTION = contrôle indépendant TASK-0050;
+- commit + push;
+- arbre propre;
+- RESULT complet.
