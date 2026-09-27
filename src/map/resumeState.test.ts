@@ -100,7 +100,20 @@ describe("TASK-0044 — l'analyse défensive de l'état de reprise", () => {
       "ftf1.i.3.NEW::ALL.4",
     );
     expect(parseResumeRestore({ ...ok, filterCursor: 7 }, "a")).toBeNull();
-    expect(parseResumeRestore({ ...ok, corrections: ["SELECTION_MISSING", "FOCUS_MISSING"] }, "a")).not.toBeNull();
+    expect(
+      parseResumeRestore(
+        {
+          ...ok,
+          corrections: [
+            "SELECTION_MISSING",
+            "FOCUS_MISSING",
+            "SELECTION_GENERATION_CHANGED",
+            "FOCUS_GENERATION_CHANGED",
+          ],
+        },
+        "a",
+      ),
+    ).not.toBeNull();
     expect(parseResumeRestore({ ...ok, corrections: ["ANYTHING"] }, "a")).toBeNull();
     expect(parseResumeRestore({ ...ok, resume: { ...good(), path: "x" } }, "a")).toBeNull();
     expect(parseResumeRestore({ ...ok, projection: { brainId: "a", nodes: [] } }, "a")).toBeNull();

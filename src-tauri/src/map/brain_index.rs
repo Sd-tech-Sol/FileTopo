@@ -434,12 +434,7 @@ impl BrainIndex {
         let metadata = Self::build_metadata_with_policy(brain, source, built, policy)?;
         let outcome = self
             .index
-            .publish_with_identity(
-                nodes,
-                identities,
-                &metadata,
-                diagnostics,
-            )
+            .publish_with_identity(nodes, identities, &metadata, diagnostics)
             .map_err(|error| match error {
                 crate::index::PublishError::Sqlite(sqlite) => MapError::from(sqlite),
                 crate::index::PublishError::IdentityCollision => MapError::IdentityCollision,
@@ -753,23 +748,72 @@ impl BrainIndex {
         })
     }
     pub fn reconstructible_digest(&self) -> Result<String, MapError> {
-        // Metadata only: view geometry and index revision cannot invalidate relations.
+        // Inter-generation logical proof: no row id or parent id enters the
+        // bytes. Parentage is represented by the parent's relative path, and
+        // rows are ordered by logical fields rather than allocation order.
+        // View geometry, revision and other explicitly non-reconstructible
+        // state are deliberately absent.
         let mut bytes = Vec::new();
-        for n in self.analysis_nodes()? {
-            bytes.extend_from_slice(n.relative_path.as_bytes());
-            bytes.push(0);
-            bytes.extend_from_slice(n.name.as_bytes());
-            bytes.push(0);
-            bytes.extend_from_slice(n.kind.as_str().as_bytes());
-            bytes.extend_from_slice(&n.depth.to_le_bytes());
-            bytes.extend_from_slice(&n.size_bytes.to_le_bytes());
-            bytes.extend_from_slice(&n.child_count.to_le_bytes());
-            bytes.extend_from_slice(&n.parent_id.unwrap_or(-1).to_le_bytes());
-            bytes.extend_from_slice(n.access_diagnostic.as_deref().unwrap_or("").as_bytes());
-            bytes.push(255);
+        let mut statement = self.index.connection.prepare(
+            "SELECT n.relative_path, p.relative_path, n.name, n.kind, n.depth,
+                    n.size_bytes, n.modified_unix_ms, n.online_only,
+                    n.reparse_point, n.child_count, d.code, n.stable_key,
+                    n.identity_provenance
+             FROM nodes n
+             LEFT JOIN nodes p ON p.id = n.parent_id
+             LEFT JOIN node_diagnostics d ON d.relative_path = n.relative_path
+             ORDER BY n.relative_path, n.kind, n.name,
+                      COALESCE(n.stable_key, ''), COALESCE(n.identity_provenance, '')",
+        )?;
+        let mut rows = statement.query([])?;
+        while let Some(row) = rows.next()? {
+            let relative_path: String = row.get(0)?;
+            let parent_path: Option<String> = row.get(1)?;
+            let name: String = row.get(2)?;
+            let kind: String = row.get(3)?;
+            let depth: i64 = row.get(4)?;
+            let size_bytes: i64 = row.get(5)?;
+            let modified_unix_ms: Option<i64> = row.get(6)?;
+            let online_only: bool = row.get(7)?;
+            let reparse_point: bool = row.get(8)?;
+            let child_count: i64 = row.get(9)?;
+            let diagnostic: Option<String> = row.get(10)?;
+            let stable_key: Option<String> = row.get(11)?;
+            let provenance: Option<String> = row.get(12)?;
+
+            push_digest_field(&mut bytes, relative_path.as_bytes());
+            match parent_path {
+                Some(path) => {
+                    bytes.push(1);
+                    push_digest_field(&mut bytes, path.as_bytes());
+                }
+                None => bytes.push(0),
+            }
+            push_digest_field(&mut bytes, name.as_bytes());
+            push_digest_field(&mut bytes, kind.as_bytes());
+            bytes.extend_from_slice(&depth.to_le_bytes());
+            bytes.extend_from_slice(&size_bytes.to_le_bytes());
+            match modified_unix_ms {
+                Some(value) => {
+                    bytes.push(1);
+                    bytes.extend_from_slice(&value.to_le_bytes());
+                }
+                None => bytes.push(0),
+            }
+            bytes.push(u8::from(online_only));
+            bytes.push(u8::from(reparse_point));
+            bytes.extend_from_slice(&child_count.to_le_bytes());
+            push_digest_field(&mut bytes, diagnostic.as_deref().unwrap_or("").as_bytes());
+            push_digest_field(&mut bytes, stable_key.as_deref().unwrap_or("").as_bytes());
+            push_digest_field(&mut bytes, provenance.as_deref().unwrap_or("").as_bytes());
         }
         Ok(format!("fnv1a64:{:016x}", fnv1a64(&bytes)))
     }
+}
+
+fn push_digest_field(bytes: &mut Vec<u8>, value: &[u8]) {
+    bytes.extend_from_slice(&(value.len() as u64).to_le_bytes());
+    bytes.extend_from_slice(value);
 }
 
 fn map_reconcile_error(error: crate::reconcile::ReconcileError) -> MapError {

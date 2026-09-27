@@ -36,7 +36,12 @@ export interface ResumeState {
 }
 
 /** Une correction que le cœur a dû faire en rouvrant ce cerveau. Mots fermés. */
-export type ResumeCorrection = "FOCUS_MISSING" | "SELECTION_MISSING" | "SELECTION_NOT_A_MATCH";
+export type ResumeCorrection =
+  | "FOCUS_GENERATION_CHANGED"
+  | "SELECTION_GENERATION_CHANGED"
+  | "FOCUS_MISSING"
+  | "SELECTION_MISSING"
+  | "SELECTION_NOT_A_MATCH";
 
 /** Ce que renvoie `map_brain_resume_restore`. */
 export interface ResumeRestore {
@@ -60,7 +65,15 @@ export function defaultResumeState(detailsPanelVisible = true): ResumeState {
 const STATES: readonly FilterState[] = ["ALL", "NEW", "UNSEEN"];
 const KINDS: readonly FilterKind[] = ["DIRECTORY", "FILE", "SKIPPED"];
 const AVAILABILITIES: readonly FilterAvailability[] = ["ALL", "LOCAL", "ONLINE_ONLY"];
-const CORRECTIONS: readonly string[] = ["FOCUS_MISSING", "SELECTION_MISSING", "SELECTION_NOT_A_MATCH"];
+const CORRECTIONS: readonly ResumeCorrection[] = [
+  "FOCUS_GENERATION_CHANGED",
+  "SELECTION_GENERATION_CHANGED",
+  "FOCUS_MISSING",
+  "SELECTION_MISSING",
+  "SELECTION_NOT_A_MATCH",
+];
+const isResumeCorrection = (value: unknown): value is ResumeCorrection =>
+  typeof value === "string" && (CORRECTIONS as readonly string[]).includes(value);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -156,7 +169,7 @@ export function parseResumeRestore(payload: unknown, brainId: string): ResumeRes
   const cursor = payload.filterCursor;
   if (cursor !== null && typeof cursor !== "string") return null;
   const corrections = payload.corrections;
-  if (!Array.isArray(corrections) || !corrections.every((word) => CORRECTIONS.includes(word as string))) {
+  if (!Array.isArray(corrections) || !corrections.every(isResumeCorrection)) {
     return null;
   }
   return {

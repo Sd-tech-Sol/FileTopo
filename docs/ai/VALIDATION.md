@@ -8711,3 +8711,70 @@ a été restauré à son contenu versionné conformément à la frontière corre
 qui interdit toute modification d'artefact de données. Aucun test Rust n'a été
 rejoué : aucun fichier Rust/backend n'a changé. La course R1–R3 est prouvée de
 façon déterministe en composant, pas rejouée explicitement par le harnais réel.
+
+## CL. TASK-0049 — V1 Reconstructibility & Index-Generation Safety — 2026-09-26
+
+**Verdict de l'exécuteur : `IMPLEMENTED`, contrôle indépendant requis.**
+
+### CL.1 Contrat et cas adversarial
+
+- Enveloppe resume v2 privée estampillée par l'`index_id` backend; DTO public
+  inchangé à cinq champs. Legacy/foreign generation efface focus/sélection
+  avant tout `exists(node_id)`; view/filter/details valides sont conservés et
+  la correction est persistée. Même génération : aucun effacement.
+- Le digest ordonne par identité logique et encode le parent par chemin. Il
+  exclut ids numériques, revision et géométrie.
+- Cas déterministe : Index historique `a,b,c,d`, retrait de `a` puis
+  publication; `b` reste id 3. Dans l'Index frais, `b` devient 2 et id 3
+  désigne `c`; les digests restent égaux et la sélection est corrigée.
+- Inventaire exact : `built_unix_ms`, `index_id`, `index_revision`,
+  `change_events`, `seen_change_events`, `seen_through_event_id`,
+  `next_node_id`, `node_id_allocation`, `nodes.seen_legacy`.
+
+### CL.2 Preuve Tauri / WebView2
+
+`docs/performance/runs/TASK-0049-webview2.json` rapporte trois processus réels
+et deux redémarrages. Après fermeture du processus 1, le harnais supprime
+uniquement l'Index canonique et ses sidecars. Le processus 2 constate
+`NotBuilt`, reconstruit par la commande produit existante, puis prouve :
+
+- `index_id` différent, digest logique identique et ids divergents;
+- focus/sélection corrigés, view/filter/details conservés;
+- nouvelle baseline à 0 événement et 0 unseen, sans histoire synthétique;
+- policy, source, catalogue stable, relations et content-signals inchangés;
+- SHA-256 source inchangé et zéro erreur console fatale.
+
+Le processus 3 prouve la persistance de la correction et la stabilité de la
+nouvelle génération.
+
+### CL.3 Validations
+
+| Commande | Résultat |
+|---|---|
+| `cargo test --offline map::resume_state` | **27 PASS** |
+| tests journal baseline et exclusion ciblés | PASS |
+| `cargo test --offline` final | **770 PASS**, 0 échec, 6 campagnes ignorées |
+| premier passage Rust complet | 1 timeout watcher; rejeu isolé PASS, puis suite finale entièrement verte |
+| frontend resume ciblé | **41 PASS** |
+| `pnpm test` | **625 PASS** dans 42 fichiers |
+| `pnpm check` | PASS |
+| `pnpm build` | PASS; avertissement Vite historique chunk > 500 kB |
+| `cargo build --offline` | PASS |
+| `pnpm tauri build --debug --no-bundle` | PASS |
+| `scripts/task0049-webview2.ps1` | PASS, trois processus réels |
+| Clippy `--offline --all-targets` | dette historique inchangée : lib 13 / lib-test 22; aucune ligne TASK-0049 |
+| `git diff --check` | PASS |
+| `scripts/audit-public-readiness.ps1 -AllowRemotes` | PASS, 656 fichiers avant commit, aucun motif sensible, aucun fichier > 5 Mio |
+
+### CL.4 Falsifications et limites
+
+Les huit sabotages §J ont été exécutés puis restaurés : suppression de la
+garde de génération, parent numérique dans le digest, inventaire amputé,
+`index_id` frais recopié, faux CREATED de baseline, policy ignorée, catalogue
+altéré et même génération effacée. Chaque garde attendue a cassé; aucun sabotage
+ne subsiste.
+
+Limites : Windows/NTFS local, fermeture normale seulement; crash recovery et
+inter-volume non revendiqués. La reconstruction réelle utilise l'IPC Tauri de
+la commande produit, pas un clic physique. Aucun bouton/commande de suppression,
+aucune DB/table/génération parallèle, aucun glob et aucune donnée personnelle.

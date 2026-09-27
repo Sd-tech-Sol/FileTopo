@@ -1,0 +1,75 @@
+{
+  "task": "TASK-0049",
+  "status": "NONCANONICAL_ENGINEERING_EVIDENCE",
+  "engine": "Windows Tauri / real WebView2",
+  "realProcesses": 3,
+  "realProcessRestarts": 2,
+  "syntheticOnly": true,
+  "personalDataUsed": false,
+  "harnessOnlyIndexDeletion": {
+    "applicationClosed": true,
+    "canonicalIndexAndSidecarsOnly": true,
+    "productDeleteCommandAdded": false
+  },
+  "generation": {
+    "before": "49dfc6f4-4f06-4d39-83bd-bd5c4426a8eb",
+    "after": "493e8c81-3f41-43fe-8607-0d166ac0395b",
+    "changed": true,
+    "stableOnThirdProcess": true
+  },
+  "logicalReconstruction": {
+    "digestBefore": "fnv1a64:eae405fb1e621caa",
+    "digestAfter": "fnv1a64:eae405fb1e621caa",
+    "equivalent": true,
+    "sourceSha256Unchanged": true,
+    "policyRules": [
+      "excluded"
+    ]
+  },
+  "divergentIds": {
+    "oldB": 3,
+    "freshB": 2,
+    "oldBIdNowNames": "c.txt",
+    "wrongPathWasNotSelected": true
+  },
+  "resume": {
+    "corrections": [
+      "FOCUS_GENERATION_CHANGED",
+      "SELECTION_GENERATION_CHANGED"
+    ],
+    "independentViewFilterDetailsPreserved": true,
+    "correctionPersistedAcrossThirdProcess": true
+  },
+  "journal": {
+    "historicalEventsBeforeLoss": 3,
+    "oldSeenStateExercised": true,
+    "newGenerationEvents": 0,
+    "newGenerationUnseen": 0,
+    "historicalJournalNotSynthesized": true
+  },
+  "nonReconstructible": [
+    "built_unix_ms",
+    "index_id",
+    "index_revision",
+    "change_events",
+    "seen_change_events",
+    "seen_through_event_id",
+    "next_node_id",
+    "node_id_allocation",
+    "nodes.seen_legacy"
+  ],
+  "externalStores": {
+    "catalogBrainPolicyAndStableMetadata": "d143b498206b87b2cc932cecfef51d8f86c38cedccc017f0472070b71b837166",
+    "relations": "1c8012111634c577cc11e59c550a09109f9d83499aa1ccb028a323b1e643243a",
+    "contentSignals": "6af52755e21551af1c5ea5bfac4a364f664f2e56302451b2b606b435568365ae",
+    "unchangedAcrossAllProcesses": true
+  },
+  "openAfterLossWasNotBuilt": true,
+  "fatalConsoleErrors": 0,
+  "limits": [
+    "The analysed REAL_ROOT was generated under a fresh repository-local proof directory; no personal data.",
+    "Index deletion was an offline harness action after a normal close, never a product command or UI feature.",
+    "Lifecycle and resume calls travelled through the real WebView2/Tauri IPC pipeline; the rebuild gesture itself was invoked through the existing map_rebuild command rather than a physical mouse click.",
+    "Windows local NTFS and normal process closes only; crash recovery and inter-volume behaviour are not claimed."
+  ]
+}

@@ -10,6 +10,10 @@ mod identity;
 /// intended caller. It is also exercised by tests and the benchmark.
 #[allow(dead_code)]
 mod incremental;
+/// `TASK-0040` incremental kernel bench (`F-031`). Compiled by `cargo test`
+/// only: it is absent from every product binary and exposes no command.
+#[cfg(test)]
+mod incremental_bench;
 mod index;
 mod map;
 /// Dynamic filters over the canonical Index — `TASK-0039`, `DEC-0037`.
@@ -21,10 +25,6 @@ mod path_codec;
 /// Internal: a scan and the Index in, an `UpdateBatch` out.
 mod reconcile;
 mod registry;
-/// `TASK-0040` incremental kernel bench (`F-031`). Compiled by `cargo test`
-/// only: it is absent from every product binary and exposes no command.
-#[cfg(test)]
-mod incremental_bench;
 /// `TASK-0029` scale query bench. Compiled by `cargo test` only: it is absent
 /// from every product binary and exposes no command.
 #[cfg(test)]
@@ -1056,9 +1056,25 @@ fn map_brain_resume_update(
     brain_id: String,
     state: map::resume_state::ResumeState,
 ) -> Result<map::resume_state::ResumeState, String> {
-    let catalog = map_catalog(&app)?;
+    let (paths, catalog) = map_brain(&app)?;
+    let brain = catalog.require(&brain_id).map_err(String::from)?;
+    // The generation is backend-owned. A missing Index leaves the record
+    // explicitly unbound; restore will preserve non-node preferences but will
+    // never trust its numeric references.
+    let index_id = match map::commands::open_store(&paths, &brain) {
+        Ok(store) => Some(
+            store
+                .index
+                .identity()
+                .map_err(map::MapError::from)
+                .map_err(String::from)?
+                .index_id,
+        ),
+        Err(map::MapError::NotBuilt(_)) => None,
+        Err(error) => return Err(String::from(error)),
+    };
     catalog
-        .set_resume_state(&brain_id, &state)
+        .set_resume_state_for_index(&brain_id, &state, index_id.as_deref())
         .map_err(String::from)
 }
 

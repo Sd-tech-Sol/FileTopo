@@ -1,5 +1,32 @@
 # HANDOFF — passage de relais
 
+## Relais — TASK-0049 IMPLEMENTED / contrôle indépendant requis — 2026-09-26
+
+- Branche `build/v0.2-a33-v1-reconstructibility-closure`; TASK-0049 et F-006
+  sont `IMPLEMENTED`, jamais auto-`VERIFIED`.
+- Lire d'abord TASK-0049 §N, VALIDATION §CL, `.orchestrator/RESULT.md` et
+  `docs/performance/runs/TASK-0049-webview2.json`.
+- Contrôler l'enveloppe privée resume v2 : `index_id` vient du backend,
+  legacy/foreign generation efface les références node-scoped avant lookup,
+  même génération ne change pas; le DTO frontend reste exactement à cinq
+  champs.
+- Contrôler le digest logique inter-génération et le cas adversarial :
+  historique `b=3`, Index frais `b=2`, ancien id 3 = `c`, digest égal,
+  aucune sélection erronée.
+- Inventaire fermé attendu : `built_unix_ms`, `index_id`,
+  `index_revision`, `change_events`, `seen_change_events`,
+  `seen_through_event_id`, `next_node_id`, `node_id_allocation`,
+  `nodes.seen_legacy`.
+- La preuve réelle couvre trois processus Tauri/WebView2, nouvel Index,
+  baseline journal vide, correction persistée, policy/source/catalogue stable,
+  relations et content-signals inchangés. La suppression est strictement une
+  action du harnais après fermeture, jamais une commande produit.
+- Rejouer ou recouper les huit falsifications. Suite finale : Rust 770 PASS /
+  6 ignorés; frontend 625 PASS; builds, audit et preuve réelle verts. Clippy
+  reste à la référence historique 13/22.
+- Limites : Windows/NTFS local et fermetures normales; rebuild via commande
+  produit IPC, sans clic physique. F-014/P-19 inchangés; aucune TASK-0050.
+
 ## Relais — ACTION-0081 corrigée / contrôle indépendant requis — 2026-09-26
 
 - TASK-0048 reste `IMPLEMENTED`, jamais auto-`VERIFIED`; aucune TASK-0049.

@@ -19,7 +19,20 @@ pub const MAP_SCHEMA_VERSION: i64 = 6;
 pub fn is_migratable_schema(version: i64) -> bool {
     (crate::index::OLDEST_MIGRATABLE_SCHEMA_VERSION..MAP_SCHEMA_VERSION).contains(&version)
 }
-pub const NON_RECONSTRUCTIBLE_KEYS: [&str; 1] = ["built_unix_ms"];
+/// Index-local facts that cannot be recovered from the source plus the
+/// surviving brain-scoped stores after the canonical Index file is lost.
+/// Closed and deterministically ordered for `TASK-0049` / `F-006`.
+pub const NON_RECONSTRUCTIBLE_KEYS: [&str; 9] = [
+    "built_unix_ms",
+    "index_id",
+    "index_revision",
+    "change_events",
+    "seen_change_events",
+    "seen_through_event_id",
+    "next_node_id",
+    "node_id_allocation",
+    "nodes.seen_legacy",
+];
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

@@ -1,18 +1,14 @@
 # Action suivante
 
-## Exécuter TASK-0049 — V1 Reconstructibility & Index-Generation Safety
+## Contrôle indépendant de TASK-0049 — V1 Reconstructibility & Index-Generation Safety
 
 Branche : `build/v0.2-a33-v1-reconstructibility-closure`.
 
 TASK-0048 / F-005 sont VERIFIED par ACTION-0082.
 
-ACTION-0083 a confirmé que F-006 exige plus qu'une preuve de rebuild :
-l'inventaire non reconstructible historique est périmé et le resume par nodeId
-doit être lié à la génération `index_id` pour éviter un mauvais rattachement
-après perte/recréation complète d'Index.
+TASK-0049 et F-006 sont IMPLEMENTED, jamais auto-VERIFIED. Contrôler
+indépendamment le diff, l'enveloppe de reprise liée à `index_id`, le digest
+logique inter-génération, l'inventaire exact, les huit falsifications et la
+preuve Tauri/WebView2 trois processus.
 
-**Exécuteur : Codex + GPT-5.6 Sol — High effort.**
-
-Prompt autoritaire : `.orchestrator/NEXT_PROMPT.md`.
-
-Aucune TASK-0050 avant contrôle indépendant.
+F-014 et P-19 restent inchangés. Aucune TASK-0050 avant verdict indépendant.

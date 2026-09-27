@@ -1,7 +1,7 @@
 # TASK-0049 — V1 Reconstructibility & Index-Generation Safety
 
 - **Date :** 2026-09-26
-- **Statut :** `READY`
+- **Statut :** `IMPLEMENTED` — contrôle indépendant requis
 - **Branche :** `build/v0.2-a33-v1-reconstructibility-closure`
 - **Décision :** `DEC-0047`
 - **Portée :** `F-006`
@@ -258,3 +258,51 @@ Aucun sabotage final.
 - commit + push sur cette branche;
 - arbre propre;
 - RESULT complet.
+
+## N — résultat d'exécution — 2026-09-26
+
+### Livraison
+
+- L'enveloppe privée de reprise passe en v2 et porte l'`index_id` lu par le
+  backend. Le DTO frontend reste limité aux cinq champs historiques.
+- Une reprise legacy, non liée ou issue d'une autre génération efface
+  `focusNodeId` et `selectedNodeId` avant toute résolution numérique,
+  conserve les préférences indépendantes des nœuds et persiste la correction
+  sous la génération courante. Une reprise de même génération reste inchangée.
+- `reconstructible_digest()` compare désormais l'identité logique
+  inter-génération : chemins et parenté par chemins, métadonnées
+  reconstructibles, identité stable et provenance; aucun `node_id`,
+  `parent_id`, revision ou géométrie.
+- L'inventaire fermé et déterministe comprend exactement :
+  `built_unix_ms`, `index_id`, `index_revision`, `change_events`,
+  `seen_change_events`, `seen_through_event_id`, `next_node_id`,
+  `node_id_allocation`, `nodes.seen_legacy`.
+
+### Preuves
+
+- Test Rust déterministe : après retrait de `a`, l'ancien `b=3` devient
+  `b=2` dans un Index frais et l'ancien id 3 nomme `c`; les digests
+  logiques restent égaux et aucune reprise ne sélectionne `c`.
+- Preuve Tauri / vrai WebView2 en trois processus :
+  `docs/performance/runs/TASK-0049-webview2.json`. Elle constate un nouvel
+  `index_id`, la correction focus/sélection persistée, zéro événement et zéro
+  unseen dans la nouvelle baseline, la policy conservée, les stores externes
+  inchangés et le SHA-256 source inchangé.
+- Les huit sabotages de §J ont chacun cassé la garde attendue puis ont été
+  restaurés. Aucun sabotage final.
+
+### Validations et limites
+
+- Rust ciblé reprise/reconstructibilité : 27 PASS; suite Rust finale :
+  770 PASS, 6 ignorés, 0 échec.
+- Frontend ciblé reprise : 41 PASS; suite TypeScript : 625 PASS.
+- `pnpm check`, `pnpm build`, `cargo build --offline`, Tauri debug,
+  WebView2 trois processus, `git diff --check` et audit public : PASS.
+- Clippy reste à la dette historique 13 diagnostics lib / 22 lib-test, sans
+  diagnostic sur les lignes TASK-0049.
+- Portée de la preuve réelle : Windows/NTFS local, fermetures normales. Le
+  rebuild passe par la commande produit existante via IPC, pas par un clic
+  physique. Aucun crash recovery ni comportement inter-volume revendiqué.
+
+**Verdict exécuteur : TASK-0049 et F-006 sont `IMPLEMENTED`, jamais
+auto-`VERIFIED`. F-014 et P-19 restent inchangés.**

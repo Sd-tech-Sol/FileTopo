@@ -91,6 +91,42 @@ fn publish(store: &mut BrainIndex, brain: &str, nodes: &[NodeDto]) {
         .unwrap();
 }
 
+fn flat_corpus(paths: &[&str]) -> Vec<NodeDto> {
+    let mut nodes = vec![dto(1, None, "", NodeKind::Root, paths.len() as u32)];
+    nodes.extend(
+        paths
+            .iter()
+            .enumerate()
+            .map(|(offset, path)| dto(offset as i64 + 2, Some(1), path, NodeKind::File, 0)),
+    );
+    nodes
+}
+
+fn publish_by_path(store: &mut BrainIndex, brain: &str, nodes: &[NodeDto]) {
+    let identities = nodes
+        .iter()
+        .map(|node| NodeIdentity {
+            node_id: node.id,
+            stable_key: format!("PATH:{}", node.relative_path),
+            provenance: IdentityProvenance::PathFallback,
+        })
+        .collect::<Vec<_>>();
+    store
+        .replace_with_identity(
+            brain,
+            SourceStamp {
+                kind: SourceKind::SyntheticFixture,
+                source_ref: "resume",
+                label: "Synthetic",
+            },
+            nodes,
+            &identities,
+            &[],
+            0,
+        )
+        .unwrap();
+}
+
 struct Fixture {
     _temp: tempfile::TempDir,
     catalog: BrainCatalog,
@@ -143,6 +179,13 @@ fn raw(catalog: &BrainCatalog, brain: &str) -> Option<String> {
     catalog.meta(&key_for(brain)).unwrap()
 }
 
+fn set_for_store(catalog: &BrainCatalog, brain: &str, store: &BrainIndex, state: &ResumeState) {
+    let index_id = store.index.identity().unwrap().index_id;
+    catalog
+        .set_resume_state_for_index(brain, state, Some(&index_id))
+        .unwrap();
+}
+
 fn shown_ids(snapshot: &MapSnapshot) -> Vec<i64> {
     snapshot.nodes.iter().map(|node| node.id).collect()
 }
@@ -180,8 +223,9 @@ fn the_dto_and_the_stored_json_carry_exactly_the_closed_keys() {
 
     let stored: serde_json::Value =
         serde_json::from_str(&raw(&fixture.catalog, "brain-alpha").unwrap()).unwrap();
-    assert_eq!(keys(&stored), ["state", "version"]);
-    assert_eq!(stored["version"], 1);
+    assert_eq!(keys(&stored), ["indexId", "state", "version"]);
+    assert_eq!(stored["version"], 2);
+    assert_eq!(stored["indexId"], serde_json::Value::Null);
     assert_eq!(keys(&stored["state"]), keys(&dto));
 
     // Nothing that names, locates or identifies: no path, no name, no key, no
@@ -364,7 +408,7 @@ fn every_kind_of_damaged_record_reads_as_nothing_stored() {
         ("a bare number", "42".into()),
         (
             "future version",
-            good("null", good_filter, "null").replace("\"version\":1", "\"version\":2"),
+            good("null", good_filter, "null").replace("\"version\":1", "\"version\":3"),
         ),
         (
             "version zero",
@@ -613,10 +657,12 @@ fn a_brain_with_nothing_stored_restores_the_plain_root_projection_and_stores_not
 fn a_remembered_branch_and_selection_are_restored_when_the_index_still_has_them() {
     let fixture = fixture();
     let (_temp, store) = store_for("brain-alpha", &corpus(10, "a"));
-    fixture
-        .catalog
-        .set_resume_state("brain-alpha", &state(Some(DOCS), Some(7)))
-        .unwrap();
+    set_for_store(
+        &fixture.catalog,
+        "brain-alpha",
+        &store,
+        &state(Some(DOCS), Some(7)),
+    );
     let before = raw(&fixture.catalog, "brain-alpha");
     let restored = restore(
         &fixture.catalog,
@@ -642,15 +688,217 @@ fn a_remembered_branch_and_selection_are_restored_when_the_index_still_has_them(
 }
 
 #[test]
+fn a_foreign_generation_never_reuses_an_existing_number_for_another_path() {
+    let fixture = fixture();
+    let (_old_temp, old_store) = store_for("brain-alpha", &corpus(10, "old"));
+    let (_new_temp, new_store) = store_for("brain-alpha", &corpus(10, "new"));
+    let selected = 7;
+    let old_path = old_store
+        .index
+        .node(selected)
+        .unwrap()
+        .unwrap()
+        .relative_path;
+    let new_path = new_store
+        .index
+        .node(selected)
+        .unwrap()
+        .unwrap()
+        .relative_path;
+    assert_ne!(old_path, new_path, "the numeric-id trap must be real");
+    assert_ne!(
+        old_store.index.identity().unwrap().index_id,
+        new_store.index.identity().unwrap().index_id,
+        "the two files must be distinct generations"
+    );
+
+    let mut chosen = state(Some(DOCS), Some(selected));
+    chosen.filter = files_only();
+    chosen.details_panel_visible = false;
+    set_for_store(&fixture.catalog, "brain-alpha", &old_store, &chosen);
+
+    let restored = restore(
+        &fixture.catalog,
+        &record(&fixture.catalog, "brain-alpha"),
+        &new_store,
+    )
+    .unwrap();
+    assert_eq!(
+        restored.corrections,
+        [
+            ResumeCorrection::FocusGenerationChanged,
+            ResumeCorrection::SelectionGenerationChanged
+        ]
+    );
+    assert_eq!(restored.resume.focus_node_id, None);
+    assert_eq!(restored.resume.selected_node_id, None);
+    assert_eq!(restored.resume.view, chosen.view);
+    assert_eq!(restored.resume.filter, chosen.filter);
+    assert!(!restored.resume.details_panel_visible);
+    assert!(
+        !restored
+            .projection
+            .nodes
+            .iter()
+            .any(|node| node.relative_path == new_path
+                && node.id == selected
+                && restored.resume.selected_node_id == Some(selected)),
+        "the reused number must never select the new path"
+    );
+
+    let stored: serde_json::Value =
+        serde_json::from_str(&raw(&fixture.catalog, "brain-alpha").unwrap()).unwrap();
+    assert_eq!(stored["version"], RESUME_VERSION);
+    assert_eq!(
+        stored["indexId"],
+        new_store.index.identity().unwrap().index_id
+    );
+    let again = restore(
+        &fixture.catalog,
+        &record(&fixture.catalog, "brain-alpha"),
+        &new_store,
+    )
+    .unwrap();
+    assert!(again.corrections.is_empty(), "the correction is durable");
+}
+
+#[test]
+fn fresh_reconstruction_forces_id_divergence_but_keeps_the_logical_digest() {
+    let fixture = fixture();
+    let old_temp = tempfile::tempdir().unwrap();
+    let mut historical = BrainIndex::open(&old_temp.path().join("index.sqlite")).unwrap();
+    publish_by_path(
+        &mut historical,
+        "brain-alpha",
+        &flat_corpus(&["a", "b", "c", "d"]),
+    );
+    publish_by_path(
+        &mut historical,
+        "brain-alpha",
+        &flat_corpus(&["b", "c", "d"]),
+    );
+
+    let fresh_temp = tempfile::tempdir().unwrap();
+    let mut fresh = BrainIndex::open(&fresh_temp.path().join("index.sqlite")).unwrap();
+    publish_by_path(&mut fresh, "brain-alpha", &flat_corpus(&["b", "c", "d"]));
+    assert_ne!(
+        historical.index.identity().unwrap().index_id,
+        fresh.index.identity().unwrap().index_id,
+        "a fresh Index must never copy the lost generation id"
+    );
+
+    let historical_b = historical.resolve_path("b").unwrap().unwrap();
+    let fresh_b = fresh.resolve_path("b").unwrap().unwrap();
+    assert_eq!(
+        historical_b, 3,
+        "b keeps its old-generation id after a is deleted"
+    );
+    assert_eq!(
+        fresh_b, 2,
+        "a fresh generation allocates the current scan from 1"
+    );
+    assert_eq!(
+        fresh
+            .index
+            .node(historical_b)
+            .unwrap()
+            .unwrap()
+            .relative_path,
+        "c",
+        "the old b number is live but now points to c"
+    );
+    assert_eq!(
+        historical.reconstructible_digest().unwrap(),
+        fresh.reconstructible_digest().unwrap(),
+        "logical corpus and parentage are equivalent despite numeric ids"
+    );
+
+    let chosen = state(None, Some(historical_b));
+    set_for_store(&fixture.catalog, "brain-alpha", &historical, &chosen);
+    let restored = restore(
+        &fixture.catalog,
+        &record(&fixture.catalog, "brain-alpha"),
+        &fresh,
+    )
+    .unwrap();
+    assert_eq!(
+        restored.corrections,
+        [ResumeCorrection::SelectionGenerationChanged]
+    );
+    assert_eq!(restored.resume.selected_node_id, None);
+}
+
+#[test]
+fn non_reconstructible_inventory_is_exact_and_deterministic() {
+    assert_eq!(
+        crate::map::store::NON_RECONSTRUCTIBLE_KEYS,
+        [
+            "built_unix_ms",
+            "index_id",
+            "index_revision",
+            "change_events",
+            "seen_change_events",
+            "seen_through_event_id",
+            "next_node_id",
+            "node_id_allocation",
+            "nodes.seen_legacy",
+        ]
+    );
+}
+
+#[test]
+fn a_legacy_record_is_unbound_clears_node_refs_and_is_rewritten_as_v2() {
+    let fixture = fixture();
+    let (_temp, store) = store_for("brain-alpha", &corpus(10, "current"));
+    let chosen = state(Some(DOCS), Some(7));
+    let legacy = serde_json::json!({"version": 1, "state": chosen});
+    fixture
+        .catalog
+        .put_meta(&key_for("brain-alpha"), &legacy.to_string())
+        .unwrap();
+
+    let restored = restore(
+        &fixture.catalog,
+        &record(&fixture.catalog, "brain-alpha"),
+        &store,
+    )
+    .unwrap();
+    assert_eq!(
+        restored.corrections,
+        [
+            ResumeCorrection::FocusGenerationChanged,
+            ResumeCorrection::SelectionGenerationChanged
+        ]
+    );
+    assert_eq!(
+        (
+            restored.resume.focus_node_id,
+            restored.resume.selected_node_id
+        ),
+        (None, None)
+    );
+    assert_eq!(restored.resume.view, state(None, None).view);
+    let rewritten: serde_json::Value =
+        serde_json::from_str(&raw(&fixture.catalog, "brain-alpha").unwrap()).unwrap();
+    assert_eq!(rewritten["version"], RESUME_VERSION);
+    assert_eq!(
+        rewritten["indexId"],
+        store.index.identity().unwrap().index_id
+    );
+}
+
+#[test]
 fn a_vanished_branch_or_selection_falls_back_and_the_correction_is_stored() {
     let fixture = fixture();
     let (_temp, store) = store_for("brain-alpha", &corpus(10, "a"));
     let brain = record(&fixture.catalog, "brain-alpha");
 
-    fixture
-        .catalog
-        .set_resume_state("brain-alpha", &state(Some(500), Some(600)))
-        .unwrap();
+    set_for_store(
+        &fixture.catalog,
+        "brain-alpha",
+        &store,
+        &state(Some(500), Some(600)),
+    );
     let restored = restore(&fixture.catalog, &brain, &store).unwrap();
     assert_eq!(
         restored.corrections,
@@ -693,10 +941,12 @@ fn a_selection_that_the_remembered_branch_does_not_show_becomes_the_branch() {
     let fixture = fixture();
     let (_temp, store) = store_for("brain-alpha", &corpus(200, "a"));
     let far = FIRST_FILE + 150;
-    fixture
-        .catalog
-        .set_resume_state("brain-alpha", &state(Some(DOCS), Some(far)))
-        .unwrap();
+    set_for_store(
+        &fixture.catalog,
+        "brain-alpha",
+        &store,
+        &state(Some(DOCS), Some(far)),
+    );
     let restored = restore(
         &fixture.catalog,
         &record(&fixture.catalog, "brain-alpha"),
@@ -723,10 +973,12 @@ fn ids_that_are_numerically_equal_in_two_brains_never_cross() {
     let (_ta, store_a) = store_for("brain-alpha", &corpus(30, "alpha"));
     let (_tg, store_g) = store_for("brain-gamma", &corpus(30, "gamma"));
 
-    fixture
-        .catalog
-        .set_resume_state("brain-alpha", &state(Some(DOCS), Some(12)))
-        .unwrap();
+    set_for_store(
+        &fixture.catalog,
+        "brain-alpha",
+        &store_a,
+        &state(Some(DOCS), Some(12)),
+    );
     let alpha = restore(
         &fixture.catalog,
         &record(&fixture.catalog, "brain-alpha"),
@@ -749,10 +1001,12 @@ fn ids_that_are_numerically_equal_in_two_brains_never_cross() {
     assert_eq!(raw(&fixture.catalog, "brain-gamma"), None);
 
     // Each brain's own `12` is validated against its own Index only.
-    fixture
-        .catalog
-        .set_resume_state("brain-gamma", &state(None, Some(12)))
-        .unwrap();
+    set_for_store(
+        &fixture.catalog,
+        "brain-gamma",
+        &store_g,
+        &state(None, Some(12)),
+    );
     let gamma = restore(
         &fixture.catalog,
         &record(&fixture.catalog, "brain-gamma"),
@@ -767,10 +1021,12 @@ fn ids_that_are_numerically_equal_in_two_brains_never_cross() {
     // A state stored for Alpha whose id only Gamma's larger Index has is refused
     // on Alpha's own Index.
     let (_ts, small) = store_for("brain-alpha", &corpus(5, "alpha"));
-    fixture
-        .catalog
-        .set_resume_state("brain-alpha", &state(None, Some(25)))
-        .unwrap();
+    set_for_store(
+        &fixture.catalog,
+        "brain-alpha",
+        &small,
+        &state(None, Some(25)),
+    );
     let alpha = restore(
         &fixture.catalog,
         &record(&fixture.catalog, "brain-alpha"),
@@ -791,10 +1047,7 @@ fn a_selected_match_beyond_the_first_page_is_restored_from_the_current_index() {
     let target = FIRST_FILE + 100;
     let mut chosen = state(None, Some(target));
     chosen.filter = files_only();
-    fixture
-        .catalog
-        .set_resume_state("brain-alpha", &chosen)
-        .unwrap();
+    set_for_store(&fixture.catalog, "brain-alpha", &store, &chosen);
 
     let first_page = materialize_filtered_view(&store, &files_only(), None).unwrap();
     let first_matches = &first_page.filtered.as_ref().unwrap().filter_match_ids;
@@ -835,7 +1088,7 @@ fn a_selected_match_beyond_the_first_page_is_restored_from_the_current_index() {
     );
     let text = raw(&fixture.catalog, "brain-alpha").unwrap();
     assert!(
-        !text.contains("ftf1") && !text.contains(&identity.index_id),
+        !text.contains("ftf1") && text.contains(&identity.index_id),
         "{text}"
     );
 
@@ -853,10 +1106,7 @@ fn a_first_page_match_and_the_root_need_no_cursor_and_no_correction() {
     for selected in [Some(FIRST_FILE + 3), Some(1), None] {
         let mut chosen = state(None, selected);
         chosen.filter = files_only();
-        fixture
-            .catalog
-            .set_resume_state("brain-alpha", &chosen)
-            .unwrap();
+        set_for_store(&fixture.catalog, "brain-alpha", &store, &chosen);
         let restored = restore(&fixture.catalog, &brain, &store).unwrap();
         assert_eq!(restored.filter_cursor, None, "{selected:?}");
         assert!(restored.corrections.is_empty(), "{selected:?}");
@@ -888,10 +1138,7 @@ fn a_selection_that_no_longer_matches_falls_back_and_the_filter_stays_authoritat
     // `docs` exists but is a directory: a files-only filter no longer matches it.
     let mut chosen = state(None, Some(DOCS));
     chosen.filter = files_only();
-    fixture
-        .catalog
-        .set_resume_state("brain-alpha", &chosen)
-        .unwrap();
+    set_for_store(&fixture.catalog, "brain-alpha", &store, &chosen);
     let restored = restore(&fixture.catalog, &brain, &store).unwrap();
     assert_eq!(restored.corrections, [ResumeCorrection::SelectionNotAMatch]);
     assert_eq!(restored.resume.selected_node_id, None);
@@ -912,10 +1159,7 @@ fn a_selection_that_no_longer_matches_falls_back_and_the_filter_stays_authoritat
 
     // An absent selection is a different word.
     chosen.selected_node_id = Some(9999);
-    fixture
-        .catalog
-        .set_resume_state("brain-alpha", &chosen)
-        .unwrap();
+    set_for_store(&fixture.catalog, "brain-alpha", &store, &chosen);
     let restored = restore(&fixture.catalog, &brain, &store).unwrap();
     assert_eq!(restored.corrections, [ResumeCorrection::SelectionMissing]);
 
@@ -926,10 +1170,7 @@ fn a_selection_that_no_longer_matches_falls_back_and_the_filter_stays_authoritat
         state: StateFilter::New,
         ..NodeFilter::default()
     };
-    fixture
-        .catalog
-        .set_resume_state("brain-alpha", &news)
-        .unwrap();
+    set_for_store(&fixture.catalog, "brain-alpha", &store, &news);
     let restored = restore(&fixture.catalog, &brain, &store).unwrap();
     assert_eq!(restored.corrections, [ResumeCorrection::SelectionNotAMatch]);
     assert_eq!(
@@ -951,10 +1192,7 @@ fn an_advanced_revision_restores_the_same_match_when_it_still_matches() {
     let target = FIRST_FILE + 150;
     let mut chosen = state(None, Some(target));
     chosen.filter = files_only();
-    fixture
-        .catalog
-        .set_resume_state("brain-alpha", &chosen)
-        .unwrap();
+    set_for_store(&fixture.catalog, "brain-alpha", &store, &chosen);
     let before = restore(&fixture.catalog, &brain, &store).unwrap();
     let old_cursor = before.filter_cursor.clone().unwrap();
     let old_revision = store.index.identity().unwrap().revision;
@@ -992,10 +1230,7 @@ fn a_match_removed_by_the_watcher_falls_back_without_a_stale_reference() {
     let target = FIRST_FILE + 150;
     let mut chosen = state(None, Some(target));
     chosen.filter = files_only();
-    fixture
-        .catalog
-        .set_resume_state("brain-alpha", &chosen)
-        .unwrap();
+    set_for_store(&fixture.catalog, "brain-alpha", &store, &chosen);
 
     // The file is gone from the next revision.
     let mut trimmed = corpus(200, "a");
@@ -1076,16 +1311,10 @@ fn restoring_and_updating_never_touch_the_index_or_its_journal() {
     let before = snapshot(&store);
     let mut chosen = state(Some(DOCS), Some(FIRST_FILE + 100));
     chosen.filter = files_only();
-    fixture
-        .catalog
-        .set_resume_state("brain-alpha", &chosen)
-        .unwrap();
+    set_for_store(&fixture.catalog, "brain-alpha", &store, &chosen);
     for _ in 0..3 {
         restore(&fixture.catalog, &brain, &store).unwrap();
-        fixture
-            .catalog
-            .set_resume_state("brain-alpha", &chosen)
-            .unwrap();
+        set_for_store(&fixture.catalog, "brain-alpha", &store, &chosen);
     }
     assert_eq!(
         snapshot(&store),
@@ -1150,8 +1379,12 @@ fn the_three_brains_restore_their_own_state_in_any_order() {
     let mut g = state(None, Some(1));
     g.details_panel_visible = false;
     g.view = None;
-    for (id, chosen) in [("brain-alpha", &a), ("brain-beta", &b), ("brain-gamma", &g)] {
-        fixture.catalog.set_resume_state(id, chosen).unwrap();
+    for (id, store, chosen) in [
+        ("brain-alpha", &store_a, &a),
+        ("brain-beta", &store_b, &b),
+        ("brain-gamma", &store_g, &g),
+    ] {
+        set_for_store(&fixture.catalog, id, store, chosen);
     }
     let stores = [
         ("brain-alpha", &store_a, &a),

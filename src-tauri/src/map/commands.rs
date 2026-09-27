@@ -332,8 +332,7 @@ pub fn exclusion_policy_state(
     if !database.try_exists()? {
         return Ok(desired.state(&brain.brain_id, !desired.rules().is_empty()));
     }
-    let applied = match open_store(paths, brain)
-        .and_then(|store| store.applied_exclusion_policy())
+    let applied = match open_store(paths, brain).and_then(|store| store.applied_exclusion_policy())
     {
         Ok(applied) => applied,
         Err(_) => return Ok(desired.state(&brain.brain_id, true)),
@@ -356,8 +355,7 @@ pub fn replace_exclusion_policy(
     if !database.try_exists()? {
         return Ok(desired.state(&brain.brain_id, !desired.rules().is_empty()));
     }
-    let applied = match open_store(paths, brain)
-        .and_then(|store| store.applied_exclusion_policy())
+    let applied = match open_store(paths, brain).and_then(|store| store.applied_exclusion_policy())
     {
         Ok(applied) => applied,
         Err(_) => return Ok(desired.state(&brain.brain_id, true)),
@@ -735,10 +733,12 @@ fn publish_locked(
 
     let scan_started = Instant::now();
     // Classified from the scanner's **structured** error, before it becomes text.
-    let scan = scan_tree_controlled_with_policy(&root, &policy, &cancelled, |_| {})
-        .map_err(|error| Refused {
-            observed: source_observation::classify_scan_error(&error),
-            error: MapError::Scan(error.to_string()),
+    let scan =
+        scan_tree_controlled_with_policy(&root, &policy, &cancelled, |_| {}).map_err(|error| {
+            Refused {
+                observed: source_observation::classify_scan_error(&error),
+                error: MapError::Scan(error.to_string()),
+            }
         })?;
     let scan_ms = elapsed_ms(scan_started);
 
@@ -786,9 +786,7 @@ fn publish_locked(
         (true, Gesture::Rebuild, false) => ApplicationMode::ExplicitRebuildFull,
         // The one question asked of the Index before the scan is compared, and
         // never asked to recover from an error.
-        (true, Gesture::Refresh, false)
-            if store.has_current_stamp().map_err(Refused::apply)? =>
-        {
+        (true, Gesture::Refresh, false) if store.has_current_stamp().map_err(Refused::apply)? => {
             ApplicationMode::Incremental
         }
         (true, Gesture::Refresh, false) => ApplicationMode::IdentityRestampFull,
@@ -2521,8 +2519,8 @@ mod tests {
         }
     }
 
-    /// `H7`: delete the index, rebuild, and everything reconstructible comes
-    /// back identical — while the one value declared unreconstructible does not.
+    /// Historical `H7`: a normal rebuild keeps the logical digest while the
+    /// report exposes the complete current non-reconstructible inventory.
     #[test]
     fn deleting_the_index_and_rebuilding_produces_an_equivalent_map() {
         let temp = tempfile::tempdir().expect("temp");
@@ -2542,7 +2540,7 @@ mod tests {
         assert_eq!(first.node_count, second.node_count);
         assert_eq!(
             second.non_reconstructible,
-            vec!["built_unix_ms".to_string()]
+            NON_RECONSTRUCTIBLE_KEYS.map(str::to_string).to_vec()
         );
 
         let store = open_store(&paths, &brain).expect("store");

@@ -6156,3 +6156,27 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
   données modifié;
 - TASK-0048 reste `IMPLEMENTED`, non `VERIFIED`; action suivante : nouveau
   contrôle indépendant; aucune TASK-0049.
+
+## 2026-09-26 — TASK-0049 — reconstructibilité et sécurité de génération (F-006)
+
+**Agent :** Codex
+**Statut à l'issue :** `IMPLEMENTED` (jamais auto-`VERIFIED`)
+
+- Enveloppe privée resume v2 liée à l'`index_id` backend, avec lecture legacy
+  sûre et correction persistée des références node-scoped inter-génération;
+  DTO frontend à cinq champs inchangé.
+- Digest reconstructible rendu logique et indépendant des allocations
+  numériques; inventaire non reconstructible corrigé à neuf éléments exacts.
+- Test adversarial prouvant qu'un ancien id valide peut nommer un autre chemin
+  après reconstruction, sans sélection erronée et avec digest égal.
+- Harnais synthétique trois processus Tauri/WebView2 : suppression hors produit
+  du seul Index, `NotBuilt`, reconstruction, nouvelle baseline sans faux
+  journal, correction persistée, policy/source/stores externes inchangés.
+- Huit sabotages attrapés puis restaurés.
+- Validations : Rust 770 PASS / 6 ignorés, frontend 625 PASS, ciblés 27/41,
+  check/build/Tauri/WebView2/audit public PASS; Clippy à la dette historique
+  13/22 sans diagnostic TASK-0049.
+- Limites : Windows/NTFS et fermetures normales; rebuild par IPC produit plutôt
+  que clic physique.
+- TASK-0049 = `IMPLEMENTED`; F-006 = `IMPLEMENTED`; F-014/P-19 inchangés.
+  Action suivante unique : contrôle indépendant de TASK-0049; aucune TASK-0050.

@@ -1,5 +1,32 @@
 # État courant
 
+## TASK-0049 — V1 Reconstructibility & Index-Generation Safety — IMPLEMENTED — 2026-09-26
+
+- Branche `build/v0.2-a33-v1-reconstructibility-closure`; F-006 seulement;
+  exécuteur Codex. Jamais auto-`VERIFIED`.
+- La reprise brain-scoped conserve son DTO public de cinq champs, mais son
+  enveloppe privée v2 est estampillée avec l'`index_id` lu par le backend.
+  Legacy, génération inconnue ou différente : focus/sélection sont effacés
+  avant lookup numérique, les préférences indépendantes restent, la correction
+  est persistée. Même génération : comportement conservé.
+- Le digest reconstructible est logique et inter-génération : chemins,
+  parenté par chemin, métadonnées, identité stable/provenance; aucun identifiant
+  numérique, revision ou géométrie.
+- Inventaire non reconstructible exact : timestamp de build, `index_id`,
+  revision, journal, acknowledgements/watermark, `next_node_id`, allocation
+  numérique et `nodes.seen` legacy.
+- Preuve WebView2 réelle sur trois processus : perte hors produit du seul Index,
+  `Open => NotBuilt`, rebuild par IPC produit, nouvel `index_id`, digest
+  égal malgré `b: 3 -> 2` et ancien 3 devenu `c`, correction de reprise
+  persistée, journal frais vide, policy/source/stores externes inchangés.
+- Validations finales : Rust 770 PASS / 6 ignorés; frontend 625 PASS; ciblés
+  reprise 27 Rust / 41 frontend; check/build/Tauri debug/WebView2/audit public
+  PASS. Clippy : dette historique 13 lib / 22 lib-test, rien sur TASK-0049.
+- Huit falsifications attrapées puis restaurées. Limites : Windows/NTFS,
+  fermetures normales, rebuild invoqué par IPC plutôt que clic physique.
+- **TASK-0049 = IMPLEMENTED; F-006 = IMPLEMENTED.** F-014/P-19 inchangés.
+  Action unique suivante : contrôle indépendant de TASK-0049.
+
 ## ACTION-0081 — corrective TASK-0048 exécutée — 2026-09-26
 
 - TASK-0048 reste IMPLEMENTED, non VERIFIED; nouveau contrôle indépendant requis.

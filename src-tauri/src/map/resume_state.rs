@@ -31,7 +31,8 @@ use crate::node_filter::{FilterCursor, FilterError, NodeFilter};
 use serde::{Deserialize, Serialize};
 
 /// Bump only together with a reader for the previous one.
-pub const RESUME_VERSION: u32 = 1;
+pub const RESUME_VERSION: u32 = 2;
+const LEGACY_RESUME_VERSION: u32 = 1;
 /// `catalog_meta` key prefix; the brain id completes it.
 const RESUME_KEY_PREFIX: &str = "brain_resume.v1.";
 /// A record is a handful of numbers: anything larger is not one of ours.
@@ -68,11 +69,29 @@ pub struct ResumeState {
     pub details_panel_visible: bool,
 }
 
-/// The closed, versioned envelope that is actually written.
+/// The closed, versioned envelope that is actually written. `index_id` is
+/// backend-owned: it never enters the public five-field [`ResumeState`] DTO.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Envelope {
     version: u32,
+    #[serde(rename = "indexId")]
+    index_id: Option<String>,
+    state: ResumeState,
+}
+
+/// Reader for the one previous envelope. A v1 record cannot prove which
+/// generation its numeric ids belonged to, so it is deliberately unbound.
+#[derive(Debug, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct LegacyEnvelope {
+    version: u32,
+    state: ResumeState,
+}
+
+#[derive(Debug, Clone)]
+struct StoredResume {
+    index_id: Option<String>,
     state: ResumeState,
 }
 
@@ -129,15 +148,35 @@ fn key_for(brain_id: &str) -> String {
 /// Parses what is stored. `None` for **anything** that is not a valid record of
 /// the current version — the reader never reports why, because the answer is
 /// the same in every case.
-fn read_record(raw: &str) -> Option<ResumeState> {
+fn read_record(raw: &str) -> Option<StoredResume> {
     if raw.len() > MAX_RECORD_BYTES {
         return None;
     }
-    let envelope: Envelope = serde_json::from_str(raw).ok()?;
-    if envelope.version != RESUME_VERSION {
-        return None;
+    let version = serde_json::from_str::<serde_json::Value>(raw)
+        .ok()?
+        .get("version")?
+        .as_u64()? as u32;
+    match version {
+        RESUME_VERSION => {
+            let envelope: Envelope = serde_json::from_str(raw).ok()?;
+            let state = envelope.state.validated().ok()?;
+            Some(StoredResume {
+                index_id: envelope.index_id.filter(|value| !value.is_empty()),
+                state,
+            })
+        }
+        LEGACY_RESUME_VERSION => {
+            let envelope: LegacyEnvelope = serde_json::from_str(raw).ok()?;
+            if envelope.version != LEGACY_RESUME_VERSION {
+                return None;
+            }
+            Some(StoredResume {
+                index_id: None,
+                state: envelope.state.validated().ok()?,
+            })
+        }
+        _ => None,
     }
-    envelope.state.validated().ok()
 }
 
 impl BrainCatalog {
@@ -153,6 +192,12 @@ impl BrainCatalog {
     /// An unknown brain is an **error that names it**, exactly like every other
     /// brain-scoped operation.
     pub fn stored_resume_state(&self, brain_id: &str) -> Result<Option<ResumeState>, MapError> {
+        Ok(self
+            .stored_resume_record(brain_id)?
+            .map(|record| record.state))
+    }
+
+    fn stored_resume_record(&self, brain_id: &str) -> Result<Option<StoredResume>, MapError> {
         self.require(brain_id)?;
         Ok(self
             .meta(&key_for(brain_id))?
@@ -173,15 +218,20 @@ impl BrainCatalog {
     ///
     /// Touches `catalog_meta` and nothing else: no publication lock, no
     /// watcher, no Index, no journal — `DEC-0042` §9.
-    pub fn set_resume_state(
+    pub fn set_resume_state_for_index(
         &self,
         brain_id: &str,
         state: &ResumeState,
+        index_id: Option<&str>,
     ) -> Result<ResumeState, MapError> {
         self.require(brain_id)?;
         let state = state.validated()?;
+        if index_id.is_some_and(str::is_empty) {
+            return Err(rejected("index_id_empty"));
+        }
         let raw = serde_json::to_string(&Envelope {
             version: RESUME_VERSION,
+            index_id: index_id.map(str::to_string),
             state: state.clone(),
         })
         .map_err(|_| rejected("not_serialisable"))?;
@@ -191,12 +241,28 @@ impl BrainCatalog {
         self.put_meta(&key_for(brain_id), &raw)?;
         Ok(state)
     }
+
+    /// Stores an explicitly unbound record. Kept for catalogue-only callers
+    /// and legacy-transition tests; product save uses
+    /// [`Self::set_resume_state_for_index`] with a backend-read generation.
+    #[cfg_attr(not(test), allow(dead_code))]
+    pub fn set_resume_state(
+        &self,
+        brain_id: &str,
+        state: &ResumeState,
+    ) -> Result<ResumeState, MapError> {
+        self.set_resume_state_for_index(brain_id, state, None)
+    }
 }
 
 /// Why a stored id was not kept. Closed words, never a name or a path.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ResumeCorrection {
+    /// The remembered branch belonged to another or an unknown Index generation.
+    FocusGenerationChanged,
+    /// The remembered selection belonged to another or an unknown Index generation.
+    SelectionGenerationChanged,
     /// The remembered branch is no longer in the Index.
     FocusMissing,
     /// The remembered selection is no longer in the Index.
@@ -243,13 +309,25 @@ pub fn restore(
     if !store.is_built()? {
         return Err(MapError::NotBuilt("canonical brain index".into()));
     }
-    let stored = catalog.stored_resume_state(&brain.brain_id)?;
+    let stored = catalog.stored_resume_record(&brain.brain_id)?;
     let original = match &stored {
-        Some(state) => state.clone(),
+        Some(record) => record.state.clone(),
         None => catalog.default_resume_state()?,
     };
     let mut state = original.clone();
     let mut corrections = Vec::new();
+    let current_index_id = store.index.identity()?.index_id;
+    let generation_matches = stored
+        .as_ref()
+        .is_none_or(|record| record.index_id.as_deref() == Some(current_index_id.as_str()));
+    if !generation_matches {
+        if state.focus_node_id.take().is_some() {
+            corrections.push(ResumeCorrection::FocusGenerationChanged);
+        }
+        if state.selected_node_id.take().is_some() {
+            corrections.push(ResumeCorrection::SelectionGenerationChanged);
+        }
+    }
     let root_id = store.root_id()?;
     let exists = |id: i64| -> Result<bool, MapError> { Ok(store.index.node(id)?.is_some()) };
 
@@ -335,8 +413,12 @@ pub fn restore(
 
     // Store the correction — and only a correction: a brain that had nothing
     // stored keeps having nothing stored.
-    if stored.is_some() && state != original {
-        state = catalog.set_resume_state(&brain.brain_id, &state)?;
+    if stored.is_some() && (!generation_matches || state != original) {
+        state = catalog.set_resume_state_for_index(
+            &brain.brain_id,
+            &state,
+            Some(current_index_id.as_str()),
+        )?;
     }
     Ok(ResumeRestore {
         resume: state,
