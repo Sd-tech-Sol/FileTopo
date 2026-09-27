@@ -1,222 +1,173 @@
-# NEXT_PROMPT — TASK-0049 — V1 Reconstructibility & Index-Generation Safety
+# NEXT_PROMPT — TASK-0050 — V1 Runtime Legend / P-10 Closure
 
 **TARGET_AGENT:** CODEX
 **RECOMMENDED_MODEL:** GPT-5.6 Sol
-**RECOMMENDED_EFFORT:** High
+**RECOMMENDED_EFFORT:** Medium
 **STATUS:** READY
-**BRANCH:** `build/v0.2-a33-v1-reconstructibility-closure`
+**BRANCH:** `build/v0.2-a34-v1-runtime-legend`
 
 ## Objectif unique
 
 Exécute intégralement
-`docs/tasks/TASK-0049-v1-reconstructibility-index-generation.md`
+`docs/tasks/TASK-0050-v1-runtime-legend-p10.md`
 selon
-`docs/decisions/DEC-0047-reconstructibility-index-generation-boundary.md`.
+`docs/decisions/DEC-0048-runtime-legend-boundary.md`.
 
-F-006 seulement. Aucune TASK-0050.
+F-014 / P-10 seulement. Aucune TASK-0051.
 
 ## 0 — préconditions
 
 1. Applique `AGENTS.md` et les instructions Codex du repo.
 2. Bascule explicitement sur
-   `build/v0.2-a33-v1-reconstructibility-closure`.
+   `build/v0.2-a34-v1-runtime-legend`.
 3. `git fetch origin`.
-4. Synchronise uniquement en fast-forward avec
-   `origin/build/v0.2-a33-v1-reconstructibility-closure`.
+4. Synchronise seulement en fast-forward avec
+   `origin/build/v0.2-a34-v1-runtime-legend`.
 5. Vérifie arbre propre.
-6. Lis :
-   - ACTION-0082;
-   - ACTION-0083;
-   - DEC-0047;
-   - TASK-0049;
-   - TASK-0031 / DEC-0032;
-   - resume_state.rs;
-   - brain_index.rs;
-   - index.rs;
-   - change_journal.rs.
-7. Vérifie que TASK-0048/F-005 sont bien VERIFIED et que F-006 reste ouvert.
+6. Lis ACTION-0084, ACTION-0085, DEC-0048, TASK-0050.
+7. Vérifie que TASK-0049/F-006 sont VERIFIED.
+8. Lis MapView.tsx, map.css, mapStrings.ts et TASK-0047-webview2.json
+   (section nonColour).
 
 STOP/BLOCKED si une précondition est fausse.
 
 ## 1 — audit avant code
 
-Ne code rien avant d'avoir établi :
+Dresse dans RESULT la liste **réelle** des codages de la carte et leurs
+primitives existantes.
 
-- comment un Index frais reçoit son index_id;
-- comment next_node_id est alloué;
-- comment un rebuild normal conserve les IDs;
-- comment un Index frais peut réattribuer les node_id après historique;
-- comment resume est sauvegardé/restauré;
-- tous les consommateurs de reconstructible_digest et nonReconstructible;
-- quels stores hors Index utilisent node_id vs chemin/stable identity.
+Ne pars pas de l'ancien prototype.
 
-Écris cette conclusion dans RESULT.
+Cherche une légende existante avant d'en créer une.
 
-## 2 — génération : réutiliser index_id
+## 2 — frontend uniquement
 
-Aucun nouveau generation_id.
+Aucun Rust/backend attendu.
 
-Le backend doit lier les refs node-scoped du resume à l'index_id sur lequel
-elles ont été enregistrées.
+Si tu crois qu'un changement Rust/Tauri/SQLite est nécessaire, STOP/BLOCKED au
+lieu de l'introduire.
 
-Le frontend ne fournit pas une génération qu'il pourrait falsifier si le
-backend peut la lire lui-même.
+Pas de nouvelle dépendance.
 
-## 3 — resume génération-safe
+## 3 — légende à la demande
 
-Même index_id : aucun changement de comportement.
+Ajouter un contrôle `Légende / Legend` dans MapApp :
 
-Index_id différent :
+- bouton clavier;
+- aria-expanded;
+- aria-controls/association panneau;
+- panneau nommé;
+- fermeture par le même bouton;
+- pas de modal/focus trap.
 
-- ne jamais valider l'ancien focus/selected par simple exists(node_id);
-- corriger/effacer les refs node-scoped avant usage;
-- garder view/filter/details si leur contrat ne dépend pas du node id;
-- persister la correction.
+État session-only pour TASK-0050.
 
-Record legacy sans génération :
+**Ne modifie pas resume v2.** La persistance de la légende appartient à P-19.
 
-- ne prétends pas que ses IDs sont liés;
-- applique la politique sûre de DEC-0047;
-- couvre la transition par tests.
+## 4 — même langage visuel que MapView
 
-Le test le plus important doit démontrer qu'un ancien numéro **existe encore
-mais pointe vers un autre chemin** après reconstruction fraîche, et que le
-resume ne choisit pas ce mauvais chemin.
+Les échantillons utilisent les mêmes :
 
-## 4 — digest/comparateur inter-génération
+- classes CSS;
+- glyphes;
+- patterns;
+- primitives SVG.
 
-L'actuel reconstructible_digest inclut parent_id numérique.
+Aucune couleur/dash copiée inline.
 
-N'en déduis pas qu'il convient à F-006.
+Extraction minimale d'un helper autorisée si MapView et Legend l'utilisent tous
+les deux.
 
-Après audit des consommateurs :
+## 5 — couverture exhaustive et testable
 
-- rends la preuve logique indépendante des IDs numériques;
-- compare parenté par identité logique/chemin;
-- ne change l'ancien digest que si ses consommateurs restent corrects;
-- sinon ajoute le plus petit digest/comparateur distinct.
+Couvre toutes les familles DEC-0048 §C :
 
-Pas de whole-graph DTO frontend.
+- root/directory/file/skipped;
+- selected/related/linked/cross-linked;
+- filter match/context;
+- diagnostic;
+- focused brain;
+- hierarchy normal/touching;
+- intra established/suggestion/approved/touching;
+- inter crossing/established/suggestion/approved/touching;
+- aggregate.
 
-## 5 — inventaire nonReconstructible
+Établis une **clé sémantique de couverture** issue du rendu réel, pas deux
+listes manuelles copiées.
 
-L'inventaire built_unix_ms seul est périmé.
+Le test doit rendre une carte riche et prouver :
+`map semantic keys ⊆ legend keys`.
 
-Audite et classe exactement :
+Un codage carte exercé sans item doit casser.
 
-- built_unix_ms;
-- index_id;
-- revision;
-- journal;
-- seen/unseen acknowledgements/watermark;
-- next_node_id;
-- allocation node_id;
-- nodes.seen legacy.
+## 6 — mots produit FR/EN
 
-Tests exacts et ordre déterministe.
+Chaque exemple a un texte clair.
 
-N'ajoute pas à la liste ce qui survit réellement dans catalogue/relations/
-content-signals.
+Aucun nom CSS interne visible.
 
-## 6 — preuve de perte complète
+Réutilise la mécanique locale TASK-0046.
 
-La suppression de l'Index est **harness-only, processus fermé**.
+## 7 — accessibilité
 
-Aucun bouton ni commande produit de suppression.
+Réutilise TASK-0047 :
 
-Scénario WebView2 obligatoire, trois processus, racine REAL_ROOT générée :
+- non color-only;
+- focus visible;
+- clavier Enter/Space;
+- aucun piège;
+- contraste;
+- axe sans nouvelle violation;
+- échantillons décoratifs aria-hidden si le texte adjacent suffit.
 
-1. construire état + historique + policy + journal/seen + resume;
-2. fermer;
-3. hors produit, supprimer uniquement Index + sidecars;
-4. relancer : Open => NotBuilt;
-5. Reconstruire via pipeline existant;
-6. nouveau index_id;
-7. équivalence corpus/hiérarchie logique;
-8. divergence réelle de node_id;
-9. resume corrigé, jamais mauvais chemin;
-10. journal historique non recréé;
-11. policy et stores externes inchangés;
-12. source SHA inchangé;
-13. troisième relance : correction resume persistée.
+## 8 — WebView2
 
-Artefact :
-`docs/performance/runs/TASK-0049-webview2.json`.
+Publie `docs/performance/runs/TASK-0050-webview2.json`.
 
-## 7 — scénario d'IDs divergents
+Scénario riche ≥ 2 cerveaux avec relations, filtre, diagnostic et agrégat :
 
-Force le cas, ne compte pas sur le hasard :
+1. légende fermée;
+2. ouverture clavier;
+3. FR;
+4. couverture de toutes les clés;
+5. changement EN;
+6. mêmes classes/computed signatures carte ↔ légende quand applicable;
+7. axe fermé/ouvert;
+8. traversal Tab sans piège;
+9. fermeture/réouverture même session;
+10. zéro commande backend causée par les gestes de légende;
+11. source SHA / Index / journal / resume inchangés.
 
-- source ordonnée a,b,c,d;
-- premier Index;
-- supprimer a côté harness/test puis appliquer;
-- sélectionner un survivant dont l'ancien ID sera réutilisé/décalé dans un
-  Index frais;
-- prouver le mapping avant/après.
+Persistance restart : **NON TESTED / P-19**, explicitement.
 
-## 8 — journal / seen
+## 9 — falsifications
 
-Une nouvelle génération établit une nouvelle baseline.
+Exécute TASK-0050 §J.
 
-Interdit :
+Aucun sabotage final.
 
-- recréer artificiellement l'ancien journal;
-- produire des CREATED/DELETED pour simuler le passé;
-- transporter des acknowledgements seen vers des event IDs qui n'existent plus.
+## 10 — validation
 
-Déclare honnêtement cette perte dans nonReconstructible.
+- ciblés TypeScript;
+- pnpm test;
+- pnpm check;
+- pnpm build;
+- Tauri debug;
+- WebView2;
+- axe local;
+- git diff --check;
+- audit public.
 
-## 9 — falsification
-
-Exécute les huit sabotages de TASK-0049 §J.
-
-En particulier, retire temporairement la garde de génération resume et montre
-que le test attrape une sélection valide numériquement mais fausse
-sémantiquement.
-
-## 10 — non-régression
-
-Préserve :
-
-- F-005 exclusions;
-- TASK-0031 rollback;
-- F-032 source absente;
-- stable identity normal;
-- watcher;
-- bounded projection 512;
-- FR/EN;
-- accessibilité;
-- relations/content-signals/décisions hors Index.
-
-Pas de refactor opportuniste.
-
-## 11 — validation
-
-Exécute TASK-0049 §K.
-
-Clippy : dette historique séparée.
-
-Audit public obligatoire.
-
-## 12 — gouvernance
+## 11 — gouvernance
 
 À la fin :
 
-- TASK-0049 = IMPLEMENTED, jamais auto-VERIFIED;
-- F-006 = IMPLEMENTED, jamais auto-VERIFIED;
-- F-014/P-19 inchangés;
-- aucune TASK-0050;
-- NEXT_ACTION = contrôle indépendant TASK-0049;
+- TASK-0050 = IMPLEMENTED, jamais auto-VERIFIED;
+- F-014 = IMPLEMENTED;
+- P-10 = IMPLEMENTED/candidate contrôle indépendant;
+- P-19 reste PARTIELLE;
+- aucune TASK-0051;
+- NEXT_ACTION = contrôle indépendant TASK-0050;
 - commit + push;
-- arbre propre.
-
-RESULT doit contenir :
-- audit avant code;
-- design de génération resume choisi;
-- inventaire reconstructible/non-reconstructible;
-- preuve IDs divergents;
-- WebView2 3 processus;
-- falsifications;
-- validations;
-- limites;
-- HEAD final.
+- arbre propre;
+- RESULT complet.
