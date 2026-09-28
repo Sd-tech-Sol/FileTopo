@@ -1,4 +1,4 @@
-# NEXT_PROMPT — TASK-0050 — V1 Runtime Legend / P-10 Closure
+# NEXT_PROMPT — TASK-0050 corrective pass — WebView2 exhaustive coverage
 
 **TARGET_AGENT:** CODEX
 **RECOMMENDED_MODEL:** GPT-5.6 Sol
@@ -8,12 +8,8 @@
 
 ## Objectif unique
 
-Exécute intégralement
-`docs/tasks/TASK-0050-v1-runtime-legend-p10.md`
-selon
-`docs/decisions/DEC-0048-runtime-legend-boundary.md`.
-
-F-014 / P-10 seulement. Aucune TASK-0051.
+Corriger uniquement les écarts trouvés par **ACTION-0086** sur TASK-0050.
+Aucune TASK-0051.
 
 ## 0 — préconditions
 
@@ -24,63 +20,44 @@ F-014 / P-10 seulement. Aucune TASK-0051.
 4. Synchronise seulement en fast-forward avec
    `origin/build/v0.2-a34-v1-runtime-legend`.
 5. Vérifie arbre propre.
-6. Lis ACTION-0084, ACTION-0085, DEC-0048, TASK-0050.
-7. Vérifie que TASK-0049/F-006 sont VERIFIED.
-8. Lis MapView.tsx, map.css, mapStrings.ts et TASK-0047-webview2.json
-   (section nonColour).
+6. Lis ACTION-0086 dans `docs/ai/VALIDATION.md` et TASK-0050 §N.
+7. Lis DEC-0048, le code actuel de légende, le harnais TASK-0050 et
+   l'artefact WebView2 actuel.
 
 STOP/BLOCKED si une précondition est fausse.
 
-## 1 — audit avant code
+## 1 — ne pas refaire ce qui est déjà bon
 
-Dresse dans RESULT la liste **réelle** des codages de la carte et leurs
-primitives existantes.
+Conserve :
 
-Ne pars pas de l'ancien prototype.
+- contrat TS fermé de 24 clés;
+- test riche déterministe 24/24;
+- FR/EN et mécanique locale;
+- bouton natif / aria-expanded / aria-controls / panneau nommé;
+- session-only;
+- zéro commande backend par gestes de légende;
+- source / Index / journal / resume inchangés;
+- P-19 séparée.
 
-Cherche une légende existante avant d'en créer une.
+Aucun Rust/backend/SQLite/Tauri command attendu.
+Aucune nouvelle dépendance.
 
-## 2 — frontend uniquement
+## 2 — corriger le libellé cross-linked
 
-Aucun Rust/backend attendu.
+Le rendu réel `.map-node--cross-linked rect` est actuellement un contour
+**solide épaissi unique**, pas un double contour.
 
-Si tu crois qu'un changement Rust/Tauri/SQLite est nécessaire, STOP/BLOCKED au
-lieu de l'introduire.
+Corrige uniquement les textes FR/EN de la légende pour décrire le rendu réel.
+N'invente pas une nouvelle apparence pour faire correspondre le texte.
 
-Pas de nouvelle dépendance.
+Ajoute/ajuste le test pour verrouiller cette exactitude.
 
-## 3 — légende à la demande
+## 3 — preuve WebView2 réelle 24/24
 
-Ajouter un contrôle `Légende / Legend` dans MapApp :
+Le défaut principal est la preuve, pas le contrat TypeScript.
 
-- bouton clavier;
-- aria-expanded;
-- aria-controls/association panneau;
-- panneau nommé;
-- fermeture par le même bouton;
-- pas de modal/focus trap.
-
-État session-only pour TASK-0050.
-
-**Ne modifie pas resume v2.** La persistance de la légende appartient à P-19.
-
-## 4 — même langage visuel que MapView
-
-Les échantillons utilisent les mêmes :
-
-- classes CSS;
-- glyphes;
-- patterns;
-- primitives SVG.
-
-Aucune couleur/dash copiée inline.
-
-Extraction minimale d'un helper autorisée si MapView et Legend l'utilisent tous
-les deux.
-
-## 5 — couverture exhaustive et testable
-
-Couvre toutes les familles DEC-0048 §C :
+Le nouvel harnais doit faire apparaître, à travers une ou plusieurs étapes
+réelles du produit dans WebView2, l'union complète des 24 clés :
 
 - root/directory/file/skipped;
 - selected/related/linked/cross-linked;
@@ -92,82 +69,95 @@ Couvre toutes les familles DEC-0048 §C :
 - inter crossing/established/suggestion/approved/touching;
 - aggregate.
 
-Établis une **clé sémantique de couverture** issue du rendu réel, pas deux
-listes manuelles copiées.
+Interdit :
 
-Le test doit rendre une carte riche et prouver :
-`map semantic keys ⊆ legend keys`.
+- injecter des faux éléments DOM;
+- marquer une clé « couverte » parce qu'elle existe seulement dans la légende;
+- compter une relation présente dans un store si MapView ne la rend pas;
+- remplacer la preuve WebView2 par le test Vitest déterministe.
 
-Un codage carte exercé sans item doit casser.
+Les états peuvent être exercés successivement; l'artefact doit enregistrer
+l'union réellement observée sur `.map-view [data-legend-keys]`.
 
-## 6 — mots produit FR/EN
+Le harnais doit **assert** que l'union observée est exactement le contrat fermé
+attendu et les 24 clés de légende. Une clé manquante doit faire échouer la
+preuve.
 
-Chaque exemple a un texte clair.
+## 4 — classes / primitives / computed signatures
 
-Aucun nom CSS interne visible.
+Pour chacune des 24 clés réellement observées :
 
-Réutilise la mécanique locale TASK-0046.
+- confirmer que l'échantillon de légende réutilise les classes/primitives
+  MapView pertinentes;
+- comparer réellement les signatures calculées pertinentes carte ↔ légende
+  (au minimum propriétés porteuses de sens : stroke width/dash/opacity,
+  fill opacity, font weight, etc. selon la famille);
+- inclure le parent porteur de classe et le descendant stylé lorsque la règle
+  CSS dépend du parent;
+- faire échouer le harnais sur divergence.
 
-## 7 — accessibilité
+Ne te contente pas de `sharedClasses.length > 0`.
+L'artefact ne doit plus laisser des familles obligatoires
+`exercisedOnMap=false`.
 
-Réutilise TASK-0047 :
+## 5 — accessibilité et passivité
 
-- non color-only;
-- focus visible;
-- clavier Enter/Space;
-- aucun piège;
-- contraste;
-- axe sans nouvelle violation;
-- échantillons décoratifs aria-hidden si le texte adjacent suffit.
+Rejoue en WebView2 :
 
-## 8 — WebView2
+- légende fermée puis ouverte au clavier;
+- FR puis EN;
+- Enter / Space;
+- traversal Tab sans piège;
+- axe fermé/ouvert sans nouvelle violation;
+- zéro commande backend causée par les gestes de légende;
+- source / Index / journal / resume inchangés.
 
-Publie `docs/performance/runs/TASK-0050-webview2.json`.
+Restart de la légende reste **NON TESTED / P-19**.
 
-Scénario riche ≥ 2 cerveaux avec relations, filtre, diagnostic et agrégat :
+## 6 — artefact
 
-1. légende fermée;
-2. ouverture clavier;
-3. FR;
-4. couverture de toutes les clés;
-5. changement EN;
-6. mêmes classes/computed signatures carte ↔ légende quand applicable;
-7. axe fermé/ouvert;
-8. traversal Tab sans piège;
-9. fermeture/réouverture même session;
-10. zéro commande backend causée par les gestes de légende;
-11. source SHA / Index / journal / resume inchangés.
+Remplace `docs/performance/runs/TASK-0050-webview2.json`.
 
-Persistance restart : **NON TESTED / P-19**, explicitement.
+Il doit permettre au contrôleur indépendant de voir sans ambiguïté :
 
-## 9 — falsifications
+- 24/24 clés réellement observées sur la carte;
+- 24/24 clés de légende;
+- égalité de couverture;
+- preuves de partage/signatures pour les 24;
+- clavier/axe/passivité;
+- P-19 NON TESTED.
 
-Exécute TASK-0050 §J.
+## 7 — validation
 
-Aucun sabotage final.
+Exécute :
 
-## 10 — validation
-
-- ciblés TypeScript;
-- pnpm test;
-- pnpm check;
-- pnpm build;
+- tests ciblés TASK-0050;
+- `pnpm test`;
+- `pnpm check`;
+- `pnpm build`;
 - Tauri debug;
-- WebView2;
+- WebView2 réel;
 - axe local;
-- git diff --check;
-- audit public.
+- `git diff --check`;
+- audit public selon la convention du repo.
 
-## 11 — gouvernance
+Falsifie au moins :
+
+1. une clé carte obligatoire non exercée -> WebView2 échoue;
+2. une signature de sample divergente -> WebView2 échoue;
+3. remettre « double contour » dans le texte -> test ciblé échoue.
+
+Restaure tout sabotage.
+
+## 8 — gouvernance
 
 À la fin :
 
-- TASK-0050 = IMPLEMENTED, jamais auto-VERIFIED;
-- F-014 = IMPLEMENTED;
-- P-10 = IMPLEMENTED/candidate contrôle indépendant;
+- TASK-0050 = IMPLEMENTED / candidate contrôle indépendant, jamais auto-VERIFIED;
+- F-014 / P-10 restent candidate jusqu'au contrôle ChatGPT;
 - P-19 reste PARTIELLE;
 - aucune TASK-0051;
-- NEXT_ACTION = contrôle indépendant TASK-0050;
+- NEXT_ACTION = contrôle indépendant TASK-0050 corrective;
+- `.orchestrator/RESULT.md` complet;
 - commit + push;
-- arbre propre;
-- RESULT complet.
+- arbre propre.

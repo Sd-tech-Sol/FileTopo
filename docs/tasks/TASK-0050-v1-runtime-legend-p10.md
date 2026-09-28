@@ -1,7 +1,7 @@
 # TASK-0050 — V1 Runtime Legend / P-10 Closure
 
 - **Date :** 2026-09-26
-- **Statut :** `IMPLEMENTED`
+- **Statut :** `CORRECTIVE_REQUIRED`
 - **Branche :** `build/v0.2-a34-v1-runtime-legend`
 - **Décision :** `DEC-0048`
 - **Portée :** `F-014`, `P-10`
@@ -239,3 +239,66 @@ Aucun Rust attendu. Si Rust change : STOP sauf justification impérative.
 **TASK-0050 = IMPLEMENTED; F-014 = IMPLEMENTED; P-10 = IMPLEMENTED, candidate
 au contrôle indépendant.** P-19 reste PARTIELLE; persistance au redémarrage
 explicitement NON TESTED. Aucune TASK-0051.
+
+
+## N — ACTION-0086 — contrôle indépendant — CORRECTIVE_REQUIRED — 2026-09-28
+
+Le contrôle indépendant refuse `VERIFIED` à ce stade.
+
+### N.1 — ce qui est confirmé
+
+- aucun Rust/backend/manifeste de dépendances modifié;
+- état de légende session-only; resume v2 et P-19 inchangés;
+- bouton natif avec `aria-expanded` / `aria-controls`, panneau nommé, FR/EN;
+- contrat TypeScript fermé de 24 clés;
+- test riche déterministe qui matérialise les 24 clés et vérifie la couverture;
+- zéro commande backend causée par les gestes de légende dans la preuve actuelle;
+- source / Index / journal / resume identiques autour de ces gestes;
+- axe sans nouvelle violation.
+
+### N.2 — écarts bloquants
+
+1. L'artefact WebView2 réel n'exerce que 12 clés carte sur 24 :
+   `aggregate`, `filter-context`, `filter-match`, `hierarchy-normal`,
+   `hierarchy-touching`, `intra-established`, `node-directory`,
+   `node-file`, `node-related`, `node-root`, `node-selected`,
+   `territory-focused`.
+2. Ne sont donc pas réellement matérialisées dans WebView2 :
+   `node-skipped`, `node-linked`, `node-cross-linked`,
+   `node-diagnostic`, `intra-suggestion`, `intra-approved`,
+   `intra-touching`, `inter-crossing`, `inter-established`,
+   `inter-suggestion`, `inter-approved`, `inter-touching`.
+3. Le harnais WebView2 n'assert que
+   `observed map keys ⊆ legend keys`; il ne prouve pas que les 24 clés
+   obligatoires ont été observées par le rendu produit.
+4. La preuve `sharedVisualLanguage` exige seulement une classe partagée pour
+   les clés exercées; elle n'assert pas l'égalité des signatures calculées
+   carte ↔ légende. Plusieurs clés sont `exercisedOnMap=false`, et
+   `hierarchy-normal` possède même une `legendSignatures` vide dans
+   l'artefact.
+5. Le libellé `node-cross-linked` dit « double contour / double outline »,
+   alors que le rendu réel `.map-node--cross-linked rect` est un contour
+   solide épaissi unique. La légende doit décrire le codage réel, pas un codage
+   imaginaire.
+
+### N.3 — corrective pass exigée avant tout VERIFIED
+
+La passe corrective reste dans TASK-0050. Aucune TASK-0051.
+
+Elle doit :
+
+- corriger le texte FR/EN de `node-cross-linked` pour refléter le rendu réel,
+  sans inventer une nouvelle sémantique visuelle;
+- faire exercer par **WebView2 réel** l'union complète des 24 clés à travers
+  une ou plusieurs étapes produit réelles, sans injection DOM factice;
+- faire échouer le harnais si
+  `observed real map keys != legend keys` pour le contrat fermé attendu;
+- prouver les classes/primitives partagées et comparer réellement les
+  signatures calculées pertinentes carte ↔ légende pour chaque clé;
+- publier un nouvel artefact TASK-0050-webview2.json cohérent;
+- rejouer ciblés, suite complète, check, build, Tauri debug, axe, diff check et
+  audit public;
+- conserver frontend-only, sans package, sans resume v2, P-19 séparée.
+
+**TASK-0050 / F-014 / P-10 restent NON VERIFIED jusqu'au prochain contrôle
+indépendant.**

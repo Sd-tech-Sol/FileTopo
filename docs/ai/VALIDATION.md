@@ -8860,3 +8860,40 @@ Persistance après redémarrage : **NON TESTED / hors portée P-19**. Aucun lect
 d'écran réel. Axe laisse un `incomplete color-contrast` préexistant et identique
 sur les deux cellules; aucune nouvelle violation ou finding incomplet n'est
 introduit par la légende. Aucun Rust/backend/SQLite/Tauri command/package changé.
+
+
+## CQ. ACTION-0086 — contrôle indépendant TASK-0050 — 2026-09-28
+
+**Verdict : CORRECTIVE_REQUIRED. TASK-0050 / F-014 / P-10 non VERIFIED.**
+
+Contrôle indépendant effectué depuis
+`4b444052b8bfe9dabbe6b6f83aca62666f77717e` jusqu'au HEAD
+`d60c0c1962323d6b0afdf15d4117ae4ef57757ff`.
+
+Confirmé :
+
+- aucun Rust/backend/package ajouté ou modifié;
+- composant session-only, FR/EN, bouton natif, `aria-expanded`,
+  `aria-controls`, panneau nommé;
+- contrat TS de 24 clés et test riche déterministe;
+- aucun geste de légende ne déclenche de commande backend dans la preuve;
+- source / Index / journal / resume inchangés;
+- P-19 reste séparée.
+
+Blocages :
+
+- la preuve WebView2 réelle n'observe que 12/24 clés carte;
+- 12 familles obligatoires restent non exercées en WebView2 :
+  `node-skipped`, `node-linked`, `node-cross-linked`,
+  `node-diagnostic`, `intra-suggestion`, `intra-approved`,
+  `intra-touching`, `inter-crossing`, `inter-established`,
+  `inter-suggestion`, `inter-approved`, `inter-touching`;
+- le harnais teste seulement `map observed ⊆ legend`, pas l'exhaustivité 24/24;
+- `sharedVisualLanguage` ne compare pas réellement les signatures calculées
+  carte ↔ légende et laisse des clés `exercisedOnMap=false`;
+- le texte cross-linked annonce un « double contour » absent du rendu réel
+  (classe actuelle : contour solide épaissi unique).
+
+Décision : passe corrective ciblée dans **TASK-0050 uniquement**. Aucune
+TASK-0051. Le prochain verdict indépendant devra repartir des nouvelles preuves,
+pas du rapport de l'exécuteur.

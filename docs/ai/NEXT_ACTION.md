@@ -1,11 +1,20 @@
 # Action suivante
 
-## Contrôle indépendant de TASK-0050 — V1 Runtime Legend / P-10 Closure
+## Exécuter la corrective pass de TASK-0050 — WebView2 exhaustif / exactitude de légende
 
-Contrôler le commit de travail de
-`build/v0.2-a34-v1-runtime-legend` sur preuves : contrat partagé de 24 clés,
-réutilisation réelle des classes/glyphes/primitives de MapView, interaction
-FR/EN clavier et artefact `docs/performance/runs/TASK-0050-webview2.json`.
+Branche : `build/v0.2-a34-v1-runtime-legend`.
 
-Attribuer ou refuser `VERIFIED` pour TASK-0050/F-014 et la fermeture P-10.
-P-19 reste PARTIELLE; aucune TASK-0051 avant ce verdict.
+ACTION-0086 a contrôlé indépendamment TASK-0050 et refuse `VERIFIED` pour deux
+écarts ciblés :
+
+1. la preuve WebView2 réelle n'exerce que 12/24 clés sémantiques;
+2. le texte `node-cross-linked` décrit un double contour absent du rendu réel.
+
+**Exécuteur : Codex + GPT-5.6 Sol — Medium effort.**
+
+La corrective doit rester frontend/harness uniquement, sans Rust/backend,
+sans nouvelle dépendance, sans resume v2 et sans toucher P-19.
+
+Prompt autoritaire : `.orchestrator/NEXT_PROMPT.md`.
+
+Aucune TASK-0051. Après exécution, contrôle indépendant obligatoire de TASK-0050.

@@ -1,5 +1,17 @@
 # État courant
 
+## ACTION-0086 — TASK-0050 corrective requise — 2026-09-28
+
+- Contrôle indépendant : TASK-0050/F-014/P-10 **NON VERIFIED**.
+- Implémentation principale confirmée, mais l'artefact WebView2 n'exerce que
+  12/24 clés et le harnais n'assert pas l'exhaustivité ni l'égalité réelle des
+  signatures calculées.
+- Le libellé cross-linked annonce à tort un double contour.
+- Corrective pass préparée dans la même TASK-0050; aucune TASK-0051.
+- Prompt autoritaire : `.orchestrator/NEXT_PROMPT.md`.
+- P-19 reste PARTIELLE et séparée.
+
+
 ## TASK-0050 — V1 Runtime Legend / P-10 Closure — IMPLEMENTED — 2026-09-28
 
 - Branche `build/v0.2-a34-v1-runtime-legend`; frontend uniquement; exécuteur

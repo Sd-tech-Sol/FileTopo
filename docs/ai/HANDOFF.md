@@ -1,5 +1,17 @@
 # HANDOFF — passage de relais
 
+## Relais — ACTION-0086 / TASK-0050 corrective READY — 2026-09-28
+
+- HEAD contrôlé avant préparation : `d60c0c1962323d6b0afdf15d4117ae4ef57757ff`.
+- TASK-0050 n'est pas VERIFIED.
+- Écarts : WebView2 12/24 clés réelles; pas d'assert d'égalité des computed
+  signatures; texte cross-linked inexact (« double contour »).
+- Corrective ciblée seulement; aucun Rust/backend/package/resume v2; P-19
+  reste séparée; aucune TASK-0051.
+- Exécuteur prévu : Codex + GPT-5.6 Sol Medium.
+- Lire et exécuter intégralement `.orchestrator/NEXT_PROMPT.md`.
+
+
 ## Relais — TASK-0050 IMPLEMENTED / contrôle indépendant requis — 2026-09-28
 
 - Branche `build/v0.2-a34-v1-runtime-legend`; TASK-0050/F-014/P-10 sont
