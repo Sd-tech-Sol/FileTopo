@@ -5,7 +5,7 @@
 - **Branche :** `build/v0.2-a34-v1-runtime-legend`
 - **Décision :** `DEC-0048`
 - **Portée :** `F-014`, `P-10`
-- **Exécuteur prévu :** Codex
+- **Exécuteur prévu :** Claude Code
 - **Prérequis :** ACTION-0084, ACTION-0085
 
 ## But
