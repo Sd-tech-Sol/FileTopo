@@ -1,4 +1,4 @@
-# NEXT_PROMPT — TASK-0050 corrective finale — 23 clés runtime + diagnostic invariant
+# NEXT_PROMPT — TASK-0050 corrective finale — preuve multi-cellules avec J12
 
 **TARGET_AGENT:** CLAUDE CODE
 **RECOMMENDED_MODEL:** Claude Sonnet 5
@@ -8,172 +8,124 @@
 
 ## Objectif unique
 
-Terminer TASK-0050 selon ACTION-0087 et l'amendement DEC-0048 §K.
+Fermer la preuve TASK-0050 sans modifier le produit : compléter les 21 clés
+déjà reproductibles avec les deux familles intra prouvées par le scénario J12
+existant, rejoué sur le HEAD courant.
 
-Aucune TASK-0051. Aucun changement Rust/backend.
+Aucune TASK-0051. Aucun Rust/backend.
 
 ## 0 — préconditions
 
-1. Applique `AGENTS.md` et les instructions Claude Code du repo.
-2. Bascule sur `build/v0.2-a34-v1-runtime-legend`.
-3. `git fetch origin`, fast-forward seulement.
-4. Vérifie arbre propre.
-5. Lis ACTION-0086, ACTION-0087, DEC-0048 §K, TASK-0050 §§O-P.
-6. Vérifie que le correctif cross-linked du commit
-   `fa429db6f2324269bfddd21b78be6b1f5eed9785` est présent.
+1. Applique `AGENTS.md` et les instructions Claude Code.
+2. Checkout `build/v0.2-a34-v1-runtime-legend`.
+3. Fetch + fast-forward seulement.
+4. Arbre propre.
+5. Lis ACTION-0087, ACTION-0088, DEC-0048 §K et TASK-0050 §Q.
+6. Lis `src/map/relationScenario.ts` et l'artefact historique
+   `docs/performance/runs/TASK-0024-J12-intrabrain-relations-regression-webview2.json`.
 
-STOP/BLOCKED si une précondition est fausse.
+L'artefact historique sert seulement de référence. La preuve finale doit rejouer
+J12 sur le HEAD actuel.
 
-## 1 — frontière ferme
+## 1 — conserver la cellule A
 
-Ne modifie PAS :
+Conserve le harnais TASK-0050 actuel et ses acquis : 21 clés réelles, jonction
+NTFS, agrégat clavier, révélation récursive, signatures calculées, axe/clavier/
+passivité et preuve node-diagnostic séparée.
 
-- Rust/backend/SQLite/Tauri commands;
-- resume v2;
-- P-19;
-- dépendances.
+Ne réécris pas ce qui fonctionne.
 
-`node-diagnostic` reste dans la légende et le contrat 24/24, mais il est
-explicitement non atteignable dans WebView2 réel tant que
-`commands.rs:745-749` refuse les diagnostics de scan.
+## 2 — cellule B : réutiliser J12 actuel
 
-Ne cherche plus à contourner cet invariant.
+Réutilise `src/map/relationScenario.ts` et le chemin `host.autoRelations`
+déjà branché dans MapApp.
 
-## 2 — rendre reproductible la preuve réelle 23/23
+Exécute J12 sur le build/HEAD courant dans un vrai WebView2.
 
-Transforme la séquence de gestes produit découverte dans la passe précédente
-en harnais reproductible `scripts/task0050-webview2.mjs` / scripts associés.
+Pendant l'étape où J12 rend les relations intra, capture explicitement les
+`data-legend-keys` réels et prouve au minimum :
 
-Aucune injection de faux DOM.
+- `intra-suggestion`;
+- `intra-approved`;
+- classes/primitives réelles;
+- suggestion pointillée + anneaux, sans flèche;
+- relation APPROVED avec provenance correspondante.
 
-Le harnais doit exercer réellement l'union des 23 clés atteignables :
+Tu peux ajouter une petite collecte d'évidence au scénario J12 ou à un wrapper
+TASK-0050, mais ne change pas le comportement produit de MapApp.
 
-- root/directory/file/skipped;
-- selected/related/linked/cross-linked;
-- filter match/context;
-- focused brain;
-- hierarchy normal/touching;
-- intra established/suggestion/approved/touching;
-- inter crossing/established/suggestion/approved/touching;
-- aggregate.
+Ne remplace aucun artefact canonique historique. Toute nouvelle preuve appartient
+à TASK-0050.
 
-La jonction NTFS réelle utilisée pour `node-skipped` est acceptable si elle
-reste confinée au sandbox de test et est nettoyée proprement.
+## 3 — union stricte
 
-## 3 — couverture sans double liste manuelle
+Dans l'artefact TASK-0050 final, distingue :
 
-Lis les 24 clés de légende depuis le rendu réel.
-
-Déclare une seule exception explicite : `node-diagnostic`.
+- `cellA.observedKeys`;
+- `cellB.observedKeys`.
 
 Dérive :
-`expectedReachable = legendKeys - {node-diagnostic}`.
 
-Assert strictement :
+- `legendKeys` depuis la légende réelle;
+- `expectedReachable = legendKeys - {node-diagnostic}`;
+- `observedUnion = unique(cellA ∪ cellB)`.
 
-- `legendKeys.length === 24`;
-- `observedRealMapKeys === expectedReachable`;
-- donc 23/23 atteignables observées;
-- aucune autre exception.
+Assert :
 
-Une clé atteignable manquante doit faire échouer WebView2.
+- legend = 24;
+- expectedReachable = 23;
+- observedUnion === expectedReachable;
+- cellB contient obligatoirement intra-suggestion et intra-approved;
+- aucune deuxième exception.
 
-## 4 — preuve séparée node-diagnostic
+Ne retire aucune clé du contrat pour obtenir PASS.
 
-Ne simule pas un backend impossible.
+## 4 — signatures visuelles
 
-Conserve/renforce le test déterministe de MapView qui rend
-`accessDiagnostic != null` et vérifie :
+Pour les deux clés fournies par J12 :
 
-- émission de `node-diagnostic`;
-- entrée correspondante dans la légende;
-- primitive/classe réelle partagée;
-- texte FR/EN.
+- classes/primitives communes carte ↔ légende;
+- computed styles porteurs de sens réellement comparés;
+- divergence = échec.
 
-Dans l'artefact, ajoute :
+La cellule A conserve ses assertions actuelles.
 
-- key: `node-diagnostic`;
-- realWebViewStatus:
-  `NOT_APPLICABLE_WHILE_SCAN_DIAGNOSTICS_ARE_REJECTED`;
-- backendInvariant:
-  `src-tauri/src/map/commands.rs:745-749`;
-- deterministicCoverage: PASS.
+## 5 — node-diagnostic
 
-Si l'invariant backend n'est plus vrai, STOP : l'exception n'est plus valide.
+Inchangé : pas de Rust; statut
+`NOT_APPLICABLE_WHILE_SCAN_DIAGNOSTICS_ARE_REJECTED`; test déterministe PASS;
+invariant commands.rs:745-749 toujours vérifié. Si l'invariant change, STOP.
 
-## 5 — computed signatures réellement assertées
+## 6 — artefact
 
-Pour chacune des 23 clés réellement observées :
+Publie/remplace seulement :
 
-- retrouver l'élément carte porteur de la clé;
-- retrouver l'échantillon de légende;
-- prouver le partage des classes/primitives pertinentes;
-- comparer et **asserter** les propriétés CSS porteuses de sens
-  (stroke width, dasharray, opacity, fill opacity, font weight, etc. selon la
-  famille), y compris les descendants stylés par une règle du parent.
+`docs/performance/runs/TASK-0050-webview2.json`
 
-Ne te contente pas de `sharedClasses.length > 0` ou d'enregistrer les valeurs.
-Une divergence doit faire échouer le harnais.
+Il doit indiquer : deux cellules réelles, HEAD testé, clés de chaque cellule,
+union = 23/23, légende = 24/24, exception unique node-diagnostic, signatures
+PASS, axe/clavier/passivité et P-19 restart NON TESTED.
 
-Compare les signatures visuelles, pas les coordonnées de layout.
-
-## 6 — interaction/accessibilité/passivité
-
-Rejoue en WebView2 réel :
-
-- légende fermée puis ouverte;
-- Enter / Space;
-- FR puis EN;
-- Tab sans piège;
-- axe fermé/ouvert sans nouvelle violation;
-- zéro commande backend causée par les gestes de légende;
-- source / Index / journal / resume inchangés;
-- fermeture/réouverture même session.
-
-Restart reste NON TESTED / P-19.
-
-## 7 — artefact
-
-Remplace `docs/performance/runs/TASK-0050-webview2.json`.
-
-Il doit montrer :
-
-- legend keys = 24/24;
-- reachable expected = 23;
-- reachable observed = 23/23;
-- exempt = seulement `node-diagnostic`;
-- statut exact de l'exception et invariant backend;
-- computed-signature assertions PASS pour les 23;
-- clavier / axe / passivité;
-- P-19 NON TESTED.
-
-## 8 — falsifications
+## 7 — falsifications
 
 Au minimum :
 
-1. retirer une clé atteignable du scénario -> WebView2 échoue;
-2. ajouter une deuxième exception -> échoue;
-3. faire diverger une propriété visuelle porteuse de sens -> échoue;
-4. supprimer la couverture déterministe node-diagnostic -> ciblé échoue;
-5. remettre « double contour / double outline » -> ciblé échoue.
+1. enlever intra-suggestion de cellule B -> union échoue;
+2. enlever intra-approved -> union échoue;
+3. substituer l'ancien artefact historique au replay courant -> preuve refusée;
+4. divergence CSS sur une des deux clés -> échec;
+5. seconde exception -> échec.
 
 Restaure tout sabotage.
 
-## 9 — validation
+## 8 — validations
 
-- ciblés TASK-0050;
-- `pnpm test`;
-- `pnpm check`;
-- `pnpm build`;
-- Tauri debug;
-- WebView2 réel;
-- axe;
-- `git diff --check`;
-- audit public selon convention repo.
+Ciblés TASK-0050/J12, pnpm test, pnpm check, pnpm build, Tauri debug, WebView2
+cellule A, WebView2/J12 cellule B, axe, git diff --check, audit public.
 
-## 10 — gouvernance
+## 9 — gouvernance
 
-À la fin :
+Si tout passe :
 
 - TASK-0050 = IMPLEMENTED / candidate contrôle indépendant;
 - F-014 / P-10 = IMPLEMENTED / candidate;
@@ -184,3 +136,6 @@ Restaure tout sabotage.
 - RESULT complet;
 - commit + push;
 - arbre propre.
+
+Si J12 actuel ne matérialise plus les deux clés, STOP/BLOCKED avec preuve :
+ce serait une régression actuelle à diagnostiquer.

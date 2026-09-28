@@ -1,33 +1,25 @@
 # Action suivante
 
-## Décider comment lever le dernier écart de TASK-0050 (21/23 clés atteignables reproductibles)
+## Reprendre TASK-0050 — fermer 23/23 en réutilisant le scénario J12
 
 Branche : `build/v0.2-a34-v1-runtime-legend`.
 
-TASK-0050 §Q (reprise Claude Code, 2026-09-28) a rendu le harnais WebView2
-réellement reproductible et durci (jonction NTFS réelle pour
-`node-skipped`, activation clavier correcte des pastilles d'agrégat,
-révélation récursive par ancêtres, assertion stricte d'égalité 23 clés,
-preuve `node-diagnostic` réellement exécutée, signatures calculées assertées
-strictement). 21 des 23 clés atteignables se matérialisent de façon
-répétable par de vrais gestes produit. `intra-approved` et
-`intra-suggestion` résistent : leurs deux extrémités sont visibles à
-l'écran mais l'arête ne se rend jamais — cause non confirmée, détail complet
-dans `docs/tasks/TASK-0050-v1-runtime-legend-p10.md` section Q.2.
+ACTION-0088 établit que les deux clés manquantes du harnais composé
+(`intra-approved`, `intra-suggestion`) sont déjà couvertes par la brique
+WebView2 réelle `src/map/relationScenario.ts`.
 
-Aucun artefact `docs/performance/runs/TASK-0050-webview2.json` n'a été
-republié : une preuve 21/23 ne satisfait pas ACTION-0087/DEC-0048 §K qui
-exigent l'égalité stricte 23/23.
+Stratégie :
 
-**TASK-0050 = `BLOCKED`.** Aucun changement Rust nécessaire ni autorisé.
+- cellule A : TASK-0050 actuel -> 21 clés réelles;
+- cellule B : replay J12 sur le HEAD courant -> les deux familles intra;
+- union A ∪ B -> exactement 23/23 clés atteignables;
+- node-diagnostic reste l'exception ACTION-0087.
 
-Décision à prendre par l'orchestrateur technique ou Sébastien :
+Ne pas instrumenter durablement MapApp et ne pas créer une nouvelle fixture
+tant que J12 suffit.
 
-- (a) instrumenter `MapApp.tsx`/`composedScenario` pour observer
-  `brain.relations`/`byId` en direct pendant la séquence de révélation, afin
-  de confirmer si `intra-approved`/`intra-suggestion` sont un bug produit ou
-  une limite de la technique d'automatisation choisie;
-- (b) accepter un scénario de preuve différent (fixture synthétique dédiée,
-  plus petite, où ces deux relations sont les seules arêtes du nœud choisi).
+**Exécuteur : Claude Code + Claude Sonnet 5 — Medium effort.**
 
-Aucune TASK-0051. Contrôle indépendant obligatoire après la prochaine passe.
+Prompt autoritaire : `.orchestrator/NEXT_PROMPT.md`.
+
+Aucune TASK-0051. Contrôle indépendant obligatoire après exécution.
