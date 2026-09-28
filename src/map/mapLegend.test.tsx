@@ -214,6 +214,42 @@ describe("TASK-0050 runtime legend", () => {
     expect(sample?.getAttribute("class")).toBe(nodePresentation("file", "cross-linked").className);
   });
 
+  it("proves node-diagnostic by deterministic render, not a real WebView2 gesture", () => {
+    // DEC-0048 §K / ACTION-0087 — `commands.rs:745-749` refuses to publish
+    // any Index whose scan diagnostics are non-empty, so `node-diagnostic`
+    // cannot be reached through a real published Index. This test is its
+    // whole proof: RichMap's node 3 carries a real `accessDiagnostic`, it
+    // must emit the `node-diagnostic` key, share the diagnostic marker's
+    // class with the legend sample, and be explained in both languages.
+    const { container } = render(
+      <>
+        <RichMap />
+        <MapLegend id="legend" locale="fr" strings={strings.fr.legend} />
+      </>,
+    );
+    const diagnosticNode = container.querySelector(
+      '.map-view [data-node-id="3"][data-legend-keys~="node-diagnostic"]',
+    );
+    expect(diagnosticNode).toBeTruthy();
+    const liveMarker = diagnosticNode?.querySelector(".map-node__diagnostic");
+    expect(liveMarker).toBeTruthy();
+    const legendMarker = container.querySelector(
+      '[data-legend-key="node-diagnostic"] .map-node__diagnostic',
+    );
+    expect(legendMarker).toBeTruthy();
+    expect(legendMarker?.getAttribute("class")).toBe(liveMarker?.getAttribute("class"));
+    const legendSampleGroup = container.querySelector('[data-legend-key="node-diagnostic"] g');
+    expect(legendSampleGroup?.getAttribute("class")).toBe(
+      nodePresentation("file", "plain", undefined, true).className,
+    );
+
+    const frText = container.querySelector('[data-legend-key="node-diagnostic"]')?.textContent ?? "";
+    expect(frText).toContain("Diagnostic d’accès");
+    const { container: en } = render(<MapLegend id="legend" locale="en" strings={strings.en.legend} />);
+    const enText = en.querySelector('[data-legend-key="node-diagnostic"]')?.textContent ?? "";
+    expect(enText).toContain("Access diagnostic");
+  });
+
   it("keeps the samples decorative because adjacent text carries every meaning", () => {
     const { container } = render(<MapLegend id="legend" locale="fr" strings={strings.fr.legend} />);
     for (const sample of container.querySelectorAll(".map-runtime-legend__sample svg")) {

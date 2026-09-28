@@ -6248,3 +6248,32 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
   déterministement + par invariant backend.
 - TASK-0050 repasse de BLOCKED à CORRECTIVE_REQUIRED.
 - Corrective finale préparée pour Claude Code; aucune TASK-0051.
+
+
+## 2026-09-28 — TASK-0050 §Q — harnais reproductible, 21/23 atteignables — `BLOCKED`
+
+- `scripts/task0050-webview2.mjs` réécrit : jonction NTFS réelle pour
+  `node-skipped` (nettoyée après coup); activation **clavier** des pastilles
+  d'agrégat `DEC-0034` (`focus()` + `Enter`) après découverte qu'un clic
+  souris brut est absorbé par le pan du canvas SVG faute de
+  `stopPropagation` sur la pastille; révélation récursive par ancêtres pour
+  les chemins imbriqués; assertion stricte d'égalité 23 clés atteignables
+  (fini le sous-ensemble); preuve `node-diagnostic` réellement exécutée par
+  le harnais (`pnpm vitest run src/map/mapLegend.test.tsx` invoqué depuis le
+  script) plus relecture assertée de l'invariant `commands.rs:745-749`;
+  signatures CSS calculées réellement comparées carte ↔ légende (fini
+  `sharedClasses.length > 0` seul).
+- Nouveau test unitaire verrouillant primitive partagée et texte FR/EN de
+  `node-diagnostic` (`mapLegend.test.tsx`, 6/6 PASS).
+- Falsifications rejouées et restaurées : retirer une clé atteignable, ou
+  réintroduire « double contour »/« double outline », font échouer les
+  tests ciblés.
+- 21/23 clés atteignables matérialisées de façon reproductible par de vrais
+  gestes produit. `intra-approved`/`intra-suggestion` ne se rendent jamais
+  malgré des extrémités visibles à l'écran — cause non confirmée, détail
+  dans `docs/tasks/TASK-0050-v1-runtime-legend-p10.md` section Q.
+- Aucun artefact `TASK-0050-webview2.json` republié (21/23 ne satisfait pas
+  l'égalité stricte exigée). Aucun Rust touché.
+- Validations : 632/632 tests frontend, check/build/Tauri debug/diff
+  check/audit public PASS.
+- TASK-0050/F-014/P-10 restent `BLOCKED`. Aucune TASK-0051.

@@ -1,5 +1,23 @@
 # État courant
 
+## TASK-0050 §Q — 21/23 clés atteignables reproductibles — `BLOCKED` — 2026-09-28
+
+- Harnais `scripts/task0050-webview2.mjs` réécrit : jonction NTFS réelle pour
+  `node-skipped`, activation clavier des pastilles d'agrégat (le clic souris
+  brut est absorbé par le pan du canvas), révélation récursive par ancêtres,
+  assertion stricte d'égalité des 23 clés atteignables, preuve
+  `node-diagnostic` réellement exécutée (`pnpm vitest` invoqué par le
+  harnais), signatures calculées carte ↔ légende réellement comparées.
+- 21/23 clés atteignables matérialisées de façon reproductible par de vrais
+  gestes produit. `intra-approved` et `intra-suggestion` ne se rendent
+  jamais malgré des extrémités visibles à l'écran — cause non confirmée.
+- Aucun nouvel artefact `TASK-0050-webview2.json` : une preuve 21/23 ne
+  satisfait pas l'égalité stricte 23/23 exigée par ACTION-0087.
+- Validations PASS sur l'état committé : 632/632 tests frontend, `pnpm
+  check`, `pnpm build`, Tauri debug, `git diff --check`, audit public.
+- TASK-0050 = `BLOCKED`. F-014/P-10 non `VERIFIED`. Aucun changement Rust.
+- Détail complet : `docs/tasks/TASK-0050-v1-runtime-legend-p10.md` section Q.
+
 ## ACTION-0087 — TASK-0050 corrective débloquée — 2026-09-28
 
 - Blocage `node-diagnostic` contrôlé indépendamment.

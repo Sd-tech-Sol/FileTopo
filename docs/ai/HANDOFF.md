@@ -2938,3 +2938,31 @@ chiffres ou en lettres.
 - Prochaine action : Sébastien tranche entre amender DEC-0048 §C ou autoriser
   le changement Rust minimal. Détail :
   `docs/tasks/TASK-0050-v1-runtime-legend-p10.md` section O.
+
+## Relais — TASK-0050 §Q — 21/23 clés atteignables reproductibles — `BLOCKED` — 2026-09-28
+
+- ACTION-0087 a levé le blocage `node-diagnostic` (amendement de preuve, pas
+  de Rust). Cette passe rend le harnais WebView2 réellement reproductible :
+  jonction NTFS réelle pour `node-skipped`, activation **clavier** correcte
+  des pastilles d'agrégat (`focus()` + `Enter` — un clic souris brut est
+  silencieusement absorbé par le pan du canvas SVG), révélation récursive
+  par ancêtres pour les nœuds imbriqués, assertion stricte d'égalité des 23
+  clés atteignables (plus un sous-ensemble), preuve `node-diagnostic`
+  réellement exécutée par le harnais (`pnpm vitest run
+  src/map/mapLegend.test.tsx` invoqué depuis le script), signatures
+  calculées carte ↔ légende réellement comparées (pas seulement enregistrées).
+- 21 des 23 clés atteignables se matérialisent de façon répétable. Les deux
+  qui résistent — `intra-approved`, `intra-suggestion` — ont chacune leurs
+  deux extrémités visibles au moment de la lecture (prouvé par d'autres
+  arêtes touchant les mêmes nœuds), mais l'arête elle-même ne se rend jamais
+  quel que soit l'ordre de révélation essayé. Cause non confirmée : détail
+  complet dans `docs/tasks/TASK-0050-v1-runtime-legend-p10.md` section Q.2.
+- Aucun nouvel artefact `TASK-0050-webview2.json` publié : une preuve 21/23
+  ne satisfait pas l'égalité stricte exigée par ACTION-0087.
+- Seuls `scripts/task0050-webview2.mjs` et `src/map/mapLegend.test.tsx`
+  modifiés; 632/632 tests frontend, check, build, Tauri debug, diff check et
+  audit public PASS. Aucun Rust touché.
+- **TASK-0050 = `BLOCKED`.** Prochaine action pour l'orchestrateur technique
+  ou Sébastien : instrumenter `MapApp.tsx`/`composedScenario` pour observer
+  `brain.relations`/`byId` en direct, ou accepter un scénario de preuve avec
+  une fixture dédiée plus petite. Aucune TASK-0051.

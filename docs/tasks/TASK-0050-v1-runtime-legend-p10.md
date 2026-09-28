@@ -400,3 +400,111 @@ jamais `VERIFIED`.
 - aucune TASK-0051.
 
 **TASK-0050 = CORRECTIVE_REQUIRED**, prête pour reprise Claude Code.
+
+## Q — reprise Claude Code — 21/23 atteignables reproductibles — `BLOCKED` — 2026-09-28
+
+Exécution de `.orchestrator/NEXT_PROMPT.md`. Préconditions §0 vérifiées :
+branche, fast-forward, arbre propre, ACTION-0086/0087 et DEC-0048 §K lus,
+correctif `node-cross-linked` du commit `fa429db` confirmé présent.
+
+### Q.1 — fait et vérifié
+
+- `scripts/task0050-webview2.mjs` réécrit en profondeur :
+  - `node-skipped` matérialisé par une **vraie jonction NTFS**
+    (`fs.symlink(..., "junction")`, sans droits admin), créée dans le
+    sandbox jetable et nettoyée (`try`/`finally`) après le run; hachage
+    d'arbre adapté pour traiter une jonction comme un lien, jamais suivie
+    (aligné sur `scanner.rs`);
+  - couverture lue depuis le rendu réel (24 clés de légende), exception
+    unique `node-diagnostic` dérivée, puis assertion **stricte d'égalité**
+    (`deepEqual`, plus un simple sous-ensemble) entre les clés carte
+    observées et `expectedReachable`;
+  - `node-diagnostic` : le test déterministe `mapLegend.test.tsx` est
+    **réellement exécuté** par le harnais (`spawnSync pnpm vitest run
+    src/map/mapLegend.test.tsx`) et son résultat PASS/FAIL est écrit tel
+    quel dans l'artefact, avec l'invariant backend relu depuis
+    `commands.rs:745-749` et asserté;
+  - un nouveau test unitaire verrouille le partage de primitive/classe et le
+    texte FR/EN de `node-diagnostic` (`mapLegend.test.tsx`, 6/6 PASS);
+  - signatures calculées : comparaison réelle des propriétés CSS porteuses
+    de sens (stroke-width, dasharray, fill-opacity, font-weight, opacity)
+    entre l'élément carte et l'échantillon de légende partageant une classe,
+    plus une assertion de divergence (pas de `sharedClasses.length > 0`
+    seul);
+  - falsifications rejouées manuellement et restaurées : retirer une clé
+    atteignable du contrat fait échouer le test riche; réintroduire « double
+    contour »/« double outline » fait échouer le test ciblé
+    `node-cross-linked` (les deux restaurés à l'identique après preuve).
+- Validations rejouées sur l'état final : 632/632 tests frontend PASS
+  (dont les 6 tests `mapLegend.test.tsx`), `pnpm check` PASS, `pnpm build`
+  PASS, `git diff --check` PASS, audit public PASS (670 fichiers, aucun
+  motif sensible).
+- Build Tauri debug (`pnpm tauri build --debug --no-bundle`) PASS. De
+  nombreux runs WebView2 réels (CDP) ont été exécutés pour développer et
+  durcir le harnais.
+
+### Q.2 — écart restant : 21/23 clés atteignables, reproductible mais pas 23/23
+
+Découverte en cours de route, documentée pour la prochaine tentative :
+
+- un clic souris brut sur le pastille d'agrégat (`DEC-0034`,
+  `data-testid="map-aggregate-indicator"`) est **silencieusement absorbé** :
+  le `onPointerDown` du canvas SVG (pan/glisser) capture le pointeur avant
+  que le `onClick` de la pastille ne s'exécute, faute de
+  `stopPropagation` sur ce contrôle précis (contrairement aux blocs de
+  nœud). Le geste réel qui fonctionne est **clavier** : `focus()` sur la
+  pastille (`tabIndex=0`, `role="treeitem"`) puis `Enter`, exactement ce que
+  gère son propre `onKeyDown`. Ce point est vérifié et réutilisable tel
+  quel.
+- une fois cette pastille activable, la vue composée reste une **fenêtre
+  glissante étroite** : révéler un nœud profondément imbriqué exige de
+  révéler chaque ancêtre dans l'ordre (chaque niveau n'a de pastille
+  d'agrégat qu'une fois son propre parent déjà visible) — implémenté
+  (`revealNode` récursif par segment de chemin).
+- Avec ces deux techniques, **21 des 23 clés atteignables** se matérialisent
+  de façon répétable par de vrais gestes produit (recherche + sélection +
+  activation clavier des pastilles), y compris `node-skipped`,
+  `node-linked`, `node-cross-linked`, toutes les clés `inter-*`, hiérarchie,
+  territoire, filtre, agrégat.
+- **`intra-approved` et `intra-suggestion` résistent** : la relation intra
+  approuvée (ex. nœuds 6→5) et la suggestion intra en attente (ex. nœuds
+  11→7) ont chacune leurs deux extrémités visibles à l'écran au moment de la
+  lecture (prouvé : d'autres arêtes touchant ces mêmes nœuds, par exemple
+  4→5 ou 11→12, se rendent normalement), mais l'arête `intra-established`
+  spécifique à approuvée/suggestion ne se rend jamais, quel que soit l'ordre
+  d'exposition essayé (extrémités révélées ensemble en un seul passage,
+  puis séparément; sélection immédiate après révélation, ou révélation
+  complète suivie de sélections groupées). L'hypothèse retenue, non
+  confirmée : `brain.relations`/`byId` côté runtime ne recalcule pas ces
+  deux arêtes précises après les cycles de pagination répétés qu'exige leur
+  matérialisation, un comportement de fenêtre bornée distinct du filtrage
+  `offScreen`/`length>1` déjà documenté par `MapView.tsx`. Aucune preuve que
+  ce soit un bug produit plutôt qu'une limite de la technique
+  d'automatisation choisie.
+
+### Q.3 — décision
+
+Aucun Rust touché. Aucun sabotage final requis puisqu'aucune preuve
+23/23 n'a été publiée : `docs/performance/runs/TASK-0050-webview2.json`
+**n'a pas été remplacé** — republier un artefact partiel aurait fait croire
+à une preuve terminée alors que l'égalité stricte exigée par ACTION-0087/§3
+n'est pas atteinte.
+
+Seuls `scripts/task0050-webview2.mjs` et `src/map/mapLegend.test.tsx` sont
+modifiés et committés : le harnais reproductible amélioré (jonction NTFS,
+activation clavier des pastilles, révélation récursive par ancêtres,
+assertions strictes, preuve `node-diagnostic` réellement exécutée) et le
+test déterministe renforcé. Rien de cela ne régresse — 632/632 PASS.
+
+**TASK-0050 = `BLOCKED`.** F-014/P-10 restent non `VERIFIED`.
+
+**Prochaine action pour l'orchestrateur technique ou Sébastien** : choisir
+entre (a) creuser pourquoi `intra-approved`/`intra-suggestion` ne se
+matérialisent pas malgré des extrémités visibles — probablement en
+instrumentant `MapApp.tsx`/`composedScenario` pour observer
+`brain.relations`/`byId` en direct pendant la séquence plutôt qu'en boîte
+noire côté DOM, ou (b) accepter un scénario de preuve différent (par
+exemple une brique synthétique dédiée, plus petite, où ces deux relations
+sont les SEULES arêtes du nœud choisi, pour éliminer toute variable de
+fenêtre partagée). Tant que ce choix n'est pas fait, `TASK-0050` / `F-014`
+/ `P-10` restent `BLOCKED`, jamais `VERIFIED`. Aucune TASK-0051.

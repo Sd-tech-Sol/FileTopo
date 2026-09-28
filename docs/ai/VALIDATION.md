@@ -8952,3 +8952,57 @@ La revendication Claude « 23/24 observées interactively » reste une preuve
 d'exécuteur, pas un verdict indépendant : aucun nouvel artefact final n'a été
 publié. La prochaine passe doit rendre cette séquence reproductible et
 assertive avant tout VERIFIED.
+
+## CT. TASK-0050 §Q — harnais reproductible, 21/23 atteignables — `BLOCKED` — 2026-09-28
+
+Exécuteur : Claude Code + Claude Sonnet 5, en réponse à ACTION-0087 /
+`.orchestrator/NEXT_PROMPT.md`.
+
+**Preuve du harnais reproductible (fait) :**
+
+- `node-skipped` : vraie jonction NTFS (`fs.symlink(..., "junction")`, sans
+  droits admin), confinée au sandbox jetable, nettoyée en `try`/`finally`;
+  hachage d'arbre du harnais adapté pour traiter un lien de reparse sans le
+  suivre (aligné sur `scanner.rs`), plutôt que de planter sur `EISDIR`.
+- Découverte de mécanique produit : la pastille d'agrégat `DEC-0034` n'a pas
+  de `stopPropagation` sur son `onClick`; un clic souris brut est absorbé
+  par le `onPointerDown` (pan) du canvas SVG. L'activation réelle qui
+  fonctionne est **clavier** — `focus()` + `Enter`, ce que gère son propre
+  `onKeyDown`. Vérifié à la main (avant/après label + liste de blocs) avant
+  d'être encodé dans le harnais.
+- Révélation récursive par ancêtres pour les chemins imbriqués (chaque
+  niveau doit être révélé avant que son propre enfant n'ait une pastille).
+- Couverture lue depuis le rendu réel (24 clés), exception unique dérivée,
+  assertion **stricte d'égalité** `mapBefore == expectedReachable` (fini le
+  sous-ensemble `⊆` de la passe précédente).
+- `node-diagnostic` : le harnais **exécute réellement**
+  `pnpm vitest run src/map/mapLegend.test.tsx` (`spawnSync`) et écrit son
+  PASS/FAIL réel dans l'artefact prévu, plus relecture assertée de
+  `commands.rs:745-749`.
+- Signatures calculées : comparaison réelle par classe partagée des
+  propriétés CSS porteuses de sens (stroke-width, dasharray, fill-opacity,
+  font-weight, opacity) entre carte et légende, avec échec sur divergence —
+  fini le `sharedClasses.length > 0` seul de la passe précédente.
+- Falsifications rejouées à la main et restaurées : retirer `node-skipped`
+  du contrat fait échouer le test riche déterministe; réintroduire « double
+  contour »/« double outline » fait échouer le test ciblé
+  `node-cross-linked`.
+
+**Écart non résolu :** `intra-approved` et `intra-suggestion` ne se rendent
+jamais en WebView2 réel malgré des extrémités matérialisées et visibles à
+l'écran au moment de la lecture — prouvé indirectement par d'autres arêtes
+touchant les mêmes nœuds qui, elles, se rendent normalement. Plusieurs
+ordres de révélation essayés (immédiat après chaque paire, révélation
+groupée puis lecture groupée) sans succès. Cause non confirmée; hypothèse
+documentée dans `docs/tasks/TASK-0050-v1-runtime-legend-p10.md` section Q.2.
+
+**Conséquence :** aucun artefact `TASK-0050-webview2.json` republié — un
+21/23 ne satisfait pas l'égalité stricte exigée par ACTION-0087/DEC-0048 §K.
+Seuls `scripts/task0050-webview2.mjs` et `src/map/mapLegend.test.tsx` sont
+modifiés. Validations rejouées sur l'état final : 632/632 tests frontend
+PASS, `pnpm check` PASS, `pnpm build` PASS, Tauri debug PASS, `git diff
+--check` PASS, audit public PASS (670 fichiers, `-AllowRemotes`, aucun
+motif sensible).
+
+**TASK-0050 = `BLOCKED`.** F-014/P-10 non `VERIFIED`. Aucun Rust touché.
+Aucune TASK-0051.
