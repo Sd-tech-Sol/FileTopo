@@ -2,6 +2,7 @@ import type { Locale } from "../lib/locale";
 import type { BrainIdentityStrings } from "./BrainIdentityEditor";
 import type { PanelStrings } from "./DetailsPanel";
 import type { ComposedViewErrorCode } from "./composedView";
+import type { MapLegendStrings } from "./MapLegend";
 
 /**
  * Everything `MapApp` itself says, in both languages — `TASK-0046`, `DEC-0044`.
@@ -53,6 +54,7 @@ export interface MapStrings {
   rebuild: string;
   building: string;
   map: string;
+  legend: MapLegendStrings & { open: string; close: string };
   zoomIn: string;
   zoomOut: string;
   fit: string;
@@ -262,6 +264,38 @@ export const strings: Record<Locale, MapStrings> = {
     rebuild: "Reconstruire l'index",
     building: "Construction…",
     map: "Graphique composé",
+    legend: {
+      open: "Légende",
+      close: "Fermer la légende",
+      title: "Légende de la carte",
+      description: "Les formes, traits et mots ci-dessous expliquent les signes porteurs de sens de la carte.",
+      items: {
+        "node-root": "Racine du cerveau — losange.",
+        "node-directory": "Dossier — glyphe de dossier.",
+        "node-file": "Fichier — glyphe de document.",
+        "node-skipped": "Élément ignoré — croix et contour pointillé.",
+        "node-selected": "Élément sélectionné — contour épais.",
+        "node-related": "Parent ou enfant direct de la sélection — contour renforcé.",
+        "node-linked": "Relié dans le même cerveau — contour pointillé renforcé.",
+        "node-cross-linked": "Relié à un autre cerveau — double contour renforcé.",
+        "filter-match": "Correspond au filtre — contour épais et symbole plein.",
+        "filter-context": "Contexte nécessaire au résultat — contour pointillé et symbole vide.",
+        "node-diagnostic": "Diagnostic d’accès — coin triangulaire.",
+        "territory-focused": "Cerveau actif — titre de territoire en caractères gras.",
+        "hierarchy-normal": "Hiérarchie parent-enfant — trait simple.",
+        "hierarchy-touching": "Hiérarchie touchant la sélection — trait renforcé.",
+        "intra-established": "Relation établie dans un cerveau — flèche dirigée.",
+        "intra-suggestion": "Suggestion à confirmer — pointillés, anneaux et aucune flèche.",
+        "intra-approved": "Relation approuvée — motif de trait long-court.",
+        "intra-touching": "Relation dans un cerveau touchant la sélection — trait renforcé.",
+        "inter-crossing": "Relation inter-cerveaux — double trait avec chevron central.",
+        "inter-established": "Relation inter-cerveaux établie — flèche dirigée.",
+        "inter-suggestion": "Suggestion inter-cerveaux — pointillés, anneaux et aucune flèche.",
+        "inter-approved": "Relation inter-cerveaux approuvée — motif de trait long-court.",
+        "inter-touching": "Relation inter-cerveaux touchant la sélection — trait renforcé.",
+        aggregate: "Éléments réels non affichés — capsule pointillée avec leur nombre.",
+      },
+    },
     zoomIn: "Zoom avant",
     zoomOut: "Zoom arrière",
     fit: "Ajuster",
@@ -530,6 +564,38 @@ export const strings: Record<Locale, MapStrings> = {
     rebuild: "Rebuild index",
     building: "Building…",
     map: "Composed graph",
+    legend: {
+      open: "Legend",
+      close: "Close legend",
+      title: "Map legend",
+      description: "The shapes, strokes and words below explain every meaningful sign used on the map.",
+      items: {
+        "node-root": "Brain root — diamond.",
+        "node-directory": "Folder — folder glyph.",
+        "node-file": "File — document glyph.",
+        "node-skipped": "Skipped item — cross and dashed outline.",
+        "node-selected": "Selected item — heavy outline.",
+        "node-related": "Direct parent or child of the selection — stronger outline.",
+        "node-linked": "Linked inside the same brain — strong dashed outline.",
+        "node-cross-linked": "Linked to another brain — strong double outline.",
+        "filter-match": "Matches the filter — heavy outline and filled symbol.",
+        "filter-context": "Context needed for a result — dashed outline and open symbol.",
+        "node-diagnostic": "Access diagnostic — triangular corner.",
+        "territory-focused": "Active brain — bold territory title.",
+        "hierarchy-normal": "Parent-child hierarchy — single line.",
+        "hierarchy-touching": "Hierarchy touching the selection — stronger line.",
+        "intra-established": "Established relation inside a brain — directed arrow.",
+        "intra-suggestion": "Suggestion to confirm — dashes, rings and no arrow.",
+        "intra-approved": "Approved relation — long-short stroke pattern.",
+        "intra-touching": "Relation inside a brain touching the selection — stronger line.",
+        "inter-crossing": "Inter-brain relation — doubled line with a middle chevron.",
+        "inter-established": "Established inter-brain relation — directed arrow.",
+        "inter-suggestion": "Inter-brain suggestion — dashes, rings and no arrow.",
+        "inter-approved": "Approved inter-brain relation — long-short stroke pattern.",
+        "inter-touching": "Inter-brain relation touching the selection — stronger line.",
+        aggregate: "Real items not displayed — dashed capsule with their count.",
+      },
+    },
     zoomIn: "Zoom in",
     zoomOut: "Zoom out",
     fit: "Fit",

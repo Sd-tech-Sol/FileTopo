@@ -1,5 +1,25 @@
 # État courant
 
+## TASK-0050 — V1 Runtime Legend / P-10 Closure — IMPLEMENTED — 2026-09-28
+
+- Branche `build/v0.2-a34-v1-runtime-legend`; frontend uniquement; exécuteur
+  Codex. Jamais auto-`VERIFIED`.
+- Légende à la demande FR/EN, clavier-accessible et session-only dans MapApp;
+  même bouton pour ouvrir/fermer, `aria-expanded`/`aria-controls`, aucun modal.
+- Contrat partagé de 24 clés : la carte riche rend toutes les familles en test
+  et la couverture échoue dès qu'une entrée manque. Glyphes, flèches, classes
+  et motifs sont ceux de MapView; aucune copie de valeur visuelle inline.
+- Preuve WebView2 réelle : trois cerveaux, relations riches, filtre, trois
+  agrégats, FR/EN, axe 0 violation fermé/ouvert, même `color-contrast`
+  `incomplete` préexistant dans les deux états, Tab sans piège, Enter/Space,
+  zéro commande, source/Index/journal/resume inchangés.
+- Frontend 630 PASS; check/build/Tauri debug/diff check/audit public PASS; six
+  falsifications attrapées. Aucun Rust/backend/package modifié.
+- **F-014 = IMPLEMENTED; P-10 = IMPLEMENTED / candidate contrôle
+  indépendant.** P-19 reste PARTIELLE; persistance restart NON TESTED. Aucune
+  TASK-0051.
+- Action unique suivante : contrôle indépendant de TASK-0050.
+
 ## ACTION-0084 / ACTION-0085 / TASK-0050 READY — 2026-09-26
 
 - TASK-0049 / F-006 : **VERIFIED** par ACTION-0084.

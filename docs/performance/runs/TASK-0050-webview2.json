@@ -1,0 +1,1321 @@
+{
+ "task": "TASK-0050",
+ "engine": {
+  "product": "Edg/153.0.4234.48",
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36 Edg/153.0.0.0",
+  "protocolVersion": "1.3"
+ },
+ "axe": {
+  "package": "4.13.0",
+  "injectedVersion": "4.13.0",
+  "axeMinJsSha256": "c24f097bd2f451d4f933e8bc7d8d539f8672a2ebcb5cc9f9f3eec8ca9470a0c1",
+  "closed": {
+   "violations": [],
+   "incomplete": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "nodes": [
+      {
+       "target": [
+        "button[data-testid=\"composition-chip-brain-alpha\"] > .composition__icon[aria-hidden=\"true\"]"
+       ],
+       "html": "<span class=\"composition__icon\" aria-hidden=\"true\">▲</span>"
+      },
+      {
+       "target": [
+        "button[data-testid=\"composition-chip-brain-gamma\"] > .composition__icon[aria-hidden=\"true\"]"
+       ],
+       "html": "<span class=\"composition__icon\" aria-hidden=\"true\">◆</span>"
+      },
+      {
+       "target": [
+        ".source-observation__symbol"
+       ],
+       "html": "<span aria-hidden=\"true\" class=\"source-observation__symbol\">✓</span>"
+      },
+      {
+       "target": [
+        ".filters__role--context > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◇ </span>"
+      },
+      {
+       "target": [
+        "button[data-testid=\"filter-result\"][data-node-id=\"2\"][data-filter-role=\"match\"] > .filters__role--match.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◆ </span>"
+      },
+      {
+       "target": [
+        "button[data-node-id=\"3\"][data-testid=\"filter-result\"][data-filter-role=\"match\"] > .filters__role--match.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◆ </span>"
+      },
+      {
+       "target": [
+        "button[data-node-id=\"10\"][data-testid=\"filter-result\"][data-filter-role=\"match\"] > .filters__role--match.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◆ </span>"
+      },
+      {
+       "target": [
+        ".map-node__filter-tag--context"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--context\" x=\"8\" y=\"102\" aria-hidden=\"true\">◇ Contexte</text>"
+      },
+      {
+       "target": [
+        "text[y=\"56\"]"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--match\" x=\"368\" y=\"56\" aria-hidden=\"true\">◆ Correspondance</text>"
+      },
+      {
+       "target": [
+        ".map-node__filter-tag--match[x=\"368\"][y=\"148\"]"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--match\" x=\"368\" y=\"148\" aria-hidden=\"true\">◆ Correspondance</text>"
+      },
+      {
+       "target": [
+        "text[x=\"728\"]"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--match\" x=\"728\" y=\"148\" aria-hidden=\"true\">◆ Correspondance</text>"
+      },
+      {
+       "target": [
+        "g[aria-label=\"+3 éléments — Voir la suite\"] > .map-aggregate__label[y=\"36\"][x=\"840\"]"
+       ],
+       "html": "<text class=\"map-aggregate__label\" x=\"840\" y=\"36\" text-anchor=\"middle\">+3 éléments — Voir la suite</text>"
+      },
+      {
+       "target": [
+        "text[y=\"128\"]"
+       ],
+       "html": "<text class=\"map-aggregate__label\" x=\"840\" y=\"128\" text-anchor=\"middle\">+2 éléments — Voir la suite</text>"
+      },
+      {
+       "target": [
+        "g[aria-label=\"+120 éléments — Voir la suite\"] > .map-aggregate__label[y=\"36\"][x=\"840\"]"
+       ],
+       "html": "<text class=\"map-aggregate__label\" x=\"840\" y=\"36\" text-anchor=\"middle\">+120 éléments — Voir la suite</text>"
+      },
+      {
+       "target": [
+        ".map-territory__title--focused"
+       ],
+       "html": "<text class=\"map-territory__title map-territory__title--focused\" data-legend-keys=\"territory-focused\" x=\"36.96971830985919\" y=\"2231.1521126760563\">▲ Cerveau Alpha · 4 nœuds</text>"
+      },
+      {
+       "target": [
+        "text[x=\"47.157464788732426\"]"
+       ],
+       "html": "<text class=\"map-node__label map-node__label--root\" data-full-name=\"quasi-empty\" x=\"47.157464788732426\" y=\"2255.6396126760565\">q…</text>"
+      },
+      {
+       "target": [
+        "text[data-full-name=\"dossier-a\"][x=\"132.05535211267608\"][y=\"2244.7915492957745\"]"
+       ],
+       "html": "<text class=\"map-node__label\" data-full-name=\"dossier-a\" x=\"132.05535211267608\" y=\"2244.7915492957745\">d…</text>"
+      },
+      {
+       "target": [
+        "text[data-full-name=\"dossier-b\"][x=\"132.05535211267608\"][y=\"2266.487676056338\"]"
+       ],
+       "html": "<text class=\"map-node__label\" data-full-name=\"dossier-b\" x=\"132.05535211267608\" y=\"2266.487676056338\">d…</text>"
+      },
+      {
+       "target": [
+        "text[data-full-name=\"sous-dossier\"]"
+       ],
+       "html": "<text class=\"map-node__label\" data-full-name=\"sous-dossier\" x=\"216.95323943661973\" y=\"2266.487676056338\">s…</text>"
+      },
+      {
+       "target": [
+        "text[x=\"314.30281690140845\"]"
+       ],
+       "html": "<text class=\"map-territory__title\" x=\"314.30281690140845\" y=\"2231.1521126760563\">◆ Cerveau Gamma · 5 nœuds</text>"
+      },
+      {
+       "target": [
+        "text[x=\"324.4905633802817\"]"
+       ],
+       "html": "<text class=\"map-node__label map-node__label--root\" data-full-name=\"quasi-empty\" x=\"324.4905633802817\" y=\"2277.33573943662\">q…</text>"
+      },
+      {
+       "target": [
+        "text[data-full-name=\"dossier-a\"][x=\"409.38845070422536\"][y=\"2244.7915492957745\"]"
+       ],
+       "html": "<text class=\"map-node__label\" data-full-name=\"dossier-a\" x=\"409.38845070422536\" y=\"2244.7915492957745\">d…</text>"
+      },
+      {
+       "target": [
+        "text[data-full-name=\"dossier-b\"][y=\"2266.487676056338\"][x=\"409.38845070422536\"]"
+       ],
+       "html": "<text class=\"map-node__label\" data-full-name=\"dossier-b\" x=\"409.38845070422536\" y=\"2266.487676056338\">d…</text>"
+      },
+      {
+       "target": [
+        "text[data-full-name=\"racine-1.txt\"]"
+       ],
+       "html": "<text class=\"map-node__label\" data-full-name=\"racine-1.txt\" x=\"409.38845070422536\" y=\"2288.1838028169013\">r…</text>"
+      },
+      {
+       "target": [
+        "text[data-full-name=\"racine-2.txt\"]"
+       ],
+       "html": "<text class=\"map-node__label\" data-full-name=\"racine-2.txt\" x=\"409.38845070422536\" y=\"2309.8799295774647\">r…</text>"
+      },
+      {
+       "target": [
+        "text[x=\"591.6359154929578\"]"
+       ],
+       "html": "<text class=\"map-territory__title\" x=\"591.6359154929578\" y=\"2231.1521126760563\">B Arbre Basile · 2 nœuds</text>"
+      },
+      {
+       "target": [
+        "text[data-full-name=\"basile\"]"
+       ],
+       "html": "<text class=\"map-node__label map-node__label--root\" data-full-name=\"basile\" x=\"601.823661971831\" y=\"2244.7915492957745\">b…</text>"
+      },
+      {
+       "target": [
+        "text[data-full-name=\"wide\"]"
+       ],
+       "html": "<text class=\"map-node__label\" data-full-name=\"wide\" x=\"686.7215492957747\" y=\"2244.7915492957745\">w…</text>"
+      },
+      {
+       "target": [
+        ".node-state__badge > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">✓</span>"
+      },
+      {
+       "target": [
+        ".relation__link[data-endpoint-node-id=\"9\"][data-provenance=\"DETERMINISTIC\"] > .relation__direction[aria-hidden=\"true\"]"
+       ],
+       "html": "<span class=\"relation__direction\" aria-hidden=\"true\">→</span>"
+      },
+      {
+       "target": [
+        ".relation__link[data-endpoint-node-id=\"9\"][data-provenance=\"DETERMINISTIC\"] > .relation__provenance--deterministic.relation__provenance > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◆</span>"
+      },
+      {
+       "target": [
+        "button[data-endpoint-node-id=\"11\"] > .relation__direction[aria-hidden=\"true\"]"
+       ],
+       "html": "<span class=\"relation__direction\" aria-hidden=\"true\">→</span>"
+      },
+      {
+       "target": [
+        "button[data-endpoint-node-id=\"11\"] > .relation__provenance--deterministic.relation__provenance > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◆</span>"
+      },
+      {
+       "target": [
+        "button[data-endpoint-node-id=\"5\"] > .relation__direction[aria-hidden=\"true\"]"
+       ],
+       "html": "<span class=\"relation__direction\" aria-hidden=\"true\">→</span>"
+      },
+      {
+       "target": [
+        "button[data-endpoint-node-id=\"5\"] > .relation__provenance--approved.relation__provenance > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">●</span>"
+      },
+      {
+       "target": [
+        "button[data-endpoint-node-id=\"7\"] > .relation__direction[aria-hidden=\"true\"]"
+       ],
+       "html": "<span class=\"relation__direction\" aria-hidden=\"true\">→</span>"
+      },
+      {
+       "target": [
+        "button[data-endpoint-node-id=\"7\"] > .relation__provenance--deterministic.relation__provenance > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◆</span>"
+      },
+      {
+       "target": [
+        "button[data-endpoint-node-id=\"12\"] > .relation__direction[aria-hidden=\"true\"]"
+       ],
+       "html": "<span class=\"relation__direction\" aria-hidden=\"true\">←</span>"
+      },
+      {
+       "target": [
+        "button[data-endpoint-node-id=\"12\"] > .relation__provenance--approved.relation__provenance > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">●</span>"
+      },
+      {
+       "target": [
+        ".cross-relation__glyph"
+       ],
+       "html": "<span class=\"cross-relation__glyph\" aria-hidden=\"true\">→</span>"
+      },
+      {
+       "target": [
+        ".cross-relation__arrow"
+       ],
+       "html": "<span class=\"cross-relation__arrow\">⇒</span>"
+      },
+      {
+       "target": [
+        ".cross-relation__provenance > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◆</span>"
+      },
+      {
+       "target": [
+        ".cross-relation__brain > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◆</span>"
+      }
+     ]
+    }
+   ],
+   "passes": 28
+  },
+  "open": {
+   "violations": [],
+   "incomplete": [
+    {
+     "id": "color-contrast",
+     "impact": "serious",
+     "nodes": [
+      {
+       "target": [
+        "button[data-testid=\"composition-chip-brain-alpha\"] > .composition__icon[aria-hidden=\"true\"]"
+       ],
+       "html": "<span class=\"composition__icon\" aria-hidden=\"true\">▲</span>"
+      },
+      {
+       "target": [
+        "button[data-testid=\"composition-chip-brain-gamma\"] > .composition__icon[aria-hidden=\"true\"]"
+       ],
+       "html": "<span class=\"composition__icon\" aria-hidden=\"true\">◆</span>"
+      },
+      {
+       "target": [
+        ".source-observation__symbol"
+       ],
+       "html": "<span aria-hidden=\"true\" class=\"source-observation__symbol\">✓</span>"
+      },
+      {
+       "target": [
+        ".filters__role--context > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◇ </span>"
+      },
+      {
+       "target": [
+        "button[data-testid=\"filter-result\"][data-node-id=\"2\"][data-filter-role=\"match\"] > .filters__role--match.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◆ </span>"
+      },
+      {
+       "target": [
+        "button[data-node-id=\"3\"][data-testid=\"filter-result\"][data-filter-role=\"match\"] > .filters__role--match.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◆ </span>"
+      },
+      {
+       "target": [
+        "button[data-node-id=\"10\"][data-testid=\"filter-result\"][data-filter-role=\"match\"] > .filters__role--match.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◆ </span>"
+      },
+      {
+       "target": [
+        "text[x=\"8\"]"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--context\" x=\"8\" y=\"102\" aria-hidden=\"true\">◇ Contexte</text>"
+      },
+      {
+       "target": [
+        "text[y=\"56\"]"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--match\" x=\"368\" y=\"56\" aria-hidden=\"true\">◆ Correspondance</text>"
+      },
+      {
+       "target": [
+        ".map-node__filter-tag--match[x=\"368\"][y=\"148\"]"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--match\" x=\"368\" y=\"148\" aria-hidden=\"true\">◆ Correspondance</text>"
+      },
+      {
+       "target": [
+        "text[x=\"728\"]"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--match\" x=\"728\" y=\"148\" aria-hidden=\"true\">◆ Correspondance</text>"
+      },
+      {
+       "target": [
+        "g[aria-label=\"+3 éléments — Voir la suite\"] > text[y=\"36\"][x=\"840\"][text-anchor=\"middle\"]"
+       ],
+       "html": "<text class=\"map-aggregate__label\" x=\"840\" y=\"36\" text-anchor=\"middle\">+3 éléments — Voir la suite</text>"
+      },
+      {
+       "target": [
+        "text[y=\"128\"]"
+       ],
+       "html": "<text class=\"map-aggregate__label\" x=\"840\" y=\"128\" text-anchor=\"middle\">+2 éléments — Voir la suite</text>"
+      },
+      {
+       "target": [
+        "g[aria-label=\"+120 éléments — Voir la suite\"] > text[y=\"36\"][x=\"840\"][text-anchor=\"middle\"]"
+       ],
+       "html": "<text class=\"map-aggregate__label\" x=\"840\" y=\"36\" text-anchor=\"middle\">+120 éléments — Voir la suite</text>"
+      },
+      {
+       "target": [
+        "text[x=\"36.96971830985919\"]"
+       ],
+       "html": "<text class=\"map-territory__title map-territory__title--focused\" data-legend-keys=\"territory-focused\" x=\"36.96971830985919\" y=\"2231.1521126760563\">▲ Cerveau Alpha · 4 nœuds</text>"
+      },
+      {
+       "target": [
+        "text[x=\"47.157464788732426\"]"
+       ],
+       "html": "<text class=\"map-node__label map-node__label--root\" data-full-name=\"quasi-empty\" x=\"47.157464788732426\" y=\"2255.6396126760565\">q…</text>"
+      },
+      {
+       "target": [
+        "text[data-full-name=\"dossier-a\"][x=\"132.05535211267608\"][y=\"2244.7915492957745\"]"
+       ],
+       "html": "<text class=\"map-node__label\" data-full-name=\"dossier-a\" x=\"132.05535211267608\" y=\"2244.7915492957745\">d…</text>"
+      },
+      {
+       "target": [
+        "text[data-full-name=\"dossier-b\"][x=\"132.05535211267608\"][y=\"2266.487676056338\"]"
+       ],
+       "html": "<text class=\"map-node__label\" data-full-name=\"dossier-b\" x=\"132.05535211267608\" y=\"2266.487676056338\">d…</text>"
+      },
+      {
+       "target": [
+        "text[data-full-name=\"sous-dossier\"]"
+       ],
+       "html": "<text class=\"map-node__label\" data-full-name=\"sous-dossier\" x=\"216.95323943661973\" y=\"2266.487676056338\">s…</text>"
+      },
+      {
+       "target": [
+        "text[x=\"314.30281690140845\"]"
+       ],
+       "html": "<text class=\"map-territory__title\" x=\"314.30281690140845\" y=\"2231.1521126760563\">◆ Cerveau Gamma · 5 nœuds</text>"
+      },
+      {
+       "target": [
+        "text[x=\"324.4905633802817\"]"
+       ],
+       "html": "<text class=\"map-node__label map-node__label--root\" data-full-name=\"quasi-empty\" x=\"324.4905633802817\" y=\"2277.33573943662\">q…</text>"
+      },
+      {
+       "target": [
+        "text[data-full-name=\"dossier-a\"][x=\"409.38845070422536\"][y=\"2244.7915492957745\"]"
+       ],
+       "html": "<text class=\"map-node__label\" data-full-name=\"dossier-a\" x=\"409.38845070422536\" y=\"2244.7915492957745\">d…</text>"
+      },
+      {
+       "target": [
+        "text[data-full-name=\"dossier-b\"][y=\"2266.487676056338\"][x=\"409.38845070422536\"]"
+       ],
+       "html": "<text class=\"map-node__label\" data-full-name=\"dossier-b\" x=\"409.38845070422536\" y=\"2266.487676056338\">d…</text>"
+      },
+      {
+       "target": [
+        "text[data-full-name=\"racine-1.txt\"]"
+       ],
+       "html": "<text class=\"map-node__label\" data-full-name=\"racine-1.txt\" x=\"409.38845070422536\" y=\"2288.1838028169013\">r…</text>"
+      },
+      {
+       "target": [
+        "text[data-full-name=\"racine-2.txt\"]"
+       ],
+       "html": "<text class=\"map-node__label\" data-full-name=\"racine-2.txt\" x=\"409.38845070422536\" y=\"2309.8799295774647\">r…</text>"
+      },
+      {
+       "target": [
+        "text[x=\"591.6359154929578\"]"
+       ],
+       "html": "<text class=\"map-territory__title\" x=\"591.6359154929578\" y=\"2231.1521126760563\">B Arbre Basile · 2 nœuds</text>"
+      },
+      {
+       "target": [
+        "text[data-full-name=\"basile\"]"
+       ],
+       "html": "<text class=\"map-node__label map-node__label--root\" data-full-name=\"basile\" x=\"601.823661971831\" y=\"2244.7915492957745\">b…</text>"
+      },
+      {
+       "target": [
+        "text[data-full-name=\"wide\"]"
+       ],
+       "html": "<text class=\"map-node__label\" data-full-name=\"wide\" x=\"686.7215492957747\" y=\"2244.7915492957745\">w…</text>"
+      },
+      {
+       "target": [
+        ".map-node__filter-tag--match[x=\"35\"][y=\"28\"]"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--match\" x=\"35\" y=\"28\">◆</text>"
+      },
+      {
+       "target": [
+        ".map-node__filter-tag--context[x=\"35\"][y=\"28\"]"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--context\" x=\"35\" y=\"28\">◇</text>"
+      },
+      {
+       "target": [
+        "text[x=\"10\"]"
+       ],
+       "html": "<text class=\"map-territory__title map-territory__title--focused\" x=\"10\" y=\"27\">A</text>"
+      },
+      {
+       "target": [
+        "text[x=\"38\"]"
+       ],
+       "html": "<text class=\"map-aggregate__label\" x=\"38\" y=\"22\">+3</text>"
+      },
+      {
+       "target": [
+        ".node-state__badge > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">✓</span>"
+      },
+      {
+       "target": [
+        ".relation__link[data-endpoint-node-id=\"9\"][data-provenance=\"DETERMINISTIC\"] > .relation__direction[aria-hidden=\"true\"]"
+       ],
+       "html": "<span class=\"relation__direction\" aria-hidden=\"true\">→</span>"
+      },
+      {
+       "target": [
+        ".relation__link[data-endpoint-node-id=\"9\"][data-provenance=\"DETERMINISTIC\"] > .relation__provenance--deterministic.relation__provenance > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◆</span>"
+      },
+      {
+       "target": [
+        "button[data-endpoint-node-id=\"11\"] > .relation__direction[aria-hidden=\"true\"]"
+       ],
+       "html": "<span class=\"relation__direction\" aria-hidden=\"true\">→</span>"
+      },
+      {
+       "target": [
+        "button[data-endpoint-node-id=\"11\"] > .relation__provenance--deterministic.relation__provenance > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◆</span>"
+      },
+      {
+       "target": [
+        "button[data-endpoint-node-id=\"5\"] > .relation__direction[aria-hidden=\"true\"]"
+       ],
+       "html": "<span class=\"relation__direction\" aria-hidden=\"true\">→</span>"
+      },
+      {
+       "target": [
+        "button[data-endpoint-node-id=\"5\"] > .relation__provenance--approved.relation__provenance > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">●</span>"
+      },
+      {
+       "target": [
+        "button[data-endpoint-node-id=\"7\"] > .relation__direction[aria-hidden=\"true\"]"
+       ],
+       "html": "<span class=\"relation__direction\" aria-hidden=\"true\">→</span>"
+      },
+      {
+       "target": [
+        "button[data-endpoint-node-id=\"7\"] > .relation__provenance--deterministic.relation__provenance > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◆</span>"
+      },
+      {
+       "target": [
+        "button[data-endpoint-node-id=\"12\"] > .relation__direction[aria-hidden=\"true\"]"
+       ],
+       "html": "<span class=\"relation__direction\" aria-hidden=\"true\">←</span>"
+      },
+      {
+       "target": [
+        "button[data-endpoint-node-id=\"12\"] > .relation__provenance--approved.relation__provenance > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">●</span>"
+      },
+      {
+       "target": [
+        ".cross-relation__glyph"
+       ],
+       "html": "<span class=\"cross-relation__glyph\" aria-hidden=\"true\">→</span>"
+      },
+      {
+       "target": [
+        ".cross-relation__arrow"
+       ],
+       "html": "<span class=\"cross-relation__arrow\">⇒</span>"
+      },
+      {
+       "target": [
+        ".cross-relation__provenance > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◆</span>"
+      },
+      {
+       "target": [
+        ".cross-relation__brain > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◆</span>"
+      }
+     ]
+    }
+   ],
+   "passes": 28
+  }
+ },
+ "scenario": {
+  "brains": 3,
+  "establishedIntra": 13,
+  "pendingIntra": 3,
+  "establishedInter": 7,
+  "pendingInter": 3,
+  "aggregateCount": 3,
+  "mapSemanticKeys": [
+   "aggregate",
+   "filter-context",
+   "filter-match",
+   "hierarchy-normal",
+   "hierarchy-touching",
+   "intra-established",
+   "node-directory",
+   "node-file",
+   "node-related",
+   "node-root",
+   "node-selected",
+   "territory-focused"
+  ],
+  "richMapSemanticKeys": [
+   "aggregate",
+   "hierarchy-normal",
+   "hierarchy-touching",
+   "intra-established",
+   "node-directory",
+   "node-file",
+   "node-related",
+   "node-root",
+   "node-selected",
+   "territory-focused"
+  ],
+  "filteredMapSemanticKeys": [
+   "aggregate",
+   "filter-context",
+   "filter-match",
+   "hierarchy-normal",
+   "intra-established",
+   "node-directory",
+   "node-file",
+   "node-root",
+   "territory-focused"
+  ],
+  "legendSemanticKeys": [
+   "node-root",
+   "node-directory",
+   "node-file",
+   "node-skipped",
+   "node-selected",
+   "node-related",
+   "node-linked",
+   "node-cross-linked",
+   "filter-match",
+   "filter-context",
+   "node-diagnostic",
+   "territory-focused",
+   "hierarchy-normal",
+   "hierarchy-touching",
+   "intra-established",
+   "intra-suggestion",
+   "intra-approved",
+   "intra-touching",
+   "inter-crossing",
+   "inter-established",
+   "inter-suggestion",
+   "inter-approved",
+   "inter-touching",
+   "aggregate"
+  ],
+  "mapKeysCovered": true,
+  "diagnosticAndSkippedExplainedByLegend": true
+ },
+ "locale": {
+  "french": {
+   "title": "Légende de la carte",
+   "root": "Racine du cerveau — losange."
+  },
+  "english": {
+   "title": "Map legend",
+   "root": "Brain root — diamond."
+  }
+ },
+ "sharedVisualLanguage": {
+  "node-root": {
+   "exercisedOnMap": true,
+   "sharedClasses": [
+    "map-node",
+    "map-node--root",
+    "map-node--plain",
+    "map-node__kind-glyph"
+   ],
+   "liveSignatures": [
+    {
+     "className": "map-node map-node--root map-node--plain map-node--filter-context",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400"
+    },
+    {
+     "className": "map-node__kind-glyph",
+     "strokeWidth": "2.5px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400"
+    }
+   ],
+   "legendSignatures": [
+    {
+     "className": "map-node__kind-glyph",
+     "strokeWidth": "2.5px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400"
+    }
+   ]
+  },
+  "node-directory": {
+   "exercisedOnMap": true,
+   "sharedClasses": [
+    "map-node",
+    "map-node--directory",
+    "map-node--plain",
+    "map-node__kind-glyph"
+   ],
+   "liveSignatures": [
+    {
+     "className": "map-node map-node--directory map-node--plain map-node--filter-match",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400"
+    },
+    {
+     "className": "map-node__kind-glyph",
+     "strokeWidth": "2px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400"
+    }
+   ],
+   "legendSignatures": [
+    {
+     "className": "map-node__kind-glyph",
+     "strokeWidth": "2px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400"
+    }
+   ]
+  },
+  "node-file": {
+   "exercisedOnMap": true,
+   "sharedClasses": [
+    "map-node",
+    "map-node--file",
+    "map-node--plain",
+    "map-node__kind-glyph"
+   ],
+   "liveSignatures": [
+    {
+     "className": "map-node map-node--file map-node--plain",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400"
+    },
+    {
+     "className": "map-node__kind-glyph",
+     "strokeWidth": "2px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400"
+    }
+   ],
+   "legendSignatures": [
+    {
+     "className": "map-node__kind-glyph",
+     "strokeWidth": "2px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400"
+    }
+   ]
+  },
+  "node-skipped": {
+   "exercisedOnMap": false
+  },
+  "node-selected": {
+   "exercisedOnMap": false
+  },
+  "node-related": {
+   "exercisedOnMap": false
+  },
+  "node-linked": {
+   "exercisedOnMap": false
+  },
+  "node-cross-linked": {
+   "exercisedOnMap": false
+  },
+  "filter-match": {
+   "exercisedOnMap": true,
+   "sharedClasses": [
+    "map-node",
+    "map-node--plain",
+    "map-node--filter-match",
+    "map-node__kind-glyph",
+    "map-node__filter-tag",
+    "map-node__filter-tag--match"
+   ],
+   "liveSignatures": [
+    {
+     "className": "map-node map-node--directory map-node--plain map-node--filter-match",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400"
+    },
+    {
+     "className": "map-node__kind-glyph",
+     "strokeWidth": "2px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400"
+    },
+    {
+     "className": "map-node__filter-tag map-node__filter-tag--match",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "700"
+    }
+   ],
+   "legendSignatures": [
+    {
+     "className": "map-node__kind-glyph",
+     "strokeWidth": "2px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400"
+    },
+    {
+     "className": "map-node__filter-tag map-node__filter-tag--match",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "700"
+    }
+   ]
+  },
+  "filter-context": {
+   "exercisedOnMap": true,
+   "sharedClasses": [
+    "map-node",
+    "map-node--plain",
+    "map-node--filter-context",
+    "map-node__kind-glyph",
+    "map-node__filter-tag",
+    "map-node__filter-tag--context"
+   ],
+   "liveSignatures": [
+    {
+     "className": "map-node map-node--root map-node--plain map-node--filter-context",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400"
+    },
+    {
+     "className": "map-node__kind-glyph",
+     "strokeWidth": "2.5px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400"
+    },
+    {
+     "className": "map-node__filter-tag map-node__filter-tag--context",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "700"
+    }
+   ],
+   "legendSignatures": [
+    {
+     "className": "map-node__kind-glyph",
+     "strokeWidth": "2px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400"
+    },
+    {
+     "className": "map-node__filter-tag map-node__filter-tag--context",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "700"
+    }
+   ]
+  },
+  "node-diagnostic": {
+   "exercisedOnMap": false
+  },
+  "territory-focused": {
+   "exercisedOnMap": true,
+   "sharedClasses": [
+    "map-territory__frame",
+    "map-territory__frame--focused"
+   ],
+   "liveSignatures": [
+    {
+     "className": "map-territory__frame map-territory__frame--focused",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400"
+    }
+   ],
+   "legendSignatures": [
+    {
+     "className": "map-territory__frame map-territory__frame--focused",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400"
+    }
+   ]
+  },
+  "hierarchy-normal": {
+   "exercisedOnMap": true,
+   "sharedClasses": [
+    "map-hierarchy-edge",
+    "map-hierarchy-edge--distant"
+   ],
+   "liveSignatures": [
+    {
+     "className": "map-hierarchy-edge map-hierarchy-edge--distant",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400"
+    }
+   ],
+   "legendSignatures": []
+  },
+  "hierarchy-touching": {
+   "exercisedOnMap": false
+  },
+  "intra-established": {
+   "exercisedOnMap": true,
+   "sharedClasses": [
+    "map-edge",
+    "map-edge--established",
+    "map-edge--distant",
+    "map-edge__line",
+    "map-edge__arrow"
+   ],
+   "liveSignatures": [
+    {
+     "className": "map-edge map-edge--established map-edge--distant map-edge--deterministic",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400"
+    },
+    {
+     "className": "map-edge__line",
+     "strokeWidth": "1.6px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400"
+    },
+    {
+     "className": "map-edge__arrow",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "0.45",
+     "fontWeight": "400"
+    }
+   ],
+   "legendSignatures": [
+    {
+     "className": "map-edge__line",
+     "strokeWidth": "1.6px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400"
+    },
+    {
+     "className": "map-edge__arrow",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "0.45",
+     "fontWeight": "400"
+    }
+   ]
+  },
+  "intra-suggestion": {
+   "exercisedOnMap": false
+  },
+  "intra-approved": {
+   "exercisedOnMap": false
+  },
+  "intra-touching": {
+   "exercisedOnMap": false
+  },
+  "inter-crossing": {
+   "exercisedOnMap": false
+  },
+  "inter-established": {
+   "exercisedOnMap": false
+  },
+  "inter-suggestion": {
+   "exercisedOnMap": false
+  },
+  "inter-approved": {
+   "exercisedOnMap": false
+  },
+  "inter-touching": {
+   "exercisedOnMap": false
+  },
+  "aggregate": {
+   "exercisedOnMap": true,
+   "sharedClasses": [
+    "map-aggregate",
+    "map-aggregate__pill",
+    "map-aggregate__label"
+   ],
+   "liveSignatures": [
+    {
+     "className": "map-aggregate",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400"
+    },
+    {
+     "className": "map-aggregate__pill",
+     "strokeWidth": "1.25px",
+     "strokeDasharray": "4px, 3px",
+     "fillOpacity": "0.9",
+     "fontWeight": "400"
+    },
+    {
+     "className": "map-aggregate__label",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400"
+    }
+   ],
+   "legendSignatures": [
+    {
+     "className": "map-aggregate__pill",
+     "strokeWidth": "1.25px",
+     "strokeDasharray": "4px, 3px",
+     "fillOpacity": "0.9",
+     "fontWeight": "400"
+    },
+    {
+     "className": "map-aggregate__label",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400"
+    }
+   ]
+  }
+ },
+ "keyboard": {
+  "openedWithEnter": true,
+  "reopenedWithSpace": true,
+  "tabStops": [
+   {
+    "tag": "INPUT",
+    "testid": "search-input",
+    "insideLegend": false
+   },
+   {
+    "tag": "BUTTON",
+    "testid": "search-clear",
+    "insideLegend": false
+   },
+   {
+    "tag": "BUTTON",
+    "testid": "search-hit",
+    "insideLegend": false
+   },
+   {
+    "tag": "BUTTON",
+    "testid": "search-hit",
+    "insideLegend": false
+   },
+   {
+    "tag": "BUTTON",
+    "testid": "search-hit",
+    "insideLegend": false
+   },
+   {
+    "tag": "INPUT",
+    "testid": "filter-state-ALL",
+    "insideLegend": false
+   },
+   {
+    "tag": "INPUT",
+    "testid": "filter-kind-DIRECTORY",
+    "insideLegend": false
+   },
+   {
+    "tag": "INPUT",
+    "testid": "filter-kind-FILE",
+    "insideLegend": false
+   },
+   {
+    "tag": "INPUT",
+    "testid": "filter-kind-SKIPPED",
+    "insideLegend": false
+   },
+   {
+    "tag": "INPUT",
+    "testid": "filter-availability-ALL",
+    "insideLegend": false
+   },
+   {
+    "tag": "BUTTON",
+    "testid": "filter-reset",
+    "insideLegend": false
+   },
+   {
+    "tag": "BUTTON",
+    "testid": "filter-result",
+    "insideLegend": false
+   },
+   {
+    "tag": "BUTTON",
+    "testid": "filter-result",
+    "insideLegend": false
+   },
+   {
+    "tag": "BUTTON",
+    "testid": "filter-result",
+    "insideLegend": false
+   },
+   {
+    "tag": "BUTTON",
+    "testid": "filter-result",
+    "insideLegend": false
+   },
+   {
+    "tag": "BUTTON",
+    "testid": null,
+    "insideLegend": false
+   },
+   {
+    "tag": "BUTTON",
+    "testid": null,
+    "insideLegend": false
+   },
+   {
+    "tag": "svg",
+    "testid": "composed-canvas",
+    "insideLegend": false
+   }
+  ],
+  "noTrap": true
+ },
+ "passiveWindow": {
+  "backendCommandsCausedByLegendGestures": [],
+  "sourceIndexJournalResumeUnchanged": true,
+  "before": {
+   "state": {
+    "alpha": {
+     "indexId": "2dc959e7-7590-4fdb-899b-b6f2ae65ba06",
+     "revision": 1,
+     "indexDigest": "6827e49681825bc1ff2aa42f088bd7593ec36972511e5bc5f11cf2482780e183",
+     "journalDigest": "6421e75c30fc0afb46067813d0d5a29ba65167ce5b01cf7add4053b4164a6c39",
+     "resume": {
+      "focusNodeId": 6,
+      "selectedNodeId": 6,
+      "view": null,
+      "filter": {
+       "state": "ALL",
+       "kinds": [
+        "DIRECTORY",
+        "SKIPPED"
+       ],
+       "availability": "ALL"
+      },
+      "detailsPanelVisible": true
+     }
+    },
+    "gamma": {
+     "indexId": "b2e8ccce-427e-4459-b0f5-e10b2d525d5a",
+     "revision": 1,
+     "indexDigest": "acaf30b32083acbf28b259b32ed3cb7b5970b6018843d4c9b6a5a96d5b40f613",
+     "journalDigest": "300c414e493db064a365c49dbbec55df9c292a8c2e4026788d4a76a25d4e600e",
+     "resume": {
+      "focusNodeId": null,
+      "selectedNodeId": null,
+      "view": null,
+      "filter": {
+       "state": "ALL",
+       "kinds": [],
+       "availability": "ALL"
+      },
+      "detailsPanelVisible": true
+     }
+    },
+    "realA": {
+     "indexId": "c795856f-a097-47d2-90e8-907b729af98e",
+     "revision": 1,
+     "indexDigest": "00b1fab9f8f151048a32ebf0aabb31a9dc51e1c9d78a4473530eed2ab3cf6be6",
+     "journalDigest": "0c2dd80e90559be5ea93936f64015e8f095d7a0fb4447cbbce6f8a5860f72f1e",
+     "resume": {
+      "focusNodeId": null,
+      "selectedNodeId": 1,
+      "view": {
+       "scale": 1,
+       "tx": 0,
+       "ty": 34
+      },
+      "filter": {
+       "state": "ALL",
+       "kinds": [],
+       "availability": "ALL"
+      },
+      "detailsPanelVisible": true
+     }
+    },
+    "wide": {
+     "indexId": "d1069c90-cd6b-4407-af52-16271263d756",
+     "revision": 1,
+     "indexDigest": "5bb56877b6b079327cc26052402dee08ac2899e1fe90fa0df7cb644a4953edb5",
+     "journalDigest": "c7d9c902d5f70759b6412e97133d881354ddae1c43e1208d561cdafca455e190",
+     "resume": {
+      "focusNodeId": null,
+      "selectedNodeId": null,
+      "view": null,
+      "filter": {
+       "state": "ALL",
+       "kinds": [],
+       "availability": "ALL"
+      },
+      "detailsPanelVisible": true
+     }
+    }
+   },
+   "source": {
+    "root1": "f92414ce433b65ef3170ebd8762539e4330204e10138c0bb7a4baea1adaf4257",
+    "root2": "b920bf3d9cbf9cf433380aa3080b28967e017256e2c14802be0a64e3405682bd",
+    "root3": "4f231b565c2cc3cf8b3aa0a28578ab1664cec67170b702683e5aefad5a8966f7"
+   }
+  },
+  "after": {
+   "state": {
+    "alpha": {
+     "indexId": "2dc959e7-7590-4fdb-899b-b6f2ae65ba06",
+     "revision": 1,
+     "indexDigest": "6827e49681825bc1ff2aa42f088bd7593ec36972511e5bc5f11cf2482780e183",
+     "journalDigest": "6421e75c30fc0afb46067813d0d5a29ba65167ce5b01cf7add4053b4164a6c39",
+     "resume": {
+      "focusNodeId": 6,
+      "selectedNodeId": 6,
+      "view": null,
+      "filter": {
+       "state": "ALL",
+       "kinds": [
+        "DIRECTORY",
+        "SKIPPED"
+       ],
+       "availability": "ALL"
+      },
+      "detailsPanelVisible": true
+     }
+    },
+    "gamma": {
+     "indexId": "b2e8ccce-427e-4459-b0f5-e10b2d525d5a",
+     "revision": 1,
+     "indexDigest": "acaf30b32083acbf28b259b32ed3cb7b5970b6018843d4c9b6a5a96d5b40f613",
+     "journalDigest": "300c414e493db064a365c49dbbec55df9c292a8c2e4026788d4a76a25d4e600e",
+     "resume": {
+      "focusNodeId": null,
+      "selectedNodeId": null,
+      "view": null,
+      "filter": {
+       "state": "ALL",
+       "kinds": [],
+       "availability": "ALL"
+      },
+      "detailsPanelVisible": true
+     }
+    },
+    "realA": {
+     "indexId": "c795856f-a097-47d2-90e8-907b729af98e",
+     "revision": 1,
+     "indexDigest": "00b1fab9f8f151048a32ebf0aabb31a9dc51e1c9d78a4473530eed2ab3cf6be6",
+     "journalDigest": "0c2dd80e90559be5ea93936f64015e8f095d7a0fb4447cbbce6f8a5860f72f1e",
+     "resume": {
+      "focusNodeId": null,
+      "selectedNodeId": 1,
+      "view": {
+       "scale": 1,
+       "tx": 0,
+       "ty": 34
+      },
+      "filter": {
+       "state": "ALL",
+       "kinds": [],
+       "availability": "ALL"
+      },
+      "detailsPanelVisible": true
+     }
+    },
+    "wide": {
+     "indexId": "d1069c90-cd6b-4407-af52-16271263d756",
+     "revision": 1,
+     "indexDigest": "5bb56877b6b079327cc26052402dee08ac2899e1fe90fa0df7cb644a4953edb5",
+     "journalDigest": "c7d9c902d5f70759b6412e97133d881354ddae1c43e1208d561cdafca455e190",
+     "resume": {
+      "focusNodeId": null,
+      "selectedNodeId": null,
+      "view": null,
+      "filter": {
+       "state": "ALL",
+       "kinds": [],
+       "availability": "ALL"
+      },
+      "detailsPanelVisible": true
+     }
+    }
+   },
+   "source": {
+    "root1": "f92414ce433b65ef3170ebd8762539e4330204e10138c0bb7a4baea1adaf4257",
+    "root2": "b920bf3d9cbf9cf433380aa3080b28967e017256e2c14802be0a64e3405682bd",
+    "root3": "4f231b565c2cc3cf8b3aa0a28578ab1664cec67170b702683e5aefad5a8966f7"
+   }
+  }
+ },
+ "sessionOnly": {
+  "closeAndReopenSameSession": true,
+  "restartPersistence": "NON TESTED — remains P-19"
+ },
+ "fatalConsoleErrors": 0
+}

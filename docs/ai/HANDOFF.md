@@ -1,5 +1,25 @@
 # HANDOFF — passage de relais
 
+## Relais — TASK-0050 IMPLEMENTED / contrôle indépendant requis — 2026-09-28
+
+- Branche `build/v0.2-a34-v1-runtime-legend`; TASK-0050/F-014/P-10 sont
+  `IMPLEMENTED`, jamais auto-`VERIFIED`.
+- Contrôler d'abord `mapLegendContract.ts`, `MapLegend.tsx`, les émissions
+  `data-legend-keys` de `MapView.tsx`, `mapLegend.test.tsx`, VALIDATION §CP et
+  `TASK-0050-webview2.json`.
+- La garde de carte riche rend les 24 clés obligatoires et prouve que toute clé
+  carte possède une entrée. Les classes de nœud/relation/hiérarchie et les
+  glyphes/flèches viennent de helpers partagés, pas d'une copie visuelle.
+- WebView2 : trois cerveaux affichés, relations backend 13/3 intra et 7/3
+  inter, filtre, trois agrégats, FR/EN, axe fermé/ouvert, navigation clavier,
+  zéro commande et état source/Index/journal/resume identique.
+- Axe : 0 violation; le même `incomplete color-contrast` sur éléments
+  décoratifs préexiste fermé et ouvert, donc aucune trouvaille ajoutée par la
+  légende. Recouper avec les preuves TASK-0047 si nécessaire.
+- Frontend 630 PASS; check/build/Tauri/diff/audit PASS; six falsifications.
+  Aucun Rust/backend/package. P-19 reste PARTIELLE; restart de la légende NON
+  TESTED; aucune TASK-0051.
+
 ## Relais — TASK-0050 READY — 2026-09-26
 
 - ACTION-0084 ferme TASK-0049/F-006.

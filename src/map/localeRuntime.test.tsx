@@ -496,6 +496,49 @@ describe("switching the language", () => {
   });
 });
 
+describe("the runtime legend", () => {
+  withHostLanguages(["fr-CA"]);
+
+  it("opens and closes from the same native button, stays session-only, and follows FR/EN without backend commands", async () => {
+    await boot();
+    const toggle = screen.getByTestId("map-legend-toggle");
+    expect(toggle.tagName).toBe("BUTTON");
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveAttribute("aria-controls", "map-runtime-legend");
+    expect(screen.queryByTestId("map-legend")).toBeNull();
+
+    const before = calls().length;
+    toggle.focus();
+    expect(document.activeElement).toBe(toggle);
+    fireEvent.click(toggle);
+    const legend = screen.getByRole("region", { name: "Légende de la carte" });
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(legend.id).toBe("map-runtime-legend");
+    expect(legend.textContent).toContain("Suggestion à confirmer");
+    expect(calls()).toHaveLength(before);
+    expect(localStorage.length).toBe(0);
+
+    fireEvent.click(screen.getByTestId("language-en"));
+    expect(screen.getByRole("region", { name: "Map legend" }).textContent).toContain(
+      "Suggestion to confirm",
+    );
+    expect(screen.getByTestId("map-legend-toggle").textContent).toBe("Close legend");
+    expect(calls()).toHaveLength(before);
+
+    const sameToggle = screen.getByTestId("map-legend-toggle");
+    sameToggle.focus();
+    fireEvent.click(sameToggle);
+    expect(sameToggle).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByTestId("map-legend")).toBeNull();
+    expect(document.activeElement).toBe(sameToggle);
+    expect(calls()).toHaveLength(before);
+
+    fireEvent.click(sameToggle);
+    expect(screen.getByTestId("map-legend")).toBeTruthy();
+    expect(calls()).toHaveLength(before);
+  });
+});
+
 describe("a real restart of the page", () => {
   withHostLanguages(["fr-CA"]);
 

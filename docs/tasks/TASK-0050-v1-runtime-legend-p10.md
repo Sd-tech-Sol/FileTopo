@@ -1,7 +1,7 @@
 # TASK-0050 — V1 Runtime Legend / P-10 Closure
 
 - **Date :** 2026-09-26
-- **Statut :** `READY`
+- **Statut :** `IMPLEMENTED`
 - **Branche :** `build/v0.2-a34-v1-runtime-legend`
 - **Décision :** `DEC-0048`
 - **Portée :** `F-014`, `P-10`
@@ -217,3 +217,25 @@ Aucun Rust attendu. Si Rust change : STOP sauf justification impérative.
 - commit + push;
 - arbre propre;
 - RESULT complet.
+
+## M — exécution Codex — 2026-09-28
+
+- Légende session-only ouverte par le bouton natif `Légende / Legend`, avec
+  `aria-expanded`, `aria-controls`, panneau nommé et même contrôle de fermeture.
+- Contrat fermé de 24 clés sémantiques. `MapView` émet ses clés depuis les
+  mêmes helpers qui produisent classes, états et relations; le test de carte
+  riche matérialise les 24 familles et vérifie `map keys ⊆ legend keys`.
+- Glyphes de nœud et géométrie de flèche extraits en primitives partagées;
+  échantillons décoratifs utilisant les classes CSS réelles, sans couleur ni
+  motif inline porteur de sens.
+- Texte produit complet FR/EN; aucune commande Tauri, préférence ou écriture
+  resume ajoutée.
+- Preuve WebView2 réelle : trois cerveaux affichés, relations backend riches,
+  filtre, agrégats, FR/EN, axe fermé/ouvert, Tab, Enter/Space, signatures de
+  classes partagées, zéro commande et source/Index/journal/resume inchangés.
+- Six falsifications attrapées puis restaurées. Validations finales : 630 tests
+  frontend, check/build/Tauri debug/WebView2/diff check/audit public PASS.
+
+**TASK-0050 = IMPLEMENTED; F-014 = IMPLEMENTED; P-10 = IMPLEMENTED, candidate
+au contrôle indépendant.** P-19 reste PARTIELLE; persistance au redémarrage
+explicitement NON TESTED. Aucune TASK-0051.

@@ -602,6 +602,44 @@ button:disabled {
   font-size: 12px;
 }
 
+/* `TASK-0050` — layout only. Every meaningful colour, stroke, dash and glyph
+   inside the samples still comes from the live MapView classes above/below. */
+.map-runtime-legend {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.map-runtime-legend h2,
+.map-runtime-legend p {
+  margin: 0 0 8px;
+}
+
+.map-runtime-legend ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 8px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.map-runtime-legend li {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+}
+
+.map-runtime-legend__sample,
+.map-runtime-legend__sample svg {
+  display: block;
+  width: 76px;
+  height: 44px;
+}
+
 .app__aside {
   display: flex;
   flex-direction: column;

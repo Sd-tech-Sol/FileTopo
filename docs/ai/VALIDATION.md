@@ -8809,3 +8809,54 @@ hiérarchie, relations intra/inter (direction/provenance/suggestion) et agrégat
 
 TASK-0050 doit réutiliser les mêmes classes/glyphes et fournir une garde de
 couverture rendue; P-19 reste séparée pour la persistance de la légende.
+
+## CP. TASK-0050 — V1 Runtime Legend / P-10 Closure — 2026-09-28
+
+**Statut : `IMPLEMENTED`, en attente de contrôle indépendant.**
+
+### CP.1 Contrat et comportement vérifiés par l'exécuteur
+
+- 24 clés fermées couvrent root/directory/file/skipped, états de nœud, filtre,
+  diagnostic, cerveau focalisé, hiérarchie, relations intra/inter et agrégat.
+- `MapView` émet `data-legend-keys` depuis `nodePresentation`,
+  `hierarchyPresentation` et `relationPresentation`; la légende rend le même
+  contrat. Le test riche matérialise les 24 clés et vérifie l'inclusion réelle.
+- `NodeKindGlyph` et `arrowHeadPath` sont partagés. Les échantillons emploient
+  les classes réelles; aucune couleur ni dash porteur de sens n'est copié.
+- Bouton natif unique : fermé -> ouvert -> fermé, `aria-expanded`,
+  `aria-controls`, panneau nommé; FR/EN; aucun élément décoratif tabbable et
+  aucune commande backend.
+
+### CP.2 Validations
+
+| Commande / preuve | Résultat |
+|---|---|
+| ciblés `mapLegend` + `localeRuntime` | 16 PASS |
+| `pnpm test` | 630 PASS, 0 échec |
+| `pnpm check` | PASS |
+| `pnpm build` | PASS; avertissement Vite historique > 500 kB |
+| `pnpm tauri build --debug --no-bundle` | PASS; avertissements Rust historiques seulement |
+| `scripts/task0050-webview2.ps1` | PASS dans WebView2 153.0.4234.48 |
+| axe 4.13.0 | 0 violation fermé et ouvert; 1 `incomplete color-contrast` identique |
+| `git diff --check` | PASS |
+| audit public sans option | FAIL attendu : `origin` configuré |
+| audit public `-AllowRemotes` | PASS, 668 fichiers audités avant commit |
+
+Artefact réel : `docs/performance/runs/TASK-0050-webview2.json`. Trois cerveaux
+affichés, 13 relations intra établies / 3 suggestions et 7 inter / 3
+suggestions dans les stores, filtre match/context, trois agrégats, 12 clés de
+carte exercées sur les états réels successifs, 24 clés expliquées. Les 24 sont
+matérialisées ensemble par le test riche déterministe. Les gestes de légende
+causent zéro commande et la comparaison source/Index/journal/resume est égale.
+
+### CP.3 Falsifications et limites
+
+Six sabotages ont été exécutés puis restaurés : retrait de `node-root`, retrait
+de linked/cross-linked, retrait de la suggestion intra, classe de relation
+inventée, texte explicatif supprimé et `aria-expanded` figé faux. Chaque test
+ciblé a échoué; aucun sabotage final.
+
+Persistance après redémarrage : **NON TESTED / hors portée P-19**. Aucun lecteur
+d'écran réel. Axe laisse un `incomplete color-contrast` préexistant et identique
+sur les deux cellules; aucune nouvelle violation ou finding incomplet n'est
+introduit par la légende. Aucun Rust/backend/SQLite/Tauri command/package changé.

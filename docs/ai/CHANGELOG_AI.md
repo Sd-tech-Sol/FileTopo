@@ -6193,3 +6193,21 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
   garde de couverture, FR/EN et clavier;
 - TASK-0050 créée READY pour Codex + GPT-5.6 Sol Medium;
 - P-19 reste séparée; aucune TASK-0051.
+
+## 2026-09-28 — TASK-0050 — légende runtime V1 / fermeture P-10
+
+**Agent :** Codex
+**Statut à l'issue :** `IMPLEMENTED` (jamais auto-`VERIFIED`)
+
+- Ajout d'une légende MapApp FR/EN à la demande, session-only, avec bouton
+  natif unique, `aria-expanded`, `aria-controls` et panneau nommé.
+- Contrat partagé de 24 clés sémantiques et garde de couverture par carte riche;
+  classes de nœud/relation/hiérarchie, glyphes et flèches réutilisés.
+- Tests interaction, langue, couverture, classes partagées, absence de commande
+  et alternatives non color-only; six falsifications attrapées puis restaurées.
+- WebView2 réel : trois cerveaux, relations, filtre, agrégats, FR/EN, axe,
+  Enter/Space/Tab, zéro commande et source/Index/journal/resume inchangés.
+- Validations : frontend 630 PASS, check/build/Tauri/WebView2/diff/audit public
+  PASS. Aucun Rust/backend/package modifié.
+- TASK-0050/F-014/P-10 = `IMPLEMENTED`, en attente de contrôle indépendant;
+  P-19 reste PARTIELLE, persistance restart NON TESTED; aucune TASK-0051.

@@ -18,6 +18,14 @@ import { headerBox, placeRect, territoryOf } from "./territories";
 import type { BrainNodeRef, BrainRecord, MapNode } from "./types";
 import type { View, Viewport } from "./viewState";
 import {
+  hierarchyPresentation,
+  legendKeyAttribute,
+  nodePresentation,
+  relationPresentation,
+  type NodeVisualState,
+} from "./mapLegendContract";
+import { arrowHeadPath, NodeKindGlyph } from "./mapVisualPrimitives";
+import {
   ensureRectVisible,
   fitToBox,
   fitView,
@@ -139,18 +147,6 @@ const WHEEL_ZOOM_STEP = 1.0015;
 const KEY_ZOOM_STEP = 1.35;
 const KEY_PAN_STEP = 90;
 
-/** Triangle of an arrow head, pointing along `(ux, uy)` from `(x, y)`. */
-function arrowHead(x: number, y: number, ux: number, uy: number): string {
-  const size = 9;
-  const tipX = x + ux * size;
-  const tipY = y + uy * size;
-  const leftX = x - uy * (size * 0.45);
-  const leftY = y + ux * (size * 0.45);
-  const rightX = x + uy * (size * 0.45);
-  const rightY = y - ux * (size * 0.45);
-  return `M ${tipX} ${tipY} L ${leftX} ${leftY} L ${rightX} ${rightY} Z`;
-}
-
 /**
  * Product vocabulary for an omitted-children indicator — `DEC-0034` D.
  *
@@ -181,21 +177,6 @@ export function truncateCardLabel(name: string, projectedWidth: number): string 
   if (name.length <= availableCharacters) return name;
   if (availableCharacters <= 1) return "…";
   return `${name.slice(0, availableCharacters - 1)}…`;
-}
-
-function nodeGlyph(node: MapNode): React.ReactElement {
-  const x = node.rect.x + 16;
-  const y = node.rect.y + 20;
-  if (node.kind === "root") {
-    return <path className="map-node__kind-glyph" d={`M ${x + 8} ${y - 8} L ${x + 16} ${y} L ${x + 8} ${y + 8} L ${x} ${y} Z`} />;
-  }
-  if (node.kind === "directory") {
-    return <path className="map-node__kind-glyph" d={`M ${x} ${y - 6} H ${x + 8} L ${x + 11} ${y - 2} H ${x + 20} V ${y + 9} H ${x} Z`} />;
-  }
-  if (node.kind === "file") {
-    return <path className="map-node__kind-glyph" d={`M ${x + 3} ${y - 8} H ${x + 13} L ${x + 19} ${y - 2} V ${y + 10} H ${x + 3} Z M ${x + 13} ${y - 8} V ${y - 2} H ${x + 19}`} />;
-  }
-  return <path className="map-node__kind-glyph" d={`M ${x} ${y - 7} L ${x + 18} ${y + 9} M ${x + 18} ${y - 7} L ${x} ${y + 9}`} />;
 }
 
 export default function MapView({
@@ -254,13 +235,13 @@ export default function MapView({
         const touchesSelection =
           selected?.brainId === brain.brainId &&
           (selected.nodeId === edge.parentNodeId || selected.nodeId === edge.childNodeId);
+        const presentation = hierarchyPresentation(touchesSelection);
         return (
           <g
             key={`${edge.parentNodeId}|${edge.childNodeId}`}
             id={domHierarchyEdgeId(brain.brainId, edge.parentNodeId, edge.childNodeId)}
-            className={`map-hierarchy-edge map-hierarchy-edge--${
-              touchesSelection ? "touching" : "distant"
-            }`}
+            className={presentation.className}
+            data-legend-keys={legendKeyAttribute(presentation.keys)}
             data-edge-kind="hierarchy"
             data-brain-id={brain.brainId}
             data-parent-node-id={edge.parentNodeId}
@@ -288,7 +269,7 @@ export default function MapView({
         const crossLinked = brain.crossNeighbours.has(node.id);
         // Attenuated, never erased: the rectangle keeps its outline and its
         // accessible name whatever the selection is — parity §3, point 4.
-        const state = isSelected
+        const state: NodeVisualState = isSelected
           ? "selected"
           : related
             ? "related"
@@ -300,6 +281,12 @@ export default function MapView({
         const corner = 6;
         const marker = Math.min(node.rect.w, node.rect.h) * 0.28;
         const filterRole = brain.filterRoles?.get(node.id);
+        const presentation = nodePresentation(
+          node.kind,
+          state,
+          filterRole,
+          Boolean(node.accessDiagnostic),
+        );
         return (
           <g
             key={node.id}
@@ -323,9 +310,8 @@ export default function MapView({
               (filterRole ? `, ${ROLE_LABELS[locale][filterRole]}` : "")
             }
             data-filter-role={filterRole}
-            className={`map-node map-node--${node.kind} map-node--${state}${
-              filterRole ? ` map-node--filter-${filterRole}` : ""
-            }`}
+            data-legend-keys={legendKeyAttribute(presentation.keys)}
+            className={presentation.className}
             onPointerDown={(event) => {
               event.stopPropagation();
               onSelect({ brainId: brain.brainId, nodeId: node.id });
@@ -340,7 +326,9 @@ export default function MapView({
               rx={corner}
               vectorEffect="non-scaling-stroke"
             />
-            <g aria-hidden="true">{nodeGlyph(node)}</g>
+            <g aria-hidden="true">
+              <NodeKindGlyph kind={node.kind} x={node.rect.x + 16} y={node.rect.y + 20} />
+            </g>
             {filterRole ? (
               // The role is written on the card: a word and a symbol, so a
               // match is never told from its context by colour alone.
@@ -404,15 +392,18 @@ export default function MapView({
         const ux = (x2 - x1) / length;
         const uy = (y2 - y1) / length;
         const established = segment.kind === "established";
-        const state = segment.touchesSelection ? "touching" : "distant";
-        const className =
-          `map-edge map-edge--${segment.kind} map-edge--${state}` +
-          (segment.provenance ? ` map-edge--${segment.provenance.toLowerCase()}` : "");
+        const presentation = relationPresentation({
+          cross: false,
+          kind: segment.kind,
+          provenance: segment.provenance,
+          touchesSelection: segment.touchesSelection,
+        });
 
         drawn.push(
           <g
             key={`${brain.brainId}|${segment.key}`}
-            className={className}
+            className={presentation.className}
+            data-legend-keys={legendKeyAttribute(presentation.keys)}
             // `L8` — an edge belongs to exactly one brain, and says which.
             data-brain-id={brain.brainId}
             data-from-brain-id={brain.brainId}
@@ -427,7 +418,7 @@ export default function MapView({
             {established ? (
               // Filled arrow head, drawn as a triangle so its shape carries the
               // direction without a marker definition and without colour.
-              <path className="map-edge__arrow" d={arrowHead(x2 - ux * 9, y2 - uy * 9, ux, uy)} />
+              <path className="map-edge__arrow" d={arrowHeadPath(x2 - ux * 9, y2 - uy * 9, ux, uy)} />
             ) : (
               <>
                 <circle className="map-edge__ring" cx={x1} cy={y1} r={3.5} />
@@ -484,16 +475,18 @@ export default function MapView({
       const ux = (x2 - x1) / length;
       const uy = (y2 - y1) / length;
       const established = segment.kind === "established";
-      const state = segment.touchesSelection ? "touching" : "distant";
       // **No `map-edge` class.** `L8` of `TASK-0019` is measured by counting
       // `.map-edge` and reading its two brain ids, and it must keep meaning what
       // it meant: an INTRA-brain edge never leaves its territory. An inter-brain
       // edge is a different layer introduced by `DEC-0018`, and it is supposed
       // to cross — so it carries its own class and the old measurement stays
       // exact rather than being redefined after the fact.
-      const className =
-        `map-cross-edge map-cross-edge--${segment.kind} map-cross-edge--${state}` +
-        (segment.provenance ? ` map-cross-edge--${segment.provenance.toLowerCase()}` : "");
+      const presentation = relationPresentation({
+        cross: true,
+        kind: segment.kind,
+        provenance: segment.provenance,
+        touchesSelection: segment.touchesSelection,
+      });
       // Halfway along, a second arrow head. Direction therefore reads even when
       // both ends are off screen and the tip is not visible — and it reads by
       // SHAPE, never by hue.
@@ -503,7 +496,8 @@ export default function MapView({
       drawn.push(
         <g
           key={`cross|${segment.key}`}
-          className={className}
+          className={presentation.className}
+          data-legend-keys={legendKeyAttribute(presentation.keys)}
           // `M6` — an inter-brain edge names BOTH its brains, and they differ.
           // A reader counting `from !== to` is counting exactly the property
           // that makes this edge legitimate.
@@ -526,11 +520,11 @@ export default function MapView({
             <>
               <path
                 className="map-cross-edge__arrow"
-                d={arrowHead(x2 - ux * 11, y2 - uy * 11, ux, uy)}
+                d={arrowHeadPath(x2 - ux * 11, y2 - uy * 11, ux, uy)}
               />
               <path
                 className="map-cross-edge__chevron"
-                d={arrowHead(midX, midY, ux, uy)}
+                d={arrowHeadPath(midX, midY, ux, uy)}
               />
             </>
           ) : (
@@ -569,6 +563,9 @@ export default function MapView({
             className={
               "map-territory__title" +
               (brain.brainId === focusedBrainId ? " map-territory__title--focused" : "")
+            }
+            data-legend-keys={
+              brain.brainId === focusedBrainId ? "territory-focused" : undefined
             }
             x={x}
             y={y + 22}
@@ -887,6 +884,9 @@ export default function MapView({
                     ? " map-territory__frame--focused"
                     : "")
                 }
+                data-legend-keys={
+                  entry.brain.brainId === focusedBrainId ? "territory-focused" : undefined
+                }
                 data-brain-id={entry.brain.brainId}
                 x={entry.territory.frame.x}
                 y={entry.territory.frame.y}
@@ -953,6 +953,7 @@ export default function MapView({
                       tabIndex={0}
                       aria-label={label}
                       className="map-aggregate"
+                      data-legend-keys="aggregate"
                       // Focus must never land on an aggregate the pan has left outside the canvas.
                       onFocus={() => {
                         const next = ensureRectVisible(

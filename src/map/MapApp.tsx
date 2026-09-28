@@ -21,6 +21,7 @@ import DetailsPanel from "./DetailsPanel";
 import FilterPanel from "./FilterPanel";
 import { filterRoles } from "./filters";
 import MapView, { aggregateLabel, type RenderedBrain } from "./MapView";
+import MapLegend from "./MapLegend";
 import { useProjectionFilter } from "./useProjectionFilter";
 import {
   ResumeWriter,
@@ -223,6 +224,9 @@ export default function MapApp() {
   // and written by `storeLocale` **only** when the person chooses. Nothing is written at
   // start, and changing it reaches no backend command.
   const [locale, setLocale] = useState<Locale>(() => resolveInitialLocale());
+  // `TASK-0050` — deliberately session-only. P-19 owns persistence; resume v2
+  // remains untouched by opening or closing this explanatory surface.
+  const [legendOpen, setLegendOpen] = useState(false);
   // `TASK-0047` — a control disabled while its action runs must not strand the keyboard on <body>.
   useRestoreFocusAfterDisabled();
   const t = strings[locale];
@@ -3233,6 +3237,15 @@ export default function MapApp() {
             >
               {contentCampaignRunning ? t.observing : t.observe}
             </button>
+            <button
+              type="button"
+              data-testid="map-legend-toggle"
+              aria-expanded={legendOpen}
+              aria-controls="map-runtime-legend"
+              onClick={() => setLegendOpen((open) => !open)}
+            >
+              {legendOpen ? t.legend.close : t.legend.open}
+            </button>
           </div>
 
           {contentReport ? (
@@ -3402,6 +3415,14 @@ export default function MapApp() {
         </div>
 
         <aside className="app__aside">
+          {legendOpen ? (
+            <MapLegend
+              id="map-runtime-legend"
+              locale={locale}
+              strings={t.legend}
+            />
+          ) : null}
+
           <ExactDuplicateExplorer
             locale={locale}
             brainId={composed?.focusedBrainId ?? null}
