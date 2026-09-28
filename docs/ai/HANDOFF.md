@@ -2910,3 +2910,17 @@ chiffres ou en lettres.
 
 
 > **Relais 2026-09-25 — TASK-0046 prête.** TASK-0045 est VERIFIED; P-20 est CLOSED / VERIFIED. ACTION-0076 confirme que le runtime courant `MapApp` reste français seulement. Réutiliser `src/lib/locale.ts` et localiser toute chaîne produit visible/aria sans nouveau backend ni système i18n. F-036 / WCAG global reste hors tranche. Lire DEC-0044, TASK-0046 puis `.orchestrator/NEXT_PROMPT.md` sur `build/v0.2-a30-v1-complete-fr-en-runtime`.
+
+## Relais — TASK-0050 corrective `BLOCKED` sur `node-diagnostic` — 2026-09-28
+
+- Exécution de `.orchestrator/NEXT_PROMPT.md`. Texte/test `node-cross-linked`
+  corrigés et sûrs (committés). 23/24 clés validées en WebView2 réel par une
+  séquence de gestes produit; `node-diagnostic` bloqué par un invariant Rust
+  vérifié (`src-tauri/src/map/commands.rs:745-749`, aucune voie d'acceptation
+  d'un index avec diagnostic). Changement Rust nécessaire, hors périmètre
+  sans GO explicite (TASK-0050 §K).
+- Décision de Sébastien : documenter, s'arrêter, ne committer que le
+  correctif sûr. Aucun artefact `TASK-0050-webview2.json` republié.
+- Prochaine action : Sébastien tranche entre amender DEC-0048 §C ou autoriser
+  le changement Rust minimal. Détail :
+  `docs/tasks/TASK-0050-v1-runtime-legend-p10.md` section O.

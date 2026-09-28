@@ -1339,9 +1339,9 @@ input[type="text"] {
 /*
  * `M` — a node linked to the selection ACROSS brains.
  *
- * Distinct from `--linked`, which marks an intra-brain neighbour: a double
- * outline rather than a dashed one. Attenuated neighbours stay fully visible
- * and keep their accessible name, as parity §3 point 4 requires.
+ * Distinct from `--linked`, which marks an intra-brain neighbour: a heavier
+ * solid outline rather than a dashed one. Attenuated neighbours stay fully
+ * visible and keep their accessible name, as parity §3 point 4 requires.
  */
 .map-node--cross-linked rect {
   fill-opacity: 0.8;

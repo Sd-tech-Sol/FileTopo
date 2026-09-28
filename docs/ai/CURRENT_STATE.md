@@ -1,5 +1,25 @@
 # État courant
 
+## Corrective TASK-0050 — BLOQUÉE sur `node-diagnostic` — 2026-09-28
+
+- Exécution de `.orchestrator/NEXT_PROMPT.md`. Texte FR/EN `node-cross-linked`
+  corrigé (contour plein épaissi, pas de double contour) + test ciblé PASS.
+  23/24 clés de légende validées en WebView2 réel par une séquence de gestes
+  produit (aucune injection DOM); `node-diagnostic` reste hors d'atteinte
+  d'un index réellement publié — `src-tauri/src/map/commands.rs:745-749`
+  refuse toute publication dès qu'un diagnostic de scan existe, sans voie
+  d'acceptation explicite. Changement Rust nécessaire, hors périmètre de la
+  passe corrective sans GO explicite.
+- **TASK-0050 = `BLOCKED`.** Décision de Sébastien : documenter et
+  s'arrêter; aucun artefact WebView2 republié; seuls
+  `src/map/mapStrings.ts`, `src/map/map.css`, `src/map/mapLegend.test.tsx`
+  modifiés (commit à suivre). Détail : `docs/tasks/TASK-0050-v1-runtime-legend-p10.md`
+  section O; `docs/ai/VALIDATION.md` section CR.
+- Prochaine décision, réservée à Sébastien : amender DEC-0048 §C (retirer ou
+  requalifier `node-diagnostic` en manque documenté comme P-19) ou autoriser
+  explicitement le changement Rust minimal permettant de publier un index
+  portant un diagnostic connu.
+
 ## ACTION-0086 — TASK-0050 corrective requise — 2026-09-28
 
 - Contrôle indépendant : TASK-0050/F-014/P-10 **NON VERIFIED**.

@@ -1,7 +1,7 @@
 # TASK-0050 — V1 Runtime Legend / P-10 Closure
 
 - **Date :** 2026-09-26
-- **Statut :** `CORRECTIVE_REQUIRED`
+- **Statut :** `BLOCKED`
 - **Branche :** `build/v0.2-a34-v1-runtime-legend`
 - **Décision :** `DEC-0048`
 - **Portée :** `F-014`, `P-10`
@@ -302,3 +302,84 @@ Elle doit :
 
 **TASK-0050 / F-014 / P-10 restent NON VERIFIED jusqu'au prochain contrôle
 indépendant.**
+
+## O — corrective pass — BLOQUÉ sur `node-diagnostic` — Claude Code — 2026-09-28
+
+Exécution de `.orchestrator/NEXT_PROMPT.md`, préconditions N §0 vérifiées
+(branche, fast-forward, arbre propre, ACTION-0086 et TASK-0050 §N lus).
+
+### O.1 — fait et vérifié
+
+- Texte FR/EN de `node-cross-linked` corrigé (`src/map/mapStrings.ts`) pour
+  décrire le rendu réel — un contour plein épaissi
+  (`.map-node--cross-linked rect { stroke-width: 3; stroke-dasharray: none; }`,
+  `src/map/map.css:1346`) — et non un double contour. Commentaire CSS corrigé
+  en cohérence.
+- Nouveau test ciblé dans `src/map/mapLegend.test.tsx` (« describes
+  node-cross-linked as the real rendered outline, not an invented one ») qui
+  échoue si le mot « double » réapparaît dans l'un ou l'autre texte, et qui
+  verrouille la classe partagée réelle de l'échantillon. `pnpm vitest run
+  src/map/mapLegend.test.tsx` → 5/5 PASS.
+- Piloté le build debug + WebView2 réel (CDP) pour prouver, par des gestes
+  produit réels (jamais d'injection DOM), une séquence qui matérialise 23 des
+  24 clés : sélectionner un bloc **déjà rendu** sans changer le focus
+  matérialise simultanément `node-linked`/`node-cross-linked` avec leurs
+  partenaires de relation; n'approuver qu'**une seule** suggestion intra et
+  une seule inter-cerveaux (en laissant les autres en attente et en
+  préchargeant les bons dossiers par navigation réelle) matérialise
+  `intra-suggestion`/`intra-approved`/`inter-suggestion`/`inter-approved`
+  ensemble avec `intra-established`/`inter-established`/`inter-crossing` et
+  les variantes `-touching`; une jonction de répertoire NTFS réelle
+  (`mklink /J`, sans droits admin) matérialise `node-skipped` sans rien
+  injecter dans le DOM.
+
+### O.2 — blocage vérifié : `node-diagnostic` est actuellement irréalisable via un index réellement publié
+
+Preuve, dans le code du produit, pas une supposition :
+
+- `src-tauri/src/map/commands.rs:745-749` — dès que `scan.diagnostics` n'est
+  pas vide (ex. un dossier réel dont la lecture échoue), **toute la
+  publication est refusée** (`"incomplete scan; previous index retained"`),
+  y compris au tout premier scan d'un brain jamais indexé. Il n'existe aucune
+  voie d'acceptation explicite « malgré les diagnostics ».
+- Confirmé par `src-tauri/src/map/source_availability_tests.rs` (famille de
+  tests `SCAN_INCOMPLETE` / `ScanDiagnostics`) : c'est un invariant produit
+  délibéré et testé, pas un oubli.
+- `grep -rn "access_diagnostic.*Some" src-tauri/src` ne retourne **aucun**
+  résultat, dans le code ni dans un seul test Rust : `access_diagnostic`
+  n'est jamais mis à `Some(...)` nulle part dans le backend.
+- Aucun artefact `docs/performance/runs/*.json` antérieur ne montre de
+  `accessDiagnostic` non nul.
+
+Une preuve WebView2 réelle de `node-diagnostic` demanderait donc de modifier
+le Rust (au minimum une voie d'acceptation explicite d'un index publié avec
+un nombre connu de diagnostics). C'est exactement le cas que TASK-0050 §K
+retient d'avance : *« Aucun Rust attendu. Si Rust change : STOP sauf
+justification impérative. »* — et un tel changement touche un invariant
+produit protégé par une suite de tests dédiée, donc engage une portée plus
+large qu'une passe corrective de légende.
+
+### O.3 — décision
+
+Signalé à Sébastien; réponse : **STOP, documenter, ne committer que ce qui
+est déjà sûr.** Aucun changement Rust tenté. Le reste de la séquence de
+correction (23/24 clés, égalité des signatures calculées, artefact WebView2
+complet) n'a pas été rejoué jusqu'au bout : il dépend du même harnais que
+`node-diagnostic`, et republier un artefact partiel aurait fait croire à une
+preuve terminée alors qu'elle ne l'est pas.
+
+**TASK-0050 = `BLOCKED`.** Rien n'a régressé : `node-cross-linked` est
+maintenant correct et verrouillé par un test. Seuls
+`src/map/mapStrings.ts`, `src/map/map.css` et `src/map/mapLegend.test.tsx`
+sont modifiés. `scripts/task0050-seed-proof.py` a été essayé puis restauré
+à l'identique (aucune modification committée) : la technique de jonction NTFS
+pour `node-skipped` y fonctionne et reste réutilisable telle quelle par la
+prochaine tentative; celle du dossier à accès refusé pour `node-diagnostic`
+a été retirée puisqu'elle ne peut aboutir sans le changement Rust ci-dessus.
+
+**Prochaine action pour Sébastien :** choisir entre (a) amender DEC-0048 §C
+pour retirer ou requalifier `node-diagnostic` en `NON TESTED` documenté
+(comme P-19), ou (b) autoriser explicitement le changement Rust minimal qui
+permettrait de publier un index portant un diagnostic connu. Tant que ce
+choix n'est pas fait, `TASK-0050` / `F-014` / `P-10` restent `BLOCKED`,
+jamais `VERIFIED`.

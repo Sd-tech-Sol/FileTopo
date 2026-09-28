@@ -8897,3 +8897,33 @@ Blocages :
 Décision : passe corrective ciblée dans **TASK-0050 uniquement**. Aucune
 TASK-0051. Le prochain verdict indépendant devra repartir des nouvelles preuves,
 pas du rapport de l'exécuteur.
+
+## CR. Corrective pass TASK-0050 — BLOQUÉE sur `node-diagnostic` — Claude Code — 2026-09-28
+
+Exécution de `.orchestrator/NEXT_PROMPT.md` (corrective d'`ACTION-0086`).
+
+Fait et vérifié : texte FR/EN `node-cross-linked` corrigé pour décrire le
+rendu réel (contour plein épaissi, pas de double contour), test ciblé
+ajouté et PASS (`pnpm vitest run src/map/mapLegend.test.tsx` → 5/5). Une
+séquence de gestes produit réels pilotée en WebView2 (CDP) sur le build
+debug a été validée pour matérialiser 23/24 clés sans aucune injection DOM
+(sélection d'un bloc déjà rendu, une seule suggestion approuvée par famille,
+une vraie jonction NTFS pour `node-skipped`).
+
+Blocage vérifié dans le code, pas une supposition : `node-diagnostic` ne peut
+être observé sur un index réellement publié. `src-tauri/src/map/commands.rs:
+745-749` refuse toute publication dès que `scan.diagnostics` n'est pas vide,
+y compris au premier scan; confirmé par la suite `SCAN_INCOMPLETE` de
+`source_availability_tests.rs`; `access_diagnostic` n'est mis à `Some(...)`
+nulle part dans le backend (`grep` sans résultat, code et tests). Prouver
+cette clé exigerait un changement Rust, hors périmètre de cette passe selon
+TASK-0050 §K (« Aucun Rust attendu. Si Rust change : STOP sauf justification
+impérative »).
+
+Signalé à Sébastien; décision : STOP, documenter, ne committer que le
+correctif texte/test déjà sûr. Aucun artefact `TASK-0050-webview2.json`
+republié — le republier avec 23/24 aurait fait croire à une preuve terminée
+alors que le harnais qui la produit n'a pas été rejoué jusqu'au bout.
+
+**TASK-0050 = `BLOCKED`.** Voir `docs/tasks/TASK-0050-v1-runtime-legend-p10.md`
+section O pour le détail complet et l'action suivante réservée à Sébastien.

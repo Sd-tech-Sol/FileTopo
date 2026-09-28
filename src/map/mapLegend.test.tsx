@@ -196,6 +196,24 @@ describe("TASK-0050 runtime legend", () => {
     expect(legendKeyAttribute(["node-file", "node-selected"])).toBe("node-file node-selected");
   });
 
+  it("describes node-cross-linked as the real rendered outline, not an invented one", () => {
+    // ACTION-0086 N.2.5 — `.map-node--cross-linked rect` is a single thicker
+    // solid outline (`stroke-width: 3; stroke-dasharray: none`), not a second
+    // stroke. The text must say that, never "double contour" / "double outline".
+    const { container: fr } = render(<MapLegend id="legend" locale="fr" strings={strings.fr.legend} />);
+    const frText = fr.querySelector('[data-legend-key="node-cross-linked"]')?.textContent ?? "";
+    expect(frText).not.toMatch(/double/i);
+    expect(frText).toContain("contour plein épaissi");
+
+    const { container: en } = render(<MapLegend id="legend" locale="en" strings={strings.en.legend} />);
+    const enText = en.querySelector('[data-legend-key="node-cross-linked"]')?.textContent ?? "";
+    expect(enText).not.toMatch(/double/i);
+    expect(enText).toContain("heavy solid outline");
+
+    const sample = fr.querySelector('[data-legend-key="node-cross-linked"] g');
+    expect(sample?.getAttribute("class")).toBe(nodePresentation("file", "cross-linked").className);
+  });
+
   it("keeps the samples decorative because adjacent text carries every meaning", () => {
     const { container } = render(<MapLegend id="legend" locale="fr" strings={strings.fr.legend} />);
     for (const sample of container.querySelectorAll(".map-runtime-legend__sample svg")) {

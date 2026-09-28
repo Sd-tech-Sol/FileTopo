@@ -1,20 +1,23 @@
 # Action suivante
 
-## Exécuter la corrective pass de TASK-0050 — WebView2 exhaustif / exactitude de légende
+## Décision de Sébastien : `node-diagnostic` (TASK-0050 corrective, `BLOCKED`)
 
-Branche : `build/v0.2-a34-v1-runtime-legend`.
+`node-diagnostic` est actuellement irréalisable sur un index réellement publié
+(`src-tauri/src/map/commands.rs:745-749` refuse toute publication dès qu'un
+diagnostic de scan existe, y compris au premier scan; confirmé par la suite
+`SCAN_INCOMPLETE` de `source_availability_tests.rs`). Le prouver en WebView2
+réel demanderait un changement Rust, hors périmètre d'une passe corrective de
+légende (TASK-0050 §K).
 
-ACTION-0086 a contrôlé indépendamment TASK-0050 et refuse `VERIFIED` pour deux
-écarts ciblés :
+Choisir entre :
 
-1. la preuve WebView2 réelle n'exerce que 12/24 clés sémantiques;
-2. le texte `node-cross-linked` décrit un double contour absent du rendu réel.
+1. amender DEC-0048 §C pour retirer ou requalifier `node-diagnostic` en
+   manque documenté (comme P-19);
+2. autoriser explicitement le changement Rust minimal qui permettrait de
+   publier un index portant un diagnostic connu.
 
-**Exécuteur : Claude Code + Claude Sonnet 5 — Medium effort.**
+Détail complet : `docs/tasks/TASK-0050-v1-runtime-legend-p10.md` section O;
+`docs/ai/VALIDATION.md` section CR.
 
-La corrective doit rester frontend/harness uniquement, sans Rust/backend,
-sans nouvelle dépendance, sans resume v2 et sans toucher P-19.
-
-Prompt autoritaire : `.orchestrator/NEXT_PROMPT.md`.
-
-Aucune TASK-0051. Après exécution, contrôle indépendant obligatoire de TASK-0050.
+Tant que ce choix n'est pas fait, `TASK-0050` / `F-014` / `P-10` restent
+`BLOCKED`, jamais `VERIFIED`. Aucune TASK-0051.

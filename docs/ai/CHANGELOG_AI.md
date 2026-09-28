@@ -6211,3 +6211,28 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
   PASS. Aucun Rust/backend/package modifié.
 - TASK-0050/F-014/P-10 = `IMPLEMENTED`, en attente de contrôle indépendant;
   P-19 reste PARTIELLE, persistance restart NON TESTED; aucune TASK-0051.
+
+## 2026-09-28 — TASK-0050 — corrective pass — `BLOCKED` sur `node-diagnostic`
+
+**Agent :** Claude Code (Claude Sonnet 5)
+**Statut à l'issue :** `BLOCKED`
+
+- Exécution de `.orchestrator/NEXT_PROMPT.md` (corrective d'`ACTION-0086`).
+- Corrigé : texte FR/EN `node-cross-linked` (contour plein épaissi, pas un
+  double contour), commentaire CSS aligné, test Vitest ajouté qui verrouille
+  cette exactitude (`src/map/mapLegend.test.tsx`, 5/5 PASS).
+- Piloté un build debug + WebView2 réel par CDP pour valider une séquence de
+  gestes produit (aucune injection DOM) qui matérialise 23 des 24 clés de
+  légende — sélection d'un bloc déjà rendu sans changer le focus pour
+  `node-linked`/`node-cross-linked`, une seule suggestion approuvée par
+  famille pour `intra/inter-suggestion/approved`, une jonction NTFS réelle
+  pour `node-skipped`.
+- Bloqué sur `node-diagnostic` : `src-tauri/src/map/commands.rs:745-749`
+  refuse toute publication d'index dès qu'un diagnostic de scan existe, y
+  compris au premier scan (confirmé par la suite `SCAN_INCOMPLETE` de
+  `source_availability_tests.rs`; `access_diagnostic` jamais `Some(...)`
+  nulle part dans le backend). Le prouver exigerait un changement Rust, hors
+  périmètre de cette passe sans GO explicite (TASK-0050 §K).
+- Signalé à Sébastien; décision : STOP, documenter, ne committer que le
+  correctif sûr. Aucun artefact WebView2 republié.
+- TASK-0050/F-014/P-10 = `BLOCKED`; P-19 reste séparée; aucune TASK-0051.
