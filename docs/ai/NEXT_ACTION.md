@@ -10,7 +10,7 @@ ACTION-0086 a contrôlé indépendamment TASK-0050 et refuse `VERIFIED` pour deu
 1. la preuve WebView2 réelle n'exerce que 12/24 clés sémantiques;
 2. le texte `node-cross-linked` décrit un double contour absent du rendu réel.
 
-**Exécuteur : Codex + GPT-5.6 Sol — Medium effort.**
+**Exécuteur : Claude Code + Claude Sonnet 5 — Medium effort.**
 
 La corrective doit rester frontend/harness uniquement, sans Rust/backend,
 sans nouvelle dépendance, sans resume v2 et sans toucher P-19.

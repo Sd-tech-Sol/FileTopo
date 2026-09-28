@@ -1,7 +1,7 @@
 # NEXT_PROMPT — TASK-0050 corrective pass — WebView2 exhaustive coverage
 
-**TARGET_AGENT:** CODEX
-**RECOMMENDED_MODEL:** GPT-5.6 Sol
+**TARGET_AGENT:** CLAUDE CODE
+**RECOMMENDED_MODEL:** Claude Sonnet 5
 **RECOMMENDED_EFFORT:** Medium
 **STATUS:** READY
 **BRANCH:** `build/v0.2-a34-v1-runtime-legend`
@@ -13,7 +13,7 @@ Aucune TASK-0051.
 
 ## 0 — préconditions
 
-1. Applique `AGENTS.md` et les instructions Codex du repo.
+1. Applique `AGENTS.md` et les instructions Claude Code du repo.
 2. Bascule explicitement sur
    `build/v0.2-a34-v1-runtime-legend`.
 3. `git fetch origin`.

@@ -1,5 +1,5 @@
 TASK_ID: TASK-0050 — corrective pass after ACTION-0086
-AGENT: CODEX
+AGENT: CLAUDE CODE
 RESULT: PENDING
 BRANCH: build/v0.2-a34-v1-runtime-legend
 

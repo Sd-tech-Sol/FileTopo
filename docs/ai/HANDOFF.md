@@ -8,7 +8,7 @@
   signatures; texte cross-linked inexact (« double contour »).
 - Corrective ciblée seulement; aucun Rust/backend/package/resume v2; P-19
   reste séparée; aucune TASK-0051.
-- Exécuteur prévu : Codex + GPT-5.6 Sol Medium.
+- Exécuteur prévu pour la corrective : Claude Code + Claude Sonnet 5, effort Medium.
 - Lire et exécuter intégralement `.orchestrator/NEXT_PROMPT.md`.
 
 
