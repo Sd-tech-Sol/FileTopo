@@ -184,3 +184,27 @@ Si la tranche passe :
 - P-10 = candidate CLOSED/VERIFIED après contrôle indépendant;
 - P-19 reste PARTIELLE;
 - aucune TASK-0051 avant contrôle indépendant.
+
+
+## K — Amendement de preuve ACTION-0087 — 2026-09-28
+
+`node-diagnostic` reste une famille obligatoire de la légende et du contrat
+sémantique. Il n'est toutefois pas atteignable dans le runtime réel actuel :
+`src-tauri/src/map/commands.rs:745-749` refuse toute publication d'Index dès
+que `scan.diagnostics` n'est pas vide.
+
+La preuve est donc scindée :
+
+1. **WebView2 réel :** toutes les clés runtime atteignables doivent être
+   exercées. Au 2026-09-28, cela représente 23 clés sur 24.
+2. **node-diagnostic :** preuve par rendu déterministe de MapView avec
+   `accessDiagnostic` non nul, même contrat/classe que la légende, plus
+   preuve de l'invariant backend qui interdit sa publication réelle.
+3. L'artefact WebView2 doit nommer explicitement l'exception :
+   `NOT_APPLICABLE_WHILE_SCAN_DIAGNOSTICS_ARE_REJECTED`.
+4. Si l'invariant backend change et qu'un Index avec diagnostic devient
+   publiable, cette exception disparaît et `node-diagnostic` doit alors être
+   exercé dans WebView2 réel.
+
+Cet amendement n'autorise aucun changement Rust dans TASK-0050 et ne rattache
+pas ce point à P-19.

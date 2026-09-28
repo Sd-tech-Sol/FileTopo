@@ -6236,3 +6236,15 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
 - Signalé à Sébastien; décision : STOP, documenter, ne committer que le
   correctif sûr. Aucun artefact WebView2 republié.
 - TASK-0050/F-014/P-10 = `BLOCKED`; P-19 reste séparée; aucune TASK-0051.
+
+
+## 2026-09-28 — ACTION-0087 — frontière de preuve node-diagnostic
+
+- Blocage Claude contrôlé indépendamment : aucun Index avec diagnostics de scan
+  n'est publié par le backend actuel.
+- Aucun changement Rust autorisé.
+- DEC-0048 amendée : 23 clés atteignables doivent passer WebView2 réel;
+  `node-diagnostic` reste dans le contrat 24/24 et est prouvé
+  déterministement + par invariant backend.
+- TASK-0050 repasse de BLOCKED à CORRECTIVE_REQUIRED.
+- Corrective finale préparée pour Claude Code; aucune TASK-0051.

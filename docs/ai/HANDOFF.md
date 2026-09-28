@@ -1,5 +1,19 @@
 # HANDOFF — passage de relais
 
+## Relais — ACTION-0087 / TASK-0050 corrective READY — 2026-09-28
+
+- HEAD contrôlé : `fa429db6f2324269bfddd21b78be6b1f5eed9785`.
+- Le correctif cross-linked de Claude est accepté.
+- `node-diagnostic` est réellement non atteignable dans un Index publié;
+  aucun Rust ne doit être ajouté pour le test.
+- DEC-0048 est amendée : WebView2 = 23 clés atteignables; diagnostic = test
+  déterministe + invariant backend, exception explicite dans l'artefact.
+- Il reste à rendre la séquence 23/24 reproductible, à assert les signatures
+  carte↔légende, puis à republier TASK-0050-webview2.json.
+- Exécuteur : Claude Code + Claude Sonnet 5, effort Medium.
+- Aucune TASK-0051.
+
+
 ## Relais — ACTION-0086 / TASK-0050 corrective READY — 2026-09-28
 
 - HEAD contrôlé avant préparation : `d60c0c1962323d6b0afdf15d4117ae4ef57757ff`.

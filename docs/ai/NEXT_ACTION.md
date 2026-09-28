@@ -1,23 +1,23 @@
 # Action suivante
 
-## Décision de Sébastien : `node-diagnostic` (TASK-0050 corrective, `BLOCKED`)
+## Reprendre TASK-0050 — preuve finale 23 clés atteignables + exception diagnostic
 
-`node-diagnostic` est actuellement irréalisable sur un index réellement publié
-(`src-tauri/src/map/commands.rs:745-749` refuse toute publication dès qu'un
-diagnostic de scan existe, y compris au premier scan; confirmé par la suite
-`SCAN_INCOMPLETE` de `source_availability_tests.rs`). Le prouver en WebView2
-réel demanderait un changement Rust, hors périmètre d'une passe corrective de
-légende (TASK-0050 §K).
+Branche : `build/v0.2-a34-v1-runtime-legend`.
 
-Choisir entre :
+ACTION-0087 a confirmé que `node-diagnostic` ne peut pas être produit par un
+Index publié sans changer l'invariant backend. **Aucun changement Rust n'est
+autorisé.**
 
-1. amender DEC-0048 §C pour retirer ou requalifier `node-diagnostic` en
-   manque documenté (comme P-19);
-2. autoriser explicitement le changement Rust minimal qui permettrait de
-   publier un index portant un diagnostic connu.
+DEC-0048 est amendée :
 
-Détail complet : `docs/tasks/TASK-0050-v1-runtime-legend-p10.md` section O;
-`docs/ai/VALIDATION.md` section CR.
+- WebView2 réel : 23/23 clés runtime atteignables;
+- légende/contrat : 24/24;
+- `node-diagnostic` : test déterministe + invariant backend, exception
+  explicite `NOT_APPLICABLE_WHILE_SCAN_DIAGNOSTICS_ARE_REJECTED`;
+- computed signatures carte ↔ légende réellement assertées pour les 23 clés.
 
-Tant que ce choix n'est pas fait, `TASK-0050` / `F-014` / `P-10` restent
-`BLOCKED`, jamais `VERIFIED`. Aucune TASK-0051.
+**Exécuteur : Claude Code + Claude Sonnet 5 — Medium effort.**
+
+Prompt autoritaire : `.orchestrator/NEXT_PROMPT.md`.
+
+Aucune TASK-0051. Contrôle indépendant obligatoire après exécution.

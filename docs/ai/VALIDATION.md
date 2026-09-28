@@ -8927,3 +8927,28 @@ alors que le harnais qui la produit n'a pas été rejoué jusqu'au bout.
 
 **TASK-0050 = `BLOCKED`.** Voir `docs/tasks/TASK-0050-v1-runtime-legend-p10.md`
 section O pour le détail complet et l'action suivante réservée à Sébastien.
+
+
+## CS. ACTION-0087 — contrôle indépendant du blocage node-diagnostic — 2026-09-28
+
+**Verdict : blocage confirmé; frontière de preuve amendée; aucun Rust.**
+
+Contrôle du HEAD `fa429db6f2324269bfddd21b78be6b1f5eed9785` :
+
+- diff limité au frontend/docs; aucun Rust/backend/package;
+- texte `node-cross-linked` désormais conforme au CSS réel
+  (contour plein épaissi);
+- test ciblé ajouté pour verrouiller FR/EN et la classe partagée;
+- `commands.rs:745-749` refuse la publication avant écriture de l'Index dès
+  qu'un diagnostic de scan existe;
+- les tests `SCAN_INCOMPLETE` protègent ce refus.
+
+Décision indépendante : ne pas changer le backend pour satisfaire une preuve.
+DEC-0048 est amendée afin d'exiger WebView2 réel pour les 23 clés atteignables
+et une preuve déterministe + invariant backend pour l'unique clé
+`node-diagnostic`.
+
+La revendication Claude « 23/24 observées interactively » reste une preuve
+d'exécuteur, pas un verdict indépendant : aucun nouvel artefact final n'a été
+publié. La prochaine passe doit rendre cette séquence reproductible et
+assertive avant tout VERIFIED.

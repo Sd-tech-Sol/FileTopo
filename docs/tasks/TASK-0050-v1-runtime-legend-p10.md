@@ -1,7 +1,7 @@
 # TASK-0050 — V1 Runtime Legend / P-10 Closure
 
 - **Date :** 2026-09-26
-- **Statut :** `BLOCKED`
+- **Statut :** `CORRECTIVE_REQUIRED`
 - **Branche :** `build/v0.2-a34-v1-runtime-legend`
 - **Décision :** `DEC-0048`
 - **Portée :** `F-014`, `P-10`
@@ -383,3 +383,20 @@ pour retirer ou requalifier `node-diagnostic` en `NON TESTED` documenté
 permettrait de publier un index portant un diagnostic connu. Tant que ce
 choix n'est pas fait, `TASK-0050` / `F-014` / `P-10` restent `BLOCKED`,
 jamais `VERIFIED`.
+
+
+## P — ACTION-0087 — blocage levé par amendement de preuve — 2026-09-28
+
+- aucun Rust/backend;
+- conserver les 24 clés de légende;
+- WebView2 réel obligatoire pour les 23 clés atteignables;
+- `node-diagnostic` reste obligatoire dans le test riche déterministe et
+  porte l'exception
+  `NOT_APPLICABLE_WHILE_SCAN_DIAGNOSTICS_ARE_REJECTED`;
+- le nouvel artefact doit montrer 23/23 clés atteignables observées, 24/24
+  clés de légende et l'unique exception diagnostique;
+- les signatures calculées carte ↔ légende doivent être réellement assertées
+  pour les 23 clés atteignables;
+- aucune TASK-0051.
+
+**TASK-0050 = CORRECTIVE_REQUIRED**, prête pour reprise Claude Code.

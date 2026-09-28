@@ -1,4 +1,4 @@
-# NEXT_PROMPT — TASK-0050 corrective pass — WebView2 exhaustive coverage
+# NEXT_PROMPT — TASK-0050 corrective finale — 23 clés runtime + diagnostic invariant
 
 **TARGET_AGENT:** CLAUDE CODE
 **RECOMMENDED_MODEL:** Claude Sonnet 5
@@ -8,156 +8,179 @@
 
 ## Objectif unique
 
-Corriger uniquement les écarts trouvés par **ACTION-0086** sur TASK-0050.
-Aucune TASK-0051.
+Terminer TASK-0050 selon ACTION-0087 et l'amendement DEC-0048 §K.
+
+Aucune TASK-0051. Aucun changement Rust/backend.
 
 ## 0 — préconditions
 
 1. Applique `AGENTS.md` et les instructions Claude Code du repo.
-2. Bascule explicitement sur
-   `build/v0.2-a34-v1-runtime-legend`.
-3. `git fetch origin`.
-4. Synchronise seulement en fast-forward avec
-   `origin/build/v0.2-a34-v1-runtime-legend`.
-5. Vérifie arbre propre.
-6. Lis ACTION-0086 dans `docs/ai/VALIDATION.md` et TASK-0050 §N.
-7. Lis DEC-0048, le code actuel de légende, le harnais TASK-0050 et
-   l'artefact WebView2 actuel.
+2. Bascule sur `build/v0.2-a34-v1-runtime-legend`.
+3. `git fetch origin`, fast-forward seulement.
+4. Vérifie arbre propre.
+5. Lis ACTION-0086, ACTION-0087, DEC-0048 §K, TASK-0050 §§O-P.
+6. Vérifie que le correctif cross-linked du commit
+   `fa429db6f2324269bfddd21b78be6b1f5eed9785` est présent.
 
 STOP/BLOCKED si une précondition est fausse.
 
-## 1 — ne pas refaire ce qui est déjà bon
+## 1 — frontière ferme
 
-Conserve :
+Ne modifie PAS :
 
-- contrat TS fermé de 24 clés;
-- test riche déterministe 24/24;
-- FR/EN et mécanique locale;
-- bouton natif / aria-expanded / aria-controls / panneau nommé;
-- session-only;
-- zéro commande backend par gestes de légende;
-- source / Index / journal / resume inchangés;
-- P-19 séparée.
+- Rust/backend/SQLite/Tauri commands;
+- resume v2;
+- P-19;
+- dépendances.
 
-Aucun Rust/backend/SQLite/Tauri command attendu.
-Aucune nouvelle dépendance.
+`node-diagnostic` reste dans la légende et le contrat 24/24, mais il est
+explicitement non atteignable dans WebView2 réel tant que
+`commands.rs:745-749` refuse les diagnostics de scan.
 
-## 2 — corriger le libellé cross-linked
+Ne cherche plus à contourner cet invariant.
 
-Le rendu réel `.map-node--cross-linked rect` est actuellement un contour
-**solide épaissi unique**, pas un double contour.
+## 2 — rendre reproductible la preuve réelle 23/23
 
-Corrige uniquement les textes FR/EN de la légende pour décrire le rendu réel.
-N'invente pas une nouvelle apparence pour faire correspondre le texte.
+Transforme la séquence de gestes produit découverte dans la passe précédente
+en harnais reproductible `scripts/task0050-webview2.mjs` / scripts associés.
 
-Ajoute/ajuste le test pour verrouiller cette exactitude.
+Aucune injection de faux DOM.
 
-## 3 — preuve WebView2 réelle 24/24
-
-Le défaut principal est la preuve, pas le contrat TypeScript.
-
-Le nouvel harnais doit faire apparaître, à travers une ou plusieurs étapes
-réelles du produit dans WebView2, l'union complète des 24 clés :
+Le harnais doit exercer réellement l'union des 23 clés atteignables :
 
 - root/directory/file/skipped;
 - selected/related/linked/cross-linked;
 - filter match/context;
-- diagnostic;
 - focused brain;
 - hierarchy normal/touching;
 - intra established/suggestion/approved/touching;
 - inter crossing/established/suggestion/approved/touching;
 - aggregate.
 
-Interdit :
+La jonction NTFS réelle utilisée pour `node-skipped` est acceptable si elle
+reste confinée au sandbox de test et est nettoyée proprement.
 
-- injecter des faux éléments DOM;
-- marquer une clé « couverte » parce qu'elle existe seulement dans la légende;
-- compter une relation présente dans un store si MapView ne la rend pas;
-- remplacer la preuve WebView2 par le test Vitest déterministe.
+## 3 — couverture sans double liste manuelle
 
-Les états peuvent être exercés successivement; l'artefact doit enregistrer
-l'union réellement observée sur `.map-view [data-legend-keys]`.
+Lis les 24 clés de légende depuis le rendu réel.
 
-Le harnais doit **assert** que l'union observée est exactement le contrat fermé
-attendu et les 24 clés de légende. Une clé manquante doit faire échouer la
-preuve.
+Déclare une seule exception explicite : `node-diagnostic`.
 
-## 4 — classes / primitives / computed signatures
+Dérive :
+`expectedReachable = legendKeys - {node-diagnostic}`.
 
-Pour chacune des 24 clés réellement observées :
+Assert strictement :
 
-- confirmer que l'échantillon de légende réutilise les classes/primitives
-  MapView pertinentes;
-- comparer réellement les signatures calculées pertinentes carte ↔ légende
-  (au minimum propriétés porteuses de sens : stroke width/dash/opacity,
-  fill opacity, font weight, etc. selon la famille);
-- inclure le parent porteur de classe et le descendant stylé lorsque la règle
-  CSS dépend du parent;
-- faire échouer le harnais sur divergence.
+- `legendKeys.length === 24`;
+- `observedRealMapKeys === expectedReachable`;
+- donc 23/23 atteignables observées;
+- aucune autre exception.
 
-Ne te contente pas de `sharedClasses.length > 0`.
-L'artefact ne doit plus laisser des familles obligatoires
-`exercisedOnMap=false`.
+Une clé atteignable manquante doit faire échouer WebView2.
 
-## 5 — accessibilité et passivité
+## 4 — preuve séparée node-diagnostic
 
-Rejoue en WebView2 :
+Ne simule pas un backend impossible.
 
-- légende fermée puis ouverte au clavier;
-- FR puis EN;
+Conserve/renforce le test déterministe de MapView qui rend
+`accessDiagnostic != null` et vérifie :
+
+- émission de `node-diagnostic`;
+- entrée correspondante dans la légende;
+- primitive/classe réelle partagée;
+- texte FR/EN.
+
+Dans l'artefact, ajoute :
+
+- key: `node-diagnostic`;
+- realWebViewStatus:
+  `NOT_APPLICABLE_WHILE_SCAN_DIAGNOSTICS_ARE_REJECTED`;
+- backendInvariant:
+  `src-tauri/src/map/commands.rs:745-749`;
+- deterministicCoverage: PASS.
+
+Si l'invariant backend n'est plus vrai, STOP : l'exception n'est plus valide.
+
+## 5 — computed signatures réellement assertées
+
+Pour chacune des 23 clés réellement observées :
+
+- retrouver l'élément carte porteur de la clé;
+- retrouver l'échantillon de légende;
+- prouver le partage des classes/primitives pertinentes;
+- comparer et **asserter** les propriétés CSS porteuses de sens
+  (stroke width, dasharray, opacity, fill opacity, font weight, etc. selon la
+  famille), y compris les descendants stylés par une règle du parent.
+
+Ne te contente pas de `sharedClasses.length > 0` ou d'enregistrer les valeurs.
+Une divergence doit faire échouer le harnais.
+
+Compare les signatures visuelles, pas les coordonnées de layout.
+
+## 6 — interaction/accessibilité/passivité
+
+Rejoue en WebView2 réel :
+
+- légende fermée puis ouverte;
 - Enter / Space;
-- traversal Tab sans piège;
+- FR puis EN;
+- Tab sans piège;
 - axe fermé/ouvert sans nouvelle violation;
 - zéro commande backend causée par les gestes de légende;
-- source / Index / journal / resume inchangés.
+- source / Index / journal / resume inchangés;
+- fermeture/réouverture même session.
 
-Restart de la légende reste **NON TESTED / P-19**.
+Restart reste NON TESTED / P-19.
 
-## 6 — artefact
+## 7 — artefact
 
 Remplace `docs/performance/runs/TASK-0050-webview2.json`.
 
-Il doit permettre au contrôleur indépendant de voir sans ambiguïté :
+Il doit montrer :
 
-- 24/24 clés réellement observées sur la carte;
-- 24/24 clés de légende;
-- égalité de couverture;
-- preuves de partage/signatures pour les 24;
-- clavier/axe/passivité;
+- legend keys = 24/24;
+- reachable expected = 23;
+- reachable observed = 23/23;
+- exempt = seulement `node-diagnostic`;
+- statut exact de l'exception et invariant backend;
+- computed-signature assertions PASS pour les 23;
+- clavier / axe / passivité;
 - P-19 NON TESTED.
 
-## 7 — validation
+## 8 — falsifications
 
-Exécute :
+Au minimum :
 
-- tests ciblés TASK-0050;
+1. retirer une clé atteignable du scénario -> WebView2 échoue;
+2. ajouter une deuxième exception -> échoue;
+3. faire diverger une propriété visuelle porteuse de sens -> échoue;
+4. supprimer la couverture déterministe node-diagnostic -> ciblé échoue;
+5. remettre « double contour / double outline » -> ciblé échoue.
+
+Restaure tout sabotage.
+
+## 9 — validation
+
+- ciblés TASK-0050;
 - `pnpm test`;
 - `pnpm check`;
 - `pnpm build`;
 - Tauri debug;
 - WebView2 réel;
-- axe local;
+- axe;
 - `git diff --check`;
-- audit public selon la convention du repo.
+- audit public selon convention repo.
 
-Falsifie au moins :
-
-1. une clé carte obligatoire non exercée -> WebView2 échoue;
-2. une signature de sample divergente -> WebView2 échoue;
-3. remettre « double contour » dans le texte -> test ciblé échoue.
-
-Restaure tout sabotage.
-
-## 8 — gouvernance
+## 10 — gouvernance
 
 À la fin :
 
-- TASK-0050 = IMPLEMENTED / candidate contrôle indépendant, jamais auto-VERIFIED;
-- F-014 / P-10 restent candidate jusqu'au contrôle ChatGPT;
+- TASK-0050 = IMPLEMENTED / candidate contrôle indépendant;
+- F-014 / P-10 = IMPLEMENTED / candidate;
+- jamais auto-VERIFIED;
 - P-19 reste PARTIELLE;
 - aucune TASK-0051;
-- NEXT_ACTION = contrôle indépendant TASK-0050 corrective;
-- `.orchestrator/RESULT.md` complet;
+- NEXT_ACTION = contrôle indépendant TASK-0050;
+- RESULT complet;
 - commit + push;
 - arbre propre.

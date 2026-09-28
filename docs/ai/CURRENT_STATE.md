@@ -1,5 +1,17 @@
 # État courant
 
+## ACTION-0087 — TASK-0050 corrective débloquée — 2026-09-28
+
+- Blocage `node-diagnostic` contrôlé indépendamment.
+- Aucun changement Rust : le backend refuse volontairement tout Index portant
+  des diagnostics de scan.
+- DEC-0048 amendée : 23 clés atteignables à prouver en WebView2 réel;
+  `node-diagnostic` reste dans le contrat 24/24 mais est prouvé
+  déterministement + par invariant backend.
+- TASK-0050 = `CORRECTIVE_REQUIRED`, plus `BLOCKED`.
+- Prochaine exécution : Claude Code, même branche, aucun TASK-0051.
+
+
 ## Corrective TASK-0050 — BLOQUÉE sur `node-diagnostic` — 2026-09-28
 
 - Exécution de `.orchestrator/NEXT_PROMPT.md`. Texte FR/EN `node-cross-linked`
