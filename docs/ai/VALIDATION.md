@@ -9093,3 +9093,27 @@ audit public PASS (673 fichiers, `-AllowRemotes`, aucun motif sensible).
 **TASK-0050 = `BLOCKED`.** F-014/P-10 non `VERIFIED`. Aucune TASK-0051.
 Contrôle indépendant obligatoire sur cellule A (21/23, quatre corrections de
 harnais) avant toute nouvelle tentative sur cellule B.
+
+
+## CV. ACTION-0089 — contrôle indépendant TASK-0050 §R — 2026-09-28
+
+**Verdict : corrective ciblée sur J12.**
+
+Le blocage cellule B est confirmé, mais le produit possède déjà la solution de
+navigation nécessaire : `MapApp.selectNode` appelle `changeProjection`
+lorsqu'un nodeId n'est pas dans la projection courante.
+
+J12 contourne cette logique de deux façons :
+
+- il résout son pivot dans `snapshot.nodes`, désormais borné;
+- MapApp lui injecte le setter React `setSelected` au lieu de `selectNode`.
+
+La corrective doit donc adapter uniquement le scénario de test :
+
+- `map_resolve_node` pour `PIVOT_PATH`;
+- callback `selectNode` produit pour matérialiser un nœud hors fenêtre;
+- attente DOM explicite avant assertions.
+
+La cellule A n'est pas déclarée VERIFIED séparément : ses résultats de run
+restent des preuves d'exécuteur jusqu'à publication du nouvel artefact final
+combiné.

@@ -1,29 +1,27 @@
 # Action suivante
 
-## Diagnostic indépendant : J12 lui-même ne retrouve plus son pivot sous fenêtre bornée
+## Reprendre TASK-0050 — réparer J12 pour la projection bornée actuelle
 
 Branche : `build/v0.2-a34-v1-runtime-legend`.
 
-La stratégie ACTION-0088 (cellule A = harnais TASK-0050, cellule B = replay
-`J12`) a été exécutée. Cellule A ferme réellement 21/23 clés atteignables,
-reproduit deux fois à l'identique (quatre défauts de harnais corrigés,
-jamais exercés en réel avant cette passe). Cellule B (`J12`) échoue
-systématiquement, après correction d'un défaut d'amorçage
-(`map_not_built: brain-alpha`, corrigé), sur `noeud introuvable:
-dossier-a/note-1.txt` : `MapNode::snapshot()` renvoie une vue **bornée**
-(`materialize_view`, `DEC-0034`), pas un dump plat, et `J12` cherche son
-nœud pivot directement dedans sans jamais révéler de pastille d'agrégat —
-une hypothèse vraie avant `DEC-0034`, plus maintenant. Détail complet :
-`docs/tasks/TASK-0050-v1-runtime-legend-p10.md` section R.
+ACTION-0089 a identifié le dernier blocage :
 
-Choisir entre :
+- J12 cherche encore son pivot dans `map_snapshot`, désormais borné;
+- J12 reçoit le setter `setSelected` brut;
+- le produit possède déjà `selectNode`, qui appelle `changeProjection` si
+  le nœud est hors fenêtre;
+- `map_resolve_node` résout déjà un chemin hors projection.
 
-- (a) diagnostiquer/corriger le pivot de `J12` sous fenêtre bornée (scénario
-  de test, pas nécessairement le produit);
-- (b) revenir à l'option Q.3(b) : une brique synthétique dédiée où les deux
-  relations manquantes sont les seules arêtes du nœud choisi.
+Corrective :
 
-Aucune TASK-0051. Contrôle indépendant obligatoire sur cellule A (21/23,
-quatre corrections de harnais) avant toute nouvelle tentative sur cellule B.
+1. résoudre `PIVOT_PATH` avec `map_resolve_node`;
+2. faire utiliser à J12 `selectNode` au lieu du setter brut;
+3. attendre la matérialisation/sélection réelle;
+4. rejouer cellule A + J12 + combineur;
+5. publier TASK-0050-webview2.json seulement si union = 23/23.
 
-**TASK-0050 reste `BLOCKED`.**
+**Exécuteur : Claude Code + Claude Sonnet 5 — Medium effort.**
+
+Prompt autoritaire : `.orchestrator/NEXT_PROMPT.md`.
+
+Aucun Rust/backend, aucune nouvelle fixture, aucune TASK-0051.

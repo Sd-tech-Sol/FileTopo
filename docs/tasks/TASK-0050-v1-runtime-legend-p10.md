@@ -1,7 +1,7 @@
 # TASK-0050 — V1 Runtime Legend / P-10 Closure
 
 - **Date :** 2026-09-26
-- **Statut :** `BLOCKED`
+- **Statut :** `CORRECTIVE_REQUIRED`
 - **Branche :** `build/v0.2-a34-v1-runtime-legend`
 - **Décision :** `DEC-0048`
 - **Portée :** `F-014`, `P-10`
@@ -628,3 +628,24 @@ quel » de cette passe, ou (b) revenir à l'option Q.3(b) : une brique
 synthétique dédiée où les deux relations manquantes sont les seules arêtes du
 nœud choisi. Tant que ce choix n'est pas fait, `TASK-0050` / `F-014` / `P-10`
 restent `BLOCKED`. Aucune TASK-0051.
+
+
+## S — ACTION-0089 — corrective J12 bornée — 2026-09-28
+
+Le contrôle indépendant confirme que J12 ne doit plus chercher son pivot dans
+`map_snapshot` ni appeler le setter de sélection brut.
+
+La passe suivante doit :
+
+- résoudre le pivot par `map_resolve_node`;
+- faire passer J12 par `MapApp.selectNode`, qui déclenche déjà
+  `changeProjection` si le node est hors de `hierarchy.byId`;
+- attendre la matérialisation réelle du pivot dans le DOM avant les assertions;
+- conserver la cellule A telle qu'elle est;
+- rejouer le vrai J12 courant;
+- combiner les deux cellules et imposer l'union 23/23;
+- ne publier l'artefact final qu'après PASS.
+
+Aucun Rust/backend. Aucune nouvelle fixture. Aucune TASK-0051.
+
+**TASK-0050 = CORRECTIVE_REQUIRED.**

@@ -1,4 +1,4 @@
-# NEXT_PROMPT — TASK-0050 corrective finale — preuve multi-cellules avec J12
+# NEXT_PROMPT — TASK-0050 corrective J12 — navigation bornée actuelle
 
 **TARGET_AGENT:** CLAUDE CODE
 **RECOMMENDED_MODEL:** Claude Sonnet 5
@@ -8,11 +8,10 @@
 
 ## Objectif unique
 
-Fermer la preuve TASK-0050 sans modifier le produit : compléter les 21 clés
-déjà reproductibles avec les deux familles intra prouvées par le scénario J12
-existant, rejoué sur le HEAD courant.
+Faire fonctionner la cellule B J12 sur le runtime borné actuel en réutilisant
+la navigation produit existante, puis fermer la preuve multi-cellules 23/23.
 
-Aucune TASK-0051. Aucun Rust/backend.
+Aucune TASK-0051. Aucun Rust/backend. Aucune nouvelle fixture.
 
 ## 0 — préconditions
 
@@ -20,110 +19,143 @@ Aucune TASK-0051. Aucun Rust/backend.
 2. Checkout `build/v0.2-a34-v1-runtime-legend`.
 3. Fetch + fast-forward seulement.
 4. Arbre propre.
-5. Lis ACTION-0087, ACTION-0088, DEC-0048 §K et TASK-0050 §Q.
-6. Lis `src/map/relationScenario.ts` et l'artefact historique
-   `docs/performance/runs/TASK-0024-J12-intrabrain-relations-regression-webview2.json`.
+5. Lis ACTION-0087, ACTION-0088, ACTION-0089, DEC-0048 §K et TASK-0050 §§Q-S.
+6. Lis :
+   - `src/map/relationScenario.ts`;
+   - `src/map/MapApp.tsx` autour de `changeProjection`, `selectNode`,
+     `runRelationScenario`;
+   - `src-tauri/src/map/brain_index.rs::snapshot`;
+   - `src-tauri/src/map/projection.rs::materialize_view`.
 
-L'artefact historique sert seulement de référence. La preuve finale doit rejouer
-J12 sur le HEAD actuel.
+## 1 — ne pas toucher la cellule A
 
-## 1 — conserver la cellule A
+Conserve `scripts/task0050-webview2.mjs` tel qu'il est sauf bug nouveau
+démontré par un run.
 
-Conserve le harnais TASK-0050 actuel et ses acquis : 21 clés réelles, jonction
-NTFS, agrégat clavier, révélation récursive, signatures calculées, axe/clavier/
-passivité et preuve node-diagnostic séparée.
+Il doit continuer de fournir exactement 21 clés réelles, avec gap exact :
 
-Ne réécris pas ce qui fonctionne.
+`[intra-approved, intra-suggestion]`.
 
-## 2 — cellule B : réutiliser J12 actuel
+## 2 — réparer la résolution du pivot J12
 
-Réutilise `src/map/relationScenario.ts` et le chemin `host.autoRelations`
-déjà branché dans MapApp.
+Dans `relationScenario.ts` :
 
-Exécute J12 sur le build/HEAD courant dans un vrai WebView2.
+- garde `map_snapshot` si nécessaire pour les métadonnées de preuve;
+- ne cherche plus `PIVOT_PATH` dans `snapshot.nodes`;
+- utilise la commande produit existante :
 
-Pendant l'étape où J12 rend les relations intra, capture explicitement les
-`data-legend-keys` réels et prouve au minimum :
+`map_resolve_node({ brainId: BRAIN, relativePath: PIVOT_PATH })`.
 
-- `intra-suggestion`;
-- `intra-approved`;
-- classes/primitives réelles;
-- suggestion pointillée + anneaux, sans flèche;
-- relation APPROVED avec provenance correspondante.
+Exige une `BrainNodeRef` non nulle et cohérente avec `BRAIN`.
 
-Tu peux ajouter une petite collecte d'évidence au scénario J12 ou à un wrapper
-TASK-0050, mais ne change pas le comportement produit de MapApp.
+Aucune lecture directe SQLite, aucun nouvel endpoint backend.
 
-Ne remplace aucun artefact canonique historique. Toute nouvelle preuve appartient
-à TASK-0050.
+## 3 — utiliser la navigation produit, pas le setter React brut
 
-## 3 — union stricte
+Aujourd'hui MapApp passe :
 
-Dans l'artefact TASK-0050 final, distingue :
+`setSelected: (reference) => setSelected(reference)`.
 
-- `cellA.observedKeys`;
-- `cellB.observedKeys`.
+C'est obsolète sous DEC-0034, car cela saute la logique :
 
-Dérive :
+`selectNode -> changeProjection -> map_view(focusId)`.
 
-- `legendKeys` depuis la légende réelle;
-- `expectedReachable = legendKeys - {node-diagnostic}`;
-- `observedUnion = unique(cellA ∪ cellB)`.
+Corrige le câblage du scénario pour injecter la navigation produit existante
+`selectNode`.
 
-Assert :
+Préférence : renommer explicitement la dépendance du scénario en
+`selectNode` pour éviter qu'un futur mainteneur remette un setter brut par
+erreur.
 
-- legend = 24;
-- expectedReachable = 23;
-- observedUnion === expectedReachable;
-- cellB contient obligatoirement intra-suggestion et intra-approved;
-- aucune deuxième exception.
+Dans `runRelationScenario`, après chaque sélection pouvant viser un nœud hors
+projection :
 
-Ne retire aucune clé du contrat pour obtenir PASS.
+- appelle `selectNode(reference)`;
+- attends avec `waitUntil` que le nœud existe dans
+  `.map-view [data-brain-id=...][data-node-id=...]`;
+- attends aussi son état sélectionné / aria-activedescendant cohérent avant
+  de lire le panneau ou les relations.
 
-## 4 — signatures visuelles
+Ne copie PAS la logique d'agrégat de cellule A.
 
-Pour les deux clés fournies par J12 :
+## 4 — conserver les gestes J12
 
-- classes/primitives communes carte ↔ légende;
-- computed styles porteurs de sens réellement comparés;
-- divergence = échec.
+Conserve :
 
-La cellule A conserve ses assertions actuelles.
+- vraie touche Windows pour traverser une relation;
+- vraie touche Windows pour approuver la suggestion;
+- aucun click synthétique de remplacement;
+- preuves isTrusted / noProgrammaticActivationUsed.
 
-## 5 — node-diagnostic
+La corrective adapte seulement l'accès à une projection bornée.
 
-Inchangé : pas de Rust; statut
-`NOT_APPLICABLE_WHILE_SCAN_DIAGNOSTICS_ARE_REJECTED`; test déterministe PASS;
-invariant commands.rs:745-749 toujours vérifié. Si l'invariant change, STOP.
+## 5 — preuves TASK-0050 cellule B
 
-## 6 — artefact
+Le replay courant doit effectivement produire :
 
-Publie/remplace seulement :
+- `intra-suggestion` dans les `data-legend-keys` live;
+- `intra-approved` après approbation réelle;
+- signatures live correspondantes;
+- aucune dépendance à l'ancien artefact canonique.
 
-`docs/performance/runs/TASK-0050-webview2.json`
+Le lanceur J12 supprime déjà son replay non protégé avant chaque run : conserve
+cette garde afin qu'un fichier stale ne puisse jamais être accepté.
 
-Il doit indiquer : deux cellules réelles, HEAD testé, clés de chaque cellule,
-union = 23/23, légende = 24/24, exception unique node-diagnostic, signatures
-PASS, axe/clavier/passivité et P-19 restart NON TESTED.
+## 6 — union finale
 
-## 7 — falsifications
+Rejoue :
+
+1. cellule A;
+2. J12 cellule B;
+3. `scripts/task0050-combine-webview2.mjs`.
+
+Le combineur doit continuer d'asserter :
+
+- légende 24/24;
+- expectedReachable 23;
+- cellule B contient intra-approved + intra-suggestion;
+- union A ∪ B === expectedReachable;
+- seule exception = node-diagnostic;
+- signatures CSS égales.
+
+## 7 — artefact
+
+Si et seulement si tout passe, publie :
+
+`docs/performance/runs/TASK-0050-webview2.json`.
+
+L'artefact doit refléter le HEAD courant testé et les deux cellules réelles.
+
+Ne modifie aucun artefact canonique VERIFIED historique.
+
+## 8 — falsifications
 
 Au minimum :
 
-1. enlever intra-suggestion de cellule B -> union échoue;
-2. enlever intra-approved -> union échoue;
-3. substituer l'ancien artefact historique au replay courant -> preuve refusée;
-4. divergence CSS sur une des deux clés -> échec;
-5. seconde exception -> échec.
+1. repasser J12 au setter `setSelected` brut -> cellule B doit échouer sur
+   le pivot hors projection;
+2. résoudre le pivot seulement dans `snapshot.nodes` -> échec;
+3. retirer intra-suggestion du replay -> combineur échoue;
+4. retirer intra-approved -> combineur échoue;
+5. fournir un vieux replay J12 stale -> le lanceur doit le supprimer/refuser.
 
 Restaure tout sabotage.
 
-## 8 — validations
+## 9 — validations
 
-Ciblés TASK-0050/J12, pnpm test, pnpm check, pnpm build, Tauri debug, WebView2
-cellule A, WebView2/J12 cellule B, axe, git diff --check, audit public.
+- ciblés relationScenario/TASK-0050;
+- `pnpm test`;
+- `pnpm check`;
+- `pnpm build`;
+- Tauri debug;
+- cellule A WebView2;
+- cellule B J12 réel;
+- combineur;
+- axe;
+- `git diff --check`;
+- audit public.
 
-## 9 — gouvernance
+## 10 — gouvernance
 
 Si tout passe :
 
@@ -137,5 +169,6 @@ Si tout passe :
 - commit + push;
 - arbre propre.
 
-Si J12 actuel ne matérialise plus les deux clés, STOP/BLOCKED avec preuve :
-ce serait une régression actuelle à diagnostiquer.
+Si J12 échoue encore après avoir réellement utilisé `selectNode`, STOP avec
+la preuve exacte; ne change pas Rust et ne crée pas une nouvelle fixture sans
+nouvelle décision d'orchestration.

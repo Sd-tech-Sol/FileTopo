@@ -6314,3 +6314,14 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
   check/audit public (673 fichiers) PASS.
 - TASK-0050/F-014/P-10 restent `BLOCKED`. Aucune TASK-0051. Contrôle
   indépendant requis sur cellule A avant toute nouvelle tentative.
+
+
+## 2026-09-28 — ACTION-0089 — J12 doit utiliser la navigation bornée produit
+
+- Contrôle indépendant de §R : cellule A cohérente, cellule B réellement
+  bloquée.
+- Cause précise : J12 résout le pivot dans un snapshot borné et reçoit le
+  setter React brut, alors que MapApp.selectNode sait déjà charger une
+  projection centrée sur un nœud hors fenêtre.
+- Corrective choisie : map_resolve_node + selectNode + attente DOM réelle.
+- Aucun Rust/backend, aucune nouvelle fixture, aucune TASK-0051.

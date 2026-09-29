@@ -1,5 +1,17 @@
 # État courant
 
+## ACTION-0089 — TASK-0050 corrective J12 READY — 2026-09-28
+
+- Contrôle du HEAD `070421eeea7562736a931766c9192c06de0562ec`.
+- Cellule A : code de harnais cohérent, 21 clés attendues; pas encore VERIFIED
+  séparément faute d'artefact final publié.
+- Cause cellule B : J12 cherche le pivot dans un snapshot borné et reçoit le
+  setter `setSelected` brut.
+- Corrective : `map_resolve_node` + navigation produit `selectNode` +
+  attente de matérialisation DOM.
+- Aucun Rust/backend, aucune nouvelle fixture, aucune TASK-0051.
+
+
 ## TASK-0050 §R — cellule A fermée 21/23 (réellement vérifiée), cellule B (J12) bloquée par une régression distincte — `BLOCKED` — 2026-09-28
 
 - Stratégie ACTION-0088 exécutée : cellule A = harnais TASK-0050 actuel,

@@ -1,5 +1,18 @@
 # HANDOFF — passage de relais
 
+## Relais — ACTION-0089 / TASK-0050 corrective READY — 2026-09-28
+
+- HEAD contrôlé : `070421eeea7562736a931766c9192c06de0562ec`.
+- Ne pas modifier la cellule A sauf nécessité démontrée.
+- J12 doit arrêter de résoudre le pivot dans `snapshot.nodes`.
+- Utiliser `map_resolve_node` puis la navigation produit existante
+  `MapApp.selectNode` (pas `setSelected` brut).
+- Attendre que le pivot soit réellement présent/sélectionné dans MapView avant
+  de poursuivre J12.
+- Rejouer les deux cellules et le combineur; artefact final seulement sur PASS.
+- Claude Code + Claude Sonnet 5 Medium. Aucune TASK-0051.
+
+
 ## Relais — TASK-0050 §R / cellule A fermée, cellule B bloquée par régression distincte — 2026-09-28
 
 - HEAD contrôlé avant exécution : `0f24fbfa2877991910129d2c9d59fd2a4f8cf991`.
