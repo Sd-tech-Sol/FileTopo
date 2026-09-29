@@ -1,5 +1,37 @@
 # État courant
 
+## TASK-0050 §T — régression J12 corrigée, nouveau blocage produit distinct confirmé — `BLOCKED` — 2026-09-28
+
+- Exécution de `.orchestrator/NEXT_PROMPT.md` (corrective ACTION-0089), branche
+  synchronisée en fast-forward (`070421e` → `30b44b8`).
+- `relationScenario.ts` : pivot résolu par `map_resolve_node`; dépendance
+  renommée `selectNode`; attente explicite de matérialisation DOM
+  (`.map-view [data-brain-id][data-node-id]` + `aria-activedescendant`) après
+  chaque sélection pouvant viser un nœud hors projection. `MapApp.tsx` :
+  `runRelationScenario` câble `selectNode` (navigation produit réelle) au
+  lieu du setter React brut `setSelected`.
+- **Régression R.2 corrigée** : J12 s'exécute pour la première fois jusqu'au
+  bout (pivot matérialisé, panneau, traversée par vraie touche Windows,
+  approbation réelle de S-005, tous PASS) — auparavant échec systématique et
+  immédiat sur `noeud introuvable: dossier-a/note-1.txt`.
+- **Nouveau blocage produit distinct confirmé** : `suggestionRendering`
+  compte zéro arête de tout type sur la carte réelle. Cause lue dans le code
+  (aucun changement) : `relationSegments()` (`src/map/relations.ts:114`)
+  exige les deux extrémités dans `hierarchy.byId` (fenêtre bornée courante);
+  `brain.relations` (overview complet) n'est chargé qu'une fois à l'ouverture
+  et n'est jamais recalculé par `changeProjection`, qui ne fait que recentrer
+  la fenêtre — une sélection séquentielle des extrémités ne les fait donc
+  jamais coexister. Confirme et précise Q.2.
+- Conforme à la clause d'arrêt §10 : STOP avec preuve exacte. Aucun Rust,
+  aucune nouvelle fixture, aucune instrumentation d'agrégat ajoutée à J12.
+- Cellule A inchangée, PASS (21/23). Aucun artefact `TASK-0050-webview2.json`
+  publié.
+- Validations PASS : 632/632 tests frontend, `pnpm check`, `pnpm build`,
+  Tauri debug, `git diff --check`, audit public (674 fichiers,
+  `-AllowRemotes`).
+- TASK-0050 reste `BLOCKED`. F-014/P-10 non `VERIFIED`. Aucune TASK-0051.
+- Détail complet : `docs/tasks/TASK-0050-v1-runtime-legend-p10.md` section T.
+
 ## ACTION-0089 — TASK-0050 corrective J12 READY — 2026-09-28
 
 - Contrôle du HEAD `070421eeea7562736a931766c9192c06de0562ec`.

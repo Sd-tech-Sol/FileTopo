@@ -1,27 +1,30 @@
 # Action suivante
 
-## Reprendre TASK-0050 — réparer J12 pour la projection bornée actuelle
+## Décider de la suite de TASK-0050 — deux options, aucune déléguée par défaut
 
 Branche : `build/v0.2-a34-v1-runtime-legend`.
 
-ACTION-0089 a identifié le dernier blocage :
+TASK-0050 §T a corrigé la régression J12 (pivot/`selectNode`) et confirmé un
+blocage produit **distinct** : `relationSegments()` n'affiche une arête que si
+ses deux extrémités sont dans la fenêtre bornée courante
+(`hierarchy.byId`), et `brain.relations` n'est jamais recalculé par
+`changeProjection`. Aucune arête ne se rend donc jamais pendant le replay
+J12, qui sélectionne ses extrémités l'une après l'autre.
 
-- J12 cherche encore son pivot dans `map_snapshot`, désormais borné;
-- J12 reçoit le setter `setSelected` brut;
-- le produit possède déjà `selectNode`, qui appelle `changeProjection` si
-  le nœud est hors fenêtre;
-- `map_resolve_node` résout déjà un chemin hors projection.
+Deux options, à trancher avant toute nouvelle exécution :
 
-Corrective :
+1. Faire recalculer `brain.relations` par `changeProjection` (ou équivalent)
+   — changement de comportement produit, pas nécessairement Rust, mais hors
+   périmètre d'une corrective de scénario de test.
+2. Revenir à Q.3(b)/R.3(b) : une brique synthétique dédiée où les relations à
+   prouver sont les seules arêtes du nœud choisi, pour que la fenêtre bornée
+   les contienne nécessairement ensemble.
 
-1. résoudre `PIVOT_PATH` avec `map_resolve_node`;
-2. faire utiliser à J12 `selectNode` au lieu du setter brut;
-3. attendre la matérialisation/sélection réelle;
-4. rejouer cellule A + J12 + combineur;
-5. publier TASK-0050-webview2.json seulement si union = 23/23.
+Aucune option n'est pré-autorisée : GO technique ou GO de Sébastien requis
+selon le point d'arrêt concerné avant exécution.
 
-**Exécuteur : Claude Code + Claude Sonnet 5 — Medium effort.**
+Prompt de référence : `docs/tasks/TASK-0050-v1-runtime-legend-p10.md`
+section T.
 
-Prompt autoritaire : `.orchestrator/NEXT_PROMPT.md`.
-
-Aucun Rust/backend, aucune nouvelle fixture, aucune TASK-0051.
+Aucun Rust/backend, aucune nouvelle fixture, aucune TASK-0051 sans cette
+décision.

@@ -52,7 +52,18 @@ export interface ScenarioDeps {
    * happened to leave on screen.
    */
   showOnly: (brainId: string) => void;
-  setSelected: (reference: BrainNodeRef) => void;
+  /**
+   * `TASK-0050` §S / `ACTION-0089` correction: the product's own navigation
+   * (`MapApp.selectNode`), never a raw React setter. `selectNode` already
+   * detects a node outside the current bounded projection
+   * (`!hierarchy.byId.has(reference.nodeId)`) and calls `changeProjection`,
+   * which fetches a fresh `map_view` centred on it. A raw setter bypasses
+   * that entirely and leaves the scenario pointing at a selection the
+   * bounded view (`DEC-0034`) never materialised — the exact regression
+   * `ACTION-0089` diagnosed. Named `selectNode`, not `setSelected`, so a
+   * future maintainer cannot quietly put a raw setter back here.
+   */
+  selectNode: (reference: BrainNodeRef) => void;
   setStatus: (message: StatusMessage) => void;
   log: (level: "info" | "error", message: string) => void;
 }
@@ -78,6 +89,33 @@ function textOf(selector: string): string {
 
 function countOf(selector: string): number {
   return document.querySelectorAll(selector).length;
+}
+
+/**
+ * `TASK-0050` §S / `ACTION-0089`: a selection that may target a node outside
+ * the current bounded projection is not proved by calling `selectNode` alone
+ * — `changeProjection` is async and re-renders once its own `map_view`
+ * round trip resolves. Wait for the node's own card to exist in the bounded
+ * DOM **and** for the canvas's `aria-activedescendant` (`MapView.tsx`,
+ * `TASK-0047`) to name it before reading the panel or the map for that
+ * selection; both together, not the card alone, because the card can be
+ * drawn slightly ahead of the selection state settling.
+ */
+async function waitForSelectionMaterialized(
+  brainId: string,
+  nodeId: number,
+): Promise<{ settled: boolean; waitedMs: number; frames: number }> {
+  const expectedActiveDescendant = domNodeId(brainId, nodeId);
+  return waitUntil(() => {
+    const card = document.querySelector(
+      `.map-view [data-brain-id="${brainId}"][data-node-id="${nodeId}"]`,
+    );
+    const canvas = document.querySelector<SVGSVGElement>(".map-view__canvas");
+    return (
+      card !== null &&
+      canvas?.getAttribute("aria-activedescendant") === expectedActiveDescendant
+    );
+  });
 }
 
 function styleOf(
@@ -145,7 +183,7 @@ function classSignature(selector: string): {
 }
 
 export async function runRelationScenario(deps: ScenarioDeps): Promise<void> {
-  const { invoke, host, showOnly, setSelected, setStatus, log } = deps;
+  const { invoke, host, showOnly, selectNode, setStatus, log } = deps;
   const evidence: Record<string, unknown> = { brainId: BRAIN };
 
   try {
@@ -205,14 +243,20 @@ export async function runRelationScenario(deps: ScenarioDeps): Promise<void> {
     }
     await settle();
 
+    // `map_snapshot` is kept only for proof metadata (`fixtureId`) — never
+    // for resolving the pivot. Since `DEC-0034`, `BrainIndex::snapshot()`
+    // calls `materialize_view(self, None, None)`, a **bounded** view (root
+    // and direct children only for a fresh index), not a flat corpus dump.
+    // `TASK-0050` §R/§S / `ACTION-0089`: looking up `PIVOT_PATH` in
+    // `snapshot.nodes` regressed once that bound existed. The product's own
+    // `map_resolve_node` command resolves a relative path to a `BrainNodeRef`
+    // regardless of what is currently materialised on screen.
     const snapshot = await invoke<MapSnapshot>("map_snapshot", { brainId: BRAIN });
     const overview = await invoke<RelationsOverview>("map_relations_open", {
       brainId: BRAIN,
     });
     evidence.fixtureId = snapshot.fixtureId;
     evidence.relationsPath = overview.relationsPath;
-    const nodeIdOf = (relativePath: string) =>
-      snapshot.nodes.find((node) => node.relativePath === relativePath)?.id ?? null;
 
     evidence.overview = {
       established: overview.established.length,
@@ -225,11 +269,36 @@ export async function runRelationScenario(deps: ScenarioDeps): Promise<void> {
       rules: overview.rules,
     };
 
-    // 1. A node with relations in both directions.
-    const pivotId = nodeIdOf(PIVOT_PATH);
-    if (pivotId === null) throw new Error(`noeud introuvable: ${PIVOT_PATH}`);
-    setSelected({ brainId: BRAIN, nodeId: pivotId });
+    // 1. A node with relations in both directions, resolved through the
+    //    product's own command — never through the bounded `map_snapshot`
+    //    (`TASK-0050` §S / `ACTION-0089`).
+    const pivotRef = await invoke<BrainNodeRef | null>("map_resolve_node", {
+      brainId: BRAIN,
+      relativePath: PIVOT_PATH,
+    });
+    if (!pivotRef || pivotRef.brainId !== BRAIN) {
+      throw new Error(
+        `noeud introuvable ou incoherent: ${PIVOT_PATH} (reference=${JSON.stringify(pivotRef)})`,
+      );
+    }
+    const pivotId = pivotRef.nodeId;
+    // The pivot can be outside the current bounded projection: navigate
+    // through the product's own `selectNode`, which calls `changeProjection`
+    // when needed, then wait for the node to actually materialise and become
+    // the active descendant before reading anything about it.
+    selectNode({ brainId: BRAIN, nodeId: pivotId });
     await settle();
+    const pivotMaterialized = await waitForSelectionMaterialized(BRAIN, pivotId);
+    evidence.pivotMaterialized = {
+      settled: pivotMaterialized.settled,
+      waitedMs: Math.round(pivotMaterialized.waitedMs),
+    };
+    if (!pivotMaterialized.settled) {
+      throw new Error(
+        `J12: le pivot ${PIVOT_PATH} (nodeId=${pivotId}) ne s'est pas materialise/selectionne ` +
+          `apres ${Math.round(pivotMaterialized.waitedMs)} ms`,
+      );
+    }
 
     const pivot = await invoke<NodeRelations>("map_relations_for_node", {
       reference: { brainId: BRAIN, nodeId: pivotId },
@@ -288,8 +357,15 @@ export async function runRelationScenario(deps: ScenarioDeps): Promise<void> {
     //
     //    Reserve `X4`. Nothing here activates the entry: the page focuses it
     //    and waits for a keystroke that comes through the Windows input path.
-    setSelected({ brainId: BRAIN, nodeId: pivotId });
+    selectNode({ brainId: BRAIN, nodeId: pivotId });
     await settle();
+    const pivotReselected = await waitForSelectionMaterialized(BRAIN, pivotId);
+    if (!pivotReselected.settled) {
+      throw new Error(
+        `J12: le pivot ${PIVOT_PATH} (nodeId=${pivotId}) ne s'est pas reselectionne ` +
+          `apres ${Math.round(pivotReselected.waitedMs)} ms`,
+      );
+    }
     await waitUntil(() => countOf(".relations__direction .relation__link") > 0);
     const entry = document.querySelector<HTMLButtonElement>(
       ".relations__direction .relation__link",
@@ -436,8 +512,15 @@ export async function runRelationScenario(deps: ScenarioDeps): Promise<void> {
     if (!pending) throw new Error("aucune suggestion en attente a approuver");
     const holderId = pending.source.nodeId;
     if (holderId === null) throw new Error("suggestion sans extremite resolue");
-    setSelected({ brainId: BRAIN, nodeId: holderId });
+    selectNode({ brainId: BRAIN, nodeId: holderId });
     await settle();
+    const holderMaterialized = await waitForSelectionMaterialized(BRAIN, holderId);
+    if (!holderMaterialized.settled) {
+      throw new Error(
+        `J12: l'extremite ${holderId} de la suggestion ne s'est pas materialisee/selectionnee ` +
+          `apres ${Math.round(holderMaterialized.waitedMs)} ms`,
+      );
+    }
 
     const before = await invoke<NodeRelations>("map_relations_for_node", {
       reference: { brainId: BRAIN, nodeId: holderId },

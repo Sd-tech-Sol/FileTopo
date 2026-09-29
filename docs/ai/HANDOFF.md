@@ -1,5 +1,36 @@
 # HANDOFF — passage de relais
 
+## Relais — TASK-0050 §T / régression J12 corrigée, nouveau blocage produit confirmé — `BLOCKED` — 2026-09-28
+
+- HEAD contrôlé avant exécution : `070421eeea7562736a931766c9192c06de0562ec`,
+  fast-forward vers `30b44b8` avant démarrage.
+- Corrective ACTION-0089 appliquée intégralement : `map_resolve_node` pour le
+  pivot, `selectNode` (navigation produit) au lieu de `setSelected`, attente
+  DOM explicite avant chaque lecture dépendant d'une sélection.
+- **La régression R.2 (pivot introuvable) est corrigée** : J12 s'exécute pour
+  la première fois jusqu'à son terme complet (pivot, panneau, traversée par
+  vraie touche Windows, approbation réelle — tous PASS).
+- **Nouveau blocage confirmé, distinct** : aucune arête de relation (établie
+  ou suggestion) ne se rend jamais sur la carte pendant le replay —
+  `relationSegments()` exige les deux extrémités dans la fenêtre bornée
+  courante (`hierarchy.byId`), mais `brain.relations` n'est jamais recalculé
+  par `changeProjection`, qui ne fait que recentrer cette fenêtre. Une
+  sélection séquentielle des extrémités (J12) ne les fait donc jamais
+  coexister. Confirme et précise Q.2.
+- Conforme à la clause d'arrêt `.orchestrator/NEXT_PROMPT.md` §10 : STOP avec
+  preuve exacte. Aucun Rust, aucune nouvelle fixture, aucune instrumentation
+  de révélation d'agrégat ajoutée à J12.
+- Aucun artefact `TASK-0050-webview2.json` publié. TASK-0050/F-014/P-10
+  restent `BLOCKED`. Aucune TASK-0051.
+- Prochaine décision, réservée à l'orchestrateur technique ou à Sébastien :
+  (a) faire recalculer `brain.relations` par `changeProjection` (changement de
+  comportement produit, hors périmètre d'une corrective de scénario), ou
+  (b) revenir à l'option Q.3(b)/R.3(b) — une brique synthétique dédiée où les
+  relations à prouver sont les seules arêtes du nœud choisi.
+- Détail complet : `docs/tasks/TASK-0050-v1-runtime-legend-p10.md` section T;
+  `docs/ai/VALIDATION.md` section CW.
+
+
 ## Relais — ACTION-0089 / TASK-0050 corrective READY — 2026-09-28
 
 - HEAD contrôlé : `070421eeea7562736a931766c9192c06de0562ec`.

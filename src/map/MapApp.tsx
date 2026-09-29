@@ -2387,12 +2387,16 @@ export default function MapApp() {
         invoke: (command, args) => invoke(command, args),
         host,
         showOnly,
-        setSelected: (reference) => setSelected(reference),
+        // `TASK-0050` §S / `ACTION-0089`: the product's own navigation, not
+        // the raw `setSelected` setter — `selectNode` already routes through
+        // `changeProjection` when the target is outside the current bounded
+        // projection (`DEC-0034`), which a raw setter silently skips.
+        selectNode,
         setStatus,
         log: hostLog,
       });
     },
-    [host, showOnly, prepareScenarioBrains],
+    [host, showOnly, prepareScenarioBrains, selectNode],
   );
 
   runRelationScenarioRef.current = runRelationScenario;

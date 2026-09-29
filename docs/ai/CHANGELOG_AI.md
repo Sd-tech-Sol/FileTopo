@@ -6325,3 +6325,42 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
   projection centrée sur un nœud hors fenêtre.
 - Corrective choisie : map_resolve_node + selectNode + attente DOM réelle.
 - Aucun Rust/backend, aucune nouvelle fixture, aucune TASK-0051.
+
+## 2026-09-28 — TASK-0050 §T — corrective J12 appliquée, régression R.2 corrigée, blocage produit distinct confirmé — `BLOCKED`
+
+- Exécution de `.orchestrator/NEXT_PROMPT.md` (stratégie ACTION-0089). Branche
+  synchronisée en fast-forward (`070421e` → `30b44b8`) avant démarrage.
+- `src/map/relationScenario.ts` : pivot résolu par `map_resolve_node` (plus
+  jamais dans `snapshot.nodes`, désormais gardé pour `fixtureId` seulement);
+  dépendance renommée `selectNode`; attente explicite
+  (`waitForSelectionMaterialized`) de la carte DOM et de
+  `aria-activedescendant` après chaque sélection pouvant viser un nœud hors
+  projection. `src/map/MapApp.tsx` : `runRelationScenario` câble désormais
+  `selectNode` (navigation produit réelle) au lieu du setter React brut
+  `setSelected`; `runBrainScenario` non touché.
+- **La régression R.2 est corrigée** : J12 s'exécute pour la première fois
+  jusqu'à son terme complet (pivot matérialisé en 17 ms, panneau, traversée
+  par vraie touche Windows, approbation réelle de S-005 tous PASS), alors que
+  R.2 échouait systématiquement dès `noeud introuvable: dossier-a/note-1.txt`.
+- **Blocage produit distinct confirmé** : `suggestionRendering` compte zéro
+  arête de tout type (`establishedEdges: 0`, `suggestionEdges: 0`), pas
+  seulement les deux clés manquantes. Cause lue dans le code (aucun
+  changement) : `relationSegments()` (`src/map/relations.ts:114`) exige les
+  deux extrémités dans `hierarchy.byId`, la fenêtre bornée **courante**;
+  `brain.relations` (l'overview complet) est chargé une fois à l'ouverture et
+  n'est jamais recalculé par `changeProjection`, qui ne fait que recentrer la
+  fenêtre — de sorte qu'une sélection séquentielle des extrémités (ce que fait
+  J12) ne les fait jamais coexister dans la même fenêtre. Cohérent avec
+  l'hypothèse déjà documentée en Q.2.
+- Conforme à la clause d'arrêt `.orchestrator/NEXT_PROMPT.md` §10 : STOP avec
+  preuve exacte, aucun Rust, aucune nouvelle fixture, aucune instrumentation
+  de révélation d'agrégat façon cellule A ajoutée à J12.
+- Validations : 632/632 tests frontend (un échec de focus isolé et non
+  reproductible en suite complète, 16/16 PASS seul, flakiness déjà
+  documentée), `pnpm check`/`pnpm build`/Tauri debug PASS, cellule A WebView2
+  PASS (21/23 inchangé), cellule B J12 exécutée jusqu'au bout mais 0 arête
+  rendue, combineur refuse (attendu), `git diff --check` PASS, audit public
+  PASS (674 fichiers, `-AllowRemotes`).
+- Aucun artefact `TASK-0050-webview2.json` publié. TASK-0050/F-014/P-10
+  restent `BLOCKED`. Aucune TASK-0051. Détail complet : `docs/tasks/TASK-0050-v1-runtime-legend-p10.md`
+  section T.

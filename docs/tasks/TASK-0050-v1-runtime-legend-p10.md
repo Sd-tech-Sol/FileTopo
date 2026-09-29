@@ -1,7 +1,7 @@
 # TASK-0050 — V1 Runtime Legend / P-10 Closure
 
 - **Date :** 2026-09-26
-- **Statut :** `CORRECTIVE_REQUIRED`
+- **Statut :** `BLOCKED`
 - **Branche :** `build/v0.2-a34-v1-runtime-legend`
 - **Décision :** `DEC-0048`
 - **Portée :** `F-014`, `P-10`
@@ -649,3 +649,135 @@ La passe suivante doit :
 Aucun Rust/backend. Aucune nouvelle fixture. Aucune TASK-0051.
 
 **TASK-0050 = CORRECTIVE_REQUIRED.**
+
+## T — reprise Claude Code — régression J12 corrigée, blocage produit distinct confirmé — `BLOCKED` — 2026-09-28
+
+Exécution de `.orchestrator/NEXT_PROMPT.md` (stratégie ACTION-0089). Préconditions
+§0 vérifiées : branche, fast-forward (`070421e` → `30b44b8`), arbre propre,
+ACTION-0087/0088/0089 et DEC-0048 §K lus, `relationScenario.ts`/`MapApp.tsx`
+(`changeProjection`/`selectNode`/`runRelationScenario`),
+`brain_index.rs::snapshot` et `projection.rs::materialize_view` lus.
+
+### T.1 — corrective appliquée : la régression R.2 est réellement corrigée
+
+`src/map/relationScenario.ts` :
+
+- le pivot `PIVOT_PATH` est résolu par `map_resolve_node({ brainId, relativePath })`
+  (une `BrainNodeRef` non nulle, cohérente avec `BRAIN`), plus jamais par
+  `snapshot.nodes.find(...)` sur le `map_snapshot` borné; `map_snapshot` reste
+  appelé une seule fois, pour `evidence.fixtureId` seulement;
+- la dépendance de sélection est renommée `selectNode` (au lieu de
+  `setSelected`) dans `ScenarioDeps`, documentée pour empêcher qu'un setter
+  brut y soit remis par erreur;
+- après chaque sélection pouvant viser un nœud hors projection (pivot d'abord,
+  re-sélection avant traversée, extrémité de suggestion avant approbation),
+  le scénario attend explicitement (`waitForSelectionMaterialized`, via
+  `waitUntil`) que la carte du nœud existe dans le DOM
+  (`.map-view [data-brain-id=...][data-node-id=...]`) **et** que
+  `aria-activedescendant` de `.map-view__canvas` le nomme, avant de lire le
+  panneau ou la carte.
+
+`src/map/MapApp.tsx` : `runRelationScenario` injecte désormais `selectNode`
+(la navigation produit réelle, qui appelle déjà `changeProjection` quand la
+cible est hors de `hierarchy.byId`) au lieu du setter React brut
+`setSelected`; `selectNode` ajouté au tableau de dépendances du `useCallback`.
+`runBrainScenario` (scénario distinct, hors périmètre) n'est pas touché.
+
+**Preuve que la régression R.2 a disparu** : le replay réel produit cette fois
+un artefact `TASK-0026-J12-intrabrain-relations-regression-webview2.json`
+complet (`pivotMaterialized.settled = true`, `waitedMs = 17`), alors que R.2
+échouait systématiquement et immédiatement sur
+`noeud introuvable: dossier-a/note-1.txt`. Le panneau de relations, la
+traversée par vraie touche Windows (`activationIsTrusted = true`,
+`selectionFollowedTheRelation = true`, `noProgrammaticActivationUsed = true`)
+et l'approbation réelle de `S-005` (`createdProvenance = "APPROVED"`,
+`enteredCountsOnlyAfterApproval = true`) réussissent intégralement — cellule B
+s'exécute désormais jusqu'à son terme, ce qu'aucune passe précédente n'avait
+atteint.
+
+### T.2 — blocage distinct confirmé : aucune arête de relation ne se rend jamais sur la carte, quelle que soit la relation
+
+Le combineur échoue sur `cellB: intra-suggestion not observed on the live map
+during J12's replay` — mais l'artefact montre que ce n'est pas spécifique à
+`intra-suggestion`/`intra-approved` : **`suggestionRendering` compte zéro
+arête de tout type** (`establishedEdges: 0`, `suggestionEdges: 0`,
+`suggestionRings: 0`) alors même que le panneau affiche correctement 3
+sortantes + 1 entrante + 1 suggestion, et que la traversée clavier a
+effectivement déplacé la sélection vers une extrémité réelle
+(`dossier-b/note-1.txt`, nœud 9).
+
+Cause identifiée par lecture seule (aucun changement) : `relationSegments()`
+(`src/map/relations.ts:114`) ne pousse un segment que si **les deux**
+extrémités sont résolues dans `byId` — `Map<number, MapNode>` construit par
+`buildHierarchy(snapshot.nodes, ...)`, c'est-à-dire la **fenêtre bornée
+courante** (`DEC-0034`). Or `brain.relations` (l'`overview` complet, toutes
+les arêtes) est chargé une fois à l'ouverture du cerveau
+(`MapApp.tsx:829-831`) et **n'est jamais recalculé par `changeProjection`**
+(`MapApp.tsx:1327-1360`) : seuls `snapshot`/`hierarchy` changent à chaque
+navigation, `relations` reste l'instantané initial. Chaque appel à
+`selectNode` sur une extrémité hors fenêtre déclenche `changeProjection`, qui
+**recentre** la fenêtre sur cette extrémité et peut en faire sortir
+l'extrémité précédente — de sorte qu'à aucun instant les deux bouts d'une
+relation quelconque ne se trouvent simultanément dans `hierarchy.byId`. `J12`
+sélectionne ses nœuds l'un après l'autre (jamais les deux ensemble dans la
+même fenêtre); cellule A, elle, révèle explicitement chaque ancêtre par
+pastille d'agrégat pour co-localiser ses témoins — exactement la différence
+qu'`ACTION-0088` interdisait de reproduire à l'intérieur de `J12` (« ne pas
+instrumenter durablement MapApp », « réutiliser J12 tel quel »).
+
+**C'est un blocage produit distinct de la régression R.2, confirmé
+reproductible sur ce run et cohérent avec l'hypothèse déjà documentée en
+Q.2** (« un comportement de fenêtre bornée distinct du filtrage
+`offScreen`/`length>1` »). R.2 empêchait `J12` de trouver son pivot; corrigée,
+`J12` trouve son pivot, navigue, traverse et approuve réellement — mais ne
+peut, par construction du scénario réutilisé tel quel, jamais faire coexister
+les deux extrémités d'une arête dans la fenêtre au moment de la lecture.
+
+### T.3 — décision
+
+Conforme à la clause d'arrêt de `.orchestrator/NEXT_PROMPT.md` §10 : *« Si
+J12 échoue encore après avoir réellement utilisé `selectNode`, STOP avec la
+preuve exacte; ne change pas Rust et ne crée pas une nouvelle fixture sans
+nouvelle décision d'orchestration. »*
+
+Aucun Rust touché. Aucune nouvelle fixture créée. `relationScenario.ts` n'a
+reçu aucune logique de révélation d'agrégat façon cellule A (cela
+instrumenterait durablement le scénario au-delà de la corrective demandée).
+`docs/performance/runs/TASK-0050-webview2.json` **n'a pas été publié ni
+remplacé** : l'union réelle ne vaut toujours pas 23/23. Aucun sabotage/
+falsification exécuté cette passe : la clause d'arrêt prime sur `§8`, qui
+suppose une preuve 23/23 déjà obtenue avant de la falsifier.
+
+Fichiers modifiés et commités : `src/map/relationScenario.ts` (résolution du
+pivot par `map_resolve_node`, `selectNode` au lieu de `setSelected`, attentes
+de matérialisation), `src/map/MapApp.tsx` (câblage `selectNode` pour
+`runRelationScenario` seulement). `scripts/task0050-webview2.mjs` (cellule A)
+non touché, comme demandé. L'artefact non protégé
+`docs/performance/runs/TASK-0026-J12-intrabrain-relations-regression-webview2.json`
+est celui produit par ce run réel (remplace sa propre variante `-abandon`
+précédente, supprimée par le lanceur J12 lui-même avant le run, comme conçu).
+Aucun artefact canonique historique protégé touché.
+
+Validations rejouées sur l'état final : 632/632 tests frontend PASS (un échec
+isolé de focus dans `brainIdentity.test.tsx` observé une fois en suite
+complète, non reproductible seul — 16/16 PASS en isolation, flakiness déjà
+documentée pour cette suite, sans lien avec les fichiers touchés ici), `pnpm
+check` PASS, `pnpm build` PASS, Tauri debug PASS, cellule A WebView2 PASS
+(21/23, écart nommé inchangé, axe 0 violation), cellule B J12 **exécutée
+jusqu'au bout pour la première fois** mais 0 arête rendue (voir T.2),
+combineur refuse (attendu, la preuve n'atteint pas 23/23), `git diff --check`
+PASS, audit public PASS (674 fichiers, `-AllowRemotes` car `origin` est le
+dépôt public déjà publié de ce projet, aucun motif sensible).
+
+**TASK-0050 reste `BLOCKED`.** F-014/P-10 non `VERIFIED`. Aucune TASK-0051.
+
+**Prochaine action pour l'orchestrateur technique ou Sébastien** : choisir
+entre (a) faire recalculer `brain.relations` par `changeProjection` (ou
+équivalent) pour que la fenêtre bornée cesse de faire disparaître les arêtes
+déjà connues du store — un changement de comportement produit, pas
+nécessairement Rust, mais qui dépasse le périmètre d'une corrective de
+scénario de test et demande une décision explicite; ou (b) revenir à l'option
+Q.3(b)/R.3(b) : une brique synthétique dédiée où les relations à prouver sont
+les seules arêtes du nœud choisi, pour que la fenêtre bornée les contienne
+nécessairement ensemble. Tant que ce choix n'est pas fait, `TASK-0050` /
+`F-014` / `P-10` restent `BLOCKED`. Aucune TASK-0051.

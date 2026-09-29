@@ -9117,3 +9117,51 @@ La corrective doit donc adapter uniquement le scénario de test :
 La cellule A n'est pas déclarée VERIFIED séparément : ses résultats de run
 restent des preuves d'exécuteur jusqu'à publication du nouvel artefact final
 combiné.
+
+## CW. TASK-0050 §T — corrective J12 appliquée, régression R.2 corrigée, nouveau blocage produit confirmé — `BLOCKED` — 2026-09-28
+
+**Statut : reprise Claude Code, `BLOCKED` (exécuteur, non VERIFIED).**
+
+Corrective ACTION-0089 appliquée : pivot résolu par `map_resolve_node`,
+navigation produit `selectNode` (au lieu du setter brut `setSelected`),
+attente explicite de matérialisation DOM (`waitForSelectionMaterialized`)
+avant chaque lecture dépendant d'une sélection.
+
+**Preuve que la régression corrigée est réelle :** le replay J12 réel produit
+pour la première fois un artefact complet (`pivotMaterialized.settled=true`,
+panneau/traversée/approbation tous PASS avec vraie touche Windows), alors que
+la passe précédente (§R.2) échouait systématiquement et immédiatement sur
+`noeud introuvable: dossier-a/note-1.txt`.
+
+**Nouveau blocage, distinct, confirmé par lecture de code :**
+`suggestionRendering` de l'artefact produit compte **zéro** arête de tout
+type (établie ou suggestion), pas seulement les deux clés visées. Cause :
+`relationSegments()` (`src/map/relations.ts:114`) n'émet un segment que si
+les deux extrémités sont dans `hierarchy.byId`, la fenêtre bornée courante;
+`brain.relations` est chargé une seule fois à l'ouverture du cerveau et n'est
+jamais recalculé par `changeProjection`, qui ne fait que recentrer la
+fenêtre — sélectionner les extrémités l'une après l'autre (ce que fait J12)
+ne les fait donc jamais coexister dans la même fenêtre au moment de la
+lecture. Confirme et précise l'hypothèse déjà posée en Q.2.
+
+**Conséquence :** conforme à la clause d'arrêt de `.orchestrator/NEXT_PROMPT.md`
+§10, STOP avec preuve exacte. Aucun changement Rust. Aucune nouvelle fixture.
+Aucune logique de révélation d'agrégat façon cellule A ajoutée à J12 (aurait
+excédé la corrective demandée). `docs/performance/runs/TASK-0050-webview2.json`
+non publié — l'union réelle n'atteint pas 23/23. Aucun artefact canonique
+historique touché;
+`docs/performance/runs/TASK-0026-J12-intrabrain-relations-regression-webview2.json`
+(non protégé) porte désormais le run réel produit cette passe, remplaçant sa
+propre variante `-abandon` (supprimée par le lanceur J12 lui-même avant le
+run, comme conçu). Fichiers modifiés : `src/map/relationScenario.ts`,
+`src/map/MapApp.tsx`. `scripts/task0050-webview2.mjs` (cellule A) non touché.
+
+Validations rejouées sur l'état final : 632/632 tests frontend PASS (voir
+note flakiness ci-dessus), `pnpm check` PASS, `pnpm build` PASS, Tauri debug
+PASS, cellule A WebView2 PASS (21/23 inchangé, axe 0 violation), cellule B
+J12 exécutée jusqu'au bout (nouveau) mais 0 arête rendue, combineur refuse
+(attendu), `git diff --check` PASS, audit public PASS (674 fichiers,
+`-AllowRemotes` — `origin` est le dépôt public déjà publié de ce projet).
+
+**TASK-0050 = `BLOCKED`.** F-014/P-10 non `VERIFIED`. Aucune TASK-0051.
+Détail complet : `docs/tasks/TASK-0050-v1-runtime-legend-p10.md` section T.
