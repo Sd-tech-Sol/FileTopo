@@ -1,5 +1,37 @@
 # État courant
 
+## TASK-0050 §R — cellule A fermée 21/23 (réellement vérifiée), cellule B (J12) bloquée par une régression distincte — `BLOCKED` — 2026-09-28
+
+- Stratégie ACTION-0088 exécutée : cellule A = harnais TASK-0050 actuel,
+  cellule B = replay `J12` (`src/map/relationScenario.ts`) sur HEAD.
+- **Cellule A fermée pour de vrai** : `scripts/task0050-webview2.mjs`
+  n'avait *jamais* atteint sa propre boucle de signatures dans un run
+  complet (bloqué plus tôt par l'égalité stricte). L'assouplir en écart
+  nommé (`intra-approved`, `intra-suggestion` seulement) a exposé et permis
+  de corriger quatre défauts de harnais jusque-là invisibles : confusion
+  racine/clé sur le glyphe de type, capture de classe absente côté légende
+  pour les éléments `<g>`-seuls (hiérarchie), confusion d'état « touching »,
+  `spawnSync('pnpm.cmd')` qui échouait `EINVAL` sur ce Node/Windows. Résultat
+  reproduit deux fois à l'identique : 21/23, axe 0 violation, 0 erreur
+  fatale, `node-diagnostic` PASS. Aucun fichier produit touché.
+- **Cellule B (J12) bloquée par une régression confirmée, distincte de
+  Q.2** : après avoir corrigé un défaut d'amorçage (`map_not_built:
+  brain-alpha` dans un sandbox neuf — `map_prepare_synthetic_source` +
+  `map_rebuild` ajoutés en tête du scénario), `J12` échoue systématiquement
+  sur `noeud introuvable: dossier-a/note-1.txt` : `MapNode::snapshot()`
+  renvoie une vue **bornée** (`materialize_view`, `DEC-0034`), jamais le
+  corpus plat que `J12` suppose depuis son écriture (`TASK-0017`, avant
+  `DEC-0034`). Reproduit deux fois à l'identique.
+- Aucun changement Rust. Aucun artefact `TASK-0050-webview2.json` publié ni
+  remplacé. Aucun artefact canonique historique touché (seule la variante
+  `-abandon`, non protégée, de `TASK-0026-J12-...json` a été écrite, comme
+  preuve du blocage).
+- Validations PASS sur l'état committé : 632/632 tests frontend, `pnpm
+  check`, `pnpm build`, Tauri debug, `git diff --check`, audit public
+  (673 fichiers).
+- TASK-0050 = `BLOCKED`. F-014/P-10 non `VERIFIED`.
+- Détail complet : `docs/tasks/TASK-0050-v1-runtime-legend-p10.md` section R.
+
 ## TASK-0050 §Q — 21/23 clés atteignables reproductibles — `BLOCKED` — 2026-09-28
 
 - Harnais `scripts/task0050-webview2.mjs` réécrit : jonction NTFS réelle pour

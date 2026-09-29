@@ -88,11 +88,80 @@ function styleOf(
   return element ? window.getComputedStyle(element)[property] : null;
 }
 
+/**
+ * `TASK-0050` §Q/§ACTION-0088 evidence only — read-only, additive. Reads the
+ * same `data-legend-keys` contract `MapView` already emits; adds no new
+ * markup and changes nothing about what is drawn.
+ */
+function legendKeysOnScreen(): string[] {
+  const keys = new Set<string>();
+  for (const element of document.querySelectorAll(".map-view [data-legend-keys]")) {
+    for (const key of (element.getAttribute("data-legend-keys") ?? "").split(/\s+/)) {
+      if (key) keys.add(key);
+    }
+  }
+  return [...keys].sort();
+}
+
+/**
+ * `TASK-0050` §4 evidence only. Reads back the live element's own class and
+ * computed style, grouped by its shared `map-*` classes — the same shape
+ * `scripts/task0050-webview2.mjs` already computes for the legend/map
+ * comparison, so `TASK-0050`'s combiner can compare this against that
+ * script's legend-side sample of the same key without opening the legend
+ * inside this scenario.
+ */
+function classSignature(selector: string): {
+  exercisedOnMap: boolean;
+  sharedClasses?: string[];
+  byClass?: Record<string, { className: string | null } & Record<string, string | null>>;
+} {
+  const live = document.querySelector(selector);
+  if (!live) return { exercisedOnMap: false };
+  const elements = [live, ...live.querySelectorAll("rect,path,line,circle,text")];
+  const byClass: Record<string, { className: string | null } & Record<string, string | null>> = {};
+  for (const element of elements) {
+    const classes = [...element.classList].filter((name) => /^map-/.test(name));
+    if (classes.length === 0) continue;
+    const classKey = classes.slice().sort().join(" ");
+    if (byClass[classKey]) continue;
+    const style = window.getComputedStyle(element);
+    byClass[classKey] = {
+      className: element.getAttribute("class"),
+      strokeWidth: style.strokeWidth,
+      strokeDasharray: style.strokeDasharray,
+      fillOpacity: style.fillOpacity,
+      fontWeight: style.fontWeight,
+      opacity: style.opacity,
+    };
+  }
+  return {
+    exercisedOnMap: true,
+    sharedClasses: [
+      ...new Set(elements.flatMap((element) => [...element.classList].filter((name) => /^map-/.test(name)))),
+    ],
+    byClass,
+  };
+}
+
 export async function runRelationScenario(deps: ScenarioDeps): Promise<void> {
   const { invoke, host, showOnly, setSelected, setStatus, log } = deps;
   const evidence: Record<string, unknown> = { brainId: BRAIN };
 
   try {
+    // `TASK-0050` §Q/ACTION-0088 discovery: replayed against a genuinely
+    // disposable `FILETOPO_SANDBOX_VARIANT` (a fresh, empty catalogue, unlike
+    // whatever persistent dev storage this scenario last ran against),
+    // `brain-alpha` is registered but its Index is not yet built — the same
+    // "Indexer" gesture `scripts/task0050-webview2.mjs` already performs for
+    // its own alpha/gamma instances. Without it, every relations command
+    // below refuses with `map_not_built` and nothing here is a J12 result at
+    // all. This does not touch what J12 measures — only makes the brain it
+    // measures exist first, in this disposable sandbox, exactly once.
+    log("info", "J12: préparation de l'index synthétique de brain-alpha");
+    await invoke("map_prepare_synthetic_source", { brainId: BRAIN });
+    await invoke("map_rebuild", { brainId: BRAIN });
+
     log("info", "J12: ouverture du cerveau et des relations");
     // The application boots on its own active brain, and that boot is itself a
     // composition being applied. Asking for `brain-alpha` before the catalogue
@@ -352,6 +421,16 @@ export async function runRelationScenario(deps: ScenarioDeps): Promise<void> {
       suggestionTagText: textOf(".suggestion__tag"),
     };
 
+    // `TASK-0050` §2/§4 evidence only: the real `intra-suggestion` legend key,
+    // materialised on screen right now by the pending suggestion edge above,
+    // read back the same way the map itself is read — plus its class/style
+    // signature for the cross-cell comparison against the legend sample.
+    evidence.intraSuggestionProof = {
+      legendKeysOnScreen: legendKeysOnScreen(),
+      hasIntraSuggestion: legendKeysOnScreen().includes("intra-suggestion"),
+      signature: classSignature('.map-view [data-legend-keys~="intra-suggestion"]'),
+    };
+
     // 7. Approval, with the counts before and after — both read from the store.
     const pending = overview.pendingSuggestions[0];
     if (!pending) throw new Error("aucune suggestion en attente a approuver");
@@ -399,6 +478,17 @@ export async function runRelationScenario(deps: ScenarioDeps): Promise<void> {
           `attente=${approvalKeyEvidence.waitedMs} ms).`,
       );
     }
+
+    // `TASK-0050` §2/§4 evidence only: the real `intra-approved` legend key,
+    // read back only once the render has settled after the real keystroke
+    // above created it — never before, so this cannot pass on the pending
+    // suggestion's own class by mistake.
+    await settle();
+    evidence.intraApprovedProof = {
+      legendKeysOnScreen: legendKeysOnScreen(),
+      hasIntraApproved: legendKeysOnScreen().includes("intra-approved"),
+      signature: classSignature('.map-view [data-legend-keys~="intra-approved"]'),
+    };
 
     const after = await invoke<NodeRelations>("map_relations_for_node", {
       reference: { brainId: BRAIN, nodeId: holderId },

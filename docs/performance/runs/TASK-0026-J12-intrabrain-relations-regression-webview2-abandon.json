@@ -1,0 +1,70 @@
+{
+  "task": "TASK-0026",
+  "sourceCriterion": "TASK-0017/J12",
+  "nature": "regression replay after multibrain migration",
+  "doesNotReplace": "docs/performance/runs/TASK-0017-J12-webview2.json, docs/performance/runs/TASK-0019-J12-relations-regression-webview2.json",
+  "replacesCanonicalEvidence": false,
+  "outcome": "abandoned",
+  "reason": "Error: noeud introuvable: dossier-a/note-1.txt",
+  "host": {
+    "sandboxRoot": "<dépôt>/.filetopo-sandbox/variants/task0022-j12-20260928231359-1cb387",
+    "appVersion": "0.1.0-alpha.1",
+    "sqliteVersion": "3.53.2",
+    "webviewVersion": "153.0.4234.48",
+    "tauriVersion": "2.11.5",
+    "platform": "windows",
+    "nodeCeiling": 0,
+    "depthCeiling": 40,
+    "cardWidth": 240,
+    "cardHeight": 64,
+    "layoutAlgorithm": "layered-tree-cards-v1",
+    "autoVerify": false,
+    "autoMeasure": false,
+    "autoRelations": true,
+    "autoBrainsPass": 0,
+    "autoComposedPass": 0,
+    "autoCrossPass": 0,
+    "autoTopographicPass": 0,
+    "autoContentPass": 0,
+    "autoDrePass": 0,
+    "autoGenericRelations": false,
+    "autoSr15Pass": 0,
+    "autoEd15Pass": 0
+  },
+  "evidence": {
+    "brainId": "brain-alpha",
+    "opened": {
+      "barReady": true,
+      "barReadyWaitedMs": 0,
+      "settled": true,
+      "waitedMs": 18
+    },
+    "fixtureId": "quasi-empty",
+    "relationsPath": "brains/brain-alpha/relations/relations.sqlite",
+    "overview": {
+      "established": 12,
+      "deterministic": 8,
+      "approved": 4,
+      "pendingSuggestions": 4,
+      "unresolvedEndpoints": [],
+      "endpointKeyScheme": "ek1",
+      "deterministicDigest": "fnv1a64:f2dc56476a45221f",
+      "rules": [
+        {
+          "name": "homonymes",
+          "version": "v1",
+          "relationType": "reference",
+          "symmetric": false,
+          "produced": 4
+        },
+        {
+          "name": "suites-numerotees",
+          "version": "v1",
+          "relationType": "revision",
+          "symmetric": false,
+          "produced": 4
+        }
+      ]
+    }
+  }
+}

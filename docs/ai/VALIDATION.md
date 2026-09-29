@@ -9006,3 +9006,90 @@ motif sensible).
 
 **TASK-0050 = `BLOCKED`.** F-014/P-10 non `VERIFIED`. Aucun Rust touché.
 Aucune TASK-0051.
+
+## CU. TASK-0050 §R — cellule A fermée 21/23 (réellement vérifiée), cellule B (J12) bloquée par une régression distincte — `BLOCKED` — 2026-09-28
+
+Exécuteur : Claude Code + Claude Sonnet 5, en réponse à ACTION-0088 /
+`.orchestrator/NEXT_PROMPT.md`. HEAD de départ :
+`0f24fbfa2877991910129d2c9d59fd2a4f8cf991`.
+
+**Cellule A — quatre défauts de harnais corrigés, jamais exercés en réel avant cette passe :**
+
+Le harnais §Q n'avait **jamais atteint** sa propre boucle de comparaison de
+signatures (§5) : l'égalité stricte `mapBefore == expectedReachable` échouait
+plus tôt (manque `intra-approved`/`intra-suggestion`), empêchant tout run
+réel de dépasser ce point. Assouplir l'égalité en écart nommé et exempté (ces
+deux clés seulement, vérifié strictement égal, aucune autre) a exposé, pour
+la première fois :
+
+1. `filter-context` (et toute clé hors type de nœud) pouvait choisir comme
+   témoin le nœud RACINE, dont le glyphe de type porte
+   `.map-node--root .map-node__kind-glyph` (déjà couvert par `node-root`) —
+   divergence hors sujet. Corrigé : score de confusion préférant un témoin
+   non-racine quand un existe.
+2. `hierarchy-normal`/`hierarchy-touching` ne portent leur classe que sur le
+   `<g>` englobant (son `<path>` enfant est sans classe) — le côté carte
+   l'incluait manuellement (`[live, ...]`), le côté légende ne le cherchait
+   jamais (sélecteur sans `g`). Corrigé : `g` ajouté au sélecteur des deux
+   côtés.
+3. Un témoin sélectionné au moment de la capture porte aussi `*-touching`
+   (contour renforcé), hors sujet pour la clé de base. Corrigé : score de
+   confusion (racine, touching, suggestion, approuvé) + re-capture différée
+   quand un témoin moins confondu apparaît plus tard dans le run (la fenêtre
+   `DEC-0034` ne garantit pas un témoin propre disponible au même instant).
+4. `spawnSync('pnpm.cmd', …)` échoue `EINVAL` sur ce Node/Windows (confirmé à
+   la main, isolément, hors harnais) — la preuve `node-diagnostic` n'avait
+   donc jamais pu s'exécuter réellement non plus. Corrigé par `shell: true`.
+
+Résultat, **reproduit deux fois à l'identique** : 21/23 clés atteignables,
+écart exactement `["intra-approved", "intra-suggestion"]`, axe 0 violation
+(fermé et ouvert), 0 erreur console fatale, `node-diagnostic` PASS
+déterministe + invariant backend relu, signatures carte ↔ légende réellement
+comparées et égales pour les 21 clés, fenêtre passive vérifiée (aucune
+commande backend causée par les gestes de légende). Seul
+`scripts/task0050-webview2.mjs` modifié pour cette cellule; aucun fichier
+produit touché.
+
+**Cellule B (J12) — régression confirmée, distincte de Q.2 :**
+
+1. Sous `FILETOPO_SANDBOX_VARIANT` (catalogue neuf), `brain-alpha` n'est pas
+   construit (`map_not_built`) — le scénario le supposait implicitement.
+   Corrigé : `map_prepare_synthetic_source` + `map_rebuild` ajoutés en tête
+   de `src/map/relationScenario.ts` (même geste que la cellule A pour ses
+   propres instances de ces deux cerveaux frozen; ne change rien à ce que
+   `J12` mesure).
+2. Une fois l'index construit, `J12` échoue systématiquement (reproduit deux
+   fois à l'identique) sur `noeud introuvable: dossier-a/note-1.txt`.
+   Diagnostic confirmé par lecture du code : `MapNode::snapshot()`
+   (`src-tauri/src/map/brain_index.rs:662`) appelle
+   `super::projection::materialize_view(self, None, None)` — la même vue
+   **bornée** (`DEC-0034`) que la carte affiche, jamais un dump plat.
+   Confirmé par relecture du journal produit : un catalogue neuf ne montre,
+   dans ce snapshot, que la racine et ses enfants directs
+   (`["", "dossier-a", "dossier-b", "racine-1.txt", "racine-2.txt"]`, aucun
+   fichier sous `dossier-a/`). `J12` cherche son pivot directement dans ce
+   snapshot borné, sans jamais révéler de pastille d'agrégat — hypothèse
+   vraie quand `J12` a été écrit (`TASK-0017`, avant `DEC-0034`), plus
+   maintenant.
+
+Conforme à la clause d'arrêt de `.orchestrator/NEXT_PROMPT.md` §9 : étendre
+`relationScenario.ts` avec la logique de révélation par pastilles de la
+cellule A referait ce travail **à l'intérieur** de `J12`, contredisant
+ACTION-0088 (« réutiliser `J12` tel quel »).
+
+**Conséquence :** aucun changement Rust. Aucun artefact
+`TASK-0050-webview2.json` publié ni remplacé — cellule B ne produit toujours
+aucune preuve, donc l'union à deux cellules ne ferme pas 23/23. Aucun
+artefact canonique historique touché;
+`docs/performance/runs/TASK-0026-J12-intrabrain-relations-regression-webview2.json`
+n'a pas été réécrit (seule la variante `-abandon`, non protégée, a été
+écrite — preuve du blocage, reproduite deux fois à l'identique). Fichiers
+modifiés : `scripts/task0050-webview2.mjs`, `scripts/task0050-webview2.ps1`,
+`scripts/task0050-combine-webview2.mjs` (nouveau), `src/map/relationScenario.ts`.
+Validations rejouées sur l'état final : 632/632 tests frontend PASS, `pnpm
+check` PASS, `pnpm build` PASS, Tauri debug PASS, `git diff --check` PASS,
+audit public PASS (673 fichiers, `-AllowRemotes`, aucun motif sensible).
+
+**TASK-0050 = `BLOCKED`.** F-014/P-10 non `VERIFIED`. Aucune TASK-0051.
+Contrôle indépendant obligatoire sur cellule A (21/23, quatre corrections de
+harnais) avant toute nouvelle tentative sur cellule B.

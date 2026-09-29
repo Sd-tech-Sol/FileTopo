@@ -282,6 +282,100 @@ const readMapKeys = () => evaluate(`(() => {
   return [...keys].sort();
 })()`);
 
+// §5 evidence, installed once and callable per key at WHATEVER moment that
+// key is actually live — some keys (a filtered pass's own hierarchy-touching
+// pair, the two ACTION-0088 intra keys handled by cellule B) do not survive
+// to the end of the run alongside everything else, so their row is captured
+// the moment they are materialised rather than in one final sweep.
+const INSTALL_SHARING_ROW_FUNCTION = `window.__task0050Row = function(key) {
+  // A legend sample renders its DEFAULT state: not root, not touching the
+  // selection, established rather than suggestion, not yet approved (unless
+  // the key under test IS one of those states). A live exemplar that ALSO
+  // carries one of those states simultaneously is styled by a SECOND,
+  // unrelated rule on top of the key under test's own — comparing it would
+  // report that other rule's divergence, not the key's. Weighted so ties
+  // prefer the plainer exemplar (the same one the legend actually rendered),
+  // most-confounding first: root changes a shared kind-glyph regardless of
+  // any other key; touching is the heaviest visual override; suggestion vs
+  // established is its own key family; approved is a stroke pattern only.
+  const penaltyOf = (otherKey) => {
+    if (otherKey === 'node-root') return 1000;
+    if (/-touching$/.test(otherKey)) return 100;
+    if (/-suggestion$/.test(otherKey)) return 10;
+    if (/-approved$/.test(otherKey)) return 5;
+    return 1;
+  };
+  const liveCandidates = [...document.querySelectorAll('.map-view [data-legend-keys~="' + CSS.escape(key) + '"]')]
+    .map((element) => {
+      const others = (element.getAttribute('data-legend-keys') || '').split(/\\s+/).filter((k) => k && k !== key);
+      return { element, penalty: others.reduce((sum, k) => sum + penaltyOf(k), 0) };
+    })
+    .sort((a, b) => a.penalty - b.penalty);
+  const chosen = liveCandidates[0];
+  const live = chosen?.element ?? null;
+  // How confounded THIS capture is, so a caller taking several captures over
+  // time (as keys come and go across the run) can keep the least-confounded
+  // one rather than whichever happened to be captured first.
+  const confound = chosen ? chosen.penalty : Infinity;
+  const item = document.querySelector('[data-legend-key="' + CSS.escape(key) + '"]');
+  const signature = element => {
+    const style = getComputedStyle(element);
+    return {
+      className: element.getAttribute('class'),
+      strokeWidth: style.strokeWidth,
+      strokeDasharray: style.strokeDasharray,
+      fillOpacity: style.fillOpacity,
+      fontWeight: style.fontWeight,
+      opacity: style.opacity,
+    };
+  };
+  const byClass = (elements, allowed) => {
+    const map = {};
+    for (const element of elements) {
+      const classes = [...element.classList].filter((name) => (allowed ? allowed.includes(name) : /^map-/.test(name)));
+      if (classes.length === 0) continue;
+      const key2 = classes.sort().join(' ');
+      map[key2] ??= signature(element);
+    }
+    return map;
+  };
+  // Both MapView and MapLegend sometimes carry a key's whole visual contract
+  // on the outer g element itself (e.g. map-hierarchy-edge--distant, its
+  // child path bearing no class of its own). The live side already includes
+  // its own g manually ([live, ...] below); the legend sample's g must be
+  // included the same way, so 'g' joins the descendant tag list on both sides.
+  const SHAPE_TAGS = 'g,rect,path,line,circle,text';
+  if (!item) return { exercisedOnMap: false, legendSampleFound: false, confound };
+  const legendByClassAll = byClass([...item.querySelectorAll(SHAPE_TAGS)]);
+  if (!live) return { exercisedOnMap: false, legendSampleFound: true, legendByClass: legendByClassAll, confound };
+  const liveClasses = new Set([live, ...live.querySelectorAll('*')].flatMap(e => [...e.classList]));
+  const sampleClasses = new Set([...item.querySelectorAll('.map-runtime-legend__sample *')].flatMap(e => [...e.classList]));
+  let shared = [...liveClasses].filter(name => sampleClasses.has(name) && /^map-/.test(name));
+  // 'map-node__kind-glyph' carries the NODE KIND's own visual contract,
+  // asserted separately under 'node-root'/'node-directory'/'node-file'/
+  // 'node-skipped' — including the root-only stroke-width bonus. Every node
+  // renders one, so it is trivially 'shared' with every OTHER key's legend
+  // sample too. Comparing it there compares node KIND, not the key under
+  // test, and — because THIS live exemplar happens to be root while the
+  // legend sample for that other key is not — diverges on a rule that has
+  // nothing to do with that key. Excluded only in that exact case.
+  if (live.closest('.map-node--root')) shared = shared.filter((name) => name !== 'map-node__kind-glyph');
+  return {
+    exercisedOnMap: true,
+    legendSampleFound: true,
+    sharedClasses: shared,
+    liveByClass: byClass([live, ...live.querySelectorAll(SHAPE_TAGS)], shared),
+    legendByClass: byClass([...item.querySelectorAll(SHAPE_TAGS)], shared),
+    confound,
+  };
+};`;
+async function computeSharingRow(key) {
+  if (!(await evaluate("typeof window.__task0050Row === 'function'"))) {
+    await evaluate(INSTALL_SHARING_ROW_FUNCTION);
+  }
+  return evaluate(`window.__task0050Row(${JSON.stringify(key)})`);
+}
+
 async function axeRun() {
   if (!(await evaluate("typeof window.axe === 'object'"))) await evaluate(axeSource);
   return evaluate(`(async () => {
@@ -427,21 +521,68 @@ try {
   assert(detIntra && apprIntra && sugIntra, "Alpha fixture lacks a deterministic/approved/pending intra relation");
   assert(detCross && apprCross && sugCross, "Alpha↔Gamma fixture lacks a deterministic/approved/pending cross relation");
 
+  // computeSharingRow needs the legend's own sample DOM (for the shared-class
+  // intersection), which only exists while the legend panel is open. Many of
+  // the keys below are exercised through a long chain of chip switches and
+  // aggregate re-paging (§Q.2's empirically observed "the other brain's own
+  // pagination resets" behaviour) that does not all survive to the end of the
+  // run — so the legend is opened here, kept open through this whole
+  // exploration, and each key's row is captured the moment it is first seen,
+  // never re-derived from a later, possibly-collapsed DOM. It is closed again
+  // below, before the axe "closed" cell, which must measure a genuinely
+  // closed legend.
+  await click(testid("map-legend-toggle"));
+  await until(`!!document.querySelector(${JSON.stringify(testid("map-legend"))})`);
   const richKeySet = new Set();
+  const capturedRows = {};
+  async function captureNewKeys() {
+    for (const key of await readMapKeys()) {
+      richKeySet.add(key);
+      const existing = capturedRows[key];
+      // A key seen for the first time is always captured. Seen again later
+      // (a different edge/node now carries it, the current selection has
+      // moved off it, ...), it is captured again ONLY to keep the LEAST
+      // confounded exemplar so far — an existing exercised capture is never
+      // downgraded by a later one that no longer finds a live element at all
+      // (a since-collapsed pagination window), and a more-confounded live
+      // capture never replaces a less-confounded one already in hand.
+      if (!existing) {
+        capturedRows[key] = await computeSharingRow(key);
+      } else if (existing.exercisedOnMap && existing.confound > 0) {
+        const candidate = await computeSharingRow(key);
+        if (candidate.exercisedOnMap && candidate.confound < existing.confound) {
+          capturedRows[key] = candidate;
+        }
+      }
+    }
+  }
   for (const edge of [detIntra, apprIntra, sugIntra]) {
     await revealNode(IDS.alpha, edge.target.relativePath, edge.target.nodeId);
     await revealNode(IDS.alpha, edge.source.relativePath, edge.source.nodeId);
+    // A relation edge draws as soon as both endpoints are revealed — selection
+    // is not required. Captured here FIRST, before the click below adds
+    // "touching", so the plainest, least-confounded exemplar (the one the
+    // pagination churn ahead is least likely to leave stranded, per the runs
+    // that chased this) is the one already in hand.
+    await captureNewKeys();
     await clickNode(IDS.alpha, edge.source.nodeId);
-    for (const key of await readMapKeys()) richKeySet.add(key);
+    await captureNewKeys();
   }
   for (const edge of [detCross, apprCross, sugCross]) {
     const other = otherSideOf(edge);
     const alphaSide = alphaSideOf(edge);
     await revealNode(other.brainId, other.relativePath, other.nodeId);
     await revealNode(alphaSide.brainId, alphaSide.relativePath, alphaSide.nodeId);
+    await captureNewKeys();
     await clickNode(alphaSide.brainId, alphaSide.nodeId);
-    for (const key of await readMapKeys()) richKeySet.add(key);
+    await captureNewKeys();
   }
+  // Every relation above was ALSO captured once selected, i.e. "touching".
+  // Deselecting now, onto the one node guaranteed to still be on screen (the
+  // brain's own root), gives a last, plain-state capture pass a chance to
+  // upgrade any of them still holding a touching-confounded exemplar.
+  await clickNode(IDS.alpha, await findNodeId(IDS.alpha, ""));
+  await captureNewKeys();
 
   const mapRichKeys = [...richKeySet].sort();
 
@@ -470,9 +611,26 @@ try {
   await until(`document.querySelector('[data-brain-id="${IDS.wide}"][data-node-id="${skipHit.nodeId}"]')?.getAttribute('aria-selected') === 'true'`);
   await click(testid("fit-composition"));
   await pause(500);
-  for (const key of await readMapKeys()) richKeySet.add(key);
+  await captureNewKeys();
   assert(richKeySet.has("node-skipped"), "node-skipped not materialised by the real NTFS junction");
   await click(testid(`composition-chip-${IDS.alpha}`));
+
+  // `hierarchy-touching` needs a parent/child pair BOTH still on screen AND
+  // one of them selected. Re-revealed and re-selected here (switching the
+  // active chip re-paged Alpha's own aggregate above, §Q.2's empirically
+  // observed behaviour).
+  await revealNode(IDS.alpha, detIntra.target.relativePath, detIntra.target.nodeId);
+  await revealNode(IDS.alpha, detIntra.source.relativePath, detIntra.source.nodeId);
+  await clickNode(IDS.alpha, detIntra.source.nodeId);
+  await until("!!document.querySelector('.map-hierarchy-edge--touching')", 5000).catch(() => {});
+  if (!(await evaluate("!!document.querySelector('.map-hierarchy-edge--touching')"))) {
+    // Whichever endpoint is NOT the brain root carries the rendered parent
+    // edge that touches the selection; try the other one, since either may
+    // be root.
+    await clickNode(IDS.alpha, detIntra.target.nodeId);
+    await until("!!document.querySelector('.map-hierarchy-edge--touching')", 5000).catch(() => {});
+  }
+  await captureNewKeys();
 
   // Files are matches; their ancestors remain visible as context.
   for (const kind of ["DIRECTORY", "SKIPPED"]) {
@@ -483,10 +641,17 @@ try {
   await click(testid("fit-composition"));
   await pause(800);
   await quiet();
-
+  await captureNewKeys();
   const mapFilterKeys = await readMapKeys();
   const mapRichKeysFinal = [...richKeySet].sort();
   const mapBefore = [...new Set([...mapRichKeysFinal, ...mapFilterKeys])].sort();
+
+  // The exploration above is done: close the legend so the axe "closed" cell
+  // right below measures a genuinely closed legend, matching the "real"
+  // trusted-click open/close sequence right after it.
+  await click(testid("map-legend-toggle"));
+  await until(`!document.querySelector(${JSON.stringify(testid("map-legend"))})`);
+
   const before = await stateSnapshot();
   await quiet();
   const wireStart = wireCalls.length;
@@ -519,58 +684,45 @@ try {
     !mapBefore.includes(DIAGNOSTIC_EXCEPTION),
     "node-diagnostic was observed on the real map; the exception is no longer valid and the backend invariant must be re-checked before this assertion is loosened",
   );
+  // ACTION-0088/TASK-0050 §Q: this cell alone cannot materialise
+  // `intra-suggestion`/`intra-approved` (a shared-window limitation of THIS
+  // harness's own reveal technique, not a legend gap — see TASK-0050.md §Q.2).
+  // Those two are cellule B's job, replayed by J12 on `relationScenario.ts`.
+  // This cell still asserts strictly: no unexplained key is missing, no
+  // unexpected key appears, and the gap is EXACTLY the two named ones — never
+  // silently wider.
+  const CELL_B_ONLY_KEYS = ["intra-approved", "intra-suggestion"];
+  const unexpectedExtra = mapBefore.filter((key) => !expectedReachable.includes(key));
+  assert.deepEqual(unexpectedExtra, [], `cellA observed keys outside expectedReachable: ${JSON.stringify(unexpectedExtra)}`);
+  const cellAGap = expectedReachable.filter((key) => !mapBefore.includes(key)).sort();
   assert.deepEqual(
-    mapBefore,
-    expectedReachable,
-    `observed real map keys != expectedReachable (legendKeys - node-diagnostic).\nobserved: ${JSON.stringify(mapBefore)}\nexpected: ${JSON.stringify(expectedReachable)}`,
+    cellAGap,
+    CELL_B_ONLY_KEYS,
+    `cellA's gap against expectedReachable must be exactly ${JSON.stringify(CELL_B_ONLY_KEYS)}, got ${JSON.stringify(cellAGap)}`,
   );
 
   // §5 — computed signatures, actually asserted equal, not merely recorded.
   // Meaningful families compared per element family; a value drift fails.
+  // Every key already captured during exploration above (`capturedRows`) is
+  // used as-is — several of those do not survive the chip switches, filter
+  // toggle and re-paging that followed, so re-querying them now would find
+  // nothing there to compare. Anything not yet captured (stable, legend- and
+  // panel-level keys unaffected by that churn) is captured fresh, right here,
+  // with the legend already open again from the "real" flow above.
   const SIGNATURE_PROPERTIES = ["strokeWidth", "strokeDasharray", "fillOpacity", "fontWeight", "opacity"];
-  const sharing = await evaluate(`(() => {
-    const rows = {};
-    for (const key of ${JSON.stringify(legendKeys)}) {
-      const live = document.querySelector('.map-view [data-legend-keys~="' + CSS.escape(key) + '"]');
-      const item = document.querySelector('[data-legend-key="' + CSS.escape(key) + '"]');
-      if (!live || !item) { rows[key] = { exercisedOnMap: false }; continue; }
-      const liveClasses = new Set([live, ...live.querySelectorAll('*')].flatMap(e => [...e.classList]));
-      const sampleClasses = new Set([...item.querySelectorAll('.map-runtime-legend__sample *')].flatMap(e => [...e.classList]));
-      const shared = [...liveClasses].filter(name => sampleClasses.has(name) && /^map-/.test(name));
-      const signature = element => {
-        const style = getComputedStyle(element);
-        return {
-          className: element.getAttribute('class'),
-          strokeWidth: style.strokeWidth,
-          strokeDasharray: style.strokeDasharray,
-          fillOpacity: style.fillOpacity,
-          fontWeight: style.fontWeight,
-          opacity: style.opacity,
-        };
-      };
-      const bySharedClass = (elements) => {
-        const map = {};
-        for (const element of elements) {
-          const classes = [...element.classList].filter((name) => shared.includes(name));
-          if (classes.length === 0) continue;
-          const key2 = classes.sort().join(' ');
-          map[key2] ??= signature(element);
-        }
-        return map;
-      };
-      rows[key] = {
-        exercisedOnMap: true,
-        sharedClasses: shared,
-        liveByClass: bySharedClass([live, ...live.querySelectorAll('rect,path,line,circle,text')]),
-        legendByClass: bySharedClass([...item.querySelectorAll('rect,path,line,circle,text')]),
-      };
-    }
-    return rows;
-  })()`);
+  const sharing = { ...capturedRows };
+  for (const key of legendKeys) {
+    if (key in sharing) continue;
+    sharing[key] = await computeSharingRow(key);
+  }
   for (const [key, row] of Object.entries(sharing)) {
     const isDiagnostic = key === DIAGNOSTIC_EXCEPTION;
-    if (!isDiagnostic) {
+    const isCellBOnly = CELL_B_ONLY_KEYS.includes(key);
+    if (!isDiagnostic && !isCellBOnly) {
       assert(row.exercisedOnMap, `${key} was not exercised on the real map (must be one of the 23 reachable keys)`);
+    }
+    if (isCellBOnly) {
+      assert(row.legendSampleFound, `${key}: legend sample missing, cellB's live-side capture cannot be compared to it`);
     }
     if (!row.exercisedOnMap) continue;
     assert(row.sharedClasses.length > 0, `${key} uses no live map class shared with its legend sample`);
@@ -597,7 +749,12 @@ try {
   const deterministicRun = spawnSync(
     process.platform === "win32" ? "pnpm.cmd" : "pnpm",
     ["vitest", "run", "src/map/mapLegend.test.tsx"],
-    { encoding: "utf8" },
+    // `shell: true`: on this Node/Windows combination, spawnSync a bare
+    // `.cmd` directly fails with EINVAL (never a PATH or content problem —
+    // confirmed by hand); routing it through the shell resolves it exactly
+    // the way a terminal would. Arguments here are two fixed, literal
+    // strings this script owns, never external input.
+    { encoding: "utf8", shell: true },
   );
   const deterministicCoverage = deterministicRun.status === 0 ? "PASS" : "FAIL";
   assert.equal(
@@ -659,7 +816,10 @@ try {
 
   const browser = await send("Browser.getVersion");
   const result = {
-    task: "TASK-0050",
+    // Cell A alone, per ACTION-0088/TASK-0050 §Q — the combiner
+    // (scripts/task0050-combine-webview2.mjs) unions this with cellule B's
+    // J12 replay and publishes the final docs/performance/runs/TASK-0050-webview2.json.
+    task: "TASK-0050-cellA",
     engine: { product: browser.product, userAgent: browser.userAgent, protocolVersion: browser.protocolVersion },
     axe: { package: axeManifest.version, injectedVersion: await evaluate("axe.version"), axeMinJsSha256: axeSha256, closed: axeClosed, open: axeOpen },
     scenario: {
@@ -677,6 +837,8 @@ try {
       expectedReachableCount: expectedReachable.length,
       observedReachableCount: mapBefore.length,
       exemptKeys: [DIAGNOSTIC_EXCEPTION],
+      cellBOnlyKeys: CELL_B_ONLY_KEYS,
+      cellAGap: cellAGap,
       mapKeysCovered: mapBefore.every((key) => legendKeys.includes(key)),
       reachableKeysExactMatch: same(mapBefore, expectedReachable),
       diagnosticAndSkippedExplainedByLegend: legendKeys.includes("node-diagnostic") && legendKeys.includes("node-skipped"),
@@ -698,7 +860,7 @@ try {
   assert(!text.includes(seed.rootAlix) && !text.includes(seed.rootBasile), "absolute proof path leaked into artifact");
   await mkdir(join(artifactPath, ".."), { recursive: true });
   await writeFile(artifactPath, text);
-  console.log(`TASK-0050 WebView2 PASS: ${mapBefore.length} map keys / ${legendKeys.length} legend keys`);
+  console.log(`TASK-0050 cellA WebView2 PASS: ${mapBefore.length}/${expectedReachable.length} reachable keys (gap: ${cellAGap.join(", ")}) / ${legendKeys.length} legend keys`);
   ws.close();
 } catch (error) {
   console.error(String(error?.stack ?? error));

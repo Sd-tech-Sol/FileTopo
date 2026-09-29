@@ -1,7 +1,7 @@
 # TASK-0050 — V1 Runtime Legend / P-10 Closure
 
 - **Date :** 2026-09-26
-- **Statut :** `CORRECTIVE_REQUIRED`
+- **Statut :** `BLOCKED`
 - **Branche :** `build/v0.2-a34-v1-runtime-legend`
 - **Décision :** `DEC-0048`
 - **Portée :** `F-014`, `P-10`
@@ -508,3 +508,123 @@ exemple une brique synthétique dédiée, plus petite, où ces deux relations
 sont les SEULES arêtes du nœud choisi, pour éliminer toute variable de
 fenêtre partagée). Tant que ce choix n'est pas fait, `TASK-0050` / `F-014`
 / `P-10` restent `BLOCKED`, jamais `VERIFIED`. Aucune TASK-0051.
+
+## R — reprise Claude Code — cellule A fermée 21/23, cellule B (J12) bloquée par une régression produit distincte — `BLOCKED` — 2026-09-28
+
+Exécution de `.orchestrator/NEXT_PROMPT.md` (stratégie ACTION-0088 : réutiliser
+`J12` comme cellule B). Préconditions §0 vérifiées : branche, fast-forward,
+arbre propre, ACTION-0087/0088 et DEC-0048 §K lus, `src/map/relationScenario.ts`
+et l'artefact historique `TASK-0024-J12-intrabrain-relations-regression-webview2.json`
+lus (référence seule, non rejouée directement).
+
+### R.1 — cellule A : fermée, 21/23 reproductible, RÉELLEMENT vérifiée cette fois
+
+`scripts/task0050-webview2.mjs` n'avait **jamais atteint** sa propre boucle de
+comparaison de signatures (§5) dans une exécution réelle complète : l'égalité
+stricte `mapBefore === expectedReachable`, avant Q, échouait systématiquement
+plus tôt à cause du manque `intra-suggestion`/`intra-approved`, empêchant tout
+run de dépasser ce point. Assouplir cette égalité en un écart nommé et exempté
+(`CELL_B_ONLY_KEYS = ["intra-approved", "intra-suggestion"]`, écart vérifié
+strictement égal à ces deux clés, aucune autre) a exposé **quatre défauts
+jusque-là invisibles** dans le harnais lui-même (jamais dans MapView/MapLegend) :
+
+1. **Confusion racine/clé** : `filter-context` (et toute clé non liée au type
+   de nœud) pouvait choisir comme témoin le nœud RACINE, dont le glyphe de
+   type porte une règle CSS dédiée (`.map-node--root .map-node__kind-glyph`,
+   déjà couverte par `node-root`) — divergence hors sujet, pas un vrai
+   défaut de `filter-context`.
+2. **Capture `g`-seul absente côté légende** : `hierarchy-normal`/`hierarchy-touching`
+   ne portent leur classe significative que sur l'élément `<g>` englobant (son
+   `<path>` enfant n'a aucune classe) — le côté carte l'incluait manuellement,
+   le côté légende ne le cherchait jamais (sélecteur sans `g`), donnant
+   `legendByClass` vide à tort.
+3. **Confusion état "touching"** : un témoin sélectionné au moment de la
+   capture porte aussi `*-touching` (contour renforcé, `stroke-width`
+   différent), hors sujet pour la clé de base (`intra-established`,
+   `inter-crossing`, …). Corrigé par un score de confusion (racine, touching,
+   suggestion, approuvé) qui préfère le témoin le plus « neutre » disponible,
+   avec re-capture différée quand un témoin moins confondu apparaît plus tard
+   dans le run (fenêtre glissante DEC-0034 oblige — un témoin propre n'est pas
+   toujours disponible au même instant).
+4. **`spawnSync('pnpm.cmd', …)` échoue `EINVAL`** sur ce Node/Windows (confirmé
+   à la main, hors harnais) : la preuve `node-diagnostic` (test déterministe
+   invoqué par le harnais) n'avait jamais pu s'exécuter réellement non plus.
+   Corrigé par `shell: true` (arguments fixes, non issus d'une entrée externe).
+
+Ces quatre défauts sont désormais corrigés dans `scripts/task0050-webview2.mjs`
+uniquement (aucun fichier produit touché). Résultat, **reproduit deux fois à
+l'identique** : 21/23 clés atteignables, écart exactement
+`["intra-approved", "intra-suggestion"]`, axe 0 violation (fermé et ouvert),
+0 erreur console fatale, `node-diagnostic` PASS déterministe + invariant
+backend, signatures carte ↔ légende réellement comparées et égales pour les
+21 clés, fenêtre passive (aucune commande backend causée par les gestes de
+légende) vérifiée. Artefact intermédiaire non publié dans le dépôt (écrit
+sous `.filetopo-sandbox/<variant>/cellA.json`, jetable).
+
+### R.2 — cellule B (J12) : `map_not_built`, puis une régression distincte confirmée
+
+Deux défauts environnementaux, corrigés dans `src/map/relationScenario.ts` :
+
+1. `FILETOPO_SANDBOX_VARIANT` démarre un catalogue vierge : `brain-alpha`
+   n'est **pas** construit (`map_not_built`), contrairement à ce que la
+   scénario supposait implicitement. Ajout, en tête du scénario, de
+   `map_prepare_synthetic_source` + `map_rebuild` sur `brain-alpha` — le même
+   geste que la cellule A effectue déjà pour ses propres instances de ces
+   deux cerveaux frozen. Ne change rien à ce que J12 mesure.
+2. Une fois l'index construit, **J12 échoue systématiquement** (reproduit
+   deux fois à l'identique) sur `noeud introuvable: dossier-a/note-1.txt`.
+   Diagnostic confirmé : `MapNode::snapshot()` appelle
+   `super::projection::materialize_view(self, None, None)`
+   (`src-tauri/src/map/brain_index.rs:662`) — la même vue **bornée/fenêtrée**
+   (`DEC-0034`) que la carte affiche, jamais un dump plat du corpus entier.
+   Un catalogue fraîchement construit ne montre donc, dans ce snapshot, que
+   la racine et ses enfants directs (confirmé : `["", "dossier-a", "dossier-b",
+   "racine-1.txt", "racine-2.txt"]`, aucun fichier sous `dossier-a/`).
+   `relationScenario.ts::nodeIdOf` cherche `PIVOT_PATH` directement dans ce
+   snapshot borné, sans jamais révéler les pastilles d'agrégat — une
+   hypothèse qui devait être vraie quand `J12` a été écrit (`TASK-0017`,
+   avant `DEC-0034`) et qui ne l'est plus depuis que la fenêtre bornée existe.
+
+**C'est une régression produit actuelle de `J12` lui-même**, distincte du
+défaut Q.2 (deux arêtes précises invisibles malgré des extrémités visibles) :
+ici, `J12` ne trouve même plus son propre nœud pivot dans un catalogue neuf.
+Aucune preuve que la fenêtre bornée elle-même soit en cause pour Q.2
+spécifiquement, mais elle est confirmée être la cause de CE blocage-ci.
+
+Conforme à la clause d'arrêt de `.orchestrator/NEXT_PROMPT.md` §9 : *« Si J12
+actuel ne matérialise plus les deux clés, STOP/BLOCKED avec preuve »*. Étendre
+`relationScenario.ts` avec la même logique de révélation par pastilles que la
+cellule A referait le travail de la cellule A **à l'intérieur** de J12,
+contredisant la stratégie ACTION-0088 (« réutiliser J12 tel quel, ne pas
+instrumenter durablement »).
+
+### R.3 — décision
+
+Aucun Rust touché. Aucun artefact `TASK-0050-webview2.json` publié ni
+remplacé : la stratégie à deux cellules ne ferme pas 23/23 puisque cellule B
+ne produit toujours aucune preuve. `docs/performance/runs/TASK-0026-J12-intrabrain-relations-regression-webview2.json`
+n'a pas été réécrit (J12 n'a produit que sa variante `-abandon`, non protégée,
+conservée comme preuve du blocage — reproduite deux fois à l'identique).
+Aucun artefact canonique historique touché.
+
+Fichiers modifiés et commités : `scripts/task0050-webview2.mjs` (cellule A,
+quatre défauts de harnais corrigés, 21/23 désormais réellement reproductible),
+`scripts/task0050-webview2.ps1` (orchestration à deux cellules + combineur),
+`scripts/task0050-combine-webview2.mjs` (nouveau — union stricte cellule A ∪
+cellule B, jamais exécuté avec succès puisque cellule B ne produit aucune
+preuve), `src/map/relationScenario.ts` (préparation de l'index + collecte
+d'évidence `intra-suggestion`/`intra-approved`, jamais atteinte). Validations
+rejouées sur l'état final : 632/632 tests frontend PASS, `pnpm check` PASS,
+`pnpm build` PASS, Tauri debug PASS, `git diff --check` PASS, audit public
+PASS (673 fichiers, aucun motif sensible).
+
+**TASK-0050 reste `BLOCKED`.** F-014/P-10 non `VERIFIED`. Aucune TASK-0051.
+
+**Prochaine action pour l'orchestrateur technique ou Sébastien** : choisir
+entre (a) diagnostiquer/corriger `materialize_view`/le pivot de J12 pour un
+catalogue neuf sous fenêtre bornée — un changement de scénario de test, pas
+nécessairement de produit, mais qui dépasse le périmètre « réutiliser J12 tel
+quel » de cette passe, ou (b) revenir à l'option Q.3(b) : une brique
+synthétique dédiée où les deux relations manquantes sont les seules arêtes du
+nœud choisi. Tant que ce choix n'est pas fait, `TASK-0050` / `F-014` / `P-10`
+restent `BLOCKED`. Aucune TASK-0051.

@@ -1,5 +1,34 @@
 # HANDOFF — passage de relais
 
+## Relais — TASK-0050 §R / cellule A fermée, cellule B bloquée par régression distincte — 2026-09-28
+
+- HEAD contrôlé avant exécution : `0f24fbfa2877991910129d2c9d59fd2a4f8cf991`.
+- Stratégie ACTION-0088 exécutée : cellule A (harnais TASK-0050) ∪ cellule B
+  (replay `J12`).
+- Cellule A **fermée pour de vrai** cette fois : 21/23 reproductible deux
+  fois à l'identique, après correction de quatre défauts de harnais jamais
+  exercés en réel auparavant (racine/clé confondues, capture de classe
+  `<g>`-seul absente côté légende, confusion d'état « touching »,
+  `spawnSync` `EINVAL`). Aucun fichier produit touché — seul
+  `scripts/task0050-webview2.mjs`.
+- Cellule B (`J12`) reste bloquée, par une régression **distincte** de Q.2 :
+  `MapNode::snapshot()` renvoie une vue bornée (`materialize_view`,
+  `DEC-0034`), pas le corpus plat que `J12` suppose depuis son écriture
+  (avant `DEC-0034`) — `J12` ne retrouve même plus son propre nœud pivot
+  dans un catalogue neuf. Reproduit deux fois à l'identique. Un défaut
+  d'amorçage séparé (`map_not_built: brain-alpha`) a été corrigé dans
+  `src/map/relationScenario.ts` (prépare l'index avant d'ouvrir les
+  relations) — nécessaire mais pas suffisant.
+- Aucun changement Rust. Aucun artefact `TASK-0050-webview2.json` publié.
+  Aucun artefact canonique historique touché.
+- Prochaine décision, réservée à l'orchestrateur technique ou à Sébastien :
+  diagnostiquer/corriger le pivot de `J12` sous fenêtre bornée, ou revenir à
+  l'option Q.3(b) (brique synthétique dédiée). Aucune TASK-0051.
+- Contrôle indépendant obligatoire sur cellule A avant toute nouvelle
+  tentative. Détail complet : `docs/tasks/TASK-0050-v1-runtime-legend-p10.md`
+  section R.
+
+
 ## Relais — ACTION-0087 / TASK-0050 corrective READY — 2026-09-28
 
 - HEAD contrôlé : `fa429db6f2324269bfddd21b78be6b1f5eed9785`.

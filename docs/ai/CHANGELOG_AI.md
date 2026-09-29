@@ -6277,3 +6277,40 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
 - Validations : 632/632 tests frontend, check/build/Tauri debug/diff
   check/audit public PASS.
 - TASK-0050/F-014/P-10 restent `BLOCKED`. Aucune TASK-0051.
+
+
+## 2026-09-28 — TASK-0050 §R — cellule A fermée 21/23, cellule B (J12) bloquée par une régression distincte — `BLOCKED`
+
+- Stratégie ACTION-0088 exécutée : cellule A (harnais TASK-0050) ∪ cellule B
+  (replay `J12` de `src/map/relationScenario.ts`).
+- **Cellule A** : l'égalité stricte de §Q empêchait tout run réel d'atteindre
+  la boucle de comparaison de signatures. Assouplie en écart nommé
+  (`intra-approved`/`intra-suggestion` seulement, vérifié exact), ce qui a
+  exposé et permis de corriger quatre défauts de harnais jusque-là jamais
+  exercés en réel : confusion racine/clé sur le glyphe de type (préfère un
+  témoin non-racine); capture de classe absente côté légende pour les
+  éléments `<g>`-seuls comme `hierarchy-*` (`g` ajouté au sélecteur);
+  confusion d'état « touching » sur un témoin sélectionné (score de
+  confusion + re-capture différée); `spawnSync('pnpm.cmd', …)` `EINVAL` sur
+  ce Node/Windows (corrigé par `shell: true`). Résultat reproduit deux fois
+  à l'identique : 21/23, axe 0 violation, `node-diagnostic` PASS, signatures
+  égales pour les 21 clés. Seul `scripts/task0050-webview2.mjs` modifié.
+- **Cellule B (`J12`)** : corrigé un défaut d'amorçage
+  (`map_not_built: brain-alpha` sous sandbox neuf — `map_prepare_synthetic_source`
+  + `map_rebuild` ajoutés en tête de `relationScenario.ts`), puis découvert
+  une régression distincte de Q.2, confirmée par lecture du code et du
+  journal : `MapNode::snapshot()` renvoie une vue **bornée**
+  (`materialize_view`, `DEC-0034`), pas le corpus plat que `J12` suppose
+  depuis son écriture (`TASK-0017`, avant `DEC-0034`) — `J12` ne retrouve
+  plus son propre nœud pivot dans un catalogue neuf. Reproduit deux fois à
+  l'identique.
+- Conforme à la clause d'arrêt `.orchestrator/NEXT_PROMPT.md` §9 :
+  instrumenter `J12` avec la logique de révélation de la cellule A
+  contredirait ACTION-0088 (« réutiliser `J12` tel quel »).
+- Aucun changement Rust. Aucun artefact `TASK-0050-webview2.json` publié ni
+  remplacé. Aucun artefact canonique historique touché (seule la variante
+  `-abandon`, non protégée, écrite comme preuve du blocage).
+- Validations : 632/632 tests frontend, check/build/Tauri debug/diff
+  check/audit public (673 fichiers) PASS.
+- TASK-0050/F-014/P-10 restent `BLOCKED`. Aucune TASK-0051. Contrôle
+  indépendant requis sur cellule A avant toute nouvelle tentative.
