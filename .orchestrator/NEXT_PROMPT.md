@@ -1,4 +1,4 @@
-# NEXT_PROMPT — TASK-0050 corrective J12 — navigation bornée actuelle
+# NEXT_PROMPT — TASK-0050 corrective finale — FILE-only filtered projection
 
 **TARGET_AGENT:** CLAUDE CODE
 **RECOMMENDED_MODEL:** Claude Sonnet 5
@@ -8,8 +8,8 @@
 
 ## Objectif unique
 
-Faire fonctionner la cellule B J12 sur le runtime borné actuel en réutilisant
-la navigation produit existante, puis fermer la preuve multi-cellules 23/23.
+Fermer les deux clés intra manquantes par la projection filtrée produit
+existante, sans changement produit.
 
 Aucune TASK-0051. Aucun Rust/backend. Aucune nouvelle fixture.
 
@@ -19,143 +19,134 @@ Aucune TASK-0051. Aucun Rust/backend. Aucune nouvelle fixture.
 2. Checkout `build/v0.2-a34-v1-runtime-legend`.
 3. Fetch + fast-forward seulement.
 4. Arbre propre.
-5. Lis ACTION-0087, ACTION-0088, ACTION-0089, DEC-0048 §K et TASK-0050 §§Q-S.
-6. Lis :
-   - `src/map/relationScenario.ts`;
-   - `src/map/MapApp.tsx` autour de `changeProjection`, `selectNode`,
-     `runRelationScenario`;
-   - `src-tauri/src/map/brain_index.rs::snapshot`;
-   - `src-tauri/src/map/projection.rs::materialize_view`.
+5. Lis ACTION-0089, ACTION-0090, TASK-0050 §§T-U.
+6. Lis `src/map/filters.ts`, `src/map/useProjectionFilter.ts`,
+   `src-tauri/src/map/filtered_projection.rs`.
 
-## 1 — ne pas toucher la cellule A
+## 1 — conserver les acquis
 
-Conserve `scripts/task0050-webview2.mjs` tel qu'il est sauf bug nouveau
-démontré par un run.
-
-Il doit continuer de fournir exactement 21 clés réelles, avec gap exact :
-
-`[intra-approved, intra-suggestion]`.
-
-## 2 — réparer la résolution du pivot J12
-
-Dans `relationScenario.ts` :
-
-- garde `map_snapshot` si nécessaire pour les métadonnées de preuve;
-- ne cherche plus `PIVOT_PATH` dans `snapshot.nodes`;
-- utilise la commande produit existante :
-
-`map_resolve_node({ brainId: BRAIN, relativePath: PIVOT_PATH })`.
-
-Exige une `BrainNodeRef` non nulle et cohérente avec `BRAIN`.
-
-Aucune lecture directe SQLite, aucun nouvel endpoint backend.
-
-## 3 — utiliser la navigation produit, pas le setter React brut
-
-Aujourd'hui MapApp passe :
-
-`setSelected: (reference) => setSelected(reference)`.
-
-C'est obsolète sous DEC-0034, car cela saute la logique :
-
-`selectNode -> changeProjection -> map_view(focusId)`.
-
-Corrige le câblage du scénario pour injecter la navigation produit existante
-`selectNode`.
-
-Préférence : renommer explicitement la dépendance du scénario en
-`selectNode` pour éviter qu'un futur mainteneur remette un setter brut par
-erreur.
-
-Dans `runRelationScenario`, après chaque sélection pouvant viser un nœud hors
-projection :
-
-- appelle `selectNode(reference)`;
-- attends avec `waitUntil` que le nœud existe dans
-  `.map-view [data-brain-id=...][data-node-id=...]`;
-- attends aussi son état sélectionné / aria-activedescendant cohérent avant
-  de lire le panneau ou les relations.
-
-Ne copie PAS la logique d'agrégat de cellule A.
-
-## 4 — conserver les gestes J12
+Ne modifie pas le produit.
 
 Conserve :
 
-- vraie touche Windows pour traverser une relation;
-- vraie touche Windows pour approuver la suggestion;
-- aucun click synthétique de remplacement;
-- preuves isTrusted / noProgrammaticActivationUsed.
+- corrections J12 ACTION-0089;
+- preuve node-diagnostic séparée;
+- signatures calculées;
+- node-skipped réel;
+- axe/clavier/passivité;
+- toutes les 21 clés déjà fermées.
 
-La corrective adapte seulement l'accès à une projection bornée.
+## 2 — corriger le défaut FILE-only
 
-## 5 — preuves TASK-0050 cellule B
+Dans `scripts/task0050-webview2.mjs`, la section actuellement commentée
+« Files are matches » est fausse : à partir de `DEFAULT_FILTER.kinds=[]`,
+cliquer DIRECTORY puis SKIPPED produit DIRECTORY+SKIPPED.
 
-Le replay courant doit effectivement produire :
+Après avoir remis `brain-alpha` au premier plan :
 
-- `intra-suggestion` dans les `data-legend-keys` live;
-- `intra-approved` après approbation réelle;
-- signatures live correspondantes;
-- aucune dépendance à l'ancien artefact canonique.
+- assure-toi que le filtre de ce cerveau part bien de l'état attendu;
+- active **FILE seulement** par les contrôles produit;
+- n'active ni DIRECTORY ni SKIPPED;
+- attends la projection filtrée acceptée et le rendu stabilisé.
 
-Le lanceur J12 supprime déjà son replay non protégé avant chaque run : conserve
-cette garde afin qu'un fichier stale ne puisse jamais être accepté.
+Ne simule pas la projection et n'injecte pas de DOM.
 
-## 6 — union finale
+## 3 — prouver les endpoints avant les clés
 
-Rejoue :
+À partir des objets réels déjà lus :
 
-1. cellule A;
-2. J12 cellule B;
-3. `scripts/task0050-combine-webview2.mjs`.
+- choisis une relation `APPROVED` de `intra.established`;
+- choisis une `pendingSuggestion`.
 
-Le combineur doit continuer d'asserter :
+Après FILE-only, assert explicitement que :
 
+- source + target de l'APPROVED sont tous deux présents dans
+  `.map-view [data-brain-id=alpha][data-node-id=...]`;
+- source + target de la suggestion sont tous deux présents simultanément.
+
+Enregistre dans l'artefact les paths/nodeIds et ce résultat.
+
+Si un endpoint manque, STOP/BLOCKED avec :
+
+- filtre courant exact;
+- nodeIds/paths attendus;
+- nodeIds/paths réellement matérialisés;
+- page/filteredTotal/materializedMatchCount.
+
+Ne change pas le produit dans ce cas.
+
+## 4 — capturer les deux clés
+
+Si les endpoints coexistent :
+
+- attends `intra-approved`;
+- attends `intra-suggestion`;
+- appelle la même capture de signature que pour les autres clés;
+- vérifie les signatures carte ↔ légende;
+- suggestion : pointillé + anneaux, pas de flèche;
+- approved : provenance/classe approuvée.
+
+## 5 — restaurer la règle stricte
+
+Supprime la logique d'exemption temporaire :
+
+`CELL_B_ONLY_KEYS = ["intra-approved", "intra-suggestion"]`.
+
+La cellule A doit désormais exiger directement :
+
+- legend = 24;
+- expectedReachable = legend - node-diagnostic = 23;
+- observed real map keys === expectedReachable;
+- aucune autre exception.
+
+Le replay J12 peut rester comme regression replay séparé, mais TASK-0050 ne
+doit plus en dépendre si la cellule A ferme 23/23.
+
+Le combineur multi-cellules devient inutile si la cellule A réussit :
+nettoie la plomberie TASK-0050 devenue morte plutôt que de conserver deux
+sources de vérité.
+
+## 6 — artefact final
+
+Si et seulement si la cellule A atteint 23/23 :
+
+- publie/remplace `docs/performance/runs/TASK-0050-webview2.json`;
+- l'artefact doit provenir du HEAD courant;
+- 23/23 atteignables;
 - légende 24/24;
-- expectedReachable 23;
-- cellule B contient intra-approved + intra-suggestion;
-- union A ∪ B === expectedReachable;
-- seule exception = node-diagnostic;
-- signatures CSS égales.
+- node-diagnostic unique exception documentée;
+- signatures PASS;
+- axe/clavier/passivité;
+- P-19 restart NON TESTED.
 
-## 7 — artefact
+Ne réutilise pas l'ancien artefact TASK-0050 déjà présent comme preuve :
+il est antérieur à cette corrective et doit être remplacé par le run courant.
 
-Si et seulement si tout passe, publie :
-
-`docs/performance/runs/TASK-0050-webview2.json`.
-
-L'artefact doit refléter le HEAD courant testé et les deux cellules réelles.
-
-Ne modifie aucun artefact canonique VERIFIED historique.
-
-## 8 — falsifications
+## 7 — falsifications
 
 Au minimum :
 
-1. repasser J12 au setter `setSelected` brut -> cellule B doit échouer sur
-   le pivot hors projection;
-2. résoudre le pivot seulement dans `snapshot.nodes` -> échec;
-3. retirer intra-suggestion du replay -> combineur échoue;
-4. retirer intra-approved -> combineur échoue;
-5. fournir un vieux replay J12 stale -> le lanceur doit le supprimer/refuser.
+1. remettre DIRECTORY+SKIPPED -> les deux clés intra doivent manquer / gate échouer;
+2. retirer FILE -> gate échoue;
+3. retirer un endpoint attendu de la preuve -> gate échoue;
+4. supprimer intra-approved -> gate 23/23 échoue;
+5. supprimer intra-suggestion -> gate 23/23 échoue.
 
 Restaure tout sabotage.
 
-## 9 — validations
+## 8 — validations
 
-- ciblés relationScenario/TASK-0050;
+- ciblés TASK-0050;
 - `pnpm test`;
 - `pnpm check`;
 - `pnpm build`;
 - Tauri debug;
-- cellule A WebView2;
-- cellule B J12 réel;
-- combineur;
+- WebView2 réel cellule A;
 - axe;
 - `git diff --check`;
 - audit public.
 
-## 10 — gouvernance
+## 9 — gouvernance
 
 Si tout passe :
 
@@ -169,6 +160,5 @@ Si tout passe :
 - commit + push;
 - arbre propre.
 
-Si J12 échoue encore après avoir réellement utilisé `selectNode`, STOP avec
-la preuve exacte; ne change pas Rust et ne crée pas une nouvelle fixture sans
-nouvelle décision d'orchestration.
+Si FILE-only n'aboutit pas, STOP/BLOCKED avec la preuve d'endpoints demandée;
+aucun changement produit sans nouvelle décision.

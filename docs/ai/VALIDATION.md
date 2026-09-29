@@ -9165,3 +9165,23 @@ J12 exécutée jusqu'au bout (nouveau) mais 0 arête rendue, combineur refuse
 
 **TASK-0050 = `BLOCKED`.** F-014/P-10 non `VERIFIED`. Aucune TASK-0051.
 Détail complet : `docs/tasks/TASK-0050-v1-runtime-legend-p10.md` section T.
+
+
+## CX. ACTION-0090 — contrôle indépendant TASK-0050 §T — 2026-09-29
+
+ACTION-0089 est confirmée : J12 atteint désormais son pivot et termine les
+gestes clavier réels.
+
+Le nouveau blocage de rendu ne justifie toutefois pas encore un changement
+produit. Le harnais TASK-0050 contient un défaut de filtre :
+
+- défaut par défaut : `kinds=[]`;
+- le code clique DIRECTORY puis SKIPPED;
+- il obtient donc DIRECTORY+SKIPPED, alors que son commentaire affirme FILE.
+
+La projection filtrée est précisément la primitive produit qui peut
+matérialiser des matches de plusieurs branches simultanément avec leurs
+ancêtres. La corrective suivante doit donc essayer FILE-only sur brain-alpha,
+asserter les endpoints, puis tenter la fermeture 23/23 dans une seule cellule.
+
+Aucun VERIFIED n'est accordé avant ce run.

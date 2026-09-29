@@ -1,5 +1,17 @@
 # HANDOFF — passage de relais
 
+## Relais — ACTION-0090 / TASK-0050 corrective READY — 2026-09-29
+
+- HEAD contrôlé : `a6e3e6d7fcf226d9cb6158ed43e2597b0f121754`.
+- J12 est réparé mais n'est probablement plus nécessaire pour la preuve finale.
+- Cellule A a un défaut concret : elle active DIRECTORY + SKIPPED, pas FILE.
+- Tester FILE-only sur brain-alpha et exiger les endpoints APPROVED + pending
+  simultanément dans le DOM.
+- Si les deux clés apparaissent, supprimer l'exemption cellule B et fermer
+  23/23 dans la cellule A seule.
+- Claude Code + Claude Sonnet 5 Medium. Aucune TASK-0051.
+
+
 ## Relais — TASK-0050 §T / régression J12 corrigée, nouveau blocage produit confirmé — `BLOCKED` — 2026-09-28
 
 - HEAD contrôlé avant exécution : `070421eeea7562736a931766c9192c06de0562ec`,

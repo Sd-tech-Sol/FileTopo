@@ -1,5 +1,15 @@
 # État courant
 
+## ACTION-0090 — TASK-0050 corrective FILE-only READY — 2026-09-29
+
+- ACTION-0089/J12 validée : pivot et navigation bornée corrigés.
+- Défaut trouvé dans la cellule A : « Files are matches » active en réalité
+  DIRECTORY + SKIPPED depuis `kinds=[]`.
+- Prochaine passe : FILE-only sur brain-alpha, endpoints simultanés,
+  capture intra-approved + intra-suggestion, puis 23/23 strict.
+- Aucun changement produit/Rust/fixture. Aucune TASK-0051.
+
+
 ## TASK-0050 §T — régression J12 corrigée, nouveau blocage produit distinct confirmé — `BLOCKED` — 2026-09-28
 
 - Exécution de `.orchestrator/NEXT_PROMPT.md` (corrective ACTION-0089), branche

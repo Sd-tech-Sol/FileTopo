@@ -1,7 +1,7 @@
 # TASK-0050 — V1 Runtime Legend / P-10 Closure
 
 - **Date :** 2026-09-26
-- **Statut :** `BLOCKED`
+- **Statut :** `CORRECTIVE_REQUIRED`
 - **Branche :** `build/v0.2-a34-v1-runtime-legend`
 - **Décision :** `DEC-0048`
 - **Portée :** `F-014`, `P-10`
@@ -781,3 +781,22 @@ Q.3(b)/R.3(b) : une brique synthétique dédiée où les relations à prouver so
 les seules arêtes du nœud choisi, pour que la fenêtre bornée les contienne
 nécessairement ensemble. Tant que ce choix n'est pas fait, `TASK-0050` /
 `F-014` / `P-10` restent `BLOCKED`. Aucune TASK-0051.
+
+
+## U — ACTION-0090 — corrective FILE-only — 2026-09-29
+
+Le contrôle indépendant a trouvé un défaut concret dans la cellule A :
+le commentaire « Files are matches » active en réalité DIRECTORY + SKIPPED à
+partir de `DEFAULT_FILTER.kinds=[]`.
+
+La prochaine passe doit tester la voie produit existante :
+
+- focus `brain-alpha`;
+- filtre **FILE seulement**;
+- vérifier les endpoints APPROVED + pending simultanément présents;
+- capturer les deux clés manquantes;
+- revenir à l'égalité stricte 23/23 sans exemption cellule B.
+
+Aucun changement produit avant ce test. Aucune TASK-0051.
+
+**TASK-0050 = CORRECTIVE_REQUIRED.**

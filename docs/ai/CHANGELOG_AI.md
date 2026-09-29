@@ -6364,3 +6364,14 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
 - Aucun artefact `TASK-0050-webview2.json` publié. TASK-0050/F-014/P-10
   restent `BLOCKED`. Aucune TASK-0051. Détail complet : `docs/tasks/TASK-0050-v1-runtime-legend-p10.md`
   section T.
+
+
+## 2026-09-29 — ACTION-0090 — défaut FILE-only trouvé dans le harnais
+
+- ACTION-0089/J12 contrôlée : navigation bornée corrigée.
+- Le commentaire « Files are matches » de la cellule A ne correspondait pas au
+  code : depuis kinds=[], DIRECTORY + SKIPPED étaient activés, FILE exclu.
+- Décision : tenter la projection filtrée FILE-only sur brain-alpha avant tout
+  changement produit.
+- Objectif : endpoints simultanés, deux clés intra, puis 23/23 strict.
+- Aucune TASK-0051.
