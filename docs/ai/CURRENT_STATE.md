@@ -1,5 +1,21 @@
 # État courant
 
+## TASK-0051 corrective stale-core — `IMPLEMENTED` (re-contrôle requis) — 2026-10-05
+
+- ACTION-0093 traitée : `revoke_relation` ne regarde plus la fraîcheur du moteur
+  (DEC-0049 §I, DEC-0026 §D). L'approbation stale reste refusée; les sorties
+  automatiques core stale restent masquées.
+- Focus après révocation : approbation de la même suggestion si elle existe
+  (CURRENT), sinon « Analyser les relations » (STALE, pending masquée).
+- Preuve WebView2 réelle (DR15 passe 3) : CURRENT → approbation clavier →
+  STALE sans rerun → APPROVED visible + `Révoquer` → Entrée réelle → relation
+  absente, moteur STALE, pending non présentée comme actuelle, focus sur
+  `analyze-relations` → rerun explicite clavier → pending, `decidedUnixMs` null,
+  relation non ressuscitée. Clé : `staleCoreRevocation` dans
+  `docs/performance/runs/TASK-0051-webview2.json`.
+- HEAD testé : `1418262e4e4edf7e131bdb7d96fe9992066b1f5a`. TASK-0051 **jamais VERIFIED par l'exécuteur**; P-19
+  inchangée; aucune TASK-0052.
+
 ## ACTION-0093 — TASK-0051 corrective stale-core REQUIRED — 2026-10-05
 
 - Cycle normal intra/cross accepté.

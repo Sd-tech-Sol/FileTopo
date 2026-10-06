@@ -1,7 +1,7 @@
 # TASK-0051 — V1 Approved Relation Revocation / P-04 Closure
 
 - **Date :** 2026-10-05
-- **Statut :** `CORRECTIVE_REQUIRED` — ACTION-0093
+- **Statut :** `IMPLEMENTED` — corrective ACTION-0093 livrée, re-contrôle indépendant requis
 - **Branche :** `build/v0.2-a35-v1-approved-relation-revocation`
 - **Décision :** `DEC-0049`
 - **Portée :** `P-04`, `F-017`, régression `F-041`
@@ -203,3 +203,9 @@ Corrective :
 - focus sûr après révocation;
 - réutiliser DR15 / `dreScenario.ts`;
 - aucune TASK-0052.
+
+## Corrective ACTION-0093 — livrée
+
+Garde stale retirée de `revoke_relation` seulement; test de commande; focus de
+repli; preuve WebView2 réelle `staleCoreRevocation` (DR15 passe 3). Code
+`1418262e4e4edf7e131bdb7d96fe9992066b1f5a`. Non `VERIFIED`.

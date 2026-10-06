@@ -1,5 +1,18 @@
 # HANDOFF — passage de relais
 
+## Relais — TASK-0051 corrective stale-core IMPLEMENTED — 2026-10-05
+
+- Code : `1418262e4e4edf7e131bdb7d96fe9992066b1f5a` (garde stale retirée de `revoke_relation` seulement; focus de
+  repli sur `analyze-relations`; DR15 passe 3; script
+  `scripts/task0051-stale-core-run-real-host.ps1`).
+- Ne pas refaire TASK-0051 : contrôler uniquement la corrective.
+- Le décor DR15 (debug) liste désormais aussi les APPROVED liées à une
+  suggestion sur le nœud sélectionné : ses extrémités ne sont pas des nœuds de
+  l'Index, sans quoi la relation n'était jamais visible.
+- Rejouer la preuve : `pnpm build`, `pnpm tauri build --debug --no-bundle`, puis
+  `pwsh scripts/task0051-stale-core-run-real-host.ps1` (envoie de vraies touches
+  à la fenêtre).
+
 ## Relais — ACTION-0093 / TASK-0051 corrective READY — 2026-10-05
 
 - HEAD contrôle : 6e725725; orchestration corrective : 6481eae3.

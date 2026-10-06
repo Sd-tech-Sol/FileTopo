@@ -9294,3 +9294,31 @@ Verdict CHANGES_REQUIRED. Le cycle normal est accepté. Bloqueur unique :
 `core-rule-engine` si le moteur est STALE. DEC-0026 §D protège pourtant les
 APPROVED humaines de la fraîcheur et P-04/DEC-0049 exigent leur révocabilité.
 Corrective ciblée exigée avant VERIFIED.
+
+## DC. Corrective ACTION-0093 — TASK-0051 stale-core — `IMPLEMENTED` — 2026-10-05
+
+HEAD testé : `1418262e4e4edf7e131bdb7d96fe9992066b1f5a`.
+
+| Contrôle | Résultat |
+|---|---|
+| `cargo test --lib a_core_approval_is_revocable` (APPROVED core → STALE → revoke OK, store pending, `decided_unix_ms` NULL, moteur encore STALE, approbation stale encore refusée) | PASS |
+| Même test avec la garde stale réintroduite | FAIL (falsification, restaurée) |
+| `cargo test` complet | PASS, 799 réussis, 6 ignorés |
+| `vitest` complet (dont focus STALE → `analyze-relations`) | PASS, 655 |
+| `tsc --noEmit`, `pnpm build`, `pnpm tauri build --debug --no-bundle` | PASS |
+| WebView2 réel, DR15 passe 3, touches Windows réelles (`isTrusted`, 0 clic programmatique) | PASS |
+| Même preuve avec la garde stale réintroduite | FAIL (« le panneau ne signale pas l'analyse à actualiser »; la révocation est refusée), restaurée puis PASS |
+| `scripts/audit-public-readiness.ps1 -AllowRemotes` | PASS, 687 fichiers |
+
+Séparation demandée : la **seule** mutation du côté fixture est une seconde
+observation des mêmes octets synthétiques (nouvelle génération de contenu, sans
+rerun) — empreinte source identique avant/après, mesurée à part. Autour du geste
+de révocation : digest d'Index, empreinte source enregistrée et digest du store
+inter-cerveaux **inchangés**.
+
+Non testé / limites : l'empreinte source « autour du geste » est celle
+enregistrée par la dernière observation (relue, pas recalculée pendant le
+geste); l'état `pending` + `decided_unix_ms` NULL au moment STALE est prouvé au
+niveau store (test de commande), et par l'aperçu après rerun en WebView2 (store
+non lu hors processus pendant le STALE). Le cas inter-cerveaux n'a pas de garde
+stale. P-19 inchangée. `cargo clippy` : avertissements préexistants seulement.

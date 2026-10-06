@@ -6426,3 +6426,13 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
 - Implémentation normale intra/cross acceptée.
 - Bloqueur indépendant : APPROVED core non révocable quand moteur STALE.
 - Corrective ciblée DR15 préparée; aucune TASK-0052.
+
+## 2026-10-05 — TASK-0051 corrective stale-core (Claude Code)
+
+- `relation_commands::revoke_relation` : garde `core-rule-engine && !is_current`
+  retirée (DEC-0049 §I). `approve_suggestion` et le masquage stale inchangés.
+- `restoreFocus.ts` / `RelationsPanel.tsx` : focus de repli sur « Analyser les
+  relations » quand l'approbation de la suggestion est masquée (STALE).
+- DR15 passe 3 (`FILETOPO_AUTO_DRE=3`, debug) + `scripts/task0051-stale-core-run-real-host.ps1`;
+  `TASK-0051-webview2.json` gagne `staleCoreRevocation`.
+- Code `1418262e4e4edf7e131bdb7d96fe9992066b1f5a`. TASK-0051 = `IMPLEMENTED`, jamais VERIFIED par l'exécuteur.

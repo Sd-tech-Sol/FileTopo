@@ -1,11 +1,12 @@
 # Action suivante
 
-## Corrective TASK-0051 — stale-core revocation
+## Re-contrôle indépendant de TASK-0051 (corrective stale-core)
 
 Branche : `build/v0.2-a35-v1-approved-relation-revocation`.
 
-Lire ACTION-0093, DEC-0049 §I et `.orchestrator/NEXT_PROMPT.md`.
-
-Exécuteur : Claude Code, Sonnet 5.5, Medium.
+Contrôler sur preuves, sans modifier le produit : ACTION-0093 est-elle levée
+(`relation_commands.rs`, test de commande, `dreScenario.ts` passe 3,
+`staleCoreRevocation` dans `TASK-0051-webview2.json`) ? Attribuer `VERIFIED` ou
+`CHANGES_REQUIRED`.
 
 Aucune TASK-0052.

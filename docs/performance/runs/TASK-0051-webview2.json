@@ -1060,5 +1060,71 @@
     "Beta (deep) was not built: no relation of this proof touches it.",
     "A restart while a revocation is in flight (kill -9) is not tested; atomicity is proved by the store-level rollback test.",
     "P-19 as a whole stays PARTIELLE: only the persistence of a revocation is claimed here."
-  ]
+  ],
+  "staleCoreRevocationHeadTested": "1418262e4e4edf7e131bdb7d96fe9992066b1f5a",
+  "staleCoreRevocation": {
+    "suggestionKey": "dre1:3dbd496b26f90583",
+    "staleCreation": {
+      "how": "second observation of the same synthetic bytes (new content generation), no rerun",
+      "generationBefore": "238935ae-df32-40ef-b35b-352a28153bb0",
+      "generationAfter": "a892b656-72f6-4c26-8423-9d770fc0cf4b",
+      "sourceFingerprintBefore": "sha256-tree-v1:8e6cc2a2428e309c087fbdccfe39983486c2b82b647b08db427f013ef753fe85",
+      "sourceFingerprintAfter": "sha256-tree-v1:8e6cc2a2428e309c087fbdccfe39983486c2b82b647b08db427f013ef753fe85",
+      "statusAfter": "STALE"
+    },
+    "beforeGesture": {
+      "engineCurrent": false,
+      "approvedRelationInStore": true,
+      "revokeControlVisible": true
+    },
+    "revocationActivation": {
+      "inputMethod": "Tauri window focus followed by Windows key injection via scripts/j12-send-real-key.ps1 — the ordinary Windows input path",
+      "keyRequested": "{ENTER}",
+      "focusedBeforeTag": "BUTTON",
+      "focusedBeforeClass": "relation__revoke",
+      "focusedBeforeText": "Révoquer dre1:3dbd496b26f90583",
+      "focusReached": true,
+      "keydownIsTrusted": true,
+      "keydownKey": "Enter",
+      "activationIsTrusted": true,
+      "programmaticClickCalls": 0,
+      "programmaticClickDispatches": 0,
+      "observedChange": true,
+      "waitedMs": 1460
+    },
+    "afterGesture": {
+      "engineState": "STALE",
+      "relationAbsent": true,
+      "pendingSuggestionPresentedAsCurrent": false,
+      "approveControlPresent": false,
+      "focusedTestId": "analyze-relations",
+      "indexDigestBefore": "fnv1a64:9e55f643e54cc8ec",
+      "indexDigestAfter": "fnv1a64:9e55f643e54cc8ec",
+      "sourceFingerprintBefore": "sha256-tree-v1:8e6cc2a2428e309c087fbdccfe39983486c2b82b647b08db427f013ef753fe85",
+      "sourceFingerprintAfter": "sha256-tree-v1:8e6cc2a2428e309c087fbdccfe39983486c2b82b647b08db427f013ef753fe85",
+      "crossDigestBefore": "fnv1a64:3020af7489aab581",
+      "crossDigestAfter": "fnv1a64:3020af7489aab581"
+    },
+    "explicitRerun": {
+      "activation": {
+        "inputMethod": "Tauri window focus followed by Windows key injection via scripts/j12-send-real-key.ps1 — the ordinary Windows input path",
+        "keyRequested": "{ENTER}",
+        "focusedBeforeTag": "BUTTON",
+        "focusedBeforeClass": "relations__analyze",
+        "focusedBeforeText": "Analyser les relations",
+        "focusReached": true,
+        "keydownIsTrusted": true,
+        "keydownKey": "Enter",
+        "activationIsTrusted": true,
+        "programmaticClickCalls": 0,
+        "programmaticClickDispatches": 0,
+        "observedChange": true,
+        "waitedMs": 1620
+      },
+      "status": "CURRENT",
+      "suggestionPendingAgain": true,
+      "pendingDecidedUnixMs": null,
+      "relationNotReapproved": true
+    }
+  }
 }
