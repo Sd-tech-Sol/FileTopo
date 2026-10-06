@@ -6395,3 +6395,11 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
   déterministe + invariant backend.
 - P-19 reste PARTIELLE.
 - Prochaine action : audit V1 frais avant toute TASK-0051.
+
+
+## 2026-10-05 — ACTION-0092 — prochain écart V1 : révocation P-04
+
+- Réconciliation matrice : F-017/F-018/F-019/F-040/F-041 → IMPLEMENTED.
+- Lacune confirmée : relations APPROVED irrévocables, intra et cross.
+- DEC-0049 : revoke = suppression APPROVED + suggestion pending, atomique.
+- TASK-0051 créée; P-19 reste séparée.

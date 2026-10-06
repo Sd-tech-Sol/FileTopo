@@ -1,14 +1,16 @@
 # Action suivante
 
-## Audit V1 post-TASK-0050
+## TASK-0051 — V1 Approved Relation Revocation / P-04 Closure
 
-TASK-0050 / F-014 / P-10 sont `VERIFIED` par ACTION-0091.
+Branche : `build/v0.2-a35-v1-approved-relation-revocation`.
 
-Ne pas créer TASK-0051 à partir des statuts historiques de la matrice sans
-réconciliation : plusieurs lignes `PROPOSED` correspondent à des tranches
-déjà VERIFIED (relations, vue composée, relations inter-cerveaux).
+Lire dans cet ordre :
 
-Prochaine action : audit documentaire/runtime des écarts MVP réellement
-ouverts, avec priorité aux obligations explicitement encore manquantes.
+1. `docs/reviews/ACTION-0092-v1-gap-audit-after-task0050.md`;
+2. `docs/decisions/DEC-0049-approved-relation-revocation.md`;
+3. `docs/tasks/TASK-0051-v1-approved-relation-revocation.md`;
+4. `.orchestrator/NEXT_PROMPT.md`.
 
-Aucune exécution produit avant ce nouvel audit.
+Exécuteur : Claude Code.
+
+Ne rien démarrer de P-19/F-042/F-046 dans cette tranche.

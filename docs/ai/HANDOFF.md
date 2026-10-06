@@ -1,5 +1,15 @@
 # HANDOFF — passage de relais
 
+## Relais — ACTION-0092 / TASK-0051 READY — 2026-10-05
+
+- TASK-0050 est VERIFIED.
+- Prochaine branche : `build/v0.2-a35-v1-approved-relation-revocation`.
+- TASK-0051 ferme la révocation P-04 intra + inter.
+- Sémantique gelée par DEC-0049 : supprimer l'APPROVED et remettre sa
+  suggestion à pending dans une transaction; réapprobation possible.
+- DETERMINISTIC non révocable. P-19 hors tranche.
+
+
 ## Relais — ACTION-0091 — TASK-0050 VERIFIED — 2026-10-05
 
 - HEAD produit contrôlé : `8656d84f6f85f53b55e44f60452d0e3fe609f32c`.

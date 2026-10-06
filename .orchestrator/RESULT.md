@@ -1,21 +1,14 @@
-TASK_ID: TASK-0050 — V1 Runtime Legend / P-10 Closure
-AGENT: INDEPENDENT ORCHESTRATOR CONTROL
-RESULT: VERIFIED
-BRANCH: build/v0.2-a34-v1-runtime-legend
+TASK_ID: TASK-0051 — V1 Approved Relation Revocation / P-04 Closure
+AGENT: CLAUDE CODE
+RESULT: PENDING
+BRANCH: build/v0.2-a35-v1-approved-relation-revocation
 
-CONTROL:
-- ACTION-0091 CLOSED / VERIFIED.
-- Product proof HEAD: 8656d84f6f85f53b55e44f60452d0e3fe609f32c.
-- Documentation HEAD controlled: 2e3bd9eccc1110b1dc5c046936db3d9a8df4b3ec.
-- 23/23 reachable runtime keys, 24/24 legend keys.
-- node-diagnostic is the sole documented exception, deterministically covered.
-- Computed signatures are assertive, not observational.
-- FILE-only endpoint proof closes intra-approved and intra-suggestion.
-- axe/keyboard/passivity PASS.
+SUMMARY:
+- Implement DEC-0049 for APPROVED intra + cross relations.
+- revoke => delete approved relation + suggestion approved→pending atomically.
+- DETERMINISTIC is never revocable.
+- UI FR/EN + keyboard, restart/rebuild/isolation proofs.
+- No P-19/F-042/F-046 work.
 
-STATE:
-- TASK-0050 = VERIFIED.
-- F-014 = VERIFIED.
-- P-10 = CLOSED / VERIFIED.
-- P-19 remains PARTIAL.
-- No TASK-0051 yet; next decision is a fresh V1 gap audit.
+NEXT_ORCHESTRATOR_DECISION:
+- Independent control after executor completion.

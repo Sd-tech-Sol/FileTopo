@@ -9232,3 +9232,17 @@ Points acceptés :
 Limite honnête : P-19 redémarrage de l'état de légende NON TESTED.
 
 Conclusion : TASK-0050 / F-014 / P-10 VERIFIED.
+
+
+## DA. ACTION-0092 — audit V1 post-TASK-0050 — 2026-10-05
+
+Audit documentaire/runtime : F-017/F-018/F-019/F-040/F-041 étaient des
+statuts historiques périmés et sont réconciliés avec leurs contrôles
+indépendants existants.
+
+Le prochain manque fonctionnel explicite est P-04 révocation : TASK-0017 et
+TASK-0020 le déclarent absent; les commandes et panneaux actuels n'exposent
+aucun geste de révocation.
+
+DEC-0049 choisit `approved → pending` comme sémantique réversible, sans
+nouvel état. TASK-0051 est sélectionnée.

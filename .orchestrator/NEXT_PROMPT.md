@@ -1,164 +1,131 @@
-# NEXT_PROMPT — TASK-0050 corrective finale — FILE-only filtered projection
+# NEXT_PROMPT — TASK-0051 — Approved Relation Revocation / P-04 Closure
 
 **TARGET_AGENT:** CLAUDE CODE
-**RECOMMENDED_MODEL:** Claude Sonnet 5
-**RECOMMENDED_EFFORT:** Medium
+**RECOMMENDED_MODEL:** Claude Sonnet 5.5
+**RECOMMENDED_EFFORT:** High
 **STATUS:** READY
-**BRANCH:** `build/v0.2-a34-v1-runtime-legend`
+**BRANCH:** `build/v0.2-a35-v1-approved-relation-revocation`
 
 ## Objectif unique
 
-Fermer les deux clés intra manquantes par la projection filtrée produit
-existante, sans changement produit.
+Implémenter intégralement TASK-0051 selon DEC-0049 : toute relation
+`APPROVED`, intra ou inter-cerveaux, est révocable; une relation
+`DETERMINISTIC` ne l'est jamais.
 
-Aucune TASK-0051. Aucun Rust/backend. Aucune nouvelle fixture.
+## Préconditions
 
-## 0 — préconditions
+1. Applique `AGENTS.md`.
+2. Checkout la branche ci-dessus, fetch + fast-forward seulement.
+3. Arbre propre.
+4. Lis ACTION-0092, DEC-0049 et TASK-0051.
+5. Inspecte/réutilise les stores, commandes, panneaux et scénarios existants
+   avant d'ajouter une nouvelle brique.
 
-1. Applique `AGENTS.md` et les instructions Claude Code.
-2. Checkout `build/v0.2-a34-v1-runtime-legend`.
-3. Fetch + fast-forward seulement.
-4. Arbre propre.
-5. Lis ACTION-0089, ACTION-0090, TASK-0050 §§T-U.
-6. Lis `src/map/filters.ts`, `src/map/useProjectionFilter.ts`,
-   `src-tauri/src/map/filtered_projection.rs`.
+STOP si un invariant gelé contredit l'implémentation actuelle.
 
-## 1 — conserver les acquis
+## Sémantique obligatoire
 
-Ne modifie pas le produit.
+Révocation intra et cross, en une transaction :
 
-Conserve :
+1. vérifier suggestion existante et `state=approved`;
+2. vérifier la ligne APPROVED exactement liée;
+3. supprimer cette ligne APPROVED;
+4. remettre la suggestion à `pending`;
+5. mettre `decided_unix_ms = NULL`.
 
-- corrections J12 ACTION-0089;
-- preuve node-diagnostic séparée;
-- signatures calculées;
-- node-skipped réel;
-- axe/clavier/passivité;
-- toutes les 21 clés déjà fermées.
+Aucun nouvel état. `rejected` reste un refus. DETERMINISTIC reste intact.
 
-## 2 — corriger le défaut FILE-only
+La réapprobation de la suggestion remise pending doit fonctionner et recréer
+exactement une relation.
 
-Dans `scripts/task0050-webview2.mjs`, la section actuellement commentée
-« Files are matches » est fausse : à partir de `DEFAULT_FILTER.kinds=[]`,
-cliquer DIRECTORY puis SKIPPED produit DIRECTORY+SKIPPED.
+## Backend/store
 
-Après avoir remis `brain-alpha` au premier plan :
+Ajouter les primitives minimales et nommées, intra + cross.
 
-- assure-toi que le filtre de ce cerveau part bien de l'état attendu;
-- active **FILE seulement** par les contrôles produit;
-- n'active ni DIRECTORY ni SKIPPED;
-- attends la projection filtrée acceptée et le rendu stabilisé.
+Refus nommés et sans changement partiel pour :
 
-Ne simule pas la projection et n'injecte pas de DOM.
+- clé inconnue;
+- suggestion non approved;
+- relation APPROVED absente/incohérente;
+- tentative de viser DETERMINISTIC.
 
-## 3 — prouver les endpoints avant les clés
+Tests au niveau store et commande, y compris rollback.
 
-À partir des objets réels déjà lus :
+## Frontend
 
-- choisis une relation `APPROVED` de `intra.established`;
-- choisis une `pendingSuggestion`.
+RelationsPanel et CrossRelationsPanel :
 
-Après FILE-only, assert explicitement que :
+- bouton `Révoquer / Revoke` uniquement sur APPROVED;
+- jamais sur DETERMINISTIC;
+- état busy explicite;
+- activation clavier native;
+- après succès, recharger les overviews/panneaux/cartes depuis le backend,
+  ne pas décrémenter des compteurs localement.
 
-- source + target de l'APPROVED sont tous deux présents dans
-  `.map-view [data-brain-id=alpha][data-node-id=...]`;
-- source + target de la suggestion sont tous deux présents simultanément.
+Réutiliser les systèmes FR/EN et patterns d'approbation existants.
 
-Enregistre dans l'artefact les paths/nodeIds et ce résultat.
+## Preuves
 
-Si un endpoint manque, STOP/BLOCKED avec :
+Construire un scénario réel qui couvre :
 
-- filtre courant exact;
-- nodeIds/paths attendus;
-- nodeIds/paths réellement matérialisés;
-- page/filteredTotal/materializedMatchCount.
+### Intra
 
-Ne change pas le produit dans ce cas.
+- suggestion pending;
+- approbation;
+- APPROVED visible;
+- révocation par vrai geste clavier;
+- relation absente;
+- suggestion revenue pending;
+- comptes exacts;
+- réapprobation;
+- exactement une relation revenue.
 
-## 4 — capturer les deux clés
+### Cross
 
-Si les endpoints coexistent :
+Même cycle sur une suggestion inter-cerveaux.
 
-- attends `intra-approved`;
-- attends `intra-suggestion`;
-- appelle la même capture de signature que pour les autres clés;
-- vérifie les signatures carte ↔ légende;
-- suggestion : pointillé + anneaux, pas de flèche;
-- approved : provenance/classe approuvée.
+### Persistance / sécurité
 
-## 5 — restaurer la règle stricte
+- redémarrage réel après révocation : reste pending;
+- rebuild de l'Index : reste pending, pas de relation ressuscitée;
+- rerun moteur intra : pas d'auto-réapprobation;
+- isolation Alpha/Gamma/cross;
+- source et Index inchangés par les gestes de révocation.
 
-Supprime la logique d'exemption temporaire :
-
-`CELL_B_ONLY_KEYS = ["intra-approved", "intra-suggestion"]`.
-
-La cellule A doit désormais exiger directement :
-
-- legend = 24;
-- expectedReachable = legend - node-diagnostic = 23;
-- observed real map keys === expectedReachable;
-- aucune autre exception.
-
-Le replay J12 peut rester comme regression replay séparé, mais TASK-0050 ne
-doit plus en dépendre si la cellule A ferme 23/23.
-
-Le combineur multi-cellules devient inutile si la cellule A réussit :
-nettoie la plomberie TASK-0050 devenue morte plutôt que de conserver deux
-sources de vérité.
-
-## 6 — artefact final
-
-Si et seulement si la cellule A atteint 23/23 :
-
-- publie/remplace `docs/performance/runs/TASK-0050-webview2.json`;
-- l'artefact doit provenir du HEAD courant;
-- 23/23 atteignables;
-- légende 24/24;
-- node-diagnostic unique exception documentée;
-- signatures PASS;
-- axe/clavier/passivité;
-- P-19 restart NON TESTED.
-
-Ne réutilise pas l'ancien artefact TASK-0050 déjà présent comme preuve :
-il est antérieur à cette corrective et doit être remplacé par le run courant.
-
-## 7 — falsifications
+## Falsifications
 
 Au minimum :
 
-1. remettre DIRECTORY+SKIPPED -> les deux clés intra doivent manquer / gate échouer;
-2. retirer FILE -> gate échoue;
-3. retirer un endpoint attendu de la preuve -> gate échoue;
-4. supprimer intra-approved -> gate 23/23 échoue;
-5. supprimer intra-suggestion -> gate 23/23 échoue.
+1. tentative DETERMINISTIC -> refus;
+2. clé inconnue -> refus;
+3. appeler revoke deux fois -> deuxième refus, aucun drift;
+4. sabotage transaction entre DELETE et UPDATE -> rollback intégral;
+5. réapprouver deux fois -> aucun doublon;
+6. cross revoke ne change aucun store intra;
+7. intra revoke ne change aucun autre cerveau/cross.
 
-Restaure tout sabotage.
+## Validation
 
-## 8 — validations
-
-- ciblés TASK-0050;
-- `pnpm test`;
-- `pnpm check`;
-- `pnpm build`;
+- tests ciblés Rust/frontend;
+- suite complète pertinente;
+- pnpm check/build;
 - Tauri debug;
-- WebView2 réel cellule A;
-- axe;
-- `git diff --check`;
+- WebView2 réel;
+- git diff --check;
 - audit public.
 
-## 9 — gouvernance
+Ne modifie aucun artefact VERIFIED historique; publie seulement les nouvelles
+preuves TASK-0051.
 
-Si tout passe :
+## Gouvernance
 
-- TASK-0050 = IMPLEMENTED / candidate contrôle indépendant;
-- F-014 / P-10 = IMPLEMENTED / candidate;
-- jamais auto-VERIFIED;
-- P-19 reste PARTIELLE;
-- aucune TASK-0051;
-- NEXT_ACTION = contrôle indépendant TASK-0050;
+À la fin :
+
+- TASK-0051 = IMPLEMENTED / candidate contrôle indépendant;
+- P-04 = candidate fermeture, jamais auto-VERIFIED;
+- P-19 inchangée;
+- aucune TASK-0052;
+- NEXT_ACTION = contrôle indépendant TASK-0051;
 - RESULT complet;
 - commit + push;
 - arbre propre.
-
-Si FILE-only n'aboutit pas, STOP/BLOCKED avec la preuve d'endpoints demandée;
-aucun changement produit sans nouvelle décision.

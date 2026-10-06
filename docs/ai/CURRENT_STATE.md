@@ -1,5 +1,16 @@
 # État courant
 
+## ACTION-0092 — prochain écart V1 choisi — 2026-10-05
+
+- Matrice réconciliée : F-017/F-018/F-019/F-040/F-041 ne sont plus de vraies
+  lignes PROPOSED; leurs tâches historiques sont VERIFIED.
+- Lacune fonctionnelle réelle : P-04 interdit une relation APPROVED irrévocable.
+- Aucun chemin de révocation n'existe intra ou cross dans le runtime actuel.
+- DEC-0049 fixe la transition : APPROVED → revoke → suggestion pending.
+- Prochaine tranche : TASK-0051 — Approved Relation Revocation / P-04 Closure.
+- P-19, F-042 et F-046 restent séparés.
+
+
 ## ACTION-0091 — TASK-0050 VERIFIED — 2026-10-05
 
 - Contrôle indépendant terminé.
