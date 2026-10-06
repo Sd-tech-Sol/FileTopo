@@ -6444,3 +6444,11 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
 - P-04 CLOSED / VERIFIED.
 - Révocation APPROVED complète intra + cross, y compris APPROVED core en STALE.
 - P-19 inchangée; aucune TASK-0052 créée.
+
+
+## 2026-10-06 — ACTION-0095 — TASK-0052 sélectionnée
+
+- Audit P-19/F-042/F-046.
+- F-042 choisie avant P-19 pour éviter de rouvrir la persistance.
+- DEC-0050 : branch focus + collapse/expand, exact descendant count, bounded.
+- TASK-0052 READY; F-046 inchangée.

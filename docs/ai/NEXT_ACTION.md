@@ -1,16 +1,16 @@
 # Action suivante
 
-## Audit V1 post-TASK-0051
+## TASK-0052 — V1 Branch Focus & Collapse / F-042 Closure
 
-TASK-0051 / P-04 sont `VERIFIED` par ACTION-0094.
+Branche : `build/v0.2-a36-v1-branch-focus-collapse`.
 
-Ne pas créer TASK-0052 automatiquement.
+Lire dans cet ordre :
 
-Audit à faire entre les écarts MVP encore ouverts explicitement, notamment :
+1. `docs/reviews/ACTION-0095-v1-gap-audit-after-task0051.md`;
+2. `docs/decisions/DEC-0050-branch-focus-collapse.md`;
+3. `docs/tasks/TASK-0052-v1-branch-focus-collapse.md`;
+4. `.orchestrator/NEXT_PROMPT.md`.
 
-- `P-19` — persistance complète de l'état et manque M-1;
-- `F-046` — identité physique persistante encore absente;
-- `F-042` — repli/dépli et focus de branche encore PROPOSED.
+Exécuteur : Claude Code, Sonnet 5.5, High.
 
-Le prochain choix doit être justifié par priorité, dépendances et preuves
-existantes avant d'écrire une nouvelle tâche.
+P-19 reste PARTIELLE et viendra après F-042. F-046 inchangée.

@@ -1,5 +1,15 @@
 # État courant
 
+## ACTION-0095 — prochain bloc V1 = F-042 — 2026-10-06
+
+- Audit P-19 / F-042 / F-046 terminé.
+- F-042 passe avant P-19 parce que son état de branche devra ensuite être
+  persisté; fermer P-19 d'abord créerait une réouverture immédiate.
+- DEC-0050 gèle branch focus + collapse/expand, compte exact descendants,
+  projection bornée, session-only.
+- TASK-0052 READY. F-046 reste séparée.
+
+
 ## ACTION-0094 — TASK-0051 / P-04 VERIFIED — 2026-10-05
 
 - Corrective stale-core acceptée indépendamment.

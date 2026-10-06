@@ -1,20 +1,13 @@
-TASK_ID: TASK-0051 — V1 Approved Relation Revocation / P-04 Closure
-AGENT: INDEPENDENT ORCHESTRATOR CONTROL
-RESULT: VERIFIED
-BRANCH: build/v0.2-a35-v1-approved-relation-revocation
+TASK_ID: TASK-0052 — V1 Branch Focus & Collapse / F-042 Closure
+AGENT: CLAUDE CODE
+RESULT: PENDING
+BRANCH: build/v0.2-a36-v1-branch-focus-collapse
 
-CONTROL:
-- ACTION-0094 CLOSED / VERIFIED.
-- Product corrective HEAD: 1418262e4e4edf7e131bdb7d96fe9992066b1f5a.
-- Normal intra/cross revocation accepted from ACTION-0093 review.
-- Stale-core blocker closed: human APPROVED remains revocable while engine STALE.
-- Stale approval remains refused; stale automatic outputs remain non-current.
-- Real WebView2 staleCoreRevocation proof PASS.
-- Command/store proof confirms pending + decided_unix_ms NULL.
-- Safe focus CURRENT and STALE.
+SUMMARY:
+- Implement DEC-0050 branch focus + collapse/expand.
+- Exact hidden descendant counts, bounded materializer, no whole graph.
+- Session-only state; P-19 comes after this task.
+- Reuse existing projection, children_page, aggregates and composition memory.
 
-STATE:
-- TASK-0051 = VERIFIED.
-- P-04 = CLOSED / VERIFIED.
-- P-19 unchanged.
-- No TASK-0052 yet; next decision is a fresh V1 gap audit.
+NEXT_ORCHESTRATOR_DECISION:
+- Independent control after executor completion.

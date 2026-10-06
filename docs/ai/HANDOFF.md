@@ -1,5 +1,15 @@
 # HANDOFF — passage de relais
 
+## Relais — ACTION-0095 / TASK-0052 READY — 2026-10-06
+
+- Branche cible : `build/v0.2-a36-v1-branch-focus-collapse`.
+- F-042 avant P-19 pour respecter la dépendance d'état.
+- Réutiliser projection.rs, children_page, agrégats, compositionSession.
+- Aucun masque CSS/whole graph; compte descendant exact.
+- État F-042 session-only dans cette tranche; P-19 après.
+- Claude Code + Sonnet 5.5 High.
+
+
 ## Relais — ACTION-0094 — TASK-0051 VERIFIED — 2026-10-05
 
 - HEAD produit contrôlé : `1418262e4e4edf7e131bdb7d96fe9992066b1f5a`.

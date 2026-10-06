@@ -9342,3 +9342,16 @@ pending stale, le focus sur Analyser, l'absence de mutation source/Index/cross,
 puis le rerun explicite sans résurrection.
 
 TASK-0051 et P-04 sont VERIFIED.
+
+
+## DE. ACTION-0095 — audit V1 post-TASK-0051 — 2026-10-06
+
+P-19 est largement acquis mais ne doit pas être fermé avant F-042 : le nouveau
+branch focus/collapse crée précisément de l'état de vue que P-19 devra restaurer.
+
+F-042 est donc sélectionnée avant P-19. F-046 reste indépendante et ultérieure
+dans cet ordre, sauf blocage nouveau.
+
+DEC-0050 et TASK-0052 définissent une projection de branche bornée, des replis
+explicites et un compte exact de descendants masqués, sans persistance dans
+cette tranche.
