@@ -694,6 +694,17 @@ describe("TASK-0051 — révoquer une relation inter-cerveaux APPROUVÉE", () =>
     expect(button).toBeDisabled();
   });
 
+  it("n'offre rien pour une entrée DETERMINISTIC, même si elle portait une clé de suggestion", () => {
+    const hostile: NodeCrossRelations = {
+      ...nodeCross,
+      outgoing: [{ ...entry("outgoing", GAMMA, 4), suggestionKey: "XB-S09" }],
+      incoming: [],
+      incomingCount: 0,
+    };
+    renderRevocable({ relations: hostile });
+    expect(revokeButtons()).toHaveLength(0);
+  });
+
   it("n'offre rien quand l'appelant n'offre pas la révocation", () => {
     renderRevocable({ onRevoke: undefined });
     expect(revokeButtons()).toHaveLength(0);

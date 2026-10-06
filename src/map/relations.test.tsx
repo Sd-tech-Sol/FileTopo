@@ -711,6 +711,19 @@ describe("TASK-0051 — révoquer une relation APPROUVÉE (panneau interne)", ()
     expect(button).toBeDisabled();
   });
 
+  it("n'offre rien pour une entrée DETERMINISTIC, même si elle portait une clé de suggestion", () => {
+    // Hostile data: the model forbids it, and the control must not depend on that.
+    const hostile: NodeRelations = {
+      ...nodeRelations,
+      outgoing: [{ ...entry("outgoing", 3, "DETERMINISTIC", "revision"), suggestionKey: "S-009" }],
+      outgoingCount: 1,
+      incoming: [],
+      incomingCount: 0,
+    };
+    renderRevocable({ relations: hostile });
+    expect(revokeButtons()).toHaveLength(0);
+  });
+
   it("n'offre rien quand l'appelant n'offre pas la révocation", () => {
     renderRevocable({ onRevoke: undefined });
     expect(revokeButtons()).toHaveLength(0);
