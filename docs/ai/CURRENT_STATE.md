@@ -1,5 +1,17 @@
 # État courant
 
+## ACTION-0091 — TASK-0050 VERIFIED — 2026-10-05
+
+- Contrôle indépendant terminé.
+- 23/23 clés runtime atteignables; légende 24/24.
+- FILE-only prouve les deux familles intra auparavant manquantes.
+- Signatures carte↔légende réellement assertées.
+- node-diagnostic = unique exception, test déterministe + invariant backend.
+- axe 0/0, clavier/passivité PASS.
+- TASK-0050 = VERIFIED; F-014 = VERIFIED; P-10 = CLOSED / VERIFIED.
+- P-19 reste PARTIELLE.
+
+
 ## TASK-0050 §V — 23/23 en une cellule via FILE-only — `IMPLEMENTED` — 2026-10-05
 
 - Corrective ACTION-0090 exécutée dans `scripts/task0050-webview2.mjs` : filtre

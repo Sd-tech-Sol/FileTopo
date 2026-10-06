@@ -1,5 +1,15 @@
 # HANDOFF — passage de relais
 
+## Relais — ACTION-0091 — TASK-0050 VERIFIED — 2026-10-05
+
+- HEAD produit contrôlé : `8656d84f6f85f53b55e44f60452d0e3fe609f32c`.
+- HEAD documentaire contrôlé : `2e3bd9eccc1110b1dc5c046936db3d9a8df4b3ec`.
+- TASK-0050 / F-014 / P-10 sont VERIFIED.
+- P-19 reste PARTIELLE; aucune persistance de légende au redémarrage n'est
+  revendiquée ici.
+- Prochaine étape : audit V1 post-TASK-0050 avant toute TASK-0051.
+
+
 ## Relais — TASK-0050 §V IMPLEMENTED, contrôle indépendant requis — 2026-10-05
 
 - Harnais corrigé (FILE-only), HEAD testé `8656d84f6f85f53b55e44f60452d0e3fe609f32c`;

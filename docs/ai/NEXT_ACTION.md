@@ -1,18 +1,14 @@
 # Action suivante
 
-## Contrôle indépendant de TASK-0050 (§V) — sur preuves
+## Audit V1 post-TASK-0050
 
-Branche : `build/v0.2-a34-v1-runtime-legend`.
+TASK-0050 / F-014 / P-10 sont `VERIFIED` par ACTION-0091.
 
-TASK-0050 est `IMPLEMENTED` : la cellule A seule atteint 23/23 clés
-atteignables (légende 24/24, `node-diagnostic` seule exception) par la
-projection filtrée FILE-only du produit, sans changement produit.
+Ne pas créer TASK-0051 à partir des statuts historiques de la matrice sans
+réconciliation : plusieurs lignes `PROPOSED` correspondent à des tranches
+déjà VERIFIED (relations, vue composée, relations inter-cerveaux).
 
-Une instance **distincte de l'exécuteur** doit contrôler, sur preuves :
+Prochaine action : audit documentaire/runtime des écarts MVP réellement
+ouverts, avec priorité aux obligations explicitement encore manquantes.
 
-- `docs/performance/runs/TASK-0050-webview2.json` (`headTested` = `8656d84f...`) :
-  23/23, signatures, endpoints, axe, clavier, passivité, P-19 NON TESTÉ;
-- `scripts/task0050-webview2.mjs` et `.ps1` (règle stricte, plus d'exemption);
-- la section V de `docs/tasks/TASK-0050-v1-runtime-legend-p10.md`.
-
-Seul ce contrôle peut attribuer `VERIFIED`. Aucune TASK-0051 avant lui.
+Aucune exécution produit avant ce nouvel audit.

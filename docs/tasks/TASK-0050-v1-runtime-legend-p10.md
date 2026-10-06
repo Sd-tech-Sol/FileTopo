@@ -1,7 +1,7 @@
 # TASK-0050 — V1 Runtime Legend / P-10 Closure
 
 - **Date :** 2026-09-26
-- **Statut :** `IMPLEMENTED` — candidate au contrôle indépendant (§V)
+- **Statut :** **`VERIFIED` par `ACTION-0091` le 2026-10-05** — candidate au contrôle indépendant (§V)
 - **Branche :** `build/v0.2-a34-v1-runtime-legend`
 - **Décision :** `DEC-0048`
 - **Portée :** `F-014`, `P-10`
@@ -838,3 +838,23 @@ Aucun changement produit avant ce test. Aucune TASK-0051.
 
 **TASK-0050 = IMPLEMENTED**, candidate au contrôle indépendant. Jamais
 auto-`VERIFIED`. F-014 / P-10 = IMPLEMENTED / candidate. P-19 reste PARTIELLE.
+
+
+## W — ACTION-0091 — contrôle indépendant final — `VERIFIED` — 2026-10-05
+
+Le contrôle indépendant accepte la corrective FILE-only et l'artefact
+`TASK-0050-webview2.json`.
+
+- 23/23 clés runtime atteignables observées;
+- 24/24 clés de légende;
+- `node-diagnostic` seule exception, prouvée séparément et gardée par
+  invariant backend;
+- signatures carte ↔ légende réellement assertées;
+- endpoints APPROVED + pending simultanément présents;
+- axe 0/0, clavier PASS, passivité PASS, 0 erreur fatale;
+- aucun produit/Rust/fixture modifié dans la corrective finale.
+
+**TASK-0050 = VERIFIED. F-014 = VERIFIED. P-10 = CLOSED / VERIFIED.**
+
+P-19 reste PARTIELLE : la persistance de l'état ouvert/fermé de la légende au
+redémarrage n'appartient pas à cette tâche.

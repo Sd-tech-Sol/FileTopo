@@ -9205,3 +9205,30 @@ HEAD testé `8656d84f6f85f53b55e44f60452d0e3fe609f32c`.
   relancé (aucun Rust touché).
 
 Aucun VERIFIED accordé : contrôle indépendant requis.
+
+
+## CZ. ACTION-0091 — contrôle indépendant final TASK-0050 — 2026-10-05
+
+**VERDICT : VERIFIED.**
+
+Contrôle indépendant du HEAD produit
+`8656d84f6f85f53b55e44f60452d0e3fe609f32c` et du HEAD documentaire
+`2e3bd9eccc1110b1dc5c046936db3d9a8df4b3ec`.
+
+Points acceptés :
+
+- filtre FILE-only réel et état initial vérifié;
+- endpoints APPROVED + pending simultanément présents;
+- égalité stricte des 23 clés runtime atteignables;
+- légende 24/24;
+- aucune exemption temporaire cellule B;
+- signatures computed réellement assertées pour chaque clé exercée;
+- `node-diagnostic` couvert déterministement + invariant backend;
+- axe 0/0, Enter/Space, Tab sans piège;
+- gestes de légende sans commande backend;
+- source/Index/journal/resume inchangés;
+- aucun changement produit/Rust/fixture après la corrective.
+
+Limite honnête : P-19 redémarrage de l'état de légende NON TESTED.
+
+Conclusion : TASK-0050 / F-014 / P-10 VERIFIED.

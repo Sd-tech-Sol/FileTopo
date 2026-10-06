@@ -6385,3 +6385,13 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
   lanceur simplifié; artefact `TASK-0050-webview2.json` remplacé (HEAD `8656d84`).
 - Falsifications F1-F5 exécutées et restaurées. Aucun produit/Rust/fixture.
 - TASK-0050 = `IMPLEMENTED`, candidate au contrôle indépendant. Aucune TASK-0051.
+
+
+## 2026-10-05 — ACTION-0091 — TASK-0050 VERIFIED
+
+- Contrôle indépendant accepte la preuve FILE-only 23/23.
+- F-014 passe à VERIFIED; P-10 CLOSED / VERIFIED.
+- node-diagnostic reste l'unique exception WebView2, gardée par test
+  déterministe + invariant backend.
+- P-19 reste PARTIELLE.
+- Prochaine action : audit V1 frais avant toute TASK-0051.
