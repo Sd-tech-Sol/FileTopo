@@ -1,5 +1,22 @@
 # État courant
 
+## TASK-0051 — révocation des relations APPROVED — `IMPLEMENTED` — 2026-10-05
+
+- DEC-0049 implémentée : `revoke` = suppression de la ligne `APPROVED` exactement
+  liée + suggestion `approved → pending` (`decided_unix_ms = NULL`), en une
+  transaction, intra **et** inter-cerveaux. Aucun nouvel état; `rejected` reste
+  un refus; `DETERMINISTIC` n'est jamais révocable (refus nommé).
+- UI : `Révoquer` / `Revoke` dans les deux panneaux, sur `APPROVED` seulement;
+  bouton natif, état occupé, focus rendu à l'approbation de la même suggestion.
+- Preuve WebView2 réelle en deux processus autour d'un redémarrage réel, vrais
+  événements clavier (Tab, Entrée, Espace) : cycle intra et inter, comptes relus
+  du backend, arêtes de la carte, isolation Alpha/Gamma/store commun, source et
+  Index inchangés, rebuild des Index et rerun du moteur sans résurrection.
+- HEAD testé : `14a821d9cfc690ad4365fc7572bc455edc7144d4`.
+- TASK-0051 = `IMPLEMENTED`; **P-04 = candidate à la fermeture, jamais
+  auto-`VERIFIED`**. P-19 inchangée (PARTIELLE). Aucune TASK-0052.
+- Reste : contrôle indépendant sur preuves (voir `NEXT_ACTION.md`).
+
 ## ACTION-0092 — prochain écart V1 choisi — 2026-10-05
 
 - Matrice réconciliée : F-017/F-018/F-019/F-040/F-041 ne sont plus de vraies

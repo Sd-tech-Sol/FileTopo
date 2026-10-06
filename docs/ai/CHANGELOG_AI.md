@@ -6403,3 +6403,19 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
 - Lacune confirmée : relations APPROVED irrévocables, intra et cross.
 - DEC-0049 : revoke = suppression APPROVED + suggestion pending, atomique.
 - TASK-0051 créée; P-19 reste séparée.
+
+
+## 2026-10-05 — TASK-0051 — révocation des relations APPROVED (Claude Code)
+
+- `revoke` intra et inter (une transaction : suppression de la ligne `APPROVED`
+  liée + suggestion `approved → pending`, `decided_unix_ms = NULL`);
+  `DETERMINISTIC` refusé par nom. Commandes `map_relations_revoke` et
+  `map_cross_relations_revoke`; `NodeRelationEntry.suggestionKey` et
+  `RelationsSelfCheck.revokedSinceSeed` (additifs).
+- Boutons `Révoquer` / `Revoke` dans `RelationsPanel` et `CrossRelationsPanel`
+  (APPROVED seulement, natifs, état occupé, FR/EN), overview relu du backend,
+  focus rendu à l'approbation de la même suggestion (`restoreFocus.ts`).
+- Preuve : `scripts/task0051-{webview2.mjs,webview2.ps1,seed-proof.py,
+  store-snapshot.py}` et `docs/performance/runs/TASK-0051-webview2.json`.
+- TASK-0051 = `IMPLEMENTED`, candidate au contrôle indépendant; P-04 candidate à
+  la fermeture; P-19 inchangée; aucune TASK-0052.

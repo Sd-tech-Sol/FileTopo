@@ -1,0 +1,1064 @@
+{
+  "task": "TASK-0051",
+  "headTested": "14a821d9cfc690ad4365fc7572bc455edc7144d4",
+  "strategy": "DEC-0049: two real WebView2 processes around a real restart; real key events (Tab, Enter, Space)",
+  "phase1": {
+    "task": "TASK-0051",
+    "phase": 1,
+    "headTested": "14a821d9cfc690ad4365fc7572bc455edc7144d4",
+    "checks": [],
+    "baseline": {
+      "alpha": [
+        8,
+        4,
+        4
+      ],
+      "gammaWithOwnApproval": [
+        8,
+        5,
+        3
+      ],
+      "common": [
+        6,
+        0,
+        4
+      ]
+    },
+    "intra": {
+      "suggestion": {
+        "key": "S-005",
+        "sourcePath": "dossier-a/note-1.txt",
+        "targetPath": "racine-2.txt",
+        "relationType": "reference"
+      },
+      "countsStart": [
+        8,
+        4,
+        4
+      ],
+      "countsApproved": [
+        8,
+        5,
+        3
+      ],
+      "countsRevoked": [
+        8,
+        4,
+        4
+      ],
+      "countsReapproved": [
+        8,
+        5,
+        3
+      ],
+      "panelTotals": {
+        "start": "1 sortante(s) · 1 entrante(s) · 1 suggestion(s) non comptée(s)",
+        "approved": "1 sortante(s) · 2 entrante(s) · 0 suggestion(s) non comptée(s)",
+        "revoked": "1 sortante(s) · 1 entrante(s) · 1 suggestion(s) non comptée(s)"
+      },
+      "selectedNodeIncoming": {
+        "start": 1,
+        "approved": 2,
+        "revoked": 1,
+        "reapproved": 2
+      },
+      "mapEdges": {
+        "start": [
+          {
+            "kind": "suggestion",
+            "keys": "intra-suggestion intra-touching"
+          }
+        ],
+        "approved": [
+          {
+            "kind": "established",
+            "keys": "intra-established intra-approved intra-touching"
+          }
+        ],
+        "revoked": [
+          {
+            "kind": "suggestion",
+            "keys": "intra-suggestion intra-touching"
+          }
+        ],
+        "reapproved": [
+          {
+            "kind": "established",
+            "keys": "intra-established intra-approved intra-touching"
+          }
+        ]
+      },
+      "keyboard": {
+        "approveWith": "Enter",
+        "revokeReachedWithRealTab": true,
+        "revokeWith": "Enter",
+        "reapproveWith": "Space",
+        "focusOnRevokeControlBeforePress": {
+          "tag": "BUTTON",
+          "testid": null,
+          "revokeKey": "S-005",
+          "approveKey": null,
+          "text": "Révoquer S-005"
+        },
+        "focusAfterRevoke": {
+          "tag": "BUTTON",
+          "testid": "approve-core-suggestion",
+          "revokeKey": "S-005",
+          "approveKey": null,
+          "text": "Approuver S-005"
+        },
+        "focusTrailAfterRevoke": [
+          {
+            "tag": "BUTTON",
+            "revoke": "S-005",
+            "approve": null
+          },
+          {
+            "tag": "BUTTON",
+            "revoke": null,
+            "approve": "S-005"
+          }
+        ]
+      },
+      "labels": {
+        "fr": "Révoquer S-005",
+        "en": "Revoke S-005"
+      },
+      "statusAfterRevoke": "Relation S-005 révoquée dans brain-alpha : la suggestion est de nouveau en attente.",
+      "revokeControlsOnApprovedEntriesOnly": true,
+      "deterministicEntriesWithRevokeControl": 0,
+      "axeWithRevokeControlOnScreen": {
+        "violations": 0,
+        "incomplete": 1,
+        "passes": 29
+      },
+      "isolation": {
+        "gammaUnchanged": true,
+        "commonStoreUnchanged": true,
+        "sourceAndIndexUnchanged": true
+      },
+      "reloadedFromBackend": {
+        "backendCommandsDuringRevocation": [
+          "map_relations_approve",
+          "map_cross_relations_open",
+          "map_relations_for_node",
+          "map_relations_review_queue",
+          "map_cross_relations_for_node",
+          "map_relations_open",
+          "map_relations_for_node",
+          "map_relations_revoke",
+          "map_cross_relations_open",
+          "map_relations_for_node",
+          "map_relations_review_queue",
+          "map_cross_relations_for_node",
+          "map_relations_open",
+          "map_relations_for_node"
+        ]
+      },
+      "falsifications": {
+        "deterministic": {
+          "refused": true,
+          "message": "relation_rejected_revocation_of_deterministic: `S-005` is aimed as DETERMINISTIC; only an APPROVED relation can be revoked"
+        },
+        "unknownKey": {
+          "refused": true,
+          "message": "relation_rejected_unknown_suggestion: S-inexistante"
+        },
+        "pendingKey": {
+          "refused": true,
+          "message": "relation_rejected_revocation_suggestion_not_approved: `S-006` is `pending`, not `approved`"
+        },
+        "thirdProvenance": {
+          "refused": true,
+          "message": "relation_rejected_unknown_provenance: `SUGGESTED` is not a provenance; an established relation is DETERMINISTIC or APPROVED, and there is no third value"
+        },
+        "secondRevoke": {
+          "refused": true,
+          "message": "relation_rejected_revocation_suggestion_not_approved: `S-005` is `pending`, not `approved`"
+        },
+        "secondApprove": {
+          "refused": true,
+          "message": "relation_rejected_suggestion_already_decided: `S-005` is already `approved`"
+        }
+      },
+      "reloadAfterRevocationCommands": [
+        "map_relations_approve",
+        "map_cross_relations_open",
+        "map_relations_for_node",
+        "map_relations_review_queue",
+        "map_cross_relations_for_node",
+        "map_relations_open",
+        "map_relations_for_node",
+        "map_relations_revoke",
+        "map_cross_relations_open",
+        "map_relations_for_node",
+        "map_relations_review_queue",
+        "map_cross_relations_for_node",
+        "map_relations_open",
+        "map_relations_for_node"
+      ]
+    },
+    "cross": {
+      "suggestion": {
+        "key": "XB-S02",
+        "sourceBrain": "brain-gamma",
+        "sourcePath": "racine-1.txt",
+        "targetBrain": "brain-alpha",
+        "targetPath": "racine-2.txt"
+      },
+      "countsStart": [
+        6,
+        0,
+        4
+      ],
+      "countsApproved": [
+        6,
+        1,
+        3
+      ],
+      "countsRevoked": [
+        6,
+        0,
+        4
+      ],
+      "countsReapproved": [
+        6,
+        1,
+        3
+      ],
+      "panelTotals": {
+        "start": "0 outgoing · 0 incoming · 1 suggestion(s) not counted",
+        "approved": "1 outgoing · 0 incoming · 0 suggestion(s) not counted",
+        "revoked": "0 outgoing · 0 incoming · 1 suggestion(s) not counted"
+      },
+      "selectedNodeOutgoing": {
+        "start": 0,
+        "approved": 1,
+        "revoked": 0
+      },
+      "mapEdges": {
+        "start": [
+          {
+            "kind": "suggestion",
+            "provenance": "",
+            "keys": "inter-crossing inter-suggestion inter-touching"
+          }
+        ],
+        "approved": [
+          {
+            "kind": "established",
+            "provenance": "APPROVED",
+            "keys": "inter-crossing inter-established inter-approved inter-touching"
+          }
+        ],
+        "revoked": [
+          {
+            "kind": "suggestion",
+            "provenance": "",
+            "keys": "inter-crossing inter-suggestion inter-touching"
+          }
+        ],
+        "reapproved": [
+          {
+            "kind": "established",
+            "provenance": "APPROVED",
+            "keys": "inter-crossing inter-established inter-approved inter-touching"
+          }
+        ]
+      },
+      "keyboard": {
+        "approveWith": "Enter",
+        "revokeReachedWithRealTab": true,
+        "revokeWith": "Enter",
+        "reapproveWith": "Enter",
+        "focusOnRevokeControlBeforePress": {
+          "tag": "BUTTON",
+          "testid": null,
+          "revokeKey": "XB-S02",
+          "approveKey": null,
+          "text": "Revoke XB-S02"
+        },
+        "focusAfterRevoke": {
+          "tag": "BUTTON",
+          "testid": null,
+          "revokeKey": null,
+          "approveKey": "XB-S02",
+          "text": "Approve XB-S02"
+        },
+        "focusTrailAfterRevoke": [
+          {
+            "tag": "BUTTON",
+            "revoke": "XB-S02",
+            "approve": null
+          },
+          {
+            "tag": "BUTTON",
+            "revoke": null,
+            "approve": "XB-S02"
+          }
+        ]
+      },
+      "labels": {
+        "en": "Revoke XB-S02",
+        "ariaEn": "revoke inter-brain relation XB-S02, from this brain to Cerveau Alpha"
+      },
+      "axeWithRevokeControlOnScreen": {
+        "violations": 0,
+        "incomplete": 1,
+        "passes": 28
+      },
+      "isolation": {
+        "alphaUnchanged": true,
+        "gammaUnchanged": true,
+        "sourceAndIndexUnchanged": true
+      },
+      "falsifications": {
+        "deterministic": {
+          "refused": true,
+          "message": "cross_relation_rejected_revocation_of_deterministic: `XB-S02` is aimed as DETERMINISTIC; only an APPROVED relation can be revoked"
+        },
+        "unknownKey": {
+          "refused": true,
+          "message": "cross_relation_rejected_unknown_suggestion: XB-inexistante"
+        },
+        "pendingKey": {
+          "refused": true,
+          "message": "cross_relation_rejected_revocation_suggestion_not_approved: `XB-S03` is `pending`, not `approved`"
+        },
+        "secondRevoke": {
+          "refused": true,
+          "message": "cross_relation_rejected_revocation_suggestion_not_approved: `XB-S02` is `pending`, not `approved`"
+        },
+        "secondApprove": {
+          "refused": true,
+          "message": "cross_relation_rejected_suggestion_already_decided: `XB-S02` is already `approved`"
+        }
+      }
+    },
+    "finalStores": {
+      "alpha": {
+        "counts": [
+          8,
+          4,
+          4
+        ],
+        "established": [
+          "APPROVED|ek1|brain-alpha|dossier-a/note-3.txt>ek1|brain-alpha|racine-1.txt|reference|S-004",
+          "APPROVED|ek1|brain-alpha|dossier-b/note-1.txt>ek1|brain-alpha|dossier-a/note-3.txt|reference|S-001",
+          "APPROVED|ek1|brain-alpha|dossier-b/sous-dossier/note-2.txt>ek1|brain-alpha|dossier-a/note-1.txt|reference|S-002",
+          "APPROVED|ek1|brain-alpha|racine-2.txt>ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|revision|S-003",
+          "DETERMINISTIC|ek1|brain-alpha|dossier-a/note-1.txt>ek1|brain-alpha|dossier-a/note-2.txt|revision|",
+          "DETERMINISTIC|ek1|brain-alpha|dossier-a/note-1.txt>ek1|brain-alpha|dossier-b/note-1.txt|reference|",
+          "DETERMINISTIC|ek1|brain-alpha|dossier-a/note-1.txt>ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|reference|",
+          "DETERMINISTIC|ek1|brain-alpha|dossier-a/note-2.txt>ek1|brain-alpha|dossier-a/note-3.txt|revision|",
+          "DETERMINISTIC|ek1|brain-alpha|dossier-a/note-2.txt>ek1|brain-alpha|dossier-b/sous-dossier/note-2.txt|reference|",
+          "DETERMINISTIC|ek1|brain-alpha|dossier-b/note-1.txt>ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|reference|",
+          "DETERMINISTIC|ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt>ek1|brain-alpha|dossier-b/sous-dossier/note-2.txt|revision|",
+          "DETERMINISTIC|ek1|brain-alpha|racine-1.txt>ek1|brain-alpha|racine-2.txt|revision|"
+        ],
+        "pending": [
+          "S-005:pending",
+          "S-006:pending",
+          "S-007:pending",
+          "S-008:pending"
+        ]
+      },
+      "gamma": {
+        "counts": [
+          8,
+          5,
+          3
+        ],
+        "established": [
+          "APPROVED|ek1|brain-gamma|dossier-a/note-1.txt>ek1|brain-gamma|racine-2.txt|reference|S-005",
+          "APPROVED|ek1|brain-gamma|dossier-a/note-3.txt>ek1|brain-gamma|racine-1.txt|reference|S-004",
+          "APPROVED|ek1|brain-gamma|dossier-b/note-1.txt>ek1|brain-gamma|dossier-a/note-3.txt|reference|S-001",
+          "APPROVED|ek1|brain-gamma|dossier-b/sous-dossier/note-2.txt>ek1|brain-gamma|dossier-a/note-1.txt|reference|S-002",
+          "APPROVED|ek1|brain-gamma|racine-2.txt>ek1|brain-gamma|dossier-b/sous-dossier/note-1.txt|revision|S-003",
+          "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-1.txt>ek1|brain-gamma|dossier-a/note-2.txt|revision|",
+          "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-1.txt>ek1|brain-gamma|dossier-b/note-1.txt|reference|",
+          "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-1.txt>ek1|brain-gamma|dossier-b/sous-dossier/note-1.txt|reference|",
+          "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-2.txt>ek1|brain-gamma|dossier-a/note-3.txt|revision|",
+          "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-2.txt>ek1|brain-gamma|dossier-b/sous-dossier/note-2.txt|reference|",
+          "DETERMINISTIC|ek1|brain-gamma|dossier-b/note-1.txt>ek1|brain-gamma|dossier-b/sous-dossier/note-1.txt|reference|",
+          "DETERMINISTIC|ek1|brain-gamma|dossier-b/sous-dossier/note-1.txt>ek1|brain-gamma|dossier-b/sous-dossier/note-2.txt|revision|",
+          "DETERMINISTIC|ek1|brain-gamma|racine-1.txt>ek1|brain-gamma|racine-2.txt|revision|"
+        ],
+        "pending": [
+          "S-006:pending",
+          "S-007:pending",
+          "S-008:pending"
+        ]
+      },
+      "common": {
+        "counts": [
+          6,
+          0,
+          4
+        ],
+        "established": [
+          "DETERMINISTIC|cek1|brain-alpha|dossier-a/note-1.txt>cek1|brain-gamma|dossier-b/note-1.txt|reference|",
+          "DETERMINISTIC|cek1|brain-alpha|racine-1.txt>cek1|brain-beta|niveau-01|reference|",
+          "DETERMINISTIC|cek1|brain-beta|niveau-01/niveau-02/niveau-03>cek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|revision|",
+          "DETERMINISTIC|cek1|brain-beta|niveau-01/niveau-02>cek1|brain-gamma|racine-2.txt|reference|",
+          "DETERMINISTIC|cek1|brain-gamma|dossier-a/note-2.txt>cek1|brain-alpha|dossier-b/sous-dossier/note-2.txt|reference|",
+          "DETERMINISTIC|cek1|brain-gamma|dossier-a/note-3.txt>cek1|brain-beta|niveau-01/niveau-02/niveau-03/annexe|revision|"
+        ],
+        "pending": [
+          "XB-S01:pending",
+          "XB-S02:pending",
+          "XB-S03:pending",
+          "XB-S04:pending"
+        ]
+      }
+    },
+    "fatalConsoleErrors": 0
+  },
+  "phase2": {
+    "task": "TASK-0051",
+    "phase": 2,
+    "headTested": "14a821d9cfc690ad4365fc7572bc455edc7144d4",
+    "checks": [],
+    "afterRestart": {
+      "alpha": [
+        8,
+        4,
+        4
+      ],
+      "gamma": [
+        8,
+        5,
+        3
+      ],
+      "common": [
+        6,
+        0,
+        4
+      ]
+    },
+    "afterIndexRebuild": {
+      "alpha": [
+        8,
+        4,
+        4
+      ],
+      "gamma": [
+        8,
+        5,
+        3
+      ],
+      "common": [
+        6,
+        0,
+        4
+      ]
+    },
+    "uiAfterRestart": {
+      "suggestionsListed": [
+        "S-005"
+      ],
+      "revokeControls": 1,
+      "mapEdges": [
+        {
+          "kind": "suggestion",
+          "keys": "intra-suggestion intra-touching"
+        }
+      ]
+    },
+    "afterEngineRerun": {
+      "alpha": [
+        8,
+        4,
+        4
+      ],
+      "gamma": [
+        8,
+        5,
+        3
+      ],
+      "common": [
+        6,
+        0,
+        4
+      ],
+      "engine": {
+        "brainId": "brain-alpha",
+        "engineVersion": "dre-v1",
+        "inputState": "CURRENT",
+        "mapDigest": "fnv1a64:e1c63551d2e1683d",
+        "currentContentGenerationId": null,
+        "lastRunId": "dre1-df42004d6185e50c",
+        "lastRunUnixMs": 1791254386406,
+        "lastMapDigest": "fnv1a64:e1c63551d2e1683d",
+        "lastContentGenerationId": null
+      }
+    },
+    "explicitReapprovalAfterRestart": {
+      "alpha": [
+        8,
+        5,
+        3
+      ],
+      "common": [
+        6,
+        1,
+        3
+      ]
+    },
+    "engine": {
+      "product": "Edg/154.0.4258.53",
+      "protocolVersion": "1.3"
+    },
+    "axe": {
+      "package": "4.13.0",
+      "axeMinJsSha256": "c24f097bd2f451d4f933e8bc7d8d539f8672a2ebcb5cc9f9f3eec8ca9470a0c1"
+    },
+    "phase1": {
+      "task": "TASK-0051",
+      "phase": 1,
+      "headTested": "14a821d9cfc690ad4365fc7572bc455edc7144d4",
+      "checks": [],
+      "baseline": {
+        "alpha": [
+          8,
+          4,
+          4
+        ],
+        "gammaWithOwnApproval": [
+          8,
+          5,
+          3
+        ],
+        "common": [
+          6,
+          0,
+          4
+        ]
+      },
+      "intra": {
+        "suggestion": {
+          "key": "S-005",
+          "sourcePath": "dossier-a/note-1.txt",
+          "targetPath": "racine-2.txt",
+          "relationType": "reference"
+        },
+        "countsStart": [
+          8,
+          4,
+          4
+        ],
+        "countsApproved": [
+          8,
+          5,
+          3
+        ],
+        "countsRevoked": [
+          8,
+          4,
+          4
+        ],
+        "countsReapproved": [
+          8,
+          5,
+          3
+        ],
+        "panelTotals": {
+          "start": "1 sortante(s) · 1 entrante(s) · 1 suggestion(s) non comptée(s)",
+          "approved": "1 sortante(s) · 2 entrante(s) · 0 suggestion(s) non comptée(s)",
+          "revoked": "1 sortante(s) · 1 entrante(s) · 1 suggestion(s) non comptée(s)"
+        },
+        "selectedNodeIncoming": {
+          "start": 1,
+          "approved": 2,
+          "revoked": 1,
+          "reapproved": 2
+        },
+        "mapEdges": {
+          "start": [
+            {
+              "kind": "suggestion",
+              "keys": "intra-suggestion intra-touching"
+            }
+          ],
+          "approved": [
+            {
+              "kind": "established",
+              "keys": "intra-established intra-approved intra-touching"
+            }
+          ],
+          "revoked": [
+            {
+              "kind": "suggestion",
+              "keys": "intra-suggestion intra-touching"
+            }
+          ],
+          "reapproved": [
+            {
+              "kind": "established",
+              "keys": "intra-established intra-approved intra-touching"
+            }
+          ]
+        },
+        "keyboard": {
+          "approveWith": "Enter",
+          "revokeReachedWithRealTab": true,
+          "revokeWith": "Enter",
+          "reapproveWith": "Space",
+          "focusOnRevokeControlBeforePress": {
+            "tag": "BUTTON",
+            "testid": null,
+            "revokeKey": "S-005",
+            "approveKey": null,
+            "text": "Révoquer S-005"
+          },
+          "focusAfterRevoke": {
+            "tag": "BUTTON",
+            "testid": "approve-core-suggestion",
+            "revokeKey": "S-005",
+            "approveKey": null,
+            "text": "Approuver S-005"
+          },
+          "focusTrailAfterRevoke": [
+            {
+              "tag": "BUTTON",
+              "revoke": "S-005",
+              "approve": null
+            },
+            {
+              "tag": "BUTTON",
+              "revoke": null,
+              "approve": "S-005"
+            }
+          ]
+        },
+        "labels": {
+          "fr": "Révoquer S-005",
+          "en": "Revoke S-005"
+        },
+        "statusAfterRevoke": "Relation S-005 révoquée dans brain-alpha : la suggestion est de nouveau en attente.",
+        "revokeControlsOnApprovedEntriesOnly": true,
+        "deterministicEntriesWithRevokeControl": 0,
+        "axeWithRevokeControlOnScreen": {
+          "violations": 0,
+          "incomplete": 1,
+          "passes": 29
+        },
+        "isolation": {
+          "gammaUnchanged": true,
+          "commonStoreUnchanged": true,
+          "sourceAndIndexUnchanged": true
+        },
+        "reloadedFromBackend": {
+          "backendCommandsDuringRevocation": [
+            "map_relations_approve",
+            "map_cross_relations_open",
+            "map_relations_for_node",
+            "map_relations_review_queue",
+            "map_cross_relations_for_node",
+            "map_relations_open",
+            "map_relations_for_node",
+            "map_relations_revoke",
+            "map_cross_relations_open",
+            "map_relations_for_node",
+            "map_relations_review_queue",
+            "map_cross_relations_for_node",
+            "map_relations_open",
+            "map_relations_for_node"
+          ]
+        },
+        "falsifications": {
+          "deterministic": {
+            "refused": true,
+            "message": "relation_rejected_revocation_of_deterministic: `S-005` is aimed as DETERMINISTIC; only an APPROVED relation can be revoked"
+          },
+          "unknownKey": {
+            "refused": true,
+            "message": "relation_rejected_unknown_suggestion: S-inexistante"
+          },
+          "pendingKey": {
+            "refused": true,
+            "message": "relation_rejected_revocation_suggestion_not_approved: `S-006` is `pending`, not `approved`"
+          },
+          "thirdProvenance": {
+            "refused": true,
+            "message": "relation_rejected_unknown_provenance: `SUGGESTED` is not a provenance; an established relation is DETERMINISTIC or APPROVED, and there is no third value"
+          },
+          "secondRevoke": {
+            "refused": true,
+            "message": "relation_rejected_revocation_suggestion_not_approved: `S-005` is `pending`, not `approved`"
+          },
+          "secondApprove": {
+            "refused": true,
+            "message": "relation_rejected_suggestion_already_decided: `S-005` is already `approved`"
+          }
+        },
+        "reloadAfterRevocationCommands": [
+          "map_relations_approve",
+          "map_cross_relations_open",
+          "map_relations_for_node",
+          "map_relations_review_queue",
+          "map_cross_relations_for_node",
+          "map_relations_open",
+          "map_relations_for_node",
+          "map_relations_revoke",
+          "map_cross_relations_open",
+          "map_relations_for_node",
+          "map_relations_review_queue",
+          "map_cross_relations_for_node",
+          "map_relations_open",
+          "map_relations_for_node"
+        ]
+      },
+      "cross": {
+        "suggestion": {
+          "key": "XB-S02",
+          "sourceBrain": "brain-gamma",
+          "sourcePath": "racine-1.txt",
+          "targetBrain": "brain-alpha",
+          "targetPath": "racine-2.txt"
+        },
+        "countsStart": [
+          6,
+          0,
+          4
+        ],
+        "countsApproved": [
+          6,
+          1,
+          3
+        ],
+        "countsRevoked": [
+          6,
+          0,
+          4
+        ],
+        "countsReapproved": [
+          6,
+          1,
+          3
+        ],
+        "panelTotals": {
+          "start": "0 outgoing · 0 incoming · 1 suggestion(s) not counted",
+          "approved": "1 outgoing · 0 incoming · 0 suggestion(s) not counted",
+          "revoked": "0 outgoing · 0 incoming · 1 suggestion(s) not counted"
+        },
+        "selectedNodeOutgoing": {
+          "start": 0,
+          "approved": 1,
+          "revoked": 0
+        },
+        "mapEdges": {
+          "start": [
+            {
+              "kind": "suggestion",
+              "provenance": "",
+              "keys": "inter-crossing inter-suggestion inter-touching"
+            }
+          ],
+          "approved": [
+            {
+              "kind": "established",
+              "provenance": "APPROVED",
+              "keys": "inter-crossing inter-established inter-approved inter-touching"
+            }
+          ],
+          "revoked": [
+            {
+              "kind": "suggestion",
+              "provenance": "",
+              "keys": "inter-crossing inter-suggestion inter-touching"
+            }
+          ],
+          "reapproved": [
+            {
+              "kind": "established",
+              "provenance": "APPROVED",
+              "keys": "inter-crossing inter-established inter-approved inter-touching"
+            }
+          ]
+        },
+        "keyboard": {
+          "approveWith": "Enter",
+          "revokeReachedWithRealTab": true,
+          "revokeWith": "Enter",
+          "reapproveWith": "Enter",
+          "focusOnRevokeControlBeforePress": {
+            "tag": "BUTTON",
+            "testid": null,
+            "revokeKey": "XB-S02",
+            "approveKey": null,
+            "text": "Revoke XB-S02"
+          },
+          "focusAfterRevoke": {
+            "tag": "BUTTON",
+            "testid": null,
+            "revokeKey": null,
+            "approveKey": "XB-S02",
+            "text": "Approve XB-S02"
+          },
+          "focusTrailAfterRevoke": [
+            {
+              "tag": "BUTTON",
+              "revoke": "XB-S02",
+              "approve": null
+            },
+            {
+              "tag": "BUTTON",
+              "revoke": null,
+              "approve": "XB-S02"
+            }
+          ]
+        },
+        "labels": {
+          "en": "Revoke XB-S02",
+          "ariaEn": "revoke inter-brain relation XB-S02, from this brain to Cerveau Alpha"
+        },
+        "axeWithRevokeControlOnScreen": {
+          "violations": 0,
+          "incomplete": 1,
+          "passes": 28
+        },
+        "isolation": {
+          "alphaUnchanged": true,
+          "gammaUnchanged": true,
+          "sourceAndIndexUnchanged": true
+        },
+        "falsifications": {
+          "deterministic": {
+            "refused": true,
+            "message": "cross_relation_rejected_revocation_of_deterministic: `XB-S02` is aimed as DETERMINISTIC; only an APPROVED relation can be revoked"
+          },
+          "unknownKey": {
+            "refused": true,
+            "message": "cross_relation_rejected_unknown_suggestion: XB-inexistante"
+          },
+          "pendingKey": {
+            "refused": true,
+            "message": "cross_relation_rejected_revocation_suggestion_not_approved: `XB-S03` is `pending`, not `approved`"
+          },
+          "secondRevoke": {
+            "refused": true,
+            "message": "cross_relation_rejected_revocation_suggestion_not_approved: `XB-S02` is `pending`, not `approved`"
+          },
+          "secondApprove": {
+            "refused": true,
+            "message": "cross_relation_rejected_suggestion_already_decided: `XB-S02` is already `approved`"
+          }
+        }
+      },
+      "finalStores": {
+        "alpha": {
+          "counts": [
+            8,
+            4,
+            4
+          ],
+          "established": [
+            "APPROVED|ek1|brain-alpha|dossier-a/note-3.txt>ek1|brain-alpha|racine-1.txt|reference|S-004",
+            "APPROVED|ek1|brain-alpha|dossier-b/note-1.txt>ek1|brain-alpha|dossier-a/note-3.txt|reference|S-001",
+            "APPROVED|ek1|brain-alpha|dossier-b/sous-dossier/note-2.txt>ek1|brain-alpha|dossier-a/note-1.txt|reference|S-002",
+            "APPROVED|ek1|brain-alpha|racine-2.txt>ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|revision|S-003",
+            "DETERMINISTIC|ek1|brain-alpha|dossier-a/note-1.txt>ek1|brain-alpha|dossier-a/note-2.txt|revision|",
+            "DETERMINISTIC|ek1|brain-alpha|dossier-a/note-1.txt>ek1|brain-alpha|dossier-b/note-1.txt|reference|",
+            "DETERMINISTIC|ek1|brain-alpha|dossier-a/note-1.txt>ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|reference|",
+            "DETERMINISTIC|ek1|brain-alpha|dossier-a/note-2.txt>ek1|brain-alpha|dossier-a/note-3.txt|revision|",
+            "DETERMINISTIC|ek1|brain-alpha|dossier-a/note-2.txt>ek1|brain-alpha|dossier-b/sous-dossier/note-2.txt|reference|",
+            "DETERMINISTIC|ek1|brain-alpha|dossier-b/note-1.txt>ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|reference|",
+            "DETERMINISTIC|ek1|brain-alpha|dossier-b/sous-dossier/note-1.txt>ek1|brain-alpha|dossier-b/sous-dossier/note-2.txt|revision|",
+            "DETERMINISTIC|ek1|brain-alpha|racine-1.txt>ek1|brain-alpha|racine-2.txt|revision|"
+          ],
+          "pending": [
+            "S-005:pending",
+            "S-006:pending",
+            "S-007:pending",
+            "S-008:pending"
+          ]
+        },
+        "gamma": {
+          "counts": [
+            8,
+            5,
+            3
+          ],
+          "established": [
+            "APPROVED|ek1|brain-gamma|dossier-a/note-1.txt>ek1|brain-gamma|racine-2.txt|reference|S-005",
+            "APPROVED|ek1|brain-gamma|dossier-a/note-3.txt>ek1|brain-gamma|racine-1.txt|reference|S-004",
+            "APPROVED|ek1|brain-gamma|dossier-b/note-1.txt>ek1|brain-gamma|dossier-a/note-3.txt|reference|S-001",
+            "APPROVED|ek1|brain-gamma|dossier-b/sous-dossier/note-2.txt>ek1|brain-gamma|dossier-a/note-1.txt|reference|S-002",
+            "APPROVED|ek1|brain-gamma|racine-2.txt>ek1|brain-gamma|dossier-b/sous-dossier/note-1.txt|revision|S-003",
+            "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-1.txt>ek1|brain-gamma|dossier-a/note-2.txt|revision|",
+            "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-1.txt>ek1|brain-gamma|dossier-b/note-1.txt|reference|",
+            "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-1.txt>ek1|brain-gamma|dossier-b/sous-dossier/note-1.txt|reference|",
+            "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-2.txt>ek1|brain-gamma|dossier-a/note-3.txt|revision|",
+            "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-2.txt>ek1|brain-gamma|dossier-b/sous-dossier/note-2.txt|reference|",
+            "DETERMINISTIC|ek1|brain-gamma|dossier-b/note-1.txt>ek1|brain-gamma|dossier-b/sous-dossier/note-1.txt|reference|",
+            "DETERMINISTIC|ek1|brain-gamma|dossier-b/sous-dossier/note-1.txt>ek1|brain-gamma|dossier-b/sous-dossier/note-2.txt|revision|",
+            "DETERMINISTIC|ek1|brain-gamma|racine-1.txt>ek1|brain-gamma|racine-2.txt|revision|"
+          ],
+          "pending": [
+            "S-006:pending",
+            "S-007:pending",
+            "S-008:pending"
+          ]
+        },
+        "common": {
+          "counts": [
+            6,
+            0,
+            4
+          ],
+          "established": [
+            "DETERMINISTIC|cek1|brain-alpha|dossier-a/note-1.txt>cek1|brain-gamma|dossier-b/note-1.txt|reference|",
+            "DETERMINISTIC|cek1|brain-alpha|racine-1.txt>cek1|brain-beta|niveau-01|reference|",
+            "DETERMINISTIC|cek1|brain-beta|niveau-01/niveau-02/niveau-03>cek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|revision|",
+            "DETERMINISTIC|cek1|brain-beta|niveau-01/niveau-02>cek1|brain-gamma|racine-2.txt|reference|",
+            "DETERMINISTIC|cek1|brain-gamma|dossier-a/note-2.txt>cek1|brain-alpha|dossier-b/sous-dossier/note-2.txt|reference|",
+            "DETERMINISTIC|cek1|brain-gamma|dossier-a/note-3.txt>cek1|brain-beta|niveau-01/niveau-02/niveau-03/annexe|revision|"
+          ],
+          "pending": [
+            "XB-S01:pending",
+            "XB-S02:pending",
+            "XB-S03:pending",
+            "XB-S04:pending"
+          ]
+        }
+      },
+      "fatalConsoleErrors": 0
+    },
+    "fatalConsoleErrors": 0
+  },
+  "externalStoresAfterPhase1": {
+    "alphaRelations": {
+      "digest": "d3bf5fa2dc5d522b8b645db7459f8902a111031f5ce83479a5ed27e120894a20",
+      "deterministic": 8,
+      "approved": 4,
+      "approvedKeys": [
+        "S-001",
+        "S-002",
+        "S-003",
+        "S-004"
+      ],
+      "suggestionStates": {
+        "S-001": "approved",
+        "S-002": "approved",
+        "S-003": "approved",
+        "S-004": "approved",
+        "S-005": "pending",
+        "S-006": "pending",
+        "S-007": "pending",
+        "S-008": "pending"
+      }
+    },
+    "gammaRelations": {
+      "digest": "47f87092b3b05826e3234558447473512961a18a8a8ba7d1663ab98ba27d69f2",
+      "deterministic": 8,
+      "approved": 5,
+      "approvedKeys": [
+        "S-001",
+        "S-002",
+        "S-003",
+        "S-004",
+        "S-005"
+      ],
+      "suggestionStates": {
+        "S-001": "approved",
+        "S-002": "approved",
+        "S-003": "approved",
+        "S-004": "approved",
+        "S-005": "approved",
+        "S-006": "pending",
+        "S-007": "pending",
+        "S-008": "pending"
+      }
+    },
+    "commonRelations": {
+      "digest": "4e5085cf8b413a2262444f8743614faf87fc8f59c8bf45f2a32fcb59fdaeb65e",
+      "deterministic": 6,
+      "approved": 0,
+      "approvedKeys": [],
+      "suggestionStates": {
+        "XB-S01": "pending",
+        "XB-S02": "pending",
+        "XB-S03": "pending",
+        "XB-S04": "pending"
+      }
+    },
+    "alphaIndex": "68ea033741697b413a444ef39969a71cde22dd41fddfb9b5359ce373d7160fc4",
+    "gammaIndex": "4644bedc52da5c91e63a303a79f36f5e2cdc856f39afcf8adba480cba645cb4d",
+    "syntheticFixtures": "30de562fc44b7a571fd975c20f18186ee50d35e23e8ee0578a145624a8f7b1cf",
+    "realRoots": [
+      "f92414ce433b65ef3170ebd8762539e4330204e10138c0bb7a4baea1adaf4257"
+    ]
+  },
+  "externalStoresAfterPhase2": {
+    "alphaRelations": {
+      "digest": "abd83cab2e986f1fbe02a6a4dfdc4df0b21b171a0558d6ddb261ca613374e2fe",
+      "deterministic": 8,
+      "approved": 5,
+      "approvedKeys": [
+        "S-001",
+        "S-002",
+        "S-003",
+        "S-004",
+        "S-005"
+      ],
+      "suggestionStates": {
+        "S-001": "approved",
+        "S-002": "approved",
+        "S-003": "approved",
+        "S-004": "approved",
+        "S-005": "approved",
+        "S-006": "pending",
+        "S-007": "pending",
+        "S-008": "pending"
+      }
+    },
+    "gammaRelations": {
+      "digest": "47f87092b3b05826e3234558447473512961a18a8a8ba7d1663ab98ba27d69f2",
+      "deterministic": 8,
+      "approved": 5,
+      "approvedKeys": [
+        "S-001",
+        "S-002",
+        "S-003",
+        "S-004",
+        "S-005"
+      ],
+      "suggestionStates": {
+        "S-001": "approved",
+        "S-002": "approved",
+        "S-003": "approved",
+        "S-004": "approved",
+        "S-005": "approved",
+        "S-006": "pending",
+        "S-007": "pending",
+        "S-008": "pending"
+      }
+    },
+    "commonRelations": {
+      "digest": "7691fc3be4020e17a03f65bf845324c140349b0347a8120be49aa679caa34b51",
+      "deterministic": 6,
+      "approved": 1,
+      "approvedKeys": [
+        "XB-S02"
+      ],
+      "suggestionStates": {
+        "XB-S01": "pending",
+        "XB-S02": "approved",
+        "XB-S03": "pending",
+        "XB-S04": "pending"
+      }
+    },
+    "alphaIndex": "1eda6e53423f37fe05dbd41213b7ada65bcf94538e6df98f62ffc4f31cd88361",
+    "gammaIndex": "55abce41b8f9695af9f0ddab476e10cf73fd5926447f4195147d4ab196f7dd3e",
+    "syntheticFixtures": "30de562fc44b7a571fd975c20f18186ee50d35e23e8ee0578a145624a8f7b1cf",
+    "realRoots": [
+      "f92414ce433b65ef3170ebd8762539e4330204e10138c0bb7a4baea1adaf4257"
+    ]
+  },
+  "notTested": [
+    "Beta (deep) was not built: no relation of this proof touches it.",
+    "A restart while a revocation is in flight (kill -9) is not tested; atomicity is proved by the store-level rollback test.",
+    "P-19 as a whole stays PARTIELLE: only the persistence of a revocation is claimed here."
+  ]
+}

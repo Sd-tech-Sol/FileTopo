@@ -1,5 +1,19 @@
 # HANDOFF — passage de relais
 
+## Relais — TASK-0051 IMPLEMENTED, contrôle indépendant requis — 2026-10-05
+
+- Branche `build/v0.2-a35-v1-approved-relation-revocation`; commits produit
+  `d5b4880` et `14a821d`; HEAD testé `14a821d9cfc690ad4365fc7572bc455edc7144d4`.
+- Révocation intra + inter livrée (stores, commandes, Tauri, deux panneaux,
+  FR/EN, clavier natif); preuve WebView2 réelle en deux processus autour d'un
+  redémarrage réel (`docs/performance/runs/TASK-0051-webview2.json`).
+- À savoir : les boutons « Révoquer » intra n'ont plus de `data-testid` partagé
+  (le hook de focus générique de TASK-0047 les confondait d'une relation à
+  l'autre); le focus est rendu à l'approbation de la même suggestion.
+- Limites déclarées dans la tâche (kill pendant révocation, Beta non construit,
+  moteur révoqué prouvé au niveau store). P-19 inchangée. Pas d'auto-VERIFIED.
+- Reste : contrôle indépendant de TASK-0051.
+
 ## Relais — ACTION-0092 / TASK-0051 READY — 2026-10-05
 
 - TASK-0050 est VERIFIED.

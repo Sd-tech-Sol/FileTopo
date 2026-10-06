@@ -9246,3 +9246,42 @@ aucun geste de révocation.
 
 DEC-0049 choisit `approved → pending` comme sémantique réversible, sans
 nouvel état. TASK-0051 est sélectionnée.
+
+
+## CZ. TASK-0051 — révocation des relations APPROVED — `IMPLEMENTED` — 2026-10-05
+
+HEAD testé `14a821d9cfc690ad4365fc7572bc455edc7144d4` (produit identique à
+`d5b4880`).
+
+- `cargo test` : 798 passés, 0 échec, 6 ignorés (préexistants). Nouveaux : 10 tests
+  de store intra, 9 inter (transition, deux fois, DETERMINISTIC, refus nommés,
+  rollback par sabotage entre `DELETE` et `UPDATE`, re-seed), 4 + 4 tests de
+  commande (cycle et comptes, refus, rebuild + réouverture, isolation), 1 test
+  moteur (`a_revoked_core_approval_is_not_reapproved_by_a_rerun`).
+- `pnpm test` : 654 / 654 (632 avant TASK-0051). `pnpm check`, `pnpm build`, Tauri
+  debug, `git diff --check` : PASS.
+- WebView2 réel (`scripts/task0051-webview2.ps1`) : phase 1 PASS, redémarrage
+  réel, phase 2 PASS. Vrais événements clavier : Tab sur le contrôle, Entrée
+  pour révoquer, Espace / Entrée pour réapprouver. Intra `S-005` : 8/4/4 → 8/5/3
+  → 8/4/4 → 8/5/3; inter `XB-S02` : 6/0/4 → 6/1/3 → 6/0/4 → 6/1/3; arêtes de la
+  carte `approved ↔ suggestion` en suivant; focus : bouton pressé puis
+  approbation de la même suggestion, jamais le contrôle d'une autre relation.
+  Gamma (approbation propre de `S-005`) et store commun inchangés par la
+  révocation Alpha; stores intra inchangés par la révocation inter; source et
+  Index inchangés (produit + lecteur externe python, produit fermé). Après
+  redémarrage, rebuild réel des deux Index et rerun du moteur par le bouton
+  produit : rien ne revient. Axe : 0 violation avec le contrôle à l'écran.
+- Falsifications de refus (IPC réel) : DETERMINISTIC, clé inconnue, clé
+  `pending`, provenance inventée, seconde révocation, seconde approbation —
+  tous refus nommés, aucun store ne bouge.
+- Mutations du produit (restaurées) : garde DETERMINISTIC retirée (2 rouges),
+  `DELETE` commité avant l'`UPDATE` (rollback rouge), `decided_unix_ms` conservé
+  (3 rouges), état laissé `approved` côté inter (9 rouges), bouton sur toute
+  provenance (rouge, puis cas de donnée hostile ajouté). Backend saboté +
+  WebView2 réel : échec `timeout: S-005 revoked`; restauré et rejoué : PASS.
+- Audit public (`scripts/audit-public-readiness.ps1 -AllowRemotes`) : PASS.
+- Non testé : kill pendant une révocation; Beta (`deep`) dans la preuve réelle;
+  révocation d'une suggestion du moteur par un geste réel (store-level
+  seulement); redémarrage de P-19 au-delà de la persistance d'une révocation.
+
+Aucun VERIFIED accordé : contrôle indépendant requis.
