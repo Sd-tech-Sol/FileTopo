@@ -1,5 +1,25 @@
 # État courant
 
+## TASK-0052 — branch focus & collapse (F-042) — `IMPLEMENTED` — 2026-10-06
+
+- DEC-0050 implémentée : **focus de branche** = vraie projection bornée du
+  sous-arbre (`map_branch_view`, `branch_projection.rs`), aucun ancêtre, frère
+  ni autre cerveau dans le DTO ni dans le DOM; **repli/dépli** par dossier avec
+  `hiddenDescendantCount` **exact** (`hierarchy::descendant_count`, requête
+  récursive SQLite pilotée par index, sans colonne, sans cache, sans liste).
+- Le repli est un **retrait pur** de la projection de référence : déplier
+  redonne exactement la référence; deux replis sont indépendants; un agrégat
+  (« Voir la suite ») n'est jamais un repli et inversement.
+- UI FR/EN : `BranchFocusPanel` (boutons natifs, Entrée et Espace), mots +
+  glyphes sur la carte, focus jamais sur `body`. Sortie : composition, caméra
+  et sélection d'avant (rien n'avait été remplacé : `composed`/`loaded` intacts).
+- **Session-only** : aucun write du resume-state, aucun stockage; un
+  redémarrage réel ne restaure rien (prouvé). P-19 reste PARTIELLE.
+- Preuve WebView2 réelle : `docs/performance/runs/TASK-0052-webview2.json`,
+  HEAD testé `bdb5e91d677ec6dd0c64de2f93506cc1aa1ad17a`.
+- TASK-0052 = `IMPLEMENTED`; **F-042 = candidate, jamais VERIFIED par
+  l'exécuteur**. Aucune TASK-0053.
+
 ## ACTION-0095 — prochain bloc V1 = F-042 — 2026-10-06
 
 - Audit P-19 / F-042 / F-046 terminé.

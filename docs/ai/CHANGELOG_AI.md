@@ -6452,3 +6452,14 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
 - F-042 choisie avant P-19 pour éviter de rouvrir la persistance.
 - DEC-0050 : branch focus + collapse/expand, exact descendant count, bounded.
 - TASK-0052 READY; F-046 inchangée.
+
+## 2026-10-06 — TASK-0052 — focus de branche et repli/dépli (Claude Code)
+
+- `branch_projection.rs` + `map_branch_view` : projection bornée d'un sous-arbre,
+  repli = retrait pur de la référence, `hiddenDescendantCount` exact via
+  `hierarchy::descendant_count` (requête récursive SQLite, index-driven).
+- UI : `BranchFocusPanel`, `branchFocus.ts`, marqueurs de carte (mot + glyphe +
+  contour), FR/EN, Entrée/Espace; état session-only, resume-state gardé.
+- Preuve : `scripts/task0052-{webview2.mjs,webview2.ps1,seed-proof.py}`,
+  `docs/performance/runs/TASK-0052-webview2.json`; sept falsifications.
+- Code `bdb5e91d677ec6dd0c64de2f93506cc1aa1ad17a`. TASK-0052 = `IMPLEMENTED`; F-042 candidate, jamais auto-VERIFIED.

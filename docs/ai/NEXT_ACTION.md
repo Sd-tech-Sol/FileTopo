@@ -1,16 +1,13 @@
 # Action suivante
 
-## TASK-0052 — V1 Branch Focus & Collapse / F-042 Closure
+## Contrôle indépendant de TASK-0052 — V1 Branch Focus & Collapse / F-042
 
 Branche : `build/v0.2-a36-v1-branch-focus-collapse`.
 
-Lire dans cet ordre :
+Contrôler **sur preuves, sans modifier le produit** : critères F42-1 à F42-12 et
+falsifications de `docs/tasks/TASK-0052-v1-branch-focus-collapse.md`, avec
+`docs/performance/runs/TASK-0052-webview2.json`, `src-tauri/src/map/branch_projection*.rs`,
+`src/map/BranchFocusPanel.tsx`, `src/map/branchFocus*.ts*` et la section `DF` de
+`docs/ai/VALIDATION.md`. Attribuer `VERIFIED` ou `CHANGES_REQUIRED`.
 
-1. `docs/reviews/ACTION-0095-v1-gap-audit-after-task0051.md`;
-2. `docs/decisions/DEC-0050-branch-focus-collapse.md`;
-3. `docs/tasks/TASK-0052-v1-branch-focus-collapse.md`;
-4. `.orchestrator/NEXT_PROMPT.md`.
-
-Exécuteur : Claude Code, Sonnet 5.5, High.
-
-P-19 reste PARTIELLE et viendra après F-042. F-046 inchangée.
+P-19 reste PARTIELLE (prochaine candidate logique). F-046 inchangée. Aucune TASK-0053.

@@ -1,5 +1,25 @@
 # HANDOFF — passage de relais
 
+## Relais — TASK-0052 IMPLEMENTED, contrôle indépendant requis — 2026-10-06
+
+- Code `bdb5e91d677ec6dd0c64de2f93506cc1aa1ad17a` (backend `branch_projection.rs` + primitive `descendant_count`,
+  commande `map_branch_view`, `BranchFocusPanel`, `branchFocus.ts`, marqueurs de
+  carte dans `MapView`).
+- Le repli/dépli n'existe **que dans la vue de branche focalisée** : la
+  projection ordinaire n'affiche qu'un niveau d'enfants plus l'ascendance, il n'y
+  a rien de profond à replier. À dire au contrôle, pas à cacher.
+- Remplissage : largeur d'abord depuis le dossier focalisé, dossiers d'abord
+  (ordre canonique), plafond ordinaire de 64; un dossier large peut donc épuiser
+  le budget avant ses cadets — les agrégats le disent. Le repli ne refait pas le
+  remplissage : il retire seulement.
+- Entrer dans un focus quitte le filtre par `filter.dropForNavigation` (chemin
+  existant) et le dit. Un autre cerveau, une nouvelle composition ou une nouvelle
+  révision d'Index quittent le focus sans restaurer.
+- Rejouer : `pnpm build`, `pnpm tauri build --debug --no-bundle`, puis
+  `pwsh scripts/task0052-webview2.ps1` (deux processus réels, sans touche
+  envoyée à la fenêtre : événements CDP).
+- Suite logique : P-19 (y intégrer ces deux états), puis F-046.
+
 ## Relais — ACTION-0095 / TASK-0052 READY — 2026-10-06
 
 - Branche cible : `build/v0.2-a36-v1-branch-focus-collapse`.

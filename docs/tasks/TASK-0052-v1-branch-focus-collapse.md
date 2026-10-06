@@ -1,7 +1,7 @@
 # TASK-0052 — V1 Branch Focus & Collapse / F-042 Closure
 
 - **Date :** 2026-10-06
-- **Statut :** `READY`
+- **Statut :** `IMPLEMENTED` — candidate au contrôle indépendant
 - **Branche :** `build/v0.2-a36-v1-branch-focus-collapse`
 - **Décision :** `DEC-0050`
 - **Portée :** `F-042`, régressions `F-050/F-051`, préparation `P-19`
@@ -146,3 +146,9 @@ Au minimum :
 - F-046 inchangée;
 - aucune TASK-0053;
 - RESULT complet, commit+push, arbre propre.
+
+## Livraison
+
+Code `bdb5e91d677ec6dd0c64de2f93506cc1aa1ad17a`; preuves : `docs/performance/runs/TASK-0052-webview2.json` et
+`docs/ai/VALIDATION.md` section `DF`. F42-1 à F42-12 couverts; sept
+falsifications effectives. **Jamais `VERIFIED` par l'exécuteur.**

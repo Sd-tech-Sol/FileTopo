@@ -9355,3 +9355,103 @@ dans cet ordre, sauf blocage nouveau.
 DEC-0050 et TASK-0052 définissent une projection de branche bornée, des replis
 explicites et un compte exact de descendants masqués, sans persistance dans
 cette tranche.
+
+## DF. TASK-0052 — branch focus & collapse (F-042) — `IMPLEMENTED` — 2026-10-06
+
+HEAD testé : `bdb5e91d677ec6dd0c64de2f93506cc1aa1ad17a`.
+
+### Audit reuse-first (avant code)
+
+`projection.rs::materialize_view` (une page d'enfants du focus + ascendance,
+inchangée), `hierarchy::children_page` (réutilisée telle quelle pour le
+remplissage), `VIEW_BUDGET`/`MATERIAL_BUDGET`/`ORDINARY_MATERIAL_TARGET`
+(réutilisés, non modifiés), `ViewAggregate` (réutilisé pour budget/pagination),
+`layout::compute` (réutilisé), `MapApp.changeProjection` (reste le chemin des
+agrégats hors focus; quitte le focus en entrée), `compositionSession.ts`
+(**non** modifié : le focus ne remplace ni `composed` ni `loaded`, donc la
+restauration est exacte par construction), `MapView` (marqueurs additifs),
+`resumeState` (**frontière non franchie** : trois effets d'écriture gardés par
+`branchFocusRef`). Ajouts : `branch_projection.rs`, `descendant_count`,
+`BranchFocusPanel`, `branchFocus.ts`.
+
+### Suites
+
+| Contrôle | Résultat |
+|---|---|
+| `cargo test` complet | PASS, 814 réussis, 6 ignorés |
+| `cargo test branch_projection` (15 tests : comptes exacts contre référence indépendante, `child_count` ≠ descendants, feuille/dossier/arbre profond/large/inconnu, plan SQLite, sous-arbre seul, repli retrait pur, dépli = référence, deux replis indépendants, id hors sous-arbre sans effet, bornes + pagination sans perte, déterminisme + lecture seule, 100 011 nœuds) | PASS |
+| Plan SQLite de `descendant_count` | `SEARCH nodes USING COVERING INDEX idx_nodes_parent (parent_id=?)` + `RECURSIVE STEP` + `SEARCH child USING COVERING INDEX idx_nodes_parent`; aucun tri, aucun balayage de `nodes` |
+| Coût | 100 011 nœuds : 117 ms (racine, 100 010 descendants), 11 ms (10 000); proportionnel au sous-arbre, payé seulement pour les dossiers repliés |
+| `vitest` complet | PASS, 671 (dont `branchFocus.test.tsx`, 16) |
+| `pnpm check`, `pnpm build`, `pnpm tauri build --debug --no-bundle`, `git diff --check` | PASS |
+| `scripts/audit-public-readiness.ps1 -AllowRemotes` | PASS, 700 fichiers, aucun motif sensible, aucun fichier > 5 Mio |
+
+### Preuve WebView2 réelle (deux processus autour d'un redémarrage réel)
+
+Trois territoires (deux racines réelles synthétiques + `brain-gamma`), événements
+clavier CDP réels (Tab, Entrée, Espace), **toute référence recomptée depuis les
+dossiers sur disque**.
+
+- F42-1/2 : focus de `projet` (Tab puis Entrée) → seul `brain-alix` dessiné, 27
+  cartes = exactement le sous-arbre disque; aucun élément d'un autre cerveau dans
+  le DOM (caché ou non); DTO = 27 nœuds sur 127; DOM = DTO (pas de masque);
+  bandeau « ◆ Branche focalisée — 27 éléments affichés », chemin, sortie.
+- F42-4/5 : repli de `docs` (Entrée) : `hiddenDescendantCount` = **14** = compte
+  disque, alors que `childCount` = 3; descendants absents, le reste inchangé;
+  étiquette « ▸ replié · 14 masqués » sur la carte + contour pointillé.
+- F42-6 : dépli (Espace) : ensemble de nœuds, arêtes et agrégats = référence;
+  DTO identique au DTO de référence, rectangles compris.
+- F42-7 : repli de `docs` (14) puis `src` (9) : retrait = union exacte; src
+  n'a pas touché docs; dépli de docs depuis la liste (Entrée) puis de src.
+- Repli profond `guide` (8), FR et EN, axe 0 violation.
+- F42-3 : sortie (Entrée) : trois territoires, mêmes nœuds, mêmes puces, **caméra
+  identique au caractère près**, sélection `projet`, focus sur « Focaliser la
+  branche ».
+- F42-9 : `archives` (92 enfants) focalisé à l'Espace : agrégats « +29 éléments
+  — Voir la suite »; replier `2024` n'ajoute aucun agrégat à `2024`, ne bouge
+  pas les autres; l'agrégat se pagine à Entrée sans quitter le focus ni toucher
+  au repli; sortie à l'Espace.
+- F42-10 : Entrée et Espace sur chacun des quatre gestes; focus jamais sur `body`.
+- F42-11 : 0 commande d'écriture envoyée pendant les cycles; sources, Index
+  (révision + empreinte de projection), journaux, états vu/non-vu de quatre
+  nœuds, relations de `brain-gamma` et du store commun **identiques**.
+- F42-12 : 0 `map_brain_resume_update` pendant les gestes; resume-state de
+  chaque cerveau identique mot pour mot; **après un redémarrage réel** aucun
+  focus ni repli actif, aucun marqueur, composition ordinaire, resume-state sans
+  champ F-042, focus persisté inchangé.
+- axe : 0 violation (focus, replié EN, après sortie); 1 `incomplete` chacun.
+
+### Falsifications (toutes effectives)
+
+| # | Falsification temporaire | Résultat |
+|---|---|---|
+| 1 | `child_count` comme compte | tests Rust (5) ÉCHOUENT; WebView2 : « 3 !== 14 » |
+| 2 | ancêtre laissé dans le focus | test Rust ÉCHOUE; WebView2 : ensemble ≠ sous-arbre disque |
+| 3 | autres territoires laissés au rendu (masque au lieu de projection) | WebView2 : « only the focused brain is drawn » (le garde compte aussi les éléments cachés) |
+| 4 | replier A retire un frère | tests Rust (2) ÉCHOUENT |
+| 5 | déplier ne retire pas l'id | WebView2 : timeout « docs expanded »; `toggledCollapsed` couvert par vitest |
+| 6 | dossier replié présenté comme agrégat | tests Rust (2) ÉCHOUENT; WebView2 : « a collapse produced no aggregate » |
+| 7 | écriture resume-state pendant les gestes | WebView2 : « exiting wrote the resume state » (8 ≠ 7) |
+
+Chaque falsification a été restaurée par `git checkout` puis la preuve rejouée au PASS final.
+
+### Défauts trouvés et corrigés pendant la preuve
+
+La caméra restaurée à la sortie était déplacée par le recentrage « suivre le
+focus » : corrigé (`skipFollowOnceRef`). Les relations d'une racine réelle ne
+sont pas ouvrables (par conception) : la preuve « relations inchangées » porte
+sur `brain-gamma` et le store commun.
+
+### Non testé / limites
+
+- Repli/dépli : **vue de branche seulement** (la projection ordinaire n'a rien de
+  profond à replier).
+- Un rechargement dû au watcher (nouvelle révision d'Index) pendant un focus le
+  quitte par conception (garde frontend); non rejoué en WebView2.
+- Sélection des cartes à la **souris** (échafaudage nommé); la navigation
+  clavier de l'arbre n'a pas de preuve propre dans une branche.
+- Racines réelles volumineuses non testées; le coût du compte est mesuré à
+  100 011 nœuds en test Rust seulement.
+- Le remplissage largeur-d'abord peut laisser un dossier cadet sans enfants
+  affichés (aggrégat déclaré); non optimisé.
+- P-19 inchangée (PARTIELLE); F-046 inchangée. Aucune TASK-0053.
