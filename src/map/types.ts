@@ -130,6 +130,22 @@ export interface MapProjection extends MapSnapshot {
   hierarchyEdges: { parentId: number; childId: number }[];
   /** `TASK-0039` — present **only** for a filtered projection. */
   filtered?: FilteredProjection | null;
+  /** `TASK-0052` — present **only** for a branch-focus projection (`DEC-0050`). */
+  branch?: BranchProjection | null;
+}
+
+/** `TASK-0052` — what a branch-focus projection adds. Ids and counts only. */
+export interface BranchProjection {
+  /** The focused folder: the root of this view. */
+  rootNodeId: number;
+  /** The collapsed folders that are in this view, with the exact hidden count. */
+  collapsed: CollapsedFolder[];
+}
+
+export interface CollapsedFolder {
+  nodeId: number;
+  /** Every real descendant hidden by the collapse — from the Index, never `childCount`. */
+  hiddenDescendantCount: number;
 }
 
 /* --- TASK-0039 — filtres dynamiques (DEC-0037) --------------------------- */

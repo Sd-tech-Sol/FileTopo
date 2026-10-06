@@ -1091,6 +1091,27 @@ pub fn view_with_filter(
     super::filtered_projection::materialize(&open_store(paths, brain)?, focus, after, filter)
 }
 
+/// `TASK-0052` / `DEC-0050` — the bounded projection of **one branch** of one
+/// brain, with the folders the person collapsed.
+///
+/// A read, and nothing else: no write to the Index, the source, the journal,
+/// the seen state, the relations or the resume state. Neither the focused
+/// folder nor the collapsed ids are stored anywhere — they are arguments.
+pub fn branch_view(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+    root: i64,
+    collapsed: &[i64],
+    after: Option<&str>,
+) -> Result<MapSnapshot, MapError> {
+    super::branch_projection::materialize_branch_view(
+        &open_store(paths, brain)?,
+        root,
+        collapsed,
+        after,
+    )
+}
+
 pub fn snapshot(paths: &SandboxPaths, brain: &BrainRecord) -> Result<MapSnapshot, MapError> {
     open_store(paths, brain)?.snapshot()
 }

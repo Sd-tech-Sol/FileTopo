@@ -12,7 +12,7 @@ import { canonicalizeSearchQuery, runCoordinatedSearch, SearchCoordinator } from
 import { invoke } from "@tauri-apps/api/core";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { resolveInitialLocale, storeLocale, type Locale } from "../lib/locale";
-import { LocalizedError, describeError, resolveStatus, type StatusMessage } from "./localeText";
+import { LocalizedError, bilingual, describeError, resolveStatus, type StatusMessage } from "./localeText";
 import { strings, type MapStrings } from "./mapStrings";
 import BrainIdentityEditor, { type BrainIdentityValues } from "./BrainIdentityEditor";
 import ExclusionsPanel from "./ExclusionsPanel";
@@ -21,6 +21,12 @@ import DetailsPanel from "./DetailsPanel";
 import FilterPanel from "./FilterPanel";
 import { filterRoles } from "./filters";
 import MapView, { aggregateLabel, type RenderedBrain } from "./MapView";
+import BranchFocusPanel from "./BranchFocusPanel";
+import {
+  collapsedCounts,
+  toggledCollapsed,
+  type BranchFocusState,
+} from "./branchFocus";
 import MapLegend from "./MapLegend";
 import { useProjectionFilter } from "./useProjectionFilter";
 import {
@@ -454,6 +460,18 @@ export default function MapApp() {
   selectedRef.current = selected;
   const composedRef = useRef(composed);
   composedRef.current = composed;
+  // `TASK-0052` / `DEC-0050` — branch focus and collapse. Session-only: nothing below
+  // reaches the catalogue, the resume state or any storage. `loaded` and `composed` are
+  // never replaced, so leaving the focus gives back exactly what was there.
+  const [branchFocus, setBranchFocus] = useState<BranchFocusState | null>(null);
+  const [branchBusy, setBranchBusy] = useState(false);
+  const branchFocusRef = useRef(branchFocus);
+  branchFocusRef.current = branchFocus;
+  const branchBusyRef = useRef(false);
+  const branchRequest = useRef(0);
+  // Leaving a focused branch puts the camera back; the follow-the-focus pan must not undo it.
+  const skipFollowOnceRef = useRef(false);
+  const leaveBranchFocusRef = useRef<(() => void) | null>(null);
   const loadedRef = useRef(loaded);
   loadedRef.current = loaded;
   const catalogRef = useRef(catalog);
@@ -510,24 +528,45 @@ export default function MapApp() {
   const focusedNeedsIndex =
     composed !== null && !loaded.has(composed.focusedBrainId);
 
+  /**
+   * What is **drawn**: the composition, except while a branch is focused — then one
+   * territory only. Derived, never stored: `composed` itself is not touched, which is what
+   * lets leaving the focus restore the previous composition exactly (`DEC-0050` G).
+   */
+  const shownComposed = useMemo(
+    () =>
+      composed && branchFocus
+        ? { ...composed, displayedBrainIds: [branchFocus.brainId], focusedBrainId: branchFocus.brainId }
+        : composed,
+    [composed, branchFocus],
+  );
+
   /** The territories of the current composition — `§4.3`. */
   const composition: Composition = useMemo(() => {
-    if (!composed) return { territories: [], world: { x: 0, y: 0, w: 1, h: 1 } };
+    if (!shownComposed) return { territories: [], world: { x: 0, y: 0, w: 1, h: 1 } };
     return composeTerritories(
-      composed.displayedBrainIds.flatMap((brainId) => {
+      shownComposed.displayedBrainIds.flatMap((brainId) => {
         const brain = loaded.get(brainId);
-        return brain
+        const snapshot = branchFocus?.brainId === brainId ? branchFocus.snapshot : brain?.snapshot;
+        return snapshot
           ? [
               {
                 brainId,
-                layoutWidth: brain.snapshot.layoutWidth,
-                layoutHeight: brain.snapshot.layoutHeight,
+                layoutWidth: snapshot.layoutWidth,
+                layoutHeight: snapshot.layoutHeight,
               },
             ]
           : [];
       }),
     );
-  }, [composed, loaded]);
+  }, [shownComposed, loaded, branchFocus]);
+
+  /** The hierarchy being drawn for a brain: the branch's own while it is focused. */
+  const hierarchyOf = useCallback((brainId: string): Hierarchy | null => {
+    const branch = branchFocusRef.current;
+    if (branch && branch.brainId === brainId) return branch.hierarchy;
+    return loadedRef.current.get(brainId)?.hierarchy ?? null;
+  }, []);
 
   const world = composition.world;
 
@@ -547,15 +586,16 @@ export default function MapApp() {
       if (!brainId) return null;
       const brain = loadedRef.current.get(brainId);
       const territory = territoryOf(compositionAt, brainId);
-      if (!brain || !territory) return null;
+      const hierarchy = hierarchyOf(brainId);
+      if (!brain || !territory || !hierarchy) return null;
       const nodeId =
         selectedRef.current && selectedRef.current.brainId === brainId
           ? selectedRef.current.nodeId
-          : brain.snapshot.rootId;
-      const node = brain.hierarchy.byId.get(nodeId);
+          : hierarchy.rootId;
+      const node = hierarchy.byId.get(nodeId);
       return node ? placeRect(territory, node.rect) : null;
     },
-    [],
+    [hierarchyOf],
   );
 
   /**
@@ -568,13 +608,15 @@ export default function MapApp() {
    */
   const nodesByBrain = useMemo(() => {
     const index = new Map<string, ReadonlyMap<number, MapNode>>();
-    if (!composed) return index;
-    for (const brainId of composed.displayedBrainIds) {
+    if (!shownComposed) return index;
+    for (const brainId of shownComposed.displayedBrainIds) {
       const brain = loaded.get(brainId);
-      if (brain) index.set(brainId, brain.hierarchy.byId);
+      if (brain) {
+        index.set(brainId, branchFocus?.brainId === brainId ? branchFocus.hierarchy.byId : brain.hierarchy.byId);
+      }
     }
     return index;
-  }, [composed, loaded]);
+  }, [shownComposed, loaded, branchFocus]);
 
   /** Inter-brain segments — `M6`. Only pairs whose two ends are displayed. */
   const crossSegments = useMemo(
@@ -590,31 +632,38 @@ export default function MapApp() {
 
   /** Everything the single canvas needs, one entry per displayed brain. */
   const renderedBrains: RenderedBrain[] = useMemo(() => {
-    if (!composed) return [];
-    return composed.displayedBrainIds.flatMap((brainId) => {
+    if (!shownComposed) return [];
+    return shownComposed.displayedBrainIds.flatMap((brainId) => {
       const brain = loaded.get(brainId);
       if (!brain) return [];
+      // `TASK-0052` — a focused branch is drawn from its own backend projection.
+      const branch = branchFocus?.brainId === brainId ? branchFocus : null;
+      const hierarchy = branch ? branch.hierarchy : brain.hierarchy;
+      const snapshot = branch ? branch.snapshot : brain.snapshot;
       const localSelection =
         selected && selected.brainId === brainId ? selected.nodeId : null;
       return [
         {
           brainId,
           record: brain.record,
-          hierarchy: brain.hierarchy,
+          hierarchy,
           // Projected from this brain's own projection rectangles. Rebuilt when
           // its tree, its relations or the selection change — never for a pan
           // or a zoom, and never by recomputing a layout.
-          segments: relationSegments(brain.relations, brain.hierarchy.byId, localSelection, locale),
+          segments: relationSegments(brain.relations, hierarchy.byId, localSelection, locale),
           relationNeighbours: establishedNeighbours(brain.relations, localSelection),
           crossNeighbours: crossNeighbours.get(brainId) ?? new Set<number>(),
-          nodeCount: brain.snapshot.materializedCount,
-          aggregates: brain.snapshot.aggregates,
+          nodeCount: snapshot.materializedCount,
+          aggregates: snapshot.aggregates,
           // `TASK-0039`: match / context of a filtered page, empty otherwise.
-          filterRoles: filterRoles(brain.snapshot.filtered),
+          filterRoles: branch ? undefined : filterRoles(brain.snapshot.filtered),
+          // `TASK-0052`: collapsed folders and the focused root, empty otherwise.
+          collapsed: branch ? collapsedCounts(branch.snapshot) : undefined,
+          branchRootId: branch?.rootNodeId,
         },
       ];
     });
-  }, [composed, crossNeighbours, loaded, locale, selected]);
+  }, [shownComposed, branchFocus, crossNeighbours, loaded, locale, selected]);
 
   // Anything the page throws becomes a line in the host log, so an unattended
   // run leaves a trace instead of a silent stall.
@@ -995,6 +1044,8 @@ export default function MapApp() {
    * zoom belong to the composition, whose coordinates mean nothing to a single brain.
    */
   const captureLiveResume = useCallback(() => {
+    // `TASK-0052` — a branch focus is session-only: nothing it moved is written down.
+    if (branchFocusRef.current) return;
     const chosen = selectedRef.current;
     if (chosen && resumeWriter.isKnown(chosen.brainId)) {
       resumeWriter.patch(chosen.brainId, { selectedNodeId: chosen.nodeId });
@@ -1332,6 +1383,8 @@ export default function MapApp() {
    */
   const projectionRequest = useRef(new Map<string, number>());
   const changeProjection = useCallback(async (brainId: string, focusId: number, after: string | null = null) => {
+    // Navigating elsewhere (a search hit, the root) leaves a focused branch first.
+    if (branchFocusRef.current) leaveBranchFocusRef.current?.();
     // Navigating is leaving the filtered view: this call loads its own projection.
     filter.dropForNavigation(brainId);
     const ticket = (projectionRequest.current.get(brainId) ?? 0) + 1;
@@ -1369,7 +1422,8 @@ export default function MapApp() {
   const selectNode = useCallback(
     (reference: BrainNodeRef) => {
       const brain = loadedRef.current.get(reference.brainId);
-      if (brain && !brain.hierarchy.byId.has(reference.nodeId)) {
+      const drawn = hierarchyOf(reference.brainId);
+      if (brain && drawn && !drawn.byId.has(reference.nodeId)) {
         void changeProjection(reference.brainId, reference.nodeId);
         return;
       }
@@ -1385,8 +1439,197 @@ export default function MapApp() {
         setStatus(say((t, l) => t.status.activeBrainNotSaved(describeError(error, l)))),
       );
     },
-    [activate, order, changeProjection],
+    [activate, order, changeProjection, hierarchyOf],
   );
+
+  /**
+   * `TASK-0052` / `DEC-0050` — branch focus and collapse.
+   *
+   * The backend materialises the branch (`map_branch_view`): the focused folder and its
+   * subtree only, bounded, read-only. What this component keeps is the arguments of that
+   * command and what to put back on exit — and **nothing is written anywhere**.
+   */
+  const fetchBranch = useCallback(
+    async (brainId: string, rootId: number, collapsed: readonly number[], after: string | null) => {
+      const snapshot = await invoke<MapProjection>("map_branch_view", {
+        brainId,
+        rootId,
+        collapsedIds: [...collapsed],
+        after,
+      });
+      if (snapshot.brainId !== brainId || !snapshot.branch) {
+        throw new LocalizedError((l) => strings[l].invariants.projectionOfAnotherBrain);
+      }
+      return snapshot;
+    },
+    [],
+  );
+
+  const leaveBranchFocus = useCallback((restore: boolean = true) => {
+    const current = branchFocusRef.current;
+    if (!current) return;
+    branchRequest.current += 1;
+    if (restore) {
+      // The camera and the selection come back as they were; `composed` and `loaded`
+      // were never replaced, so the composition is already exactly the previous one.
+      restoreViewRef.current = { ...current.saved.view };
+      skipFollowOnceRef.current = true;
+      setSelected(current.saved.selected);
+    }
+    setBranchFocus(null);
+    setStatus(
+      bilingual(
+        restore
+          ? "Focus de branche quitté : composition, vue et sélection précédentes restaurées."
+          : "Focus de branche quitté : la composition ou l'Index a changé.",
+        restore
+          ? "Branch focus exited: previous composition, view and selection restored."
+          : "Branch focus exited: the composition or the Index changed.",
+      ),
+    );
+  }, [setStatus]);
+  leaveBranchFocusRef.current = leaveBranchFocus;
+
+  const enterBranchFocus = useCallback(
+    async (nodeId: number) => {
+      const reference = selectedRef.current;
+      const shown = composedRef.current;
+      if (!reference || !shown || branchBusyRef.current || branchFocusRef.current) return;
+      const brainId = reference.brainId;
+      const brain = loadedRef.current.get(brainId);
+      if (!brain) return;
+      const ticket = ++branchRequest.current;
+      branchBusyRef.current = true;
+      setBranchBusy(true);
+      try {
+        const snapshot = await fetchBranch(brainId, nodeId, [], null);
+        if (ticket !== branchRequest.current) return;
+        // Entering from a filtered view leaves the filter by the existing navigation path.
+        const hadFilter = Boolean(brain.snapshot.filtered);
+        filter.dropForNavigation(brainId);
+        setBranchFocus({
+          brainId,
+          rootNodeId: nodeId,
+          collapsed: [],
+          after: null,
+          composedKey: `${shown.displayedBrainIds.join("|")}@${shown.focusedBrainId}`,
+          snapshot,
+          hierarchy: buildHierarchy(snapshot.nodes, nodeId),
+          saved: {
+            view: { ...viewRef.current },
+            selected: { ...reference },
+            indexRevision: brain.snapshot.indexRevision,
+          },
+        });
+        setSelected({ brainId, nodeId });
+        const root = snapshot.nodes.find((node) => node.id === nodeId);
+        setStatus(
+          bilingual(
+            `Branche focalisée : ${root?.relativePath || root?.name || "/"} — ${snapshot.materializedCount} éléments affichés.` +
+              (hadFilter ? " Le filtre a été quitté par la navigation." : ""),
+            `Branch focused: ${root?.relativePath || root?.name || "/"} — ${snapshot.materializedCount} items shown.` +
+              (hadFilter ? " The filter was left by navigating." : ""),
+          ),
+        );
+      } catch (error) {
+        setStatus(say((t, l) => t.status.projectionRefused(describeError(error, l))));
+      } finally {
+        branchBusyRef.current = false;
+        setBranchBusy(false);
+      }
+    },
+    [fetchBranch, filter, setStatus],
+  );
+
+  /** Re-reads the focused branch for new arguments: collapse, expand, or a new page/root. */
+  const updateBranch = useCallback(
+    async (
+      change: { rootNodeId?: number; collapsed?: readonly number[]; after?: string | null },
+      toggled: number | null,
+    ) => {
+      const current = branchFocusRef.current;
+      if (!current || branchBusyRef.current) return;
+      const rootNodeId = change.rootNodeId ?? current.rootNodeId;
+      const collapsed = change.collapsed ?? current.collapsed;
+      const after = change.after === undefined ? current.after : change.after;
+      const ticket = ++branchRequest.current;
+      branchBusyRef.current = true;
+      setBranchBusy(true);
+      try {
+        const snapshot = await fetchBranch(current.brainId, rootNodeId, collapsed, after);
+        if (ticket !== branchRequest.current || branchFocusRef.current === null) return;
+        const hierarchy = buildHierarchy(snapshot.nodes, rootNodeId);
+        setBranchFocus((previous) =>
+          previous ? { ...previous, rootNodeId, collapsed, after, snapshot, hierarchy } : previous,
+        );
+        // A selection that the change removed from the view lands on the folder that
+        // hid it (or on the root): the selection is never left on a node that is gone.
+        const chosen = selectedRef.current;
+        if (chosen && chosen.brainId === current.brainId && !hierarchy.byId.has(chosen.nodeId)) {
+          const landing = toggled !== null && hierarchy.byId.has(toggled) ? toggled : rootNodeId;
+          setSelected({ brainId: current.brainId, nodeId: landing });
+        }
+        if (toggled !== null) {
+          const folder = hierarchy.byId.get(toggled);
+          const entry = snapshot.branch?.collapsed.find((item) => item.nodeId === toggled);
+          // Expanding a folder selects it, so « Replier » is one key away and the focus
+          // has a control to land on whichever list or button the expansion came from.
+          if (!entry && folder) setSelected({ brainId: current.brainId, nodeId: toggled });
+          const name = folder?.name ?? String(toggled);
+          setStatus(
+            entry
+              ? bilingual(
+                  `${name} replié : ${entry.hiddenDescendantCount} descendant(s) masqué(s).`,
+                  `${name} collapsed: ${entry.hiddenDescendantCount} hidden descendant(s).`,
+                )
+              : bilingual(`${name} déplié.`, `${name} expanded.`),
+          );
+        }
+      } catch (error) {
+        setStatus(say((t, l) => t.status.projectionRefused(describeError(error, l))));
+      } finally {
+        branchBusyRef.current = false;
+        setBranchBusy(false);
+      }
+    },
+    [fetchBranch, setStatus],
+  );
+
+  const toggleBranchCollapse = useCallback(
+    (nodeId: number) => {
+      const current = branchFocusRef.current;
+      if (!current) return;
+      void updateBranch({ collapsed: toggledCollapsed(current.collapsed, nodeId) }, nodeId);
+    },
+    [updateBranch],
+  );
+
+  /**
+   * « Voir la suite » of an aggregate — **not** an expansion. In a focused branch it
+   * re-roots the branch on the parent (the page the cursor names); otherwise it is the
+   * ordinary projection change.
+   */
+  const expandAggregate = useCallback(
+    (brainId: string, aggregate: { parentId: number; nextCursor: string | null }) => {
+      if (branchFocusRef.current?.brainId === brainId) {
+        void updateBranch({ rootNodeId: aggregate.parentId, after: aggregate.nextCursor }, null);
+        return;
+      }
+      void changeProjection(brainId, aggregate.parentId, aggregate.nextCursor);
+    },
+    [changeProjection, updateBranch],
+  );
+
+  // A focused branch belongs to one composition and one revision of one Index: a different
+  // composition or a new revision leaves it, never silently drawing stale data.
+  useEffect(() => {
+    if (!branchFocus) return;
+    const brain = loaded.get(branchFocus.brainId);
+    const key = composed ? `${composed.displayedBrainIds.join("|")}@${composed.focusedBrainId}` : null;
+    if (!brain || key !== branchFocus.composedKey || brain.snapshot.indexRevision !== branchFocus.saved.indexRevision) {
+      leaveBranchFocus(false);
+    }
+  }, [branchFocus, composed, loaded, leaveBranchFocus]);
 
   /** Selection helper for the panels, which only ever describe one brain. */
   const selectInSelectedBrain = useCallback(
@@ -1421,7 +1664,10 @@ export default function MapApp() {
   // The guard is not decoration. Without it the camera moves again when the
   // viewport settles a frame later, and that second move erased the view a
   // composition had just been given back.
-  const compositionId = composed ? compositionKey(composed.displayedBrainIds) : null;
+  const compositionId = shownComposed
+    ? compositionKey(shownComposed.displayedBrainIds) +
+      (branchFocus ? `#branch:${branchFocus.rootNodeId}` : "")
+    : null;
   const projectionKey = renderedBrains.map(b => `${b.brainId}:${loaded.get(b.brainId)?.snapshot.focusId}:${loaded.get(b.brainId)?.snapshot.indexRevision}:${b.hierarchy.drawOrder.map(n => n.id).join(",")}`).join("|");
   /**
    * `TASK-0044` — the projection the camera was just restored for. The follow-the-focus pan
@@ -1511,6 +1757,8 @@ export default function MapApp() {
       armed.stale = null;
     }
     const brainId = shown.displayedBrainIds[0];
+    // `TASK-0052` — session-only: the camera of a focused branch is never written.
+    if (branchFocusRef.current) return;
     if (!resumeWriter.isKnown(brainId) || !isStorableView(view)) return;
     resumeWriter.patch(brainId, { view: { ...view } });
   }, [view, resumeWriter]);
@@ -1519,12 +1767,15 @@ export default function MapApp() {
   // brain's id, never as a bare number.
   useEffect(() => {
     if (!selected || !resumeWriter.isKnown(selected.brainId)) return;
+    // `TASK-0052` — session-only: a selection made inside a focused branch is never written.
+    if (branchFocusRef.current) return;
     resumeWriter.patch(selected.brainId, { selectedNodeId: selected.nodeId });
   }, [selected, resumeWriter]);
 
   // `TASK-0044` — the branch each brain is on. A filtered page carries no branch: the one
   // the person was on stays as it was until the filter is dropped.
   useEffect(() => {
+    if (branchFocusRef.current) return;
     for (const [brainId, brain] of loaded) {
       if (!resumeWriter.isKnown(brainId) || brain.snapshot.filtered) continue;
       const branch = brain.snapshot.focusId === brain.snapshot.rootId ? null : brain.snapshot.focusId;
@@ -1599,6 +1850,10 @@ export default function MapApp() {
   useEffect(() => {
     const restoredHere = restoredProjectionRef.current === projectionKey;
     restoredProjectionRef.current = null;
+    if (skipFollowOnceRef.current) {
+      skipFollowOnceRef.current = false;
+      return;
+    }
     if (!projectionKey || restoredHere) return;
     const anchor = focusAnchorRect(composition);
     if (!anchor) return;
@@ -2641,7 +2896,11 @@ export default function MapApp() {
   runGenericRelationScenarioRef.current = runGenericRelationScenario;
 
   const selectedNode: MapNode | null =
-    selected && selectedBrain ? selectedBrain.hierarchy.byId.get(selected.nodeId) ?? null : null;
+    selected && selectedBrain
+      ? (branchFocus?.brainId === selected.brainId ? branchFocus.hierarchy : selectedBrain.hierarchy).byId.get(
+          selected.nodeId,
+        ) ?? null
+      : null;
   const selectedTerritory = selected
     ? composition.territories.find((entry) => entry.brainId === selected.brainId) ?? null
     : null;
@@ -3436,20 +3695,35 @@ export default function MapApp() {
           />
 
           {focusedBrain ? (
+            <BranchFocusPanel
+              locale={locale}
+              active={branchFocus}
+              selectedNode={selected?.brainId === focusedBrain.record.brainId ? selectedNode : null}
+              busy={branchBusy}
+              onFocus={(nodeId) => void enterBranchFocus(nodeId)}
+              onExit={() => leaveBranchFocus(true)}
+              onToggle={toggleBranchCollapse}
+            />
+          ) : null}
+          {focusedBrain ? (
             <section aria-label={t.projection.label} data-testid="projection-controls">
               <p>
                 {t.projection.summary(
-                  focusedBrain.snapshot.materializedCount,
-                  focusedBrain.snapshot.nodeCount,
-                  focusedBrain.snapshot.nonMaterializedCount,
+                  (branchFocus?.snapshot ?? focusedBrain.snapshot).materializedCount,
+                  (branchFocus?.snapshot ?? focusedBrain.snapshot).nodeCount,
+                  (branchFocus?.snapshot ?? focusedBrain.snapshot).nonMaterializedCount,
                 )}
               </p>
-              <button type="button" disabled={!selected || selected.brainId !== focusedBrain.record.brainId}
-                onClick={() => selected && void changeProjection(selected.brainId, selected.nodeId)}>{t.projection.exploreSelection}</button>
-              <button type="button" onClick={() => void changeProjection(focusedBrain.record.brainId, focusedBrain.snapshot.rootId)}>{t.projection.backToRoot}</button>
-              {focusedBrain.snapshot.aggregates.map(a => <button type="button" key={a.parentId}
+              {branchFocus ? null : (
+                <>
+                  <button type="button" disabled={!selected || selected.brainId !== focusedBrain.record.brainId}
+                    onClick={() => selected && void changeProjection(selected.brainId, selected.nodeId)}>{t.projection.exploreSelection}</button>
+                  <button type="button" onClick={() => void changeProjection(focusedBrain.record.brainId, focusedBrain.snapshot.rootId)}>{t.projection.backToRoot}</button>
+                </>
+              )}
+              {(branchFocus?.snapshot ?? focusedBrain.snapshot).aggregates.map(a => <button type="button" key={a.parentId}
                 data-testid="expand-aggregate" data-parent-id={a.parentId}
-                onClick={() => void changeProjection(focusedBrain.record.brainId, a.parentId, a.nextCursor)}>
+                onClick={() => expandAggregate(focusedBrain.record.brainId, a)}>
                 {aggregateLabel(a.omittedDirectChildren, locale)}
               </button>)}
             </section>
@@ -3464,7 +3738,7 @@ export default function MapApp() {
               viewport={viewport}
               selected={selected}
               focusedBrainId={composed.focusedBrainId}
-              onExpand={(brainId, aggregate) => void changeProjection(brainId, aggregate.parentId, aggregate.nextCursor)}
+              onExpand={(brainId, aggregate) => expandAggregate(brainId, aggregate)}
               onViewChange={setView}
               onSelect={selectNode}
               onViewportChange={setViewport}
@@ -3622,7 +3896,7 @@ export default function MapApp() {
             // What is on screen, so the panel can say « hors de la vue ». The
             // store never learns this: it is the interface's question, not the
             // model's — §4.1, §4.8.
-            displayedBrainIds={composed?.displayedBrainIds ?? []}
+            displayedBrainIds={shownComposed?.displayedBrainIds ?? []}
             onNavigate={navigateCross}
             onApprove={approveCrossSuggestion}
             approving={approvingCross}

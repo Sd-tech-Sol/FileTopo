@@ -1946,6 +1946,30 @@ input[type="text"] {
   pointer-events: none;
 }
 
+/* `TASK-0052` — branch focus and collapse: a word and a glyph on the card itself, and a
+   dotted outline for a collapsed folder, so neither depends on colour. */
+.map-node__collapsed-tag,
+.map-node__branch-tag {
+  font-size: 11px;
+  font-weight: 700;
+  fill: var(--ink);
+  pointer-events: none;
+}
+
+.map-node--root .map-node__collapsed-tag,
+.map-node--root .map-node__branch-tag {
+  fill: #f5f7f4;
+}
+
+[data-collapsed="true"] > rect {
+  stroke-dasharray: 2 4;
+  stroke-width: 3px;
+}
+
+[data-branch-root="true"] > rect {
+  stroke-width: 3px;
+}
+
 /* `TASK-0047` — on the (always dark) root card the tag reads light, like the root's name. */
 .map-node--root .map-node__filter-tag {
   fill: #f5f7f4;

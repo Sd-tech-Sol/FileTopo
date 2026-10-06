@@ -242,6 +242,7 @@ pub fn materialize_filtered_view(
             filter_context_ids: context_ids,
             filter_next_cursor: next_cursor,
         }),
+        branch: None,
     };
     tx.commit()?;
     Ok(result)

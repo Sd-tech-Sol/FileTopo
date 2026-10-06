@@ -108,6 +108,14 @@ export interface RenderedBrain {
    * colour alone.
    */
   filterRoles?: ReadonlyMap<number, FilterRole>;
+  /**
+   * `TASK-0052` — the collapsed folders of a branch-focus view, with the exact
+   * number of descendants each one hides. Drawn as a word and a glyph on the
+   * folder itself; **never** confused with an aggregate (« Voir la suite »).
+   */
+  collapsed?: ReadonlyMap<number, number>;
+  /** `TASK-0052` — the focused folder of a branch-focus view. */
+  branchRootId?: number;
 }
 
 interface MapViewProps {
@@ -162,6 +170,18 @@ export function aggregateLabel(omittedDirectChildren: number, locale: Locale): s
   const count = `+${omittedDirectChildren} item${omittedDirectChildren > 1 ? "s" : ""}`;
   return `${count} — See more`;
 }
+
+/** `TASK-0052` — what a collapsed folder says about itself, in words and a glyph. */
+export function collapsedLabel(hidden: number, locale: Locale): string {
+  return locale === "fr"
+    ? `▸ replié · ${hidden} masqué${hidden > 1 ? "s" : ""}`
+    : `▸ collapsed · ${hidden} hidden`;
+}
+
+const BRANCH_ROOT_LABEL: Record<Locale, string> = {
+  fr: "◆ branche focalisée",
+  en: "◆ focused branch",
+};
 
 /** The word after a territory's node count, in its header. */
 function nodesWord(count: number, locale: Locale): string {
@@ -281,6 +301,8 @@ export default function MapView({
         const corner = 6;
         const marker = Math.min(node.rect.w, node.rect.h) * 0.28;
         const filterRole = brain.filterRoles?.get(node.id);
+        const hiddenCount = brain.collapsed?.get(node.id);
+        const isBranchRoot = brain.branchRootId === node.id;
         const presentation = nodePresentation(
           node.kind,
           state,
@@ -307,9 +329,14 @@ export default function MapView({
             aria-selected={isSelected}
             aria-label={
               labelFor(node, brain.record) +
-              (filterRole ? `, ${ROLE_LABELS[locale][filterRole]}` : "")
+              (filterRole ? `, ${ROLE_LABELS[locale][filterRole]}` : "") +
+              (hiddenCount !== undefined ? `, ${collapsedLabel(hiddenCount, locale)}` : "") +
+              (isBranchRoot ? `, ${BRANCH_ROOT_LABEL[locale]}` : "")
             }
             data-filter-role={filterRole}
+            data-collapsed={hiddenCount !== undefined ? "true" : undefined}
+            data-hidden-descendant-count={hiddenCount}
+            data-branch-root={isBranchRoot ? "true" : undefined}
             data-legend-keys={legendKeyAttribute(presentation.keys)}
             className={presentation.className}
             onPointerDown={(event) => {
@@ -339,6 +366,26 @@ export default function MapView({
                 aria-hidden="true"
               >
                 {ROLE_SYMBOLS[filterRole]} {ROLE_LABELS[locale][filterRole]}
+              </text>
+            ) : null}
+            {hiddenCount !== undefined ? (
+              <text
+                className="map-node__collapsed-tag"
+                data-testid="map-collapsed-tag"
+                x={node.rect.x + 8}
+                y={node.rect.y + node.rect.h - 8}
+                aria-hidden="true"
+              >
+                {collapsedLabel(hiddenCount, locale)}
+              </text>
+            ) : isBranchRoot ? (
+              <text
+                className="map-node__branch-tag"
+                x={node.rect.x + 8}
+                y={node.rect.y + node.rect.h - 8}
+                aria-hidden="true"
+              >
+                {BRANCH_ROOT_LABEL[locale]}
               </text>
             ) : null}
             {node.accessDiagnostic ? (

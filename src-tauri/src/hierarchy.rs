@@ -301,6 +301,45 @@ pub fn direct_child_count(
         .ok_or(HierarchyError::UnknownNode { node_id: parent_id })
 }
 
+/// The SQL of [`descendant_count`], in one place so the published plan is the
+/// plan of the query the product runs.
+fn descendant_count_sql() -> &'static str {
+    "WITH RECURSIVE subtree(id) AS (
+         SELECT id FROM nodes WHERE parent_id = ?1
+         UNION ALL
+         SELECT child.id FROM nodes child JOIN subtree ON child.parent_id = subtree.id
+     )
+     SELECT COUNT(*) FROM subtree"
+}
+
+/// Exact number of **all** descendants of a node (children, grandchildren, ...),
+/// excluding the node itself — `DEC-0050 §I`.
+///
+/// Counted by SQLite over the canonical Index by following `parent_id`
+/// (`idx_nodes_parent` / `idx_nodes_child_order` serve each step); nothing is
+/// collected, nothing is serialised, no column is added and no estimate is
+/// made. The cost is proportional to the subtree, which is why the caller asks
+/// only for the few folders a person has **collapsed** — never for the whole
+/// view. Unlike [`direct_child_count`], it never trusts `child_count`: a deep
+/// folder with two children can hold thousands of descendants.
+pub fn descendant_count(
+    connection: &Connection,
+    node_id: i64,
+) -> Result<u64, HierarchyError> {
+    // An unknown node is refused, not counted as an empty subtree.
+    direct_child_count(connection, node_id)?;
+    let count: i64 = connection.query_row(descendant_count_sql(), [node_id], |row| row.get(0))?;
+    Ok(count.max(0) as u64)
+}
+
+/// The `EXPLAIN QUERY PLAN` of [`descendant_count`], verbatim.
+pub fn descendant_count_plan(connection: &Connection) -> rusqlite::Result<Vec<String>> {
+    let mut statement =
+        connection.prepare(&format!("EXPLAIN QUERY PLAN {}", descendant_count_sql()))?;
+    let rows = statement.query_map([1i64], |row| row.get::<_, String>(3))?;
+    rows.collect()
+}
+
 /// The chain from a node up to its root, nearest ancestor first.
 ///
 /// Bounded by depth: one primary-key lookup per level, capped by

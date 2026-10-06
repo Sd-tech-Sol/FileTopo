@@ -867,6 +867,21 @@ fn map_view(
         .map_err(String::from)
 }
 
+/// `TASK-0052` / `DEC-0050` — branch focus: the bounded projection of one
+/// folder's subtree, with collapsed folders. Read-only and session-only.
+#[tauri::command]
+fn map_branch_view(
+    app: tauri::AppHandle,
+    brain_id: String,
+    root_id: i64,
+    collapsed_ids: Vec<i64>,
+    after: Option<String>,
+) -> Result<map::store::MapSnapshot, String> {
+    let (paths, brain) = resolve_brain(&app, &brain_id)?;
+    map::commands::branch_view(&paths, &brain, root_id, &collapsed_ids, after.as_deref())
+        .map_err(String::from)
+}
+
 #[tauri::command]
 fn map_node_detail(
     app: tauri::AppHandle,
@@ -1724,6 +1739,7 @@ pub fn run() {
             map_prepare_synthetic_source,
             map_snapshot,
             map_view,
+            map_branch_view,
             map_resolve_node,
             map_node_detail,
             map_search_nodes,

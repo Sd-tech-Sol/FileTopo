@@ -68,6 +68,11 @@ pub struct MapSnapshot {
     /// to what it was before filters existed.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub filtered: Option<super::filtered_projection::FilteredProjection>,
+    /// `TASK-0052` — present **only** for a branch-focus projection (`DEC-0050`).
+    /// Absent from the serialised DTO otherwise, so every other projection is
+    /// byte-identical to what it was before branch focus existed.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub branch: Option<super::branch_projection::BranchProjection>,
     /// Brain identity read from the canonical index metadata.
     pub brain_id: String,
     /// The synthetic source behind the brain. A developer diagnostic —

@@ -6,6 +6,7 @@
 //! legacy tests; the converged runtime limits its projection, not its corpus.
 
 pub mod brain_index;
+pub mod branch_projection;
 pub mod brains;
 pub mod commands;
 pub mod content_signals;

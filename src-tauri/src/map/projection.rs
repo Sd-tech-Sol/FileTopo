@@ -177,6 +177,7 @@ pub fn materialize_view(
         aggregates,
         hierarchy_edges: edges,
         filtered: None,
+        branch: None,
     };
     tx.commit()?;
     Ok(result)

@@ -832,6 +832,11 @@ impl Index {
         hierarchy::direct_child_count(&self.connection, parent_id)
     }
 
+    /// Exact count of every descendant of a node — `DEC-0050 §I`.
+    pub fn descendant_count(&self, node_id: i64) -> std::result::Result<u64, HierarchyError> {
+        hierarchy::descendant_count(&self.connection, node_id)
+    }
+
     /// The chain to the root, nearest ancestor first, bounded by depth.
     pub fn ancestor_chain(
         &self,
