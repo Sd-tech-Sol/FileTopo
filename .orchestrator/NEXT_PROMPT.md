@@ -1,131 +1,34 @@
-# NEXT_PROMPT — TASK-0051 — Approved Relation Revocation / P-04 Closure
+# NEXT_PROMPT — TASK-0051 corrective stale-core
 
 **TARGET_AGENT:** CLAUDE CODE
 **RECOMMENDED_MODEL:** Claude Sonnet 5.5
-**RECOMMENDED_EFFORT:** High
+**RECOMMENDED_EFFORT:** Medium
 **STATUS:** READY
 **BRANCH:** `build/v0.2-a35-v1-approved-relation-revocation`
 
-## Objectif unique
+Objectif unique : une relation humaine `APPROVED` issue du moteur doit être
+révocable même si le moteur est `STALE`.
 
-Implémenter intégralement TASK-0051 selon DEC-0049 : toute relation
-`APPROVED`, intra ou inter-cerveaux, est révocable; une relation
-`DETERMINISTIC` ne l'est jamais.
-
-## Préconditions
-
-1. Applique `AGENTS.md`.
-2. Checkout la branche ci-dessus, fetch + fast-forward seulement.
-3. Arbre propre.
-4. Lis ACTION-0092, DEC-0049 et TASK-0051.
-5. Inspecte/réutilise les stores, commandes, panneaux et scénarios existants
-   avant d'ajouter une nouvelle brique.
-
-STOP si un invariant gelé contredit l'implémentation actuelle.
-
-## Sémantique obligatoire
-
-Révocation intra et cross, en une transaction :
-
-1. vérifier suggestion existante et `state=approved`;
-2. vérifier la ligne APPROVED exactement liée;
-3. supprimer cette ligne APPROVED;
-4. remettre la suggestion à `pending`;
-5. mettre `decided_unix_ms = NULL`.
-
-Aucun nouvel état. `rejected` reste un refus. DETERMINISTIC reste intact.
-
-La réapprobation de la suggestion remise pending doit fonctionner et recréer
-exactement une relation.
-
-## Backend/store
-
-Ajouter les primitives minimales et nommées, intra + cross.
-
-Refus nommés et sans changement partiel pour :
-
-- clé inconnue;
-- suggestion non approved;
-- relation APPROVED absente/incohérente;
-- tentative de viser DETERMINISTIC.
-
-Tests au niveau store et commande, y compris rollback.
-
-## Frontend
-
-RelationsPanel et CrossRelationsPanel :
-
-- bouton `Révoquer / Revoke` uniquement sur APPROVED;
-- jamais sur DETERMINISTIC;
-- état busy explicite;
-- activation clavier native;
-- après succès, recharger les overviews/panneaux/cartes depuis le backend,
-  ne pas décrémenter des compteurs localement.
-
-Réutiliser les systèmes FR/EN et patterns d'approbation existants.
-
-## Preuves
-
-Construire un scénario réel qui couvre :
-
-### Intra
-
-- suggestion pending;
-- approbation;
-- APPROVED visible;
-- révocation par vrai geste clavier;
-- relation absente;
-- suggestion revenue pending;
-- comptes exacts;
-- réapprobation;
-- exactement une relation revenue.
-
-### Cross
-
-Même cycle sur une suggestion inter-cerveaux.
-
-### Persistance / sécurité
-
-- redémarrage réel après révocation : reste pending;
-- rebuild de l'Index : reste pending, pas de relation ressuscitée;
-- rerun moteur intra : pas d'auto-réapprobation;
-- isolation Alpha/Gamma/cross;
-- source et Index inchangés par les gestes de révocation.
-
-## Falsifications
-
-Au minimum :
-
-1. tentative DETERMINISTIC -> refus;
-2. clé inconnue -> refus;
-3. appeler revoke deux fois -> deuxième refus, aucun drift;
-4. sabotage transaction entre DELETE et UPDATE -> rollback intégral;
-5. réapprouver deux fois -> aucun doublon;
-6. cross revoke ne change aucun store intra;
-7. intra revoke ne change aucun autre cerveau/cross.
-
-## Validation
-
-- tests ciblés Rust/frontend;
-- suite complète pertinente;
-- pnpm check/build;
-- Tauri debug;
-- WebView2 réel;
-- git diff --check;
-- audit public.
-
-Ne modifie aucun artefact VERIFIED historique; publie seulement les nouvelles
-preuves TASK-0051.
-
-## Gouvernance
-
-À la fin :
-
-- TASK-0051 = IMPLEMENTED / candidate contrôle indépendant;
-- P-04 = candidate fermeture, jamais auto-VERIFIED;
-- P-19 inchangée;
-- aucune TASK-0052;
-- NEXT_ACTION = contrôle indépendant TASK-0051;
-- RESULT complet;
-- commit + push;
-- arbre propre.
+1. Lis ACTION-0093, DEC-0049 §I, DEC-0026 §D.
+2. Dans `relation_commands::revoke_relation`, retire uniquement la garde
+   `core-rule-engine && !is_current`.
+3. Ne change pas la garde stale de `approve_suggestion`.
+4. Ne change pas le masquage des sorties automatiques core stale.
+5. Ajoute un test de commande : APPROVED core -> moteur STALE -> revoke réussit
+   et store revient pending.
+6. Gère le focus : en STALE la pending core peut être masquée; ne cherche pas un
+   bouton approve absent. Focus sûr, préférence sur `Analyser les relations`.
+   Le cas CURRENT doit garder son focus actuel vers la suggestion réapparue.
+7. Réutilise `dreScenario.ts` / DR15 pour une preuve WebView2 réelle :
+   CURRENT -> suggestion core -> approve clavier -> rendre STALE sans rerun ->
+   APPROVED toujours visible + bouton revoke -> revoke clavier -> relation
+   absente, suggestion store pending, timestamp NULL, moteur toujours STALE,
+   pending stale non présentée comme actuelle, focus sûr -> rerun explicite.
+8. Sépare explicitement toute mutation de fixture utilisée pour créer STALE de
+   l'empreinte source/Index autour du geste revoke.
+9. Falsification : réintroduire temporairement la garde stale doit faire échouer
+   la preuve; restaurer puis PASS.
+10. Mets à jour `TASK-0051-webview2.json` avec `staleCoreRevocation`.
+11. Rejoue suites pertinentes, build Tauri, audit public.
+12. Fin : TASK-0051 IMPLEMENTED/candidate re-control, jamais VERIFIED;
+    P-19 inchangée; aucune TASK-0052; commit+push; arbre propre.

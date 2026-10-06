@@ -1,7 +1,7 @@
 # TASK-0051 — V1 Approved Relation Revocation / P-04 Closure
 
 - **Date :** 2026-10-05
-- **Statut :** `IMPLEMENTED` — candidate au contrôle indépendant (§Exécution)
+- **Statut :** `CORRECTIVE_REQUIRED` — ACTION-0093
 - **Branche :** `build/v0.2-a35-v1-approved-relation-revocation`
 - **Décision :** `DEC-0049`
 - **Portée :** `P-04`, `F-017`, régression `F-041`
@@ -184,3 +184,22 @@ donnée hostile, 1 rouge (intra). **Preuve réelle falsifiée** : le backend sab
 
 **TASK-0051 = IMPLEMENTED**, candidate au contrôle indépendant. P-04 =
 candidate à la fermeture, **jamais auto-`VERIFIED`**.
+
+
+## Corrective ACTION-0093 — APPROVED core révocable même quand STALE
+
+Le contrôle indépendant accepte le cycle normal intra/cross mais refuse VERIFIED
+sur un cas P-04 : `revoke_relation` refuse une suggestion liée à une relation
+APPROVED lorsque `producer=core-rule-engine` et que le moteur est STALE.
+
+Corrective :
+- retirer la garde stale de **revoke seulement**;
+- conserver la garde stale de l'approbation;
+- conserver le masquage des sorties automatiques stale;
+- prouver en vrai WebView2 qu'une APPROVED core reste visible et révocable par
+  clavier en STALE;
+- store -> pending, relation supprimée;
+- pending core stale peut rester masquée jusqu'au rerun;
+- focus sûr après révocation;
+- réutiliser DR15 / `dreScenario.ts`;
+- aucune TASK-0052.

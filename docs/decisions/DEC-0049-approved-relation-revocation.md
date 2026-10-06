@@ -95,3 +95,18 @@ révocation cross ne change aucun store intra.
 - aucune troisième provenance;
 - aucune nouvelle dépendance;
 - aucune donnée réelle dans les preuves.
+
+
+## I — Clarification ACTION-0093 : fraîcheur du moteur
+
+La fraîcheur du moteur ne conditionne jamais le droit de retirer une
+approbation humaine. Une relation `APPROVED` issue d'une suggestion core reste
+une relation humaine et doit rester révocable en `STALE`, conformément à
+`DEC-0026 §D`.
+
+La garde STALE reste obligatoire pour **approuver** une suggestion core pending.
+
+Après révocation en STALE, le store revient à `pending`, mais cette sortie
+automatique périmée peut rester masquée jusqu'au rerun. L'interface doit alors
+conserver un focus sûr, sans prétendre que la suggestion est immédiatement
+approuvable.
