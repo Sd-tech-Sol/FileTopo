@@ -611,3 +611,135 @@ describe("M10 — a suggestion is a suggestion, and enters no count", () => {
     );
   });
 });
+
+
+/* --- TASK-0051 : révoquer une relation inter-cerveaux approuvée ------------- */
+
+describe("TASK-0051 — révoquer une relation inter-cerveaux APPROUVÉE", () => {
+  function renderRevocable(
+    overrides: Partial<Parameters<typeof CrossRelationsPanel>[0]> = {},
+    locale: "fr" | "en" = "fr",
+  ) {
+    const onRevoke = vi.fn();
+    const onNavigate = vi.fn();
+    render(
+      <CrossRelationsPanel
+        locale={locale}
+        relations={nodeCross}
+        loading={false}
+        displayedBrainIds={[ALPHA, GAMMA]}
+        onNavigate={onNavigate}
+        onApprove={vi.fn()}
+        approving={null}
+        onRevoke={onRevoke}
+        revoking={null}
+        {...overrides}
+      />,
+    );
+    return { onRevoke, onNavigate };
+  }
+
+  const revokeButtons = () =>
+    [...document.querySelectorAll<HTMLButtonElement>("[data-cross-revoke]")];
+
+  it("n'offre le contrôle que sur la relation APPROUVÉE, jamais sur une déterministe", () => {
+    renderRevocable();
+    // One deterministic (outgoing) and one approved (incoming): one control.
+    expect(revokeButtons()).toHaveLength(1);
+    expect(revokeButtons()[0].dataset.crossRevoke).toBe("XB-S01");
+    expect(revokeButtons()[0].dataset.direction).toBe("incoming");
+    const outgoing = screen.getByLabelText(/Sortantes — vers un autre cerveau/);
+    expect(within(outgoing).queryByRole("button", { name: /Révoquer|révoquer/ })).toBeNull();
+  });
+
+  it("dit « Révoquer » et « Revoke », et nomme les deux cerveaux pour un lecteur d'écran", () => {
+    renderRevocable();
+    expect(revokeButtons()[0]).toHaveTextContent("Révoquer XB-S01");
+    expect(revokeButtons()[0].getAttribute("aria-label")).toContain(
+      "révoquer la relation inter-cerveaux XB-S01",
+    );
+    expect(revokeButtons()[0].getAttribute("aria-label")).toContain("Cerveau Gamma");
+    cleanup();
+    renderRevocable({}, "en");
+    expect(revokeButtons()[0]).toHaveTextContent("Revoke XB-S01");
+    expect(revokeButtons()[0].getAttribute("aria-label")).toContain(
+      "revoke inter-brain relation XB-S01",
+    );
+  });
+
+  it("ne révoque que sur action explicite, et ne navigue pas", () => {
+    const { onRevoke, onNavigate } = renderRevocable();
+    expect(onRevoke).not.toHaveBeenCalled();
+    fireEvent.click(revokeButtons()[0]);
+    expect(onRevoke).toHaveBeenCalledExactlyOnceWith("XB-S01");
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it("est un vrai bouton natif, atteignable au clavier", () => {
+    renderRevocable();
+    const button = revokeButtons()[0];
+    expect(button.tagName).toBe("BUTTON");
+    expect(button.type).toBe("button");
+    expect(button.tabIndex).toBe(0);
+    button.focus();
+    expect(document.activeElement).toBe(button);
+    expect(button.getAttribute("onkeydown")).toBeNull();
+  });
+
+  it("montre un état occupé explicite pendant la révocation", () => {
+    renderRevocable({ revoking: "XB-S01" });
+    const button = revokeButtons()[0];
+    expect(button).toHaveTextContent("Révocation…");
+    expect(button).toHaveAttribute("aria-busy", "true");
+    expect(button).toBeDisabled();
+  });
+
+  it("n'offre rien quand l'appelant n'offre pas la révocation", () => {
+    renderRevocable({ onRevoke: undefined });
+    expect(revokeButtons()).toHaveLength(0);
+  });
+
+  it("n'ajoute aucune classe relation__ au panneau inter-cerveaux", () => {
+    renderRevocable();
+    const offending = [...document.querySelectorAll<HTMLElement>("*")].filter((element) =>
+      [...element.classList].some((name) => /^relations?__/.test(name)),
+    );
+    expect(offending).toHaveLength(0);
+  });
+});
+
+describe("TASK-0051 — le focus après une révocation inter-cerveaux", () => {
+  function panel(props: Partial<Parameters<typeof CrossRelationsPanel>[0]>) {
+    return (
+      <CrossRelationsPanel
+        locale="fr"
+        relations={nodeCross}
+        loading={false}
+        displayedBrainIds={[ALPHA, GAMMA]}
+        onNavigate={vi.fn()}
+        onApprove={vi.fn()}
+        approving={null}
+        {...props}
+      />
+    );
+  }
+
+  it("place le focus sur l'approbation de la même suggestion, après le rechargement, une seule fois", () => {
+    const onFocusRestored = vi.fn();
+    const { rerender } = render(panel({ focusSuggestionKey: "XB-S01", onFocusRestored }));
+    expect(onFocusRestored).not.toHaveBeenCalled();
+    rerender(panel({ loading: true, focusSuggestionKey: "XB-S01", onFocusRestored }));
+    expect(onFocusRestored).not.toHaveBeenCalled();
+    rerender(panel({ loading: false, focusSuggestionKey: "XB-S01", onFocusRestored }));
+    expect(document.activeElement).toBe(document.querySelector('[data-cross-approve="XB-S01"]'));
+    expect(onFocusRestored).toHaveBeenCalledTimes(1);
+  });
+
+  it("ne vole pas le focus quand aucune révocation n'est en attente", () => {
+    const onFocusRestored = vi.fn();
+    const { rerender } = render(panel({ loading: true, onFocusRestored }));
+    rerender(panel({ loading: false, onFocusRestored }));
+    expect(document.activeElement).toBe(document.body);
+    expect(onFocusRestored).not.toHaveBeenCalled();
+  });
+});

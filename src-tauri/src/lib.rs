@@ -1444,6 +1444,24 @@ fn map_relations_reject(
     map::relation_commands::reject_suggestion(&paths, &brain, &suggestion_key).map_err(String::from)
 }
 
+/// `TASK-0051` — the one explicit act that takes an approval back (`P-04`).
+///
+/// Deletes the approved relation and returns its suggestion to `pending`, in
+/// one transaction, then returns the whole overview so the counts on screen
+/// come from the store. `provenance` is what the caller aims at: a
+/// `DETERMINISTIC` relation is refused by name.
+#[tauri::command]
+fn map_relations_revoke(
+    app: tauri::AppHandle,
+    brain_id: String,
+    provenance: String,
+    suggestion_key: String,
+) -> Result<map::relation_commands::RelationsOverview, String> {
+    let (paths, brain) = resolve_brain(&app, &brain_id)?;
+    map::relation_commands::revoke_relation(&paths, &brain, &provenance, &suggestion_key)
+        .map_err(String::from)
+}
+
 /// `F-044` — one bounded page of the suggestions a brain is waiting on.
 ///
 /// Generic over brains and paginated: `offset` and `limit` are clamped by the
@@ -1534,6 +1552,22 @@ fn map_cross_relations_approve(
     let paths = map_sandbox(&app)?;
     let brains = map_all_brains(&app)?;
     map::cross_commands::approve_cross_suggestion(&paths, &brains, &suggestion_key)
+        .map_err(String::from)
+}
+
+/// `TASK-0051` — the one explicit act that takes an inter-brain approval back.
+///
+/// Only the common store moves; no brain, index or source is opened. The whole
+/// overview comes back so the counts on screen are the store's.
+#[tauri::command]
+fn map_cross_relations_revoke(
+    app: tauri::AppHandle,
+    provenance: String,
+    suggestion_key: String,
+) -> Result<map::cross_commands::CrossRelationsOverview, String> {
+    let paths = map_sandbox(&app)?;
+    let brains = map_all_brains(&app)?;
+    map::cross_commands::revoke_cross_relation(&paths, &brains, &provenance, &suggestion_key)
         .map_err(String::from)
 }
 
@@ -1727,11 +1761,13 @@ pub fn run() {
             map_relations_for_node,
             map_relations_approve,
             map_relations_reject,
+            map_relations_revoke,
             map_relations_review_queue,
             map_relations_self_check,
             map_cross_relations_open,
             map_cross_relations_for_node,
             map_cross_relations_approve,
+            map_cross_relations_revoke,
             map_cross_relations_self_check,
             map_cross_relations_frozen,
             map_host_info,

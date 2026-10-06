@@ -345,6 +345,13 @@ export default function MapApp() {
   const [nodeRelations, setNodeRelations] = useState<NodeRelations | null>(null);
   const [relationsLoading, setRelationsLoading] = useState(false);
   const [approving, setApproving] = useState<string | null>(null);
+  // `TASK-0051` — the suggestion key whose revocation is in flight.
+  const [revoking, setRevoking] = useState<string | null>(null);
+  const [revokingCross, setRevokingCross] = useState<string | null>(null);
+  // Where the keyboard focus goes once the panel has been reloaded after a
+  // revocation: the same suggestion's approval control, never a neighbour's.
+  const [focusAfterRevoke, setFocusAfterRevoke] = useState<string | null>(null);
+  const [focusAfterCrossRevoke, setFocusAfterCrossRevoke] = useState<string | null>(null);
   const [relationsCheck, setRelationsCheck] = useState<RelationsSelfCheck | null>(null);
   const [relationEngineStatus, setRelationEngineStatus] =
     useState<RelationEngineStatus | null>(null);
@@ -1848,6 +1855,42 @@ export default function MapApp() {
   );
 
   /**
+   * `TASK-0051` — takes an `APPROVED` relation back.
+   *
+   * The same shape as approval, in reverse: the overview that comes back from
+   * the store replaces the brain's entry, so the panels, the edges on the map
+   * and the review queue all reload from the backend — **no counter is
+   * decremented here**. The relation's provenance is sent as the caller's aim,
+   * and is always `APPROVED`: the control exists on no other kind.
+   */
+  const revokeRelation = useCallback(async (suggestionKey: string) => {
+    const reference = selectedRef.current;
+    if (!reference) return;
+    const brainId = reference.brainId;
+    setRevoking(suggestionKey);
+    try {
+      const next = await invoke<RelationsOverview>("map_relations_revoke", {
+        brainId,
+        provenance: "APPROVED",
+        suggestionKey,
+      });
+      setLoaded((current) => {
+        const brain = current.get(brainId);
+        if (!brain) return current;
+        const updated = new Map(current);
+        updated.set(brainId, { ...brain, relations: next });
+        return updated;
+      });
+      setStatus(say((t) => t.status.revoked(suggestionKey, brainId)));
+      setFocusAfterRevoke(suggestionKey);
+    } catch (error) {
+      setStatus(say((t, l) => t.status.revocationRefused(describeError(error, l))));
+    } finally {
+      setRevoking(null);
+    }
+  }, []);
+
+  /**
    * The brain the review queue is about — `TASK-0025` §9.
    *
    * The selected node's brain when there is one, the focused brain of the
@@ -2013,6 +2056,30 @@ export default function MapApp() {
       setStatus(say((t, l) => t.status.crossApprovalRefused(describeError(error, l))));
     } finally {
       setApprovingCross(null);
+    }
+  }, []);
+
+  /**
+   * `TASK-0051` — takes an `APPROVED` inter-brain relation back.
+   *
+   * Mirrors {@link approveCrossSuggestion}: the whole overview is replaced by
+   * what the command returns, so every count and every edge is the store's.
+   * No `brainId` is passed — the store is common, and no brain is opened.
+   */
+  const revokeCrossRelation = useCallback(async (suggestionKey: string) => {
+    setRevokingCross(suggestionKey);
+    try {
+      const next = await invoke<CrossRelationsOverview>("map_cross_relations_revoke", {
+        provenance: "APPROVED",
+        suggestionKey,
+      });
+      setCrossOverview(next);
+      setStatus(say((t) => t.status.crossRevoked(suggestionKey)));
+      setFocusAfterCrossRevoke(suggestionKey);
+    } catch (error) {
+      setStatus(say((t, l) => t.status.crossRevocationRefused(describeError(error, l))));
+    } finally {
+      setRevokingCross(null);
     }
   }, []);
 
@@ -3525,6 +3592,10 @@ export default function MapApp() {
             onSelect={selectInSelectedBrain}
             onApprove={approveSuggestion}
             approving={approving}
+            onRevoke={revokeRelation}
+            revoking={revoking}
+            focusSuggestionKey={focusAfterRevoke}
+            onFocusRestored={() => setFocusAfterRevoke(null)}
             engineStatus={relationEngineStatus}
             engineReport={relationEngineReport}
             engineRunning={relationEngineRunning}
@@ -3555,6 +3626,10 @@ export default function MapApp() {
             onNavigate={navigateCross}
             onApprove={approveCrossSuggestion}
             approving={approvingCross}
+            onRevoke={revokeCrossRelation}
+            revoking={revokingCross}
+            focusSuggestionKey={focusAfterCrossRevoke}
+            onFocusRestored={() => setFocusAfterCrossRevoke(null)}
           />
 
           {measurement ? (

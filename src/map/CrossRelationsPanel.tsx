@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import type { Locale } from "../lib/locale";
 import type {
   BrainNodeRef,
@@ -8,6 +8,7 @@ import type {
   RelationProvenance,
 } from "./types";
 import { PROVENANCE_LABELS, relationTypeLabel } from "./relations";
+import { useRestoreFocusAfterReload } from "./restoreFocus";
 import { crossEntryKey, groupCrossByType, otherEndIsDisplayed } from "./crossRelations";
 
 /**
@@ -89,6 +90,9 @@ interface CrossRelationsPanelStrings {
   approveAria: (key: string, source: string, target: string) => string;
   approve: (key: string) => string;
   approving: string;
+  revokeAria: (key: string, source: string, target: string) => string;
+  revoke: (key: string) => string;
+  revoking: string;
 }
 
 export const CROSS_RELATIONS_PANEL_STRINGS: Record<Locale, CrossRelationsPanelStrings> = {
@@ -164,6 +168,10 @@ export const CROSS_RELATIONS_PANEL_STRINGS: Record<Locale, CrossRelationsPanelSt
       `approuver la suggestion inter-cerveaux ${key}, de ${source} vers ${target}`,
     approve: (key) => `Approuver ${key}`,
     approving: "Approbation…",
+    revokeAria: (key, source, target) =>
+      `révoquer la relation inter-cerveaux ${key}, de ${source} vers ${target}`,
+    revoke: (key) => `Révoquer ${key}`,
+    revoking: "Révocation…",
   },
   en: {
     title: "Inter-brain relations",
@@ -234,6 +242,10 @@ export const CROSS_RELATIONS_PANEL_STRINGS: Record<Locale, CrossRelationsPanelSt
       `approve inter-brain suggestion ${key}, from ${source} to ${target}`,
     approve: (key) => `Approve ${key}`,
     approving: "Approving…",
+    revokeAria: (key, source, target) =>
+      `revoke inter-brain relation ${key}, from ${source} to ${target}`,
+    revoke: (key) => `Revoke ${key}`,
+    revoking: "Revoking…",
   },
 };
 
@@ -248,6 +260,20 @@ interface CrossRelationsPanelProps {
   onNavigate: (target: BrainNodeRef | { brainId: string; endpointKey: string }) => void;
   onApprove: (suggestionKey: string) => void;
   approving: string | null;
+  /**
+   * `TASK-0051` — takes an `APPROVED` inter-brain relation back. Optional so a
+   * caller that never offers revocation renders no control.
+   */
+  onRevoke?: (suggestionKey: string) => void;
+  /** The suggestion key whose revocation is in flight, `null` otherwise. */
+  revoking?: string | null;
+  /**
+   * The suggestion whose revocation just succeeded. Once the panel has been
+   * reloaded from the backend, focus moves to that suggestion's approval
+   * control, then `onFocusRestored` is called.
+   */
+  focusSuggestionKey?: string | null;
+  onFocusRestored?: () => void;
 }
 
 function ProvenanceBadge({
@@ -293,12 +319,16 @@ function CrossEntryRow({
   selfBrainName,
   displayedBrainIds,
   onNavigate,
+  onRevoke,
+  revoking,
 }: {
   locale: Locale;
   entry: NodeCrossRelationEntry;
   selfBrainName: string;
   displayedBrainIds: readonly string[];
   onNavigate: CrossRelationsPanelProps["onNavigate"];
+  onRevoke?: (suggestionKey: string) => void;
+  revoking: string | null;
 }) {
   const words = CROSS_RELATIONS_PANEL_STRINGS[locale];
   const displayed = otherEndIsDisplayed(entry, displayedBrainIds);
@@ -377,6 +407,26 @@ function CrossEntryRow({
       {displayed ? null : (
         <p className="cross-relation__hint">{words.navigationHint(entry.other.brainDisplayName)}</p>
       )}
+      {
+        // `TASK-0051` — only an APPROVED relation is revocable, and only when
+        // it names the suggestion it came from. A DETERMINISTIC one never gets
+        // the control: it comes from a documented rule, not a user's decision.
+        entry.provenance === "APPROVED" && entry.suggestionKey && onRevoke ? (
+          <button
+            type="button"
+            className="cross-relation__revoke"
+            data-cross-revoke={entry.suggestionKey}
+            data-endpoint-key={entry.other.key}
+            data-direction={entry.direction}
+            disabled={revoking !== null}
+            aria-busy={revoking === entry.suggestionKey}
+            aria-label={words.revokeAria(entry.suggestionKey, sourceName, targetName)}
+            onClick={() => onRevoke(entry.suggestionKey as string)}
+          >
+            {revoking === entry.suggestionKey ? words.revoking : words.revoke(entry.suggestionKey)}
+          </button>
+        ) : null
+      }
     </li>
   );
 }
@@ -390,6 +440,8 @@ function CrossDirectionSection({
   selfBrainName,
   displayedBrainIds,
   onNavigate,
+  onRevoke,
+  revoking,
 }: {
   locale: Locale;
   title: string;
@@ -399,6 +451,8 @@ function CrossDirectionSection({
   selfBrainName: string;
   displayedBrainIds: readonly string[];
   onNavigate: CrossRelationsPanelProps["onNavigate"];
+  onRevoke?: (suggestionKey: string) => void;
+  revoking: string | null;
 }) {
   return (
     <section className="cross-relations__direction" aria-label={`${title} (${count})`}>
@@ -424,6 +478,8 @@ function CrossDirectionSection({
                   selfBrainName={selfBrainName}
                   displayedBrainIds={displayedBrainIds}
                   onNavigate={onNavigate}
+                  onRevoke={onRevoke}
+                  revoking={revoking}
                 />
               ))}
             </ul>
@@ -495,8 +551,21 @@ export default function CrossRelationsPanel({
   onNavigate,
   onApprove,
   approving,
+  onRevoke,
+  revoking = null,
+  focusSuggestionKey = null,
+  onFocusRestored,
 }: CrossRelationsPanelProps) {
   const words = CROSS_RELATIONS_PANEL_STRINGS[locale];
+  const root = useRef<HTMLElement | null>(null);
+  useRestoreFocusAfterReload({
+    root,
+    selector: `[data-cross-approve="${focusSuggestionKey}"]`,
+    active: focusSuggestionKey !== null,
+    loading,
+    ready: relations !== null,
+    onRestored: () => onFocusRestored?.(),
+  });
   if (loading) {
     return (
       <section className="cross-relations" aria-label={words.title}>
@@ -517,7 +586,7 @@ export default function CrossRelationsPanel({
   const selfBrainName = words.selfBrain;
 
   return (
-    <section className="cross-relations" aria-label={words.title}>
+    <section className="cross-relations" aria-label={words.title} ref={root}>
       <h2 className="cross-relations__title">{words.title}</h2>
       <p className="cross-relations__hint">{words.hint}</p>
       <p className="cross-relations__totals" data-testid="cross-relation-totals">
@@ -533,6 +602,8 @@ export default function CrossRelationsPanel({
         selfBrainName={selfBrainName}
         displayedBrainIds={displayedBrainIds}
         onNavigate={onNavigate}
+        onRevoke={onRevoke}
+        revoking={revoking}
       />
       <CrossDirectionSection
         locale={locale}
@@ -543,6 +614,8 @@ export default function CrossRelationsPanel({
         selfBrainName={selfBrainName}
         displayedBrainIds={displayedBrainIds}
         onNavigate={onNavigate}
+        onRevoke={onRevoke}
+        revoking={revoking}
       />
 
       <section className="cross-relations__suggestions" aria-label={words.suggestionsLabel}>

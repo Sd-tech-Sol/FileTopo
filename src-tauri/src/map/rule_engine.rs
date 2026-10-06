@@ -885,6 +885,51 @@ mod tests {
         assert_eq!(store.approved().unwrap()[0].provenance.as_str(), "APPROVED");
     }
 
+    /// `TASK-0051` / `R10` — a core approval that a user revoked is never
+    /// approved again by a rerun of the engine: the suggestion stays `pending`,
+    /// refreshed but not decided, and no relation comes back.
+    #[test]
+    fn a_revoked_core_approval_is_not_reapproved_by_a_rerun() {
+        use super::super::relations::Provenance;
+
+        let mut store = RelationStore::in_memory().unwrap();
+        let suggestion = suggestion_write();
+        store
+            .reconcile_engine_outputs(&[], std::slice::from_ref(&suggestion), &engine_snapshot())
+            .unwrap();
+        store.approve(&suggestion.suggestion_key).unwrap();
+        store
+            .revoke(Provenance::Approved, &suggestion.suggestion_key)
+            .unwrap();
+        assert!(store.approved().unwrap().is_empty());
+
+        for _ in 0..3 {
+            let result = store
+                .reconcile_engine_outputs(&[], std::slice::from_ref(&suggestion), &engine_snapshot())
+                .unwrap();
+            assert_eq!(
+                result.approved_suggestion_preservations, 0,
+                "it is no longer an approval to preserve"
+            );
+            assert_eq!(result.suggestions_produced, 1);
+            assert!(store.approved().unwrap().is_empty(), "a rerun re-approved it");
+            assert!(store.established().unwrap().is_empty());
+            let row = store.suggestion(&suggestion.suggestion_key).unwrap().unwrap();
+            assert_eq!(row.state, "pending");
+            assert_eq!(row.decided_unix_ms, None);
+        }
+        // It is the same single row: no duplicate suggestion was created.
+        assert_eq!(store.suggestions().unwrap().len(), 1);
+
+        // And it can be approved again, exactly once.
+        store.approve(&suggestion.suggestion_key).unwrap();
+        assert_eq!(store.approved().unwrap().len(), 1);
+        let preserved = store
+            .reconcile_engine_outputs(&[], &[suggestion], &engine_snapshot())
+            .unwrap();
+        assert_eq!(preserved.approved_suggestion_preservations, 1);
+    }
+
     #[test]
     fn established_collision_suppresses_a_core_suggestion_without_touching_legacy() {
         let mut store = RelationStore::in_memory().unwrap();

@@ -946,6 +946,8 @@ export interface NodeRelationEntry {
   provenance: RelationProvenance;
   relationType: string;
   other: RelationEndpoint;
+  /** The suggestion an `APPROVED` entry came from — what a revocation names. */
+  suggestionKey?: string | null;
   ruleName: string | null;
   ruleVersion: string | null;
   producer?: string;
@@ -1039,6 +1041,8 @@ export interface RelationsSelfCheck {
   counts: CountComparison[];
   countsAgree: boolean;
   approvedSinceSeed: string[];
+  /** Seed-approved suggestions a user has since revoked — `TASK-0051`. */
+  revokedSinceSeed?: string[];
   inventedInverses: string[];
   suggestionsInEstablished: string[];
   unresolvedEndpoints: string[];

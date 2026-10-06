@@ -9,7 +9,7 @@ use super::brains::{BrainNodeRef, BrainRecord};
 use super::relations::{
     EXPECTED_COUNTS, FORBIDDEN_INVERSES, MAX_REVIEW_QUEUE_LIMIT, RELATIONS_FIXTURE,
     RELATIONS_SCHEMA_VERSION, RejectionOutcome, RelationError, RelationStore, SEEDED_SUGGESTIONS,
-    StoredRelation, StoredSuggestion, endpoint_key,
+    Provenance, StoredRelation, StoredSuggestion, endpoint_key,
 };
 use super::sandbox::SandboxPaths;
 use super::store::MapNode;
@@ -128,6 +128,10 @@ pub struct NodeRelationEntry {
     pub provenance: String,
     pub relation_type: String,
     pub other: RelationEndpoint,
+    /// The suggestion an `APPROVED` entry came from — the identity a
+    /// revocation names (`TASK-0051`). `None` for `DETERMINISTIC`, which has no
+    /// suggestion and is never revocable.
+    pub suggestion_key: Option<String>,
     pub rule_name: Option<String>,
     pub rule_version: Option<String>,
     pub producer: String,
@@ -195,6 +199,10 @@ pub struct RelationsSelfCheck {
     /// the frozen expectation. Listed so the adjustment is auditable rather
     /// than invisible.
     pub approved_since_seed: Vec<String>,
+    /// Suggestions the frozen fixture approved at seed and a user has since
+    /// **revoked** (`TASK-0051`), each removing exactly one edge from the frozen
+    /// expectation. Listed for the same reason as `approved_since_seed`.
+    pub revoked_since_seed: Vec<String>,
     /// `J5` — inverses that were invented. Must stay empty.
     pub invented_inverses: Vec<String>,
     /// `J2` — pending suggestions that leaked into an established read.
@@ -472,6 +480,7 @@ fn entry_of(
         provenance: relation.provenance.as_str().to_string(),
         relation_type: relation.relation_type.clone(),
         other: endpoint_of(other_key, by_key, unresolved),
+        suggestion_key: relation.suggestion_key.clone(),
         rule_name: relation.rule_name.clone(),
         rule_version: relation.rule_version.clone(),
         producer: relation.producer.clone(),
@@ -620,6 +629,56 @@ pub fn approve_suggestion(
         }
     }
     store.approve(suggestion_key)?;
+    let engine_current = super::rule_engine::is_current(paths, brain)?;
+    overview(
+        &store,
+        brain,
+        spec.id,
+        legacy_scope,
+        paths.relative_name(&database),
+        &snapshot.nodes,
+        0,
+        engine_current,
+    )
+}
+
+/// `TASK-0051` / `DEC-0049` — the one explicit act that takes an approval back.
+///
+/// The counterpart of [`approve_suggestion`]: the approved relation is
+/// deleted, the suggestion returns to `pending`, and the whole overview comes
+/// back from the store, so the interface shows counts that were read rather
+/// than decremented. `provenance` is what the caller aims at — a
+/// `DETERMINISTIC` relation is refused by name.
+///
+/// Opened on **this** brain's store only: a revocation in one brain cannot
+/// reach another brain's copy of the same suggestion key, nor the common
+/// inter-brain store, nor an index, nor a source.
+pub fn revoke_relation(
+    paths: &SandboxPaths,
+    brain: &BrainRecord,
+    provenance: &str,
+    suggestion_key: &str,
+) -> Result<RelationsOverview, MapError> {
+    let provenance = Provenance::parse(provenance)?;
+    let spec = source_spec(brain)?;
+    let legacy_scope = legacy_fixture_spec(brain)?.is_some();
+    let snapshot = commands::analysis_input(paths, brain)?;
+    let database = paths.brain_relations_database(&brain.brain_id);
+    let mut store = RelationStore::open(&database)?;
+    if let Some(suggestion) = store.suggestion(suggestion_key)? {
+        if suggestion.producer == super::relations::CORE_RULE_ENGINE_PRODUCER
+            && !super::rule_engine::is_current(paths, brain)?
+        {
+            // The policy approval and refusal already apply, for the same
+            // reason: a stale core suggestion describes a run whose inputs have
+            // moved, and the relation it produced is not even listed.
+            return Err(MapError::RuleEngine(
+                "stale core suggestion cannot be revoked; run the relation engine again"
+                    .to_string(),
+            ));
+        }
+    }
+    store.revoke(provenance, suggestion_key)?;
     let engine_current = super::rule_engine::is_current(paths, brain)?;
     overview(
         &store,
@@ -826,7 +885,31 @@ pub fn self_check(
         .map(|(path, outgoing, incoming)| ((*path).to_string(), (*outgoing, *incoming)))
         .collect::<std::collections::BTreeMap<_, _>>();
     let mut approved_since_seed = Vec::new();
+    let mut revoked_since_seed = Vec::new();
     for suggestion in store.suggestions()? {
+        // A suggestion the fixture approved at seed is back to `pending` only
+        // if a user revoked it (`TASK-0051`; it cannot have been rejected,
+        // being already decided). The frozen table counted its edge, and the
+        // edge is gone: the expectation loses it, and says so.
+        let approved_by_the_fixture = SEEDED_SUGGESTIONS
+            .iter()
+            .any(|seeded| seeded.key == suggestion.suggestion_key && seeded.approved_at_seed);
+        if approved_by_the_fixture && suggestion.state == "pending" {
+            revoked_since_seed.push(suggestion.suggestion_key.clone());
+            if let Some(path) = super::relations::relative_path_of(brain_id, &suggestion.source_key)
+            {
+                if let Some(entry) = expected.get_mut(path) {
+                    entry.0 = entry.0.saturating_sub(1);
+                }
+            }
+            if let Some(path) = super::relations::relative_path_of(brain_id, &suggestion.target_key)
+            {
+                if let Some(entry) = expected.get_mut(path) {
+                    entry.1 = entry.1.saturating_sub(1);
+                }
+            }
+            continue;
+        }
         if suggestion.state != "approved" {
             continue;
         }
@@ -924,6 +1007,7 @@ pub fn self_check(
         counts_agree: counts.iter().all(|entry| entry.matches),
         counts,
         approved_since_seed,
+        revoked_since_seed,
         invented_inverses,
         suggestions_in_established,
         unresolved_endpoints: unresolved,
@@ -1848,6 +1932,305 @@ mod tests {
             let queue = review_queue(&paths, &beta(), 0, MAX_REVIEW_QUEUE_LIMIT).expect("queue");
             assert_eq!(queue.total_pending, warm.total_pending - 1);
         }
+
+        let _ = std::fs::remove_dir_all(PathBuf::from(&paths.fixtures).parent().unwrap());
+    }
+    // -----------------------------------------------------------------------
+    // `TASK-0051` / `DEC-0049` — revoking an approval, through the command layer
+    // -----------------------------------------------------------------------
+
+    fn counts(overview: &RelationsOverview) -> (usize, usize, usize) {
+        (
+            overview.deterministic_count,
+            overview.approved_count,
+            overview.pending_suggestion_count,
+        )
+    }
+
+    /// The overview without the row ids: opening a legacy brain replays its
+    /// derivation, which hands out fresh ids to the same relations, so an id is
+    /// not part of what a relation *is*.
+    #[allow(clippy::type_complexity)]
+    fn shape(
+        overview: &RelationsOverview,
+    ) -> (
+        (usize, usize, usize),
+        Vec<(String, String, String, String, Option<String>)>,
+        Vec<(String, String)>,
+    ) {
+        (
+            counts(overview),
+            overview
+                .established
+                .iter()
+                .map(|edge| {
+                    (
+                        edge.provenance.clone(),
+                        edge.source.key.clone(),
+                        edge.target.key.clone(),
+                        edge.relation_type.clone(),
+                        edge.suggestion_key.clone(),
+                    )
+                })
+                .collect(),
+            overview
+                .pending_suggestions
+                .iter()
+                .map(|suggestion| (suggestion.suggestion_key.clone(), suggestion.state.clone()))
+                .collect(),
+        )
+    }
+
+    /// A digest of everything on disk that is not a relations store: the
+    /// synthetic source tree and the brain's index. A revocation must leave
+    /// both exactly as they were.
+    fn source_and_index_digest(paths: &SandboxPaths, brain_id: &str) -> u64 {
+        use std::hash::{Hash, Hasher};
+        fn walk(dir: &std::path::Path, hasher: &mut std::collections::hash_map::DefaultHasher) {
+            let mut entries = std::fs::read_dir(dir)
+                .expect("read dir")
+                .map(|entry| entry.expect("entry").path())
+                .collect::<Vec<_>>();
+            entries.sort();
+            for path in entries {
+                path.file_name().hash(hasher);
+                if path.is_dir() {
+                    walk(&path, hasher);
+                } else {
+                    std::fs::read(&path).expect("read file").hash(hasher);
+                }
+            }
+        }
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        walk(&paths.fixtures, &mut hasher);
+        std::fs::read(paths.brain_map_database(brain_id))
+            .expect("index")
+            .hash(&mut hasher);
+        hasher.finish()
+    }
+
+    /// `R1`, `R5`, `R6` — the whole cycle through the command, with the counts
+    /// read back from the store at every step.
+    #[test]
+    fn revoking_through_the_command_returns_the_exact_counts_and_can_be_approved_again() {
+        let paths = built("revoke-cycle");
+        let start = open_relations(&paths, &alpha()).expect("start");
+        assert_eq!(counts(&start), (8, 4, 4));
+
+        let approved = approve_suggestion(&paths, &alpha(), "S-005").expect("approval");
+        assert_eq!(counts(&approved), (8, 5, 3));
+        let edge = approved
+            .established
+            .iter()
+            .find(|edge| edge.suggestion_key.as_deref() == Some("S-005"))
+            .expect("S-005 is established")
+            .clone();
+        assert_eq!(edge.provenance, "APPROVED");
+
+        let revoked = revoke_relation(&paths, &alpha(), "APPROVED", "S-005").expect("revocation");
+        assert_eq!(counts(&revoked), (8, 4, 4), "R6: the counts are back, read from the store");
+        assert!(
+            revoked
+                .established
+                .iter()
+                .all(|edge| edge.suggestion_key.as_deref() != Some("S-005")),
+            "the relation is gone from the established list"
+        );
+        let pending = revoked
+            .pending_suggestions
+            .iter()
+            .find(|suggestion| suggestion.suggestion_key == "S-005")
+            .expect("the suggestion is pending again");
+        assert_eq!(pending.state, "pending");
+        assert_eq!(pending.decided_unix_ms, None);
+        assert_eq!(pending.source.key, edge.source.key);
+        assert_eq!(pending.target.key, edge.target.key);
+        assert_eq!(pending.relation_type, edge.relation_type);
+
+        // The node panel agrees, from its own two queries: the endpoint lost
+        // exactly the one edge, and the suggestion is offered, not counted.
+        let source_node = edge.source.node_id.expect("source resolves");
+        let reference = BrainNodeRef::new("brain-alpha", source_node);
+        let after_revoke = node_relations(&paths, &alpha(), &reference).expect("node relations");
+        assert!(
+            after_revoke
+                .outgoing
+                .iter()
+                .all(|entry| entry.suggestion_key.as_deref() != Some("S-005"))
+        );
+        assert!(
+            after_revoke
+                .suggestions
+                .iter()
+                .any(|suggestion| suggestion.suggestion_key == "S-005")
+        );
+
+        let again = approve_suggestion(&paths, &alpha(), "S-005").expect("re-approval");
+        assert_eq!(counts(&again), (8, 5, 3));
+        assert_eq!(
+            again
+                .established
+                .iter()
+                .filter(|edge| edge.suggestion_key.as_deref() == Some("S-005"))
+                .count(),
+            1,
+            "R5: exactly one relation came back"
+        );
+        let after_reapproval =
+            node_relations(&paths, &alpha(), &reference).expect("node relations");
+        assert_eq!(
+            after_reapproval.outgoing_count,
+            after_revoke.outgoing_count + 1,
+            "the endpoint gained back exactly one edge"
+        );
+        assert!(approve_suggestion(&paths, &alpha(), "S-005").is_err(), "no double approval");
+        assert_eq!(counts(&open_relations(&paths, &alpha()).expect("read")), (8, 5, 3));
+
+        let _ = std::fs::remove_dir_all(PathBuf::from(&paths.fixtures).parent().unwrap());
+    }
+
+    /// `R3`, `R4` — the refusals, named, through the command, with no drift.
+    #[test]
+    fn the_revocation_command_refuses_by_name_and_changes_nothing() {
+        let paths = built("revoke-refusals");
+        open_relations(&paths, &alpha()).expect("relations");
+        approve_suggestion(&paths, &alpha(), "S-005").expect("approval");
+        let before = open_relations(&paths, &alpha()).expect("before");
+        let digest = source_and_index_digest(&paths, "brain-alpha");
+
+        let motif = |result: Result<RelationsOverview, MapError>| {
+            result.expect_err("must be refused").to_string()
+        };
+        // Aimed at DETERMINISTIC — with an approved key, a pending key and a
+        // key that does not exist.
+        for key in ["S-005", "S-006", "S-inexistante"] {
+            assert!(
+                motif(revoke_relation(&paths, &alpha(), "DETERMINISTIC", key))
+                    .starts_with("relation_rejected_revocation_of_deterministic"),
+                "{key}"
+            );
+        }
+        // An unknown key.
+        assert!(
+            motif(revoke_relation(&paths, &alpha(), "APPROVED", "S-inexistante"))
+                .starts_with("relation_rejected_unknown_suggestion")
+        );
+        // A pending suggestion.
+        assert!(
+            motif(revoke_relation(&paths, &alpha(), "APPROVED", "S-006"))
+                .starts_with("relation_rejected_revocation_suggestion_not_approved")
+        );
+        // A third provenance does not exist.
+        assert!(
+            motif(revoke_relation(&paths, &alpha(), "SUGGESTED", "S-005"))
+                .starts_with("relation_rejected_unknown_provenance")
+        );
+        assert_eq!(shape(&open_relations(&paths, &alpha()).expect("after")), shape(&before));
+
+        // Twice: the first succeeds, the second is refused, and nothing drifts.
+        let first = revoke_relation(&paths, &alpha(), "APPROVED", "S-005").expect("first");
+        assert!(
+            motif(revoke_relation(&paths, &alpha(), "APPROVED", "S-005"))
+                .starts_with("relation_rejected_revocation_suggestion_not_approved")
+        );
+        assert_eq!(shape(&open_relations(&paths, &alpha()).expect("after")), shape(&first));
+        assert_eq!(
+            source_and_index_digest(&paths, "brain-alpha"),
+            digest,
+            "R12: the source and the index are untouched by the gestures"
+        );
+
+        let _ = std::fs::remove_dir_all(PathBuf::from(&paths.fixtures).parent().unwrap());
+    }
+
+    /// `R9`, `R10` — the revocation survives an Index rebuild and a reopening,
+    /// and nothing brings the relation back on its own.
+    #[test]
+    fn a_revocation_survives_an_index_rebuild_and_a_reopening() {
+        let paths = built("revoke-persist");
+        open_relations(&paths, &alpha()).expect("relations");
+        approve_suggestion(&paths, &alpha(), "S-005").expect("approval");
+        // One of the four approvals the fixture made at seed, revoked as well:
+        // the seed is replayed on every open and must not undo this.
+        revoke_relation(&paths, &alpha(), "APPROVED", "S-001").expect("seed approval revoked");
+        let revoked = revoke_relation(&paths, &alpha(), "APPROVED", "S-005").expect("revocation");
+        assert_eq!(counts(&revoked), (8, 3, 5));
+
+        commands::build_map(&paths, &alpha(), true).expect("rebuilt");
+        let rebuilt = open_relations(&paths, &alpha()).expect("after rebuild");
+        assert_eq!(counts(&rebuilt), (8, 3, 5), "R10: the rebuild resurrects nothing");
+        assert_eq!(rebuilt.seeded, 0);
+        assert!(rebuilt.unresolved_endpoints.is_empty());
+        assert_eq!(rebuilt.deterministic_digest, revoked.deterministic_digest);
+
+        // A fresh store handle is what a restart does: the state is on disk.
+        let reopened = RelationStore::open(&paths.brain_relations_database("brain-alpha"))
+            .expect("reopened");
+        for key in ["S-001", "S-005"] {
+            assert_eq!(
+                reopened.suggestion(key).expect("read").expect("row").state,
+                "pending",
+                "{key}"
+            );
+        }
+        assert_eq!(reopened.approved().expect("read").len(), 3);
+        let again = open_relations(&paths, &alpha()).expect("reopened overview");
+        assert_eq!(counts(&again), (8, 3, 5));
+
+        // The legacy self-check still agrees with the store: the frozen
+        // expectation names the revoked seed approval instead of failing on it.
+        let check = self_check(&paths, &alpha()).expect("self check");
+        assert!(check.counts_agree, "{:?}", check.counts);
+        assert_eq!(check.revoked_since_seed, vec!["S-001".to_string()]);
+        assert!(check.approved_since_seed.is_empty());
+
+        let _ = std::fs::remove_dir_all(PathBuf::from(&paths.fixtures).parent().unwrap());
+    }
+
+    /// `R11` — a revocation in Alpha reaches nothing of Gamma, nor the common
+    /// inter-brain store, nor the index and the source.
+    #[test]
+    fn revoking_in_one_brain_moves_nothing_in_another_brain_or_in_the_common_store() {
+        let paths = temporary_sandbox("revoke-isolation");
+        commands::build_map(&paths, &alpha(), false).expect("alpha map");
+        commands::build_map(&paths, &gamma(), false).expect("gamma map");
+        open_relations(&paths, &alpha()).expect("alpha");
+        open_relations(&paths, &gamma()).expect("gamma");
+        // The same key is approved in both: the identity space is the brain.
+        approve_suggestion(&paths, &alpha(), "S-005").expect("alpha approval");
+        approve_suggestion(&paths, &gamma(), "S-005").expect("gamma approval");
+
+        let state_of = |brain_id: &str| {
+            let store = RelationStore::open(&paths.brain_relations_database(brain_id))
+                .expect("store");
+            (
+                store.deterministic().expect("read"),
+                store.approved().expect("read"),
+                store.suggestions().expect("read"),
+            )
+        };
+        let gamma_before = state_of("brain-gamma");
+        let gamma_index = source_and_index_digest(&paths, "brain-gamma");
+        let alpha_index = source_and_index_digest(&paths, "brain-alpha");
+        let common = paths.interbrain_relations_database();
+        let common_existed = common.exists();
+
+        let after = revoke_relation(&paths, &alpha(), "APPROVED", "S-005").expect("revocation");
+        assert_eq!(counts(&after), (8, 4, 4));
+
+        assert_eq!(state_of("brain-gamma"), gamma_before, "Alpha's revocation moved Gamma");
+        assert_eq!(
+            counts(&open_relations(&paths, &gamma()).expect("gamma after")),
+            (8, 5, 3),
+            "Gamma still holds its own approval of the very same key"
+        );
+        assert_eq!(common.exists(), common_existed, "the common store was created or removed");
+        assert_eq!(source_and_index_digest(&paths, "brain-gamma"), gamma_index);
+        assert_eq!(
+            source_and_index_digest(&paths, "brain-alpha"),
+            alpha_index,
+            "the revocation touched the source or the index"
+        );
 
         let _ = std::fs::remove_dir_all(PathBuf::from(&paths.fixtures).parent().unwrap());
     }

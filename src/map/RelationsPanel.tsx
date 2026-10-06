@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 import type { Locale } from "../lib/locale";
 import type {
   NodeRelations,
@@ -14,6 +14,7 @@ import {
   groupByType,
   relationTypeLabel,
 } from "./relations";
+import { useRestoreFocusAfterReload } from "./restoreFocus";
 
 /**
  * The **intra-brain** relations panel — `P-07`, `P-05`, and the provenance
@@ -82,6 +83,8 @@ interface RelationsPanelStrings {
   basis: string;
   approve: (key: string) => string;
   approving: string;
+  revoke: (key: string) => string;
+  revoking: string;
   see: (name: string) => string;
   observedHash: (hash: string, generation: string) => ReactNode;
   approvedRule: string;
@@ -150,6 +153,8 @@ export const RELATIONS_PANEL_STRINGS: Record<Locale, RelationsPanelStrings> = {
     basis: "Origine synthétique :",
     approve: (key) => `Approuver ${key}`,
     approving: "Approbation…",
+    revoke: (key) => `Révoquer ${key}`,
+    revoking: "Révocation…",
     see: (name) => `Voir ${name}`,
     observedHash: (hash, generation) => (
       <>
@@ -222,6 +227,8 @@ export const RELATIONS_PANEL_STRINGS: Record<Locale, RelationsPanelStrings> = {
     basis: "Synthetic origin:",
     approve: (key) => `Approve ${key}`,
     approving: "Approving…",
+    revoke: (key) => `Revoke ${key}`,
+    revoking: "Revoking…",
     see: (name) => `View ${name}`,
     observedHash: (hash, generation) => (
       <>
@@ -257,6 +264,20 @@ interface RelationsPanelProps {
   onSelect: (nodeId: number) => void;
   onApprove: (suggestionKey: string) => void;
   approving: string | null;
+  /**
+   * `TASK-0051` — takes an `APPROVED` relation back. Optional so a caller that
+   * never offers revocation (a fixture, an older test) renders no control.
+   */
+  onRevoke?: (suggestionKey: string) => void;
+  /** The suggestion key whose revocation is in flight, `null` otherwise. */
+  revoking?: string | null;
+  /**
+   * The suggestion whose revocation just succeeded. Once the panel has been
+   * reloaded from the backend, focus moves to that suggestion's approval
+   * control, then `onFocusRestored` is called.
+   */
+  focusSuggestionKey?: string | null;
+  onFocusRestored?: () => void;
   engineStatus?: RelationEngineStatus | null;
   engineReport?: RelationEngineReport | null;
   engineRunning?: boolean;
@@ -376,6 +397,8 @@ function DirectionSection({
   entries,
   count,
   onSelect,
+  onRevoke,
+  revoking,
 }: {
   locale: Locale;
   title: string;
@@ -383,6 +406,8 @@ function DirectionSection({
   entries: NodeRelations["outgoing"];
   count: number;
   onSelect: (nodeId: number) => void;
+  onRevoke?: (suggestionKey: string) => void;
+  revoking: string | null;
 }) {
   const words = RELATIONS_PANEL_STRINGS[locale];
   return (
@@ -439,6 +464,34 @@ function DirectionSection({
                     ) : (
                       <p className="relation__rule relation__rule--approved">{words.approvedRule}</p>
                     )}
+                    {
+                      // `TASK-0051` — only an APPROVED relation is revocable, and
+                      // only when it names the suggestion it came from. A
+                      // DETERMINISTIC entry never gets the control: it comes
+                      // from a documented rule, not from a user's decision.
+                      entry.provenance === "APPROVED" && entry.suggestionKey && onRevoke ? (
+                        <button
+                          type="button"
+                          className="relation__revoke"
+                          // **No shared `data-testid`.** The generic focus
+                          // restoration of `TASK-0047` finds « the same control »
+                          // by `data-testid`; for a control repeated once per
+                          // relation that would hand the focus to ANOTHER
+                          // relation's revoke button. The key names this one.
+                          data-relation-revoke={entry.suggestionKey}
+                          data-suggestion-key={entry.suggestionKey}
+                          data-endpoint-key={entry.other.key}
+                          data-direction={entry.direction}
+                          disabled={revoking !== null}
+                          aria-busy={revoking === entry.suggestionKey}
+                          onClick={() => onRevoke(entry.suggestionKey as string)}
+                        >
+                          {revoking === entry.suggestionKey
+                            ? words.revoking
+                            : words.revoke(entry.suggestionKey)}
+                        </button>
+                      ) : null
+                    }
                   </li>
                 );
               })}
@@ -459,12 +512,25 @@ export default function RelationsPanel({
   onSelect,
   onApprove,
   approving,
+  onRevoke,
+  revoking = null,
+  focusSuggestionKey = null,
+  onFocusRestored,
   engineStatus = null,
   engineReport = null,
   engineRunning = false,
   onAnalyze,
 }: RelationsPanelProps) {
   const words = RELATIONS_PANEL_STRINGS[locale];
+  const root = useRef<HTMLElement | null>(null);
+  useRestoreFocusAfterReload({
+    root,
+    selector: `[data-testid="approve-core-suggestion"][data-suggestion-key="${focusSuggestionKey}"]`,
+    active: focusSuggestionKey !== null,
+    loading,
+    ready: relations !== null,
+    onRestored: () => onFocusRestored?.(),
+  });
   if (!available) {
     return (
       <section className="relations" aria-label={words.title}>
@@ -491,7 +557,7 @@ export default function RelationsPanel({
   }
 
   return (
-    <section className="relations" aria-label={words.title}>
+    <section className="relations" aria-label={words.title} ref={root}>
       <h2 className="relations__title">{words.title}</h2>
       {legacyInScope ? null : (
         <p className="relations__legacy-note" data-testid="legacy-scope-note">
@@ -537,6 +603,8 @@ export default function RelationsPanel({
         entries={relations.outgoing}
         count={relations.outgoingCount}
         onSelect={onSelect}
+        onRevoke={onRevoke}
+        revoking={revoking}
       />
       <DirectionSection
         locale={locale}
@@ -545,6 +613,8 @@ export default function RelationsPanel({
         entries={relations.incoming}
         count={relations.incomingCount}
         onSelect={onSelect}
+        onRevoke={onRevoke}
+        revoking={revoking}
       />
 
       <section className="relations__suggestions" aria-label={words.suggestionsLabel}>

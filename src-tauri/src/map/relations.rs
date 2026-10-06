@@ -137,6 +137,18 @@ pub enum RelationError {
     UnknownSuggestion(String),
     #[error("relation_rejected_suggestion_already_decided: {0}")]
     SuggestionAlreadyDecided(String),
+    /// `TASK-0051` / `DEC-0049` §A — a deterministic relation comes from a
+    /// documented rule and is never removed by a user gesture.
+    #[error("relation_rejected_revocation_of_deterministic: {0}")]
+    RevocationOfDeterministic(String),
+    /// `DEC-0049` §D — only an `approved` suggestion has an approval to take
+    /// back. A `pending` one has none, and a `rejected` one is a refusal.
+    #[error("relation_rejected_revocation_suggestion_not_approved: {0}")]
+    RevocationSuggestionNotApproved(String),
+    /// `DEC-0049` §D — the approved row the suggestion names is absent, or does
+    /// not carry the suggestion's endpoints and type.
+    #[error("relation_rejected_revocation_relation_inconsistent: {0}")]
+    RevocationRelationInconsistent(String),
     #[error("relation_derivation_refused: {found} derived relations exceed the ceiling of {ceiling}")]
     DerivationCeilingExceeded { found: usize, ceiling: usize },
     #[error("relations_out_of_scope_for_fixture: {0}")]
@@ -1200,6 +1212,94 @@ impl RelationStore {
             ))
             .into());
         }
+        self.suggestion(suggestion_key)?.ok_or_else(|| {
+            MapError::from(RelationError::UnknownSuggestion(suggestion_key.to_string()))
+        })
+    }
+
+    /// The **one** path from an approved relation back to its suggestion —
+    /// `TASK-0051` / `DEC-0049` (`P-04`: an approval is revocable).
+    ///
+    /// The mirror of [`RelationStore::approve`], and deliberately not of
+    /// [`RelationStore::reject`]: **revoking is not refusing.** The approved
+    /// row is deleted and the suggestion returns to `pending` with
+    /// `decided_unix_ms` cleared, so the user can approve it again. No state is
+    /// added, and nothing a producer wrote — endpoints, type, rule, basis — is
+    /// touched.
+    ///
+    /// `provenance` names what the caller believes it is aiming at. Anything
+    /// but `APPROVED` is refused before the store is read: a `DETERMINISTIC`
+    /// relation has no suggestion and no approval, and no gesture removes it.
+    ///
+    /// One transaction. It is refused — by name, with nothing changed — when
+    /// the suggestion does not exist, is not `approved`, or has no approved row
+    /// that matches it exactly. The two statements are each guarded, and an
+    /// unexpected row count aborts the transaction, so a half-revoked state is
+    /// not representable.
+    pub fn revoke(
+        &mut self,
+        provenance: Provenance,
+        suggestion_key: &str,
+    ) -> Result<StoredSuggestion, MapError> {
+        if provenance != Provenance::Approved {
+            return Err(RelationError::RevocationOfDeterministic(format!(
+                "`{suggestion_key}` is aimed as {}; only an APPROVED relation can be revoked",
+                provenance.as_str()
+            ))
+            .into());
+        }
+        let suggestion = self
+            .suggestion(suggestion_key)?
+            .ok_or_else(|| RelationError::UnknownSuggestion(suggestion_key.to_string()))?;
+        if suggestion.state != "approved" {
+            return Err(RelationError::RevocationSuggestionNotApproved(format!(
+                "`{suggestion_key}` is `{}`, not `approved`",
+                suggestion.state
+            ))
+            .into());
+        }
+        let linked = self
+            .approved()?
+            .into_iter()
+            .find(|relation| relation.suggestion_key.as_deref() == Some(suggestion_key));
+        let Some(linked) = linked.filter(|relation| {
+            relation.source_key == suggestion.source_key
+                && relation.target_key == suggestion.target_key
+                && relation.relation_type == suggestion.relation_type
+        }) else {
+            return Err(RelationError::RevocationRelationInconsistent(format!(
+                "`{suggestion_key}` is approved but has no approved relation carrying its endpoints \
+                 and type"
+            ))
+            .into());
+        };
+
+        let transaction = self.connection.transaction()?;
+        let deleted = transaction.execute(
+            "DELETE FROM relations_approved WHERE id = ?1 AND suggestion_key = ?2",
+            params![linked.id, suggestion_key],
+        )?;
+        if deleted != 1 {
+            return Err(RelationError::RevocationRelationInconsistent(format!(
+                "`{suggestion_key}`: {deleted} approved relation(s) deleted, expected exactly 1"
+            ))
+            .into());
+        }
+        let reset = transaction.execute(
+            "UPDATE relation_suggestions
+                SET state = 'pending', decided_unix_ms = NULL
+              WHERE suggestion_key = ?1 AND state = 'approved'",
+            params![suggestion_key],
+        )?;
+        if reset != 1 {
+            // Dropping the transaction rolls the delete back.
+            return Err(RelationError::RevocationSuggestionNotApproved(format!(
+                "`{suggestion_key}` changed concurrently"
+            ))
+            .into());
+        }
+        transaction.commit()?;
+
         self.suggestion(suggestion_key)?.ok_or_else(|| {
             MapError::from(RelationError::UnknownSuggestion(suggestion_key.to_string()))
         })
@@ -3147,5 +3247,322 @@ mod tests {
             store.suggestion("S-900").expect("read").expect("row").state,
             "rejected"
         );
+    }
+    // -- TASK-0051 / DEC-0049 : revoking an approval ---------------------------
+
+    /// Everything the store holds that a revocation could disturb, in one value.
+    fn revocation_snapshot(
+        store: &RelationStore,
+    ) -> (Vec<StoredRelation>, Vec<StoredRelation>, Vec<StoredSuggestion>) {
+        (
+            store.deterministic().expect("read"),
+            store.approved().expect("read"),
+            store.suggestions().expect("read"),
+        )
+    }
+
+    /// `R1` — the transition is `approved -> pending`, exactly.
+    #[test]
+    fn revoking_deletes_the_approved_relation_and_returns_the_suggestion_to_pending() {
+        let mut store = seeded_store();
+        let before = store.suggestion("S-005").expect("read").expect("row");
+        assert_eq!(before.state, "pending");
+        store.approve("S-005").expect("approval");
+        assert_eq!(store.established().expect("read").len(), 13);
+
+        let revoked = store.revoke(Provenance::Approved, "S-005").expect("revocation");
+
+        assert_eq!(revoked.state, "pending");
+        assert_eq!(revoked.decided_unix_ms, None, "a pending suggestion is undated");
+        // Nothing a producer wrote moved: identity, endpoints, type, basis.
+        assert_eq!(revoked.source_key, before.source_key);
+        assert_eq!(revoked.target_key, before.target_key);
+        assert_eq!(revoked.relation_type, before.relation_type);
+        assert_eq!(revoked.basis, before.basis);
+        assert_eq!(revoked.created_unix_ms, before.created_unix_ms);
+        assert_eq!(revoked.producer, before.producer);
+        assert_eq!(revoked, before, "revoking restores the suggestion exactly as it was pending");
+        assert_eq!(store.established().expect("read").len(), 12);
+        assert!(
+            store
+                .approved()
+                .expect("read")
+                .iter()
+                .all(|relation| relation.suggestion_key.as_deref() != Some("S-005")),
+            "the approved row is gone"
+        );
+        assert!(
+            store
+                .pending_suggestions()
+                .expect("read")
+                .iter()
+                .any(|suggestion| suggestion.suggestion_key == "S-005"),
+            "the suggestion is offered again"
+        );
+    }
+
+    /// `R5` — revoke, approve again: exactly one relation, never a duplicate.
+    #[test]
+    fn revoking_then_approving_again_yields_exactly_one_relation() {
+        let mut store = seeded_store();
+        let first = store.approve("S-005").expect("approval");
+        store.revoke(Provenance::Approved, "S-005").expect("revocation");
+        let second = store.approve("S-005").expect("re-approval");
+
+        assert_eq!(second.suggestion_key.as_deref(), Some("S-005"));
+        assert_eq!(second.source_key, first.source_key);
+        assert_eq!(second.target_key, first.target_key);
+        assert_eq!(
+            store
+                .approved()
+                .expect("read")
+                .iter()
+                .filter(|relation| relation.suggestion_key.as_deref() == Some("S-005"))
+                .count(),
+            1
+        );
+        // A third approval is refused, as it always was: no duplicate appears.
+        assert!(matches!(
+            store.approve("S-005"),
+            Err(MapError::Relation(RelationError::SuggestionAlreadyDecided(_)))
+        ));
+        assert_eq!(store.established().expect("read").len(), 13);
+        // And the cycle can be run again.
+        store.revoke(Provenance::Approved, "S-005").expect("second revocation");
+        store.approve("S-005").expect("second re-approval");
+        assert_eq!(store.established().expect("read").len(), 13);
+    }
+
+    /// `R3` — a deterministic relation is never revoked by this path, whatever
+    /// key it is aimed with.
+    #[test]
+    fn revoking_a_deterministic_relation_is_refused_and_changes_nothing() {
+        let mut store = seeded_store();
+        store.approve("S-005").expect("approval");
+        let before = revocation_snapshot(&store);
+        let digest = store.deterministic_digest().expect("digest");
+
+        for key in ["S-005", "S-001", "S-inexistante", ""] {
+            let error = store
+                .revoke(Provenance::Deterministic, key)
+                .expect_err("DETERMINISTIC is never revocable");
+            assert!(
+                matches!(
+                    error,
+                    MapError::Relation(RelationError::RevocationOfDeterministic(_))
+                ),
+                "unexpected refusal for `{key}`: {error}"
+            );
+            assert!(
+                error
+                    .to_string()
+                    .starts_with("relation_rejected_revocation_of_deterministic"),
+                "unexpected motif: {error}"
+            );
+        }
+        assert_eq!(revocation_snapshot(&store), before);
+        assert_eq!(store.deterministic_digest().expect("digest"), digest);
+    }
+
+    /// `R4` — the other named refusals, each with no partial change.
+    #[test]
+    fn revoking_refuses_an_unknown_a_pending_and_a_rejected_suggestion() {
+        let mut store = seeded_store();
+        store.reject("S-006").expect("rejection");
+        let before = revocation_snapshot(&store);
+
+        assert!(matches!(
+            store.revoke(Provenance::Approved, "S-inexistante"),
+            Err(MapError::Relation(RelationError::UnknownSuggestion(_)))
+        ));
+        // `S-005` is pending: there is no approval to take back.
+        assert!(matches!(
+            store.revoke(Provenance::Approved, "S-005"),
+            Err(MapError::Relation(RelationError::RevocationSuggestionNotApproved(_)))
+        ));
+        // `S-006` is rejected: a refusal is not an approval, and stays one.
+        assert!(matches!(
+            store.revoke(Provenance::Approved, "S-006"),
+            Err(MapError::Relation(RelationError::RevocationSuggestionNotApproved(_)))
+        ));
+        assert_eq!(revocation_snapshot(&store), before);
+        assert_eq!(
+            store.suggestion("S-006").expect("read").expect("row").state,
+            "rejected",
+            "revoking never turns a refusal into anything else"
+        );
+    }
+
+    /// `R4` — the approved row absent.
+    #[test]
+    fn revoking_refuses_an_approved_suggestion_whose_relation_is_missing() {
+        let mut store = seeded_store();
+        store.approve("S-005").expect("approval");
+        // Out-of-band damage: the relation disappears, the suggestion stays
+        // approved. The storage layer has no trigger on delete, so this is
+        // reachable, and it must be refused rather than papered over.
+        store
+            .connection
+            .execute("DELETE FROM relations_approved WHERE suggestion_key = 'S-005'", [])
+            .expect("raw delete");
+        let before = revocation_snapshot(&store);
+
+        let error = store
+            .revoke(Provenance::Approved, "S-005")
+            .expect_err("no relation, nothing to revoke");
+        assert!(
+            matches!(
+                error,
+                MapError::Relation(RelationError::RevocationRelationInconsistent(_))
+            ),
+            "unexpected refusal: {error}"
+        );
+        assert_eq!(revocation_snapshot(&store), before);
+        assert_eq!(
+            store.suggestion("S-005").expect("read").expect("row").state,
+            "approved",
+            "no partial change: the suggestion is still approved"
+        );
+    }
+
+    /// `R4` — a relation that names the suggestion but not its type.
+    #[test]
+    fn revoking_refuses_a_relation_that_does_not_carry_the_suggestions_endpoints() {
+        let mut store = seeded_store();
+        store.approve("S-005").expect("approval");
+        // The `X3` trigger forbids this on update; drop it to inflict the damage.
+        store
+            .connection
+            .execute_batch("DROP TRIGGER approved_must_match_its_suggestion_on_update;")
+            .expect("drop trigger");
+        store
+            .connection
+            .execute(
+                "UPDATE relations_approved SET relation_type = 'revision'
+                  WHERE suggestion_key = 'S-005'",
+                [],
+            )
+            .expect("raw update");
+        let before = revocation_snapshot(&store);
+
+        assert!(matches!(
+            store.revoke(Provenance::Approved, "S-005"),
+            Err(MapError::Relation(RelationError::RevocationRelationInconsistent(_)))
+        ));
+        assert_eq!(revocation_snapshot(&store), before);
+    }
+
+    /// Calling it twice: the second call is a named refusal and nothing drifts.
+    #[test]
+    fn revoking_twice_refuses_the_second_call_without_drift() {
+        let mut store = seeded_store();
+        store.approve("S-005").expect("approval");
+        store.revoke(Provenance::Approved, "S-005").expect("first revocation");
+        let after_first = revocation_snapshot(&store);
+
+        let error = store
+            .revoke(Provenance::Approved, "S-005")
+            .expect_err("the second revocation has nothing to take back");
+        assert!(
+            matches!(
+                error,
+                MapError::Relation(RelationError::RevocationSuggestionNotApproved(_))
+            ),
+            "unexpected refusal: {error}"
+        );
+        assert_eq!(revocation_snapshot(&store), after_first);
+    }
+
+    /// `R1` — one transaction. A failure between the delete and the update
+    /// leaves the relation exactly where it was.
+    #[test]
+    fn a_failure_between_the_delete_and_the_update_rolls_everything_back() {
+        let mut store = seeded_store();
+        store.approve("S-005").expect("approval");
+        let before = revocation_snapshot(&store);
+        // The sabotage: the UPDATE of the suggestion's state is made to fail,
+        // after the DELETE of the relation has already run.
+        store
+            .connection
+            .execute_batch(
+                "CREATE TRIGGER sabotage_the_update
+                 BEFORE UPDATE OF state ON relation_suggestions
+                 FOR EACH ROW BEGIN
+                     SELECT RAISE(ABORT, 'sabotage');
+                 END;",
+            )
+            .expect("sabotage");
+
+        let error = store
+            .revoke(Provenance::Approved, "S-005")
+            .expect_err("the sabotaged update must fail the revocation");
+        assert!(error.to_string().contains("sabotage"), "unexpected error: {error}");
+
+        assert_eq!(
+            revocation_snapshot(&store),
+            before,
+            "the delete was not rolled back with the failed update"
+        );
+        store
+            .connection
+            .execute_batch("DROP TRIGGER sabotage_the_update;")
+            .expect("remove sabotage");
+        // The store is healthy again: the same revocation now goes through.
+        store.revoke(Provenance::Approved, "S-005").expect("clean revocation");
+        assert_eq!(store.established().expect("read").len(), 12);
+    }
+
+    /// The fixture approved four suggestions at seed. They are approvals like
+    /// any other, and a re-seed — replayed on every open — must not bring one
+    /// back.
+    #[test]
+    fn a_revoked_seed_approval_stays_pending_through_a_reseed() {
+        let mut store = seeded_store();
+        store.revoke(Provenance::Approved, "S-001").expect("revocation");
+        assert_eq!(store.established().expect("read").len(), 11);
+
+        let reseeded = seed_fixture(&mut store, RELATIONS_FIXTURE).expect("re-seed");
+        let derived = derive(RELATIONS_FIXTURE, &quasi_empty_nodes()).expect("derivation");
+        store.replace_derived(&derived).expect("derivation replayed");
+
+        assert_eq!(reseeded, 0, "a re-seed inserts nothing and decides nothing");
+        assert_eq!(
+            store.suggestion("S-001").expect("read").expect("row").state,
+            "pending"
+        );
+        assert_eq!(store.established().expect("read").len(), 11);
+        assert!(
+            store
+                .approved()
+                .expect("read")
+                .iter()
+                .all(|relation| relation.suggestion_key.as_deref() != Some("S-001")),
+            "S-001 was resurrected"
+        );
+    }
+
+    /// `R4` — one revocation moves one suggestion and one relation, no other.
+    #[test]
+    fn revoking_touches_exactly_one_suggestion_and_one_relation() {
+        let mut store = seeded_store();
+        store.approve("S-005").expect("approval");
+        let before = revocation_snapshot(&store);
+        store.revoke(Provenance::Approved, "S-005").expect("revocation");
+        let after = revocation_snapshot(&store);
+
+        assert_eq!(after.0, before.0, "no deterministic relation moved");
+        assert_eq!(after.1.len(), before.1.len() - 1);
+        for relation in &after.1 {
+            assert!(before.1.contains(relation), "an unrelated approved relation moved");
+        }
+        assert_eq!(after.2.len(), before.2.len(), "a revocation deletes no suggestion");
+        for (was, now) in before.2.iter().zip(after.2.iter()) {
+            if was.suggestion_key == "S-005" {
+                assert_eq!(was.state, "approved");
+                assert_eq!(now.state, "pending");
+            } else {
+                assert_eq!(was, now, "`{}` moved and should not have", was.suggestion_key);
+            }
+        }
     }
 }

@@ -22,7 +22,7 @@
 use super::brains::{BrainNodeRef, BrainRecord};
 use super::cross_relations::{
     CROSS_ENDPOINT_KEY_SCHEME, CROSS_EXPECTED_COUNTS, CROSS_FORBIDDEN_INVERSES, CROSS_RULES,
-    CROSS_SCHEMA_VERSION, CrossRejectionOutcome, CrossRelationStore, StoredCrossRelation,
+    CROSS_SCHEMA_VERSION, CrossProvenance, CrossRejectionOutcome, CrossRelationStore, StoredCrossRelation,
     StoredCrossSuggestion, XBR1_RELATIONS, cross_endpoint_key, derive_xbr1,
     replay_cross_rejections, seed_xbr1_suggestions, split_cross_endpoint_key,
 };
@@ -519,6 +519,24 @@ pub fn approve_cross_suggestion(
 ) -> Result<CrossRelationsOverview, MapError> {
     let mut store = CrossRelationStore::open(&paths.interbrain_relations_database())?;
     store.approve(suggestion_key)?;
+    overview(&store, paths, brains, 0)
+}
+
+/// `TASK-0051` / `DEC-0049` §E — the one explicit act that takes an
+/// inter-brain approval back.
+///
+/// Opens the **common** store and nothing else: no brain's relations store, no
+/// index and no source is touched. The whole overview comes back from the
+/// store, so the counts on screen were read, never decremented.
+pub fn revoke_cross_relation(
+    paths: &SandboxPaths,
+    brains: &[BrainRecord],
+    provenance: &str,
+    suggestion_key: &str,
+) -> Result<CrossRelationsOverview, MapError> {
+    let provenance = CrossProvenance::parse(provenance)?;
+    let mut store = CrossRelationStore::open(&paths.interbrain_relations_database())?;
+    store.revoke(provenance, suggestion_key)?;
     overview(&store, paths, brains, 0)
 }
 
@@ -1042,5 +1060,265 @@ mod tests {
         let root = PathBuf::from(paths.relative_name(&paths.interbrain_relations_database()));
         assert_eq!(root, PathBuf::from("brains/interbrain/relations.sqlite"));
         assert!(paths.interbrain_root().starts_with(std::env::temp_dir()));
+    }
+    // -----------------------------------------------------------------------
+    // `TASK-0051` / `DEC-0049` §E — revoking an inter-brain approval
+    // -----------------------------------------------------------------------
+
+    fn cross_counts(overview: &CrossRelationsOverview) -> (usize, usize, usize) {
+        (
+            overview.deterministic_count,
+            overview.approved_count,
+            overview.pending_suggestion_count,
+        )
+    }
+
+    /// The overview without row ids, for comparing two reads of the same state.
+    #[allow(clippy::type_complexity)]
+    fn cross_shape(
+        overview: &CrossRelationsOverview,
+    ) -> (
+        (usize, usize, usize),
+        Vec<(String, String, String, String, Option<String>)>,
+        Vec<(String, String)>,
+    ) {
+        (
+            cross_counts(overview),
+            overview
+                .established
+                .iter()
+                .map(|edge| {
+                    (
+                        edge.provenance.clone(),
+                        edge.source.key.clone(),
+                        edge.target.key.clone(),
+                        edge.relation_type.clone(),
+                        edge.suggestion_key.clone(),
+                    )
+                })
+                .collect(),
+            overview
+                .pending_suggestions
+                .iter()
+                .map(|suggestion| (suggestion.suggestion_key.clone(), suggestion.state.clone()))
+                .collect(),
+        )
+    }
+
+    /// `R7` — the whole cycle through the commands, counts read from the store,
+    /// at the endpoints as well as in the overview.
+    #[test]
+    fn revoking_an_inter_brain_relation_restores_the_exact_counts_and_can_be_approved_again() {
+        let paths = sandbox("revoke-cycle");
+        let brains = frozen_brains();
+        built(&paths, &brains);
+        let start = open_cross_relations(&paths, &brains).expect("open");
+        assert_eq!(cross_counts(&start), (6, 0, 4));
+
+        let alpha = brains.iter().find(|b| b.brain_id == "brain-alpha").expect("alpha");
+        let source = resolve_by_path(&paths, alpha, "dossier-a/note-2.txt");
+        let reference = BrainNodeRef::new("brain-alpha", source.id);
+
+        let approved = approve_cross_suggestion(&paths, &brains, "XB-S01").expect("approve");
+        assert_eq!(cross_counts(&approved), (6, 1, 3));
+        let with_relation = node_cross_relations(&paths, &brains, &reference).expect("node");
+        assert_eq!(with_relation.outgoing_count, 1);
+        assert_eq!(with_relation.outgoing[0].suggestion_key.as_deref(), Some("XB-S01"));
+
+        let revoked =
+            revoke_cross_relation(&paths, &brains, "APPROVED", "XB-S01").expect("revoke");
+        assert_eq!(cross_counts(&revoked), (6, 0, 4), "R7: counts come back from the store");
+        assert!(
+            revoked
+                .established
+                .iter()
+                .all(|edge| edge.suggestion_key.as_deref() != Some("XB-S01")),
+            "the relation is gone"
+        );
+        let pending = revoked
+            .pending_suggestions
+            .iter()
+            .find(|suggestion| suggestion.suggestion_key == "XB-S01")
+            .expect("pending again");
+        assert_eq!(pending.state, "pending");
+        let after_revoke = node_cross_relations(&paths, &brains, &reference).expect("node");
+        assert_eq!(after_revoke.outgoing_count, 0, "the endpoint lost exactly the one edge");
+        assert_eq!(after_revoke.incoming_count, 0);
+        assert_eq!(after_revoke.suggestions.len(), 1);
+        assert_eq!(after_revoke.suggestions[0].suggestion_key, "XB-S01");
+        assert_eq!(after_revoke.suggestions[0].state, "pending");
+
+        let again = approve_cross_suggestion(&paths, &brains, "XB-S01").expect("re-approve");
+        assert_eq!(cross_counts(&again), (6, 1, 3));
+        assert_eq!(
+            again
+                .established
+                .iter()
+                .filter(|edge| edge.suggestion_key.as_deref() == Some("XB-S01"))
+                .count(),
+            1,
+            "exactly one relation came back"
+        );
+        assert!(approve_cross_suggestion(&paths, &brains, "XB-S01").is_err());
+        let back = node_cross_relations(&paths, &brains, &reference).expect("node");
+        assert_eq!(back.outgoing_count, 1);
+    }
+
+    /// `R3`, `R4` — named refusals through the command, with no drift.
+    #[test]
+    fn the_inter_brain_revocation_command_refuses_by_name_and_changes_nothing() {
+        let paths = sandbox("revoke-refusals");
+        let brains = frozen_brains();
+        built(&paths, &brains);
+        open_cross_relations(&paths, &brains).expect("open");
+        approve_cross_suggestion(&paths, &brains, "XB-S01").expect("approve");
+        let before = open_cross_relations(&paths, &brains).expect("before");
+
+        let motif = |result: Result<CrossRelationsOverview, MapError>| {
+            result.expect_err("must be refused").to_string()
+        };
+        for key in ["XB-S01", "XB-S02", "XB-inexistante"] {
+            assert!(
+                motif(revoke_cross_relation(&paths, &brains, "DETERMINISTIC", key))
+                    .starts_with("cross_relation_rejected_revocation_of_deterministic"),
+                "{key}"
+            );
+        }
+        assert!(
+            motif(revoke_cross_relation(&paths, &brains, "APPROVED", "XB-inexistante"))
+                .starts_with("cross_relation_rejected_unknown_suggestion")
+        );
+        assert!(
+            motif(revoke_cross_relation(&paths, &brains, "APPROVED", "XB-S02"))
+                .starts_with("cross_relation_rejected_revocation_suggestion_not_approved")
+        );
+        assert!(
+            motif(revoke_cross_relation(&paths, &brains, "SUGGESTED", "XB-S01"))
+                .starts_with("cross_relation_rejected_unknown_provenance")
+        );
+        assert_eq!(
+            cross_shape(&open_cross_relations(&paths, &brains).expect("after")),
+            cross_shape(&before)
+        );
+
+        let first =
+            revoke_cross_relation(&paths, &brains, "APPROVED", "XB-S01").expect("first");
+        assert!(
+            motif(revoke_cross_relation(&paths, &brains, "APPROVED", "XB-S01"))
+                .starts_with("cross_relation_rejected_revocation_suggestion_not_approved")
+        );
+        assert_eq!(
+            cross_shape(&open_cross_relations(&paths, &brains).expect("after")),
+            cross_shape(&first)
+        );
+    }
+
+    /// `R9`, `R10` — the revocation survives a rebuild of every Index and a
+    /// reopening of the store, and the self-check still agrees.
+    #[test]
+    fn an_inter_brain_revocation_survives_a_rebuild_and_a_reopening() {
+        let paths = sandbox("revoke-persist");
+        let brains = frozen_brains();
+        built(&paths, &brains);
+        open_cross_relations(&paths, &brains).expect("open");
+        approve_cross_suggestion(&paths, &brains, "XB-S01").expect("approve");
+        let revoked =
+            revoke_cross_relation(&paths, &brains, "APPROVED", "XB-S01").expect("revoke");
+
+        for brain in &brains {
+            build_map(&paths, brain, true).expect("rebuilt");
+        }
+        let rebuilt = open_cross_relations(&paths, &brains).expect("after rebuild");
+        assert_eq!(cross_counts(&rebuilt), (6, 0, 4), "the rebuild resurrects nothing");
+        assert_eq!(rebuilt.seeded, 0);
+        assert!(rebuilt.unresolved_endpoints.is_empty());
+        assert_eq!(rebuilt.deterministic_digest, revoked.deterministic_digest);
+
+        let reopened = CrossRelationStore::open(&paths.interbrain_relations_database())
+            .expect("reopened");
+        assert_eq!(
+            reopened.suggestion("XB-S01").expect("read").expect("row").state,
+            "pending"
+        );
+        assert!(reopened.approved().expect("read").is_empty());
+
+        let check = cross_self_check(&paths, &brains).expect("self check");
+        assert!(check.counts_agree, "{:?}", check.counts);
+        assert!(check.approved_since_seed.is_empty());
+        assert_eq!(check.approved_total, 0);
+    }
+
+    /// `R11` — a cross revocation changes no intra-brain store, no index and no
+    /// source.
+    #[test]
+    fn an_inter_brain_revocation_moves_no_intra_brain_store_index_or_source() {
+        use crate::map::relation_commands::open_relations;
+        use crate::map::relations::RelationStore;
+
+        let paths = sandbox("revoke-isolation");
+        let brains = frozen_brains();
+        built(&paths, &brains);
+        for brain in &brains {
+            open_relations(&paths, brain).expect("intra overview");
+        }
+        open_cross_relations(&paths, &brains).expect("open");
+        approve_cross_suggestion(&paths, &brains, "XB-S01").expect("approve");
+
+        let intra_state = |brain_id: &str| {
+            let store = RelationStore::open(&paths.brain_relations_database(brain_id))
+                .expect("store");
+            (
+                store.deterministic().expect("read").len(),
+                store.approved().expect("read"),
+                store.suggestions().expect("read"),
+            )
+        };
+        let digest = |brain_id: &str| {
+            use std::hash::{Hash, Hasher};
+            fn walk(dir: &std::path::Path, hasher: &mut std::collections::hash_map::DefaultHasher) {
+                let mut entries = std::fs::read_dir(dir)
+                    .expect("read dir")
+                    .map(|entry| entry.expect("entry").path())
+                    .collect::<Vec<_>>();
+                entries.sort();
+                for path in entries {
+                    path.file_name().hash(hasher);
+                    if path.is_dir() {
+                        walk(&path, hasher);
+                    } else {
+                        std::fs::read(&path).expect("read file").hash(hasher);
+                    }
+                }
+            }
+            let mut hasher = std::collections::hash_map::DefaultHasher::new();
+            walk(&paths.fixtures, &mut hasher);
+            std::fs::read(paths.brain_map_database(brain_id))
+                .expect("index")
+                .hash(&mut hasher);
+            hasher.finish()
+        };
+        let before_states = brains
+            .iter()
+            .map(|brain| (brain.brain_id.clone(), intra_state(&brain.brain_id)))
+            .collect::<Vec<_>>();
+        let before_digests = brains
+            .iter()
+            .map(|brain| (brain.brain_id.clone(), digest(&brain.brain_id)))
+            .collect::<Vec<_>>();
+
+        let revoked =
+            revoke_cross_relation(&paths, &brains, "APPROVED", "XB-S01").expect("revoke");
+        assert_eq!(cross_counts(&revoked), (6, 0, 4));
+
+        for (brain_id, state) in &before_states {
+            assert_eq!(&intra_state(brain_id), state, "{brain_id}: an intra store moved");
+        }
+        for (brain_id, expected) in &before_digests {
+            assert_eq!(
+                &digest(brain_id),
+                expected,
+                "{brain_id}: the source or the index moved"
+            );
+        }
     }
 }

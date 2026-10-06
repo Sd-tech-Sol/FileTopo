@@ -185,6 +185,10 @@ export interface MapStrings {
     later: string;
     crossApproved: (key: string) => string;
     crossApprovalRefused: (detail: string) => string;
+    revoked: (key: string, brainId: string) => string;
+    revocationRefused: (detail: string) => string;
+    crossRevoked: (key: string) => string;
+    crossRevocationRefused: (detail: string) => string;
     crossNavigation: (brainId: string) => string;
     resolutionRefused: (detail: string) => string;
     crossCheckFailed: (detail: string) => string;
@@ -489,6 +493,12 @@ export const strings: Record<Locale, MapStrings> = {
       crossApproved: (key) =>
         `Suggestion inter-cerveaux ${key} approuvée : elle est désormais une relation APPROVED.`,
       crossApprovalRefused: (detail) => `Approbation inter-cerveaux refusée : ${detail}`,
+      revoked: (key, brainId) =>
+        `Relation ${key} révoquée dans ${brainId} : la suggestion est de nouveau en attente.`,
+      revocationRefused: (detail) => `Révocation refusée : ${detail}`,
+      crossRevoked: (key) =>
+        `Relation inter-cerveaux ${key} révoquée : la suggestion est de nouveau en attente.`,
+      crossRevocationRefused: (detail) => `Révocation inter-cerveaux refusée : ${detail}`,
       crossNavigation: (brainId) =>
         `Navigation inter-cerveaux : ${brainId} rejoint la vue. ` +
         `Aucune relation n'est créée, modifiée ni approuvée.`,
@@ -776,6 +786,12 @@ export const strings: Record<Locale, MapStrings> = {
       crossApproved: (key) =>
         `Inter-brain suggestion ${key} approved: it is now an APPROVED relation.`,
       crossApprovalRefused: (detail) => `Inter-brain approval refused: ${detail}`,
+      revoked: (key, brainId) =>
+        `Relation ${key} revoked in ${brainId}: the suggestion is pending again.`,
+      revocationRefused: (detail) => `Revocation refused: ${detail}`,
+      crossRevoked: (key) =>
+        `Inter-brain relation ${key} revoked: the suggestion is pending again.`,
+      crossRevocationRefused: (detail) => `Inter-brain revocation refused: ${detail}`,
       crossNavigation: (brainId) =>
         `Inter-brain navigation: ${brainId} joins the view. ` +
         `No relation is created, modified or approved.`,

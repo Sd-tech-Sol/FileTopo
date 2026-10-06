@@ -121,6 +121,14 @@ pub enum CrossRelationError {
     UnknownSuggestion(String),
     #[error("cross_relation_rejected_suggestion_already_decided: {0}")]
     SuggestionAlreadyDecided(String),
+    /// `TASK-0051` / `DEC-0049` §A, transposed: a deterministic inter-brain
+    /// relation comes from a documented rule and is never removed by a gesture.
+    #[error("cross_relation_rejected_revocation_of_deterministic: {0}")]
+    RevocationOfDeterministic(String),
+    #[error("cross_relation_rejected_revocation_suggestion_not_approved: {0}")]
+    RevocationSuggestionNotApproved(String),
+    #[error("cross_relation_rejected_revocation_relation_inconsistent: {0}")]
+    RevocationRelationInconsistent(String),
 }
 
 /// The only two provenances an established inter-brain relation can have.
@@ -998,6 +1006,87 @@ impl CrossRelationStore {
                     "approval of `{suggestion_key}` produced no relation"
                 )))
             })
+    }
+
+    /// The **one** path from an approved inter-brain relation back to its
+    /// suggestion — `TASK-0051` / `DEC-0049` §E.
+    ///
+    /// Exactly the semantics of the intra-brain `revoke`: the approved row is
+    /// deleted and the suggestion returns to `pending` with `decided_unix_ms`
+    /// cleared, in one transaction. Only the common store moves — no brain, no
+    /// index, no source is opened.
+    ///
+    /// `provenance` is what the caller believes it is aiming at; anything but
+    /// `APPROVED` is refused before the store is read.
+    pub fn revoke(
+        &mut self,
+        provenance: CrossProvenance,
+        suggestion_key: &str,
+    ) -> Result<StoredCrossSuggestion, MapError> {
+        if provenance != CrossProvenance::Approved {
+            return Err(CrossRelationError::RevocationOfDeterministic(format!(
+                "`{suggestion_key}` is aimed as {}; only an APPROVED relation can be revoked",
+                provenance.as_str()
+            ))
+            .into());
+        }
+        let suggestion = self
+            .suggestion(suggestion_key)?
+            .ok_or_else(|| CrossRelationError::UnknownSuggestion(suggestion_key.to_string()))?;
+        if suggestion.state != "approved" {
+            return Err(CrossRelationError::RevocationSuggestionNotApproved(format!(
+                "`{suggestion_key}` is `{}`, not `approved`",
+                suggestion.state
+            ))
+            .into());
+        }
+        let linked = self
+            .approved()?
+            .into_iter()
+            .find(|relation| relation.suggestion_key.as_deref() == Some(suggestion_key));
+        let Some(linked) = linked.filter(|relation| {
+            relation.source_brain_id == suggestion.source_brain_id
+                && relation.source_key == suggestion.source_key
+                && relation.target_brain_id == suggestion.target_brain_id
+                && relation.target_key == suggestion.target_key
+                && relation.relation_type == suggestion.relation_type
+        }) else {
+            return Err(CrossRelationError::RevocationRelationInconsistent(format!(
+                "`{suggestion_key}` is approved but has no approved relation carrying its endpoints \
+                 and type"
+            ))
+            .into());
+        };
+
+        let transaction = self.connection.transaction()?;
+        let deleted = transaction.execute(
+            "DELETE FROM cross_relations_approved WHERE id = ?1 AND suggestion_key = ?2",
+            params![linked.id, suggestion_key],
+        )?;
+        if deleted != 1 {
+            return Err(CrossRelationError::RevocationRelationInconsistent(format!(
+                "`{suggestion_key}`: {deleted} approved relation(s) deleted, expected exactly 1"
+            ))
+            .into());
+        }
+        let reset = transaction.execute(
+            "UPDATE cross_suggestions
+                SET state = 'pending', decided_unix_ms = NULL
+              WHERE suggestion_key = ?1 AND state = 'approved'",
+            params![suggestion_key],
+        )?;
+        if reset != 1 {
+            // Dropping the transaction rolls the delete back.
+            return Err(CrossRelationError::RevocationSuggestionNotApproved(format!(
+                "`{suggestion_key}` changed concurrently"
+            ))
+            .into());
+        }
+        transaction.commit()?;
+
+        self.suggestion(suggestion_key)?.ok_or_else(|| {
+            MapError::from(CrossRelationError::UnknownSuggestion(suggestion_key.to_string()))
+        })
     }
 
     // -- reads ---------------------------------------------------------------
@@ -1994,5 +2083,242 @@ mod tests {
             refused,
             Err(MapError::CrossRelation(CrossRelationError::UnknownType(_)))
         ));
+    }
+    // -- TASK-0051 / DEC-0049 §E : revoking an inter-brain approval -------------
+
+    fn revocation_snapshot(
+        store: &CrossRelationStore,
+    ) -> (
+        Vec<StoredCrossRelation>,
+        Vec<StoredCrossRelation>,
+        Vec<StoredCrossSuggestion>,
+    ) {
+        (
+            store.deterministic().expect("read"),
+            store.approved().expect("read"),
+            store.suggestions().expect("read"),
+        )
+    }
+
+    /// `R2` — the same transition as the intra-brain store: `approved -> pending`.
+    #[test]
+    fn revoking_deletes_the_approved_relation_and_returns_the_suggestion_to_pending() {
+        let mut store = seeded_store();
+        let before = store.suggestion("XB-S01").expect("read").expect("row");
+        assert_eq!(before.state, "pending");
+        let established_before = store.established().expect("read").len();
+        store.approve("XB-S01").expect("approval");
+        assert_eq!(store.established().expect("read").len(), established_before + 1);
+
+        let revoked = store
+            .revoke(CrossProvenance::Approved, "XB-S01")
+            .expect("revocation");
+
+        assert_eq!(revoked.state, "pending");
+        assert_eq!(revoked.decided_unix_ms, None);
+        assert_eq!(revoked, before, "restored exactly as it was pending");
+        assert_eq!(store.established().expect("read").len(), established_before);
+        assert!(
+            store
+                .pending_suggestions()
+                .expect("read")
+                .iter()
+                .any(|suggestion| suggestion.suggestion_key == "XB-S01")
+        );
+    }
+
+    /// `R5`, `R7` — revoke then approve again: exactly one relation.
+    #[test]
+    fn revoking_then_approving_again_yields_exactly_one_relation() {
+        let mut store = seeded_store();
+        store.approve("XB-S01").expect("approval");
+        store
+            .revoke(CrossProvenance::Approved, "XB-S01")
+            .expect("revocation");
+        store.approve("XB-S01").expect("re-approval");
+        assert_eq!(
+            store
+                .approved()
+                .expect("read")
+                .iter()
+                .filter(|relation| relation.suggestion_key.as_deref() == Some("XB-S01"))
+                .count(),
+            1
+        );
+        assert!(matches!(
+            store.approve("XB-S01"),
+            Err(MapError::CrossRelation(CrossRelationError::SuggestionAlreadyDecided(_)))
+        ));
+        assert_eq!(store.approved().expect("read").len(), 1);
+    }
+
+    /// `R3` — a deterministic inter-brain relation is never revoked here.
+    #[test]
+    fn revoking_a_deterministic_relation_is_refused_and_changes_nothing() {
+        let mut store = seeded_store();
+        store.approve("XB-S01").expect("approval");
+        let before = revocation_snapshot(&store);
+        let digest = store.deterministic_digest().expect("digest");
+
+        for suggestion_key in ["XB-S01", "XB-S02", "XB-inexistante", ""] {
+            let error = store
+                .revoke(CrossProvenance::Deterministic, suggestion_key)
+                .expect_err("DETERMINISTIC is never revocable");
+            assert!(
+                matches!(
+                    error,
+                    MapError::CrossRelation(CrossRelationError::RevocationOfDeterministic(_))
+                ),
+                "unexpected refusal for `{suggestion_key}`: {error}"
+            );
+            assert!(
+                error
+                    .to_string()
+                    .starts_with("cross_relation_rejected_revocation_of_deterministic"),
+                "unexpected motif: {error}"
+            );
+        }
+        assert_eq!(revocation_snapshot(&store), before);
+        assert_eq!(store.deterministic_digest().expect("digest"), digest);
+    }
+
+    /// `R4` — unknown and not-approved suggestions, with no partial change.
+    #[test]
+    fn revoking_refuses_an_unknown_and_a_pending_suggestion() {
+        let mut store = seeded_store();
+        let before = revocation_snapshot(&store);
+        assert!(matches!(
+            store.revoke(CrossProvenance::Approved, "XB-inexistante"),
+            Err(MapError::CrossRelation(CrossRelationError::UnknownSuggestion(_)))
+        ));
+        assert!(matches!(
+            store.revoke(CrossProvenance::Approved, "XB-S01"),
+            Err(MapError::CrossRelation(CrossRelationError::RevocationSuggestionNotApproved(_)))
+        ));
+        assert_eq!(revocation_snapshot(&store), before);
+    }
+
+    /// `R4` — an approved suggestion whose relation is gone is refused.
+    #[test]
+    fn revoking_refuses_an_approved_suggestion_whose_relation_is_missing() {
+        let mut store = seeded_store();
+        store.approve("XB-S01").expect("approval");
+        store
+            .connection
+            .execute(
+                "DELETE FROM cross_relations_approved WHERE suggestion_key = 'XB-S01'",
+                [],
+            )
+            .expect("raw delete");
+        let before = revocation_snapshot(&store);
+        assert!(matches!(
+            store.revoke(CrossProvenance::Approved, "XB-S01"),
+            Err(MapError::CrossRelation(CrossRelationError::RevocationRelationInconsistent(_)))
+        ));
+        assert_eq!(revocation_snapshot(&store), before);
+        assert_eq!(
+            store.suggestion("XB-S01").expect("read").expect("row").state,
+            "approved"
+        );
+    }
+
+    /// Calling it twice: the second call is refused and nothing drifts.
+    #[test]
+    fn revoking_twice_refuses_the_second_call_without_drift() {
+        let mut store = seeded_store();
+        store.approve("XB-S01").expect("approval");
+        store
+            .revoke(CrossProvenance::Approved, "XB-S01")
+            .expect("first revocation");
+        let after_first = revocation_snapshot(&store);
+        assert!(matches!(
+            store.revoke(CrossProvenance::Approved, "XB-S01"),
+            Err(MapError::CrossRelation(CrossRelationError::RevocationSuggestionNotApproved(_)))
+        ));
+        assert_eq!(revocation_snapshot(&store), after_first);
+    }
+
+    /// `R2` — one transaction: a failure between the delete and the update
+    /// rolls the delete back.
+    #[test]
+    fn a_failure_between_the_delete_and_the_update_rolls_everything_back() {
+        let mut store = seeded_store();
+        store.approve("XB-S01").expect("approval");
+        let before = revocation_snapshot(&store);
+        store
+            .connection
+            .execute_batch(
+                "CREATE TRIGGER sabotage_the_update
+                 BEFORE UPDATE OF state ON cross_suggestions
+                 FOR EACH ROW BEGIN
+                     SELECT RAISE(ABORT, 'sabotage');
+                 END;",
+            )
+            .expect("sabotage");
+        let error = store
+            .revoke(CrossProvenance::Approved, "XB-S01")
+            .expect_err("the sabotaged update must fail the revocation");
+        assert!(error.to_string().contains("sabotage"), "unexpected error: {error}");
+        assert_eq!(
+            revocation_snapshot(&store),
+            before,
+            "the delete was not rolled back with the failed update"
+        );
+        store
+            .connection
+            .execute_batch("DROP TRIGGER sabotage_the_update;")
+            .expect("remove sabotage");
+        store
+            .revoke(CrossProvenance::Approved, "XB-S01")
+            .expect("clean revocation");
+    }
+
+    /// A revocation moves one suggestion and one relation, no other.
+    #[test]
+    fn revoking_touches_exactly_one_suggestion_and_one_relation() {
+        let mut store = seeded_store();
+        store.approve("XB-S01").expect("approval");
+        store.approve("XB-S02").expect("approval");
+        let before = revocation_snapshot(&store);
+        store
+            .revoke(CrossProvenance::Approved, "XB-S01")
+            .expect("revocation");
+        let after = revocation_snapshot(&store);
+
+        assert_eq!(after.0, before.0, "no deterministic relation moved");
+        assert_eq!(after.1.len(), before.1.len() - 1);
+        assert!(
+            after
+                .1
+                .iter()
+                .any(|relation| relation.suggestion_key.as_deref() == Some("XB-S02")),
+            "XB-S02 must stay approved"
+        );
+        assert_eq!(after.2.len(), before.2.len());
+        for (was, now) in before.2.iter().zip(after.2.iter()) {
+            if was.suggestion_key == "XB-S01" {
+                assert_eq!((was.state.as_str(), now.state.as_str()), ("approved", "pending"));
+            } else {
+                assert_eq!(was, now, "`{}` moved and should not have", was.suggestion_key);
+            }
+        }
+    }
+
+    /// A re-seed, replayed on every open, never brings a revoked approval back.
+    #[test]
+    fn a_revoked_approval_stays_pending_through_a_reseed() {
+        let mut store = seeded_store();
+        store.approve("XB-S01").expect("approval");
+        store
+            .revoke(CrossProvenance::Approved, "XB-S01")
+            .expect("revocation");
+        store.replace_deterministic(&derive_xbr1(&known()).expect("derive")).expect("replace");
+        let reseeded = seed_xbr1_suggestions(&store, &known()).expect("re-seed");
+        assert_eq!(reseeded, 0);
+        assert_eq!(
+            store.suggestion("XB-S01").expect("read").expect("row").state,
+            "pending"
+        );
+        assert!(store.approved().expect("read").is_empty());
     }
 }

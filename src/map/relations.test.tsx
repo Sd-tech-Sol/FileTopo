@@ -628,3 +628,159 @@ describe("TASK-0024 — deterministic relation engine UI", () => {
     expect(explanation.textContent?.toLowerCase()).not.toContain("confidence");
   });
 });
+
+
+/* --- TASK-0051 : révoquer une relation approuvée --------------------------- */
+
+describe("TASK-0051 — révoquer une relation APPROUVÉE (panneau interne)", () => {
+  const withKey: NodeRelations = {
+    ...nodeRelations,
+    incoming: [{ ...entry("incoming", 5, "APPROVED"), suggestionKey: "S-001" }],
+  };
+
+  function renderRevocable(
+    overrides: Partial<Parameters<typeof RelationsPanel>[0]> = {},
+    locale: "fr" | "en" = "fr",
+  ) {
+    const onRevoke = vi.fn();
+    render(
+      <RelationsPanel
+        locale={locale}
+        relations={withKey}
+        loading={false}
+        available
+        legacyInScope
+        onSelect={vi.fn()}
+        onApprove={vi.fn()}
+        approving={null}
+        onRevoke={onRevoke}
+        revoking={null}
+        {...overrides}
+      />,
+    );
+    return { onRevoke };
+  }
+
+  const revokeButtons = () =>
+    [...document.querySelectorAll<HTMLButtonElement>("[data-relation-revoke]")];
+
+  it("n'offre le contrôle que sur la relation APPROUVÉE, jamais sur une déterministe", () => {
+    renderRevocable();
+    // Two deterministic entries and one approved: exactly one control.
+    expect(revokeButtons()).toHaveLength(1);
+    const incoming = screen.getByRole("region", { name: /Entrantes/ });
+    expect(within(incoming).getByRole("button", { name: "Révoquer S-001" })).toBeInTheDocument();
+    const outgoing = screen.getByRole("region", { name: /Sortantes/ });
+    expect(within(outgoing).queryByRole("button", { name: /Révoquer|Revoke/ })).toBeNull();
+    // It names the suggestion it takes back, for a scenario to read.
+    expect(revokeButtons()[0].dataset.suggestionKey).toBe("S-001");
+  });
+
+  it("dit « Revoke » en anglais", () => {
+    renderRevocable({}, "en");
+    expect(screen.getByRole("button", { name: "Revoke S-001" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Révoquer/ })).toBeNull();
+  });
+
+  it("ne révoque que sur action explicite, une seule fois, par la clé de la suggestion", () => {
+    const { onRevoke } = renderRevocable();
+    expect(onRevoke).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("button", { name: "Révoquer S-001" }));
+    expect(onRevoke).toHaveBeenCalledExactlyOnceWith("S-001");
+  });
+
+  it("est un vrai bouton natif, dans l'ordre de tabulation, sans gestionnaire de touche ajouté", () => {
+    renderRevocable();
+    const button = revokeButtons()[0];
+    expect(button.tagName).toBe("BUTTON");
+    expect(button.type).toBe("button");
+    expect(button.tabIndex).toBe(0);
+    expect(button).not.toBeDisabled();
+    button.focus();
+    expect(document.activeElement).toBe(button);
+    // Enter and Space activate a native button; nothing here intercepts them.
+    expect(button.getAttribute("onkeydown")).toBeNull();
+    expect(button.getAttribute("role")).toBeNull();
+  });
+
+  it("montre un état occupé explicite pendant la révocation, et verrouille le contrôle", () => {
+    renderRevocable({ revoking: "S-001" });
+    const button = revokeButtons()[0];
+    expect(button).toHaveTextContent("Révocation…");
+    expect(button).toHaveAttribute("aria-busy", "true");
+    expect(button).toBeDisabled();
+  });
+
+  it("n'offre rien quand l'appelant n'offre pas la révocation", () => {
+    renderRevocable({ onRevoke: undefined });
+    expect(revokeButtons()).toHaveLength(0);
+  });
+
+  it("n'offre rien pour une relation approuvée sans suggestion nommée", () => {
+    renderRevocable({ relations: nodeRelations });
+    expect(revokeButtons()).toHaveLength(0);
+  });
+
+  it("ne traite jamais une suggestion en attente comme révocable", () => {
+    renderRevocable();
+    const suggestions = screen.getByRole("region", { name: "Suggestions non établies" });
+    expect(within(suggestions).queryByRole("button", { name: /Révoquer/ })).toBeNull();
+  });
+});
+
+describe("TASK-0051 — le focus après une révocation (panneau interne)", () => {
+  function panel(props: Partial<Parameters<typeof RelationsPanel>[0]>) {
+    return (
+      <RelationsPanel
+        locale="fr"
+        relations={nodeRelations}
+        loading={false}
+        available
+        legacyInScope
+        onSelect={vi.fn()}
+        onApprove={vi.fn()}
+        approving={null}
+        {...props}
+      />
+    );
+  }
+
+  it("place le focus sur l'approbation de la même suggestion, après le rechargement, une seule fois", () => {
+    const onFocusRestored = vi.fn();
+    const { rerender } = render(
+      panel({ loading: false, focusSuggestionKey: "S-005", onFocusRestored }),
+    );
+    // Before the reload has even begun, nothing is stolen.
+    expect(onFocusRestored).not.toHaveBeenCalled();
+    rerender(panel({ loading: true, focusSuggestionKey: "S-005", onFocusRestored }));
+    expect(onFocusRestored).not.toHaveBeenCalled();
+    rerender(panel({ loading: false, focusSuggestionKey: "S-005", onFocusRestored }));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Approuver S-005" }));
+    expect(onFocusRestored).toHaveBeenCalledTimes(1);
+  });
+
+  it("ne vole pas le focus quand aucune révocation n'est en attente", () => {
+    const onFocusRestored = vi.fn();
+    const { rerender } = render(panel({ loading: true, onFocusRestored }));
+    rerender(panel({ loading: false, onFocusRestored }));
+    expect(document.activeElement).toBe(document.body);
+    expect(onFocusRestored).not.toHaveBeenCalled();
+  });
+
+  it("n'atterrit jamais sur le contrôle d'une autre relation", () => {
+    const withKey: NodeRelations = {
+      ...nodeRelations,
+      incoming: [{ ...entry("incoming", 5, "APPROVED"), suggestionKey: "S-001" }],
+    };
+    const { rerender } = render(
+      panel({ relations: withKey, onRevoke: vi.fn(), loading: true, focusSuggestionKey: "S-005", onFocusRestored: vi.fn() }),
+    );
+    rerender(
+      panel({ relations: withKey, onRevoke: vi.fn(), loading: false, focusSuggestionKey: "S-005", onFocusRestored: vi.fn() }),
+    );
+    const focused = document.activeElement as HTMLElement;
+    expect(focused.dataset.testid).toBe("approve-core-suggestion");
+    expect(focused.dataset.suggestionKey).toBe("S-005");
+    expect(focused.dataset.relationRevoke).toBeUndefined();
+  });
+});
