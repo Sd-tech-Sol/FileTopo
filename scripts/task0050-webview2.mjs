@@ -9,7 +9,9 @@ import { setTimeout as pause } from "node:timers/promises";
 const port = Number(process.argv[2]);
 const variant = process.argv[3];
 const artifactPath = process.argv[4];
+const headTested = process.argv[5];
 assert(/^task0050-[a-f0-9]+$/.test(variant));
+assert(/^[a-f0-9]{40}$/.test(headTested ?? ""), "HEAD sha (argv[5]) required");
 const seed = JSON.parse(
   (
     await new Promise((resolve, reject) => {
@@ -632,15 +634,67 @@ try {
   }
   await captureNewKeys();
 
-  // Files are matches; their ancestors remain visible as context.
-  for (const kind of ["DIRECTORY", "SKIPPED"]) {
-    await clickLabelFor(`filter-kind-${kind}`);
-  }
+  // FILE-only projected view. `DEFAULT_FILTER.kinds` is `[]`, so toggling
+  // DIRECTORY/SKIPPED would select exactly those two kinds and exclude the
+  // files that carry the intra relations (ACTION-0090). Only FILE is toggled,
+  // through the product's own filter control, from a verified inactive state.
+  const filterKindsChecked = () =>
+    evaluate(`['DIRECTORY','FILE','SKIPPED'].filter((kind) => document.querySelector('[data-testid="filter-kind-' + kind + '"]')?.checked)`);
+  assert.deepEqual(await filterKindsChecked(), [], "alpha filter did not start from the inactive default (no kind checked)");
+  assert.equal(
+    await evaluate(`document.querySelector('[data-testid="filter-state-ALL"]')?.checked === true && document.querySelector('[data-testid="filter-availability-ALL"]')?.checked === true`),
+    true,
+    "alpha filter did not start from state=ALL / availability=ALL",
+  );
+  await clickLabelFor("filter-kind-FILE");
   await until("!!document.querySelector('[data-legend-keys~=" + JSON.stringify("filter-match") + "]')");
   await until("!!document.querySelector('[data-legend-keys~=" + JSON.stringify("filter-context") + "]')");
+  await until(`!document.querySelector(${JSON.stringify(testid("filter-loading"))})`);
+  assert.deepEqual(await filterKindsChecked(), ["FILE"], "filter must be FILE only (no DIRECTORY, no SKIPPED)");
   await click(testid("fit-composition"));
   await pause(800);
   await quiet();
+
+  // Endpoint proof BEFORE the keys: both endpoints of one APPROVED relation
+  // and of one pending suggestion must be in the real DOM at the same time.
+  const nodePresent = (nodeId) =>
+    evaluate(`!!document.querySelector('.map-view [data-brain-id="${IDS.alpha}"][data-node-id="${String(nodeId)}"]')`);
+  const presentIn = async (edge) => ({
+    source: await nodePresent(edge.source.nodeId),
+    target: await nodePresent(edge.target.nodeId),
+  });
+  const materializedAlpha = () =>
+    evaluate(`[...document.querySelectorAll('.map-view [data-brain-id=${JSON.stringify(IDS.alpha)}][data-node-id]')].map((e) => e.getAttribute('data-node-id'))`);
+  const filterReadout = () =>
+    evaluate(`({
+      active: document.querySelector('[data-testid="filter-active"]')?.textContent ?? null,
+      count: document.querySelector('[data-testid="filter-count"]')?.textContent ?? null,
+      page: document.querySelector('[data-testid="filter-page"]')?.textContent ?? null,
+      results: document.querySelectorAll('[data-testid="filter-result"]').length,
+    })`);
+  const endpointProof = {};
+  const endpointFailures = [];
+  for (const [name, edge] of [["intraApproved", apprIntra], ["intraSuggestion", sugIntra]]) {
+    const present = await presentIn(edge);
+    endpointProof[name] = {
+      sourceNodeId: edge.source.nodeId,
+      sourcePath: edge.source.relativePath,
+      targetNodeId: edge.target.nodeId,
+      targetPath: edge.target.relativePath,
+      sourcePresent: present.source,
+      targetPresent: present.target,
+      bothPresent: present.source && present.target,
+    };
+    if (!endpointProof[name].bothPresent) endpointFailures.push(name);
+  }
+  const filterReadoutAfter = await filterReadout();
+  if (endpointFailures.length > 0) {
+    throw new Error(
+      `FILE-only projection did not materialise both endpoints of: ${endpointFailures.join(", ")}
+` +
+        JSON.stringify({ filterReadout: filterReadoutAfter, kindsChecked: await filterKindsChecked(), expected: endpointProof, materializedAlphaNodeIds: await materializedAlpha() }, null, 1),
+    );
+  }
   await captureNewKeys();
   const mapFilterKeys = await readMapKeys();
   const mapRichKeysFinal = [...richKeySet].sort();
@@ -684,21 +738,15 @@ try {
     !mapBefore.includes(DIAGNOSTIC_EXCEPTION),
     "node-diagnostic was observed on the real map; the exception is no longer valid and the backend invariant must be re-checked before this assertion is loosened",
   );
-  // ACTION-0088/TASK-0050 §Q: this cell alone cannot materialise
-  // `intra-suggestion`/`intra-approved` (a shared-window limitation of THIS
-  // harness's own reveal technique, not a legend gap — see TASK-0050.md §Q.2).
-  // Those two are cellule B's job, replayed by J12 on `relationScenario.ts`.
-  // This cell still asserts strictly: no unexplained key is missing, no
-  // unexpected key appears, and the gap is EXACTLY the two named ones — never
-  // silently wider.
-  const CELL_B_ONLY_KEYS = ["intra-approved", "intra-suggestion"];
-  const unexpectedExtra = mapBefore.filter((key) => !expectedReachable.includes(key));
-  assert.deepEqual(unexpectedExtra, [], `cellA observed keys outside expectedReachable: ${JSON.stringify(unexpectedExtra)}`);
-  const cellAGap = expectedReachable.filter((key) => !mapBefore.includes(key)).sort();
+  // Strict rule (ACTION-0090): this cell alone must observe exactly the 23
+  // reachable keys — no gap, no extra, no other exemption than node-diagnostic.
   assert.deepEqual(
-    cellAGap,
-    CELL_B_ONLY_KEYS,
-    `cellA's gap against expectedReachable must be exactly ${JSON.stringify(CELL_B_ONLY_KEYS)}, got ${JSON.stringify(cellAGap)}`,
+    mapBefore,
+    expectedReachable,
+    `observed real map keys !== expectedReachable.
+observed: ${JSON.stringify(mapBefore)}
+missing: ${JSON.stringify(expectedReachable.filter((key) => !mapBefore.includes(key)))}
+extra: ${JSON.stringify(mapBefore.filter((key) => !expectedReachable.includes(key)))}`,
   );
 
   // §5 — computed signatures, actually asserted equal, not merely recorded.
@@ -717,12 +765,8 @@ try {
   }
   for (const [key, row] of Object.entries(sharing)) {
     const isDiagnostic = key === DIAGNOSTIC_EXCEPTION;
-    const isCellBOnly = CELL_B_ONLY_KEYS.includes(key);
-    if (!isDiagnostic && !isCellBOnly) {
+    if (!isDiagnostic) {
       assert(row.exercisedOnMap, `${key} was not exercised on the real map (must be one of the 23 reachable keys)`);
-    }
-    if (isCellBOnly) {
-      assert(row.legendSampleFound, `${key}: legend sample missing, cellB's live-side capture cannot be compared to it`);
     }
     if (!row.exercisedOnMap) continue;
     assert(row.sharedClasses.length > 0, `${key} uses no live map class shared with its legend sample`);
@@ -816,10 +860,9 @@ try {
 
   const browser = await send("Browser.getVersion");
   const result = {
-    // Cell A alone, per ACTION-0088/TASK-0050 §Q — the combiner
-    // (scripts/task0050-combine-webview2.mjs) unions this with cellule B's
-    // J12 replay and publishes the final docs/performance/runs/TASK-0050-webview2.json.
-    task: "TASK-0050-cellA",
+    task: "TASK-0050",
+    headTested,
+    strategy: "ACTION-0090: single real WebView2 cell, FILE-only filtered projection",
     engine: { product: browser.product, userAgent: browser.userAgent, protocolVersion: browser.protocolVersion },
     axe: { package: axeManifest.version, injectedVersion: await evaluate("axe.version"), axeMinJsSha256: axeSha256, closed: axeClosed, open: axeOpen },
     scenario: {
@@ -837,10 +880,11 @@ try {
       expectedReachableCount: expectedReachable.length,
       observedReachableCount: mapBefore.length,
       exemptKeys: [DIAGNOSTIC_EXCEPTION],
-      cellBOnlyKeys: CELL_B_ONLY_KEYS,
-      cellAGap: cellAGap,
+      intraEndpointProof: endpointProof,
+      intraFilterReadout: filterReadoutAfter,
       mapKeysCovered: mapBefore.every((key) => legendKeys.includes(key)),
       reachableKeysExactMatch: same(mapBefore, expectedReachable),
+      observedMissingFromReachable: expectedReachable.filter((key) => !mapBefore.includes(key)),
       diagnosticAndSkippedExplainedByLegend: legendKeys.includes("node-diagnostic") && legendKeys.includes("node-skipped"),
     },
     locale: { french, english },
@@ -860,7 +904,7 @@ try {
   assert(!text.includes(seed.rootAlix) && !text.includes(seed.rootBasile), "absolute proof path leaked into artifact");
   await mkdir(join(artifactPath, ".."), { recursive: true });
   await writeFile(artifactPath, text);
-  console.log(`TASK-0050 cellA WebView2 PASS: ${mapBefore.length}/${expectedReachable.length} reachable keys (gap: ${cellAGap.join(", ")}) / ${legendKeys.length} legend keys`);
+  console.log(`TASK-0050 WebView2 PASS: ${mapBefore.length}/${expectedReachable.length} reachable keys / ${legendKeys.length} legend keys`);
   ws.close();
 } catch (error) {
   console.error(String(error?.stack ?? error));
