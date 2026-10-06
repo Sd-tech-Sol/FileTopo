@@ -434,3 +434,52 @@ fn the_branch_projection_is_deterministic_and_read_only() {
     assert_eq!(store.reconstructible_digest().unwrap(), digest, "the Index is untouched");
     assert_eq!(store.index.identity().unwrap().revision, revision);
 }
+
+/// The cost is proportional to the subtree and it is paid only for a folder the
+/// person collapsed: a hundred thousand descendants are counted in well under a
+/// second even on a debug build, and the answer stays exact. The timing is
+/// printed for the validation record; the assertion is a generous ceiling.
+#[test]
+fn counting_a_hundred_thousand_descendants_is_exact_and_fast() {
+    let mut nodes = vec![node(1, None, "root", "", NodeKind::Root, 0)];
+    for dir in 0..10 {
+        let dir_id = nodes.len() as i64 + 1;
+        nodes.push(node(dir_id, Some(1), &format!("d{dir:02}"), &format!("d{dir:02}"), NodeKind::Directory, 1));
+        for file in 0..10_000 {
+            let id = nodes.len() as i64 + 1;
+            nodes.push(node(
+                id,
+                Some(dir_id),
+                &format!("f{file:05}.txt"),
+                &format!("d{dir:02}/f{file:05}.txt"),
+                NodeKind::File,
+                2,
+            ));
+        }
+    }
+    let counts: HashMap<i64, u32> = nodes.iter().fold(HashMap::new(), |mut acc, n| {
+        if let Some(p) = n.parent_id {
+            *acc.entry(p).or_default() += 1;
+        }
+        acc
+    });
+    for n in &mut nodes {
+        n.child_count = counts.get(&n.id).copied().unwrap_or(0);
+    }
+    let (_temp, store) = open_with(&nodes);
+    let started = std::time::Instant::now();
+    let whole = store.index.descendant_count(1).unwrap();
+    let whole_ms = started.elapsed().as_millis();
+    let started = std::time::Instant::now();
+    let one = store.index.descendant_count(2).unwrap();
+    let one_ms = started.elapsed().as_millis();
+    eprintln!("descendant_count: 100011-node tree {whole_ms} ms, 10000-descendant folder {one_ms} ms");
+    assert_eq!(whole, 100_010);
+    assert_eq!(one, 10_000);
+    assert!(whole_ms < 3_000, "counted in {whole_ms} ms");
+    // The collapsed view sends a count and a few cards, never the descendants.
+    let view = branch(&store, 1, &[2]);
+    let payload = serde_json::to_string(&view).unwrap();
+    assert!(payload.len() < 150_000, "payload {} bytes", payload.len());
+    assert!(!payload.contains("f09999.txt"));
+}
