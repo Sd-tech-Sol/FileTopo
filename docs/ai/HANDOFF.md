@@ -1,5 +1,14 @@
 # HANDOFF — passage de relais
 
+## Relais — ACTION-0094 — TASK-0051 VERIFIED — 2026-10-05
+
+- HEAD produit contrôlé : `1418262e4e4edf7e131bdb7d96fe9992066b1f5a`.
+- TASK-0051 / P-04 = VERIFIED.
+- F-017/F-041 n'ont plus de manque de révocation.
+- P-19, F-042 et F-046 restent des audits distincts.
+- Prochaine étape : audit V1 frais avant toute TASK-0052.
+
+
 ## Relais — TASK-0051 corrective stale-core IMPLEMENTED — 2026-10-05
 
 - Code : `1418262e4e4edf7e131bdb7d96fe9992066b1f5a` (garde stale retirée de `revoke_relation` seulement; focus de

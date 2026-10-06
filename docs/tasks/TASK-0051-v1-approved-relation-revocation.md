@@ -1,7 +1,7 @@
 # TASK-0051 — V1 Approved Relation Revocation / P-04 Closure
 
 - **Date :** 2026-10-05
-- **Statut :** `IMPLEMENTED` — corrective ACTION-0093 livrée, re-contrôle indépendant requis
+- **Statut :** **`VERIFIED` par `ACTION-0094` le 2026-10-05**
 - **Branche :** `build/v0.2-a35-v1-approved-relation-revocation`
 - **Décision :** `DEC-0049`
 - **Portée :** `P-04`, `F-017`, régression `F-041`
@@ -209,3 +209,16 @@ Corrective :
 Garde stale retirée de `revoke_relation` seulement; test de commande; focus de
 repli; preuve WebView2 réelle `staleCoreRevocation` (DR15 passe 3). Code
 `1418262e4e4edf7e131bdb7d96fe9992066b1f5a`. Non `VERIFIED`.
+
+
+## Contrôle final ACTION-0094 — VERIFIED
+
+La corrective ACTION-0093 est acceptée indépendamment.
+
+- revoke d'une APPROVED core fonctionne même moteur STALE;
+- approve d'une pending core STALE reste refusée;
+- sorties automatiques stale restent masquées;
+- focus CURRENT et STALE contrôlés;
+- preuve WebView2 réelle et test de commande concordants.
+
+**TASK-0051 = VERIFIED. P-04 = CLOSED / VERIFIED.**

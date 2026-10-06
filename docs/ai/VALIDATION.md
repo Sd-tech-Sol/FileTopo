@@ -9322,3 +9322,23 @@ geste); l'état `pending` + `decided_unix_ms` NULL au moment STALE est prouvé a
 niveau store (test de commande), et par l'aperçu après rerun en WebView2 (store
 non lu hors processus pendant le STALE). Le cas inter-cerveaux n'a pas de garde
 stale. P-19 inchangée. `cargo clippy` : avertissements préexistants seulement.
+
+
+## DD. ACTION-0094 — re-contrôle indépendant final TASK-0051 — 2026-10-05
+
+**VERDICT : VERIFIED.**
+
+Contrôle du HEAD produit
+`1418262e4e4edf7e131bdb7d96fe9992066b1f5a`.
+
+La garde stale a été retirée uniquement de `revoke_relation`; la garde stale
+de l'approbation reste intacte. Le test de commande prouve
+APPROVED core → STALE → revoke → pending + timestamp NULL, moteur toujours
+STALE, puis approbation stale refusée.
+
+La preuve WebView2 `staleCoreRevocation` confirme l'APPROVED visible en STALE,
+la révocation par touche réelle, l'absence de relation, le masquage de la
+pending stale, le focus sur Analyser, l'absence de mutation source/Index/cross,
+puis le rerun explicite sans résurrection.
+
+TASK-0051 et P-04 sont VERIFIED.

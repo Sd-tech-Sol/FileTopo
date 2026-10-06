@@ -395,3 +395,12 @@ Ils sont écrits ici plutôt que corrigés en silence.
 - [PROGRESSIVE_SCALE_ARCHITECTURE.md](../architecture/PROGRESSIVE_SCALE_ARCHITECTURE.md)
 - [ROADMAP.md](../../ROADMAP.md)
 - [TASK-0015](../tasks/TASK-0015-cartetopo-functional-parity.md)
+
+
+> **Clôture P-04 — ACTION-0094 (2026-10-05).** `P-04` est
+> **CLOSED / VERIFIED** par composition de `TASK-0017/ACTION-0027` (modèle
+> relation/suggestion/provenance, panneau et parcours), `TASK-0020/ACTION-0032`
+> (relations inter-cerveaux) et `TASK-0051/ACTION-0094` (révocation de toute
+> relation `APPROVED`, intra et inter, y compris approbation humaine issue du
+> moteur lorsque son état devient `STALE`). Les relations
+> `DETERMINISTIC` restent non révocables par ce geste.

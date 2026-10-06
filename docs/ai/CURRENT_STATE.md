@@ -1,5 +1,15 @@
 # État courant
 
+## ACTION-0094 — TASK-0051 / P-04 VERIFIED — 2026-10-05
+
+- Corrective stale-core acceptée indépendamment.
+- APPROVED core révocable même moteur STALE.
+- Approval stale reste refusée; sorties automatiques stale restent masquées.
+- WebView2 réel + test de commande concordants.
+- TASK-0051 = VERIFIED; P-04 = CLOSED / VERIFIED.
+- P-19 inchangée. Aucune TASK-0052.
+
+
 ## TASK-0051 corrective stale-core — `IMPLEMENTED` (re-contrôle requis) — 2026-10-05
 
 - ACTION-0093 traitée : `revoke_relation` ne regarde plus la fraîcheur du moteur

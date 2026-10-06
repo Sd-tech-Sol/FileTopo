@@ -6436,3 +6436,11 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
 - DR15 passe 3 (`FILETOPO_AUTO_DRE=3`, debug) + `scripts/task0051-stale-core-run-real-host.ps1`;
   `TASK-0051-webview2.json` gagne `staleCoreRevocation`.
 - Code `1418262e4e4edf7e131bdb7d96fe9992066b1f5a`. TASK-0051 = `IMPLEMENTED`, jamais VERIFIED par l'exécuteur.
+
+
+## 2026-10-05 — ACTION-0094 — TASK-0051 VERIFIED
+
+- Corrective stale-core recontrôlée indépendamment.
+- P-04 CLOSED / VERIFIED.
+- Révocation APPROVED complète intra + cross, y compris APPROVED core en STALE.
+- P-19 inchangée; aucune TASK-0052 créée.

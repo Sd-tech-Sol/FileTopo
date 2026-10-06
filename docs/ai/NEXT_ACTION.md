@@ -1,12 +1,16 @@
 # Action suivante
 
-## Re-contrôle indépendant de TASK-0051 (corrective stale-core)
+## Audit V1 post-TASK-0051
 
-Branche : `build/v0.2-a35-v1-approved-relation-revocation`.
+TASK-0051 / P-04 sont `VERIFIED` par ACTION-0094.
 
-Contrôler sur preuves, sans modifier le produit : ACTION-0093 est-elle levée
-(`relation_commands.rs`, test de commande, `dreScenario.ts` passe 3,
-`staleCoreRevocation` dans `TASK-0051-webview2.json`) ? Attribuer `VERIFIED` ou
-`CHANGES_REQUIRED`.
+Ne pas créer TASK-0052 automatiquement.
 
-Aucune TASK-0052.
+Audit à faire entre les écarts MVP encore ouverts explicitement, notamment :
+
+- `P-19` — persistance complète de l'état et manque M-1;
+- `F-046` — identité physique persistante encore absente;
+- `F-042` — repli/dépli et focus de branche encore PROPOSED.
+
+Le prochain choix doit être justifié par priorité, dépendances et preuves
+existantes avant d'écrire une nouvelle tâche.
