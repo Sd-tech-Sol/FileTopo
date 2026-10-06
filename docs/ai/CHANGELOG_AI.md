@@ -6375,3 +6375,13 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
   changement produit.
 - Objectif : endpoints simultanés, deux clés intra, puis 23/23 strict.
 - Aucune TASK-0051.
+
+
+## 2026-10-05 — TASK-0050 §V — corrective FILE-only (Claude Code)
+
+- Cellule A : filtre FILE seulement, preuve d'endpoints, capture de
+  `intra-approved` / `intra-suggestion`, règle stricte 23/23 restaurée.
+- `CELL_B_ONLY_KEYS` et `scripts/task0050-combine-webview2.mjs` supprimés;
+  lanceur simplifié; artefact `TASK-0050-webview2.json` remplacé (HEAD `8656d84`).
+- Falsifications F1-F5 exécutées et restaurées. Aucun produit/Rust/fixture.
+- TASK-0050 = `IMPLEMENTED`, candidate au contrôle indépendant. Aucune TASK-0051.

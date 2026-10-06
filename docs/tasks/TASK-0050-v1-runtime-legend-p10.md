@@ -1,7 +1,7 @@
 # TASK-0050 — V1 Runtime Legend / P-10 Closure
 
 - **Date :** 2026-09-26
-- **Statut :** `CORRECTIVE_REQUIRED`
+- **Statut :** `IMPLEMENTED` — candidate au contrôle indépendant (§V)
 - **Branche :** `build/v0.2-a34-v1-runtime-legend`
 - **Décision :** `DEC-0048`
 - **Portée :** `F-014`, `P-10`
@@ -800,3 +800,41 @@ La prochaine passe doit tester la voie produit existante :
 Aucun changement produit avant ce test. Aucune TASK-0051.
 
 **TASK-0050 = CORRECTIVE_REQUIRED.**
+
+## V — corrective FILE-only exécutée — 23/23 en une seule cellule — `IMPLEMENTED` — 2026-10-05
+
+- `scripts/task0050-webview2.mjs` : le bloc « Files are matches » activait
+  DIRECTORY + SKIPPED. Il vérifie maintenant l'état de départ inactif
+  (aucun type coché, état `ALL`, disponibilité `ALL`), active **FILE seulement**
+  par le contrôle produit (`filter-kind-FILE`), attend la projection filtrée
+  acceptée (`filter-match`, `filter-context`, fin de `filter-loading`) et le
+  rendu stabilisé.
+- Preuve d'endpoints **avant** les clés : source + cible de la relation
+  `APPROVED` (`dossier-a/note-1.txt` -> `racine-2.txt`) et de la suggestion
+  pending (`dossier-b/sous-dossier/note-1.txt` -> `dossier-a/note-2.txt`) sont
+  tous deux présents simultanément dans `.map-view [data-brain-id=...]`. Chemins,
+  nodeIds et résultat sont dans l'artefact (`scenario.intraEndpointProof`),
+  avec le relevé du filtre (`Type : fichiers`, 8 correspondances, 12 lignes).
+  En cas d'endpoint manquant : échec avec filtre, attendus et nodeIds réellement
+  matérialisés.
+- `intra-approved` et `intra-suggestion` capturés par la même capture de
+  signature que les autres clés; signatures carte <-> légende égales
+  (suggestion : pointillé 5/5 + anneaux, sans flèche; approved : classe
+  `map-edge--approved`, tiret-point).
+- Règle stricte restaurée : `CELL_B_ONLY_KEYS` supprimé; l'égalité
+  `observé === expectedReachable` (23 = 24 - `node-diagnostic`) est exigée
+  directement. Plomberie morte supprimée : `scripts/task0050-combine-webview2.mjs`
+  retiré; `task0050-webview2.ps1` n'exécute plus J12 et ne publie l'artefact
+  qu'en cas de succès. Le replay J12 reste une régression séparée
+  (`scripts/j12-run-real-host.ps1`), dont TASK-0050 ne dépend plus.
+- Artefact `docs/performance/runs/TASK-0050-webview2.json` **remplacé** par
+  le run courant : `headTested = 8656d84f...`, 23/23, légende 24/24, axe 0/0,
+  0 erreur fatale, `node-diagnostic` PASS (exception unique documentée),
+  P-19 redémarrage **NON TESTÉ**.
+- Falsifications (sabotage temporaire, restauré) : DIRECTORY+SKIPPED, FILE
+  retiré, endpoint retiré (nodeId inexistant) -> échec de la preuve d'endpoints;
+  `intra-approved` retiré, `intra-suggestion` retiré -> échec de l'égalité 23/23.
+- Aucun changement produit, Rust, fixture ni TASK-0051.
+
+**TASK-0050 = IMPLEMENTED**, candidate au contrôle indépendant. Jamais
+auto-`VERIFIED`. F-014 / P-10 = IMPLEMENTED / candidate. P-19 reste PARTIELLE.

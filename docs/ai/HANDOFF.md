@@ -1,5 +1,13 @@
 # HANDOFF — passage de relais
 
+## Relais — TASK-0050 §V IMPLEMENTED, contrôle indépendant requis — 2026-10-05
+
+- Harnais corrigé (FILE-only), HEAD testé `8656d84f6f85f53b55e44f60452d0e3fe609f32c`;
+  run WebView2 réel : 23/23, légende 24/24, axe 0/0.
+- Exemption cellule B et combineur supprimés; J12 reste un replay de régression séparé.
+- Aucun produit/Rust/fixture touché. Pas d'auto-VERIFIED. Aucune TASK-0051.
+- Reste : contrôle indépendant sur preuves (voir NEXT_ACTION).
+
 ## Relais — ACTION-0090 / TASK-0050 corrective READY — 2026-09-29
 
 - HEAD contrôlé : `a6e3e6d7fcf226d9cb6158ed43e2597b0f121754`.

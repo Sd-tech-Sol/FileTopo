@@ -9185,3 +9185,23 @@ ancêtres. La corrective suivante doit donc essayer FILE-only sur brain-alpha,
 asserter les endpoints, puis tenter la fermeture 23/23 dans une seule cellule.
 
 Aucun VERIFIED n'est accordé avant ce run.
+
+
+## CY. TASK-0050 §V — corrective FILE-only — `IMPLEMENTED` — 2026-10-05
+
+HEAD testé `8656d84f6f85f53b55e44f60452d0e3fe609f32c`.
+
+- WebView2 réel (`scripts/task0050-webview2.ps1`), deux runs identiques :
+  `TASK-0050 WebView2 PASS: 23/23 reachable keys / 24 legend keys`. Endpoints
+  APPROVED et pending simultanément présents (filtre `Type : fichiers`, 8
+  correspondances). Axe fermé/ouvert : 0 violation. 0 erreur fatale.
+  `node-diagnostic` PASS (couverture déterministe).
+- Falsifications F1-F5 (DIRECTORY+SKIPPED, FILE retiré, endpoint retiré,
+  `intra-approved` retiré, `intra-suggestion` retiré) : toutes échouent comme
+  attendu; sabotage restauré (`git checkout`).
+- `pnpm test` 632/632 PASS; `pnpm check` PASS; `pnpm build` PASS; Tauri debug
+  PASS; `git diff --check` PASS; audit public PASS (675 fichiers, `-AllowRemotes`).
+- Non testé : redémarrage de l'application (P-19, PARTIELLE); cargo test non
+  relancé (aucun Rust touché).
+
+Aucun VERIFIED accordé : contrôle indépendant requis.

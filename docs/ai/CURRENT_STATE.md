@@ -1,5 +1,19 @@
 # État courant
 
+## TASK-0050 §V — 23/23 en une cellule via FILE-only — `IMPLEMENTED` — 2026-10-05
+
+- Corrective ACTION-0090 exécutée dans `scripts/task0050-webview2.mjs` : filtre
+  **FILE seulement** (état de départ vérifié inactif), endpoints APPROVED +
+  pending prouvés simultanément présents dans le DOM, `intra-approved` et
+  `intra-suggestion` capturés, signatures carte <-> légende égales.
+- Règle stricte restaurée (`observé === expectedReachable`, 23 = 24 -
+  `node-diagnostic`); `CELL_B_ONLY_KEYS` et le combineur supprimés.
+- Artefact `TASK-0050-webview2.json` remplacé (HEAD testé `8656d84`) : 23/23,
+  légende 24/24, axe 0/0, passivité OK, P-19 NON TESTÉ.
+- TASK-0050 et F-014 / P-10 = `IMPLEMENTED` / candidates; **jamais auto-
+  `VERIFIED`**. Aucun changement produit, aucune TASK-0051.
+- Détail : `docs/tasks/TASK-0050-v1-runtime-legend-p10.md` section V.
+
 ## ACTION-0090 — TASK-0050 corrective FILE-only READY — 2026-09-29
 
 - ACTION-0089/J12 validée : pivot et navigation bornée corrigés.

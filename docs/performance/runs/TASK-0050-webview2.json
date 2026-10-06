@@ -1,8 +1,10 @@
 {
  "task": "TASK-0050",
+ "headTested": "8656d84f6f85f53b55e44f60452d0e3fe609f32c",
+ "strategy": "ACTION-0090: single real WebView2 cell, FILE-only filtered projection",
  "engine": {
-  "product": "Edg/153.0.4234.48",
-  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/153.0.0.0 Safari/537.36 Edg/153.0.0.0",
+  "product": "Edg/154.0.4258.53",
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36 Edg/154.0.0.0",
   "protocolVersion": "1.3"
  },
  "axe": {
@@ -36,153 +38,183 @@
       },
       {
        "target": [
-        ".filters__role--context > span[aria-hidden=\"true\"]"
+        "button[data-node-id=\"1\"][data-filter-role=\"context\"][data-testid=\"filter-result\"] > .filters__role--context.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
        ],
        "html": "<span aria-hidden=\"true\">◇ </span>"
       },
       {
        "target": [
-        "button[data-testid=\"filter-result\"][data-node-id=\"2\"][data-filter-role=\"match\"] > .filters__role--match.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
+        "button[data-node-id=\"2\"][data-filter-role=\"context\"][data-testid=\"filter-result\"] > .filters__role--context.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◇ </span>"
+      },
+      {
+       "target": [
+        "button[data-node-id=\"3\"][data-filter-role=\"context\"][data-testid=\"filter-result\"] > .filters__role--context.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◇ </span>"
+      },
+      {
+       "target": [
+        "button[data-node-id=\"4\"][data-testid=\"filter-result\"][data-filter-role=\"match\"] > .filters__role--match.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
        ],
        "html": "<span aria-hidden=\"true\">◆ </span>"
       },
       {
        "target": [
-        "button[data-node-id=\"3\"][data-testid=\"filter-result\"][data-filter-role=\"match\"] > .filters__role--match.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
+        "button[data-node-id=\"5\"][data-testid=\"filter-result\"][data-filter-role=\"match\"] > .filters__role--match.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
        ],
        "html": "<span aria-hidden=\"true\">◆ </span>"
       },
       {
        "target": [
-        "button[data-node-id=\"10\"][data-testid=\"filter-result\"][data-filter-role=\"match\"] > .filters__role--match.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
+        "button[data-node-id=\"6\"][data-testid=\"filter-result\"][data-filter-role=\"match\"] > .filters__role--match.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
        ],
        "html": "<span aria-hidden=\"true\">◆ </span>"
       },
       {
        "target": [
-        ".map-node__filter-tag--context"
+        "button[data-node-id=\"7\"][data-testid=\"filter-result\"][data-filter-role=\"match\"] > .filters__role--match.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
        ],
-       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--context\" x=\"8\" y=\"102\" aria-hidden=\"true\">◇ Contexte</text>"
+       "html": "<span aria-hidden=\"true\">◆ </span>"
+      },
+      {
+       "target": [
+        "button[data-node-id=\"8\"][data-testid=\"filter-result\"][data-filter-role=\"match\"] > .filters__role--match.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◆ </span>"
+      },
+      {
+       "target": [
+        "button[data-node-id=\"9\"][data-testid=\"filter-result\"][data-filter-role=\"match\"] > .filters__role--match.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◆ </span>"
+      },
+      {
+       "target": [
+        "button[data-node-id=\"10\"][data-filter-role=\"context\"][data-testid=\"filter-result\"] > .filters__role--context.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◇ </span>"
+      },
+      {
+       "target": [
+        "button[data-node-id=\"11\"][data-testid=\"filter-result\"][data-filter-role=\"match\"] > .filters__role--match.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◆ </span>"
+      },
+      {
+       "target": [
+        "button[data-node-id=\"12\"][data-testid=\"filter-result\"][data-filter-role=\"match\"] > .filters__role--match.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◆ </span>"
+      },
+      {
+       "target": [
+        "text[x=\"8\"]"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--context\" x=\"8\" y=\"424\" aria-hidden=\"true\">◇ Contexte</text>"
+      },
+      {
+       "target": [
+        ".map-node__filter-tag--context[y=\"148\"][x=\"368\"]"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--context\" x=\"368\" y=\"148\" aria-hidden=\"true\">◇ Contexte</text>"
+      },
+      {
+       "target": [
+        "text[y=\"401\"]"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--context\" x=\"368\" y=\"401\" aria-hidden=\"true\">◇ Contexte</text>"
+      },
+      {
+       "target": [
+        "text[y=\"608\"]"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--match\" x=\"368\" y=\"608\" aria-hidden=\"true\">◆ Correspondance</text>"
+      },
+      {
+       "target": [
+        "text[y=\"700\"]"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--match\" x=\"368\" y=\"700\" aria-hidden=\"true\">◆ Correspondance</text>"
       },
       {
        "target": [
         "text[y=\"56\"]"
        ],
-       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--match\" x=\"368\" y=\"56\" aria-hidden=\"true\">◆ Correspondance</text>"
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--match\" x=\"728\" y=\"56\" aria-hidden=\"true\">◆ Correspondance</text>"
       },
       {
        "target": [
-        ".map-node__filter-tag--match[x=\"368\"][y=\"148\"]"
-       ],
-       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--match\" x=\"368\" y=\"148\" aria-hidden=\"true\">◆ Correspondance</text>"
-      },
-      {
-       "target": [
-        "text[x=\"728\"]"
+        ".map-node__filter-tag--match[y=\"148\"][x=\"728\"]"
        ],
        "html": "<text class=\"map-node__filter-tag map-node__filter-tag--match\" x=\"728\" y=\"148\" aria-hidden=\"true\">◆ Correspondance</text>"
       },
       {
        "target": [
-        "g[aria-label=\"+3 éléments — Voir la suite\"] > .map-aggregate__label[y=\"36\"][x=\"840\"]"
+        "text[y=\"240\"]"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--match\" x=\"728\" y=\"240\" aria-hidden=\"true\">◆ Correspondance</text>"
+      },
+      {
+       "target": [
+        "text[y=\"332\"]"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--match\" x=\"728\" y=\"332\" aria-hidden=\"true\">◆ Correspondance</text>"
+      },
+      {
+       "target": [
+        "text[y=\"470\"]"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--context\" x=\"728\" y=\"470\" aria-hidden=\"true\">◇ Contexte</text>"
+      },
+      {
+       "target": [
+        ".map-node__filter-tag--match[x=\"1088\"][y=\"424\"]"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--match\" x=\"1088\" y=\"424\" aria-hidden=\"true\">◆ Correspondance</text>"
+      },
+      {
+       "target": [
+        "text[y=\"516\"]"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--match\" x=\"1088\" y=\"516\" aria-hidden=\"true\">◆ Correspondance</text>"
+      },
+      {
+       "target": [
+        "text[y=\"36\"]"
        ],
        "html": "<text class=\"map-aggregate__label\" x=\"840\" y=\"36\" text-anchor=\"middle\">+3 éléments — Voir la suite</text>"
       },
       {
        "target": [
-        "text[y=\"128\"]"
+        "g[data-parent-id=\"3\"] > .map-aggregate__label[y=\"128\"][x=\"840\"]"
        ],
        "html": "<text class=\"map-aggregate__label\" x=\"840\" y=\"128\" text-anchor=\"middle\">+2 éléments — Voir la suite</text>"
       },
       {
        "target": [
-        "g[aria-label=\"+120 éléments — Voir la suite\"] > .map-aggregate__label[y=\"36\"][x=\"840\"]"
+        "g[aria-label=\"+120 éléments — Voir la suite\"] > .map-aggregate__label[y=\"128\"][x=\"840\"]"
        ],
-       "html": "<text class=\"map-aggregate__label\" x=\"840\" y=\"36\" text-anchor=\"middle\">+120 éléments — Voir la suite</text>"
+       "html": "<text class=\"map-aggregate__label\" x=\"840\" y=\"128\" text-anchor=\"middle\">+120 éléments — Voir la suite</text>"
       },
       {
        "target": [
         ".map-territory__title--focused"
        ],
-       "html": "<text class=\"map-territory__title map-territory__title--focused\" data-legend-keys=\"territory-focused\" x=\"36.96971830985919\" y=\"2231.1521126760563\">▲ Cerveau Alpha · 4 nœuds</text>"
+       "html": "<text class=\"map-territory__title map-territory__title--focused\" x=\"35.88821656050959\" y=\"2071.3174363057324\" data-legend-keys=\"territory-focused\">▲ Cerveau Alpha · 12 nœuds</text>"
       },
       {
        "target": [
-        "text[x=\"47.157464788732426\"]"
+        "text[x=\"363.5111464968153\"]"
        ],
-       "html": "<text class=\"map-node__label map-node__label--root\" data-full-name=\"quasi-empty\" x=\"47.157464788732426\" y=\"2255.6396126760565\">q…</text>"
+       "html": "<text class=\"map-territory__title\" x=\"363.5111464968153\" y=\"2071.3174363057324\">◆ Cerveau Gamma · 5 nœuds</text>"
       },
       {
        "target": [
-        "text[data-full-name=\"dossier-a\"][x=\"132.05535211267608\"][y=\"2244.7915492957745\"]"
+        "text[x=\"614.3474522292993\"]"
        ],
-       "html": "<text class=\"map-node__label\" data-full-name=\"dossier-a\" x=\"132.05535211267608\" y=\"2244.7915492957745\">d…</text>"
-      },
-      {
-       "target": [
-        "text[data-full-name=\"dossier-b\"][x=\"132.05535211267608\"][y=\"2266.487676056338\"]"
-       ],
-       "html": "<text class=\"map-node__label\" data-full-name=\"dossier-b\" x=\"132.05535211267608\" y=\"2266.487676056338\">d…</text>"
-      },
-      {
-       "target": [
-        "text[data-full-name=\"sous-dossier\"]"
-       ],
-       "html": "<text class=\"map-node__label\" data-full-name=\"sous-dossier\" x=\"216.95323943661973\" y=\"2266.487676056338\">s…</text>"
-      },
-      {
-       "target": [
-        "text[x=\"314.30281690140845\"]"
-       ],
-       "html": "<text class=\"map-territory__title\" x=\"314.30281690140845\" y=\"2231.1521126760563\">◆ Cerveau Gamma · 5 nœuds</text>"
-      },
-      {
-       "target": [
-        "text[x=\"324.4905633802817\"]"
-       ],
-       "html": "<text class=\"map-node__label map-node__label--root\" data-full-name=\"quasi-empty\" x=\"324.4905633802817\" y=\"2277.33573943662\">q…</text>"
-      },
-      {
-       "target": [
-        "text[data-full-name=\"dossier-a\"][x=\"409.38845070422536\"][y=\"2244.7915492957745\"]"
-       ],
-       "html": "<text class=\"map-node__label\" data-full-name=\"dossier-a\" x=\"409.38845070422536\" y=\"2244.7915492957745\">d…</text>"
-      },
-      {
-       "target": [
-        "text[data-full-name=\"dossier-b\"][y=\"2266.487676056338\"][x=\"409.38845070422536\"]"
-       ],
-       "html": "<text class=\"map-node__label\" data-full-name=\"dossier-b\" x=\"409.38845070422536\" y=\"2266.487676056338\">d…</text>"
-      },
-      {
-       "target": [
-        "text[data-full-name=\"racine-1.txt\"]"
-       ],
-       "html": "<text class=\"map-node__label\" data-full-name=\"racine-1.txt\" x=\"409.38845070422536\" y=\"2288.1838028169013\">r…</text>"
-      },
-      {
-       "target": [
-        "text[data-full-name=\"racine-2.txt\"]"
-       ],
-       "html": "<text class=\"map-node__label\" data-full-name=\"racine-2.txt\" x=\"409.38845070422536\" y=\"2309.8799295774647\">r…</text>"
-      },
-      {
-       "target": [
-        "text[x=\"591.6359154929578\"]"
-       ],
-       "html": "<text class=\"map-territory__title\" x=\"591.6359154929578\" y=\"2231.1521126760563\">B Arbre Basile · 2 nœuds</text>"
-      },
-      {
-       "target": [
-        "text[data-full-name=\"basile\"]"
-       ],
-       "html": "<text class=\"map-node__label map-node__label--root\" data-full-name=\"basile\" x=\"601.823661971831\" y=\"2244.7915492957745\">b…</text>"
-      },
-      {
-       "target": [
-        "text[data-full-name=\"wide\"]"
-       ],
-       "html": "<text class=\"map-node__label\" data-full-name=\"wide\" x=\"686.7215492957747\" y=\"2244.7915492957745\">w…</text>"
+       "html": "<text class=\"map-territory__title\" x=\"614.3474522292993\" y=\"2071.3174363057324\">B Arbre Basile · 3 nœuds</text>"
       },
       {
        "target": [
@@ -277,7 +309,7 @@
      ]
     }
    ],
-   "passes": 28
+   "passes": 29
   },
   "open": {
    "violations": [],
@@ -306,25 +338,73 @@
       },
       {
        "target": [
-        ".filters__role--context > span[aria-hidden=\"true\"]"
+        "button[data-node-id=\"1\"][data-filter-role=\"context\"][data-testid=\"filter-result\"] > .filters__role--context.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
        ],
        "html": "<span aria-hidden=\"true\">◇ </span>"
       },
       {
        "target": [
-        "button[data-testid=\"filter-result\"][data-node-id=\"2\"][data-filter-role=\"match\"] > .filters__role--match.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
+        "button[data-node-id=\"2\"][data-filter-role=\"context\"][data-testid=\"filter-result\"] > .filters__role--context.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◇ </span>"
+      },
+      {
+       "target": [
+        "button[data-node-id=\"3\"][data-filter-role=\"context\"][data-testid=\"filter-result\"] > .filters__role--context.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◇ </span>"
+      },
+      {
+       "target": [
+        "button[data-node-id=\"4\"][data-testid=\"filter-result\"][data-filter-role=\"match\"] > .filters__role--match.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
        ],
        "html": "<span aria-hidden=\"true\">◆ </span>"
       },
       {
        "target": [
-        "button[data-node-id=\"3\"][data-testid=\"filter-result\"][data-filter-role=\"match\"] > .filters__role--match.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
+        "button[data-node-id=\"5\"][data-testid=\"filter-result\"][data-filter-role=\"match\"] > .filters__role--match.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
        ],
        "html": "<span aria-hidden=\"true\">◆ </span>"
       },
       {
        "target": [
-        "button[data-node-id=\"10\"][data-testid=\"filter-result\"][data-filter-role=\"match\"] > .filters__role--match.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
+        "button[data-node-id=\"6\"][data-testid=\"filter-result\"][data-filter-role=\"match\"] > .filters__role--match.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◆ </span>"
+      },
+      {
+       "target": [
+        "button[data-node-id=\"7\"][data-testid=\"filter-result\"][data-filter-role=\"match\"] > .filters__role--match.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◆ </span>"
+      },
+      {
+       "target": [
+        "button[data-node-id=\"8\"][data-testid=\"filter-result\"][data-filter-role=\"match\"] > .filters__role--match.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◆ </span>"
+      },
+      {
+       "target": [
+        "button[data-node-id=\"9\"][data-testid=\"filter-result\"][data-filter-role=\"match\"] > .filters__role--match.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◆ </span>"
+      },
+      {
+       "target": [
+        "button[data-node-id=\"10\"][data-filter-role=\"context\"][data-testid=\"filter-result\"] > .filters__role--context.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◇ </span>"
+      },
+      {
+       "target": [
+        "button[data-node-id=\"11\"][data-testid=\"filter-result\"][data-filter-role=\"match\"] > .filters__role--match.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
+       ],
+       "html": "<span aria-hidden=\"true\">◆ </span>"
+      },
+      {
+       "target": [
+        "button[data-node-id=\"12\"][data-testid=\"filter-result\"][data-filter-role=\"match\"] > .filters__role--match.filters__role[data-testid=\"filter-role\"] > span[aria-hidden=\"true\"]"
        ],
        "html": "<span aria-hidden=\"true\">◆ </span>"
       },
@@ -332,127 +412,109 @@
        "target": [
         "text[x=\"8\"]"
        ],
-       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--context\" x=\"8\" y=\"102\" aria-hidden=\"true\">◇ Contexte</text>"
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--context\" x=\"8\" y=\"424\" aria-hidden=\"true\">◇ Contexte</text>"
+      },
+      {
+       "target": [
+        ".map-node__filter-tag--context[y=\"148\"][x=\"368\"]"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--context\" x=\"368\" y=\"148\" aria-hidden=\"true\">◇ Contexte</text>"
+      },
+      {
+       "target": [
+        "text[y=\"401\"]"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--context\" x=\"368\" y=\"401\" aria-hidden=\"true\">◇ Contexte</text>"
+      },
+      {
+       "target": [
+        "text[y=\"608\"]"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--match\" x=\"368\" y=\"608\" aria-hidden=\"true\">◆ Correspondance</text>"
+      },
+      {
+       "target": [
+        "text[y=\"700\"]"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--match\" x=\"368\" y=\"700\" aria-hidden=\"true\">◆ Correspondance</text>"
       },
       {
        "target": [
         "text[y=\"56\"]"
        ],
-       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--match\" x=\"368\" y=\"56\" aria-hidden=\"true\">◆ Correspondance</text>"
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--match\" x=\"728\" y=\"56\" aria-hidden=\"true\">◆ Correspondance</text>"
       },
       {
        "target": [
-        ".map-node__filter-tag--match[x=\"368\"][y=\"148\"]"
-       ],
-       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--match\" x=\"368\" y=\"148\" aria-hidden=\"true\">◆ Correspondance</text>"
-      },
-      {
-       "target": [
-        "text[x=\"728\"]"
+        ".map-node__filter-tag--match[y=\"148\"][x=\"728\"]"
        ],
        "html": "<text class=\"map-node__filter-tag map-node__filter-tag--match\" x=\"728\" y=\"148\" aria-hidden=\"true\">◆ Correspondance</text>"
       },
       {
        "target": [
-        "g[aria-label=\"+3 éléments — Voir la suite\"] > text[y=\"36\"][x=\"840\"][text-anchor=\"middle\"]"
+        "text[y=\"240\"]"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--match\" x=\"728\" y=\"240\" aria-hidden=\"true\">◆ Correspondance</text>"
+      },
+      {
+       "target": [
+        "text[y=\"332\"]"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--match\" x=\"728\" y=\"332\" aria-hidden=\"true\">◆ Correspondance</text>"
+      },
+      {
+       "target": [
+        "text[y=\"470\"]"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--context\" x=\"728\" y=\"470\" aria-hidden=\"true\">◇ Contexte</text>"
+      },
+      {
+       "target": [
+        ".map-node__filter-tag--match[x=\"1088\"][y=\"424\"]"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--match\" x=\"1088\" y=\"424\" aria-hidden=\"true\">◆ Correspondance</text>"
+      },
+      {
+       "target": [
+        "text[y=\"516\"]"
+       ],
+       "html": "<text class=\"map-node__filter-tag map-node__filter-tag--match\" x=\"1088\" y=\"516\" aria-hidden=\"true\">◆ Correspondance</text>"
+      },
+      {
+       "target": [
+        "text[y=\"36\"]"
        ],
        "html": "<text class=\"map-aggregate__label\" x=\"840\" y=\"36\" text-anchor=\"middle\">+3 éléments — Voir la suite</text>"
       },
       {
        "target": [
-        "text[y=\"128\"]"
+        "g[data-parent-id=\"3\"] > text[y=\"128\"][x=\"840\"][text-anchor=\"middle\"]"
        ],
        "html": "<text class=\"map-aggregate__label\" x=\"840\" y=\"128\" text-anchor=\"middle\">+2 éléments — Voir la suite</text>"
       },
       {
        "target": [
-        "g[aria-label=\"+120 éléments — Voir la suite\"] > text[y=\"36\"][x=\"840\"][text-anchor=\"middle\"]"
+        "g[aria-label=\"+120 éléments — Voir la suite\"] > text[y=\"128\"][x=\"840\"][text-anchor=\"middle\"]"
        ],
-       "html": "<text class=\"map-aggregate__label\" x=\"840\" y=\"36\" text-anchor=\"middle\">+120 éléments — Voir la suite</text>"
+       "html": "<text class=\"map-aggregate__label\" x=\"840\" y=\"128\" text-anchor=\"middle\">+120 éléments — Voir la suite</text>"
       },
       {
        "target": [
-        "text[x=\"36.96971830985919\"]"
+        "text[x=\"35.88821656050959\"]"
        ],
-       "html": "<text class=\"map-territory__title map-territory__title--focused\" data-legend-keys=\"territory-focused\" x=\"36.96971830985919\" y=\"2231.1521126760563\">▲ Cerveau Alpha · 4 nœuds</text>"
+       "html": "<text class=\"map-territory__title map-territory__title--focused\" x=\"35.88821656050959\" y=\"2071.3174363057324\" data-legend-keys=\"territory-focused\">▲ Cerveau Alpha · 12 nœuds</text>"
       },
       {
        "target": [
-        "text[x=\"47.157464788732426\"]"
+        "text[x=\"363.5111464968153\"]"
        ],
-       "html": "<text class=\"map-node__label map-node__label--root\" data-full-name=\"quasi-empty\" x=\"47.157464788732426\" y=\"2255.6396126760565\">q…</text>"
+       "html": "<text class=\"map-territory__title\" x=\"363.5111464968153\" y=\"2071.3174363057324\">◆ Cerveau Gamma · 5 nœuds</text>"
       },
       {
        "target": [
-        "text[data-full-name=\"dossier-a\"][x=\"132.05535211267608\"][y=\"2244.7915492957745\"]"
+        "text[x=\"614.3474522292993\"]"
        ],
-       "html": "<text class=\"map-node__label\" data-full-name=\"dossier-a\" x=\"132.05535211267608\" y=\"2244.7915492957745\">d…</text>"
-      },
-      {
-       "target": [
-        "text[data-full-name=\"dossier-b\"][x=\"132.05535211267608\"][y=\"2266.487676056338\"]"
-       ],
-       "html": "<text class=\"map-node__label\" data-full-name=\"dossier-b\" x=\"132.05535211267608\" y=\"2266.487676056338\">d…</text>"
-      },
-      {
-       "target": [
-        "text[data-full-name=\"sous-dossier\"]"
-       ],
-       "html": "<text class=\"map-node__label\" data-full-name=\"sous-dossier\" x=\"216.95323943661973\" y=\"2266.487676056338\">s…</text>"
-      },
-      {
-       "target": [
-        "text[x=\"314.30281690140845\"]"
-       ],
-       "html": "<text class=\"map-territory__title\" x=\"314.30281690140845\" y=\"2231.1521126760563\">◆ Cerveau Gamma · 5 nœuds</text>"
-      },
-      {
-       "target": [
-        "text[x=\"324.4905633802817\"]"
-       ],
-       "html": "<text class=\"map-node__label map-node__label--root\" data-full-name=\"quasi-empty\" x=\"324.4905633802817\" y=\"2277.33573943662\">q…</text>"
-      },
-      {
-       "target": [
-        "text[data-full-name=\"dossier-a\"][x=\"409.38845070422536\"][y=\"2244.7915492957745\"]"
-       ],
-       "html": "<text class=\"map-node__label\" data-full-name=\"dossier-a\" x=\"409.38845070422536\" y=\"2244.7915492957745\">d…</text>"
-      },
-      {
-       "target": [
-        "text[data-full-name=\"dossier-b\"][y=\"2266.487676056338\"][x=\"409.38845070422536\"]"
-       ],
-       "html": "<text class=\"map-node__label\" data-full-name=\"dossier-b\" x=\"409.38845070422536\" y=\"2266.487676056338\">d…</text>"
-      },
-      {
-       "target": [
-        "text[data-full-name=\"racine-1.txt\"]"
-       ],
-       "html": "<text class=\"map-node__label\" data-full-name=\"racine-1.txt\" x=\"409.38845070422536\" y=\"2288.1838028169013\">r…</text>"
-      },
-      {
-       "target": [
-        "text[data-full-name=\"racine-2.txt\"]"
-       ],
-       "html": "<text class=\"map-node__label\" data-full-name=\"racine-2.txt\" x=\"409.38845070422536\" y=\"2309.8799295774647\">r…</text>"
-      },
-      {
-       "target": [
-        "text[x=\"591.6359154929578\"]"
-       ],
-       "html": "<text class=\"map-territory__title\" x=\"591.6359154929578\" y=\"2231.1521126760563\">B Arbre Basile · 2 nœuds</text>"
-      },
-      {
-       "target": [
-        "text[data-full-name=\"basile\"]"
-       ],
-       "html": "<text class=\"map-node__label map-node__label--root\" data-full-name=\"basile\" x=\"601.823661971831\" y=\"2244.7915492957745\">b…</text>"
-      },
-      {
-       "target": [
-        "text[data-full-name=\"wide\"]"
-       ],
-       "html": "<text class=\"map-node__label\" data-full-name=\"wide\" x=\"686.7215492957747\" y=\"2244.7915492957745\">w…</text>"
+       "html": "<text class=\"map-territory__title\" x=\"614.3474522292993\" y=\"2071.3174363057324\">B Arbre Basile · 3 nœuds</text>"
       },
       {
        "target": [
@@ -571,7 +633,7 @@
      ]
     }
    ],
-   "passes": 28
+   "passes": 29
   }
  },
  "scenario": {
@@ -587,24 +649,48 @@
    "filter-match",
    "hierarchy-normal",
    "hierarchy-touching",
+   "inter-approved",
+   "inter-crossing",
+   "inter-established",
+   "inter-suggestion",
+   "inter-touching",
+   "intra-approved",
    "intra-established",
+   "intra-suggestion",
+   "intra-touching",
+   "node-cross-linked",
    "node-directory",
    "node-file",
+   "node-linked",
    "node-related",
    "node-root",
    "node-selected",
+   "node-skipped",
    "territory-focused"
   ],
   "richMapSemanticKeys": [
    "aggregate",
+   "filter-context",
+   "filter-match",
    "hierarchy-normal",
    "hierarchy-touching",
+   "inter-approved",
+   "inter-crossing",
+   "inter-established",
+   "inter-suggestion",
+   "inter-touching",
+   "intra-approved",
    "intra-established",
+   "intra-suggestion",
+   "intra-touching",
+   "node-cross-linked",
    "node-directory",
    "node-file",
+   "node-linked",
    "node-related",
    "node-root",
    "node-selected",
+   "node-skipped",
    "territory-focused"
   ],
   "filteredMapSemanticKeys": [
@@ -612,39 +698,83 @@
    "filter-context",
    "filter-match",
    "hierarchy-normal",
+   "hierarchy-touching",
+   "inter-crossing",
+   "inter-suggestion",
+   "intra-approved",
    "intra-established",
+   "intra-suggestion",
+   "intra-touching",
    "node-directory",
    "node-file",
+   "node-linked",
+   "node-related",
    "node-root",
+   "node-selected",
+   "node-skipped",
    "territory-focused"
   ],
   "legendSemanticKeys": [
-   "node-root",
-   "node-directory",
-   "node-file",
-   "node-skipped",
-   "node-selected",
-   "node-related",
-   "node-linked",
-   "node-cross-linked",
-   "filter-match",
+   "aggregate",
    "filter-context",
-   "node-diagnostic",
-   "territory-focused",
+   "filter-match",
    "hierarchy-normal",
    "hierarchy-touching",
-   "intra-established",
-   "intra-suggestion",
-   "intra-approved",
-   "intra-touching",
+   "inter-approved",
    "inter-crossing",
    "inter-established",
    "inter-suggestion",
-   "inter-approved",
    "inter-touching",
-   "aggregate"
+   "intra-approved",
+   "intra-established",
+   "intra-suggestion",
+   "intra-touching",
+   "node-cross-linked",
+   "node-diagnostic",
+   "node-directory",
+   "node-file",
+   "node-linked",
+   "node-related",
+   "node-root",
+   "node-selected",
+   "node-skipped",
+   "territory-focused"
   ],
+  "legendKeyCount": 24,
+  "expectedReachableCount": 23,
+  "observedReachableCount": 23,
+  "exemptKeys": [
+   "node-diagnostic"
+  ],
+  "intraEndpointProof": {
+   "intraApproved": {
+    "sourceNodeId": 6,
+    "sourcePath": "dossier-a/note-1.txt",
+    "targetNodeId": 5,
+    "targetPath": "racine-2.txt",
+    "sourcePresent": true,
+    "targetPresent": true,
+    "bothPresent": true
+   },
+   "intraSuggestion": {
+    "sourceNodeId": 11,
+    "sourcePath": "dossier-b/sous-dossier/note-1.txt",
+    "targetNodeId": 7,
+    "targetPath": "dossier-a/note-2.txt",
+    "sourcePresent": true,
+    "targetPresent": true,
+    "bothPresent": true
+   }
+  },
+  "intraFilterReadout": {
+   "active": "Filtre actif — Type : fichiers",
+   "count": "8 correspondances",
+   "page": "Page 1 · 8 correspondances sur cette page",
+   "results": 12
+  },
   "mapKeysCovered": true,
+  "reachableKeysExactMatch": true,
+  "observedMissingFromReachable": [],
   "diagnosticAndSkippedExplainedByLegend": true
  },
  "locale": {
@@ -658,175 +788,1118 @@
   }
  },
  "sharedVisualLanguage": {
-  "node-root": {
+  "aggregate": {
    "exercisedOnMap": true,
+   "legendSampleFound": true,
    "sharedClasses": [
-    "map-node",
-    "map-node--root",
-    "map-node--plain",
-    "map-node__kind-glyph"
+    "map-aggregate",
+    "map-aggregate__pill",
+    "map-aggregate__label"
    ],
-   "liveSignatures": [
-    {
-     "className": "map-node map-node--root map-node--plain map-node--filter-context",
+   "liveByClass": {
+    "map-aggregate": {
+     "className": "map-aggregate",
      "strokeWidth": "1px",
      "strokeDasharray": "none",
      "fillOpacity": "1",
-     "fontWeight": "400"
+     "fontWeight": "400",
+     "opacity": "1"
     },
-    {
-     "className": "map-node__kind-glyph",
-     "strokeWidth": "2.5px",
+    "map-aggregate__pill": {
+     "className": "map-aggregate__pill",
+     "strokeWidth": "1.25px",
+     "strokeDasharray": "4px, 3px",
+     "fillOpacity": "0.9",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-aggregate__label": {
+     "className": "map-aggregate__label",
+     "strokeWidth": "1px",
      "strokeDasharray": "none",
      "fillOpacity": "1",
-     "fontWeight": "400"
+     "fontWeight": "400",
+     "opacity": "1"
     }
+   },
+   "legendByClass": {
+    "map-aggregate": {
+     "className": "map-aggregate",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-aggregate__pill": {
+     "className": "map-aggregate__pill",
+     "strokeWidth": "1.25px",
+     "strokeDasharray": "4px, 3px",
+     "fillOpacity": "0.9",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-aggregate__label": {
+     "className": "map-aggregate__label",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "confound": 0
+  },
+  "hierarchy-normal": {
+   "exercisedOnMap": true,
+   "legendSampleFound": true,
+   "sharedClasses": [
+    "map-hierarchy-edge",
+    "map-hierarchy-edge--distant"
    ],
-   "legendSignatures": [
-    {
-     "className": "map-node__kind-glyph",
-     "strokeWidth": "2.5px",
+   "liveByClass": {
+    "map-hierarchy-edge map-hierarchy-edge--distant": {
+     "className": "map-hierarchy-edge map-hierarchy-edge--distant",
+     "strokeWidth": "1px",
      "strokeDasharray": "none",
      "fillOpacity": "1",
-     "fontWeight": "400"
+     "fontWeight": "400",
+     "opacity": "1"
     }
-   ]
+   },
+   "legendByClass": {
+    "map-hierarchy-edge map-hierarchy-edge--distant": {
+     "className": "map-hierarchy-edge map-hierarchy-edge--distant",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "confound": 0
+  },
+  "hierarchy-touching": {
+   "exercisedOnMap": true,
+   "legendSampleFound": true,
+   "sharedClasses": [
+    "map-hierarchy-edge",
+    "map-hierarchy-edge--touching"
+   ],
+   "liveByClass": {
+    "map-hierarchy-edge map-hierarchy-edge--touching": {
+     "className": "map-hierarchy-edge map-hierarchy-edge--touching",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "legendByClass": {
+    "map-hierarchy-edge map-hierarchy-edge--touching": {
+     "className": "map-hierarchy-edge map-hierarchy-edge--touching",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "confound": 0
+  },
+  "intra-established": {
+   "exercisedOnMap": true,
+   "legendSampleFound": true,
+   "sharedClasses": [
+    "map-edge",
+    "map-edge--established",
+    "map-edge--distant",
+    "map-edge__line",
+    "map-edge__arrow"
+   ],
+   "liveByClass": {
+    "map-edge map-edge--distant map-edge--established": {
+     "className": "map-edge map-edge--established map-edge--distant map-edge--deterministic",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-edge__line": {
+     "className": "map-edge__line",
+     "strokeWidth": "1.6px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-edge__arrow": {
+     "className": "map-edge__arrow",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "0.45",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "legendByClass": {
+    "map-edge map-edge--distant map-edge--established": {
+     "className": "map-edge map-edge--established map-edge--distant",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-edge__line": {
+     "className": "map-edge__line",
+     "strokeWidth": "1.6px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-edge__arrow": {
+     "className": "map-edge__arrow",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "0.45",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "confound": 0
   },
   "node-directory": {
    "exercisedOnMap": true,
+   "legendSampleFound": true,
    "sharedClasses": [
     "map-node",
     "map-node--directory",
     "map-node--plain",
     "map-node__kind-glyph"
    ],
-   "liveSignatures": [
-    {
-     "className": "map-node map-node--directory map-node--plain map-node--filter-match",
+   "liveByClass": {
+    "map-node map-node--directory map-node--plain": {
+     "className": "map-node map-node--directory map-node--plain",
      "strokeWidth": "1px",
      "strokeDasharray": "none",
      "fillOpacity": "1",
-     "fontWeight": "400"
+     "fontWeight": "400",
+     "opacity": "1"
     },
-    {
+    "map-node__kind-glyph": {
      "className": "map-node__kind-glyph",
      "strokeWidth": "2px",
      "strokeDasharray": "none",
      "fillOpacity": "1",
-     "fontWeight": "400"
+     "fontWeight": "400",
+     "opacity": "1"
     }
-   ],
-   "legendSignatures": [
-    {
+   },
+   "legendByClass": {
+    "map-node map-node--directory map-node--plain": {
+     "className": "map-node map-node--directory map-node--plain",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-node__kind-glyph": {
      "className": "map-node__kind-glyph",
      "strokeWidth": "2px",
      "strokeDasharray": "none",
      "fillOpacity": "1",
-     "fontWeight": "400"
+     "fontWeight": "400",
+     "opacity": "1"
     }
-   ]
+   },
+   "confound": 0
   },
   "node-file": {
    "exercisedOnMap": true,
+   "legendSampleFound": true,
    "sharedClasses": [
     "map-node",
     "map-node--file",
     "map-node--plain",
     "map-node__kind-glyph"
    ],
-   "liveSignatures": [
-    {
+   "liveByClass": {
+    "map-node map-node--file map-node--plain": {
      "className": "map-node map-node--file map-node--plain",
      "strokeWidth": "1px",
      "strokeDasharray": "none",
      "fillOpacity": "1",
-     "fontWeight": "400"
+     "fontWeight": "400",
+     "opacity": "1"
     },
-    {
+    "map-node__kind-glyph": {
      "className": "map-node__kind-glyph",
      "strokeWidth": "2px",
      "strokeDasharray": "none",
      "fillOpacity": "1",
-     "fontWeight": "400"
+     "fontWeight": "400",
+     "opacity": "1"
     }
-   ],
-   "legendSignatures": [
-    {
+   },
+   "legendByClass": {
+    "map-node map-node--file map-node--plain": {
+     "className": "map-node map-node--file map-node--plain",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-node__kind-glyph": {
      "className": "map-node__kind-glyph",
      "strokeWidth": "2px",
      "strokeDasharray": "none",
      "fillOpacity": "1",
-     "fontWeight": "400"
+     "fontWeight": "400",
+     "opacity": "1"
     }
-   ]
-  },
-  "node-skipped": {
-   "exercisedOnMap": false
-  },
-  "node-selected": {
-   "exercisedOnMap": false
+   },
+   "confound": 0
   },
   "node-related": {
-   "exercisedOnMap": false
-  },
-  "node-linked": {
-   "exercisedOnMap": false
-  },
-  "node-cross-linked": {
-   "exercisedOnMap": false
-  },
-  "filter-match": {
    "exercisedOnMap": true,
+   "legendSampleFound": true,
    "sharedClasses": [
     "map-node",
+    "map-node--file",
+    "map-node--related",
+    "map-node__kind-glyph"
+   ],
+   "liveByClass": {
+    "map-node map-node--file map-node--related": {
+     "className": "map-node map-node--file map-node--related",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-node__kind-glyph": {
+     "className": "map-node__kind-glyph",
+     "strokeWidth": "2px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "legendByClass": {
+    "map-node map-node--file map-node--related": {
+     "className": "map-node map-node--file map-node--related",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-node__kind-glyph": {
+     "className": "map-node__kind-glyph",
+     "strokeWidth": "2px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "confound": 1
+  },
+  "node-root": {
+   "exercisedOnMap": true,
+   "legendSampleFound": true,
+   "sharedClasses": [
+    "map-node",
+    "map-node--root",
+    "map-node--plain"
+   ],
+   "liveByClass": {
+    "map-node map-node--plain map-node--root": {
+     "className": "map-node map-node--root map-node--plain",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "legendByClass": {
+    "map-node map-node--plain map-node--root": {
+     "className": "map-node map-node--root map-node--plain",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "confound": 0
+  },
+  "node-selected": {
+   "exercisedOnMap": true,
+   "legendSampleFound": true,
+   "sharedClasses": [
+    "map-node",
+    "map-node--selected",
+    "map-node__kind-glyph"
+   ],
+   "liveByClass": {
+    "map-node map-node--selected": {
+     "className": "map-node map-node--directory map-node--selected",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-node__kind-glyph": {
+     "className": "map-node__kind-glyph",
+     "strokeWidth": "2px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "legendByClass": {
+    "map-node map-node--selected": {
+     "className": "map-node map-node--file map-node--selected",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-node__kind-glyph": {
+     "className": "map-node__kind-glyph",
+     "strokeWidth": "2px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "confound": 1
+  },
+  "territory-focused": {
+   "exercisedOnMap": true,
+   "legendSampleFound": true,
+   "sharedClasses": [
+    "map-territory__frame",
+    "map-territory__frame--focused"
+   ],
+   "liveByClass": {
+    "map-territory__frame map-territory__frame--focused": {
+     "className": "map-territory__frame map-territory__frame--focused",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "legendByClass": {
+    "map-territory__frame map-territory__frame--focused": {
+     "className": "map-territory__frame map-territory__frame--focused",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "confound": 0
+  },
+  "intra-touching": {
+   "exercisedOnMap": true,
+   "legendSampleFound": true,
+   "sharedClasses": [
+    "map-edge",
+    "map-edge--established",
+    "map-edge--touching",
+    "map-edge__line",
+    "map-edge__arrow"
+   ],
+   "liveByClass": {
+    "map-edge map-edge--established map-edge--touching": {
+     "className": "map-edge map-edge--established map-edge--touching map-edge--deterministic",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-edge__line": {
+     "className": "map-edge__line",
+     "strokeWidth": "2.6px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-edge__arrow": {
+     "className": "map-edge__arrow",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "legendByClass": {
+    "map-edge map-edge--established map-edge--touching": {
+     "className": "map-edge map-edge--established map-edge--touching",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-edge__line": {
+     "className": "map-edge__line",
+     "strokeWidth": "2.6px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-edge__arrow": {
+     "className": "map-edge__arrow",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "confound": 1
+  },
+  "node-linked": {
+   "exercisedOnMap": true,
+   "legendSampleFound": true,
+   "sharedClasses": [
+    "map-node",
+    "map-node--file",
+    "map-node--linked",
+    "map-node__kind-glyph"
+   ],
+   "liveByClass": {
+    "map-node map-node--file map-node--linked": {
+     "className": "map-node map-node--file map-node--linked",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-node__kind-glyph": {
+     "className": "map-node__kind-glyph",
+     "strokeWidth": "2px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "legendByClass": {
+    "map-node map-node--file map-node--linked": {
+     "className": "map-node map-node--file map-node--linked",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-node__kind-glyph": {
+     "className": "map-node__kind-glyph",
+     "strokeWidth": "2px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "confound": 1
+  },
+  "inter-crossing": {
+   "exercisedOnMap": true,
+   "legendSampleFound": true,
+   "sharedClasses": [
+    "map-cross-edge",
+    "map-cross-edge--established",
+    "map-cross-edge--distant",
+    "map-cross-edge__casing",
+    "map-cross-edge__line",
+    "map-cross-edge__arrow",
+    "map-cross-edge__chevron"
+   ],
+   "liveByClass": {
+    "map-cross-edge map-cross-edge--distant map-cross-edge--established": {
+     "className": "map-cross-edge map-cross-edge--established map-cross-edge--distant map-cross-edge--deterministic",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__casing": {
+     "className": "map-cross-edge__casing",
+     "strokeWidth": "6px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__line": {
+     "className": "map-cross-edge__line",
+     "strokeWidth": "2px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__arrow": {
+     "className": "map-cross-edge__arrow",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "0.7",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__chevron": {
+     "className": "map-cross-edge__chevron",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "0.7",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "legendByClass": {
+    "map-cross-edge map-cross-edge--distant map-cross-edge--established": {
+     "className": "map-cross-edge map-cross-edge--established map-cross-edge--distant",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__casing": {
+     "className": "map-cross-edge__casing",
+     "strokeWidth": "6px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__line": {
+     "className": "map-cross-edge__line",
+     "strokeWidth": "2px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__arrow": {
+     "className": "map-cross-edge__arrow",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "0.7",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__chevron": {
+     "className": "map-cross-edge__chevron",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "0.7",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "confound": 1
+  },
+  "inter-established": {
+   "exercisedOnMap": true,
+   "legendSampleFound": true,
+   "sharedClasses": [
+    "map-cross-edge",
+    "map-cross-edge--established",
+    "map-cross-edge--distant",
+    "map-cross-edge__casing",
+    "map-cross-edge__line",
+    "map-cross-edge__arrow",
+    "map-cross-edge__chevron"
+   ],
+   "liveByClass": {
+    "map-cross-edge map-cross-edge--distant map-cross-edge--established": {
+     "className": "map-cross-edge map-cross-edge--established map-cross-edge--distant map-cross-edge--deterministic",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__casing": {
+     "className": "map-cross-edge__casing",
+     "strokeWidth": "6px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__line": {
+     "className": "map-cross-edge__line",
+     "strokeWidth": "2px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__arrow": {
+     "className": "map-cross-edge__arrow",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "0.7",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__chevron": {
+     "className": "map-cross-edge__chevron",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "0.7",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "legendByClass": {
+    "map-cross-edge map-cross-edge--distant map-cross-edge--established": {
+     "className": "map-cross-edge map-cross-edge--established map-cross-edge--distant",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__casing": {
+     "className": "map-cross-edge__casing",
+     "strokeWidth": "6px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__line": {
+     "className": "map-cross-edge__line",
+     "strokeWidth": "2px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__arrow": {
+     "className": "map-cross-edge__arrow",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "0.7",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__chevron": {
+     "className": "map-cross-edge__chevron",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "0.7",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "confound": 1
+  },
+  "inter-touching": {
+   "exercisedOnMap": true,
+   "legendSampleFound": true,
+   "sharedClasses": [
+    "map-cross-edge",
+    "map-cross-edge--established",
+    "map-cross-edge--touching",
+    "map-cross-edge__casing",
+    "map-cross-edge__line",
+    "map-cross-edge__arrow",
+    "map-cross-edge__chevron"
+   ],
+   "liveByClass": {
+    "map-cross-edge map-cross-edge--established map-cross-edge--touching": {
+     "className": "map-cross-edge map-cross-edge--established map-cross-edge--touching map-cross-edge--deterministic",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__casing": {
+     "className": "map-cross-edge__casing",
+     "strokeWidth": "6px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__line": {
+     "className": "map-cross-edge__line",
+     "strokeWidth": "3.2px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__arrow": {
+     "className": "map-cross-edge__arrow",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__chevron": {
+     "className": "map-cross-edge__chevron",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "legendByClass": {
+    "map-cross-edge map-cross-edge--established map-cross-edge--touching": {
+     "className": "map-cross-edge map-cross-edge--established map-cross-edge--touching",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__casing": {
+     "className": "map-cross-edge__casing",
+     "strokeWidth": "6px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__line": {
+     "className": "map-cross-edge__line",
+     "strokeWidth": "3.2px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__arrow": {
+     "className": "map-cross-edge__arrow",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__chevron": {
+     "className": "map-cross-edge__chevron",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "confound": 2
+  },
+  "node-cross-linked": {
+   "exercisedOnMap": true,
+   "legendSampleFound": true,
+   "sharedClasses": [
+    "map-node",
+    "map-node--file",
+    "map-node--cross-linked",
+    "map-node__kind-glyph"
+   ],
+   "liveByClass": {
+    "map-node map-node--cross-linked map-node--file": {
+     "className": "map-node map-node--file map-node--cross-linked",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-node__kind-glyph": {
+     "className": "map-node__kind-glyph",
+     "strokeWidth": "2px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "legendByClass": {
+    "map-node map-node--cross-linked map-node--file": {
+     "className": "map-node map-node--file map-node--cross-linked",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-node__kind-glyph": {
+     "className": "map-node__kind-glyph",
+     "strokeWidth": "2px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "confound": 1
+  },
+  "inter-approved": {
+   "exercisedOnMap": true,
+   "legendSampleFound": true,
+   "sharedClasses": [
+    "map-cross-edge",
+    "map-cross-edge--established",
+    "map-cross-edge--distant",
+    "map-cross-edge--approved",
+    "map-cross-edge__casing",
+    "map-cross-edge__line",
+    "map-cross-edge__arrow",
+    "map-cross-edge__chevron"
+   ],
+   "liveByClass": {
+    "map-cross-edge map-cross-edge--approved map-cross-edge--distant map-cross-edge--established": {
+     "className": "map-cross-edge map-cross-edge--established map-cross-edge--distant map-cross-edge--approved",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__casing": {
+     "className": "map-cross-edge__casing",
+     "strokeWidth": "6px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__line": {
+     "className": "map-cross-edge__line",
+     "strokeWidth": "2px",
+     "strokeDasharray": "14px, 3px, 3px, 3px",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__arrow": {
+     "className": "map-cross-edge__arrow",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "0.7",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__chevron": {
+     "className": "map-cross-edge__chevron",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "0.7",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "legendByClass": {
+    "map-cross-edge map-cross-edge--approved map-cross-edge--distant map-cross-edge--established": {
+     "className": "map-cross-edge map-cross-edge--established map-cross-edge--distant map-cross-edge--approved",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__casing": {
+     "className": "map-cross-edge__casing",
+     "strokeWidth": "6px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__line": {
+     "className": "map-cross-edge__line",
+     "strokeWidth": "2px",
+     "strokeDasharray": "14px, 3px, 3px, 3px",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__arrow": {
+     "className": "map-cross-edge__arrow",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "0.7",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__chevron": {
+     "className": "map-cross-edge__chevron",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "0.7",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "confound": 2
+  },
+  "inter-suggestion": {
+   "exercisedOnMap": true,
+   "legendSampleFound": true,
+   "sharedClasses": [
+    "map-cross-edge",
+    "map-cross-edge--suggestion",
+    "map-cross-edge--distant",
+    "map-cross-edge__casing",
+    "map-cross-edge__line",
+    "map-cross-edge__ring"
+   ],
+   "liveByClass": {
+    "map-cross-edge map-cross-edge--distant map-cross-edge--suggestion": {
+     "className": "map-cross-edge map-cross-edge--suggestion map-cross-edge--distant",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__casing": {
+     "className": "map-cross-edge__casing",
+     "strokeWidth": "5px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__line": {
+     "className": "map-cross-edge__line",
+     "strokeWidth": "1.6px",
+     "strokeDasharray": "6px, 6px",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__ring": {
+     "className": "map-cross-edge__ring",
+     "strokeWidth": "1.6px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "legendByClass": {
+    "map-cross-edge map-cross-edge--distant map-cross-edge--suggestion": {
+     "className": "map-cross-edge map-cross-edge--suggestion map-cross-edge--distant",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__casing": {
+     "className": "map-cross-edge__casing",
+     "strokeWidth": "5px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__line": {
+     "className": "map-cross-edge__line",
+     "strokeWidth": "1.6px",
+     "strokeDasharray": "6px, 6px",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-cross-edge__ring": {
+     "className": "map-cross-edge__ring",
+     "strokeWidth": "1.6px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "confound": 1
+  },
+  "node-skipped": {
+   "exercisedOnMap": true,
+   "legendSampleFound": true,
+   "sharedClasses": [
+    "map-node",
+    "map-node--skipped",
     "map-node--plain",
-    "map-node--filter-match",
-    "map-node__kind-glyph",
-    "map-node__filter-tag",
-    "map-node__filter-tag--match"
+    "map-node__kind-glyph"
    ],
-   "liveSignatures": [
-    {
-     "className": "map-node map-node--directory map-node--plain map-node--filter-match",
+   "liveByClass": {
+    "map-node map-node--plain map-node--skipped": {
+     "className": "map-node map-node--skipped map-node--plain",
      "strokeWidth": "1px",
      "strokeDasharray": "none",
      "fillOpacity": "1",
-     "fontWeight": "400"
+     "fontWeight": "400",
+     "opacity": "1"
     },
-    {
+    "map-node__kind-glyph": {
      "className": "map-node__kind-glyph",
      "strokeWidth": "2px",
      "strokeDasharray": "none",
      "fillOpacity": "1",
-     "fontWeight": "400"
-    },
-    {
-     "className": "map-node__filter-tag map-node__filter-tag--match",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "legendByClass": {
+    "map-node map-node--plain map-node--skipped": {
+     "className": "map-node map-node--skipped map-node--plain",
      "strokeWidth": "1px",
      "strokeDasharray": "none",
      "fillOpacity": "1",
-     "fontWeight": "700"
-    }
-   ],
-   "legendSignatures": [
-    {
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-node__kind-glyph": {
      "className": "map-node__kind-glyph",
      "strokeWidth": "2px",
      "strokeDasharray": "none",
      "fillOpacity": "1",
-     "fontWeight": "400"
-    },
-    {
-     "className": "map-node__filter-tag map-node__filter-tag--match",
-     "strokeWidth": "1px",
-     "strokeDasharray": "none",
-     "fillOpacity": "1",
-     "fontWeight": "700"
+     "fontWeight": "400",
+     "opacity": "1"
     }
-   ]
+   },
+   "confound": 0
   },
   "filter-context": {
    "exercisedOnMap": true,
+   "legendSampleFound": true,
    "sharedClasses": [
     "map-node",
     "map-node--plain",
@@ -835,214 +1908,292 @@
     "map-node__filter-tag",
     "map-node__filter-tag--context"
    ],
-   "liveSignatures": [
-    {
-     "className": "map-node map-node--root map-node--plain map-node--filter-context",
+   "liveByClass": {
+    "map-node map-node--filter-context map-node--plain": {
+     "className": "map-node map-node--directory map-node--plain map-node--filter-context",
      "strokeWidth": "1px",
      "strokeDasharray": "none",
      "fillOpacity": "1",
-     "fontWeight": "400"
+     "fontWeight": "400",
+     "opacity": "1"
     },
-    {
-     "className": "map-node__kind-glyph",
-     "strokeWidth": "2.5px",
-     "strokeDasharray": "none",
-     "fillOpacity": "1",
-     "fontWeight": "400"
-    },
-    {
-     "className": "map-node__filter-tag map-node__filter-tag--context",
-     "strokeWidth": "1px",
-     "strokeDasharray": "none",
-     "fillOpacity": "1",
-     "fontWeight": "700"
-    }
-   ],
-   "legendSignatures": [
-    {
+    "map-node__kind-glyph": {
      "className": "map-node__kind-glyph",
      "strokeWidth": "2px",
      "strokeDasharray": "none",
      "fillOpacity": "1",
-     "fontWeight": "400"
+     "fontWeight": "400",
+     "opacity": "1"
     },
-    {
+    "map-node__filter-tag map-node__filter-tag--context": {
      "className": "map-node__filter-tag map-node__filter-tag--context",
      "strokeWidth": "1px",
      "strokeDasharray": "none",
      "fillOpacity": "1",
-     "fontWeight": "700"
+     "fontWeight": "700",
+     "opacity": "1"
     }
-   ]
+   },
+   "legendByClass": {
+    "map-node map-node--filter-context map-node--plain": {
+     "className": "map-node map-node--file map-node--plain map-node--filter-context",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-node__kind-glyph": {
+     "className": "map-node__kind-glyph",
+     "strokeWidth": "2px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-node__filter-tag map-node__filter-tag--context": {
+     "className": "map-node__filter-tag map-node__filter-tag--context",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "700",
+     "opacity": "1"
+    }
+   },
+   "confound": 1
   },
-  "node-diagnostic": {
-   "exercisedOnMap": false
-  },
-  "territory-focused": {
+  "filter-match": {
    "exercisedOnMap": true,
+   "legendSampleFound": true,
    "sharedClasses": [
-    "map-territory__frame",
-    "map-territory__frame--focused"
+    "map-node",
+    "map-node--file",
+    "map-node--plain",
+    "map-node--filter-match",
+    "map-node__kind-glyph",
+    "map-node__filter-tag",
+    "map-node__filter-tag--match"
    ],
-   "liveSignatures": [
-    {
-     "className": "map-territory__frame map-territory__frame--focused",
+   "liveByClass": {
+    "map-node map-node--file map-node--filter-match map-node--plain": {
+     "className": "map-node map-node--file map-node--plain map-node--filter-match",
      "strokeWidth": "1px",
      "strokeDasharray": "none",
      "fillOpacity": "1",
-     "fontWeight": "400"
-    }
-   ],
-   "legendSignatures": [
-    {
-     "className": "map-territory__frame map-territory__frame--focused",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-node__kind-glyph": {
+     "className": "map-node__kind-glyph",
+     "strokeWidth": "2px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-node__filter-tag map-node__filter-tag--match": {
+     "className": "map-node__filter-tag map-node__filter-tag--match",
      "strokeWidth": "1px",
      "strokeDasharray": "none",
      "fillOpacity": "1",
-     "fontWeight": "400"
+     "fontWeight": "700",
+     "opacity": "1"
     }
-   ]
+   },
+   "legendByClass": {
+    "map-node map-node--file map-node--filter-match map-node--plain": {
+     "className": "map-node map-node--file map-node--plain map-node--filter-match",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-node__kind-glyph": {
+     "className": "map-node__kind-glyph",
+     "strokeWidth": "2px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-node__filter-tag map-node__filter-tag--match": {
+     "className": "map-node__filter-tag map-node__filter-tag--match",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "700",
+     "opacity": "1"
+    }
+   },
+   "confound": 1
   },
-  "hierarchy-normal": {
+  "intra-approved": {
    "exercisedOnMap": true,
-   "sharedClasses": [
-    "map-hierarchy-edge",
-    "map-hierarchy-edge--distant"
-   ],
-   "liveSignatures": [
-    {
-     "className": "map-hierarchy-edge map-hierarchy-edge--distant",
-     "strokeWidth": "1px",
-     "strokeDasharray": "none",
-     "fillOpacity": "1",
-     "fontWeight": "400"
-    }
-   ],
-   "legendSignatures": []
-  },
-  "hierarchy-touching": {
-   "exercisedOnMap": false
-  },
-  "intra-established": {
-   "exercisedOnMap": true,
+   "legendSampleFound": true,
    "sharedClasses": [
     "map-edge",
     "map-edge--established",
     "map-edge--distant",
+    "map-edge--approved",
     "map-edge__line",
     "map-edge__arrow"
    ],
-   "liveSignatures": [
-    {
-     "className": "map-edge map-edge--established map-edge--distant map-edge--deterministic",
+   "liveByClass": {
+    "map-edge map-edge--approved map-edge--distant map-edge--established": {
+     "className": "map-edge map-edge--established map-edge--distant map-edge--approved",
      "strokeWidth": "1px",
      "strokeDasharray": "none",
      "fillOpacity": "1",
-     "fontWeight": "400"
+     "fontWeight": "400",
+     "opacity": "1"
     },
-    {
+    "map-edge__line": {
      "className": "map-edge__line",
      "strokeWidth": "1.6px",
-     "strokeDasharray": "none",
+     "strokeDasharray": "12px, 3px, 2px, 3px",
      "fillOpacity": "1",
-     "fontWeight": "400"
+     "fontWeight": "400",
+     "opacity": "1"
     },
-    {
+    "map-edge__arrow": {
      "className": "map-edge__arrow",
      "strokeWidth": "1px",
      "strokeDasharray": "none",
      "fillOpacity": "0.45",
-     "fontWeight": "400"
+     "fontWeight": "400",
+     "opacity": "1"
     }
-   ],
-   "legendSignatures": [
-    {
-     "className": "map-edge__line",
-     "strokeWidth": "1.6px",
+   },
+   "legendByClass": {
+    "map-edge map-edge--approved map-edge--distant map-edge--established": {
+     "className": "map-edge map-edge--established map-edge--distant map-edge--approved",
+     "strokeWidth": "1px",
      "strokeDasharray": "none",
      "fillOpacity": "1",
-     "fontWeight": "400"
+     "fontWeight": "400",
+     "opacity": "1"
     },
-    {
+    "map-edge__line": {
+     "className": "map-edge__line",
+     "strokeWidth": "1.6px",
+     "strokeDasharray": "12px, 3px, 2px, 3px",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-edge__arrow": {
      "className": "map-edge__arrow",
      "strokeWidth": "1px",
      "strokeDasharray": "none",
      "fillOpacity": "0.45",
-     "fontWeight": "400"
+     "fontWeight": "400",
+     "opacity": "1"
     }
-   ]
+   },
+   "confound": 1
   },
   "intra-suggestion": {
-   "exercisedOnMap": false
-  },
-  "intra-approved": {
-   "exercisedOnMap": false
-  },
-  "intra-touching": {
-   "exercisedOnMap": false
-  },
-  "inter-crossing": {
-   "exercisedOnMap": false
-  },
-  "inter-established": {
-   "exercisedOnMap": false
-  },
-  "inter-suggestion": {
-   "exercisedOnMap": false
-  },
-  "inter-approved": {
-   "exercisedOnMap": false
-  },
-  "inter-touching": {
-   "exercisedOnMap": false
-  },
-  "aggregate": {
    "exercisedOnMap": true,
+   "legendSampleFound": true,
    "sharedClasses": [
-    "map-aggregate",
-    "map-aggregate__pill",
-    "map-aggregate__label"
+    "map-edge",
+    "map-edge--suggestion",
+    "map-edge--distant",
+    "map-edge__line",
+    "map-edge__ring"
    ],
-   "liveSignatures": [
-    {
-     "className": "map-aggregate",
+   "liveByClass": {
+    "map-edge map-edge--distant map-edge--suggestion": {
+     "className": "map-edge map-edge--suggestion map-edge--distant",
      "strokeWidth": "1px",
      "strokeDasharray": "none",
      "fillOpacity": "1",
-     "fontWeight": "400"
+     "fontWeight": "400",
+     "opacity": "1"
     },
-    {
-     "className": "map-aggregate__pill",
-     "strokeWidth": "1.25px",
-     "strokeDasharray": "4px, 3px",
-     "fillOpacity": "0.9",
-     "fontWeight": "400"
+    "map-edge__line": {
+     "className": "map-edge__line",
+     "strokeWidth": "1.4px",
+     "strokeDasharray": "5px, 5px",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
     },
-    {
-     "className": "map-aggregate__label",
-     "strokeWidth": "1px",
+    "map-edge__ring": {
+     "className": "map-edge__ring",
+     "strokeWidth": "1.4px",
      "strokeDasharray": "none",
      "fillOpacity": "1",
-     "fontWeight": "400"
+     "fontWeight": "400",
+     "opacity": "1"
     }
-   ],
-   "legendSignatures": [
-    {
-     "className": "map-aggregate__pill",
-     "strokeWidth": "1.25px",
-     "strokeDasharray": "4px, 3px",
-     "fillOpacity": "0.9",
-     "fontWeight": "400"
-    },
-    {
-     "className": "map-aggregate__label",
+   },
+   "legendByClass": {
+    "map-edge map-edge--distant map-edge--suggestion": {
+     "className": "map-edge map-edge--suggestion map-edge--distant",
      "strokeWidth": "1px",
      "strokeDasharray": "none",
      "fillOpacity": "1",
-     "fontWeight": "400"
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-edge__line": {
+     "className": "map-edge__line",
+     "strokeWidth": "1.4px",
+     "strokeDasharray": "5px, 5px",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-edge__ring": {
+     "className": "map-edge__ring",
+     "strokeWidth": "1.4px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
     }
-   ]
+   },
+   "confound": 0
+  },
+  "node-diagnostic": {
+   "exercisedOnMap": false,
+   "legendSampleFound": true,
+   "legendByClass": {
+    "map-node map-node--file map-node--plain": {
+     "className": "map-node map-node--file map-node--plain",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-node__kind-glyph": {
+     "className": "map-node__kind-glyph",
+     "strokeWidth": "2px",
+     "strokeDasharray": "none",
+     "fillOpacity": "1",
+     "fontWeight": "400",
+     "opacity": "1"
+    },
+    "map-node__diagnostic": {
+     "className": "map-node__diagnostic",
+     "strokeWidth": "1px",
+     "strokeDasharray": "none",
+     "fillOpacity": "0.9",
+     "fontWeight": "400",
+     "opacity": "1"
+    }
+   },
+   "confound": null
   }
+ },
+ "nodeDiagnosticProof": {
+  "key": "node-diagnostic",
+  "realWebViewStatus": "NOT_APPLICABLE_WHILE_SCAN_DIAGNOSTICS_ARE_REJECTED",
+  "backendInvariant": "src-tauri/src/map/commands.rs:745-749",
+  "deterministicCoverage": "PASS"
  },
  "keyboard": {
   "openedWithEnter": true,
@@ -1051,26 +2202,6 @@
    {
     "tag": "INPUT",
     "testid": "search-input",
-    "insideLegend": false
-   },
-   {
-    "tag": "BUTTON",
-    "testid": "search-clear",
-    "insideLegend": false
-   },
-   {
-    "tag": "BUTTON",
-    "testid": "search-hit",
-    "insideLegend": false
-   },
-   {
-    "tag": "BUTTON",
-    "testid": "search-hit",
-    "insideLegend": false
-   },
-   {
-    "tag": "BUTTON",
-    "testid": "search-hit",
     "insideLegend": false
    },
    {
@@ -1125,17 +2256,37 @@
    },
    {
     "tag": "BUTTON",
-    "testid": null,
+    "testid": "filter-result",
     "insideLegend": false
    },
    {
     "tag": "BUTTON",
-    "testid": null,
+    "testid": "filter-result",
     "insideLegend": false
    },
    {
-    "tag": "svg",
-    "testid": "composed-canvas",
+    "tag": "BUTTON",
+    "testid": "filter-result",
+    "insideLegend": false
+   },
+   {
+    "tag": "BUTTON",
+    "testid": "filter-result",
+    "insideLegend": false
+   },
+   {
+    "tag": "BUTTON",
+    "testid": "filter-result",
+    "insideLegend": false
+   },
+   {
+    "tag": "BUTTON",
+    "testid": "filter-result",
+    "insideLegend": false
+   },
+   {
+    "tag": "BUTTON",
+    "testid": "filter-result",
     "insideLegend": false
    }
   ],
@@ -1147,19 +2298,18 @@
   "before": {
    "state": {
     "alpha": {
-     "indexId": "2dc959e7-7590-4fdb-899b-b6f2ae65ba06",
+     "indexId": "0d216942-ed2d-4f7d-b580-6809643db38f",
      "revision": 1,
-     "indexDigest": "6827e49681825bc1ff2aa42f088bd7593ec36972511e5bc5f11cf2482780e183",
-     "journalDigest": "6421e75c30fc0afb46067813d0d5a29ba65167ce5b01cf7add4053b4164a6c39",
+     "indexDigest": "c2cef2d3346622eea4895c4f704aa5b300be3d38b5f12bbdc87d516b7796fbe9",
+     "journalDigest": "ba66498c957521a937b50e2ebeff705fffdc954136a09996633cc86697497e5a",
      "resume": {
-      "focusNodeId": 6,
+      "focusNodeId": 2,
       "selectedNodeId": 6,
       "view": null,
       "filter": {
        "state": "ALL",
        "kinds": [
-        "DIRECTORY",
-        "SKIPPED"
+        "FILE"
        ],
        "availability": "ALL"
       },
@@ -1167,13 +2317,13 @@
      }
     },
     "gamma": {
-     "indexId": "b2e8ccce-427e-4459-b0f5-e10b2d525d5a",
+     "indexId": "537bc50d-35ae-40e4-bf37-e346003988cf",
      "revision": 1,
-     "indexDigest": "acaf30b32083acbf28b259b32ed3cb7b5970b6018843d4c9b6a5a96d5b40f613",
-     "journalDigest": "300c414e493db064a365c49dbbec55df9c292a8c2e4026788d4a76a25d4e600e",
+     "indexDigest": "31b312f4837a2b87834e082a07ec9f76293c07fa21594bbcac458c4d19dd7d75",
+     "journalDigest": "7290ed3dc7ab22b5492e21282737712713563dec6bd0a18680d67e4136e38dcc",
      "resume": {
       "focusNodeId": null,
-      "selectedNodeId": null,
+      "selectedNodeId": 1,
       "view": null,
       "filter": {
        "state": "ALL",
@@ -1184,10 +2334,10 @@
      }
     },
     "realA": {
-     "indexId": "c795856f-a097-47d2-90e8-907b729af98e",
+     "indexId": "96db700e-3ce5-432b-a105-6c22dbab2925",
      "revision": 1,
-     "indexDigest": "00b1fab9f8f151048a32ebf0aabb31a9dc51e1c9d78a4473530eed2ab3cf6be6",
-     "journalDigest": "0c2dd80e90559be5ea93936f64015e8f095d7a0fb4447cbbce6f8a5860f72f1e",
+     "indexDigest": "a85ba7aa7977c0a9c830447f6f596decc470e9a9a58e6a32255475792621a8c0",
+     "journalDigest": "01fe00c640524010996b710494a3f3364776be46ebcb9f443a63d7660c307357",
      "resume": {
       "focusNodeId": null,
       "selectedNodeId": 1,
@@ -1205,13 +2355,13 @@
      }
     },
     "wide": {
-     "indexId": "d1069c90-cd6b-4407-af52-16271263d756",
+     "indexId": "bba2a154-7353-4791-9056-233b236bdbdc",
      "revision": 1,
-     "indexDigest": "5bb56877b6b079327cc26052402dee08ac2899e1fe90fa0df7cb644a4953edb5",
-     "journalDigest": "c7d9c902d5f70759b6412e97133d881354ddae1c43e1208d561cdafca455e190",
+     "indexDigest": "de4ba1b52f0dd3bcaf425222b384a2753f08f06e585b24b3afa6314d0936dd62",
+     "journalDigest": "369e073aaba9b8d029f11ca165fa95433ceae2c9fa1f938a1212f02e57d70c1f",
      "resume": {
-      "focusNodeId": null,
-      "selectedNodeId": null,
+      "focusNodeId": 3,
+      "selectedNodeId": 3,
       "view": null,
       "filter": {
        "state": "ALL",
@@ -1224,26 +2374,25 @@
    },
    "source": {
     "root1": "f92414ce433b65ef3170ebd8762539e4330204e10138c0bb7a4baea1adaf4257",
-    "root2": "b920bf3d9cbf9cf433380aa3080b28967e017256e2c14802be0a64e3405682bd",
+    "root2": "f41696cc0ecf0ad769ed9856166d931569745979f2663cd9c96cc627217703c0",
     "root3": "4f231b565c2cc3cf8b3aa0a28578ab1664cec67170b702683e5aefad5a8966f7"
    }
   },
   "after": {
    "state": {
     "alpha": {
-     "indexId": "2dc959e7-7590-4fdb-899b-b6f2ae65ba06",
+     "indexId": "0d216942-ed2d-4f7d-b580-6809643db38f",
      "revision": 1,
-     "indexDigest": "6827e49681825bc1ff2aa42f088bd7593ec36972511e5bc5f11cf2482780e183",
-     "journalDigest": "6421e75c30fc0afb46067813d0d5a29ba65167ce5b01cf7add4053b4164a6c39",
+     "indexDigest": "c2cef2d3346622eea4895c4f704aa5b300be3d38b5f12bbdc87d516b7796fbe9",
+     "journalDigest": "ba66498c957521a937b50e2ebeff705fffdc954136a09996633cc86697497e5a",
      "resume": {
-      "focusNodeId": 6,
+      "focusNodeId": 2,
       "selectedNodeId": 6,
       "view": null,
       "filter": {
        "state": "ALL",
        "kinds": [
-        "DIRECTORY",
-        "SKIPPED"
+        "FILE"
        ],
        "availability": "ALL"
       },
@@ -1251,13 +2400,13 @@
      }
     },
     "gamma": {
-     "indexId": "b2e8ccce-427e-4459-b0f5-e10b2d525d5a",
+     "indexId": "537bc50d-35ae-40e4-bf37-e346003988cf",
      "revision": 1,
-     "indexDigest": "acaf30b32083acbf28b259b32ed3cb7b5970b6018843d4c9b6a5a96d5b40f613",
-     "journalDigest": "300c414e493db064a365c49dbbec55df9c292a8c2e4026788d4a76a25d4e600e",
+     "indexDigest": "31b312f4837a2b87834e082a07ec9f76293c07fa21594bbcac458c4d19dd7d75",
+     "journalDigest": "7290ed3dc7ab22b5492e21282737712713563dec6bd0a18680d67e4136e38dcc",
      "resume": {
       "focusNodeId": null,
-      "selectedNodeId": null,
+      "selectedNodeId": 1,
       "view": null,
       "filter": {
        "state": "ALL",
@@ -1268,10 +2417,10 @@
      }
     },
     "realA": {
-     "indexId": "c795856f-a097-47d2-90e8-907b729af98e",
+     "indexId": "96db700e-3ce5-432b-a105-6c22dbab2925",
      "revision": 1,
-     "indexDigest": "00b1fab9f8f151048a32ebf0aabb31a9dc51e1c9d78a4473530eed2ab3cf6be6",
-     "journalDigest": "0c2dd80e90559be5ea93936f64015e8f095d7a0fb4447cbbce6f8a5860f72f1e",
+     "indexDigest": "a85ba7aa7977c0a9c830447f6f596decc470e9a9a58e6a32255475792621a8c0",
+     "journalDigest": "01fe00c640524010996b710494a3f3364776be46ebcb9f443a63d7660c307357",
      "resume": {
       "focusNodeId": null,
       "selectedNodeId": 1,
@@ -1289,13 +2438,13 @@
      }
     },
     "wide": {
-     "indexId": "d1069c90-cd6b-4407-af52-16271263d756",
+     "indexId": "bba2a154-7353-4791-9056-233b236bdbdc",
      "revision": 1,
-     "indexDigest": "5bb56877b6b079327cc26052402dee08ac2899e1fe90fa0df7cb644a4953edb5",
-     "journalDigest": "c7d9c902d5f70759b6412e97133d881354ddae1c43e1208d561cdafca455e190",
+     "indexDigest": "de4ba1b52f0dd3bcaf425222b384a2753f08f06e585b24b3afa6314d0936dd62",
+     "journalDigest": "369e073aaba9b8d029f11ca165fa95433ceae2c9fa1f938a1212f02e57d70c1f",
      "resume": {
-      "focusNodeId": null,
-      "selectedNodeId": null,
+      "focusNodeId": 3,
+      "selectedNodeId": 3,
       "view": null,
       "filter": {
        "state": "ALL",
@@ -1308,7 +2457,7 @@
    },
    "source": {
     "root1": "f92414ce433b65ef3170ebd8762539e4330204e10138c0bb7a4baea1adaf4257",
-    "root2": "b920bf3d9cbf9cf433380aa3080b28967e017256e2c14802be0a64e3405682bd",
+    "root2": "f41696cc0ecf0ad769ed9856166d931569745979f2663cd9c96cc627217703c0",
     "root3": "4f231b565c2cc3cf8b3aa0a28578ab1664cec67170b702683e5aefad5a8966f7"
    }
   }
