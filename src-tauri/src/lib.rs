@@ -1371,7 +1371,7 @@ fn map_host_info(app: tauri::AppHandle) -> map::commands::HostInfo {
         auto_dre_pass: std::env::var("FILETOPO_AUTO_DRE")
             .ok()
             .and_then(|value| value.parse::<u8>().ok())
-            .filter(|pass| *pass == 1 || *pass == 2)
+            .filter(|pass| (1..=3).contains(pass))
             .unwrap_or(0),
         // Reserve `X11`: the same engine, on a brain the legacy slice never
         // covered. One pass, because what it proves is genericity rather than

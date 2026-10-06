@@ -375,7 +375,7 @@ fn input_state(
 
 pub fn task0024_dr15_enabled() -> bool {
     cfg!(debug_assertions)
-        && std::env::var("FILETOPO_AUTO_DRE").is_ok_and(|value| value == "1" || value == "2")
+        && std::env::var("FILETOPO_AUTO_DRE").is_ok_and(|value| value == "1" || value == "2" || value == "3")
 }
 
 /// `SR15`. Same shape as the `DR15` flag, and just as narrow: development

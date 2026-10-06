@@ -9,7 +9,10 @@ import { useEffect, useRef, type RefObject } from "react";
  * sits where the removed one was, which can be **another relation's** revoke
  * control: one more Enter would take back a relation the reader never chose.
  * The right place to land is the same suggestion's own approval control,
- * because that is what the suggestion has just become.
+ * because that is what the suggestion has just become. When the engine is
+ * `STALE` the pending core suggestion is masked and has no approval control:
+ * focus then goes to `fallbackSelector` (the explicit analysis command),
+ * never to a neighbouring relation's revoke button.
  *
  * It waits for the reload the revocation causes: the panel first shows its
  * loading state, then the rows read back from the backend. Only after that
@@ -19,6 +22,7 @@ import { useEffect, useRef, type RefObject } from "react";
 export function useRestoreFocusAfterReload({
   root,
   selector,
+  fallbackSelector,
   active,
   loading,
   ready,
@@ -27,6 +31,8 @@ export function useRestoreFocusAfterReload({
   root: RefObject<HTMLElement | null>;
   /** The control to focus, inside `root`. Only read once the reload is over. */
   selector: string;
+  /** A safe landing when `selector` matches nothing; focus is never left to the browser. */
+  fallbackSelector?: string;
   /** `true` from the moment a revocation succeeded until focus has been placed. */
   active: boolean;
   loading: boolean;
@@ -46,7 +52,10 @@ export function useRestoreFocusAfterReload({
     }
     if (!reloaded.current || !ready) return;
     reloaded.current = false;
-    root.current?.querySelector<HTMLElement>(selector)?.focus();
+    const target =
+      root.current?.querySelector<HTMLElement>(selector) ??
+      (fallbackSelector ? root.current?.querySelector<HTMLElement>(fallbackSelector) : null);
+    target?.focus();
     onRestored();
   });
 }

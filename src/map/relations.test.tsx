@@ -796,4 +796,24 @@ describe("TASK-0051 — le focus après une révocation (panneau interne)", () =
     expect(focused.dataset.suggestionKey).toBe("S-005");
     expect(focused.dataset.relationRevoke).toBeUndefined();
   });
+
+  it("moteur STALE : sans approbation à retrouver, le focus va sur « Analyser les relations »", () => {
+    // The pending core suggestion is masked while stale: no approve control.
+    const masked: NodeRelations = { ...nodeRelations, suggestions: [] };
+    const withKey: NodeRelations = {
+      ...masked,
+      incoming: [{ ...entry("incoming", 5, "APPROVED"), suggestionKey: "S-001" }],
+    };
+    const onFocusRestored = vi.fn();
+    const { rerender } = render(
+      panel({ relations: withKey, onRevoke: vi.fn(), onAnalyze: vi.fn(), loading: true, focusSuggestionKey: "S-005", onFocusRestored }),
+    );
+    rerender(
+      panel({ relations: withKey, onRevoke: vi.fn(), onAnalyze: vi.fn(), loading: false, focusSuggestionKey: "S-005", onFocusRestored }),
+    );
+    const focused = document.activeElement as HTMLElement;
+    expect(focused.dataset.testid).toBe("analyze-relations");
+    expect(focused.dataset.relationRevoke).toBeUndefined();
+    expect(onFocusRestored).toHaveBeenCalledTimes(1);
+  });
 });

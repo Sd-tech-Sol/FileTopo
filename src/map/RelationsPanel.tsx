@@ -526,6 +526,9 @@ export default function RelationsPanel({
   useRestoreFocusAfterReload({
     root,
     selector: `[data-testid="approve-core-suggestion"][data-suggestion-key="${focusSuggestionKey}"]`,
+    // Stale engine: the pending core suggestion is masked, so land on the
+    // explicit analysis command rather than on a neighbour's control.
+    fallbackSelector: '[data-testid="analyze-relations"]:not(:disabled)',
     active: focusSuggestionKey !== null,
     loading,
     ready: relations !== null,

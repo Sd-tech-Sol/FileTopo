@@ -675,7 +675,7 @@ export default function MapApp() {
       void runReviewScenarioRef.current?.();
       return;
     }
-    if (host.autoDrePass === 1 || host.autoDrePass === 2) {
+    if (host.autoDrePass === 1 || host.autoDrePass === 2 || host.autoDrePass === 3) {
       autoStarted.current = true;
       hostLog("info", `démarrage automatique du scénario DR15, passe ${host.autoDrePass}`);
       void runDreScenarioRef.current?.();
@@ -2591,8 +2591,8 @@ export default function MapApp() {
   runExactDuplicateScenarioRef.current = runExactDuplicateScenario;
 
   const runDreScenario = useCallback(async () => {
-    const pass = host?.autoDrePass === 2 ? 2 : 1;
-    await prepareScenarioBrains(pass === 1);
+    const pass = host?.autoDrePass === 2 ? 2 : host?.autoDrePass === 3 ? 3 : 1;
+    await prepareScenarioBrains(pass !== 2);
     return runDre({
       invoke: (command, args) => invoke(command, args),
       host,

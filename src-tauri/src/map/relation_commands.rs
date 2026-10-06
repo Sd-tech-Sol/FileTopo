@@ -540,9 +540,15 @@ pub fn node_relations(
             entry_of(relation, "outgoing", &relation.target_key, &by_key, &mut unresolved)
         })
         .collect::<Vec<_>>();
-    if super::rule_engine::task0024_dr15_enabled() && engine_current {
+    if super::rule_engine::task0024_dr15_enabled() {
+        // The proof's endpoints are not nodes of the snapshot, so its relations
+        // are listed on whatever node is selected: the current core output,
+        // and every human approval, which engine freshness never hides
+        // (`DEC-0026 §D`, `DEC-0049 §I`).
         for relation in store.established()?.iter().filter(|relation| {
-            relation.producer == super::relations::CORE_RULE_ENGINE_PRODUCER
+            ((relation.producer == super::relations::CORE_RULE_ENGINE_PRODUCER && engine_current)
+                || (relation.provenance == super::relations::Provenance::Approved
+                    && relation.suggestion_key.is_some()))
                 && relation.source_key != key
                 && relation.target_key != key
         }) {
@@ -665,19 +671,9 @@ pub fn revoke_relation(
     let snapshot = commands::analysis_input(paths, brain)?;
     let database = paths.brain_relations_database(&brain.brain_id);
     let mut store = RelationStore::open(&database)?;
-    if let Some(suggestion) = store.suggestion(suggestion_key)? {
-        if suggestion.producer == super::relations::CORE_RULE_ENGINE_PRODUCER
-            && !super::rule_engine::is_current(paths, brain)?
-        {
-            // The policy approval and refusal already apply, for the same
-            // reason: a stale core suggestion describes a run whose inputs have
-            // moved, and the relation it produced is not even listed.
-            return Err(MapError::RuleEngine(
-                "stale core suggestion cannot be revoked; run the relation engine again"
-                    .to_string(),
-            ));
-        }
-    }
+    // Engine freshness never decides whether a human approval can be taken
+    // back (DEC-0049 §I, DEC-0026 §D); only approving a core suggestion is
+    // gated on `STALE`.
     store.revoke(provenance, suggestion_key)?;
     let engine_current = super::rule_engine::is_current(paths, brain)?;
     overview(
@@ -2183,6 +2179,82 @@ mod tests {
         assert!(check.counts_agree, "{:?}", check.counts);
         assert_eq!(check.revoked_since_seed, vec!["S-001".to_string()]);
         assert!(check.approved_since_seed.is_empty());
+
+        let _ = std::fs::remove_dir_all(PathBuf::from(&paths.fixtures).parent().unwrap());
+    }
+
+    /// `TASK-0051` / `DEC-0049 §I` — engine freshness never decides whether a
+    /// human approval can be taken back. A core approval is revoked while the
+    /// engine is `STALE`; the store returns to `pending`, the engine stays
+    /// `STALE`, and approving the same suggestion is still refused.
+    #[test]
+    fn a_core_approval_is_revocable_while_the_engine_is_stale() {
+        use super::super::relations::{EngineSnapshot, EngineSuggestionWrite};
+        use super::super::rule_engine::{ENGINE_VERSION, RULE_VERSION};
+
+        let paths = built("revoke-stale-core");
+        open_relations(&paths, &alpha()).expect("seeded");
+        let digest = commands::open_store(&paths, &alpha())
+            .expect("map store")
+            .reconstructible_digest()
+            .expect("digest");
+        let snapshot = |map_digest: &str| EngineSnapshot {
+            run_id: "run-stale-core".to_string(),
+            map_digest: map_digest.to_string(),
+            content_generation_id: None,
+            engine_version: ENGINE_VERSION.to_string(),
+            run_unix_ms: 1,
+        };
+        let source_key = "brain-alpha|stale-core-a".to_string();
+        let target_key = "brain-alpha|stale-core-b".to_string();
+        let write = EngineSuggestionWrite {
+            suggestion_key: "S-core-stale-001".to_string(),
+            source_key,
+            target_key,
+            relation_type: "revision".to_string(),
+            rule_name: "core.numbered-sibling".to_string(),
+            rule_version: RULE_VERSION.to_string(),
+            explanation_fr: "essai".to_string(),
+            explanation_en: "test".to_string(),
+            signals_json: "{\"sameParent\":true}".to_string(),
+        };
+        let database = paths.brain_relations_database("brain-alpha");
+        RelationStore::open(&database)
+            .expect("store")
+            .reconcile_engine_outputs(&[], std::slice::from_ref(&write), &snapshot(&digest))
+            .expect("core suggestion");
+        assert!(super::super::rule_engine::is_current(&paths, &alpha()).expect("current"));
+
+        approve_suggestion(&paths, &alpha(), "S-core-stale-001").expect("core approval");
+
+        // The map moves without a rerun: the engine is now stale.
+        RelationStore::open(&database)
+            .expect("store")
+            .reconcile_engine_outputs(&[], std::slice::from_ref(&write), &snapshot("moved-map"))
+            .expect("stale snapshot");
+        assert!(!super::super::rule_engine::is_current(&paths, &alpha()).expect("stale"));
+
+        let revoked = revoke_relation(&paths, &alpha(), "APPROVED", "S-core-stale-001")
+            .expect("a human approval is revocable while the engine is stale");
+        assert!(!revoked.engine_current, "the engine is still stale");
+        let store = RelationStore::open(&database).expect("store");
+        let suggestion = store
+            .suggestion("S-core-stale-001")
+            .expect("read")
+            .expect("suggestion kept");
+        assert_eq!(suggestion.state.as_str(), "pending");
+        assert_eq!(suggestion.decided_unix_ms, None);
+        assert!(
+            store
+                .approved()
+                .expect("read")
+                .iter()
+                .all(|relation| relation.suggestion_key.as_deref() != Some("S-core-stale-001"))
+        );
+        assert!(
+            approve_suggestion(&paths, &alpha(), "S-core-stale-001").is_err(),
+            "approving a stale core suggestion stays refused"
+        );
 
         let _ = std::fs::remove_dir_all(PathBuf::from(&paths.fixtures).parent().unwrap());
     }
