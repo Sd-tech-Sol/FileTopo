@@ -1,5 +1,15 @@
 # HANDOFF — passage de relais
 
+## Relais — ACTION-0093 / TASK-0051 corrective READY — 2026-10-05
+
+- HEAD contrôle : 6e725725; orchestration corrective : 6481eae3.
+- Ne pas refaire toute TASK-0051.
+- Retirer uniquement la garde stale de revoke_relation.
+- Approval stale reste refusée; sorties core stale restent non actuelles.
+- APPROVED humaine doit être révocable en STALE; focus sûr après revoke.
+- Réutiliser dreScenario/DR15. Claude Sonnet 5.5 Medium.
+
+
 ## Relais — TASK-0051 IMPLEMENTED, contrôle indépendant requis — 2026-10-05
 
 - Branche `build/v0.2-a35-v1-approved-relation-revocation`; commits produit

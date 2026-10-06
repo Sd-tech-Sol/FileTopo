@@ -9285,3 +9285,12 @@ HEAD testé `14a821d9cfc690ad4365fc7572bc455edc7144d4` (produit identique à
   seulement); redémarrage de P-19 au-delà de la persistance d'une révocation.
 
 Aucun VERIFIED accordé : contrôle indépendant requis.
+
+
+## DB. ACTION-0093 — contrôle indépendant TASK-0051 — 2026-10-05
+
+Verdict CHANGES_REQUIRED. Le cycle normal est accepté. Bloqueur unique :
+`revoke_relation` refuse une relation APPROVED liée à une suggestion
+`core-rule-engine` si le moteur est STALE. DEC-0026 §D protège pourtant les
+APPROVED humaines de la fraîcheur et P-04/DEC-0049 exigent leur révocabilité.
+Corrective ciblée exigée avant VERIFIED.

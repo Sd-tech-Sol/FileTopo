@@ -6419,3 +6419,10 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
   store-snapshot.py}` et `docs/performance/runs/TASK-0051-webview2.json`.
 - TASK-0051 = `IMPLEMENTED`, candidate au contrôle indépendant; P-04 candidate à
   la fermeture; P-19 inchangée; aucune TASK-0052.
+
+
+## 2026-10-05 — ACTION-0093 — corrective stale-core TASK-0051
+
+- Implémentation normale intra/cross acceptée.
+- Bloqueur indépendant : APPROVED core non révocable quand moteur STALE.
+- Corrective ciblée DR15 préparée; aucune TASK-0052.

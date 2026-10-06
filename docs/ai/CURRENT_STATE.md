@@ -1,5 +1,14 @@
 # État courant
 
+## ACTION-0093 — TASK-0051 corrective stale-core REQUIRED — 2026-10-05
+
+- Cycle normal intra/cross accepté.
+- Bloqueur : revoke d'une APPROVED core refusé lorsque moteur STALE.
+- Contradiction P-04 / DEC-0049 / DEC-0026 §D.
+- Corrective : retirer la garde stale de revoke seulement; preuve DR15 réelle.
+- TASK-0051 non VERIFIED. Aucune TASK-0052.
+
+
 ## TASK-0051 — révocation des relations APPROVED — `IMPLEMENTED` — 2026-10-05
 
 - DEC-0049 implémentée : `revoke` = suppression de la ligne `APPROVED` exactement
