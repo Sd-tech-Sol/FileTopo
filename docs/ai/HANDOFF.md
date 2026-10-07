@@ -1,5 +1,16 @@
 # HANDOFF — passage de relais
 
+## Relais — ACTION-0100 / TASK-0054 READY — 2026-10-07
+
+- Nouvelle branche : `build/v0.2-a38-v1-scale-closure`, basée sur `befd86a73216131eae9675961a758c1df73bffa1`.
+- TASK-0053/P-19 restent fermés par ACTION-0099.
+- Audit V1 : F-050/F-051 sont le prochain bloc P0/MVP; F-046 reste le bloc P1/MVP suivant, non commencé.
+- TASK-0054 doit d'abord réutiliser Index/materializer/ViewAggregate/REAL_ROOT/harness TASK-0028/0030/0052.
+- 10k/100k/1M = corpus indexés synthétiques; pas 1M fichiers physiques.
+- WebView2 normal + `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--disable-gpu`, avec preuve discriminante que la configuration est réellement appliquée.
+- Pas de nouveau renderer/dépendance/store. Pas d'auto-VERIFIED. Aucune TASK-0055.
+- Agent recommandé : Claude Code, Sonnet 5.5 High. `/clear` est recommandé avant cette tâche, car tout le contexte est versionné.
+
 ## Relais — ACTION-0099 — TASK-0053 VERIFIED — 2026-10-07
 
 - Branche : `build/v0.2-a37-v1-workspace-persistence`.

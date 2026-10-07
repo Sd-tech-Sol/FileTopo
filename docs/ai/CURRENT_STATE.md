@@ -1,5 +1,15 @@
 # État courant
 
+## ACTION-0100 — audit V1 frais / TASK-0054 READY — 2026-10-07
+
+- Base auditée : `befd86a73216131eae9675961a758c1df73bffa1` après ACTION-0099.
+- Les faux gaps historiques ont été distingués des gaps actuels : F-001/F-004/F-007/F-016/F-042 possèdent déjà leurs contrôles indépendants.
+- Vrais gaps fonctionnels MVP restants identifiés : `F-050 + F-051` (P0, paire obligatoire) et `F-046` (P1).
+- Ordre choisi : `F-050 + F-051` avant F-046, car P0 et condition de véracité/échelle de la V1.
+- `TASK-0054 — V1 Progressive Scale & Exact Aggregate Global Closure` est READY sur `build/v0.2-a38-v1-scale-closure`.
+- Stratégie : réutiliser TASK-0028/0030 et le runtime actuel; preuves 10k/100k/1M indexés + REAL_ROOT temporaire + WebView2 normal/GPU-disabled; correction produit minimale seulement si une preuve casse.
+- Aucune TASK-0055. F-046 reste inchangée.
+
 ## ACTION-0099 — TASK-0053 / F-052 / M-1 / P-19 — VERIFIED — 2026-10-07
 
 - Contrôle indépendant du code `804e1daa29b30e60b098ff677d06b452f02ecad6` : PASS.

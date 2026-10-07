@@ -1,134 +1,180 @@
-# NEXT_PROMPT — TASK-0053 — Workspace Preferences & Persistence / P-19
+# NEXT_PROMPT — TASK-0054 — Progressive Scale & Exact Aggregate Global Closure
 
 **TARGET_AGENT:** CLAUDE CODE
 **RECOMMENDED_MODEL:** Claude Sonnet 5.5
 **RECOMMENDED_EFFORT:** High
-**STATUS:** EXECUTED — voir `.orchestrator/RESULT.md`
-**BRANCH:** `build/v0.2-a37-v1-workspace-persistence`
+**STATUS:** READY
+**BRANCH:** `build/v0.2-a38-v1-scale-closure`
+**BASE_ORCHESTRATION:** `befd86a73216131eae9675961a758c1df73bffa1`
 
-## Objectif
+## Instruction de départ
 
-Implémenter TASK-0053 selon DEC-0051 et rendre F-052/M-1/P-19 candidates à
-un contrôle indépendant.
+Synchronise cette branche **en fast-forward seulement**, vérifie que l'arbre est
+propre, puis lis et exécute intégralement :
 
-## Préconditions
+1. `AGENTS.md`;
+2. `docs/reviews/ACTION-0100-v1-gap-audit-after-task0053.md`;
+3. `docs/tasks/TASK-0054-v1-progressive-scale-closure.md`;
+4. `DEC-0029`, `DEC-0031`;
+5. `TASK-0028/ACTION-0045`;
+6. `TASK-0030/ACTION-0047`.
 
-1. Applique `AGENTS.md`.
-2. Checkout branche cible, fetch + fast-forward, arbre propre.
-3. Lis ACTION-0098, DEC-0051, TASK-0053.
-4. Fais l'audit reuse-first avant code :
-   - brains.rs catalog_meta;
-   - resume_state.rs versioning/corrections;
-   - resumeState.ts scheduling/flush;
-   - compositionSession.ts;
-   - branchFocus.ts;
-   - locale.ts;
-   - seen store.
+**Tu peux faire `/clear` avant cette tâche.** Elle est autonome et tout le
+contexte obligatoire est versionné dans le repo.
 
-## Règle de propriété
+## Mission
 
-Ne crée aucune deuxième source de vérité :
+Rendre `F-050` et `F-051` candidates à une fermeture globale indépendante,
+en réutilisant le materializer/projection/agrégats actuels et en construisant
+les preuves manquantes sur le runtime V1 courant.
 
-- per-brain view/filter/panel/selection = resume existant;
-- locale = mécanisme existant;
-- seen = store existant;
-- F-052 = workspace global uniquement.
+Ne réarchitecture pas FileTopo.
 
-## F-052
+## Reuse-first obligatoire
 
-Ajoute un store global workspace dans catalog_meta :
+Avant de modifier du code produit, fais un tableau :
 
-- format fermé/versionné/borné;
-- defaults sûrs;
-- corrections nommées;
-- aucun path/content;
-- backend attache les index_id des node refs.
+- EXISTE / RÉUTILISER;
+- ADAPTER / INTÉGRER;
+- MANQUANT / DÉVELOPPER.
 
-Expose les commandes minimales read/update/restore nécessaires.
+Inspecte au minimum :
 
-## Workspace
+- Index/BrainIndex;
+- `map_view` / materializer / projection;
+- `ViewAggregate`;
+- `children_page` / recherche;
+- REAL_ROOT;
+- MapApp/MapView;
+- branch focus/collapse;
+- scripts TASK-0028 et TASK-0030;
+- harness WebView2/CDP/axe récent.
 
-Persiste la composition active uniquement :
+**Aucune nouvelle dépendance** sauf nécessité démontrée et arrêt pour décision
+orchestrateur. N'ajoute ni renderer, ni store, ni service.
 
-- displayed brain ids;
-- focused brain;
-- global view;
-- global selection.
+## Règle principale
 
-Ne persiste pas tout l'historique CompositionSessionMemory.
+Le premier objectif est de **prouver l'existant**, pas de le réécrire.
 
-## Branch focus
+Si un critère passe déjà :
+- ajoute seulement la garde/preuve discriminante nécessaire.
 
-Persiste assez d'état pour qu'un restart pendant branch focus revienne dans le
-même mode et que « Quitter le focus » restaure correctement la composition
-pré-focus.
+Si un critère échoue :
+- corrige le minimum;
+- ajoute un test qui échoue sur l'ancien comportement;
+- ne déborde pas vers F-046 ou une autre fonction.
 
-Node refs/collapsed ids liés à l'Index courant par le backend.
+## Échelle
 
-## Préférences
+Exerce le cœur produit sur 10k / 100k / 1M éléments **indexés synthétiques**.
 
-### Legend
-Persist open/closed.
+Ne crée pas 1M fichiers physiques.
 
-### Density
-`comfortable | compact`.
-Chrome/panels only. Map layout/rectangles/projection must remain byte/stable
-semantically unchanged.
+Mesure et vérifie :
+- cardinalité Index;
+- VIEW_BUDGET;
+- nœuds/agrégats/arêtes;
+- taille sérialisée;
+- layout seulement sur vue;
+- absence whole-graph;
+- cursors/revision;
+- couverture/atteignabilité.
 
-### Motion
-`system | reduce`.
-System keeps prefers-reduced-motion. Reduce forces no transitions/animations.
-Never force motion against the OS.
+Réutilise les fixtures/protocoles TASK-0028/0030 lorsqu'ils restent valides.
 
-## Compatibilité
+## Atteignabilité
 
-- no F-052 record => current defaults;
-- resume v1/v2 unchanged;
-- locale unchanged;
-- no destructive migration;
-- malformed workspace => safe open + explicit correction.
+Ne prouve pas seulement quelques échantillons UI.
 
-## Writes
+Établis structurellement que les primitives bornées couvrent le corpus :
+pagination exacte, recherche exacte, navigation vers hors-vue, expansion/focus,
+résolution d'une destination.
 
-Reuse debounce/flush patterns. Do not write SQLite on every raw pan pointer
-event. Explicit toggles/preferences must be durable before normal close.
+Toute omission ou duplication doit faire échouer la preuve.
 
-## Proof
+## Agrégats
 
-Implement every P19-1..P19-14 criterion and falsification from TASK-0053.
+Prouve sur large/profond/mixte :
+- compte exact;
+- raison lisible;
+- pas faux dossier;
+- pas path/open/copy;
+- pas arête inventée;
+- expansion/pagination exacte;
+- distinct de F-042 collapse.
 
-Real WebView2 multi-process mandatory:
+Ajoute une falsification count +1/-1.
 
-A. configure three brains + 3-brain composition + nondefault global view /
-selection + legend open + compact + reduce + branch focus/two collapses + FR +
-distinct per-brain resume and seen; normal close.
+## REAL_ROOT
 
-B. restart and compare every value exactly; exit branch focus and prove prior
-composition/view/selection restore; check computed compact/reduced styles;
-change values including legend closed + EN; close.
+Utilise une racine temporaire synthétique, jamais une donnée personnelle.
 
-C. restart again; then controlled rebuild of a brain carrying node refs;
-restart; prove explicit corrections and no stale node-id aliasing.
+Prouve bout-en-bout :
+`REAL_ROOT -> Index canonique -> map_view/materializer -> MapApp`.
 
-Fingerprint source/Index/journal/relations/exclusions around preference-only
-gestures.
+Vérifie source inchangée avant/après.
 
-## Documentation
+## WebView2 GPU-disabled
 
-Resolve M-1 ownership explicitly in matrix/parity once implemented, but do not
-mark CLOSED/VERIFIED yourself.
+Réutilise le harness réel actuel.
 
-## Validation
+Passe normale + passe avec :
 
-Rust/frontend full pertinent suites, pnpm check/build, Tauri debug, WebView2,
-axe, diff-check, public audit.
+`WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--disable-gpu`
+
+Microsoft documente ce mécanisme et ce flag :
+https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/webview-features-flags
+
+Mais **ne considère pas la variable comme preuve** : vérifie de façon
+discriminante que le run observé applique effectivement la configuration.
+
+Exerce pan/zoom/sélection/clavier/navigation/agrégat + axe + console.
+
+Ne revendique aucun SLA sur laptop modeste.
+
+## Interdictions
+
+- pas de whole-graph DTO;
+- pas de second corpus;
+- pas de nouveau renderer;
+- pas de cloud/LLM/MCP;
+- pas de F-046;
+- pas de données personnelles;
+- pas de TASK-0055;
+- pas de VERIFIED auto-attribué.
+
+## Falsifications
+
+Réalise les 11 falsifications de TASK-0054 §11. Une table « on pense que ça
+échouerait » n'est pas suffisante : chaque garde doit être concrète.
+
+## Validation et artefacts
+
+Exécute TASK-0054 §13.
+
+Crée des artefacts TASK-0054 lisibles et liés au HEAD réellement testé.
+Distingue clairement :
+- preuves Rust;
+- preuves frontend;
+- preuves WebView2 normal;
+- preuves WebView2 GPU-disabled;
+- résultats d'exécuteur;
+- NOT_TESTED.
+
+Aucun chemin personnel ou secret.
 
 ## Fin
 
-- TASK-0053 IMPLEMENTED/candidate;
-- F-052 IMPLEMENTED/candidate;
-- M-1/P-19 candidate closure only;
-- F-046 unchanged;
-- aucune TASK-0054;
-- RESULT/NEXT_ACTION complets;
-- commit+push, arbre propre.
+Quand tout est terminé :
+
+- TASK-0054 = IMPLEMENTED / candidate;
+- F-050/F-051 = candidates seulement;
+- P-01/P-02/P-03 candidates seulement si réellement couvertes;
+- F-046 inchangée;
+- RESULT + VALIDATION + CURRENT_STATE + HANDOFF + NEXT_ACTION à jour;
+- commit/push;
+- git status propre;
+- STOP.
+
+Le prochain geste appartient à ChatGPT : contrôle indépendant.

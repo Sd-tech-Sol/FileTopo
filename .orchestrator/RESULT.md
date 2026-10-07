@@ -1,32 +1,23 @@
-TASK_ID: TASK-0053 — V1 Workspace Preferences & Persistence / P-19 Closure
-AGENT: CLAUDE CODE (Sonnet 5.5)
-RESULT: VERIFIED — ACTION-0099 independent control PASS
-BRANCH: build/v0.2-a37-v1-workspace-persistence
-CODE_COMMIT: 804e1daa29b30e60b098ff677d06b452f02ecad6
+TASK_ID: ACTION-0100 — Fresh V1 gap audit after TASK-0053
+AGENT: CHATGPT ORCHESTRATOR
+RESULT: CLOSED — TASK-0054 READY
+BRANCH: build/v0.2-a38-v1-scale-closure
+BASE: befd86a73216131eae9675961a758c1df73bffa1
 
 SUMMARY:
-- F-052 : store global `workspace.v1` (catalog_meta), fermé/versionné/borné, références de nœud liées par le backend à `index_id@revision`, 14 corrections nommées.
-- Persistés : composition + focus, caméra/sélection de composition, légende, densité (chrome), mouvement system|reduce, branch focus + collapsed ids.
-- Inchangés et rejoués : resume par cerveau, langue `filetopo.locale`, vu/non-vu.
-- UI : préférences densité/mouvement, résumé non bloquant des corrections FR/EN.
+- ACTION-0099 confirmed TASK-0053 / F-052 VERIFIED and M-1 / P-19 CLOSED.
+- Fresh V1 audit reconciled historical stale gap text against independent controls.
+- Remaining functional MVP gaps: F-050 + F-051 (P0, mandatory pair) and F-046 (P1).
+- F-050 + F-051 selected before F-046 because the current MVP baseline makes them P0 and explicitly inseparable.
+- TASK-0054 created for global progressive-scale / exact-aggregate closure.
+- Reuse-first: current Index/materializer/ViewAggregate/REAL_ROOT and TASK-0028/0030 harnesses.
+- Scale proof: 10k/100k/1M indexed synthetic corpora, not 1M physical files.
+- Real WebView2: normal + verified --disable-gpu run.
+- No new dependency, renderer, store, cloud, LLM or MCP by default.
 
-VALIDATION:
-- Rust 839 PASS; frontend 708 PASS; tsc OK; build + Tauri debug OK.
-- WebView2 réel : 4 processus, 3 fermetures; docs/performance/runs/TASK-0053-webview2.json.
-- Neuf falsifications effectives (VALIDATION.md DG).
-
-NOT_TESTED / LIMITS:
-- Crash entre changement debounced et écriture; réduction de mouvement OS émulée par CDP.
-- Reconstruire garde les ids si les chemins survivent : piège numérique prouvé en Rust seulement.
-
-GOVERNANCE: F-052 = IMPLEMENTED/candidate; M-1 et P-19 candidates, jamais auto-VERIFIED; F-046 inchangée; aucune TASK-0054.
-NEXT_ORCHESTRATOR_DECISION: contrôle indépendant de TASK-0053.
-
-
-ORCHESTRATOR_CONTROL:
-- ACTION-0099: PASS / VERIFIED.
-- Product code verified: 804e1daa29b30e60b098ff677d06b452f02ecad6.
-- Branch head inspected: a28f354ff9625287c41284f058e132628a3dd32d; post-tested delta is documentation/proof only.
-- TASK-0053 and F-052 VERIFIED; M-1 CLOSED; P-19 CLOSED / VERIFIED.
-- No GitHub Actions workflow run or commit status is attached to the tested commit.
-- F-046 unchanged; next step is a fresh V1 audit before any TASK-0054.
+NEXT:
+- Claude Code, Sonnet 5.5, High.
+- /clear is recommended before execution.
+- Fast-forward branch, then execute .orchestrator/NEXT_PROMPT.md completely.
+- Do not auto-VERIFY.
+- F-046 unchanged; no TASK-0055.

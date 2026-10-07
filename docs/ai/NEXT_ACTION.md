@@ -1,16 +1,29 @@
 # Action suivante
 
-## Audit V1 frais après ACTION-0099
+## Exécuter TASK-0054
 
-Branche : `build/v0.2-a37-v1-workspace-persistence`.
+Branche : `build/v0.2-a38-v1-scale-closure`.
 
-`TASK-0053 / F-052 / M-1 / P-19` sont fermés par `ACTION-0099`.
+Tâche :
+`docs/tasks/TASK-0054-v1-progressive-scale-closure.md`.
 
-Avant toute `TASK-0054` :
-1. relire le contrat V1 courant, `FEATURE_MATRIX`, `CARTETOPO_FUNCTIONAL_PARITY`, `CURRENT_STATE` et les décisions encore ouvertes;
-2. distinguer les vrais bloqueurs V1 des extensions déjà classées MVP/ultérieures;
-3. vérifier les statuts périmés ou contradictions documentaires;
-4. classer les gaps restants par impact direct sur une V1 terminée;
-5. choisir **une seule** prochaine tranche, seulement si elle rapproche directement de la définition V1.
+Prompt exécuteur :
+`.orchestrator/NEXT_PROMPT.md`.
 
-`F-046` est un candidat à réévaluer, pas une sélection automatique. Aucun agent d'exécution ne doit partir avant la décision issue de cet audit.
+Objectif unique : rendre `F-050` et `F-051` candidates à une fermeture
+globale indépendante par preuve du runtime V1 courant, sans réarchitecture.
+
+Agent : **Claude Code — Claude Sonnet 5.5 — High**.
+
+Avant l'exécution, un `/clear` est souhaitable : la tâche est autonome dans
+GitHub.
+
+Instruction à l'agent :
+
+> Synchronise `build/v0.2-a38-v1-scale-closure` en fast-forward seulement,
+> puis lis et exécute intégralement `.orchestrator/NEXT_PROMPT.md`.
+
+À la fin : TASK-0054 doit rester `IMPLEMENTED / candidate`, jamais
+auto-`VERIFIED`. L'action suivante redevient le contrôle indépendant ChatGPT.
+
+`F-046` reste inchangée. Aucune TASK-0055.

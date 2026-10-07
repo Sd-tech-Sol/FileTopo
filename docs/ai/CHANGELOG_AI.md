@@ -6518,3 +6518,12 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
 - Aucun workflow run / commit status GitHub attaché au commit testé : résultats 839 Rust / 708 frontend / tsc/build/Tauri traités comme preuves locales de l'exécuteur, pas comme CI distante.
 - `TASK-0053 = VERIFIED`; `F-052 = VERIFIED`; `M-1 = CLOSED`; `P-19 = CLOSED / VERIFIED`.
 - `F-046` inchangée. Audit V1 frais requis avant toute `TASK-0054`.
+
+## 2026-10-07 — ACTION-0100 — audit V1 frais / TASK-0054 sélectionnée
+
+- Base post-ACTION-0099 : `befd86a73216131eae9675961a758c1df73bffa1`.
+- Réconciliation des textes historiques avec les contrôles indépendants existants : F-001, F-004, F-007/F-016 et F-042 ne sont pas de nouveaux gaps produit.
+- Gaps fonctionnels MVP restants : F-050 + F-051 (P0, paire obligatoire) et F-046 (P1).
+- Ordre : F-050/F-051 avant F-046, contrairement à l'ordre historique indicatif, parce que le baseline courant les classe P0/MVP et « ensemble ou pas du tout ».
+- TASK-0054 créée : fermeture globale de la vue progressive/agrégats par réutilisation du runtime actuel, preuves 10k/100k/1M indexés, REAL_ROOT temporaire et WebView2 normal/GPU-disabled.
+- Aucune nouvelle architecture/dépendance prévue. Aucune TASK-0055.

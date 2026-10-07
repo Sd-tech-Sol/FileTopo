@@ -439,3 +439,12 @@ Ils sont écrits ici plutôt que corrigés en silence.
 > `filetopo.locale` et vu/non-vu gardent leurs propriétaires existants. La preuve WebView2
 > à quatre processus confirme la restauration valeur par valeur et les corrections explicites
 > après changement de génération. `P-19 = CLOSED / VERIFIED`; `M-1 = CLOSED`.
+
+> **Audit V1 — ACTION-0100 (2026-10-07).**
+> `P-19` est fermé par ACTION-0099. Le bloc d'acceptance suivant est
+> `F-050 + F-051`, dont la fermeture globale doit produire les preuves
+> manquantes des amendements d'échelle de `P-01`, `P-02` et `P-03` :
+> vue bornée exacte, omissions déclarées/agrégées à compte exact, et tous les
+> éléments indexés atteignables par les primitives bornées. `TASK-0054` ne
+> ferme pas ces exigences elle-même : elle les rend candidates au contrôle
+> indépendant. `F-046` reste séparée.
