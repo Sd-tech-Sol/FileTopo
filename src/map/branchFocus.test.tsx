@@ -92,11 +92,12 @@ describe("branch focus helpers", () => {
     expect(canFocusBranch(null)).toBe(false);
   });
 
-  it("collapses a folder with something to hide, never the focused root, and can always expand", () => {
-    expect(canCollapse(nodes[1], 10, false)).toBe(true);
-    expect(canCollapse(nodes[0], 10, false)).toBe(false);
-    expect(canCollapse(nodes[2], 10, false)).toBe(false);
-    expect(canCollapse(nodes[2], 10, true)).toBe(true);
+  it("collapses any visible folder with something to hide, the focused root included, and can always expand", () => {
+    expect(canCollapse(nodes[1], false)).toBe(true);
+    expect(canCollapse(nodes[0], false)).toBe(true);
+    expect(canCollapse(nodes[2], false)).toBe(false);
+    expect(canCollapse(nodes[2], true)).toBe(true);
+    expect(canCollapse(null, false)).toBe(false);
   });
 
   it("toggling touches one folder and leaves the others alone", () => {
@@ -208,18 +209,39 @@ describe("branch focus panel — F42-2, F42-10", () => {
     expect(items[1]).toHaveAttribute("data-hidden-descendant-count", "0");
     fireEvent.click(screen.getAllByTestId("branch-expand-one")[0]);
     expect(onToggle).toHaveBeenCalledWith(11);
-    // The entry goes away with the expansion. The toggle is unusable while the root is
-    // selected, so the exit control holds the focus; once the expanded folder is selected
-    // the focus moves to the toggle. It is never on `body`.
-    expect(document.activeElement).toBe(screen.getByTestId("branch-exit"));
+    // The entry goes away with the expansion. The root is selected and collapsible, so the
+    // toggle holds the focus at once; it is never on `body`.
+    expect(document.activeElement).toBe(screen.getByTestId("branch-toggle"));
     rerender(panel({ active: state([]), selectedNode: nodes[1], onToggle }));
     expect(document.activeElement).toBe(screen.getByTestId("branch-toggle"));
   });
 
-  it("the root of the focused branch cannot be collapsed, and says so", () => {
-    render(panel({ active: state([]), selectedNode: nodes[0] }));
-    expect(screen.getByTestId("branch-toggle")).toBeDisabled();
-    expect(screen.getByTestId("branch-toggle-hint")).toHaveTextContent("ne se replie pas");
+  it("the focused root collapses and expands like any folder — Enter and Space, focus kept", () => {
+    const onToggle = vi.fn();
+    const { rerender } = render(panel({ active: state([]), selectedNode: nodes[0], onToggle }));
+    const toggle = screen.getByTestId("branch-toggle");
+    expect(toggle).not.toBeDisabled();
+    expect(toggle).toHaveTextContent("Replier a");
+    expect(screen.queryByTestId("branch-toggle-hint")).toBeNull();
+    toggle.focus();
+    fireEvent.click(toggle);
+    expect(onToggle).toHaveBeenCalledWith(10);
+    rerender(
+      panel({
+        active: state([{ nodeId: 10, hiddenDescendantCount: 7 }]),
+        selectedNode: nodes[0],
+        onToggle,
+      }),
+    );
+    expect(screen.getByTestId("branch-toggle")).toBe(toggle);
+    expect(document.activeElement).toBe(toggle);
+    expect(toggle).toHaveTextContent("Déplier a — 7 descendants masqués");
+    expect(toggle).toHaveAttribute("data-collapsed", "true");
+    // The list names it once; the main button stays the single primary control.
+    expect(screen.getAllByTestId("branch-collapsed-item")).toHaveLength(1);
+    fireEvent.click(toggle);
+    expect(onToggle).toHaveBeenLastCalledWith(10);
+    expect(screen.queryByText(/ne se replie pas/)).toBeNull();
   });
 
   it("has a complete word list in both languages", () => {

@@ -16,6 +16,8 @@
 //!   materialised descendant. So collapsing is a pure removal and expanding is
 //!   exactly the reference: same focus, same pagination, same budget ⇒ same
 //!   projection, and one collapse can never move a node of another branch.
+//! * **The focused folder collapses like any other** (`DEC-0050` §L): it stays,
+//!   alone, with the exact count of all its real descendants and no aggregate.
 //! * **Exact hidden count.** `hiddenDescendantCount` is
 //!   [`crate::hierarchy::descendant_count`]: every real descendant, from the
 //!   Index, never `child_count`, never an estimate, never a list.
@@ -111,11 +113,10 @@ pub fn materialize_branch_view(
     let collapsed_in_view: HashSet<i64> = collapsed_ids
         .iter()
         .copied()
-        .filter(|id| *id != root)
         .filter(|id| {
             in_reference
                 .get(id)
-                .is_some_and(|n| matches!(n.kind, NodeKind::Directory))
+                .is_some_and(|n| matches!(n.kind, NodeKind::Directory | NodeKind::Root))
         })
         .collect();
     let hidden_by_collapse = |node: &NodeDto| -> bool {

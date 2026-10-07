@@ -345,6 +345,7 @@ const readPanel = () =>
       focusDisabled: document.querySelector('[data-testid="branch-focus"]')?.disabled ?? null,
       toggle: text('[data-testid="branch-toggle"]'),
       toggleDisabled: document.querySelector('[data-testid="branch-toggle"]')?.disabled ?? null,
+      toggleCollapsed: document.querySelector('[data-testid="branch-toggle"]')?.getAttribute('data-collapsed') === 'true',
       collapsed: [...document.querySelectorAll('[data-testid="branch-collapsed-item"]')].map((li) => ({
         nodeId: Number(li.getAttribute('data-node-id')), hidden: Number(li.getAttribute('data-hidden-descendant-count')), text: li.textContent,
       })),
@@ -659,6 +660,73 @@ async function phaseOne() {
   await quiet();
   assert.deepEqual(cardKeys(await readCanvas()), cardKeys(referenceCanvas));
   record.deepCollapse = { folder: "projet/docs/guide", hiddenOnDisk: guideDisk.length, english: { exit: english.exit, toggle: english.toggle, tag: englishCanvas.cards.find((card) => card.collapsed).tag } };
+
+  // ===== ACTION-0096 / DEC-0050 §L — the focused ROOT collapses like any folder.
+  // Enter collapses and Space expands, then the other pair (Space collapses, Enter expands).
+  const rootDisk = descendantsOnDisk(diskAlix, "projet");
+  assert.equal(rootDisk.length, expectedSubtree.length - 1, "the disk reference: every entry of the branch but the root");
+  const rootFingerprintsBefore = await everythingElse();
+  const rootWritesBefore = resumeWrites();
+  const rootWireMark = wireCalls.length;
+  const rootPairs = [];
+  for (const [collapseKey, expandKey, label] of [["Enter", " ", "Enter then Space"], [" ", "Enter", "Space then Enter"]]) {
+    await selectNodeByMouse(ALIX, "projet");
+    await startFocusTrail();
+    await focusDirectly(testid("branch-toggle"));
+    let rootPanel = await readPanel();
+    assert.equal(rootPanel.toggle, "Replier projet", `the root offers Replier: ${rootPanel.toggle}`);
+    assert.equal(rootPanel.toggleDisabled, false, "the root toggle is enabled");
+    await press(collapseKey);
+    await untilTrue("root collapsed", async () => (await readPanel()).collapsed.some((item) => item.nodeId === projetId));
+    await quiet();
+    canvas = await readCanvas();
+    rootPanel = await readPanel();
+    const rootCard = canvas.cards.find((card) => card.nodeId === projetId);
+    assert.deepEqual(await cardPaths(canvas, ALIX), ["projet"], "the DOM holds the root alone");
+    assert.equal(canvas.cards.length, 1);
+    assert.equal(canvas.edges.length, 0, "no edge while the root is collapsed");
+    assert.equal(canvas.aggregates.length, 0, "no aggregate of the root while it is collapsed");
+    assert(rootCard.collapsed && rootCard.branchRoot, "the root is both the focused root and collapsed");
+    assert.equal(Number(rootCard.hidden), rootDisk.length, "hidden count equals the independent disk reference");
+    assert.equal(rootPanel.collapsed.length, 1);
+    assert.equal(rootPanel.collapsed[0].hidden, rootDisk.length);
+    assert.equal(rootPanel.toggle, `Déplier projet — ${rootDisk.length} descendants masqués`);
+    assert.equal(rootPanel.toggleCollapsed, true);
+    assert.equal(canvas.cards.find((card) => card.selected)?.nodeId, projetId, "the selection stays on the root");
+    const rootFocus = await activeElement();
+    assert.equal(rootFocus.testid, "branch-toggle", `focus after collapsing the root: ${JSON.stringify(rootFocus)}`);
+    const dtoRoot = await invoke("map_branch_view", { brainId: ALIX, rootId: projetId, collapsedIds: [projetId], after: null });
+    assert.deepEqual(dtoRoot.nodes.map((node) => node.relativePath.replaceAll("\\", "/")), ["projet"], "the DTO holds the root alone");
+    assert.equal(dtoRoot.branch.collapsed[0].hiddenDescendantCount, rootDisk.length);
+    assert.equal(dtoRoot.aggregates.length, 0);
+    assert.equal(dtoRoot.hierarchyEdges.length, 0);
+    assert.equal(canvas.cards.length, dtoRoot.nodes.length, "no CSS mask: the DOM equals the collapsed DTO");
+    await press(expandKey);
+    await untilTrue("root expanded", async () => (await readPanel()).collapsed.length === 0);
+    await quiet();
+    canvas = await readCanvas();
+    assert.deepEqual(cardKeys(canvas), cardKeys(referenceCanvas), "expanding the root restored the reference node set");
+    assert.deepEqual(canvas.edges, referenceCanvas.edges);
+    assert.deepEqual(canvas.aggregates, referenceCanvas.aggregates);
+    assert.deepEqual(await invoke("map_branch_view", { brainId: ALIX, rootId: projetId, collapsedIds: [], after: null }), referenceDto, "expanded root = the reference projection, rectangles included");
+    const rootFocusAfter = await activeElement();
+    assert.equal(rootFocusAfter.testid, "branch-toggle");
+    assert.equal((await readPanel()).toggle, "Replier projet");
+    assert(focusTrailHasNoBody(await readFocusTrail()), "the focus never fell to body");
+    rootPairs.push({ keys: label, hiddenShown: Number(rootCard.hidden), focusAfterCollapse: rootFocus, focusAfterExpand: rootFocusAfter });
+  }
+  assert.deepEqual(await everythingElse(), rootFingerprintsBefore, "source, Index, journal, seen, relations moved around the root gestures");
+  assert.equal(resumeWrites(), rootWritesBefore, "the root gestures wrote the resume state");
+  assert.deepEqual(writesIn(wireSince(rootWireMark)), [], "a write command was sent during the root gestures");
+  record.rootCollapse = {
+    folder: "projet (the focused root)",
+    hiddenOnDisk: rootDisk.length,
+    projectionWhileCollapsed: "root alone, no edge, no aggregate",
+    pairs: rootPairs,
+    expandEqualsReferenceProjection: true,
+    sourceIndexJournalSeenRelationsUnchanged: true,
+    resumeWrites: 0,
+  };
 
   // ===== F42-3 — exit with a real Enter: composition, camera and selection come back as they were.
   const writesBeforeExit = resumeWrites();

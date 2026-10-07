@@ -368,14 +368,64 @@ fn two_collapses_are_independent() {
 }
 
 #[test]
-fn a_collapsed_id_outside_the_subtree_or_on_the_root_changes_nothing() {
+fn a_collapsed_id_outside_the_subtree_a_file_or_an_unknown_id_changes_nothing() {
     let (nodes, ids) = rich();
     let (_temp, store) = open_with(&nodes);
     let reference = branch(&store, ids.a, &[]);
-    // `b` is outside the focused subtree; the root itself cannot be collapsed;
-    // a file and an unknown id are not folders of this view.
-    let noisy = branch(&store, ids.a, &[ids.b, ids.a, ids.leaf, 9_999]);
+    // `b` is outside the focused subtree; a file and an unknown id are not
+    // folders of this view.
+    let noisy = branch(&store, ids.a, &[ids.b, ids.leaf, 9_999]);
     assert_eq!(noisy, reference);
+}
+
+/// `DEC-0050` §L: the focused root is a visible folder like any other.
+#[test]
+fn collapsing_the_focused_root_keeps_exactly_the_root() {
+    let (nodes, ids) = rich();
+    let (_temp, store) = open_with(&nodes);
+    for root in [ids.a, ids.b, ids.chain_top, 1] {
+        let reference = branch(&store, root, &[]);
+        let collapsed = branch(&store, root, &[root]);
+        assert_eq!(id_set(&collapsed), HashSet::from([root]), "root {root}: the root alone");
+        assert_eq!(collapsed.nodes.len(), 1);
+        let entries = &collapsed.branch.as_ref().unwrap().collapsed;
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].node_id, root);
+        assert_eq!(entries[0].hidden_descendant_count, reference_descendants(&nodes, root).len() as u64);
+        assert!(collapsed.aggregates.is_empty(), "no aggregate while the root is collapsed");
+        assert!(collapsed.hierarchy_edges.is_empty());
+        assert!(collapsed.aggregates.iter().all(|a| a.parent_id != root));
+        // Expanding gives the reference back, exactly.
+        assert_eq!(branch(&store, root, &[]), reference);
+    }
+}
+
+/// The count is every real descendant, not `child_count`, on a multi-level root.
+#[test]
+fn the_root_hidden_count_is_not_child_count() {
+    let (nodes, ids) = rich();
+    let (_temp, store) = open_with(&nodes);
+    let view = branch(&store, ids.a, &[ids.a]);
+    let entry = &view.branch.as_ref().unwrap().collapsed[0];
+    assert_eq!(entry.hidden_descendant_count, 7, "a1, a1a, three files, a1-note, a-note");
+    let child_count = nodes.iter().find(|n| n.id == ids.a).unwrap().child_count;
+    assert_ne!(entry.hidden_descendant_count, u64::from(child_count));
+    let chain = branch(&store, ids.chain_top, &[ids.chain_top]);
+    assert_eq!(chain.branch.as_ref().unwrap().collapsed[0].hidden_descendant_count, 4);
+}
+
+/// A root collapse overrides descendant collapses without losing them on expand.
+#[test]
+fn a_root_collapse_wins_over_descendant_collapses_and_expand_is_the_reference() {
+    let (nodes, ids) = rich();
+    let (_temp, store) = open_with(&nodes);
+    let both = branch(&store, ids.a, &[ids.a1, ids.a]);
+    assert_eq!(id_set(&both), HashSet::from([ids.a]));
+    assert_eq!(both.branch.as_ref().unwrap().collapsed.len(), 1);
+    // Descendant collapses alone are unchanged by this correction.
+    let only_a1 = branch(&store, ids.a, &[ids.a1]);
+    assert!(id_set(&only_a1).contains(&ids.a1) && !id_set(&only_a1).contains(&ids.a1a));
+    assert_eq!(branch(&store, ids.a, &[]), branch(&store, ids.a, &[ids.b]));
 }
 
 /// `F42-8`, `F42-9`: bounded, honest, and aggregates stay aggregates.

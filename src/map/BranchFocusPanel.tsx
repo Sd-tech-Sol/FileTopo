@@ -33,7 +33,6 @@ export interface BranchFocusStrings {
   collapse: (name: string) => string;
   expand: (name: string, hidden: number) => string;
   collapseNeedsFolder: string;
-  rootCannotCollapse: string;
   collapsedList: string;
   collapsedState: string;
   hidden: (count: number) => string;
@@ -56,7 +55,6 @@ export const BRANCH_FOCUS_STRINGS: Record<Locale, BranchFocusStrings> = {
     expand: (name, hidden) =>
       `Déplier ${name} — ${hidden} descendant${hidden > 1 ? "s" : ""} masqué${hidden > 1 ? "s" : ""}`,
     collapseNeedsFolder: "Sélectionnez un dossier de la branche pour le replier ou le déplier.",
-    rootCannotCollapse: "La racine de la branche focalisée ne se replie pas.",
     collapsedList: "Dossiers repliés",
     collapsedState: "replié",
     hidden: (count) => `${count} descendant${count > 1 ? "s" : ""} masqué${count > 1 ? "s" : ""}`,
@@ -77,7 +75,6 @@ export const BRANCH_FOCUS_STRINGS: Record<Locale, BranchFocusStrings> = {
     expand: (name, hidden) =>
       `Expand ${name} — ${hidden} hidden descendant${hidden === 1 ? "" : "s"}`,
     collapseNeedsFolder: "Select a folder of the branch to collapse or expand it.",
-    rootCannotCollapse: "The root of the focused branch cannot be collapsed.",
     collapsedList: "Collapsed folders",
     collapsedState: "collapsed",
     hidden: (count) => `${count} hidden descendant${count === 1 ? "" : "s"}`,
@@ -157,7 +154,7 @@ export default function BranchFocusPanel({
   const counts = collapsedCounts(active.snapshot);
   const rootNode = active.hierarchy.byId.get(active.rootNodeId);
   const isCollapsed = selectedNode ? counts.has(selectedNode.id) : false;
-  const toggleable = canCollapse(selectedNode, active.rootNodeId, isCollapsed);
+  const toggleable = canCollapse(selectedNode, isCollapsed);
   const toggleLabel =
     selectedNode && toggleable
       ? isCollapsed
@@ -197,9 +194,7 @@ export default function BranchFocusPanel({
       </button>
       {toggleable ? null : (
         <p data-testid="branch-toggle-hint">
-          {selectedNode && selectedNode.id === active.rootNodeId
-            ? words.rootCannotCollapse
-            : words.collapseNeedsFolder}
+          {words.collapseNeedsFolder}
         </p>
       )}
       {busy ? <p aria-live="polite">{words.busy}</p> : null}

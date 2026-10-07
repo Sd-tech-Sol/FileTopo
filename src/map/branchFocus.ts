@@ -47,15 +47,15 @@ export function canFocusBranch(node: MapNode | undefined | null): boolean {
   return node !== undefined && node !== null && (node.kind === "directory" || node.kind === "root");
 }
 
-/** Whether a node may be collapsed: a folder with something to hide, and not the focused root. */
-export function canCollapse(
-  node: MapNode | undefined | null,
-  rootNodeId: number,
-  alreadyCollapsed: boolean,
-): boolean {
-  if (!node || node.id === rootNodeId) return false;
+/**
+ * Whether a node may be collapsed: a visible folder with something to hide. The
+ * focused root is a visible folder like any other (`DEC-0050` §L). An already
+ * collapsed folder can always be expanded.
+ */
+export function canCollapse(node: MapNode | undefined | null, alreadyCollapsed: boolean): boolean {
+  if (!node) return false;
   if (alreadyCollapsed) return true;
-  return node.kind === "directory" && node.childCount > 0;
+  return (node.kind === "directory" || node.kind === "root") && node.childCount > 0;
 }
 
 /** The new collapsed list after toggling one folder. Other folders are untouched. */
