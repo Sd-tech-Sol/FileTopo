@@ -1,7 +1,7 @@
 # TASK-0052 — V1 Branch Focus & Collapse / F-042 Closure
 
 - **Date :** 2026-10-06
-- **Statut :** `CORRECTIVE_REQUIRED` — ACTION-0096
+- **Statut :** `IMPLEMENTED` — corrective ACTION-0096 livrée, candidate à re-contrôle indépendant
 - **Branche :** `build/v0.2-a36-v1-branch-focus-collapse`
 - **Décision :** `DEC-0050`
 - **Portée :** `F-042`, régressions `F-050/F-051`, préparation `P-19`
@@ -172,3 +172,20 @@ le root de la branche focalisée est actuellement exclu du repli.
 
 Le repli limité à la **vue de branche focalisée** reste accepté dans TASK-0052.
 Aucune TASK-0053.
+
+### Livraison de la corrective ACTION-0096
+
+Code `cfba445bdaabc0d74a3bd6b7551fd6398e5b179d`; preuve `docs/performance/runs/TASK-0052-webview2.json`
+(`rootCollapse`, HEAD testé `cfba445bdaabc0d74a3bd6b7551fd6398e5b179d`) et `docs/ai/VALIDATION.md` section `DH`.
+
+- Backend : exclusion `id != root` retirée; le root (kind `directory` ou `root`)
+  replié = root seul, compte exact, aucun agrégat, aucune arête.
+- UI : `rootCannotCollapse` supprimé; `canCollapse(node, alreadyCollapsed)`.
+- Tests Rust : root collapse exact (4 racines), compte ≠ `child_count`, root +
+  descendant repliés, expand = référence; tests frontend Enter/Space + focus.
+- WebView2 : root replié Enter→Space puis Space→Enter, projection = root seul,
+  compte = disque (26), dépli = référence, invariants inchangés.
+- Falsification : exclusion réintroduite ⇒ 3 tests Rust et la preuve WebView2
+  échouent (« timeout: root collapsed »); restaurée ⇒ PASS.
+
+**Jamais `VERIFIED` par l'exécuteur.** P-19 reste PARTIELLE. Aucune TASK-0053.

@@ -9470,3 +9470,23 @@ exception root. Le backend filtre `id != root`, l'UI expose
 
 Corrective ciblée : root replié = root seul + compte exact de tous les
 descendants; dépli = projection de référence; Enter/Space; aucun aggregate root.
+
+
+## DH. TASK-0052 corrective ACTION-0096 — root focalisé repliable — 2026-10-06
+
+Code `cfba445bdaabc0d74a3bd6b7551fd6398e5b179d`.
+
+| Contrôle | Résultat |
+|---|---|
+| `cargo test branch_projection` | 18 PASS (dont root exact sur 4 racines, compte ≠ `child_count`, root + descendant, expand = référence) |
+| `cargo test` complet | 817 PASS, 0 échec, 6 ignorés |
+| `vitest run src/map` | 42 fichiers, 635 PASS |
+| `pnpm check`, `pnpm build`, Tauri debug | PASS |
+| WebView2 réel (`task0052-webview2.ps1`) | phases 1 et 2 PASS sur `cfba445bdaabc0d74a3bd6b7551fd6398e5b179d`; `rootCollapse` : Enter→Space et Space→Enter, DOM et DTO = root seul, 0 arête, 0 agrégat, compte 26 = référence disque, focus sur `branch-toggle`, dépli = projection de référence (rectangles inclus), source/Index/journal/seen/relations inchangés, 0 write resume |
+| Falsification | exclusion `id != root` réintroduite : 3 tests Rust en échec, WebView2 « timeout: root collapsed »; restaurée : PASS |
+| `git diff --check`, audit public | propre; aucun chemin local ni donnée réelle ajoutés |
+
+Non testé / limites : racines réelles volumineuses; repli du root hors vue de
+branche (la projection ordinaire n'a qu'un niveau). P-19 PARTIELLE; F-046
+inchangée; aucune TASK-0053. Jamais `VERIFIED` par l'exécuteur.
+

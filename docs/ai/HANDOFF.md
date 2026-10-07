@@ -1,5 +1,15 @@
 # HANDOFF — passage de relais
 
+## Relais — corrective TASK-0052 livrée, re-contrôle requis — 2026-10-06
+
+- Code `cfba445bdaabc0d74a3bd6b7551fd6398e5b179d`. Seule l'exception root retirée : `branch_projection.rs`
+  (`collapsed_in_view` accepte le root, kind `directory` ou `root`),
+  `branchFocus.ts::canCollapse(node, alreadyCollapsed)`, `BranchFocusPanel.tsx`.
+- Rejouer : `pnpm build`, `pnpm tauri build --debug --no-bundle` (**pas** un
+  `cargo build` simple : l'exe pointerait sur `localhost:1420`), puis
+  `powershell -File scripts/task0052-webview2.ps1`.
+- Aucune TASK-0053; P-19 PARTIELLE; F-046 inchangée.
+
 ## Relais — ACTION-0096 / TASK-0052 corrective READY — 2026-10-06
 
 - Ne pas refaire l'architecture F-042.

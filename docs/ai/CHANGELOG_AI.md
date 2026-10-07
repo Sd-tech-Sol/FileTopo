@@ -6470,3 +6470,15 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
 - Contrôle indépendant : implémentation F-042 solide sauf exception root.
 - L'interdiction de replier la racine focalisée n'existe pas dans DEC-0050.
 - Corrective ciblée préparée; aucune TASK-0053.
+
+---
+
+## 2026-10-06 — TASK-0052 — Corrective ACTION-0096 (root repliable)
+
+**Agent :** exécuteur Claude Code (Sonnet 5.5)
+**Statut à l'issue :** `IMPLEMENTED` (re-contrôle indépendant requis)
+
+- Backend : root accepté dans `collapsed_ids`; UI : `rootCannotCollapse` supprimé.
+- Tests Rust/frontend et preuve WebView2 étendus; falsification effective.
+- Code `cfba445bdaabc0d74a3bd6b7551fd6398e5b179d`. Aucune TASK-0053.
+

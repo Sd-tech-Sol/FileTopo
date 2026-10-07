@@ -1,16 +1,13 @@
 # Action suivante
 
-## Corrective TASK-0052 — autoriser le repli du root focalisé
+## Re-contrôle indépendant de la corrective TASK-0052 (ACTION-0096)
 
-Branche : `build/v0.2-a36-v1-branch-focus-collapse`.
+Branche : `build/v0.2-a36-v1-branch-focus-collapse`, code `cfba445bdaabc0d74a3bd6b7551fd6398e5b179d`.
 
-Lire :
+Contrôler sur preuves, par une instance distincte de l'exécuteur, que le root
+focalisé est repliable (root seul, compte exact, sans agrégat, dépli =
+référence), puis décider `VERIFIED` ou une nouvelle corrective.
 
-1. `docs/reviews/ACTION-0096-task0052-independent-control.md`;
-2. `docs/decisions/DEC-0050-branch-focus-collapse.md` §L;
-3. corrective dans `docs/tasks/TASK-0052-v1-branch-focus-collapse.md`;
-4. `.orchestrator/NEXT_PROMPT.md`.
-
-Exécuteur : Claude Code + Sonnet 5.5, Medium.
-
-Aucune TASK-0053.
+Lire : `docs/reviews/ACTION-0096-task0052-independent-control.md`, section `DH`
+de `docs/ai/VALIDATION.md`, `docs/performance/runs/TASK-0052-webview2.json`
+(`rootCollapse`). Aucune TASK-0053.

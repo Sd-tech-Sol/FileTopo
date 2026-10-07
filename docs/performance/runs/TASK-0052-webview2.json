@@ -1,443 +1,495 @@
-{
-  "task": "TASK-0052",
-  "headTested": "bdb5e91d677ec6dd0c64de2f93506cc1aa1ad17a",
-  "strategy": "DEC-0050: two real WebView2 processes around a real restart; real key events (Tab, Enter, Space); every reference count recomputed from the synthetic directories on disk",
-  "phase1": {
-    "task": "TASK-0052",
-    "phase": 1,
-    "headTested": "bdb5e91d677ec6dd0c64de2f93506cc1aa1ad17a",
-    "checks": [
-      {
-        "label": "initial composition is multi-brain",
-        "value": [
-          "brain-gamma",
-          "real-e29baa86-2a91-4508-950e-c55e7559015b",
-          "real-e3ddbc76-5975-4bc5-a1c7-3a33ba77a8ca"
-        ]
-      }
-    ],
-    "focus": {
-      "enteredWith": "real Tab then Enter on the native button",
-      "banner": "◆ Branche focalisée — 27 éléments affichés",
-      "path": "Chemin : projet",
-      "cardsDrawn": 27,
-      "drawnPathsEqualDiskSubtree": true,
-      "otherBrainElements": 0,
-      "dtoNodeCount": 27,
-      "brainNodeCount": 127,
-      "focusAfterEntering": {
-        "tag": "BUTTON",
-        "testid": "branch-exit",
-        "text": "Quitter le focus"
-      },
-      "resumeWritesDuringEntry": 0
-    },
-    "collapseExpand": {
-      "folder": "projet/docs",
-      "childCountOfFolder": 3,
-      "hiddenDescendantCountShown": 14,
-      "hiddenDescendantCountOnDisk": 14,
-      "collapsedWith": "real Enter",
-      "expandedWith": "real Space",
-      "cardTag": "▸ replié · 14 masqués",
-      "outlineDash": "2px, 4px",
-      "cardsAfterCollapse": 13,
-      "cardsAfterExpand": 27,
-      "expandEqualsReferenceProjection": true,
-      "focusAfterCollapse": {
-        "tag": "BUTTON",
-        "testid": "branch-toggle",
-        "text": "Déplier docs — 14 descendants masqués"
-      },
-      "focusAfterExpand": {
-        "tag": "BUTTON",
-        "testid": "branch-toggle",
-        "text": "Replier docs"
-      }
-    },
-    "independentCollapses": {
-      "folders": [
-        "projet/docs",
-        "projet/src"
-      ],
-      "hiddenOnDisk": {
-        "docs": 14,
-        "src": 9
-      },
-      "removedByBothEqualsUnionOfDescendants": true,
-      "srcCollapseLeftDocsAlone": true,
-      "docsExpandedFromListWithEnter": true,
-      "focusAfterListExpansion": {
-        "tag": "BUTTON",
-        "testid": "branch-toggle",
-        "text": "Replier docs"
-      }
-    },
-    "deepCollapse": {
-      "folder": "projet/docs/guide",
-      "hiddenOnDisk": 8,
-      "english": {
-        "exit": "Exit branch focus",
-        "toggle": "Expand guide — 8 hidden descendants",
-        "tag": "▸ collapsed · 8 hidden"
-      }
-    },
-    "exit": {
-      "exitedWith": "real Enter",
-      "brainsDrawn": [
-        "brain-gamma",
-        "real-e29baa86-2a91-4508-950e-c55e7559015b",
-        "real-e3ddbc76-5975-4bc5-a1c7-3a33ba77a8ca"
-      ],
-      "sameNodesAsBefore": true,
-      "sameChips": true,
-      "sameSelection": true,
-      "cameraBefore": "translate(25.650000000000034 1049.8323943661971) scale(0.23582746478873237)",
-      "cameraAfter": "translate(25.650000000000034 1049.8323943661971) scale(0.23582746478873237)",
-      "focusAfterExit": {
-        "tag": "BUTTON",
-        "testid": "branch-focus",
-        "text": "Focaliser la branche"
-      }
-    },
-    "untouched": {
-      "resumeWritesDuringTheWholeCycle": 0,
-      "writeCommandsDuringTheWholeCycle": 0,
-      "commandsSentDuringTheCycle": [
-        "map_brain_resume_state",
-        "map_branch_view",
-        "map_cross_relations_for_node",
-        "map_node_change_state",
-        "map_node_children",
-        "map_node_detail",
-        "map_resolve_node"
-      ],
-      "resumeStateIdentical": true,
-      "sourceTreesIdentical": true,
-      "indexRevisionAndDigestIdentical": true,
-      "journalIdentical": true,
-      "relationsIdentical": true,
-      "seenStateIdentical": true,
-      "fingerprints": {
-        "indexes": {
-          "real-e29baa86-2a91-4508-950e-c55e7559015b": {
-            "revision": 1,
-            "nodeCount": 127,
-            "digest": "01c358f18b4f67cbb16bbf7794134baf9b206790416514c03e4520aa2436a8c9"
-          },
-          "real-e3ddbc76-5975-4bc5-a1c7-3a33ba77a8ca": {
-            "revision": 1,
-            "nodeCount": 9,
-            "digest": "f3c3bf09a0242a2d8af77369ef06190aa91d9bea3d7b2eec2db7dff5d049d0ec"
-          },
-          "brain-gamma": {
-            "revision": 1,
-            "nodeCount": 12,
-            "digest": "8adc4923816f88c9a148469b987abfc6f635d589797999e4f8b0087706b48814"
-          }
-        },
-        "journals": {
-          "real-e29baa86-2a91-4508-950e-c55e7559015b": "12e90b7f3db093c8922d76c3614f12da3edbe9dd6c3dd2883ac3ff68c3951d17",
-          "real-e3ddbc76-5975-4bc5-a1c7-3a33ba77a8ca": "8d7b6e25b4f05c3c7b34e2a31350946e469999b5009805dc2793f5c6333c437d",
-          "brain-gamma": "ce7a99dc30e76569c08acff65081d5907e960fad63cc44468d0144379d22bd15"
-        },
-        "relations": {
-          "gamma": {
-            "counts": [
-              8,
-              4,
-              4
-            ],
-            "established": [
-              "APPROVED|ek1|brain-gamma|dossier-a/note-3.txt>ek1|brain-gamma|racine-1.txt|reference|S-004",
-              "APPROVED|ek1|brain-gamma|dossier-b/note-1.txt>ek1|brain-gamma|dossier-a/note-3.txt|reference|S-001",
-              "APPROVED|ek1|brain-gamma|dossier-b/sous-dossier/note-2.txt>ek1|brain-gamma|dossier-a/note-1.txt|reference|S-002",
-              "APPROVED|ek1|brain-gamma|racine-2.txt>ek1|brain-gamma|dossier-b/sous-dossier/note-1.txt|revision|S-003",
-              "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-1.txt>ek1|brain-gamma|dossier-a/note-2.txt|revision|",
-              "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-1.txt>ek1|brain-gamma|dossier-b/note-1.txt|reference|",
-              "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-1.txt>ek1|brain-gamma|dossier-b/sous-dossier/note-1.txt|reference|",
-              "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-2.txt>ek1|brain-gamma|dossier-a/note-3.txt|revision|",
-              "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-2.txt>ek1|brain-gamma|dossier-b/sous-dossier/note-2.txt|reference|",
-              "DETERMINISTIC|ek1|brain-gamma|dossier-b/note-1.txt>ek1|brain-gamma|dossier-b/sous-dossier/note-1.txt|reference|",
-              "DETERMINISTIC|ek1|brain-gamma|dossier-b/sous-dossier/note-1.txt>ek1|brain-gamma|dossier-b/sous-dossier/note-2.txt|revision|",
-              "DETERMINISTIC|ek1|brain-gamma|racine-1.txt>ek1|brain-gamma|racine-2.txt|revision|"
-            ],
-            "pending": [
-              "S-005:pending",
-              "S-006:pending",
-              "S-007:pending",
-              "S-008:pending"
-            ]
-          },
-          "common": {
-            "counts": [
-              6,
-              0,
-              4
-            ],
-            "established": [
-              "DETERMINISTIC|cek1|brain-alpha|dossier-a/note-1.txt>cek1|brain-gamma|dossier-b/note-1.txt|reference|",
-              "DETERMINISTIC|cek1|brain-alpha|racine-1.txt>cek1|brain-beta|niveau-01|reference|",
-              "DETERMINISTIC|cek1|brain-beta|niveau-01/niveau-02/niveau-03>cek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|revision|",
-              "DETERMINISTIC|cek1|brain-beta|niveau-01/niveau-02>cek1|brain-gamma|racine-2.txt|reference|",
-              "DETERMINISTIC|cek1|brain-gamma|dossier-a/note-2.txt>cek1|brain-alpha|dossier-b/sous-dossier/note-2.txt|reference|",
-              "DETERMINISTIC|cek1|brain-gamma|dossier-a/note-3.txt>cek1|brain-beta|niveau-01/niveau-02/niveau-03/annexe|revision|"
-            ],
-            "pending": [
-              "XB-S01:pending",
-              "XB-S02:pending",
-              "XB-S03:pending",
-              "XB-S04:pending"
-            ]
-          }
-        },
-        "seen": {
-          "projet": "6bbc6462aaaf20bd21b5320859dbef8829e0b95331e5de5504d7eed37d6197d1",
-          "projet/docs": "e76190d55ad5ab40715771401f7f1329cb7ce28393b6bf3dc8be23d414b8f2b8",
-          "projet/src": "c3b6c55c835ec934e32f919e22e1b40881de1a4723954789c189577c6a1bdafb",
-          "archives": "c800b4789d670d186baf0dd824f352beb4bbdde4e862b27aff105e14efde0372"
-        },
-        "sources": {
-          "root1": "6850ca82df5b8a89fd3c9792ce551d913a01e46d86c99939f8bb4eacde1901ee",
-          "root2": "9ba4bb40f162a77b2358a055e4d3da50629976af9d626c7ba1bd6e84db143630"
-        }
-      }
-    },
-    "aggregateVsCollapse": {
-      "wideFolder": "archives",
-      "aggregateLabel": "+29 éléments — Voir la suite",
-      "collapsedFolderHasNoAggregate": true,
-      "otherAggregatesUnchanged": true,
-      "hiddenOfCollapsed2024": 3,
-      "aggregateActivatedWithEnter": true,
-      "stillOnlySubtreeAfterPaging": true
-    },
-    "keys": {
-      "focus": [
-        "Enter (with a real Tab)",
-        "Space"
-      ],
-      "collapse": [
-        "Enter",
-        "Space"
-      ],
-      "expand": [
-        "Space",
-        "Enter"
-      ],
-      "exit": [
-        "Enter",
-        "Space"
-      ],
-      "aggregate": [
-        "Enter"
-      ]
-    },
-    "axe": {
-      "package": "4.13.0",
-      "axeMinJsSha256": "c24f097bd2f451d4f933e8bc7d8d539f8672a2ebcb5cc9f9f3eec8ca9470a0c1",
-      "focused": {
-        "violations": 0,
-        "incomplete": 1
-      },
-      "collapsedEnglish": {
-        "violations": 0,
-        "incomplete": 1
-      },
-      "afterExit": {
-        "violations": 0,
-        "incomplete": 1
-      }
-    },
-    "status": {
-      "afterExit": "Focus de branche quitté : composition, vue et sélection précédentes restaurées."
-    },
-    "resumeBefore": {
-      "alix": {
-        "focusNodeId": null,
-        "selectedNodeId": 3,
-        "view": {
-          "scale": 1,
-          "tx": 0,
-          "ty": 0
-        },
-        "filter": {
-          "state": "ALL",
-          "kinds": [],
-          "availability": "ALL"
-        },
-        "detailsPanelVisible": true
-      },
-      "bea": {
-        "focusNodeId": null,
-        "selectedNodeId": null,
-        "view": null,
-        "filter": {
-          "state": "ALL",
-          "kinds": [],
-          "availability": "ALL"
-        },
-        "detailsPanelVisible": true
-      }
-    },
-    "sessionOnlyState": {
-      "rootNodeId": 3,
-      "wholeBrainNodes": 127
-    },
-    "engine": {
-      "product": "Edg/154.0.4258.53",
-      "protocolVersion": "1.3"
-    },
-    "fatalConsoleErrors": 0,
-    "carry": {
-      "resumeBefore": {
-        "alix": {
-          "focusNodeId": null,
-          "selectedNodeId": 3,
-          "view": {
-            "scale": 1,
-            "tx": 0,
-            "ty": 0
-          },
-          "filter": {
-            "state": "ALL",
-            "kinds": [],
-            "availability": "ALL"
-          },
-          "detailsPanelVisible": true
-        },
-        "bea": {
-          "focusNodeId": null,
-          "selectedNodeId": null,
-          "view": null,
-          "filter": {
-            "state": "ALL",
-            "kinds": [],
-            "availability": "ALL"
-          },
-          "detailsPanelVisible": true
-        }
-      },
-      "fingerprints": {
-        "indexes": {
-          "real-e29baa86-2a91-4508-950e-c55e7559015b": {
-            "revision": 1,
-            "nodeCount": 127,
-            "digest": "01c358f18b4f67cbb16bbf7794134baf9b206790416514c03e4520aa2436a8c9"
-          },
-          "real-e3ddbc76-5975-4bc5-a1c7-3a33ba77a8ca": {
-            "revision": 1,
-            "nodeCount": 9,
-            "digest": "f3c3bf09a0242a2d8af77369ef06190aa91d9bea3d7b2eec2db7dff5d049d0ec"
-          },
-          "brain-gamma": {
-            "revision": 1,
-            "nodeCount": 12,
-            "digest": "8adc4923816f88c9a148469b987abfc6f635d589797999e4f8b0087706b48814"
-          }
-        },
-        "journals": {
-          "real-e29baa86-2a91-4508-950e-c55e7559015b": "12e90b7f3db093c8922d76c3614f12da3edbe9dd6c3dd2883ac3ff68c3951d17",
-          "real-e3ddbc76-5975-4bc5-a1c7-3a33ba77a8ca": "8d7b6e25b4f05c3c7b34e2a31350946e469999b5009805dc2793f5c6333c437d",
-          "brain-gamma": "ce7a99dc30e76569c08acff65081d5907e960fad63cc44468d0144379d22bd15"
-        },
-        "relations": {
-          "gamma": {
-            "counts": [
-              8,
-              4,
-              4
-            ],
-            "established": [
-              "APPROVED|ek1|brain-gamma|dossier-a/note-3.txt>ek1|brain-gamma|racine-1.txt|reference|S-004",
-              "APPROVED|ek1|brain-gamma|dossier-b/note-1.txt>ek1|brain-gamma|dossier-a/note-3.txt|reference|S-001",
-              "APPROVED|ek1|brain-gamma|dossier-b/sous-dossier/note-2.txt>ek1|brain-gamma|dossier-a/note-1.txt|reference|S-002",
-              "APPROVED|ek1|brain-gamma|racine-2.txt>ek1|brain-gamma|dossier-b/sous-dossier/note-1.txt|revision|S-003",
-              "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-1.txt>ek1|brain-gamma|dossier-a/note-2.txt|revision|",
-              "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-1.txt>ek1|brain-gamma|dossier-b/note-1.txt|reference|",
-              "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-1.txt>ek1|brain-gamma|dossier-b/sous-dossier/note-1.txt|reference|",
-              "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-2.txt>ek1|brain-gamma|dossier-a/note-3.txt|revision|",
-              "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-2.txt>ek1|brain-gamma|dossier-b/sous-dossier/note-2.txt|reference|",
-              "DETERMINISTIC|ek1|brain-gamma|dossier-b/note-1.txt>ek1|brain-gamma|dossier-b/sous-dossier/note-1.txt|reference|",
-              "DETERMINISTIC|ek1|brain-gamma|dossier-b/sous-dossier/note-1.txt>ek1|brain-gamma|dossier-b/sous-dossier/note-2.txt|revision|",
-              "DETERMINISTIC|ek1|brain-gamma|racine-1.txt>ek1|brain-gamma|racine-2.txt|revision|"
-            ],
-            "pending": [
-              "S-005:pending",
-              "S-006:pending",
-              "S-007:pending",
-              "S-008:pending"
-            ]
-          },
-          "common": {
-            "counts": [
-              6,
-              0,
-              4
-            ],
-            "established": [
-              "DETERMINISTIC|cek1|brain-alpha|dossier-a/note-1.txt>cek1|brain-gamma|dossier-b/note-1.txt|reference|",
-              "DETERMINISTIC|cek1|brain-alpha|racine-1.txt>cek1|brain-beta|niveau-01|reference|",
-              "DETERMINISTIC|cek1|brain-beta|niveau-01/niveau-02/niveau-03>cek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|revision|",
-              "DETERMINISTIC|cek1|brain-beta|niveau-01/niveau-02>cek1|brain-gamma|racine-2.txt|reference|",
-              "DETERMINISTIC|cek1|brain-gamma|dossier-a/note-2.txt>cek1|brain-alpha|dossier-b/sous-dossier/note-2.txt|reference|",
-              "DETERMINISTIC|cek1|brain-gamma|dossier-a/note-3.txt>cek1|brain-beta|niveau-01/niveau-02/niveau-03/annexe|revision|"
-            ],
-            "pending": [
-              "XB-S01:pending",
-              "XB-S02:pending",
-              "XB-S03:pending",
-              "XB-S04:pending"
-            ]
-          }
-        },
-        "seen": {
-          "projet": "6bbc6462aaaf20bd21b5320859dbef8829e0b95331e5de5504d7eed37d6197d1",
-          "projet/docs": "e76190d55ad5ab40715771401f7f1329cb7ce28393b6bf3dc8be23d414b8f2b8",
-          "projet/src": "c3b6c55c835ec934e32f919e22e1b40881de1a4723954789c189577c6a1bdafb",
-          "archives": "c800b4789d670d186baf0dd824f352beb4bbdde4e862b27aff105e14efde0372"
-        },
-        "sources": {
-          "root1": "6850ca82df5b8a89fd3c9792ce551d913a01e46d86c99939f8bb4eacde1901ee",
-          "root2": "9ba4bb40f162a77b2358a055e4d3da50629976af9d626c7ba1bd6e84db143630"
-        }
-      }
-    }
-  },
-  "phase2": {
-    "task": "TASK-0052",
-    "phase": 2,
-    "headTested": "bdb5e91d677ec6dd0c64de2f93506cc1aa1ad17a",
-    "checks": [],
-    "afterRestart": {
-      "branchFocusActive": false,
-      "collapsedFolders": 0,
-      "markersOnMap": 0,
-      "brainsDrawn": [
-        "brain-gamma",
-        "real-e29baa86-2a91-4508-950e-c55e7559015b",
-        "real-e3ddbc76-5975-4bc5-a1c7-3a33ba77a8ca"
-      ],
-      "resumeStateKeys": [
-        "detailsPanelVisible",
-        "filter",
-        "focusNodeId",
-        "selectedNodeId",
-        "view"
-      ],
-      "resumeStateMentionsBranchOrCollapse": false,
-      "persistedFocusNodeIdUnchanged": true,
-      "explicitly": "F-042 state (focused branch, collapsed folders) is session-only in TASK-0052; persistence belongs to the next P-19 slice."
-    },
-    "engine": {
-      "product": "Edg/154.0.4258.53",
-      "protocolVersion": "1.3"
-    },
-    "fatalConsoleErrors": 0
-  },
-  "notTested": [
-    "Branch focus and collapse are available in the focused-branch view only; the ordinary one-level projection has no descendants to collapse.",
-    "A watcher-driven reload (new Index revision) while a branch is focused leaves the focus by design; covered by the frontend guard, not replayed in WebView2.",
-    "P-19 as a whole stays PARTIELLE: F-042 state is session-only here; persistence belongs to the next slice."
-  ]
+﻿{
+    "task":  "TASK-0052",
+    "headTested":  "cfba445bdaabc0d74a3bd6b7551fd6398e5b179d",
+    "strategy":  "DEC-0050: two real WebView2 processes around a real restart; real key events (Tab, Enter, Space); every reference count recomputed from the synthetic directories on disk",
+    "phase1":  {
+                   "task":  "TASK-0052",
+                   "phase":  1,
+                   "headTested":  "cfba445bdaabc0d74a3bd6b7551fd6398e5b179d",
+                   "checks":  [
+                                  {
+                                      "label":  "initial composition is multi-brain",
+                                      "value":  [
+                                                    "brain-gamma",
+                                                    "real-d4be8e66-bf1b-4f2f-858e-fd9dbe0bbd2f",
+                                                    "real-da8a0ead-941f-4a4b-b00e-cede2ffc2fa0"
+                                                ]
+                                  }
+                              ],
+                   "focus":  {
+                                 "enteredWith":  "real Tab then Enter on the native button",
+                                 "banner":  "â—† Branche focalisÃ©e â€” 27 Ã©lÃ©ments affichÃ©s",
+                                 "path":  "Chemin : projet",
+                                 "cardsDrawn":  27,
+                                 "drawnPathsEqualDiskSubtree":  true,
+                                 "otherBrainElements":  0,
+                                 "dtoNodeCount":  27,
+                                 "brainNodeCount":  127,
+                                 "focusAfterEntering":  {
+                                                            "tag":  "BUTTON",
+                                                            "testid":  "branch-exit",
+                                                            "text":  "Quitter le focus"
+                                                        },
+                                 "resumeWritesDuringEntry":  0
+                             },
+                   "collapseExpand":  {
+                                          "folder":  "projet/docs",
+                                          "childCountOfFolder":  3,
+                                          "hiddenDescendantCountShown":  14,
+                                          "hiddenDescendantCountOnDisk":  14,
+                                          "collapsedWith":  "real Enter",
+                                          "expandedWith":  "real Space",
+                                          "cardTag":  "â–¸ repliÃ© Â· 14 masquÃ©s",
+                                          "outlineDash":  "2px, 4px",
+                                          "cardsAfterCollapse":  13,
+                                          "cardsAfterExpand":  27,
+                                          "expandEqualsReferenceProjection":  true,
+                                          "focusAfterCollapse":  {
+                                                                     "tag":  "BUTTON",
+                                                                     "testid":  "branch-toggle",
+                                                                     "text":  "DÃ©plier docs â€” 14 descendants masquÃ©s"
+                                                                 },
+                                          "focusAfterExpand":  {
+                                                                   "tag":  "BUTTON",
+                                                                   "testid":  "branch-toggle",
+                                                                   "text":  "Replier docs"
+                                                               }
+                                      },
+                   "independentCollapses":  {
+                                                "folders":  [
+                                                                "projet/docs",
+                                                                "projet/src"
+                                                            ],
+                                                "hiddenOnDisk":  {
+                                                                     "docs":  14,
+                                                                     "src":  9
+                                                                 },
+                                                "removedByBothEqualsUnionOfDescendants":  true,
+                                                "srcCollapseLeftDocsAlone":  true,
+                                                "docsExpandedFromListWithEnter":  true,
+                                                "focusAfterListExpansion":  {
+                                                                                "tag":  "BUTTON",
+                                                                                "testid":  "branch-toggle",
+                                                                                "text":  "Replier docs"
+                                                                            }
+                                            },
+                   "deepCollapse":  {
+                                        "folder":  "projet/docs/guide",
+                                        "hiddenOnDisk":  8,
+                                        "english":  {
+                                                        "exit":  "Exit branch focus",
+                                                        "toggle":  "Expand guide â€” 8 hidden descendants",
+                                                        "tag":  "â–¸ collapsed Â· 8 hidden"
+                                                    }
+                                    },
+                   "rootCollapse":  {
+                                        "folder":  "projet (the focused root)",
+                                        "hiddenOnDisk":  26,
+                                        "projectionWhileCollapsed":  "root alone, no edge, no aggregate",
+                                        "pairs":  [
+                                                      {
+                                                          "keys":  "Enter then Space",
+                                                          "hiddenShown":  26,
+                                                          "focusAfterCollapse":  {
+                                                                                     "tag":  "BUTTON",
+                                                                                     "testid":  "branch-toggle",
+                                                                                     "text":  "DÃ©plier projet â€” 26 descendants masquÃ©s"
+                                                                                 },
+                                                          "focusAfterExpand":  {
+                                                                                   "tag":  "BUTTON",
+                                                                                   "testid":  "branch-toggle",
+                                                                                   "text":  "Replier projet"
+                                                                               }
+                                                      },
+                                                      {
+                                                          "keys":  "Space then Enter",
+                                                          "hiddenShown":  26,
+                                                          "focusAfterCollapse":  {
+                                                                                     "tag":  "BUTTON",
+                                                                                     "testid":  "branch-toggle",
+                                                                                     "text":  "DÃ©plier projet â€” 26 descendants masquÃ©s"
+                                                                                 },
+                                                          "focusAfterExpand":  {
+                                                                                   "tag":  "BUTTON",
+                                                                                   "testid":  "branch-toggle",
+                                                                                   "text":  "Replier projet"
+                                                                               }
+                                                      }
+                                                  ],
+                                        "expandEqualsReferenceProjection":  true,
+                                        "sourceIndexJournalSeenRelationsUnchanged":  true,
+                                        "resumeWrites":  0
+                                    },
+                   "exit":  {
+                                "exitedWith":  "real Enter",
+                                "brainsDrawn":  [
+                                                    "brain-gamma",
+                                                    "real-d4be8e66-bf1b-4f2f-858e-fd9dbe0bbd2f",
+                                                    "real-da8a0ead-941f-4a4b-b00e-cede2ffc2fa0"
+                                                ],
+                                "sameNodesAsBefore":  true,
+                                "sameChips":  true,
+                                "sameSelection":  true,
+                                "cameraBefore":  "translate(25.650000000000034 1049.8323943661971) scale(0.23582746478873237)",
+                                "cameraAfter":  "translate(25.650000000000034 1049.8323943661971) scale(0.23582746478873237)",
+                                "focusAfterExit":  {
+                                                       "tag":  "BUTTON",
+                                                       "testid":  "branch-focus",
+                                                       "text":  "Focaliser la branche"
+                                                   }
+                            },
+                   "untouched":  {
+                                     "resumeWritesDuringTheWholeCycle":  0,
+                                     "writeCommandsDuringTheWholeCycle":  0,
+                                     "commandsSentDuringTheCycle":  [
+                                                                        "map_brain_resume_state",
+                                                                        "map_branch_view",
+                                                                        "map_change_journal",
+                                                                        "map_cross_relations_for_node",
+                                                                        "map_cross_relations_open",
+                                                                        "map_node_change_state",
+                                                                        "map_node_children",
+                                                                        "map_node_detail",
+                                                                        "map_relations_open",
+                                                                        "map_resolve_node",
+                                                                        "map_view"
+                                                                    ],
+                                     "resumeStateIdentical":  true,
+                                     "sourceTreesIdentical":  true,
+                                     "indexRevisionAndDigestIdentical":  true,
+                                     "journalIdentical":  true,
+                                     "relationsIdentical":  true,
+                                     "seenStateIdentical":  true,
+                                     "fingerprints":  {
+                                                          "indexes":  {
+                                                                          "real-d4be8e66-bf1b-4f2f-858e-fd9dbe0bbd2f":  {
+                                                                                                                            "revision":  1,
+                                                                                                                            "nodeCount":  127,
+                                                                                                                            "digest":  "36842962876f7279a190a6aca132aca5b76514b08b0fbed17bf0828b2dcbbe0e"
+                                                                                                                        },
+                                                                          "real-da8a0ead-941f-4a4b-b00e-cede2ffc2fa0":  {
+                                                                                                                            "revision":  1,
+                                                                                                                            "nodeCount":  9,
+                                                                                                                            "digest":  "ceb41588c8f654b4b40172481b2415a12abbbfc070a54abd5731de2b57ecb6ec"
+                                                                                                                        },
+                                                                          "brain-gamma":  {
+                                                                                              "revision":  1,
+                                                                                              "nodeCount":  12,
+                                                                                              "digest":  "47eb8a796e1daefc553b8e1eb8cf2a52c3defca939debbf2c27b786660176512"
+                                                                                          }
+                                                                      },
+                                                          "journals":  {
+                                                                           "real-d4be8e66-bf1b-4f2f-858e-fd9dbe0bbd2f":  "36a392b0a1d94997aea866dc459f62271bd6c27149033b25a4b27886ab011ddc",
+                                                                           "real-da8a0ead-941f-4a4b-b00e-cede2ffc2fa0":  "6b07da5081fe36f52c962a1b536f89036901d4abe2b388c0c2c64adbc88fbcd7",
+                                                                           "brain-gamma":  "87609fa442cdbf008e1720054045537a790a6ce98bba82c4e21f5c7d2b981237"
+                                                                       },
+                                                          "relations":  {
+                                                                            "gamma":  {
+                                                                                          "counts":  [
+                                                                                                         8,
+                                                                                                         4,
+                                                                                                         4
+                                                                                                     ],
+                                                                                          "established":  [
+                                                                                                              "APPROVED|ek1|brain-gamma|dossier-a/note-3.txt\u003eek1|brain-gamma|racine-1.txt|reference|S-004",
+                                                                                                              "APPROVED|ek1|brain-gamma|dossier-b/note-1.txt\u003eek1|brain-gamma|dossier-a/note-3.txt|reference|S-001",
+                                                                                                              "APPROVED|ek1|brain-gamma|dossier-b/sous-dossier/note-2.txt\u003eek1|brain-gamma|dossier-a/note-1.txt|reference|S-002",
+                                                                                                              "APPROVED|ek1|brain-gamma|racine-2.txt\u003eek1|brain-gamma|dossier-b/sous-dossier/note-1.txt|revision|S-003",
+                                                                                                              "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-1.txt\u003eek1|brain-gamma|dossier-a/note-2.txt|revision|",
+                                                                                                              "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-1.txt\u003eek1|brain-gamma|dossier-b/note-1.txt|reference|",
+                                                                                                              "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-1.txt\u003eek1|brain-gamma|dossier-b/sous-dossier/note-1.txt|reference|",
+                                                                                                              "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-2.txt\u003eek1|brain-gamma|dossier-a/note-3.txt|revision|",
+                                                                                                              "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-2.txt\u003eek1|brain-gamma|dossier-b/sous-dossier/note-2.txt|reference|",
+                                                                                                              "DETERMINISTIC|ek1|brain-gamma|dossier-b/note-1.txt\u003eek1|brain-gamma|dossier-b/sous-dossier/note-1.txt|reference|",
+                                                                                                              "DETERMINISTIC|ek1|brain-gamma|dossier-b/sous-dossier/note-1.txt\u003eek1|brain-gamma|dossier-b/sous-dossier/note-2.txt|revision|",
+                                                                                                              "DETERMINISTIC|ek1|brain-gamma|racine-1.txt\u003eek1|brain-gamma|racine-2.txt|revision|"
+                                                                                                          ],
+                                                                                          "pending":  [
+                                                                                                          "S-005:pending",
+                                                                                                          "S-006:pending",
+                                                                                                          "S-007:pending",
+                                                                                                          "S-008:pending"
+                                                                                                      ]
+                                                                                      },
+                                                                            "common":  {
+                                                                                           "counts":  [
+                                                                                                          6,
+                                                                                                          0,
+                                                                                                          4
+                                                                                                      ],
+                                                                                           "established":  [
+                                                                                                               "DETERMINISTIC|cek1|brain-alpha|dossier-a/note-1.txt\u003ecek1|brain-gamma|dossier-b/note-1.txt|reference|",
+                                                                                                               "DETERMINISTIC|cek1|brain-alpha|racine-1.txt\u003ecek1|brain-beta|niveau-01|reference|",
+                                                                                                               "DETERMINISTIC|cek1|brain-beta|niveau-01/niveau-02/niveau-03\u003ecek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|revision|",
+                                                                                                               "DETERMINISTIC|cek1|brain-beta|niveau-01/niveau-02\u003ecek1|brain-gamma|racine-2.txt|reference|",
+                                                                                                               "DETERMINISTIC|cek1|brain-gamma|dossier-a/note-2.txt\u003ecek1|brain-alpha|dossier-b/sous-dossier/note-2.txt|reference|",
+                                                                                                               "DETERMINISTIC|cek1|brain-gamma|dossier-a/note-3.txt\u003ecek1|brain-beta|niveau-01/niveau-02/niveau-03/annexe|revision|"
+                                                                                                           ],
+                                                                                           "pending":  [
+                                                                                                           "XB-S01:pending",
+                                                                                                           "XB-S02:pending",
+                                                                                                           "XB-S03:pending",
+                                                                                                           "XB-S04:pending"
+                                                                                                       ]
+                                                                                       }
+                                                                        },
+                                                          "seen":  {
+                                                                       "projet":  "56144b342b62ada589941060244960a8baeb269dd60acd65db4ad2270359033e",
+                                                                       "projet/docs":  "86f3e740f6d821943d34f6ffdcdd07d40db3ea95783ba0d226186346c5531141",
+                                                                       "projet/src":  "daa52a7d45021b0323babaf4787bda9f45512e6f6c34710fbf4f86241fdb98c9",
+                                                                       "archives":  "2b1c8ccdb6e2a3207156625f89647da33f4c6b03f6865efb36bab336012acfcd"
+                                                                   },
+                                                          "sources":  {
+                                                                          "root1":  "6850ca82df5b8a89fd3c9792ce551d913a01e46d86c99939f8bb4eacde1901ee",
+                                                                          "root2":  "9ba4bb40f162a77b2358a055e4d3da50629976af9d626c7ba1bd6e84db143630"
+                                                                      }
+                                                      }
+                                 },
+                   "aggregateVsCollapse":  {
+                                               "wideFolder":  "archives",
+                                               "aggregateLabel":  "+29 Ã©lÃ©ments â€” Voir la suite",
+                                               "collapsedFolderHasNoAggregate":  true,
+                                               "otherAggregatesUnchanged":  true,
+                                               "hiddenOfCollapsed2024":  3,
+                                               "aggregateActivatedWithEnter":  true,
+                                               "stillOnlySubtreeAfterPaging":  true
+                                           },
+                   "keys":  {
+                                "focus":  [
+                                              "Enter (with a real Tab)",
+                                              "Space"
+                                          ],
+                                "collapse":  [
+                                                 "Enter",
+                                                 "Space"
+                                             ],
+                                "expand":  [
+                                               "Space",
+                                               "Enter"
+                                           ],
+                                "exit":  [
+                                             "Enter",
+                                             "Space"
+                                         ],
+                                "aggregate":  [
+                                                  "Enter"
+                                              ]
+                            },
+                   "axe":  {
+                               "package":  "4.13.0",
+                               "axeMinJsSha256":  "c24f097bd2f451d4f933e8bc7d8d539f8672a2ebcb5cc9f9f3eec8ca9470a0c1",
+                               "focused":  {
+                                               "violations":  0,
+                                               "incomplete":  1
+                                           },
+                               "collapsedEnglish":  {
+                                                        "violations":  0,
+                                                        "incomplete":  1
+                                                    },
+                               "afterExit":  {
+                                                 "violations":  0,
+                                                 "incomplete":  1
+                                             }
+                           },
+                   "status":  {
+                                  "afterExit":  "Focus de branche quittÃ© : composition, vue et sÃ©lection prÃ©cÃ©dentes restaurÃ©es."
+                              },
+                   "resumeBefore":  {
+                                        "alix":  {
+                                                     "focusNodeId":  null,
+                                                     "selectedNodeId":  3,
+                                                     "view":  {
+                                                                  "scale":  1,
+                                                                  "tx":  0,
+                                                                  "ty":  0
+                                                              },
+                                                     "filter":  {
+                                                                    "state":  "ALL",
+                                                                    "kinds":  [
+
+                                                                              ],
+                                                                    "availability":  "ALL"
+                                                                },
+                                                     "detailsPanelVisible":  true
+                                                 },
+                                        "bea":  {
+                                                    "focusNodeId":  null,
+                                                    "selectedNodeId":  null,
+                                                    "view":  null,
+                                                    "filter":  {
+                                                                   "state":  "ALL",
+                                                                   "kinds":  [
+
+                                                                             ],
+                                                                   "availability":  "ALL"
+                                                               },
+                                                    "detailsPanelVisible":  true
+                                                }
+                                    },
+                   "sessionOnlyState":  {
+                                            "rootNodeId":  3,
+                                            "wholeBrainNodes":  127
+                                        },
+                   "engine":  {
+                                  "product":  "Edg/154.0.4258.62",
+                                  "protocolVersion":  "1.3"
+                              },
+                   "fatalConsoleErrors":  0,
+                   "carry":  {
+                                 "resumeBefore":  {
+                                                      "alix":  {
+                                                                   "focusNodeId":  null,
+                                                                   "selectedNodeId":  3,
+                                                                   "view":  {
+                                                                                "scale":  1,
+                                                                                "tx":  0,
+                                                                                "ty":  0
+                                                                            },
+                                                                   "filter":  {
+                                                                                  "state":  "ALL",
+                                                                                  "kinds":  [
+
+                                                                                            ],
+                                                                                  "availability":  "ALL"
+                                                                              },
+                                                                   "detailsPanelVisible":  true
+                                                               },
+                                                      "bea":  {
+                                                                  "focusNodeId":  null,
+                                                                  "selectedNodeId":  null,
+                                                                  "view":  null,
+                                                                  "filter":  {
+                                                                                 "state":  "ALL",
+                                                                                 "kinds":  [
+
+                                                                                           ],
+                                                                                 "availability":  "ALL"
+                                                                             },
+                                                                  "detailsPanelVisible":  true
+                                                              }
+                                                  },
+                                 "fingerprints":  {
+                                                      "indexes":  {
+                                                                      "real-d4be8e66-bf1b-4f2f-858e-fd9dbe0bbd2f":  {
+                                                                                                                        "revision":  1,
+                                                                                                                        "nodeCount":  127,
+                                                                                                                        "digest":  "36842962876f7279a190a6aca132aca5b76514b08b0fbed17bf0828b2dcbbe0e"
+                                                                                                                    },
+                                                                      "real-da8a0ead-941f-4a4b-b00e-cede2ffc2fa0":  {
+                                                                                                                        "revision":  1,
+                                                                                                                        "nodeCount":  9,
+                                                                                                                        "digest":  "ceb41588c8f654b4b40172481b2415a12abbbfc070a54abd5731de2b57ecb6ec"
+                                                                                                                    },
+                                                                      "brain-gamma":  {
+                                                                                          "revision":  1,
+                                                                                          "nodeCount":  12,
+                                                                                          "digest":  "47eb8a796e1daefc553b8e1eb8cf2a52c3defca939debbf2c27b786660176512"
+                                                                                      }
+                                                                  },
+                                                      "journals":  {
+                                                                       "real-d4be8e66-bf1b-4f2f-858e-fd9dbe0bbd2f":  "36a392b0a1d94997aea866dc459f62271bd6c27149033b25a4b27886ab011ddc",
+                                                                       "real-da8a0ead-941f-4a4b-b00e-cede2ffc2fa0":  "6b07da5081fe36f52c962a1b536f89036901d4abe2b388c0c2c64adbc88fbcd7",
+                                                                       "brain-gamma":  "87609fa442cdbf008e1720054045537a790a6ce98bba82c4e21f5c7d2b981237"
+                                                                   },
+                                                      "relations":  {
+                                                                        "gamma":  {
+                                                                                      "counts":  [
+                                                                                                     8,
+                                                                                                     4,
+                                                                                                     4
+                                                                                                 ],
+                                                                                      "established":  [
+                                                                                                          "APPROVED|ek1|brain-gamma|dossier-a/note-3.txt\u003eek1|brain-gamma|racine-1.txt|reference|S-004",
+                                                                                                          "APPROVED|ek1|brain-gamma|dossier-b/note-1.txt\u003eek1|brain-gamma|dossier-a/note-3.txt|reference|S-001",
+                                                                                                          "APPROVED|ek1|brain-gamma|dossier-b/sous-dossier/note-2.txt\u003eek1|brain-gamma|dossier-a/note-1.txt|reference|S-002",
+                                                                                                          "APPROVED|ek1|brain-gamma|racine-2.txt\u003eek1|brain-gamma|dossier-b/sous-dossier/note-1.txt|revision|S-003",
+                                                                                                          "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-1.txt\u003eek1|brain-gamma|dossier-a/note-2.txt|revision|",
+                                                                                                          "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-1.txt\u003eek1|brain-gamma|dossier-b/note-1.txt|reference|",
+                                                                                                          "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-1.txt\u003eek1|brain-gamma|dossier-b/sous-dossier/note-1.txt|reference|",
+                                                                                                          "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-2.txt\u003eek1|brain-gamma|dossier-a/note-3.txt|revision|",
+                                                                                                          "DETERMINISTIC|ek1|brain-gamma|dossier-a/note-2.txt\u003eek1|brain-gamma|dossier-b/sous-dossier/note-2.txt|reference|",
+                                                                                                          "DETERMINISTIC|ek1|brain-gamma|dossier-b/note-1.txt\u003eek1|brain-gamma|dossier-b/sous-dossier/note-1.txt|reference|",
+                                                                                                          "DETERMINISTIC|ek1|brain-gamma|dossier-b/sous-dossier/note-1.txt\u003eek1|brain-gamma|dossier-b/sous-dossier/note-2.txt|revision|",
+                                                                                                          "DETERMINISTIC|ek1|brain-gamma|racine-1.txt\u003eek1|brain-gamma|racine-2.txt|revision|"
+                                                                                                      ],
+                                                                                      "pending":  [
+                                                                                                      "S-005:pending",
+                                                                                                      "S-006:pending",
+                                                                                                      "S-007:pending",
+                                                                                                      "S-008:pending"
+                                                                                                  ]
+                                                                                  },
+                                                                        "common":  {
+                                                                                       "counts":  [
+                                                                                                      6,
+                                                                                                      0,
+                                                                                                      4
+                                                                                                  ],
+                                                                                       "established":  [
+                                                                                                           "DETERMINISTIC|cek1|brain-alpha|dossier-a/note-1.txt\u003ecek1|brain-gamma|dossier-b/note-1.txt|reference|",
+                                                                                                           "DETERMINISTIC|cek1|brain-alpha|racine-1.txt\u003ecek1|brain-beta|niveau-01|reference|",
+                                                                                                           "DETERMINISTIC|cek1|brain-beta|niveau-01/niveau-02/niveau-03\u003ecek1|brain-alpha|dossier-b/sous-dossier/note-1.txt|revision|",
+                                                                                                           "DETERMINISTIC|cek1|brain-beta|niveau-01/niveau-02\u003ecek1|brain-gamma|racine-2.txt|reference|",
+                                                                                                           "DETERMINISTIC|cek1|brain-gamma|dossier-a/note-2.txt\u003ecek1|brain-alpha|dossier-b/sous-dossier/note-2.txt|reference|",
+                                                                                                           "DETERMINISTIC|cek1|brain-gamma|dossier-a/note-3.txt\u003ecek1|brain-beta|niveau-01/niveau-02/niveau-03/annexe|revision|"
+                                                                                                       ],
+                                                                                       "pending":  [
+                                                                                                       "XB-S01:pending",
+                                                                                                       "XB-S02:pending",
+                                                                                                       "XB-S03:pending",
+                                                                                                       "XB-S04:pending"
+                                                                                                   ]
+                                                                                   }
+                                                                    },
+                                                      "seen":  {
+                                                                   "projet":  "56144b342b62ada589941060244960a8baeb269dd60acd65db4ad2270359033e",
+                                                                   "projet/docs":  "86f3e740f6d821943d34f6ffdcdd07d40db3ea95783ba0d226186346c5531141",
+                                                                   "projet/src":  "daa52a7d45021b0323babaf4787bda9f45512e6f6c34710fbf4f86241fdb98c9",
+                                                                   "archives":  "2b1c8ccdb6e2a3207156625f89647da33f4c6b03f6865efb36bab336012acfcd"
+                                                               },
+                                                      "sources":  {
+                                                                      "root1":  "6850ca82df5b8a89fd3c9792ce551d913a01e46d86c99939f8bb4eacde1901ee",
+                                                                      "root2":  "9ba4bb40f162a77b2358a055e4d3da50629976af9d626c7ba1bd6e84db143630"
+                                                                  }
+                                                  }
+                             }
+               },
+    "phase2":  {
+                   "task":  "TASK-0052",
+                   "phase":  2,
+                   "headTested":  "cfba445bdaabc0d74a3bd6b7551fd6398e5b179d",
+                   "checks":  [
+
+                              ],
+                   "afterRestart":  {
+                                        "branchFocusActive":  false,
+                                        "collapsedFolders":  0,
+                                        "markersOnMap":  0,
+                                        "brainsDrawn":  [
+                                                            "brain-gamma",
+                                                            "real-d4be8e66-bf1b-4f2f-858e-fd9dbe0bbd2f",
+                                                            "real-da8a0ead-941f-4a4b-b00e-cede2ffc2fa0"
+                                                        ],
+                                        "resumeStateKeys":  [
+                                                                "detailsPanelVisible",
+                                                                "filter",
+                                                                "focusNodeId",
+                                                                "selectedNodeId",
+                                                                "view"
+                                                            ],
+                                        "resumeStateMentionsBranchOrCollapse":  false,
+                                        "persistedFocusNodeIdUnchanged":  true,
+                                        "explicitly":  "F-042 state (focused branch, collapsed folders) is session-only in TASK-0052; persistence belongs to the next P-19 slice."
+                                    },
+                   "engine":  {
+                                  "product":  "Edg/154.0.4258.62",
+                                  "protocolVersion":  "1.3"
+                              },
+                   "fatalConsoleErrors":  0
+               },
+    "notTested":  [
+                      "Branch focus and collapse are available in the focused-branch view only; the ordinary one-level projection has no descendants to collapse.",
+                      "A watcher-driven reload (new Index revision) while a branch is focused leaves the focus by design; covered by the frontend guard, not replayed in WebView2.",
+                      "P-19 as a whole stays PARTIELLE: F-042 state is session-only here; persistence belongs to the next slice."
+                  ]
 }

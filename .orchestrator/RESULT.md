@@ -1,20 +1,19 @@
 TASK_ID: TASK-0052 — root-collapse corrective after ACTION-0096
 AGENT: CLAUDE CODE
-RESULT: PENDING
+RESULT: DONE — IMPLEMENTED, awaiting independent re-control
 BRANCH: build/v0.2-a36-v1-branch-focus-collapse
+CODE_COMMIT: cfba445bdaabc0d74a3bd6b7551fd6398e5b179d
 
-ACCEPTED:
-- Core branch focus architecture and F42 proofs except root collapse.
+DONE:
+- Root focalisé repliable : root seul, compte exact (26 = disque), aucun agrégat/arête.
+- `rootCannotCollapse` et l'exception backend/UI/tests supprimés.
+- Dépli = projection de référence (rectangles inclus).
 
-BLOCKER:
-- Focused branch root is artificially excluded from collapse although the
-  contract permits every visible folder.
+VALIDATION:
+- cargo test 817 PASS; vitest src/map 635 PASS; pnpm check/build; Tauri debug.
+- WebView2 réel PASS (Enter→Space, Space→Enter) sur cfba445bdaabc0d74a3bd6b7551fd6398e5b179d.
+- Falsification : exclusion root réintroduite => 3 tests Rust + WebView2 échouent; restaurée => PASS.
 
-REQUIRED:
-- Root collapse => root only + exact all-descendant count.
-- No root aggregate while collapsed.
-- Expand => reference projection.
-- UI/keyboard proof and falsification.
-
-NEXT_ORCHESTRATOR_DECISION:
-- Independent re-control.
+NOT_TESTED: racines réelles volumineuses.
+STATE: TASK-0052 IMPLEMENTED (jamais VERIFIED par l'exécuteur); P-19 PARTIELLE; aucune TASK-0053.
+NEXT_ORCHESTRATOR_DECISION: re-contrôle indépendant.

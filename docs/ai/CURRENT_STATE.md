@@ -1,5 +1,14 @@
 # État courant
 
+## TASK-0052 corrective ACTION-0096 — `IMPLEMENTED` — 2026-10-06
+
+- Le root de la branche focalisée se replie comme tout dossier visible : root
+  seul, `hiddenDescendantCount` exact (26 sur disque en preuve), aucun agrégat,
+  dépli = projection de référence. `rootCannotCollapse` supprimé.
+- Code `cfba445bdaabc0d74a3bd6b7551fd6398e5b179d`; preuve WebView2 réelle rejouée sur ce HEAD (Enter→Space, Space→Enter).
+- TASK-0052 reste `IMPLEMENTED`, en attente de re-contrôle indépendant; F-042
+  candidate, jamais VERIFIED par l'exécuteur. P-19 PARTIELLE. Aucune TASK-0053.
+
 ## ACTION-0096 — TASK-0052 corrective root-collapse REQUIRED — 2026-10-06
 
 - Contrôle indépendant du HEAD produit bdb5e91d.
