@@ -38,7 +38,7 @@ export interface BranchFocusStrings {
   hidden: (count: number) => string;
   expandOne: (name: string) => string;
   otherBrains: string;
-  sessionOnly: string;
+  kept: string;
   busy: string;
 }
 
@@ -60,7 +60,7 @@ export const BRANCH_FOCUS_STRINGS: Record<Locale, BranchFocusStrings> = {
     hidden: (count) => `${count} descendant${count > 1 ? "s" : ""} masqué${count > 1 ? "s" : ""}`,
     expandOne: (name) => `Déplier ${name}`,
     otherBrains: "Seule cette branche est affichée ; les autres territoires reviennent à la sortie.",
-    sessionOnly: "Cet état n'est pas conservé après un redémarrage.",
+    kept: "Cet état est conservé au redémarrage ; « Quitter le focus » retrouve la composition d'avant.",
     busy: "Chargement de la branche…",
   },
   en: {
@@ -80,7 +80,7 @@ export const BRANCH_FOCUS_STRINGS: Record<Locale, BranchFocusStrings> = {
     hidden: (count) => `${count} hidden descendant${count === 1 ? "" : "s"}`,
     expandOne: (name) => `Expand ${name}`,
     otherBrains: "Only this branch is shown; the other territories come back on exit.",
-    sessionOnly: "This state is not kept after a restart.",
+    kept: "This state is kept across a restart; “Exit branch focus” brings back the previous composition.",
     busy: "Loading the branch…",
   },
 };
@@ -177,7 +177,7 @@ export default function BranchFocusPanel({
       </p>
       <p data-testid="branch-focus-path">{words.path(rootNode?.relativePath || rootNode?.name || "/")}</p>
       <p>{words.otherBrains}</p>
-      <p>{words.sessionOnly}</p>
+      <p>{words.kept}</p>
       <button type="button" ref={exitButton} data-testid="branch-exit" aria-busy={busy} onClick={onExit}>
         {words.exit}
       </button>

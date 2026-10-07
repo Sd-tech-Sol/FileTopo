@@ -28,6 +28,16 @@ import {
   type BranchFocusState,
 } from "./branchFocus";
 import MapLegend from "./MapLegend";
+import { WorkspaceCorrections, WorkspacePreferences } from "./WorkspacePreferences";
+import {
+  WorkspaceWriter,
+  buildWorkspaceState,
+  parseWorkspaceRestore,
+  type Density,
+  type Motion,
+  type WorkspaceCorrection,
+  type WorkspaceState,
+} from "./workspaceState";
 import { useProjectionFilter } from "./useProjectionFilter";
 import {
   ResumeWriter,
@@ -230,9 +240,18 @@ export default function MapApp() {
   // and written by `storeLocale` **only** when the person chooses. Nothing is written at
   // start, and changing it reaches no backend command.
   const [locale, setLocale] = useState<Locale>(() => resolveInitialLocale());
-  // `TASK-0050` — deliberately session-only. P-19 owns persistence; resume v2
-  // remains untouched by opening or closing this explanatory surface.
+  // `TASK-0050` — the legend. Since `TASK-0053` (`F-052`) its open/closed state is part of
+  // the global workspace: restored at start, written with it — never with the resume state.
   const [legendOpen, setLegendOpen] = useState(false);
+  // `TASK-0053` — the two global preferences only `F-052` owns. Chrome only: neither of them
+  // reaches a coordinate, a projection or a budget of the map.
+  const [density, setDensity] = useState<Density>("comfortable");
+  const [motion, setMotion] = useState<Motion>("system");
+  // What a restart had to correct, shown once and never silently (`P19-11`).
+  const [workspaceCorrections, setWorkspaceCorrections] = useState<WorkspaceCorrection[]>([]);
+  // `true` only once the stored workspace was read and applied: nothing is written before,
+  // so a value guessed while starting can never replace what the catalogue keeps.
+  const [workspaceReady, setWorkspaceReady] = useState(false);
   // `TASK-0047` — a control disabled while its action runs must not strand the keyboard on <body>.
   useRestoreFocusAfterDisabled();
   const t = strings[locale];
@@ -245,6 +264,13 @@ export default function MapApp() {
   useEffect(() => {
     document.documentElement.lang = locale;
   }, [locale]);
+  // `TASK-0053` — the preferences reach the page as two attributes the stylesheet reads.
+  // `data-motion="system"` leaves `prefers-reduced-motion` in charge; there is no value that
+  // forces motion.
+  useEffect(() => {
+    document.documentElement.dataset.density = density;
+    document.documentElement.dataset.motion = motion;
+  }, [density, motion]);
 
   const [fixtures, setFixtures] = useState<FixtureSummary[]>([]);
   const [host, setHost] = useState<HostInfo | null>(null);
@@ -322,6 +348,14 @@ export default function MapApp() {
         parseResumeState(await invoke<unknown>("map_brain_resume_state", { brainId })),
       onError: (brainId, error) =>
         hostLog("error", `état de reprise non enregistré pour ${brainId}: ${String(error)}`),
+    }),
+  ).current;
+  // `TASK-0053` — the one global workspace record (`F-052`): one writer, latest-wins and
+  // bounded, to the catalogue and nothing else.
+  const workspaceWriter = useRef(
+    new WorkspaceWriter({
+      write: (state) => invoke("map_workspace_update", { state }),
+      onError: (error) => hostLog("error", `espace de travail non enregistré: ${String(error)}`),
     }),
   ).current;
   const filter = useProjectionFilter({
@@ -460,9 +494,10 @@ export default function MapApp() {
   selectedRef.current = selected;
   const composedRef = useRef(composed);
   composedRef.current = composed;
-  // `TASK-0052` / `DEC-0050` — branch focus and collapse. Session-only: nothing below
-  // reaches the catalogue, the resume state or any storage. `loaded` and `composed` are
-  // never replaced, so leaving the focus gives back exactly what was there.
+  // `TASK-0052` / `DEC-0050` — branch focus and collapse. Never written to the per-brain
+  // resume state; since `TASK-0053` its arguments travel with the global workspace (`F-052`).
+  // `loaded` and `composed` are never replaced, so leaving the focus gives back exactly
+  // what was there.
   const [branchFocus, setBranchFocus] = useState<BranchFocusState | null>(null);
   const [branchBusy, setBranchBusy] = useState(false);
   const branchFocusRef = useRef(branchFocus);
@@ -1044,7 +1079,7 @@ export default function MapApp() {
    * zoom belong to the composition, whose coordinates mean nothing to a single brain.
    */
   const captureLiveResume = useCallback(() => {
-    // `TASK-0052` — a branch focus is session-only: nothing it moved is written down.
+    // `TASK-0052` — nothing a branch focus moved is written to the per-brain resume state.
     if (branchFocusRef.current) return;
     const chosen = selectedRef.current;
     if (chosen && resumeWriter.isKnown(chosen.brainId)) {
@@ -1087,6 +1122,12 @@ export default function MapApp() {
          * against the snapshot that has just been loaded.
          */
         selectEndpoint?: { brainId: string; endpointKey: string };
+        /**
+         * `TASK-0053` — the camera and selection **of the composition** the workspace remembered
+         * (`F-052`), for a start on several brains. The camera goes through the same path as a
+         * camera the catalogue remembered: it waits for a measured viewport and is clamped.
+         */
+        remembered?: { view: View | null; selected: BrainNodeRef | null };
       } = {},
     ) => {
       setBusy(true);
@@ -1207,7 +1248,12 @@ export default function MapApp() {
         if (compositionChanged) {
           // A camera from the catalogue waits for a measured viewport (see the positioning
           // effect); it replaces the session memory's for a brain read from the catalogue.
-          resumeViewRef.current = fromCatalogue?.view ? { ...fromCatalogue.view } : null;
+          const bootView = single ? null : (options.remembered?.view ?? null);
+          resumeViewRef.current = fromCatalogue?.view
+            ? { ...fromCatalogue.view }
+            : bootView
+              ? { ...bootView }
+              : null;
           if (resumeViewRef.current) restoreViewRef.current = null;
           resumeTargetRef.current = null;
           viewArmedRef.current = null;
@@ -1224,8 +1270,15 @@ export default function MapApp() {
             filter.adopt(brainId, brain.resume.filter, brain.filterCursor ?? null, brain.snapshot.indexRevision);
           }
         }
+        const bootSelected: BrainNodeRef | null =
+          !single &&
+          options.remembered?.selected &&
+          nextLoaded.get(options.remembered.selected.brainId)?.hierarchy.byId.has(options.remembered.selected.nodeId)
+            ? options.remembered.selected
+            : null;
         setSelected(
           forced ??
+            bootSelected ??
             restoredSelection ??
             rememberedSelection ??
             (focusedRoot === null
@@ -1447,7 +1500,9 @@ export default function MapApp() {
    *
    * The backend materialises the branch (`map_branch_view`): the focused folder and its
    * subtree only, bounded, read-only. What this component keeps is the arguments of that
-   * command and what to put back on exit — and **nothing is written anywhere**.
+   * command and what to put back on exit. Since `TASK-0053` those arguments travel with the
+   * global workspace (`F-052`) so a restart in the middle of a focus comes back to it; the
+   * per-brain resume state still never sees anything done inside a branch.
    */
   const fetchBranch = useCallback(
     async (brainId: string, rootId: number, collapsed: readonly number[], after: string | null) => {
@@ -1472,7 +1527,8 @@ export default function MapApp() {
     if (restore) {
       // The camera and the selection come back as they were; `composed` and `loaded`
       // were never replaced, so the composition is already exactly the previous one.
-      restoreViewRef.current = { ...current.saved.view };
+      // A camera the restart could not vouch for (`null`) leaves the composition to be fitted.
+      restoreViewRef.current = current.saved.view ? { ...current.saved.view } : null;
       skipFollowOnceRef.current = true;
       setSelected(current.saved.selected);
     }
@@ -1640,20 +1696,134 @@ export default function MapApp() {
     [selectNode],
   );
 
-  // `K9` — the application starts on the brain the catalogue calls active, and
-  // on **that brain alone**: the composition is session-only, so a restart
-  // never restores a multi-brain view. Stated in `§3`, and true here.
+  // `K9` / `TASK-0053` — the application starts where the workspace was left: the brains
+  // that were on screen, the focused one, the composed camera and selection, the legend,
+  // the density, the motion preference and — if the product was closed in the middle of
+  // one — the focused branch. The backend checked all of it against the **current**
+  // catalogue and Indexes and names whatever it had to correct. Without a stored
+  // workspace (or if it cannot be read) the application opens exactly as it always did:
+  // on the active brain alone.
   const booted = useRef(false);
   useEffect(() => {
     if (booted.current || !catalog || order.length === 0) return;
     booted.current = true;
-    hostLog("info", `cerveau actif au démarrage: ${catalog.activeBrainId}, affiché seul`);
-    try {
-      void applyComposition(singleBrainView(order, catalog.activeBrainId));
-    } catch (error) {
-      refuse(error);
-    }
-  }, [applyComposition, catalog, order, refuse]);
+    void (async () => {
+      let restored: ReturnType<typeof parseWorkspaceRestore> = null;
+      try {
+        restored = parseWorkspaceRestore(await invoke<unknown>("map_workspace_restore"));
+      } catch (error) {
+        hostLog("error", `espace de travail illisible, ouverture simple: ${String(error)}`);
+      }
+      const workspace: WorkspaceState | null = restored?.workspace ?? null;
+      let next: ComposedView | null = null;
+      if (restored && workspace) {
+        workspaceWriter.seed(workspace);
+        setLegendOpen(workspace.legendOpen);
+        setDensity(workspace.density);
+        setMotion(workspace.motion);
+        if (restored.corrections.length > 0) {
+          setWorkspaceCorrections(restored.corrections);
+          hostLog("info", `espace de travail corrigé: ${restored.corrections.join(",")}`);
+        }
+        try {
+          next = composeView(order, workspace.displayedBrainIds, workspace.focusedBrainId);
+        } catch (error) {
+          hostLog("error", `composition mémorisée refusée: ${String(error)}`);
+        }
+      }
+      hostLog(
+        "info",
+        next
+          ? `espace de travail restauré: ${next.displayedBrainIds.length} cerveau(x) affiché(s)`
+          : `cerveau actif au démarrage: ${catalog.activeBrainId}, affiché seul`,
+      );
+      try {
+        // The composed camera and selection ride the ordinary composition path. One brain alone is
+        // the resume state's (`DEC-0051` A); inside a branch focus the branch is positioned below.
+        await applyComposition(
+          next ?? singleBrainView(order, catalog.activeBrainId),
+          workspace && next && next.displayedBrainIds.length > 1 && !workspace.branchFocus
+            ? { remembered: { view: workspace.view, selected: workspace.selected } }
+            : {},
+        );
+      } catch (error) {
+        refuse(error);
+      }
+      if (!restored || !workspace) return;
+      const record = workspace.branchFocus;
+      if (!record || !next) {
+        setWorkspaceReady(true);
+        return;
+      }
+      // The composition must have reached the refs (a render) and been positioned against a
+      // measured viewport before the branch is read, or the branch's camera could be consumed by
+      // the composition's own positioning. Bounded: a viewport that never measures does not hang.
+      const composedKey = `${next.displayedBrainIds.join("|")}@${next.focusedBrainId}`;
+      const compositionNow = compositionKey(next.displayedBrainIds);
+      for (let attempt = 0; attempt < 120; attempt += 1) {
+        const shown = composedRef.current;
+        const positioned = positionedRef.current;
+        if (
+          shown &&
+          `${shown.displayedBrainIds.join("|")}@${shown.focusedBrainId}` === composedKey &&
+          loadedRef.current.has(record.brainId) &&
+          positioned?.key === compositionNow &&
+          positioned.width > 1 &&
+          resumeViewRef.current === null
+        ) {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 25));
+      }
+      const brain = loadedRef.current.get(record.brainId);
+      const abandon = () => {
+        // Back to the composition: what leaving the focus would have put back.
+        setWorkspaceCorrections((current) => [...current, "BRANCH_UNAVAILABLE"]);
+        restoreViewRef.current = record.savedView ? { ...record.savedView } : null;
+        if (record.savedSelected) setSelected(record.savedSelected);
+      };
+      if (!brain) {
+        abandon();
+        setWorkspaceReady(true);
+        return;
+      }
+      try {
+        const snapshot = await fetchBranch(record.brainId, record.rootNodeId, record.collapsedIds, null);
+        const hierarchy = buildHierarchy(snapshot.nodes, record.rootNodeId);
+        const root = { brainId: record.brainId, nodeId: record.rootNodeId };
+        const chosen = workspace.selected;
+        const landing =
+          chosen && chosen.brainId === record.brainId && hierarchy.byId.has(chosen.nodeId) ? chosen : root;
+        if (chosen && landing === root && chosen.nodeId !== root.nodeId) {
+          setWorkspaceCorrections((current) => [...current, "BRANCH_SELECTION_NOT_IN_VIEW"]);
+        }
+        // The camera the branch was left at, not the brain's remembered one.
+        resumeViewRef.current = null;
+        resumeTargetRef.current = null;
+        restoreViewRef.current = workspace.view ? { ...workspace.view } : null;
+        skipFollowOnceRef.current = true;
+        setBranchFocus({
+          brainId: record.brainId,
+          rootNodeId: record.rootNodeId,
+          collapsed: record.collapsedIds,
+          after: null,
+          composedKey,
+          snapshot,
+          hierarchy,
+          saved: {
+            view: record.savedView ? { ...record.savedView } : null,
+            selected: record.savedSelected ? { ...record.savedSelected } : null,
+            indexRevision: brain.snapshot.indexRevision,
+          },
+        });
+        setSelected(landing);
+      } catch (error) {
+        hostLog("error", `focus de branche non restauré: ${String(error)}`);
+        abandon();
+      }
+      setWorkspaceReady(true);
+    })();
+  }, [applyComposition, catalog, fetchBranch, order, refuse, workspaceWriter]);
 
   // A fresh composition opens at a readable scale centred on root/focus, and
   // that view is what `reset` reproduces — unless this composition was
@@ -1757,7 +1927,7 @@ export default function MapApp() {
       armed.stale = null;
     }
     const brainId = shown.displayedBrainIds[0];
-    // `TASK-0052` — session-only: the camera of a focused branch is never written.
+    // `TASK-0052` — the camera of a focused branch is the workspace's, never the brain's.
     if (branchFocusRef.current) return;
     if (!resumeWriter.isKnown(brainId) || !isStorableView(view)) return;
     resumeWriter.patch(brainId, { view: { ...view } });
@@ -1767,7 +1937,7 @@ export default function MapApp() {
   // brain's id, never as a bare number.
   useEffect(() => {
     if (!selected || !resumeWriter.isKnown(selected.brainId)) return;
-    // `TASK-0052` — session-only: a selection made inside a focused branch is never written.
+    // `TASK-0052` — a selection made inside a focused branch is the workspace's, never the brain's.
     if (branchFocusRef.current) return;
     resumeWriter.patch(selected.brainId, { selectedNodeId: selected.nodeId });
   }, [selected, resumeWriter]);
@@ -1798,12 +1968,64 @@ export default function MapApp() {
     };
   }, [filterBrainId, resumeWriter]);
 
+  // `TASK-0053` — the global workspace (`F-052`): what is on screen, written through the
+  // bounded writer. A composition, focus, legend, density, motion or branch change is
+  // explicit and goes out at once; a camera or selection change alone is debounced — never
+  // one write per pointer event. Nothing is written before the stored workspace was read.
+  useEffect(() => {
+    if (!workspaceReady || !composed) return;
+    const known = workspaceWriter.current();
+    // The camera is stored only once it was positioned for what is on screen; until then
+    // the last stored one stands for the same composition, and nothing for another.
+    const armed = viewArmedRef.current;
+    const cameraArmed =
+      armed !== null && armed.key === compositionId && (armed.stale === null || view !== armed.stale);
+    const sameShape =
+      known !== null &&
+      known.displayedBrainIds.join("|") === composed.displayedBrainIds.join("|") &&
+      known.focusedBrainId === composed.focusedBrainId &&
+      known.branchFocus?.brainId === branchFocus?.brainId &&
+      known.branchFocus?.rootNodeId === branchFocus?.rootNodeId;
+    workspaceWriter.set(
+      buildWorkspaceState({
+        displayedBrainIds: composed.displayedBrainIds,
+        focusedBrainId: composed.focusedBrainId,
+        view: cameraArmed ? view : sameShape ? known.view : null,
+        selected,
+        legendOpen,
+        density,
+        motion,
+        branch: branchFocus
+          ? {
+              brainId: branchFocus.brainId,
+              rootNodeId: branchFocus.rootNodeId,
+              collapsed: branchFocus.collapsed,
+              savedView: branchFocus.saved.view,
+              savedSelected: branchFocus.saved.selected,
+            }
+          : null,
+      }),
+    );
+  }, [
+    workspaceReady,
+    composed,
+    compositionId,
+    branchFocus,
+    selected,
+    view,
+    legendOpen,
+    density,
+    motion,
+    workspaceWriter,
+  ]);
+
   // Best effort on a normal close: whatever is still waiting goes to the catalogue. It is
   // not a promise about a crash — the debounce keeps the wait short, nothing more.
   useEffect(() => {
     const flush = () => {
       captureLiveResume();
       void resumeWriter.flushAll();
+      void workspaceWriter.flush();
     };
     const onVisibility = () => {
       if (document.visibilityState === "hidden") flush();
@@ -1818,7 +2040,7 @@ export default function MapApp() {
       // The page goes away: nothing waits behind a timer that will never be read.
       flush();
     };
-  }, [captureLiveResume, resumeWriter]);
+  }, [captureLiveResume, resumeWriter, workspaceWriter]);
 
   // `.map-view` can grow after this composition was already positioned — the
   // aside panel filling in with real data (relations, content observations)
@@ -3198,6 +3420,13 @@ export default function MapApp() {
             </button>
           ))}
         </div>
+        <WorkspacePreferences
+          strings={t.workspace}
+          density={density}
+          motion={motion}
+          onDensity={setDensity}
+          onMotion={setMotion}
+        />
         {host ? (
           <dl className="app__host">
             <div>
@@ -3323,6 +3552,12 @@ export default function MapApp() {
           </button>
         </div>
       </nav>
+
+      <WorkspaceCorrections
+        strings={t.workspace}
+        corrections={workspaceCorrections}
+        onDismiss={() => setWorkspaceCorrections([])}
+      />
 
       {status ? (
         <p className="app__status" role="status">

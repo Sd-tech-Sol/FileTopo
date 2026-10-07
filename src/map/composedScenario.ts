@@ -596,9 +596,10 @@ async function secondPass(
     gammaStillActive: catalog.activeBrainId === "brain-gamma",
     interfaceShowsTheActiveBrain: active ? focusedChipText().includes(active.displayName) : false,
     displayedBrainIds: displayed,
-    // §3, declared in advance: the composition is session-only, so the
-    // application comes back on the active brain **alone**. This is the limit
-    // being confirmed, not a defect being discovered.
+    // The first pass ended with Gamma displayed **alone**, so a restart — which since
+    // `TASK-0053` (`F-052`) restores the composition that was on screen at close —
+    // comes back on Gamma alone. (At the time of this scenario the composition was
+    // session-only and the application always came back on the active brain alone.)
     compositionIsGammaAlone: displayed.length === 1 && displayed[0] === "brain-gamma",
     canvases: canvasCount(),
     territories: territoryBrainIds(),

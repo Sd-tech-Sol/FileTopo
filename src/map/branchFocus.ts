@@ -1,9 +1,11 @@
 /**
  * `TASK-0052` / `DEC-0050` — the session-only state of branch focus and collapse.
  *
- * **Session-only, and says so.** Nothing here is written anywhere: not to the
- * catalogue, not to the resume state (`P-19` is the next slice, and will carry
- * these values), not to any browser store. A restart forgets all of it.
+ * **Persistence belongs to the global workspace (`TASK-0053`, `F-052`).** This module
+ * holds the live state; `MapApp` writes the arguments of the branch (brain, root,
+ * collapsed ids) and what leaving it puts back to the workspace record, never to the
+ * per-brain resume state, never to a browser store. The backend binds them to the
+ * Index generation they were read from, so a rebuild abandons the focus.
  *
  * **The backend materialises the branch.** `map_branch_view` returns a real
  * bounded projection that holds the focused folder and its descendants only.
@@ -35,7 +37,8 @@ export interface BranchFocusState {
   hierarchy: Hierarchy;
   /** What leaving the focus puts back. */
   saved: {
-    view: View;
+    /** `null` when a restart could not vouch for it: the composition is then fitted. */
+    view: View | null;
     selected: BrainNodeRef | null;
     /** The Index revision the focus was entered on. */
     indexRevision: number;

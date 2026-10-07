@@ -838,6 +838,107 @@ input[type="text"] {
   }
 }
 
+/* TASK-0053 / DEC-0051 I — the explicit preference "Mouvement : Réduit". It removes motion
+   whatever the system says; "Système" (the default) adds nothing here and leaves the media
+   query above in charge. There is no rule that forces motion. */
+:root[data-motion="reduce"] *,
+:root[data-motion="reduce"] *::before,
+:root[data-motion="reduce"] *::after {
+  transition: none !important;
+  animation: none !important;
+  scroll-behavior: auto !important;
+}
+
+/* TASK-0053 / DEC-0051 H — the two global preferences and the restart's corrections.
+   Layout only; the pressed state repeats the language switch's. */
+.app__preferences {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-self: flex-start;
+}
+
+.app__preference {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+}
+
+.app__preference-label {
+  margin-right: 8px;
+  color: var(--ink-soft);
+}
+
+.app__preference button {
+  border-radius: 0;
+  margin: 0;
+}
+
+.app__preference button:nth-of-type(1) {
+  border-radius: 8px 0 0 8px;
+}
+
+.app__preference button:nth-of-type(2) {
+  border-radius: 0 8px 8px 0;
+  border-left-width: 0;
+}
+
+.app__preference button[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--paper);
+  font-weight: 600;
+}
+
+.app__corrections {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 8px 12px;
+  border-left: 4px solid var(--accent);
+  background: var(--accent-soft);
+  border-radius: 0 8px 8px 0;
+}
+
+.app__corrections ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+/* TASK-0053 / DEC-0051 H — "Compacte" tightens the APPLICATION's own chrome: spacing of
+   the page, the buttons, the status lines and the side panels. It never selects the map
+   (.app__map, .map-view, .map-node, any SVG): not one coordinate, rectangle, projection or
+   budget of the map depends on it. */
+:root[data-density="compact"] .app {
+  gap: 5px;
+  padding: 8px 12px 10px;
+}
+
+:root[data-density="compact"] .app__header {
+  gap: 8px;
+}
+
+:root[data-density="compact"] button {
+  padding: 3px 8px;
+}
+
+:root[data-density="compact"] .app__status,
+:root[data-density="compact"] .app__corrections,
+:root[data-density="compact"] .app__report {
+  padding: 4px 8px;
+}
+
+:root[data-density="compact"] .app__aside {
+  gap: 6px;
+}
+
+:root[data-density="compact"] .details,
+:root[data-density="compact"] .measure,
+:root[data-density="compact"] .map-runtime-legend {
+  padding: 6px 8px;
+}
+
 /* --- TASK-0017 — relations transversales ---------------------------------
  *
  * Nothing below carries meaning by colour alone. An established relation is a

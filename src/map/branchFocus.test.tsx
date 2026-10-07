@@ -142,8 +142,8 @@ describe("branch focus panel — F42-2, F42-10", () => {
   });
 
   it.each([
-    ["fr", "Branche focalisée", "Quitter le focus", "Chemin : a", "Cet état n'est pas conservé après un redémarrage."],
-    ["en", "Focused branch", "Exit branch focus", "Path: a", "This state is not kept after a restart."],
+    ["fr", "Branche focalisée", "Quitter le focus", "Chemin : a", "Cet état est conservé au redémarrage ; « Quitter le focus » retrouve la composition d'avant."],
+    ["en", "Focused branch", "Exit branch focus", "Path: a", "This state is kept across a restart; “Exit branch focus” brings back the previous composition."],
   ] as const)("announces the focused branch, its path and the exit in %s", (locale, focused, exit, path, session) => {
     render(panel({ locale, active: state([]) }));
     expect(screen.getByTestId("branch-focus-banner")).toHaveTextContent(focused);

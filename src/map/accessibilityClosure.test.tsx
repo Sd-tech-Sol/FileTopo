@@ -353,8 +353,13 @@ describe("stylesheet guard — focus and motion", () => {
     expect(reduce).toMatch(/\*\s*\{[^}]*transition:\s*none\s*!important/);
     expect(reduce).toMatch(/animation:\s*none\s*!important/);
     expect(mapCss.replace(reduce, "")).not.toMatch(/scroll-behavior:\s*smooth/);
-    // The product declares no motion of its own: a new one has to be added on purpose, and reviewed against the block above.
-    const outside = mapCss.replace(reduce, "");
+    // `TASK-0053` — the explicit preference removes motion too, and there is no value that adds any.
+    const preference = block(mapCss, ':root[data-motion="reduce"] *,');
+    expect(preference).toMatch(/transition:\s*none\s*!important/);
+    expect(preference).toMatch(/animation:\s*none\s*!important/);
+    expect(mapCss).not.toMatch(/data-motion="(?!reduce")/);
+    // The product declares no motion of its own: a new one has to be added on purpose, and reviewed against the blocks above.
+    const outside = mapCss.replace(reduce, "").replace(preference, "");
     expect(outside).not.toMatch(/@keyframes/);
     expect(outside).not.toMatch(/\btransition\s*:/);
     expect(outside).not.toMatch(/\banimation\s*:/);

@@ -24,6 +24,8 @@ pub mod relation_commands;
 pub mod relations;
 /// Per-brain resume state in the catalogue — `TASK-0044`, `DEC-0042`.
 pub mod resume_state;
+/// The global workspace and its preferences — `TASK-0053`, `DEC-0051`, `F-052`.
+pub mod workspace_state;
 pub mod rule_engine;
 pub mod sandbox;
 /// Resolving a brain to the tree it actually reads — `DEC-0033` D and G.
@@ -65,6 +67,10 @@ pub enum MapError {
     /// never a value.
     #[error("map_resume_rejected: {0}")]
     ResumeRejected(String),
+    /// `TASK-0053` — a workspace state the catalogue refuses to store. A fixed
+    /// word (`displayed_empty`, `view_out_of_bounds`, …), never a value.
+    #[error("map_workspace_rejected: {0}")]
+    WorkspaceRejected(String),
     /// `TASK-0048` — fixed refusal codes only; never the rejected path.
     #[error("map_exclusion_policy_rejected: {0}")]
     ExclusionPolicyRejected(String),

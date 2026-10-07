@@ -16,9 +16,11 @@
  * the same behaviour — not a re-implementation of it. That is what `L9`'s last
  * sentence asks for.
  *
- * **It is session-only, and says so.** Nothing here is written to disk.
- * Persisting a composition across a restart is out of scope; only the **active
- * brain** survives a restart, in the catalogue, as `K9` established.
+ * **It is session-only, and says so.** Nothing here is written to disk. Since
+ * `TASK-0053` (`F-052`) the composition that was **on screen** at close is stored
+ * by the global workspace record — one composition, never this whole memory — and
+ * handed back through this very memory at start, so nothing new decides where a
+ * composition opens.
  */
 
 import type { BrainNodeRef } from "./types";

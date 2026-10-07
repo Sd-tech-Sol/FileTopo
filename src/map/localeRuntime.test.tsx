@@ -499,7 +499,7 @@ describe("switching the language", () => {
 describe("the runtime legend", () => {
   withHostLanguages(["fr-CA"]);
 
-  it("opens and closes from the same native button, stays session-only, and follows FR/EN without backend commands", async () => {
+  it("opens and closes from the same native button, writes no locale and no backend command without a restored workspace, and follows FR/EN", async () => {
     await boot();
     const toggle = screen.getByTestId("map-legend-toggle");
     expect(toggle.tagName).toBe("BUTTON");

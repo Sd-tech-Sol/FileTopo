@@ -1,4 +1,6 @@
 // TASK-0052 — real WebView2 proof of branch focus and collapse (DEC-0050 / F-042).
+// NOTE: phase 2 asserts the session-only behaviour that was true on the proof HEAD; TASK-0053 (F-052)
+// supersedes it — a restart now restores the focus. Kept as the historical proof of that HEAD.
 // Two real processes: phase 1 exercises the gestures, phase 2 runs after a real
 // restart and states that none of the F-042 state was kept (session-only).
 //

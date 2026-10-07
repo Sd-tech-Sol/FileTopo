@@ -3,6 +3,7 @@ import type { BrainIdentityStrings } from "./BrainIdentityEditor";
 import type { PanelStrings } from "./DetailsPanel";
 import type { ComposedViewErrorCode } from "./composedView";
 import type { MapLegendStrings } from "./MapLegend";
+import type { WorkspaceCorrection } from "./workspaceState";
 
 /**
  * Everything `MapApp` itself says, in both languages — `TASK-0046`, `DEC-0044`.
@@ -30,6 +31,18 @@ export interface MapStrings {
     label: string;
     fr: string;
     en: string;
+  };
+  /** `TASK-0053` — the global workspace preferences and what a restart had to correct. */
+  workspace: {
+    preferences: string;
+    density: string;
+    densityOptions: { comfortable: string; compact: string };
+    motion: string;
+    motionOptions: { system: string; reduce: string };
+    motionHint: string;
+    correctionsTitle: string;
+    correctionsDismiss: string;
+    corrections: Record<WorkspaceCorrection, string>;
   };
   composition: string;
   compositionFocused: string;
@@ -228,6 +241,34 @@ export const strings: Record<Locale, MapStrings> = {
     appTitle: "FileTopo — carte de blocs",
     subtitle: "Tranche verticale TASK-0019 · vue composée, cerveaux synthétiques seulement",
     language: { label: "Langue de l'interface", fr: "Français", en: "English" },
+    workspace: {
+      preferences: "Préférences de l'espace de travail",
+      density: "Densité",
+      densityOptions: { comfortable: "Confortable", compact: "Compacte" },
+      motion: "Mouvement",
+      motionOptions: { system: "Système", reduce: "Réduit" },
+      motionHint: "« Système » suit le réglage de votre système ; « Réduit » supprime toute animation.",
+      correctionsTitle: "Espace de travail rouvert avec des corrections",
+      correctionsDismiss: "Fermer ce résumé",
+      corrections: {
+        RECORD_UNREADABLE: "L'espace enregistré était illisible : valeurs par défaut utilisées.",
+        BRAIN_MISSING: "Un cerveau affiché n'existe plus au catalogue : il a été retiré de la composition.",
+        COMPOSITION_FALLBACK: "Aucun cerveau mémorisé n'existe plus : le cerveau actif est affiché seul.",
+        FOCUSED_BRAIN_MISSING: "Le cerveau actif mémorisé n'existe plus : un autre cerveau affiché a pris le focus.",
+        VIEW_COMPOSITION_CHANGED: "La composition a changé : la caméra mémorisée n'a pas été reprise.",
+        SELECTION_BRAIN_NOT_DISPLAYED: "La sélection mémorisée appartient à un cerveau qui n'est plus affiché : elle a été retirée.",
+        SELECTION_GENERATION_CHANGED: "L'Index a changé depuis la sélection mémorisée : elle a été retirée.",
+        SELECTION_MISSING: "L'élément sélectionné n'existe plus dans l'Index : la sélection a été retirée.",
+        BRANCH_BRAIN_NOT_DISPLAYED: "Le cerveau de la branche focalisée n'est plus affiché : le focus de branche a été abandonné.",
+        BRANCH_GENERATION_CHANGED: "L'Index a changé depuis le focus de branche : il a été abandonné.",
+        BRANCH_ROOT_INVALID: "La racine de la branche focalisée n'existe plus : le focus de branche a été abandonné.",
+        BRANCH_COLLAPSED_INVALID: "Des dossiers repliés n'existent plus ou sortent de la branche : ils ont été retirés.",
+        BRANCH_SELECTION_OUTSIDE: "La sélection était hors de la branche focalisée : la racine de la branche est sélectionnée.",
+        BRANCH_SAVED_SELECTION_INVALID: "La sélection à retrouver en quittant le focus n'est plus valide : elle a été retirée.",
+        BRANCH_UNAVAILABLE: "La branche focalisée n'a pas pu être relue : le focus de branche a été abandonné.",
+        BRANCH_SELECTION_NOT_IN_VIEW: "La sélection n'est pas dans la vue de branche : la racine de la branche est sélectionnée.",
+      },
+    },
     composition: "Cerveaux affichés",
     compositionFocused: "actif",
     compositionFocus: "rendre actif",
@@ -534,6 +575,34 @@ export const strings: Record<Locale, MapStrings> = {
     appTitle: "FileTopo — block map",
     subtitle: "TASK-0019 vertical slice · composed view, synthetic brains only",
     language: { label: "Interface language", fr: "Français", en: "English" },
+    workspace: {
+      preferences: "Workspace preferences",
+      density: "Density",
+      densityOptions: { comfortable: "Comfortable", compact: "Compact" },
+      motion: "Motion",
+      motionOptions: { system: "System", reduce: "Reduced" },
+      motionHint: "“System” follows your system setting; “Reduced” removes all animation.",
+      correctionsTitle: "Workspace reopened with corrections",
+      correctionsDismiss: "Dismiss this summary",
+      corrections: {
+        RECORD_UNREADABLE: "The saved workspace was unreadable: defaults were used.",
+        BRAIN_MISSING: "A displayed brain is no longer in the catalogue: it was removed from the composition.",
+        COMPOSITION_FALLBACK: "No remembered brain exists any more: the active brain is shown alone.",
+        FOCUSED_BRAIN_MISSING: "The remembered active brain no longer exists: another displayed brain took the focus.",
+        VIEW_COMPOSITION_CHANGED: "The composition changed: the remembered camera was not restored.",
+        SELECTION_BRAIN_NOT_DISPLAYED: "The remembered selection belongs to a brain that is no longer displayed: it was dropped.",
+        SELECTION_GENERATION_CHANGED: "The Index changed since the remembered selection: it was dropped.",
+        SELECTION_MISSING: "The selected item no longer exists in the Index: the selection was dropped.",
+        BRANCH_BRAIN_NOT_DISPLAYED: "The focused branch's brain is no longer displayed: branch focus was abandoned.",
+        BRANCH_GENERATION_CHANGED: "The Index changed since the branch focus: it was abandoned.",
+        BRANCH_ROOT_INVALID: "The focused branch's root no longer exists: branch focus was abandoned.",
+        BRANCH_COLLAPSED_INVALID: "Some collapsed folders no longer exist or lie outside the branch: they were dropped.",
+        BRANCH_SELECTION_OUTSIDE: "The selection was outside the focused branch: the branch root is selected.",
+        BRANCH_SAVED_SELECTION_INVALID: "The selection to return to when leaving the focus is no longer valid: it was dropped.",
+        BRANCH_UNAVAILABLE: "The focused branch could not be read again: branch focus was abandoned.",
+        BRANCH_SELECTION_NOT_IN_VIEW: "The selection is not in the branch view: the branch root is selected.",
+      },
+    },
     composition: "Displayed brains",
     compositionFocused: "active",
     compositionFocus: "make active",

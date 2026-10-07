@@ -1108,6 +1108,50 @@ fn map_brain_resume_restore(
     map::resume_state::restore(&catalog, &brain, &store).map_err(String::from)
 }
 
+/// `TASK-0053` — reopens the workspace (`F-052`): the brains on screen and the focus,
+/// the composed camera and selection, the legend, the density, the motion preference
+/// and a focused branch, each checked against the **current** catalogue and Indexes.
+/// Whatever cannot come back is replaced and named in `corrections`. Reads the
+/// Indexes read-only; the source is never touched.
+#[tauri::command]
+fn map_workspace_restore(
+    app: tauri::AppHandle,
+) -> Result<map::workspace_state::WorkspaceRestore, String> {
+    let (paths, catalog) = map_brain(&app)?;
+    map::workspace_state::restore(&catalog, |brain| {
+        map::commands::open_store(&paths, brain).ok()
+    })
+    .map_err(String::from)
+}
+
+/// `TASK-0053` — stores the workspace, validated in Rust. The page never names an
+/// Index generation: the backend reads the current one of every brain a node
+/// reference belongs to and binds the reference to it.
+#[tauri::command]
+fn map_workspace_update(
+    app: tauri::AppHandle,
+    state: map::workspace_state::WorkspaceState,
+) -> Result<map::workspace_state::WorkspaceState, String> {
+    let (paths, catalog) = map_brain(&app)?;
+    let state = state.validated().map_err(String::from)?;
+    let generations = state
+        .referenced_brains()
+        .into_iter()
+        .map(|brain_id| {
+            let generation = catalog
+                .get(&brain_id)
+                .ok()
+                .flatten()
+                .and_then(|brain| map::commands::open_store(&paths, &brain).ok())
+                .and_then(|store| map::workspace_state::generation_of(&store).ok());
+            (brain_id, generation)
+        })
+        .collect();
+    catalog
+        .set_workspace_state(&state, &generations)
+        .map_err(String::from)
+}
+
 #[tauri::command]
 fn map_integrity(
     app: tauri::AppHandle,
@@ -1756,6 +1800,8 @@ pub fn run() {
             map_brain_resume_state,
             map_brain_resume_update,
             map_brain_resume_restore,
+            map_workspace_restore,
+            map_workspace_update,
             map_integrity,
             map_self_check,
             map_content_observe,

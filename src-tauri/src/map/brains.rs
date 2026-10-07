@@ -37,7 +37,7 @@ pub const CATALOG_SCHEMA_VERSION: i64 = 2;
 ///
 /// The active brain is **non-reconstructible state**: nothing in an index or a
 /// relations store could tell you which brain a person was last looking at.
-const ACTIVE_BRAIN_KEY: &str = "active_brain_id";
+pub(super) const ACTIVE_BRAIN_KEY: &str = "active_brain_id";
 
 /// Key under which the catalogue remembers whether the details panel is
 /// shown — `TASK-0035` A. **Legacy since `TASK-0044`**: the panel is now stored
