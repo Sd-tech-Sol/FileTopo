@@ -6463,3 +6463,10 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
 - Preuve : `scripts/task0052-{webview2.mjs,webview2.ps1,seed-proof.py}`,
   `docs/performance/runs/TASK-0052-webview2.json`; sept falsifications.
 - Code `bdb5e91d677ec6dd0c64de2f93506cc1aa1ad17a`. TASK-0052 = `IMPLEMENTED`; F-042 candidate, jamais auto-VERIFIED.
+
+
+## 2026-10-06 — ACTION-0096 — corrective root-collapse TASK-0052
+
+- Contrôle indépendant : implémentation F-042 solide sauf exception root.
+- L'interdiction de replier la racine focalisée n'existe pas dans DEC-0050.
+- Corrective ciblée préparée; aucune TASK-0053.

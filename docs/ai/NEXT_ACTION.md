@@ -1,13 +1,16 @@
 # Action suivante
 
-## Contrôle indépendant de TASK-0052 — V1 Branch Focus & Collapse / F-042
+## Corrective TASK-0052 — autoriser le repli du root focalisé
 
 Branche : `build/v0.2-a36-v1-branch-focus-collapse`.
 
-Contrôler **sur preuves, sans modifier le produit** : critères F42-1 à F42-12 et
-falsifications de `docs/tasks/TASK-0052-v1-branch-focus-collapse.md`, avec
-`docs/performance/runs/TASK-0052-webview2.json`, `src-tauri/src/map/branch_projection*.rs`,
-`src/map/BranchFocusPanel.tsx`, `src/map/branchFocus*.ts*` et la section `DF` de
-`docs/ai/VALIDATION.md`. Attribuer `VERIFIED` ou `CHANGES_REQUIRED`.
+Lire :
 
-P-19 reste PARTIELLE (prochaine candidate logique). F-046 inchangée. Aucune TASK-0053.
+1. `docs/reviews/ACTION-0096-task0052-independent-control.md`;
+2. `docs/decisions/DEC-0050-branch-focus-collapse.md` §L;
+3. corrective dans `docs/tasks/TASK-0052-v1-branch-focus-collapse.md`;
+4. `.orchestrator/NEXT_PROMPT.md`.
+
+Exécuteur : Claude Code + Sonnet 5.5, Medium.
+
+Aucune TASK-0053.

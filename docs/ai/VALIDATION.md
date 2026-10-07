@@ -9455,3 +9455,18 @@ sur `brain-gamma` et le store commun.
 - Le remplissage largeur-d'abord peut laisser un dossier cadet sans enfants
   affichés (aggrégat déclaré); non optimisé.
 - P-19 inchangée (PARTIELLE); F-046 inchangée. Aucune TASK-0053.
+
+
+## DG. ACTION-0096 — contrôle indépendant TASK-0052 — 2026-10-06
+
+**Verdict : CHANGES_REQUIRED.**
+
+Toutes les preuves principales F-042 sont acceptées sauf une exception inventée
+par l'implémentation : le root focalisé est explicitement non repliable.
+
+DEC-0050 et F42-4 parlent de tout dossier visible et ne prévoient aucune
+exception root. Le backend filtre `id != root`, l'UI expose
+`rootCannotCollapse` et un test verrouille ce comportement.
+
+Corrective ciblée : root replié = root seul + compte exact de tous les
+descendants; dépli = projection de référence; Enter/Space; aucun aggregate root.

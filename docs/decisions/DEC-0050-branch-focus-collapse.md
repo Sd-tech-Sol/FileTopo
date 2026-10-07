@@ -134,3 +134,19 @@ Dans TASK-0052 :
 - filtres dynamiques inchangés;
 - agrégats FileTopo restent distincts d'un dossier replié;
 - F-046 hors portée.
+
+
+## L — Clarification ACTION-0096 : le root focalisé est repliable
+
+Le dossier qui sert de racine à la projection de branche est un **dossier
+visible** au sens des §§A/D. Il n'est pas une exception.
+
+Le replier :
+
+- garde le root lui-même;
+- retire tous ses descendants matérialisés;
+- porte le compte exact de tous ses descendants réels;
+- retire tout agrégat attaché au root pendant le repli;
+- conserve la possibilité de déplier immédiatement.
+
+Aucune règle « rootCannotCollapse » n'est autorisée.

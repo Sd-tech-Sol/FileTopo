@@ -1,5 +1,16 @@
 # État courant
 
+## ACTION-0096 — TASK-0052 corrective root-collapse REQUIRED — 2026-10-06
+
+- Contrôle indépendant du HEAD produit bdb5e91d.
+- F42-1..12 largement acceptés.
+- Bloqueur unique : le root focalisé est interdit de repli sans base dans
+  DEC-0050/TASK-0052.
+- Corrective : root repliable, root seul rendu, compte descendant exact,
+  dépli = référence.
+- TASK-0052 non VERIFIED. Aucune TASK-0053.
+
+
 ## TASK-0052 — branch focus & collapse (F-042) — `IMPLEMENTED` — 2026-10-06
 
 - DEC-0050 implémentée : **focus de branche** = vraie projection bornée du

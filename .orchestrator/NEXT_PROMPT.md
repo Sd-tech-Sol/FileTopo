@@ -1,81 +1,88 @@
-# NEXT_PROMPT — TASK-0052 — V1 Branch Focus & Collapse / F-042
+# NEXT_PROMPT — TASK-0052 corrective root-collapse after ACTION-0096
 
 **TARGET_AGENT:** CLAUDE CODE
 **RECOMMENDED_MODEL:** Claude Sonnet 5.5
-**RECOMMENDED_EFFORT:** High
+**RECOMMENDED_EFFORT:** Medium
 **STATUS:** READY
 **BRANCH:** `build/v0.2-a36-v1-branch-focus-collapse`
 
-## Objectif
+## Objectif unique
 
-Implémenter intégralement TASK-0052 selon DEC-0050.
+Fermer le seul écart indépendant de TASK-0052 : le dossier root de la branche
+focalisée doit être repliable comme tout autre dossier visible.
 
 ## Préconditions
 
 1. Applique `AGENTS.md`.
-2. Checkout la branche cible, fetch + fast-forward seulement.
-3. Arbre propre.
-4. Lis ACTION-0095, DEC-0050, TASK-0052.
-5. Audit reuse-first avant code :
-   `projection.rs`, `hierarchy.rs::children_page`, `MapApp.changeProjection`,
-   `compositionSession.ts`, `MapView`, agrégats, focus clavier.
+2. Checkout/fetch/fast-forward, arbre propre.
+3. Lis ACTION-0096, DEC-0050 §L et la corrective TASK-0052.
+4. Ne refais pas l'architecture.
 
-## Frontière
+## Backend
 
-- pas de whole-graph DTO;
-- pas de masque CSS présenté comme une projection;
-- pas de nouvelle DB;
-- pas de colonne persistante subtree count sans STOP;
-- pas de persistance P-19 dans cette tranche;
-- pas de F-046;
-- aucune TASK-0053.
+Dans `branch_projection.rs` :
 
-## Implémentation
+- retire l'exclusion `id != root`;
+- un root présent dans `collapsed_ids` doit être reconnu comme replié;
+- la projection résultante contient exactement le root;
+- `hiddenDescendantCount = descendant_count(root)`;
+- aucun aggregate dont `parentId == root` ne subsiste pendant le repli;
+- les collapsed ids hors sous-arbre / fichiers / inconnus restent sans effet;
+- les replis descendants existants restent inchangés.
 
-Construis la plus petite extension du materializer qui satisfait DEC-0050 :
+Ajuste les tests :
+- remplace le test qui dit que root ne change rien;
+- ajoute root collapse exact;
+- root expand = référence exacte;
+- arbre profond + large;
+- count ≠ child_count sur un root multi-niveaux.
 
-- branch focus strict : aucun nœud extérieur au sous-arbre;
-- remplissage descendant borné et déterministe;
-- collapsed ids respectés;
-- exact `hiddenDescendantCount`;
-- expand inverse propre;
-- UI FR/EN et clavier;
-- sortie du branch focus restaure la session précédente.
+## Frontend
 
-Réutilise les agrégats pour budget/pagination, mais **ne les confonds jamais**
-avec l'état collapsed.
+- supprime `rootCannotCollapse`;
+- `canCollapse` doit accepter le root dossier;
+- sélection root → bouton Replier;
+- après repli → bouton Déplier avec compte exact;
+- sélection reste root;
+- Enter et Space;
+- focus jamais body;
+- la liste des replis peut inclure le root si utile, sans dupliquer/confondre
+  le bouton principal.
 
-Si le compte exact de descendants exige une primitive Index, implémente une
-requête exacte, testée et index-driven; ne sérialise jamais les descendants.
+Aucune modification P-19.
 
-## Preuves
+## WebView2
 
-Suis tous les critères F42-1..F42-12 et les falsifications de TASK-0052.
+Étends le vrai scénario TASK-0052 :
 
-WebView2 réel obligatoire, avec :
+1. entrer dans un branch focus;
+2. sélectionner le root;
+3. replier par vraie touche Enter;
+4. confirmer DTO/DOM = root seul;
+5. confirmer hidden count = référence indépendante disque;
+6. confirmer aucun aggregate du root;
+7. confirmer focus/label Déplier;
+8. déplier par Space;
+9. comparer projection/nœuds/arêtes/agrégats à la référence pré-repli;
+10. répéter au moins l'autre paire Space→Enter;
+11. confirmer invariants source/Index/journal/seen/relations/resume inchangés.
 
-- multi-brain → branch focus mono-brain;
-- zéro nœud extérieur;
-- collapse profond + compte indépendant exact;
-- expand = projection de référence;
-- deux collapses indépendants;
-- exit = composition/vue/sélection restaurées;
-- Enter + Space;
-- axe/focus/non-couleur;
-- source/Index/journal/seen/relations inchangés;
-- restart montrant explicitement que l'état F-042 reste session-only.
+## Falsification obligatoire
+
+Réintroduire temporairement l'exclusion du root :
+- test ciblé et preuve WebView2 doivent échouer.
+Restaurer puis PASS.
 
 ## Validation
 
-Rust/frontend complets pertinents, pnpm check/build, Tauri debug, WebView2,
+Rejoue ciblés + suites pertinentes, pnpm check/build, Tauri debug, WebView2,
 diff-check, audit public.
 
 ## Fin
 
-- TASK-0052 IMPLEMENTED / candidate contrôle indépendant;
-- F-042 candidate, jamais VERIFIED par l'exécuteur;
-- P-19 reste PARTIELLE;
+- TASK-0052 IMPLEMENTED / candidate re-control;
+- jamais VERIFIED par l'exécuteur;
+- P-19 PARTIELLE;
 - aucune TASK-0053;
-- NEXT_ACTION = contrôle indépendant TASK-0052;
-- RESULT complet;
-- commit + push, arbre propre.
+- RESULT/NEXT_ACTION à jour;
+- commit+push, arbre propre.

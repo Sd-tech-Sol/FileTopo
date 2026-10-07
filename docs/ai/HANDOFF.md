@@ -1,5 +1,16 @@
 # HANDOFF — passage de relais
 
+## Relais — ACTION-0096 / TASK-0052 corrective READY — 2026-10-06
+
+- Ne pas refaire l'architecture F-042.
+- Retirer uniquement l'exception rootCannotCollapse.
+- Backend + UI + tests + WebView2 doivent accepter le root focalisé comme
+  dossier repliable.
+- Repli root : root seul, hiddenDescendantCount exact, aucun aggregate root.
+- Dépli root : projection de référence exacte.
+- Sonnet 5.5 Medium. Aucune TASK-0053.
+
+
 ## Relais — TASK-0052 IMPLEMENTED, contrôle indépendant requis — 2026-10-06
 
 - Code `bdb5e91d677ec6dd0c64de2f93506cc1aa1ad17a` (backend `branch_projection.rs` + primitive `descendant_count`,
