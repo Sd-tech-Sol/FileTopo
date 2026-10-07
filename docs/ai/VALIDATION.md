@@ -9489,4 +9489,3 @@ Code `cfba445bdaabc0d74a3bd6b7551fd6398e5b179d`.
 Non testé / limites : racines réelles volumineuses; repli du root hors vue de
 branche (la projection ordinaire n'a qu'un niveau). P-19 PARTIELLE; F-046
 inchangée; aucune TASK-0053. Jamais `VERIFIED` par l'exécuteur.
-

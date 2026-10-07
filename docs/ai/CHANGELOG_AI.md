@@ -6481,4 +6481,3 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
 - Backend : root accepté dans `collapsed_ids`; UI : `rootCannotCollapse` supprimé.
 - Tests Rust/frontend et preuve WebView2 étendus; falsification effective.
 - Code `cfba445bdaabc0d74a3bd6b7551fd6398e5b179d`. Aucune TASK-0053.
-
