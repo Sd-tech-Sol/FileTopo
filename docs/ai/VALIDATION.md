@@ -9570,3 +9570,21 @@ carte identiques en unités monde sous compact; 60 crans + 1 glissement = 2 écr
 émulée (CDP); « Reconstruire » conserve les ids quand les chemins survivent, donc le piège numérique n'est pas
 reproduit par la preuve WebView2 (il l'est en Rust); la page n'a pas de moyen de reconstruire fermée : les
 écritures de la page sont retenues pendant la reconstruction de la phase C.
+
+
+## DH — ACTION-0099 — contrôle indépendant final TASK-0053 / F-052 / P-19 — 2026-10-07
+
+**Verdict : PASS / VERIFIED.** Contrôle indépendant du code `804e1daa29b30e60b098ff677d06b452f02ecad6` et du HEAD documentaire `a28f354ff9625287c41284f058e132628a3dd32d`.
+
+- `804e1daa29b30e60b098ff677d06b452f02ecad6..a28f354ff9625287c41284f058e132628a3dd32d` = un seul commit, uniquement documentation/preuve; aucun code produit non retesté après le HEAD testé.
+- Backend : `workspace.v1` versionné, forme fermée, limites de taille/valeurs, JSON inconnu/corrompu/futur => défaut sûr + correction `RECORD_UNREADABLE`; upsert SQLite unique.
+- Générations : les commandes Tauri calculent les bindings depuis les Index courants; `check_ref` exige la génération liée avant de vérifier l'existence du nœud. Le test Rust `a_number_reused_by_a_new_index_never_selects_the_new_object` matérialise le piège numérique.
+- F-042 : branch focus entier ou abandonné; collapsed ids invalides filtrés et nommés; saved view/saved selection contrôlés.
+- Frontend : `WorkspaceWriter` latest-wins, urgent pour changements explicites, debounce/max-wait pour caméra/sélection, flush best-effort sur `pagehide`/`beforeunload`/visibility/unmount; aucun engagement crash brutal.
+- Densité = chrome seulement; mouvement = `system|reduce`, sans mode pouvant forcer les animations contre l'OS.
+- WebView2 : artefact `TASK-0053-webview2.json` lié à `804e1daa29b30e60b098ff677d06b452f02ecad6`, 4 processus / 3 fermetures réelles, 3 cerveaux, restauration exacte, sortie du branch focus, changement FR→EN, compact→comfortable, reduce→system, rebuild revision 2→3, corrections `BRANCH_GENERATION_CHANGED` et `SELECTION_GENERATION_CHANGED`, zéro violation axe aux états mesurés.
+- Invariants : sources/Index/journal/relations/exclusions/seen inchangés autour des gestes de préférence; rectangles/projections monde identiques sous compact; 60 crans + 1 drag => 2 écritures workspace.
+- Public readiness du diff TASK-0053 : aucun motif de chemin utilisateur, clé privée, mot de passe, secret ou token détecté dans le diff examiné.
+- **CI distante : absente** pour `804e1daa29b30e60b098ff677d06b452f02ecad6` (0 workflow run, 0 commit status). Les suites annoncées par l'exécuteur sont des preuves locales, pas une validation GitHub Actions.
+
+**Clôture :** `TASK-0053 = VERIFIED`; `F-052 = VERIFIED`; `M-1 = CLOSED`; `P-19 = CLOSED / VERIFIED`. Limites documentées (crash brutal non testé; reduced-motion OS émulé en CDP) conservées sans abaisser le contrat.

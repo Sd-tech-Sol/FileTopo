@@ -430,3 +430,12 @@ Ils sont écrits ici plutôt que corrigés en silence.
 > `F-035`; branch state = `F-042` + `F-052`; vu/non-vu = `F-028`; composition
 > affichée = `F-040`/`F-034` + `F-052`. `M-1` et `P-19` sont **candidates** à la
 > fermeture : jamais `CLOSED` / `VERIFIED` avant le contrôle indépendant.
+
+
+> **Clôture M-1 / P-19 — ACTION-0099 (2026-10-07).**
+> Le contrôle indépendant de `TASK-0053` ferme le manque `M-1` et le contrat `P-19`.
+> `F-052` est le propriétaire du workspace global (composition, caméra/sélection de composition,
+> légende, densité, mouvement, branch focus/collapsed ids) tandis que resume par cerveau,
+> `filetopo.locale` et vu/non-vu gardent leurs propriétaires existants. La preuve WebView2
+> à quatre processus confirme la restauration valeur par valeur et les corrections explicites
+> après changement de génération. `P-19 = CLOSED / VERIFIED`; `M-1 = CLOSED`.

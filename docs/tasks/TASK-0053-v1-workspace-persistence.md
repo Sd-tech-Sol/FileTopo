@@ -1,7 +1,7 @@
 # TASK-0053 — V1 Workspace Preferences & Persistence / P-19 Closure
 
 - **Date :** 2026-10-06
-- **Statut :** `IMPLEMENTED` — candidate à un contrôle indépendant (jamais `VERIFIED` par l'exécuteur)
+- **Statut :** `VERIFIED` — contrôle indépendant `ACTION-0099` (2026-10-07)
 - **Branche :** `build/v0.2-a37-v1-workspace-persistence`
 - **Décision :** `DEC-0051`
 - **Portée :** `F-052`, `M-1`, `P-19`
@@ -287,3 +287,21 @@ Code `804e1daa29b30e60b098ff677d06b452f02ecad6`; preuve `docs/performance/runs/T
   migrés et rejoués.
 - P19-1..P19-14 couverts; neuf falsifications effectives (voir `VALIDATION.md` `DG`).
 - **Jamais `VERIFIED` par l'exécuteur.** F-046 inchangée. Aucune TASK-0054.
+
+
+## Contrôle indépendant — ACTION-0099 — 2026-10-07
+
+Verdict : **PASS / VERIFIED**.
+
+- Code produit contrôlé : `804e1daa29b30e60b098ff677d06b452f02ecad6`.
+- HEAD de branche au début du contrôle : `a28f354ff9625287c41284f058e132628a3dd32d`; le seul commit après le code testé est documentaire/preuve, sans fichier produit.
+- Store `workspace.v1` contrôlé : enveloppe versionnée, fermée (`deny_unknown_fields`), bornée (16 Kio), défaut sûr et remplacement SQLite d'une seule ligne.
+- Références de nœuds contrôlées : liaison backend à `index_id@revision`; un `nodeId` seul n'est jamais cru; sélection/branch/collapsed/saved selection sont corrigés explicitement.
+- Propriété des états : resume par cerveau, locale et vu/non-vu restent dans leurs stores existants; F-052 ne les duplique pas.
+- Composition, légende, densité, mouvement et état F-042 sont couverts par les tests frontend/Rust et la preuve WebView2 à quatre processus.
+- La preuve WebView2 est liée à `804e1daa29b30e60b098ff677d06b452f02ecad6`, comporte 3 fermetures/réouvertures réelles, 3 cerveaux, restauration exacte, corrections après changement de génération, zéro violation axe aux états mesurés et budget d'écriture borné.
+- Le piège d'un identifiant numérique réutilisé par un Index recréé est testé directement en Rust; le rebuild WebView2 prouve séparément le changement réel de génération et le refus des références devenues obsolètes.
+- Aucun chemin personnel, secret ou donnée réelle n'a été trouvé dans le diff produit TASK-0053 ni dans l'artefact public contrôlé.
+- **GitHub Actions : aucune workflow run ni commit status attaché au commit testé.** Les nombres `839 Rust PASS`, `708 frontend PASS`, `tsc/build/Tauri PASS` restent donc des preuves d'exécution de l'exécuteur, relues mais non re-jouées par une CI distante.
+
+Conséquence : `TASK-0053 = VERIFIED`, `F-052 = VERIFIED`, `M-1 = CLOSED`, `P-19 = CLOSED / VERIFIED`. `F-046` reste inchangée.

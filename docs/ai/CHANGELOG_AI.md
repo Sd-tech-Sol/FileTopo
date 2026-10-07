@@ -6508,3 +6508,13 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
 - Composition, légende, densité, mouvement, branch focus persistés; resume/langue/vu inchangés.
 - Corrections nommées et visibles; densité = chrome seulement; mouvement sans mode « forcer ».
 - Code `804e1daa29b30e60b098ff677d06b452f02ecad6`; preuve WebView2 réelle (4 processus); neuf falsifications. F-046 inchangée; aucune TASK-0054.
+
+
+## 2026-10-07 — ACTION-0099 — TASK-0053 VERIFIED / P-19 fermé
+
+- Contrôle indépendant de `804e1daa29b30e60b098ff677d06b452f02ecad6`; le seul commit après le code testé jusqu'à `a28f354ff9625287c41284f058e132628a3dd32d` est documentaire/preuve.
+- Store `workspace.v1`, bindings `index_id@revision`, corrections, composition, F-042, légende, densité, mouvement et stores existants contrôlés.
+- Preuve WebView2 relue : 4 processus, 3 fermetures réelles, 3 cerveaux, corrections de génération, axe 0 violation aux états mesurés, invariants et budget d'écriture conformes.
+- Aucun workflow run / commit status GitHub attaché au commit testé : résultats 839 Rust / 708 frontend / tsc/build/Tauri traités comme preuves locales de l'exécuteur, pas comme CI distante.
+- `TASK-0053 = VERIFIED`; `F-052 = VERIFIED`; `M-1 = CLOSED`; `P-19 = CLOSED / VERIFIED`.
+- `F-046` inchangée. Audit V1 frais requis avant toute `TASK-0054`.

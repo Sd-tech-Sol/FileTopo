@@ -171,3 +171,10 @@ Une fois TASK-0053 VERIFIED :
 - F-052 = VERIFIED;
 - M-1 = CLOSED;
 - P-19 = CLOSED / VERIFIED par composition des preuves existantes + TASK-0053.
+
+
+## N — Application de la décision — ACTION-0099 — 2026-10-07
+
+Le contrôle indépendant `ACTION-0099` confirme les conditions de la section M :
+`F-052 = VERIFIED`, `M-1 = CLOSED`, `P-19 = CLOSED / VERIFIED`.
+Les limites de preuve déclarées restent documentées et ne changent pas l'architecture approuvée.

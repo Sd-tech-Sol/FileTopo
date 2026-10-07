@@ -1,5 +1,14 @@
 # HANDOFF — passage de relais
 
+## Relais — ACTION-0099 — TASK-0053 VERIFIED — 2026-10-07
+
+- Branche : `build/v0.2-a37-v1-workspace-persistence`.
+- Produit vérifié : `804e1daa29b30e60b098ff677d06b452f02ecad6`; HEAD documentaire contrôlé : `a28f354ff9625287c41284f058e132628a3dd32d`.
+- Clôtures : `TASK-0053 / F-052 = VERIFIED`, `M-1 = CLOSED`, `P-19 = CLOSED / VERIFIED`.
+- CI distante : aucune attachée au commit testé.
+- Limites conservées : crash brutal pendant debounce non testé; préférence OS reduced-motion émulée par CDP; piège de réutilisation numérique démontré en Rust, changement de génération/rejet démontré en WebView2.
+- Ne pas créer `TASK-0054` par inertie : faire d'abord un audit V1 frais. `F-046` reste inchangée jusqu'à cet audit.
+
 ## Relais — TASK-0053 IMPLEMENTED — 2026-10-07
 
 - Branche `build/v0.2-a37-v1-workspace-persistence`, code `804e1daa29b30e60b098ff677d06b452f02ecad6`.

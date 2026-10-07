@@ -38,6 +38,7 @@ internal log of agent work lives in `docs/ai/CHANGELOG_AI.md`, in French.
 
 ### Changed
 
+- FileTopo now restores the global workspace across real application restarts: displayed collections and focus, composed camera and selection, legend state, compact/comfortable UI density, system/reduced motion preference, and branch-focus/collapsed state. Persisted node references are generation-bound and stale references are corrected explicitly instead of being silently reused.
 - The synthetic fixture is a development-only feature. Its location is resolved
   at run time instead of being compiled in, and the button is hidden when the
   build does not provide it.

@@ -1,5 +1,14 @@
 # État courant
 
+## ACTION-0099 — TASK-0053 / F-052 / M-1 / P-19 — VERIFIED — 2026-10-07
+
+- Contrôle indépendant du code `804e1daa29b30e60b098ff677d06b452f02ecad6` : PASS.
+- Le HEAD `a28f354ff9625287c41284f058e132628a3dd32d` ne contient après le code testé qu'un commit documentaire/preuve.
+- `TASK-0053 = VERIFIED`; `F-052 = VERIFIED`; `M-1 = CLOSED`; `P-19 = CLOSED / VERIFIED`.
+- WebView2 : 4 processus, 3 fermetures réelles, 3 cerveaux; restauration/corrections/invariants conformes.
+- Aucune CI GitHub distante attachée au commit testé; les résultats de suites sont des preuves locales relues.
+- `F-046` reste inchangée. Prochaine action : audit V1 frais avant toute nouvelle tâche.
+
 ## TASK-0053 — F-052 / M-1 / P-19 — `IMPLEMENTED` (candidate) — 2026-10-07
 
 - Workspace global persistant dans `catalog_meta` (`workspace.v1`) : composition +
