@@ -1,5 +1,15 @@
 # HANDOFF — passage de relais
 
+## Relais — ACTION-0097 — TASK-0052 VERIFIED — 2026-10-06
+
+- HEAD produit contrôlé : `cfba445bdaabc0d74a3bd6b7551fd6398e5b179d`.
+- TASK-0052 / F-042 = VERIFIED.
+- L'état branch focus + collapsed ids reste volontairement session-only.
+- P-19 est maintenant la prochaine candidate logique à auditer.
+- F-046 reste séparée.
+- Aucune TASK-0053 créée sans audit.
+
+
 ## Relais — corrective TASK-0052 livrée, re-contrôle requis — 2026-10-06
 
 - Code `cfba445bdaabc0d74a3bd6b7551fd6398e5b179d`. Seule l'exception root retirée : `branch_projection.rs`

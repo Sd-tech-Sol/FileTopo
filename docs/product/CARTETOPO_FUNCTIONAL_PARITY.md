@@ -404,3 +404,11 @@ Ils sont écrits ici plutôt que corrigés en silence.
 > relation `APPROVED`, intra et inter, y compris approbation humaine issue du
 > moteur lorsque son état devient `STALE`). Les relations
 > `DETERMINISTIC` restent non révocables par ce geste.
+
+
+> **Clôture F-042 — ACTION-0097 (2026-10-06).** `F-042` est
+> **CLOSED / VERIFIED** par `TASK-0052` : focus de branche strict, projection
+> bornée, repli/dépli réversible, compte exact de tous les descendants masqués,
+> root focalisé repliable, clavier et restauration de session. L'état
+> `branch focus + collapsed ids` reste volontairement session-only et doit
+> être repris par la fermeture `P-19`.

@@ -1,7 +1,7 @@
 # TASK-0052 — V1 Branch Focus & Collapse / F-042 Closure
 
 - **Date :** 2026-10-06
-- **Statut :** `IMPLEMENTED` — corrective ACTION-0096 livrée, candidate à re-contrôle indépendant
+- **Statut :** **`VERIFIED` par `ACTION-0097` le 2026-10-06**
 - **Branche :** `build/v0.2-a36-v1-branch-focus-collapse`
 - **Décision :** `DEC-0050`
 - **Portée :** `F-042`, régressions `F-050/F-051`, préparation `P-19`
@@ -189,3 +189,18 @@ Code `cfba445bdaabc0d74a3bd6b7551fd6398e5b179d`; preuve `docs/performance/runs/T
   échouent (« timeout: root collapsed »); restaurée ⇒ PASS.
 
 **Jamais `VERIFIED` par l'exécuteur.** P-19 reste PARTIELLE. Aucune TASK-0053.
+
+
+## Contrôle final ACTION-0097 — VERIFIED
+
+La corrective root-collapse est acceptée indépendamment :
+
+- root focalisé repliable;
+- root seul rendu;
+- compte exact de tous ses descendants;
+- aucun aggregate/arête;
+- Enter/Space;
+- dépli = projection de référence;
+- invariants source/Index/journal/seen/relations/resume inchangés.
+
+**TASK-0052 = VERIFIED. F-042 = CLOSED / VERIFIED.**

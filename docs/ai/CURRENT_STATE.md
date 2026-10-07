@@ -1,5 +1,15 @@
 # État courant
 
+## ACTION-0097 — TASK-0052 / F-042 VERIFIED — 2026-10-06
+
+- Corrective root-collapse acceptée indépendamment.
+- Branch focus + collapse/expand complets dans la projection de branche.
+- Root repliable, compte exact, no aggregate, expand = référence.
+- TASK-0052 = VERIFIED; F-042 = CLOSED / VERIFIED.
+- P-19 reste PARTIELLE; F-046 inchangée.
+- Prochaine étape : audit P-19 avant toute TASK-0053.
+
+
 ## TASK-0052 corrective ACTION-0096 — `IMPLEMENTED` — 2026-10-06
 
 - Le root de la branche focalisée se replie comme tout dossier visible : root

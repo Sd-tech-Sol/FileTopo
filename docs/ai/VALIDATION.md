@@ -9489,3 +9489,22 @@ Code `cfba445bdaabc0d74a3bd6b7551fd6398e5b179d`.
 Non testé / limites : racines réelles volumineuses; repli du root hors vue de
 branche (la projection ordinaire n'a qu'un niveau). P-19 PARTIELLE; F-046
 inchangée; aucune TASK-0053. Jamais `VERIFIED` par l'exécuteur.
+
+
+## DI. ACTION-0097 — re-contrôle indépendant final TASK-0052 — 2026-10-06
+
+**VERDICT : VERIFIED.**
+
+HEAD produit contrôlé :
+`cfba445bdaabc0d74a3bd6b7551fd6398e5b179d`.
+
+La corrective ACTION-0096 est conforme : root repliable côté backend et UI,
+compte exact via `descendant_count`, projection root-only, aucun aggregate ni
+arête, Enter/Space, dépli exact vers la référence, aucune mutation des
+invariants et aucun write P-19.
+
+La preuve WebView2 couvre les deux paires de touches Enter→Space et Space→Enter,
+avec référence disque indépendante. Aucun code produit n'a changé après le HEAD
+testé; les commits suivants sont documentaires/artefact.
+
+TASK-0052 et F-042 sont VERIFIED.
