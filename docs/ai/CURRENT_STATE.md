@@ -1,5 +1,15 @@
 # État courant
 
+## ACTION-0098 — P-19 audit terminé / TASK-0053 READY — 2026-10-06
+
+- P-19 est fermable en une tranche sans dupliquer les stores existants.
+- F-052 créée pour résoudre M-1 : workspace global + légende + densité +
+  mouvement + état F-042.
+- Resume brain-scoped, locale et seen gardent leur source de vérité.
+- Stockage F-052 dans catalog_meta, versionné et index-generation-aware.
+- TASK-0053 READY; F-046 inchangée. Aucune TASK-0054.
+
+
 ## ACTION-0097 — TASK-0052 / F-042 VERIFIED — 2026-10-06
 
 - Corrective root-collapse acceptée indépendamment.

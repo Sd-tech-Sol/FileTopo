@@ -1,88 +1,134 @@
-# NEXT_PROMPT — TASK-0052 corrective root-collapse after ACTION-0096
+# NEXT_PROMPT — TASK-0053 — Workspace Preferences & Persistence / P-19
 
 **TARGET_AGENT:** CLAUDE CODE
 **RECOMMENDED_MODEL:** Claude Sonnet 5.5
-**RECOMMENDED_EFFORT:** Medium
+**RECOMMENDED_EFFORT:** High
 **STATUS:** READY
-**BRANCH:** `build/v0.2-a36-v1-branch-focus-collapse`
+**BRANCH:** `build/v0.2-a37-v1-workspace-persistence`
 
-## Objectif unique
+## Objectif
 
-Fermer le seul écart indépendant de TASK-0052 : le dossier root de la branche
-focalisée doit être repliable comme tout autre dossier visible.
+Implémenter TASK-0053 selon DEC-0051 et rendre F-052/M-1/P-19 candidates à
+un contrôle indépendant.
 
 ## Préconditions
 
 1. Applique `AGENTS.md`.
-2. Checkout/fetch/fast-forward, arbre propre.
-3. Lis ACTION-0096, DEC-0050 §L et la corrective TASK-0052.
-4. Ne refais pas l'architecture.
+2. Checkout branche cible, fetch + fast-forward, arbre propre.
+3. Lis ACTION-0098, DEC-0051, TASK-0053.
+4. Fais l'audit reuse-first avant code :
+   - brains.rs catalog_meta;
+   - resume_state.rs versioning/corrections;
+   - resumeState.ts scheduling/flush;
+   - compositionSession.ts;
+   - branchFocus.ts;
+   - locale.ts;
+   - seen store.
 
-## Backend
+## Règle de propriété
 
-Dans `branch_projection.rs` :
+Ne crée aucune deuxième source de vérité :
 
-- retire l'exclusion `id != root`;
-- un root présent dans `collapsed_ids` doit être reconnu comme replié;
-- la projection résultante contient exactement le root;
-- `hiddenDescendantCount = descendant_count(root)`;
-- aucun aggregate dont `parentId == root` ne subsiste pendant le repli;
-- les collapsed ids hors sous-arbre / fichiers / inconnus restent sans effet;
-- les replis descendants existants restent inchangés.
+- per-brain view/filter/panel/selection = resume existant;
+- locale = mécanisme existant;
+- seen = store existant;
+- F-052 = workspace global uniquement.
 
-Ajuste les tests :
-- remplace le test qui dit que root ne change rien;
-- ajoute root collapse exact;
-- root expand = référence exacte;
-- arbre profond + large;
-- count ≠ child_count sur un root multi-niveaux.
+## F-052
 
-## Frontend
+Ajoute un store global workspace dans catalog_meta :
 
-- supprime `rootCannotCollapse`;
-- `canCollapse` doit accepter le root dossier;
-- sélection root → bouton Replier;
-- après repli → bouton Déplier avec compte exact;
-- sélection reste root;
-- Enter et Space;
-- focus jamais body;
-- la liste des replis peut inclure le root si utile, sans dupliquer/confondre
-  le bouton principal.
+- format fermé/versionné/borné;
+- defaults sûrs;
+- corrections nommées;
+- aucun path/content;
+- backend attache les index_id des node refs.
 
-Aucune modification P-19.
+Expose les commandes minimales read/update/restore nécessaires.
 
-## WebView2
+## Workspace
 
-Étends le vrai scénario TASK-0052 :
+Persiste la composition active uniquement :
 
-1. entrer dans un branch focus;
-2. sélectionner le root;
-3. replier par vraie touche Enter;
-4. confirmer DTO/DOM = root seul;
-5. confirmer hidden count = référence indépendante disque;
-6. confirmer aucun aggregate du root;
-7. confirmer focus/label Déplier;
-8. déplier par Space;
-9. comparer projection/nœuds/arêtes/agrégats à la référence pré-repli;
-10. répéter au moins l'autre paire Space→Enter;
-11. confirmer invariants source/Index/journal/seen/relations/resume inchangés.
+- displayed brain ids;
+- focused brain;
+- global view;
+- global selection.
 
-## Falsification obligatoire
+Ne persiste pas tout l'historique CompositionSessionMemory.
 
-Réintroduire temporairement l'exclusion du root :
-- test ciblé et preuve WebView2 doivent échouer.
-Restaurer puis PASS.
+## Branch focus
+
+Persiste assez d'état pour qu'un restart pendant branch focus revienne dans le
+même mode et que « Quitter le focus » restaure correctement la composition
+pré-focus.
+
+Node refs/collapsed ids liés à l'Index courant par le backend.
+
+## Préférences
+
+### Legend
+Persist open/closed.
+
+### Density
+`comfortable | compact`.
+Chrome/panels only. Map layout/rectangles/projection must remain byte/stable
+semantically unchanged.
+
+### Motion
+`system | reduce`.
+System keeps prefers-reduced-motion. Reduce forces no transitions/animations.
+Never force motion against the OS.
+
+## Compatibilité
+
+- no F-052 record => current defaults;
+- resume v1/v2 unchanged;
+- locale unchanged;
+- no destructive migration;
+- malformed workspace => safe open + explicit correction.
+
+## Writes
+
+Reuse debounce/flush patterns. Do not write SQLite on every raw pan pointer
+event. Explicit toggles/preferences must be durable before normal close.
+
+## Proof
+
+Implement every P19-1..P19-14 criterion and falsification from TASK-0053.
+
+Real WebView2 multi-process mandatory:
+
+A. configure three brains + 3-brain composition + nondefault global view /
+selection + legend open + compact + reduce + branch focus/two collapses + FR +
+distinct per-brain resume and seen; normal close.
+
+B. restart and compare every value exactly; exit branch focus and prove prior
+composition/view/selection restore; check computed compact/reduced styles;
+change values including legend closed + EN; close.
+
+C. restart again; then controlled rebuild of a brain carrying node refs;
+restart; prove explicit corrections and no stale node-id aliasing.
+
+Fingerprint source/Index/journal/relations/exclusions around preference-only
+gestures.
+
+## Documentation
+
+Resolve M-1 ownership explicitly in matrix/parity once implemented, but do not
+mark CLOSED/VERIFIED yourself.
 
 ## Validation
 
-Rejoue ciblés + suites pertinentes, pnpm check/build, Tauri debug, WebView2,
-diff-check, audit public.
+Rust/frontend full pertinent suites, pnpm check/build, Tauri debug, WebView2,
+axe, diff-check, public audit.
 
 ## Fin
 
-- TASK-0052 IMPLEMENTED / candidate re-control;
-- jamais VERIFIED par l'exécuteur;
-- P-19 PARTIELLE;
-- aucune TASK-0053;
-- RESULT/NEXT_ACTION à jour;
+- TASK-0053 IMPLEMENTED/candidate;
+- F-052 IMPLEMENTED/candidate;
+- M-1/P-19 candidate closure only;
+- F-046 unchanged;
+- aucune TASK-0054;
+- RESULT/NEXT_ACTION complets;
 - commit+push, arbre propre.

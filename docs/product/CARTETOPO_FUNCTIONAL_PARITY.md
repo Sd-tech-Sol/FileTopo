@@ -412,3 +412,12 @@ Ils sont écrits ici plutôt que corrigés en silence.
 > root focalisé repliable, clavier et restauration de session. L'état
 > `branch focus + collapsed ids` reste volontairement session-only et doit
 > être repris par la fermeture `P-19`.
+
+
+> **Résolution planifiée de M-1 — ACTION-0098 / DEC-0051 (2026-10-06).**
+> La matrice gagne `F-052 — Préférences et reprise du workspace`.
+> `F-052` possède la persistance globale qui n'avait aucun propriétaire :
+> composition courante, légende, densité, préférence de mouvement et état
+> F-042. Vue/panneau/filtres/sélection restent dans le resume brain-scoped;
+> langue et vu/non-vu gardent leurs stores déjà vérifiés. `M-1` et `P-19`
+> ne seront fermés qu'après contrôle indépendant de `TASK-0053`.

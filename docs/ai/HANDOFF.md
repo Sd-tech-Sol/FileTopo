@@ -1,5 +1,16 @@
 # HANDOFF — passage de relais
 
+## Relais — ACTION-0098 / TASK-0053 READY — 2026-10-06
+
+- Branche cible : `build/v0.2-a37-v1-workspace-persistence`.
+- Objectif : fermer F-052 + M-1 + P-19.
+- Ne pas dupliquer resume, locale ou seen.
+- Workspace global : composition, legendOpen, density, motion, branch focus.
+- catalog_meta versionné; node refs liées à index_id côté backend.
+- WebView2 multi-process réel sur 3 cerveaux.
+- Claude Code + Sonnet 5.5 High. Aucune TASK-0054.
+
+
 ## Relais — ACTION-0097 — TASK-0052 VERIFIED — 2026-10-06
 
 - HEAD produit contrôlé : `cfba445bdaabc0d74a3bd6b7551fd6398e5b179d`.

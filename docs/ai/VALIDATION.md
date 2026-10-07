@@ -9508,3 +9508,20 @@ avec référence disque indépendante. Aucun code produit n'a changé après le 
 testé; les commits suivants sont documentaires/artefact.
 
 TASK-0052 et F-042 sont VERIFIED.
+
+
+## DJ. ACTION-0098 — audit P-19 post-F-042 — 2026-10-06
+
+Audit terminé.
+
+Déjà VERIFIED : resume par cerveau (vue/focus/sélection/filtre/panneau), seen,
+langue, cerveau actif.
+
+Restent session-only : composition courante, légende, branch focus/collapsed.
+
+M-1 reste réel : densité n'existe pas et aucune préférence utilisateur
+d'accessibilité n'est persistée. Décision : F-052 devient le propriétaire du
+workspace global et matérialise deux préférences minimales et bornées :
+density comfortable/compact et motion system/reduce.
+
+TASK-0053 est sélectionnée pour fermer F-052/M-1/P-19.

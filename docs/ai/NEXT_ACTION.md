@@ -1,19 +1,16 @@
 # Action suivante
 
-## Audit P-19 — persistance complète post-F-042
+## TASK-0053 — V1 Workspace Preferences & Persistence / P-19 Closure
 
-TASK-0052 / F-042 sont `VERIFIED` par ACTION-0097.
+Branche : `build/v0.2-a37-v1-workspace-persistence`.
 
-Ne pas créer TASK-0053 automatiquement.
+Lire dans cet ordre :
 
-Auditer précisément ce qui reste de `P-19` maintenant que F-042 existe :
+1. `docs/reviews/ACTION-0098-p19-audit-after-task0052.md`;
+2. `docs/decisions/DEC-0051-workspace-persistence.md`;
+3. `docs/tasks/TASK-0053-v1-workspace-persistence.md`;
+4. `.orchestrator/NEXT_PROMPT.md`.
 
-- branch focus + collapsed ids;
-- état de légende;
-- composition multi-cerveaux;
-- langue déjà persistée : confirmer propriétaire et preuve;
-- panneau/filtres/vue/sélection/vu-non-vu déjà acquis : réconcilier;
-- ligne M-1 « Préférences » : décider si densité/accessibilité sont de vraies
-  préférences runtime actuelles ou des cibles documentaires non matérialisées.
+Exécuteur : Claude Code, Sonnet 5.5, High.
 
-Le prochain découpage doit fermer P-19 sans inventer de préférence inexistante.
+F-046 reste hors portée. Aucune TASK-0054.

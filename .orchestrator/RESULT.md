@@ -1,19 +1,17 @@
-TASK_ID: TASK-0052 — V1 Branch Focus & Collapse / F-042 Closure
-AGENT: INDEPENDENT ORCHESTRATOR CONTROL
-RESULT: VERIFIED
-BRANCH: build/v0.2-a36-v1-branch-focus-collapse
+TASK_ID: TASK-0053 — V1 Workspace Preferences & Persistence / P-19 Closure
+AGENT: CLAUDE CODE
+RESULT: PENDING
+BRANCH: build/v0.2-a37-v1-workspace-persistence
 
-CONTROL:
-- ACTION-0097 CLOSED / VERIFIED.
-- Product corrective HEAD: cfba445bdaabc0d74a3bd6b7551fd6398e5b179d.
-- Root focus collapse now satisfies ACTION-0096.
-- Enter/Space, exact descendant count, no aggregate, exact expand reference.
-- General F-042 proofs from ACTION-0096 remain accepted.
-- No product code changed after the tested HEAD.
+SUMMARY:
+- Add F-052 global workspace/preferences persistence in catalog_meta.
+- Persist current composition, legend, density, motion and F-042 state.
+- Reuse existing per-brain resume, locale and seen stores without duplication.
+- Backend binds persisted node refs to index generations.
+- Multi-process WebView2 proof across three brains.
 
-STATE:
-- TASK-0052 = VERIFIED.
-- F-042 = CLOSED / VERIFIED.
-- P-19 remains PARTIAL.
-- F-046 unchanged.
-- No TASK-0053 yet; next step is a fresh P-19 audit.
+TARGET:
+- F-052 / M-1 / P-19 candidate closure after execution.
+
+NEXT_ORCHESTRATOR_DECISION:
+- Independent control after executor completion.

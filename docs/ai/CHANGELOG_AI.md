@@ -6489,3 +6489,12 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
 - F-042 CLOSED / VERIFIED.
 - P-19 reste PARTIELLE et devient la prochaine candidate logique.
 - F-046 inchangée; aucune TASK-0053 créée.
+
+
+## 2026-10-06 — ACTION-0098 — TASK-0053 sélectionnée
+
+- Audit P-19 complet.
+- F-052 créée pour résoudre M-1 et posséder le workspace global.
+- TASK-0053 : composition, légende, densité, mouvement, F-042 + preuve
+  composite des stores existants.
+- F-046 inchangée; aucune TASK-0054.
