@@ -1,7 +1,7 @@
 # TASK-0053 — V1 Workspace Preferences & Persistence / P-19 Closure
 
 - **Date :** 2026-10-06
-- **Statut :** `READY`
+- **Statut :** `IMPLEMENTED` — candidate à un contrôle indépendant (jamais `VERIFIED` par l'exécuteur)
 - **Branche :** `build/v0.2-a37-v1-workspace-persistence`
 - **Décision :** `DEC-0051`
 - **Portée :** `F-052`, `M-1`, `P-19`
@@ -268,3 +268,22 @@ Au minimum :
 - RESULT/NEXT_ACTION complets;
 - commit + push;
 - arbre propre.
+
+
+## Livraison
+
+Code `804e1daa29b30e60b098ff677d06b452f02ecad6`; preuve `docs/performance/runs/TASK-0053-webview2.json` et
+`docs/ai/VALIDATION.md` section `DG`.
+
+- **Backend** : `src-tauri/src/map/workspace_state.rs` (store F-052 dans `catalog_meta`,
+  clé `workspace.v1`, enveloppe fermée `deny_unknown_fields`, 16 Kio max, références de
+  nœud liées par le **backend** à la génération `index_id@revision`, 14 corrections
+  nommées), commandes `map_workspace_restore` / `map_workspace_update`.
+- **Frontend** : `workspaceState.ts` (lecteur défensif, règle de propriété, écrivain
+  borné), `WorkspacePreferences.tsx` (densité, mouvement, résumé des corrections),
+  démarrage restauré dans `MapApp.tsx`, CSS `data-density` / `data-motion`.
+- **Propriété** : un cerveau seul hors focus de branche garde sa caméra et sa sélection
+  dans le resume (`view`/`selected` valent `null` dans F-052). Langue et vu/non-vu non
+  migrés et rejoués.
+- P19-1..P19-14 couverts; neuf falsifications effectives (voir `VALIDATION.md` `DG`).
+- **Jamais `VERIFIED` par l'exécuteur.** F-046 inchangée. Aucune TASK-0054.

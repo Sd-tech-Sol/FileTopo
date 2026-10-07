@@ -421,3 +421,12 @@ Ils sont écrits ici plutôt que corrigés en silence.
 > F-042. Vue/panneau/filtres/sélection restent dans le resume brain-scoped;
 > langue et vu/non-vu gardent leurs stores déjà vérifiés. `M-1` et `P-19`
 > ne seront fermés qu'après contrôle indépendant de `TASK-0053`.
+
+
+> **Résolution de M-1 implémentée — TASK-0053 (2026-10-07), candidate.**
+> Propriété explicite, sans duplication : vue = `F-012` + resume; panneau = `F-013`
+> + resume; filtres = `F-022` + resume; légende = `F-014` + persistance `F-052`;
+> densité = `F-052`; accessibilité configurable = `F-036` + `F-052`; langue =
+> `F-035`; branch state = `F-042` + `F-052`; vu/non-vu = `F-028`; composition
+> affichée = `F-040`/`F-034` + `F-052`. `M-1` et `P-19` sont **candidates** à la
+> fermeture : jamais `CLOSED` / `VERIFIED` avant le contrôle indépendant.

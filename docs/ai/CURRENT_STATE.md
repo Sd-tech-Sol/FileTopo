@@ -1,5 +1,18 @@
 # État courant
 
+## TASK-0053 — F-052 / M-1 / P-19 — `IMPLEMENTED` (candidate) — 2026-10-07
+
+- Workspace global persistant dans `catalog_meta` (`workspace.v1`) : composition +
+  focus, caméra/sélection de composition, légende, densité (chrome seulement),
+  mouvement `system|reduce`, branch focus + collapsed ids. Références de nœud liées
+  par le backend à `index_id@revision`; corrections nommées et visibles.
+- Resume par cerveau, langue (`filetopo.locale`) et vu/non-vu **inchangés**, rejoués.
+- Code `804e1daa29b30e60b098ff677d06b452f02ecad6`; preuve WebView2 réelle (4 processus, 3 fermetures) ;
+  Rust 839 + frontend 708 PASS ; neuf falsifications effectives.
+- TASK-0053 / F-052 = `IMPLEMENTED` ; M-1 / P-19 = candidates ; **jamais auto-VERIFIED**.
+  F-046 inchangée. Aucune TASK-0054.
+
+
 ## ACTION-0098 — P-19 audit terminé / TASK-0053 READY — 2026-10-06
 
 - P-19 est fermable en une tranche sans dupliquer les stores existants.

@@ -6498,3 +6498,13 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
 - TASK-0053 : composition, légende, densité, mouvement, F-042 + preuve
   composite des stores existants.
 - F-046 inchangée; aucune TASK-0054.
+
+
+## 2026-10-07 — TASK-0053 — F-052 workspace global et préférences
+
+**Agent :** exécuteur Claude Code (Sonnet 5.5) — **Statut :** `IMPLEMENTED` (contrôle indépendant requis)
+
+- Store `workspace.v1` dans `catalog_meta`, références liées par le backend à `index_id@revision`.
+- Composition, légende, densité, mouvement, branch focus persistés; resume/langue/vu inchangés.
+- Corrections nommées et visibles; densité = chrome seulement; mouvement sans mode « forcer ».
+- Code `804e1daa29b30e60b098ff677d06b452f02ecad6`; preuve WebView2 réelle (4 processus); neuf falsifications. F-046 inchangée; aucune TASK-0054.

@@ -1,16 +1,12 @@
 # Action suivante
 
-## TASK-0053 — V1 Workspace Preferences & Persistence / P-19 Closure
+## Contrôle indépendant de TASK-0053 (F-052 / M-1 / P-19)
 
 Branche : `build/v0.2-a37-v1-workspace-persistence`.
 
-Lire dans cet ordre :
+Un contrôleur distinct de l'exécuteur examine, **sur preuves**, TASK-0053 :
+`docs/tasks/TASK-0053-v1-workspace-persistence.md` (section « Livraison »),
+`docs/ai/VALIDATION.md` section `DG`, `docs/performance/runs/TASK-0053-webview2.json`
+et `.orchestrator/RESULT.md`.
 
-1. `docs/reviews/ACTION-0098-p19-audit-after-task0052.md`;
-2. `docs/decisions/DEC-0051-workspace-persistence.md`;
-3. `docs/tasks/TASK-0053-v1-workspace-persistence.md`;
-4. `.orchestrator/NEXT_PROMPT.md`.
-
-Exécuteur : Claude Code, Sonnet 5.5, High.
-
-F-046 reste hors portée. Aucune TASK-0054.
+F-046 reste hors portée. Aucune TASK-0054 avant ce verdict.

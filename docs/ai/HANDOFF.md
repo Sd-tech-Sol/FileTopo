@@ -1,5 +1,16 @@
 # HANDOFF — passage de relais
 
+## Relais — TASK-0053 IMPLEMENTED — 2026-10-07
+
+- Branche `build/v0.2-a37-v1-workspace-persistence`, code `804e1daa29b30e60b098ff677d06b452f02ecad6`.
+- À contrôler : stockage F-052 (`workspace_state.rs`), règle de propriété
+  (`workspaceState.ts` : un cerveau seul garde caméra/sélection dans le resume),
+  démarrage restauré (`MapApp.tsx`), corrections visibles, densité/mouvement (CSS).
+- Limites dites : « Reconstruire » garde les ids si les chemins survivent (piège
+  numérique prouvé en Rust, pas en WebView2); crash non testé; réduction OS émulée.
+- Ne rien marquer VERIFIED sans contrôle indépendant. Aucune TASK-0054.
+
+
 ## Relais — ACTION-0098 / TASK-0053 READY — 2026-10-06
 
 - Branche cible : `build/v0.2-a37-v1-workspace-persistence`.

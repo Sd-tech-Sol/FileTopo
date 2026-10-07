@@ -3,7 +3,7 @@
 **TARGET_AGENT:** CLAUDE CODE
 **RECOMMENDED_MODEL:** Claude Sonnet 5.5
 **RECOMMENDED_EFFORT:** High
-**STATUS:** READY
+**STATUS:** EXECUTED — voir `.orchestrator/RESULT.md`
 **BRANCH:** `build/v0.2-a37-v1-workspace-persistence`
 
 ## Objectif

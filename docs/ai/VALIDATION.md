@@ -9525,3 +9525,48 @@ workspace global et matérialise deux préférences minimales et bornées :
 density comfortable/compact et motion system/reduce.
 
 TASK-0053 est sélectionnée pour fermer F-052/M-1/P-19.
+
+
+## DG — TASK-0053 / F-052 / P-19 (2026-10-07)
+
+Code `804e1daa29b30e60b098ff677d06b452f02ecad6`. **Jamais `VERIFIED` par l'exécuteur.**
+
+**Rust** : suite complète 839 PASS (`cargo test`), dont 22 tests `workspace_state` (forme fermée, défauts,
+aller-retour 1/2/3 cerveaux, version inconnue / JSON corrompu / trop grand / champ inconnu, refus d'écriture sans
+altérer l'ancien enregistrement, cerveau supprimé, focus perdu, sélection invalide, **numéro réutilisé par un Index
+recréé**, reconstruction en place = nouvelle révision, référence non liée jamais crue, branch focus entier ou rien,
+collapsed hors sous-arbre, isolation resume/panneau/identités, écriture atomique d'une seule ligne).
+**Frontend** : `tsc --noEmit` OK; `vitest` 708 PASS (47 fichiers) dont `workspaceState.test.ts` (lecteur, règle de
+propriété, écrivain borné), `workspaceMapApp.test.tsx` (vrai `MapApp`, 14 cas), `workspaceCss.test.ts`.
+`pnpm build` + `pnpm tauri build --debug --no-bundle` OK.
+
+**WebView2 réel** : `scripts/task0053-{seed-proof.py,webview2.mjs,webview2.ps1}`, artefact
+`docs/performance/runs/TASK-0053-webview2.json`; quatre processus, trois fermetures réelles; gestes = vrais
+événements souris/clavier (CDP). A : trois cerveaux aux resume/seen distincts, composition de 3, focus Chloé,
+caméra/sélection, légende, compact, reduce, FR, branch focus + deux replis. B : toutes les valeurs identiques,
+densité calculée (`8px 12px 10px` vs `14px 18px 18px`), sonde de mouvement `0s`, « Quitter le focus » restitue
+composition/caméra/sélection d'avant; puis légende fermée, EN, confortable, système, 2 cerveaux, autre branche.
+C : valeurs confirmées; Reconstruire du cerveau portant les références (écritures de la page retenues).
+D : `BRANCH_GENERATION_CHANGED` + `SELECTION_GENERATION_CHANGED` affichées en anglais, focus de branche non
+restauré, préférences intactes, correction stockée une fois. axe : 0 violation à chaque état. Empreintes
+(source, Index, journal, relations, exclusions, vu) identiques autour des gestes de préférence; rectangles de la
+carte identiques en unités monde sous compact; 60 crans + 1 glissement = 2 écritures du workspace.
+
+**Falsifications** (une garantie cassée à la fois, tests ciblés, sources restaurées) :
+
+| # | Garantie cassée | Résultat |
+|---|---|---|
+| 1 | persistance de la légende retirée | 3 tests frontend échouent |
+| 2 | un cerveau omis de la composition | 6 tests échouent |
+| 3 | nodeId réutilisé après changement d'index | 4 tests Rust échouent |
+| 4 | racine de branche sans liaison d'Index | 1 test Rust échoue |
+| 5 | compact touche les rectangles de la carte | 2 gardes CSS échouent |
+| 6 | `system` ignore la requête OS de mouvement réduit | 2 tests échouent |
+| 7 | correction silencieuse (frontend ; backend) | 2 ; 3 tests échouent |
+| 8 | filtre sous une clé partagée au lieu de par cerveau | 4 tests resume échouent |
+| 9 | une écriture brute par événement de pointeur | 2 tests de budget échouent |
+
+**Non testé / limites** : crash entre un changement debounced et son écriture; réduction de mouvement OS
+émulée (CDP); « Reconstruire » conserve les ids quand les chemins survivent, donc le piège numérique n'est pas
+reproduit par la preuve WebView2 (il l'est en Rust); la page n'a pas de moyen de reconstruire fermée : les
+écritures de la page sont retenues pendant la reconstruction de la phase C.

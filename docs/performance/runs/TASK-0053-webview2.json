@@ -1,0 +1,500 @@
+{
+  "task": "TASK-0053",
+  "headTested": "804e1daa29b30e60b098ff677d06b452f02ecad6",
+  "strategy": "DEC-0051: four real WebView2 processes around three real closes; real mouse and key events; the workspace and every per-brain value read back from the catalogue; every disk reference recomputed from the synthetic directories on disk",
+  "realProcessRestarts": 3,
+  "brains": 3,
+  "phase1": {
+    "task": "TASK-0053",
+    "phase": 1,
+    "headTested": "804e1daa29b30e60b098ff677d06b452f02ecad6",
+    "checks": [],
+    "seenBefore": {
+      "real-c063bf03-acfe-4c9c-8504-da059bca9f4c": {
+        "total": 2,
+        "unseenTotal": 0
+      },
+      "real-f6742c00-31b0-44b8-8e0f-e8636e7a010b": {
+        "total": 3,
+        "unseenTotal": 3
+      },
+      "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7": {
+        "total": 2,
+        "unseenTotal": 1
+      }
+    },
+    "resumeBefore": {
+      "real-c063bf03-acfe-4c9c-8504-da059bca9f4c": {
+        "focusNodeId": null,
+        "selectedNodeId": 4,
+        "view": {
+          "scale": 0.6103989611240352,
+          "tx": 139.00443728151447,
+          "ty": -9.458683733179257
+        },
+        "filter": {
+          "state": "ALL",
+          "kinds": [
+            "FILE"
+          ],
+          "availability": "ALL"
+        },
+        "detailsPanelVisible": false
+      },
+      "real-f6742c00-31b0-44b8-8e0f-e8636e7a010b": {
+        "focusNodeId": null,
+        "selectedNodeId": 2,
+        "view": {
+          "scale": 1,
+          "tx": 0,
+          "ty": 0
+        },
+        "filter": {
+          "state": "ALL",
+          "kinds": [
+            "DIRECTORY"
+          ],
+          "availability": "ALL"
+        },
+        "detailsPanelVisible": true
+      },
+      "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7": {
+        "focusNodeId": null,
+        "selectedNodeId": 2,
+        "view": {
+          "scale": 0.5094139887009735,
+          "tx": 231.52389091785017,
+          "ty": 32.60464937980069
+        },
+        "filter": {
+          "state": "ALL",
+          "kinds": [],
+          "availability": "ALL"
+        },
+        "detailsPanelVisible": false
+      }
+    },
+    "preferenceGestures": {
+      "chromeBefore": {
+        "appPadding": "14px 18px 18px",
+        "appGap": "10px",
+        "buttonPadding": "7px 12px",
+        "composedBackground": "0px"
+      },
+      "chromeAfter": {
+        "appPadding": "8px 12px 10px",
+        "appGap": "5px",
+        "buttonPadding": "3px 8px",
+        "composedBackground": "0px"
+      },
+      "rectangles": 21,
+      "rectanglesIdentical": true,
+      "projectionsIdentical": true,
+      "everythingElseIdentical": true,
+      "writeCommandsOtherThanWorkspace": 0,
+      "workspaceWrites": 3
+    },
+    "writeBudget": {
+      "wheelNotches": 60,
+      "drags": 1,
+      "milliseconds": 2568,
+      "workspaceWritesOnTheWire": 2
+    },
+    "final": {
+      "screen": {
+        "chips": [
+          "real-c063bf03-acfe-4c9c-8504-da059bca9f4c",
+          "real-f6742c00-31b0-44b8-8e0f-e8636e7a010b",
+          "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7"
+        ],
+        "focused": "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7",
+        "selected": {
+          "brainId": "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7",
+          "nodeId": 47
+        },
+        "view": {
+          "tx": -606.7606160263726,
+          "ty": 0,
+          "scale": 2.2465441605345258
+        },
+        "legendOpen": true,
+        "densityAttr": "compact",
+        "motionAttr": "reduce",
+        "densityPressed": "compact",
+        "motionPressed": "reduce",
+        "lang": "fr",
+        "locale": "fr",
+        "branch": {
+          "active": true,
+          "rootId": 3,
+          "collapsed": [
+            46,
+            48
+          ]
+        }
+      },
+      "workspace": {
+        "displayedBrainIds": [
+          "real-c063bf03-acfe-4c9c-8504-da059bca9f4c",
+          "real-f6742c00-31b0-44b8-8e0f-e8636e7a010b",
+          "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7"
+        ],
+        "focusedBrainId": "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7",
+        "view": {
+          "scale": 2.2465441605345258,
+          "tx": -606.7606160263726,
+          "ty": 0
+        },
+        "selected": {
+          "brainId": "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7",
+          "nodeId": 47
+        },
+        "legendOpen": true,
+        "density": "compact",
+        "motion": "reduce",
+        "branchFocus": {
+          "brainId": "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7",
+          "rootNodeId": 3,
+          "collapsedIds": [
+            46,
+            48
+          ],
+          "savedView": {
+            "scale": 0.2673818897637795,
+            "tx": 26.00999999999999,
+            "ty": 753.4410826771654
+          },
+          "savedSelected": {
+            "brainId": "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7",
+            "nodeId": 3
+          }
+        }
+      },
+      "composition": {
+        "chips": [
+          "real-c063bf03-acfe-4c9c-8504-da059bca9f4c",
+          "real-f6742c00-31b0-44b8-8e0f-e8636e7a010b",
+          "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7"
+        ],
+        "focused": "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7",
+        "selected": {
+          "brainId": "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7",
+          "nodeId": 2
+        },
+        "view": {
+          "tx": 26.00999999999999,
+          "ty": 753.4410826771654,
+          "scale": 0.2673818897637795
+        },
+        "legendOpen": true,
+        "densityAttr": "compact",
+        "motionAttr": "reduce",
+        "densityPressed": "compact",
+        "motionPressed": "reduce",
+        "lang": "fr",
+        "locale": "fr",
+        "branch": {
+          "active": false,
+          "rootId": null,
+          "collapsed": []
+        }
+      }
+    },
+    "fingerprints": {
+      "indexes": {
+        "real-c063bf03-acfe-4c9c-8504-da059bca9f4c": {
+          "revision": 2,
+          "nodeCount": 12,
+          "digest": "16ecef36942a4181c08dc3204456090e4799adcde97abaffdcb2b8c940639a4a"
+        },
+        "real-f6742c00-31b0-44b8-8e0f-e8636e7a010b": {
+          "revision": 2,
+          "nodeCount": 12,
+          "digest": "6eec62b360fe762ea8a2691f0f476c52fcef56a992fce9547cecd90c800fe45b"
+        },
+        "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7": {
+          "revision": 2,
+          "nodeCount": 75,
+          "digest": "d8762408dd791a92ba9ad6a799f21100aa89bb6483f3adaa4cb0f084c238e348"
+        }
+      },
+      "journals": {
+        "real-c063bf03-acfe-4c9c-8504-da059bca9f4c": {
+          "digest": "a29f26c31958d9688a94eeb18a09b1340903d655d9964e5ae6e2f96673e088fe",
+          "total": 2,
+          "unseenTotal": 0
+        },
+        "real-f6742c00-31b0-44b8-8e0f-e8636e7a010b": {
+          "digest": "e87e465fe0edff949a207ea6c8b4f68a418ff61140802ee2b0eddc0304adf69d",
+          "total": 3,
+          "unseenTotal": 3
+        },
+        "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7": {
+          "digest": "1ebfa7adfb24262baea708eae174643deb64441a9fd60fbcedda5cd9a389948c",
+          "total": 2,
+          "unseenTotal": 1
+        }
+      },
+      "exclusions": {
+        "real-c063bf03-acfe-4c9c-8504-da059bca9f4c": "a6e3c8ebb83673ede12891971175c3b710e51fb7ef430846f9b150a7dc3fed1e",
+        "real-f6742c00-31b0-44b8-8e0f-e8636e7a010b": "4af2919c62215a6ec9ac16825d68093dad44f478f6ee680de2859128111b6dc6",
+        "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7": "1eebadf80d3b03fafe85a8a81e085780ee9abdafcc488d878e5fa4c70aed0bf1"
+      },
+      "relations": "3a2040d8e16e38e07551542b05ad872ed766c625805b693c14bd070454dc7089",
+      "sources": {
+        "real-c063bf03-acfe-4c9c-8504-da059bca9f4c": "791510541cda9e4bb9b0ce512cfab82a76388dcf0493518c30796fb0fff0da41",
+        "real-f6742c00-31b0-44b8-8e0f-e8636e7a010b": "be4d0b37e113a9783700b4a1b707b42140cd80a9b86c4d63e922644002b4e0ea",
+        "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7": "2e6d1773ee5bdf6f82c52ddc7adb72704c1c3f3aeea45a4323485a6d37c0f51e"
+      },
+      "unseen": {
+        "real-c063bf03-acfe-4c9c-8504-da059bca9f4c": 0,
+        "real-f6742c00-31b0-44b8-8e0f-e8636e7a010b": 3,
+        "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7": 1
+      }
+    },
+    "fatalConsoleErrors": 0,
+    "axe": {
+      "version": "4.13.0",
+      "sha256": "c24f097bd2f451d4f933e8bc7d8d539f8672a2ebcb5cc9f9f3eec8ca9470a0c1"
+    }
+  },
+  "phase2": {
+    "task": "TASK-0053",
+    "phase": 2,
+    "headTested": "804e1daa29b30e60b098ff677d06b452f02ecad6",
+    "checks": [],
+    "restored": {
+      "screen": {
+        "chips": [
+          "real-c063bf03-acfe-4c9c-8504-da059bca9f4c",
+          "real-f6742c00-31b0-44b8-8e0f-e8636e7a010b",
+          "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7"
+        ],
+        "focused": "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7",
+        "selected": {
+          "brainId": "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7",
+          "nodeId": 47
+        },
+        "view": {
+          "tx": -606.7606160263726,
+          "ty": 0,
+          "scale": 2.2465441605345258
+        },
+        "legendOpen": true,
+        "densityAttr": "compact",
+        "motionAttr": "reduce",
+        "densityPressed": "compact",
+        "motionPressed": "reduce",
+        "lang": "fr",
+        "locale": "fr",
+        "branch": {
+          "active": true,
+          "rootId": 3,
+          "collapsed": [
+            46,
+            48
+          ]
+        }
+      },
+      "chrome": {
+        "appPadding": "8px 12px 10px",
+        "appGap": "5px",
+        "buttonPadding": "3px 8px",
+        "composedBackground": "0px"
+      },
+      "motion": {
+        "transitionDuration": "0s",
+        "animationName": "none",
+        "animationDuration": "0s"
+      },
+      "correctionsShown": null,
+      "workspaceWritesDuringRestore": 0
+    },
+    "motion": {
+      "reduce": {
+        "transitionDuration": "0s",
+        "animationName": "none",
+        "animationDuration": "0s"
+      },
+      "systemNoOsPreference": {
+        "transitionDuration": "1s",
+        "animationName": "__probe",
+        "animationDuration": "1s"
+      },
+      "systemOsReduced": {
+        "transitionDuration": "0s",
+        "animationName": "none",
+        "animationDuration": "0s"
+      },
+      "reduceNoOsPreference": {
+        "transitionDuration": "0s",
+        "animationName": "none",
+        "animationDuration": "0s"
+      }
+    },
+    "exit": {
+      "chips": [
+        "real-c063bf03-acfe-4c9c-8504-da059bca9f4c",
+        "real-f6742c00-31b0-44b8-8e0f-e8636e7a010b",
+        "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7"
+      ],
+      "focused": "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7",
+      "selected": {
+        "brainId": "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7",
+        "nodeId": 3
+      },
+      "view": {
+        "tx": 26.00999999999999,
+        "ty": 753.4410826771654,
+        "scale": 0.2673818897637795
+      },
+      "expectedView": {
+        "tx": 26.00999999999999,
+        "ty": 753.4410826771654,
+        "scale": 0.2673818897637795
+      },
+      "expectedSelection": {
+        "brainId": "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7",
+        "nodeId": 3
+      }
+    },
+    "changed": {
+      "screen": {
+        "chips": [
+          "real-c063bf03-acfe-4c9c-8504-da059bca9f4c",
+          "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7"
+        ],
+        "focused": "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7",
+        "selected": {
+          "brainId": "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7",
+          "nodeId": 55
+        },
+        "view": {
+          "tx": 314.9926145623908,
+          "ty": 94.60618118479869,
+          "scale": 0.12646269986069264
+        },
+        "legendOpen": false,
+        "densityAttr": "comfortable",
+        "motionAttr": "system",
+        "densityPressed": "comfortable",
+        "motionPressed": "system",
+        "lang": "en",
+        "locale": "en",
+        "branch": {
+          "active": true,
+          "rootId": 3,
+          "collapsed": [
+            52
+          ]
+        }
+      },
+      "workspace": {
+        "displayedBrainIds": [
+          "real-c063bf03-acfe-4c9c-8504-da059bca9f4c",
+          "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7"
+        ],
+        "focusedBrainId": "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7",
+        "view": {
+          "scale": 0.12646269986069264,
+          "tx": 314.9926145623908,
+          "ty": 94.60618118479869
+        },
+        "selected": {
+          "brainId": "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7",
+          "nodeId": 55
+        },
+        "legendOpen": false,
+        "density": "comfortable",
+        "motion": "system",
+        "branchFocus": {
+          "brainId": "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7",
+          "rootNodeId": 3,
+          "collapsedIds": [
+            52
+          ],
+          "savedView": {
+            "scale": 1.3096994747046475,
+            "tx": -1790.7559777470674,
+            "ty": -106.32260404655054
+          },
+          "savedSelected": {
+            "brainId": "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7",
+            "nodeId": 3
+          }
+        }
+      }
+    },
+    "fatalConsoleErrors": 0,
+    "axe": {
+      "version": "4.13.0",
+      "sha256": "c24f097bd2f451d4f933e8bc7d8d539f8672a2ebcb5cc9f9f3eec8ca9470a0c1"
+    }
+  },
+  "phase3": {
+    "task": "TASK-0053",
+    "phase": 3,
+    "headTested": "804e1daa29b30e60b098ff677d06b452f02ecad6",
+    "checks": [],
+    "idsStableAcrossRebuild": true,
+    "rebuild": {
+      "sourceEntriesBefore": 74,
+      "sourceEntriesAfter": 80,
+      "revisionBefore": 2,
+      "revisionAfter": 3,
+      "storedReferences": {
+        "selection": {
+          "nodeId": 55
+        },
+        "branchRoot": 3,
+        "collapsed": [
+          52
+        ]
+      },
+      "idsThatNowNameAnotherObject": [],
+      "pageWritesHeldBackDuringTheRebuild": 0,
+      "storedWorkspaceReadAfterTheRebuild": false
+    },
+    "fatalConsoleErrors": 0,
+    "axe": {
+      "version": "4.13.0",
+      "sha256": "c24f097bd2f451d4f933e8bc7d8d539f8672a2ebcb5cc9f9f3eec8ca9470a0c1"
+    }
+  },
+  "phase4": {
+    "task": "TASK-0053",
+    "phase": 4,
+    "headTested": "804e1daa29b30e60b098ff677d06b452f02ecad6",
+    "checks": [],
+    "corrections": {
+      "shown": [
+        "BRANCH_GENERATION_CHANGED",
+        "SELECTION_GENERATION_CHANGED"
+      ],
+      "text": "Workspace reopened with correctionsThe Index changed since the branch focus: it was abandoned.The Index changed since the remembered selection: it was dropped.Dismiss this summary",
+      "branchActive": false,
+      "selectedAfter": {
+        "brainId": "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7",
+        "nodeId": 3,
+        "path": "projet"
+      },
+      "staleReferences": {
+        "brainId": "real-ff0172d1-72b2-41ab-93fa-0696b96ec0b7",
+        "nodeId": 55
+      },
+      "idsThatWouldHaveNamedAnotherObject": [],
+      "storedOnce": true
+    },
+    "fatalConsoleErrors": 0,
+    "axe": {
+      "version": "4.13.0",
+      "sha256": "c24f097bd2f451d4f933e8bc7d8d539f8672a2ebcb5cc9f9f3eec8ca9470a0c1"
+    }
+  },
+  "notTested": [
+    "A crash (power loss, kill) between a debounced camera/selection change and its write: the proof covers a normal close; explicit changes (composition, focus, legend, density, motion, branch) reach the store at once.",
+    "A real OS-level reduced-motion setting: the proof emulates the media feature through the browser (CDP Emulation.setEmulatedMedia).",
+    "The rebuild of phase 3 is executed with the page's own workspace writes held back, to model a rebuild between a closing and a reopening; the application has no other way to rebuild while it is closed.",
+    "The language choice is replayed (it persists, and it is not in the workspace); it is not migrated."
+  ]
+}
