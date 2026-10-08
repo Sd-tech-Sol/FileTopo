@@ -1,0 +1,258 @@
+{
+  "task": "TASK-0055",
+  "headTested": "d0502fa1bb3bc993ec4977356e210ceb1349c9eb",
+  "classification": "DEVELOPMENT_BENCH_ENGINEERING_EVIDENCE",
+  "strategy": "Two real Tauri/WebView2 processes over one disposable synthetic REAL_ROOT holding a real hard link, a byte-for-byte copy and two distinct empty files; the second process proves the facts persist across a restart, and the two passes must agree on the same semantics digest",
+  "machine": {
+    "cpu": "Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz",
+    "logicalProcessors": 16,
+    "memoryGiB": 31.9,
+    "note": "Development workstation. No SLA is claimed; this slice measures no performance."
+  },
+  "pass1": {
+    "task": "TASK-0055",
+    "pass": 1,
+    "headTested": "d0502fa1bb3bc993ec4977356e210ceb1349c9eb",
+    "checks": [
+      {
+        "label": "indexing a tree with a real hard link succeeds, two occurrences, two nodeIds",
+        "value": {
+          "indexed": 8,
+          "distinctNodeIds": 3
+        }
+      },
+      {
+        "label": "identical content and same physical object are separate facts, in words",
+        "value": {
+          "group": "sha256-v1:cfe8029078…",
+          "members": [
+            "a.bin",
+            "b-hardlink.bin",
+            "c-copy.bin"
+          ],
+          "concepts": 5
+        }
+      },
+      {
+        "label": "two empty files: identical content, two objects, zero relation",
+        "value": {
+          "members": [
+            "vide-deux.bin",
+            "vide-un.bin"
+          ],
+          "relationsUnchanged": true
+        }
+      },
+      {
+        "label": "a member can be selected in the map without any mutation",
+        "value": true
+      },
+      {
+        "label": "F-004 intact, and a renamed alias is never correlated by supposition",
+        "value": {
+          "f004": {
+            "keptNodeId": true
+          },
+          "hardLinkCycle": {
+            "originalKeptItsId": true,
+            "renamedAliasNotCorrelated": true
+          }
+        }
+      },
+      {
+        "label": "no stable key, volume serial or file id in DOM, IPC, log or artifact",
+        "value": {
+          "spellingsChecked": 12,
+          "surfaces": 4
+        }
+      },
+      {
+        "label": "source unchanged, no write on the wire, no fatal console error",
+        "value": {
+          "commandsSeen": [
+            "map_brain_resume_update",
+            "map_content_identical_members",
+            "map_content_observation_for_path",
+            "map_content_observe",
+            "map_content_summary",
+            "map_cross_relations_for_node",
+            "map_exact_duplicate_groups",
+            "map_exact_duplicate_members",
+            "map_exact_duplicate_summary",
+            "map_node_change_state",
+            "map_node_children",
+            "map_node_detail",
+            "map_refresh",
+            "map_relation_engine_status",
+            "map_resolve_node",
+            "map_view"
+          ]
+        }
+      }
+    ],
+    "semanticsDigest": "22dfc466fa154be6859f3bc18fb7e1236191d5dccd665425ff586bbfd649ddc2",
+    "semantics": {
+      "indexed": 8,
+      "contentGroup": [
+        [
+          "a.bin",
+          "PROVEN_SHARED",
+          "2"
+        ],
+        [
+          "b-hardlink.bin",
+          "PROVEN_SHARED",
+          "2"
+        ],
+        [
+          "c-copy.bin",
+          "PROVEN_SINGLE",
+          "1"
+        ]
+      ],
+      "emptyGroup": [
+        [
+          "vide-deux.bin",
+          "PROVEN_SINGLE",
+          "1"
+        ],
+        [
+          "vide-un.bin",
+          "PROVEN_SINGLE",
+          "1"
+        ]
+      ],
+      "concepts": 5
+    },
+    "metrics": {
+      "indexed": 8,
+      "digestGroupsSeen": 2,
+      "wireCommandCount": 29
+    },
+    "axe": {
+      "version": "4.13.0",
+      "explorerViolations": 0
+    },
+    "f004": {
+      "keptNodeId": true
+    },
+    "hardLinkCycle": {
+      "originalKeptItsId": true,
+      "renamedAliasNotCorrelated": true
+    },
+    "fatalConsoleErrors": 0,
+    "sourceHashUnchanged": true
+  },
+  "pass2": {
+    "task": "TASK-0055",
+    "pass": 2,
+    "headTested": "d0502fa1bb3bc993ec4977356e210ceb1349c9eb",
+    "checks": [
+      {
+        "label": "indexing a tree with a real hard link succeeds, two occurrences, two nodeIds",
+        "value": {
+          "indexed": 8,
+          "distinctNodeIds": 3
+        }
+      },
+      {
+        "label": "identical content and same physical object are separate facts, in words",
+        "value": {
+          "group": "sha256-v1:cfe8029078…",
+          "members": [
+            "a.bin",
+            "b-hardlink.bin",
+            "c-copy.bin"
+          ],
+          "concepts": 5
+        }
+      },
+      {
+        "label": "two empty files: identical content, two objects, zero relation",
+        "value": {
+          "members": [
+            "vide-deux.bin",
+            "vide-un.bin"
+          ],
+          "relationsUnchanged": true
+        }
+      },
+      {
+        "label": "a member can be selected in the map without any mutation",
+        "value": true
+      },
+      {
+        "label": "no stable key, volume serial or file id in DOM, IPC, log or artifact",
+        "value": {
+          "spellingsChecked": 12,
+          "surfaces": 4
+        }
+      },
+      {
+        "label": "source unchanged, no write on the wire, no fatal console error",
+        "value": {
+          "commandsSeen": [
+            "map_exact_duplicate_groups",
+            "map_exact_duplicate_members",
+            "map_resolve_node",
+            "map_view"
+          ]
+        }
+      }
+    ],
+    "semanticsDigest": "22dfc466fa154be6859f3bc18fb7e1236191d5dccd665425ff586bbfd649ddc2",
+    "semantics": {
+      "indexed": 8,
+      "contentGroup": [
+        [
+          "a.bin",
+          "PROVEN_SHARED",
+          "2"
+        ],
+        [
+          "b-hardlink.bin",
+          "PROVEN_SHARED",
+          "2"
+        ],
+        [
+          "c-copy.bin",
+          "PROVEN_SINGLE",
+          "1"
+        ]
+      ],
+      "emptyGroup": [
+        [
+          "vide-deux.bin",
+          "PROVEN_SINGLE",
+          "1"
+        ],
+        [
+          "vide-un.bin",
+          "PROVEN_SINGLE",
+          "1"
+        ]
+      ],
+      "concepts": 5
+    },
+    "metrics": {
+      "indexed": 8,
+      "digestGroupsSeen": 2,
+      "wireCommandCount": 8
+    },
+    "axe": {
+      "version": "4.13.0",
+      "explorerViolations": 0
+    },
+    "f004": null,
+    "hardLinkCycle": null,
+    "fatalConsoleErrors": 0,
+    "sourceHashUnchanged": true
+  },
+  "sameSemantics": true,
+  "notTested": [
+    "No Cloud Files provider, account or placeholder is used: DEC-0035 stays covered by its own decision-table tests and the Win32 call on an ordinary file.",
+    "No inter-volume hard link: NTFS does not allow one, and writing outside the repository is a stop condition.",
+    "No performance claim: this slice adds no measurement.",
+    "The non-Windows fallback is UNKNOWN by construction and is not exercised on this host."
+  ]
+}

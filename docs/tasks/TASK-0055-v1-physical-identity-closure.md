@@ -1,7 +1,8 @@
 # TASK-0055 — V1 Physical Object Identity / F-046 Closure
 
 - **Date :** 2026-10-07
-- **Statut :** `READY`
+- **Statut :** `IMPLEMENTED`, jamais auto-`VERIFIED`. Détail :
+  [`VALIDATION.md` section DK](../ai/VALIDATION.md).
 - **Branche :** `build/v0.2-a39-v1-physical-identity-closure`
 - **Base :** `393ac6d190295d979b58c9a03cc4712391d93335`
 - **Sélection :** ACTION-0102
@@ -219,3 +220,82 @@ Distinguer exécution locale, CI éventuelle et NOT_TESTED.
 - RESULT/HANDOFF/CURRENT_STATE/VALIDATION complets;
 - commit + push;
 - arbre propre.
+
+
+## 14. Audit reuse-first — EXISTE / ADAPTER / MANQUANT
+
+Écrit **avant** toute modification de code produit, à partir de la lecture de
+`identity.rs`, `scanner.rs`, `scope.rs`, `index.rs`, `brain_index.rs`,
+`reconcile.rs`, `incremental.rs`, `watch_ops.rs`, `content_signals.rs`,
+`ExactDuplicateExplorer.tsx` et des fiches `TASK-0036/ACTION-0060`,
+`TASK-0023/ACTION-0039`, `TASK-0026/ACTION-0043`.
+
+| Élément | Constat | Décision |
+|---|---|---|
+| `GetFileInformationByHandleEx(FileIdInfo)`, couple volume + `FileId` 128 bits | **EXISTE** — `identity.rs::system_identity_key`, productionisé par `TASK-0036` | **RÉUTILISER** tel quel |
+| Frontière Cloud Files `CfGetPlaceholderInfo` | **EXISTE** — `identity.rs::cloud_files_detection`, `DEC-0035` | **RÉUTILISER** tel quel |
+| Colonnes `nodes.stable_key` / `identity_provenance` | **EXISTE** depuis le schéma 4 | **RÉUTILISER** — aucune colonne ajoutée |
+| Compteur durable `next_node_id` | **EXISTE** — `index.rs::read_next_node_id` | **RÉUTILISER** |
+| Enveloppe de migration `M-B` | **EXISTE** — `brain_index.rs::open_existing_migrating` | **RÉUTILISER** — un pas de plus dans le dispatcher versionné |
+| Dispatcher versionné de migration | **EXISTE** — `index.rs::migrate_to_current_schema` | **ADAPTER** — un bras `6 => …` |
+| Index SQL `idx_nodes_stable_key` **UNIQUE** | **EXISTE** — et c'est précisément le gap | **ADAPTER** — recréé non unique (`6 → 7`) |
+| Remap `HashMap<stable_key, id>` dans `publish` | **EXISTE** — hypothèse « une clé, une ligne » | **ADAPTER** — groupes d'occurrences |
+| `reconcile_full_scan` keyé par clé unique | **EXISTE** | **ADAPTER** — groupes, avec le flux conservé |
+| Noyau `U-B` résolvant par `WHERE stable_key = ?1` | **EXISTE** | **ADAPTER** — vérifie l'appariement du producteur |
+| `W-B` `stored_by_key` / `must_enter` | **EXISTE** | **ADAPTER** — par occurrence, image de groupe complétée |
+| SHA-256 `sha256-v1`, campagnes datées | **EXISTE** — `TASK-0023`, `VERIFIED` | **RÉUTILISER** tel quel |
+| Explorateur borné de contenus identiques | **EXISTE** — `TASK-0026`, `VERIFIED` | **ADAPTER** — deux champs de DTO, un bloc d'explication |
+| Moteur de relations, suggestions | **EXISTE** | **NE PAS TOUCHER** — aucune relation produite ici |
+| Résolution de racine `BrainSource` | **EXISTE** — scanner, refresh, watcher l'emploient | **ADAPTER** — `observe_content` l'emploie aussi |
+| Primitive de classification physique sûre | **MANQUANT** | **CRÉER** — `index::physical_object_fact`, trois valeurs fermées |
+| Règle d'appariement group-aware | **MANQUANT** | **CRÉER** — `identity::pair_group`, écrite **une seule fois** |
+| `FILE_STANDARD_INFO.NumberOfLinks` | **MANQUANT** et **non ajouté** | La clé `SYSTEM` suffit, et le compte demandé est celui du cerveau, pas celui du volume |
+| Seconde base, second store d'identité, moteur de similarité | **MANQUANT** et **non ajouté** | `DEC-0052` A et G l'interdisent |
+| Nouvelle dépendance | aucune | `Cargo.toml` et `Cargo.lock` inchangés |
+
+## 15. Résultat livré
+
+- **Deux niveaux séparés.** `nodes.id` reste unique par occurrence; une clé
+  `SYSTEM` identifie l'objet physique et peut être partagée. `PATH_FALLBACK`
+  reste une clé d'occurrence, unique par corpus.
+- **Schéma 7.** `DROP INDEX` puis `CREATE INDEX` non unique sur la même
+  expression et le même prédicat partiel; aucune ligne réécrite; version
+  estampillée en dernier dans la transaction du pas; contrat canonique v7
+  (« index présent et non unique ») ajouté à l'étape 5 de `M-B`.
+- **Une règle, quatre chemins.** `identity::pair_group` : groupe non ambigu
+  (1 ↔ 1) = même id, donc `F-004` intact; groupe partagé = chemin relatif exact
+  d'abord, alias restant jamais corrélé, nouvelle occurrence = id monotone neuf,
+  occurrence stockée non appariée = disparition. Employée par la publication
+  complète, `reconcile_full_scan`, le noyau `U-B` (par vérification) et `W-B`.
+- **Noyau et watcher.** `ObservedNode::continues` porte l'appariement prouvé par
+  le producteur; le noyau le vérifie (ligne existante, même clé, même provenance,
+  jamais deux fois) et refuse une « nouvelle » occurrence qui écraserait une
+  occurrence stockée. `W-B` complète l'image d'un groupe par une relecture
+  ciblée, uniquement quand une occurrence observée n'a pas de correspondance
+  exacte.
+- **Surface produit.** Par membre d'un groupe SHA-256 :
+  `PROVEN_SHARED` + compte d'occurrences du cerveau, `PROVEN_SINGLE` + 1, ou
+  `UNKNOWN` + `null`. Les cinq notions de `DEC-0021` sont énoncées
+  distinctement, en FR et EN, « copie probable » et « nom similaire » déclarées
+  non inférées. Aucune clé, volume, `FileId` ou dérivé en IPC, DOM, log ou
+  artefact.
+- **Preuve Windows réelle.** `std::fs::hard_link` / `os.link`, fixture `a.bin` +
+  hard link + copie octet pour octet + deux fichiers vides distincts, créée
+  avant le baseline d'empreinte source. Deux processus WebView2 réels, même
+  digest sémantique, axe 0 violation, source inchangée.
+- **Validations :** Rust 894 PASS / 0 failed / 13 ignored; frontend 721 PASS;
+  `pnpm check`, `pnpm build`, Tauri debug `--no-bundle`, audit public et
+  `git diff --check` verts. Détail et limites : `VALIDATION.md` section DK.
+- **Limites conservées :** aucun fournisseur Cloud Files réel; aucun hard link
+  inter-volume; repli non-Windows `UNKNOWN` par construction non exercé; crash
+  physique pendant `M-B` non testé; `W-B` prouvé sur deux topologies de groupe
+  partagé, pas sur toutes; aucune CI distante.
+
+## 16. Journal d'exécution
+
+- 2026-10-07 — `IN_PROGRESS` : branche synchronisée en fast-forward
+  (`7f86417`, base d'orchestration `393ac6d`), arbre propre, audit reuse-first
+  §14 écrit avant toute modification de code produit.
+- 2026-10-07 — `IMPLEMENTED` : `§3` à `§12` livrées. Discrimination des tests
+  mesurée en réintroduisant temporairement la règle d'avant la tranche. `F-046` =
+  `IMPLEMENTED` / candidate. Aucune `TASK-0056`.

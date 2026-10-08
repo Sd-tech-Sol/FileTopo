@@ -3267,3 +3267,29 @@ chiffres ou en lettres.
   ou Sébastien : instrumenter `MapApp.tsx`/`composedScenario` pour observer
   `brain.relations`/`byId` en direct, ou accepter un scénario de preuve avec
   une fixture dédiée plus petite. Aucune TASK-0051.
+
+## Relais — TASK-0055 / F-046 `IMPLEMENTED` — contrôle indépendant attendu — 2026-10-07
+
+- Branche `build/v0.2-a39-v1-physical-identity-closure`, synchronisée en
+  fast-forward depuis `7f86417` (base d'orchestration `393ac6d`). `main`
+  intacte, aucun PR, aucune étiquette, aucune release.
+- `DEC-0052` appliquée : `nodes.id` = occurrence, clé `SYSTEM` = objet physique
+  Windows partageable. Le refus `IdentityCollision` d'une source à hard links est
+  levé; `PATH_FALLBACK` dupliqué reste refusé.
+- Ce qu'un contrôleur doit relire en premier : `identity::pair_group` (la règle,
+  écrite une fois), `index.rs::publish` (groupes + migration `6 → 7`),
+  `incremental.rs` (le noyau **vérifie** l'appariement, il ne le redérive plus),
+  `scope.rs::reconcile_scopes` (complétion de l'image d'un groupe partiel) et
+  `content_signals.rs::MapResolver` (classification fermée, un seul handle par
+  page).
+- Ce qui mérite d'être attaqué en premier, honnêtement : la **complétion d'image**
+  de `W-B` est l'endroit où une lecture partielle pourrait encore mal conclure.
+  Elle est prouvée sur deux topologies (alias dans un sous-dossier non listé,
+  deux occurrences dans un même dossier listé), pas sur toutes.
+- Preuve réelle : `docs/performance/runs/TASK-0055-webview2.json`, deux processus,
+  digest `22dfc466…`, HEAD testé `d0502fa1`.
+- Détail des validations : `docs/ai/VALIDATION.md` section **DK**. Rapport
+  compact : `.orchestrator/RESULT.md`.
+- `TASK-0055` et `F-046` restent `IMPLEMENTED` / candidates. Aucune `TASK-0056`
+  n'est créée; le choix de la tranche suivante appartient à l'orchestrateur,
+  après un audit V1 final comme `ACTION-0102` §9 le demande.

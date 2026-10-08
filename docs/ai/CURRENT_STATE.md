@@ -3719,3 +3719,44 @@ est levée pour Claude Code**; elle **reste entière pour Codex**.
 - `DEC-0044` : **APPROVED** — une locale globale UI, aucun nouveau backend de préférence.
 - `TASK-0046` : **READY** sur `build/v0.2-a30-v1-complete-fr-en-runtime`.
 - Portée : F-035 complet + portions langue de P-19/P-21. F-036 hors tranche; P-19/P-21 restent partielles.
+
+
+## TASK-0055 — F-046 / identité d'objet physique — IMPLEMENTED — 2026-10-07
+
+- `TASK-0054` / `F-050` / `F-051` / `P-01` / `P-02` / `P-03` restent `VERIFIED` /
+  `CLOSED` par `ACTION-0101`. Rien de cette tranche ne les touche.
+- `DEC-0052` est appliquée. Le modèle distingue désormais explicitement deux
+  niveaux : **`nodes.id` = une occurrence** de l'arborescence; **clé `SYSTEM` =
+  un objet physique Windows**, que plusieurs hard links partagent légitimement.
+- Le gap réel qu'`ACTION-0102` avait nommé est fermé : une source contenant deux
+  hard links était refusée comme `IdentityCollision`. Elle s'indexe maintenant,
+  en deux occurrences portant la même identité physique.
+- Schéma `6 → 7` : `idx_nodes_stable_key` recréé **non unique**, même expression
+  et même prédicat partiel, aucune ligne réécrite, aucune colonne ajoutée, stamp
+  de version en dernier dans la transaction du pas, sous l'enveloppe `M-B`
+  existante. `MAP_SCHEMA_VERSION = 7`. Le contrat canonique v7 — index présent
+  et non unique — rejoint l'étape 5 de `M-B`.
+- Une seule règle d'appariement, `identity::pair_group`, utilisée par **tous** les
+  chemins de mutation : publication complète, `Actualiser` incrémental
+  (`reconcile` + noyau `U-B`), watcher `W-B`, rebase d'exclusions, `Reconstruire`.
+  Groupe non ambigu = même id (`F-004` inchangé); groupe partagé = appariement
+  par **chemin relatif exact** uniquement; aucun alias corrélé par supposition;
+  doublon `PATH_FALLBACK` toujours refusé.
+- Le noyau incrémental ne résout plus un id canonique depuis une clé : le
+  producteur, qui seul détient l'image complète du groupe, décide, et le noyau
+  **vérifie** (`continues`). `W-B` complète l'image d'un groupe par une relecture
+  ciblée avant d'apparier — sans quoi un hard link neuf serait indistinguable du
+  renommage de l'objet qu'il désigne.
+- Surface produit : `ExactDuplicateExplorer` publie par membre une classification
+  fermée — `PROVEN_SHARED` + compte, `PROVEN_SINGLE` + 1, `UNKNOWN` + `null` —
+  **portée au cerveau courant**, plus les cinq notions de `DEC-0021` énoncées
+  distinctement en FR et EN. Aucune clé, aucun numéro de volume, aucun `FileId`
+  ni dérivé ne franchit l'IPC, le DOM, les logs ou les artefacts.
+- `observe_content` résout sa racine par `BrainSource`, comme tous les autres
+  chemins : un cerveau `REAL_ROOT` peut donc être observé. C'était nécessaire —
+  prouver que « contenu identique » et « même objet physique » sont deux faits
+  distincts demande un vrai arbre portant un vrai hard link.
+- Aucun nouveau store, aucune nouvelle base, aucun moteur de similarité, aucune
+  dépendance, aucune `TASK-0056`.
+- `TASK-0055` et `F-046` sont **`IMPLEMENTED` / candidates**, jamais
+  auto-`VERIFIED`. Le prochain verdict appartient à l'orchestrateur indépendant.

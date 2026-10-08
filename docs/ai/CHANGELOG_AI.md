@@ -6557,3 +6557,37 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
 - DEC-0052 approuvée : nodeId unique par occurrence; clé SYSTEM partageable; PATH_FALLBACK toujours unique; remap group-aware sans heuristique.
 - TASK-0055 READY : migration 6→7 minimale, classification physique sûre dans ExactDuplicateExplorer, preuve hardlink/copie/fichiers vides, régressions F-004, watcher/incrémental.
 - Aucun nouveau store, moteur de similarité, dépendance ou TASK-0056.
+
+## 2026-10-07 — TASK-0055 — F-046 identité d'objet physique (candidate)
+
+- Reuse-first : `GetFileInformationByHandleEx`/`FILE_ID_INFO`, `stable_key` /
+  `identity_provenance`, l'enveloppe `M-B`, SHA-256 `sha256-v1`,
+  `ExactDuplicateExplorer` et le moteur de relations existants suffisent.
+  `FILE_STANDARD_INFO.NumberOfLinks` **n'est pas ajouté** : la clé `SYSTEM` déjà
+  observée répond, et le compte d'occurrences est celui du cerveau, pas celui du
+  volume.
+- Schéma `6 → 7` minimal : unicité SQL de `stable_key` retirée, même index
+  recréé non unique, aucune ligne réécrite, aucune colonne, stamp final atomique,
+  dispatcher versionné, `MAP_SCHEMA_VERSION` aligné, contrat canonique v7 ajouté
+  à `M-B` étape 5.
+- `identity::pair_group` : une seule règle de remap group-aware, partagée par la
+  publication complète, `reconcile`, le noyau `U-B` et `W-B`. Le noyau vérifie
+  désormais l'appariement du producteur (`ObservedNode::continues`) au lieu de le
+  redériver d'une clé que plusieurs occurrences peuvent porter.
+- `W-B` complète l'image d'un groupe de clé avant d'apparier (une relecture
+  ciblée, uniquement quand une occurrence observée n'a pas de correspondance
+  exacte), et ses suppressions deviennent « non apparié » au lieu de « clé non
+  observée ».
+- Produit : classification fermée `PROVEN_SHARED` / `PROVEN_SINGLE` / `UNKNOWN`
+  par membre, comptée dans le cerveau courant, plus les cinq notions distinctes
+  FR/EN. Aucun identifiant brut en IPC/DOM/log/artefact.
+- `observe_content` résout sa racine par `BrainSource` : un cerveau `REAL_ROOT`
+  est enfin observable, ce qu'exigeait la preuve §8.
+- Preuves : Rust **894 PASS / 0 failed / 13 ignored** (dont 16 nouveaux tests
+  Windows réels à hard link), frontend **721 PASS**, `pnpm check`, `pnpm build`,
+  Tauri debug, audit public et `git diff --check` verts; WebView2 réel en deux
+  processus, même digest sémantique, 0 violation axe.
+- Discrimination **mesurée** : la règle d'avant la tranche fait échouer 11 des 16
+  tests Windows, 5 tests d'`identity` et 2 tests d'`index`.
+- Code `d55c1faa7f1664a3edeb2a2b7a0b032c50f19e7f`; artefacts liés au HEAD testé `d0502fa1bb3bc993ec4977356e210ceb1349c9eb`. `TASK-0055` et `F-046`
+  = `IMPLEMENTED` / candidates, jamais auto-`VERIFIED`. Aucune `TASK-0056`.

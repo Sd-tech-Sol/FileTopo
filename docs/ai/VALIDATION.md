@@ -9633,3 +9633,80 @@ Contrôle indépendant du code `fd3f6067c47a50bccff4713bda04f7f89bc8af85`, des a
 - **CI distante absente** sur code et HEAD : ne pas confondre preuve locale de l'exécuteur et CI indépendante.
 
 **Clôture :** `TASK-0054 = VERIFIED`; `F-050/F-051 = VERIFIED`; `P-01/P-02/P-03 = CLOSED / VERIFIED`. Limites de performance/matériel restent documentées sans devenir des promesses produit.
+
+## DK — TASK-0055 / F-046 (2026-10-07)
+
+**Statut : `IMPLEMENTED`**, en attente de contrôle indépendant. Code
+`d55c1faa7f1664a3edeb2a2b7a0b032c50f19e7f` (+ deux commits de harnais); artefacts liés au HEAD testé
+`d0502fa1bb3bc993ec4977356e210ceb1349c9eb`.
+
+Vérifié par l'exécuteur (preuves, non indépendant) :
+
+- `cargo test --lib --offline` : **894 passed; 0 failed; 13 ignored** (862 au
+  départ de la tranche + 32 nouveaux). Dont `physical_identity_tests` **16/16**,
+  `incremental_apply_tests` **61/61**, `identity::tests` **28/28**.
+- **Discrimination mesurée, pas supposée.** La règle d'avant `TASK-0055` a été
+  temporairement réintroduite (`pair_group` rendant toujours la première
+  occurrence stockée, et le refus de clé dupliquée dans `publish`) : **11 des 16**
+  tests de `physical_identity_tests`, **5** tests de `identity::tests` et **2**
+  tests de `index::tests` échouent alors, puis repassent après restauration. Les
+  5 qui passent dans les deux cas ne portent pas sur un groupe partagé
+  (classification `UNKNOWN`, contrat canonique v7, rollback 6→7, scan source du
+  DTO) : c'est le résultat attendu.
+- Migration : `6 → 7` sur un **vrai** index v6 réduit à sa forme exacte
+  (`downgrade_to_schema_v6`), sous l'enveloppe `M-B` existante — `index_id` et
+  `index_revision` inchangés, aucune ligne réécrite, source non lue, copie de
+  sûreté réglée, et le cas que v6 refusait (clé `SYSTEM` partagée) publie ensuite.
+  Échec injecté sur la **dernière** instruction du pas (le stamp de version),
+  donc après `DROP INDEX` **et** `CREATE INDEX` : `user_version` reste 6 et
+  l'index `UNIQUE` v6 est restauré. Un fichier estampillé 7 portant encore
+  l'index `UNIQUE` — ou plus d'index du tout — est refusé par la validation
+  canonique.
+- Frontend : `vitest run` **48 fichiers, 721 passed** (719 + 2); `pnpm check`
+  PASS; `pnpm build` PASS; `pnpm tauri build --debug --no-bundle` PASS.
+- WebView2 réel, **deux processus** sur le même sandbox,
+  `docs/performance/runs/TASK-0055-webview2.json` : même digest de sémantique
+  (`22dfc466…`), axe-core 4.13.0 **0 violation** sur l'explorateur, **0** erreur
+  console fatale, source **inchangée** (hash de contenu avant/après). La fixture
+  — `a.bin`, un **vrai** hard link, une copie octet pour octet, deux fichiers
+  vides distincts — est créée par le seed **avant** le premier processus, donc
+  avant le baseline d'empreinte source de la campagne de contenu.
+  Faits lus sur le DOM : `a.bin` et `b-hardlink.bin` = `PROVEN_SHARED` / 2
+  occurrences; `c-copy.bin` = `PROVEN_SINGLE` / 1; les deux fichiers vides =
+  `PROVEN_SINGLE` / 1 chacun, dans un seul groupe SHA-256; cinq notions
+  distinctes affichées, « copie probable » et « nom similaire » déclarées **non
+  inférées**. `F-004` : renommage d'un objet `SYSTEM` non partagé = même
+  `nodeId`; alias renommé **non corrélé**, `a.bin` jamais déplacé.
+- Fuite d'identité : les 12 orthographes interdites (`stableKey`, `stable_key`,
+  `SYS1:`, `PFv1:`, `volumeSerial`, `VolumeSerialNumber`, `volume_serial`,
+  `fileId`, `FileId`, `file_id`, `identityProvenance`, `identity_provenance`)
+  sont absentes du **DOM**, des **payloads IPC**, de `app.log`, de
+  `app-error.log` et de l'artefact; en Rust, la clé réelle de la fixture et
+  chacune de ses deux moitiés sont cherchées dans le DTO sérialisé.
+- `git diff --check` PASS; `scripts/audit-public-readiness.ps1 -AllowRemotes`
+  PASS (736 fichiers, aucun motif sensible, aucun chemin personnel).
+- `cargo fmt` : les cinq fichiers propres au HEAD de départ (`identity.rs`,
+  `index.rs`, `incremental.rs`, `reconcile.rs`, `brain_index.rs`) et le nouveau
+  module de tests sont formatés. `content_signals.rs` et `watch_ops.rs` restent
+  non formatés **à leurs lignes historiques** (715, 1251, 1334, 1642, 1888+ et
+  242) : vérifié que ces positions sont hors des blocs ajoutés par cette tranche.
+- `cargo clippy --all-targets -- -D warnings` : **27 diagnostics**, tous
+  historiques, **aucun** dans `identity.rs`, `index.rs`, `incremental.rs`,
+  `reconcile.rs`, `scope.rs`, `brain_index.rs`, `store.rs` ni
+  `physical_identity_tests.rs` — compté par fichier. Le seul diagnostic
+  introduit par cette tranche (`map_node_ref_for_path` devenu mort) a été
+  supprimé en supprimant la fonction.
+
+Les dix falsifications de `TASK-0055` §11 sont effectives : rapport §6 de
+`.orchestrator/RESULT.md`.
+
+**Non testé / limites :** aucun fournisseur, compte ni placeholder Cloud Files
+réel — `DEC-0035` reste couvert par sa table de décision et l'appel Win32 sur un
+fichier ordinaire; aucun hard link inter-volume (NTFS ne le permet pas, et
+écrire hors du dépôt est une condition d'arrêt); repli non-Windows `UNKNOWN` par
+construction, non exercé sur cet hôte; aucune mesure de performance dans cette
+tranche; `W-B` sur un groupe partagé est prouvé sur un alias dans un
+sous-dossier et sur deux occurrences dans un même dossier, pas sur toutes les
+topologies de hints possibles; crash physique pendant `M-B` toujours non testé;
+aucune CI GitHub distante attachée; dette Clippy et `cargo fmt` historique
+inchangée.
