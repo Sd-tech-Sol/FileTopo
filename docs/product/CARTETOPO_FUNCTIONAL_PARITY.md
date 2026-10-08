@@ -466,6 +466,37 @@ Ils sont écrits ici plutôt que corrigés en silence.
 > `P-03 = CLOSED / VERIFIED`. Les limites déclarées de profondeur,
 > performance de recherche et matériel ne diminuent pas ces critères.
 
+> **TASK-0056 — acceptance finale, `BLOCKED` (2026-10-08).**
+> La matrice de preuve `P-01..P-22` est livrée :
+> [PARITY_MATRIX_P01_P22.md](PARITY_MATRIX_P01_P22.md) et son jumeau
+> machine-lisible `parity-matrix-p01-p22.json`. **Aucune exigence n'est fermée par
+> cette tâche** : l'exécuteur ne s'attribue pas `VERIFIED`.
+>
+> **`P-22` possède enfin une preuve runtime.** Campagne finale dans trois processus
+> Tauri/WebView2 réels sur quatre racines synthétiques temporaires, exerçant
+> `P-01` à `P-21` par de vrais gestes, indisponibilité temporaire d'une racine et
+> restauration comprises : empreinte externe **stricte identique** avant et après
+> la fenêtre — contenu, noms, structure, nombre de liens physiques, horodatages de
+> modification et de création —, horodatages de dernier accès identiques aussi, et
+> **aucun fichier FileTopo** sous une racine. `P-22` est **candidate**, jamais
+> fermée ici. Artefact : `docs/performance/runs/TASK-0056-p22-webview2.json`.
+>
+> **Un gap produit a été trouvé, et rapporté sans correction.** Sur un cerveau
+> `REAL_ROOT`, `map_relations_open`, `map_relations_for_node` et
+> `map_relations_review_queue` passent par `BrainRecord::source_fixture()`, qui
+> refuse une racine réelle (`map_source_not_synthetic`) : le panneau des relations
+> rend sa forme « indisponible ». Le moteur, lui, est générique et répond. Comme
+> `DEC-0033` A fait de la racine réelle la seule entrée d'une arborescence
+> personnelle, **`P-04`, `P-05` et `P-07` sont inatteignables pour les données de
+> l'utilisateur** — §3 règle 2. La campagne les a exercés, et ils fonctionnent, sur
+> un cerveau `SYNTHETIC_FIXTURE`. Verdict de la matrice : `GAP` pour les trois, avec
+> le contre-argument écrit. La clôture `P-04` d'`ACTION-0094` **n'est pas révoquée**
+> — l'exécuteur n'en a pas l'autorité — mais elle **ne couvre pas** une racine
+> réelle. Arbitrage réservé au contrôle indépendant et à Sébastien.
+>
+> `P-05`..`P-18` sont par ailleurs réconciliées sous-critère par sous-critère dans
+> la matrice; toutes sont **candidates**, `GAP` pour les trois ci-dessus.
+
 > **Audit final Stage A — ACTION-0105 (2026-10-08).**
 > Après ACTION-0104, aucun gap fonctionnel MVP nommé ne reste ouvert.
 > Les clôtures formelles existantes couvrent P-01..P-04 et P-19..P-21.

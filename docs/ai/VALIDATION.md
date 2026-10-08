@@ -9827,3 +9827,146 @@ Contrôle du code/artefact `e9c67473df2c46ce99926869a6a1f8940eba2d4d` et du HEAD
 - Instabilité Rust : une passe `900/1` sans nom capturé, puis trois passes complètes `901/0` au même code. Historique du projet contient déjà des timeouts/flakes isolés revalidés par rejeu. Accepté pour la **fonction F-046**, mais transféré au gate final V1 : prochaine validation globale doit capturer intégralement les sorties; tout nouvel échec non expliqué bloque la release.
 
 **Clôture :** `TASK-0055 = VERIFIED`; `F-046 = VERIFIED`.
+## DO — TASK-0056 — acceptance finale V1 / matrice P-01..P-22 / campagne P-22 — 2026-10-08
+
+**Statut : `BLOCKED`.** Branche `build/v0.2-a40-v1-final-parity-acceptance`,
+base `446a4e4922f46bf4cdd71dd1aff65f08b5318b9d`. **Aucun fichier de production
+touché.** Tout ce qui suit a été exécuté dans cette session, sauf mention
+« non exécuté ».
+
+### DO.1 Gate de régression Rust à sorties capturées — PASS
+
+`scripts/task0056-rust-gate.ps1`, trois exécutions **consécutives** au même
+`HEAD` `7196fffd8a1a…`, logs capturés **hors du dépôt**, résumé déterministe
+publié dans `docs/performance/runs/TASK-0056-rust-gate.json`.
+
+| Run | Commande | Exit | passed | failed | ignored | Durée | SHA-256 du log |
+|---|---|---:|---:|---:|---:|---:|---|
+| 1 | `cargo test --manifest-path src-tauri/Cargo.toml --lib --offline` | 0 | 901 | 0 | 13 | 192,0 s | `d38a3e987af1f50a…` |
+| 2 | idem | 0 | 901 | 0 | 13 | 189,7 s | `ef4a9ecb772f2bfd…` |
+| 3 | idem | 0 | 901 | 0 | 13 | 200,2 s | `2bb80179f6af3994…` |
+
+**Liste des tests en échec : vide, aux trois runs.** Le flake non identifié de
+`TASK-0055` **ne s'est pas reproduit**; il n'est pas pour autant déclaré
+inexistant — c'est un run non capturé qui reste non expliqué, et le gate existe
+pour cela. Aucune CI GitHub distante n'est attachée : ce sont trois exécutions
+locales relues depuis leurs logs.
+
+### DO.2 Campagne finale `P-22` — PASS comme mesure d'immuabilité
+
+`scripts/task0056-webview2.ps1` : trois processus **Tauri/WebView2 réels** du
+même exécutable, autour de vraies fermetures. Artefact
+`docs/performance/runs/TASK-0056-p22-webview2.json`.
+
+Quatre racines synthétiques temporaires empreintées par
+`scripts/task0056-fingerprint.py`, **outil hors du produit** qui ne lit ni
+l'index ni quoi que ce soit de FileTopo : chemin relatif, nature, taille,
+SHA-256 du contenu, **nombre de liens physiques**, horodatage de modification et
+de création en nanosecondes, plus les métadonnées de la racine elle-même.
+
+| Racine | Entrées avant → après | Empreinte stricte | Horodatages d'accès |
+|---|---|---|---|
+| `atelier` (unicode, profondeur 8, 150 enfants, lien physique, copie, dossier vide) | 180 → 180 | **identique** | identique |
+| `carnets` | 8 → 8 | **identique** | identique |
+| `archives` | 6 → 6 | **identique** | identique |
+| `fixture` (`quasi-empty`, pour la surface des relations) | 11 → 11 | **identique** | identique |
+
+- **Aucun artefact FileTopo sous une racine**, avant comme après (`I-2`).
+- **Les 22 exigences ont au moins une observation runtime** dans la fenêtre :
+  le tableau `coverage` de l'artefact porte 26 lignes, une par exigence et par
+  phase.
+- **Chemin copié** (`P-14`) relu **hors du WebView** par le `.ps1` et comparé au
+  chemin réel de l'élément sélectionné : égal. Ni le chemin ni le contenu du
+  presse-papiers n'est publié.
+- **Les deux moitiés de `P-18` sont deux gestes distincts**, sur deux arbres :
+  le watcher applique seul, **sans un clic**, les cinq natures de changement
+  pré-baseline du premier arbre; sur le troisième — dont la racine était absente
+  à l'ouverture de la fenêtre, donc dont le watcher dormait — un **vrai clic**
+  sur « Actualiser » applique ses changements en mode `INCREMENTAL`, avec résumé
+  et nouvelle révision.
+- **Indisponibilité temporaire et retour** (`F-032`, `P-22`) : racine déplacée
+  sous les pieds du produit, garde réveillé qui l'observe, badge `UNAVAILABLE`
+  en mots, **zéro suppression journalisée**, index et préférences intacts, puis
+  restauration et retour à `SYNCED`.
+- **axe-core 4.13.0** injecté dans la page : **0 violation** sur chaque état
+  retenu — français tous panneaux ouverts, anglais journal et légende ouverts,
+  schéma sombre, mouvement réduit.
+- **0 erreur console fatale**; aucune commande d'écriture ou de reconstruction
+  sur le fil IPC pendant la fenêtre; aucune commande « graphe entier ».
+
+### DO.3 Le gap produit, trouvé et **non corrigé**
+
+**`map_relations_open`, `map_relations_for_node` et
+`map_relations_review_queue` refusent un cerveau `REAL_ROOT`.** Les trois
+passent par `BrainRecord::source_fixture()` (`src-tauri/src/map/brains.rs`),
+qui rend `map_source_not_synthetic` pour une racine réelle. Observé dans le vrai
+moteur, à travers l'IPC réel, et publié dans `productGaps` avec le texte exact
+des trois refus.
+
+Sur **le même cerveau**, `map_relation_engine_status` répond : l'écart est dans
+les **lectures**, pas dans le moteur. Le panneau rend sa forme
+« indisponible ».
+
+Conséquence : `P-04`, `P-05` et `P-07` sont **inatteignables pour les données de
+l'utilisateur**, puisque `DEC-0033` A fait de la racine réelle la seule entrée
+d'une arborescence personnelle. Verdict de la matrice : **`GAP`**. La campagne
+a **exercé et validé** la surface sur un cerveau `SYNTHETIC_FIXTURE` —
+provenance affichée en glyphe **et** en mot, direction portée aussi par une tête
+de flèche pleine, suggestion objet distinct jamais comptée comme relation,
+approbation au clavier réel produisant exactement une relation `APPROVED`
+sortante sur sa source et entrante sur sa cible, panneau groupé par direction
+puis par nature, refus du modèle rejoués.
+
+**Le contre-argument est écrit** dans la matrice et dans `TASK-0056` §11 : le
+contrat autorise la vérification sur fixtures synthétiques. **Arbitrage
+réservé** au contrôle indépendant et à Sébastien. La clôture `P-04`
+d'`ACTION-0094` n'est pas révoquée — l'exécuteur n'en a pas l'autorité — et il
+est écrit qu'elle **ne couvre pas** une racine réelle.
+
+### DO.4 Un faux échec, publié avec ce qu'il aurait produit
+
+La première campagne complète a rapporté l'empreinte comme **changée** : trois
+horodatages **de dossier**. Les trois nouvelles valeurs sont des instants
+**antérieurs à l'ouverture de la fenêtre** (`11:35:58,058`–`,060` pour une
+fenêtre allant de `11:35:58` à `11:37:50`), et **rien** dans les quatre arbres
+ne portait un instant pris dans la fenêtre. NTFS écrit l'horodatage d'un dossier
+paresseusement : la ligne de base, lue une seconde après les changements
+pré-baseline, avait capté trois valeurs non encore écrites. **Les deux
+empreintes sont désormais lues jusqu'à ce que deux lectures consécutives
+concordent**, et le nombre de lectures (3 et 2) est publié avec l'artefact. Sans
+ce constat, `P-22` aurait été déclarée en échec pour une cause qui n'est pas le
+produit.
+
+### DO.5 Autres validations, au `HEAD` final
+
+| Contrôle | Commande | Résultat |
+|---|---|---|
+| Types | `pnpm check` | **PASS** |
+| Frontend | `pnpm test` | **721 PASS**, 48 fichiers |
+| Build interface | `pnpm build` | **PASS** |
+| Hôte Tauri debug | `pnpm tauri build --debug --no-bundle` | **PASS** |
+| Blancs parasites | `git diff --check` | **PASS** |
+| Lisibilité publique | `scripts/audit-public-readiness.ps1 -AllowRemotes` | **PASS**, 753 fichiers versionnés |
+| Pureté du diff | `scripts/task0056-diff-purity.ps1` | **PURE** — 21 fichiers modifiés depuis la base, **0 de production** |
+
+**Aucune CI GitHub distante n'est attachée** à ce dépôt : tous les résultats
+ci-dessus sont des exécutions locales, avec leurs sorties capturées.
+
+### DO.6 Ce qui n'est PAS déclaré
+
+- **Aucune exigence n'est fermée.** `P-05`..`P-18` et `P-22` restent
+  **candidates**; `P-04`, `P-05`, `P-07` sont `GAP`.
+- **Aucun seuil lourd n'est remesuré** : 100 000 et 1 000 000 de lignes
+  indexées, la rafale de 10 000 événements, la courbe de coût incrémental et la
+  matrice complète de contrastes restent composés depuis leurs campagnes
+  `VERIFIED` propres, nommées dans la matrice.
+- **Aucun chiffre de performance** n'est produit; réserve `R8` intacte.
+- **Aucun lecteur d'écran réel** n'est exercé; l'accessibilité repose sur axe
+  plus un parcours clavier réel, comme dans `TASK-0047`.
+- Les fenêtres `explorer.exe` qu'un vrai dévoilement ouvre sont laissées à
+  Windows, comme `TASK-0034`/`0035` l'exigent.
+- La campagne porte sur des racines **NTFS locales** : elle ne dit rien d'un
+  volume réseau ni d'un fournisseur Cloud Files.
+- **Le pavé tactile** de `P-11` n'est pas distinguable de la souris par un
+  harnais CDP : la molette et le pointeur sont exercés, le geste tactile propre
+  reste **non exécuté** et déclaré tel.

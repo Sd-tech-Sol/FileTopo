@@ -1,5 +1,82 @@
 # HANDOFF — passage de relais
 
+## Passation du 2026-10-08 — TASK-0056, acceptance finale V1, `BLOCKED`
+
+**Où en est l'étape A.** Elle reste **`EN COURS`**. La matrice de preuve
+`P-01..P-22` existe enfin, le gate de régression Rust à sorties capturées est
+vert trois fois de suite, et `P-22` possède sa première preuve runtime. Mais la
+campagne a trouvé un **gap produit**, et `TASK-0056` §9 interdit de le corriger
+dans la même tâche : la tâche s'arrête.
+
+**Le gap, à relire d'abord.** Sur un cerveau `REAL_ROOT`,
+`map_relations_open`, `map_relations_for_node` et
+`map_relations_review_queue` passent par `BrainRecord::source_fixture()`
+(`src-tauri/src/map/brains.rs`), qui rend `map_source_not_synthetic` pour une
+racine réelle. Le panneau des relations rend donc sa forme « indisponible ».
+Le **moteur** est générique et répond sur le même cerveau, ce qui situe l'écart
+dans les **lectures**. `DEC-0033` A faisant de la racine réelle la seule entrée
+d'une arborescence personnelle, `P-04`, `P-05` et `P-07` sont inatteignables
+pour les données de l'utilisateur. Détail et contre-argument :
+`TASK-0056` §11, `docs/product/PARITY_MATRIX_P01_P22.md`.
+
+**Ce qu'il ne faut pas refaire.**
+
+- **Ne pas rejouer les seuils lourds** pour fermer une exigence : 100 000 et
+  1 000 000 de lignes indexées, la rafale de 10 000 événements, la courbe de
+  coût incrémental et la matrice de contrastes sont **composés** depuis leurs
+  campagnes `VERIFIED`, nommées ligne par ligne dans la matrice.
+- **Ne pas éditer `PARITY_MATRIX_P01_P22.md` à la main.** Il est **généré** par
+  `scripts/task0056-render-matrix.py` depuis
+  `docs/product/parity-matrix-p01-p22.json`. Le renderer **contrôle** aussi la
+  matrice : il refuse une exigence `CLOSED/VERIFIED` sans l'`ACTION` qui l'a
+  fermée, une `CANDIDATE` qui prétend l'être fermée, et une ligne qui réclame
+  une observation runtime que la campagne n'a pas.
+- **Ne pas lire une empreinte de source une seule fois.** NTFS écrit
+  l'horodatage d'un dossier paresseusement : la première campagne a rapporté un
+  faux échec parce que la ligne de base avait capté trois valeurs non encore
+  écrites. `Get-SettledFingerprint` lit jusqu'à ce que deux lectures
+  consécutives concordent, et publie le nombre de lectures. Garder cette
+  discipline dans toute preuve qui compare des horodatages.
+- **Ne pas compter sur un watcher endormi.** Il est **propriété du cœur** et
+  démarre pour **chaque** cerveau `REAL_ROOT` qui a un index, avec une
+  vérification complète obligatoire : allonger `FILETOPO_WATCH_*` ne l'empêche
+  pas de faire sa **première** vérification. La seule façon obtenue de garder un
+  « Actualiser » manuel décisif est d'ouvrir la fenêtre avec la racine **absente**
+  (son watcher dort alors derrière un garde long) puis de la restaurer dans la
+  fenêtre.
+- **Ne pas comparer le nombre d'arêtes de relation dessinées au total de
+  l'index.** `relationSegments` ne dessine une arête que si **les deux** bouts
+  sont matérialisés; un bout non dessiné est déclaré dans la région « extrémités
+  hors de la vue courante » avec un contrôle pour l'amener à l'écran. Le contrôle
+  honnête est à deux côtés.
+- **Ne pas demander `map_integrity` sur une racine réelle** : il compare à un
+  plan de fixture figé et refuse, par construction. Pour une racine réelle,
+  `I-2` se juge par l'empreinte externe.
+- **Ne pas écrire dans la boîte de recherche sans la vider** : l'entrée est
+  contrôlée, et deux requêtes s'empilent. `searchFor()` vide puis saisit.
+
+**Ce qui est réutilisable tel quel.**
+
+- `scripts/task0056-rust-gate.ps1` — N suites Rust consécutives avec code de
+  sortie, comptes, **noms exacts des tests en échec**, hash de log et durée;
+  logs hors dépôt, résumé déterministe publié.
+- `scripts/task0056-fingerprint.py` — empreinte de source **hors du produit**,
+  horodatages d'accès digérés **à part** et déclarés.
+- `scripts/task0056-diff-purity.ps1` — prouve, contre une base, qu'aucun fichier
+  de production n'a changé.
+- `scripts/task0056-webview2.{ps1,mjs}` et `task0056-seed-proof.py` — la
+  campagne : pré-baseline, fenêtre jugée, couverture machine-lisible par
+  exigence.
+
+**Statuts historiques réconciliés le 2026-10-08 :** les en-têtes de
+`TASK-0034` et `TASK-0036` disaient encore `IMPLEMENTED` alors
+qu'`ACTION-0055` et `ACTION-0060` les ont `VERIFIED`. Corps des fiches
+inchangés.
+
+**Action unique suivante :** arbitrage du gap. La correction, si elle est
+décidée, appartient à une **tâche séparée**. Aucune `TASK-0057` n'est créée;
+ni B, ni C, ni D ne commence.
+
 ## Relais — ACTION-0105 / TASK-0056 READY — 2026-10-08
 
 - Branche : `build/v0.2-a40-v1-final-parity-acceptance`.

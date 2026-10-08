@@ -1,5 +1,47 @@
 # État courant
 
+## TASK-0056 — acceptance finale V1 — `BLOCKED` — 2026-10-08
+
+- Base `446a4e49`, branche `build/v0.2-a40-v1-final-parity-acceptance`. **Aucun
+  fichier de production touché** : pureté du diff prouvée, 0 production sur 21
+  fichiers modifiés depuis la base (`TASK-0056-diff-purity.json`).
+- **Gap produit trouvé, rapporté, non corrigé.** Sur un cerveau `REAL_ROOT`,
+  `map_relations_open`, `map_relations_for_node` et
+  `map_relations_review_queue` passent par `BrainRecord::source_fixture()`, qui
+  refuse une racine réelle (`map_source_not_synthetic`) : le panneau des
+  relations rend sa forme « indisponible ». Le moteur est générique et répond sur
+  le même cerveau. Comme `DEC-0033` A fait de la racine réelle la seule entrée
+  d'une arborescence personnelle, `P-04`, `P-05` et `P-07` sont inatteignables
+  pour les données de l'utilisateur : `GAP`, contre-argument écrit, arbitrage
+  réservé au contrôle indépendant. La clôture `P-04` d'`ACTION-0094` n'est pas
+  révoquée mais ne couvre pas une racine réelle.
+- **Livré malgré l'arrêt :** matrice `P-01..P-22` lisible et machine-lisible;
+  gate de régression Rust à sorties capturées **3/3 vertes** (901 passed / 0
+  failed / 13 ignored, exit 0, 192,0 s / 189,7 s / 200,2 s, hash de log par run,
+  `HEAD` `7196fff`); campagne finale `P-22` **PASS** comme mesure
+  d'immuabilité; audit reuse-first.
+- **`P-22` a enfin une preuve runtime :** trois processus Tauri/WebView2 réels,
+  quatre racines empreintées par un outil **hors produit**, `P-01..P-22` tous
+  couverts par au moins une observation. Empreinte stricte identique avant/après
+  la fenêtre, horodatages de dernier accès compris, aucun artefact FileTopo sous
+  une racine, chemin copié relu hors du WebView et égal au chemin réel.
+  Indisponibilité d'une racine observée par le garde puis restaurée, sans une
+  seule suppression journalisée.
+- **Un faux échec, publié :** la première campagne complète a rapporté
+  l'empreinte comme changée. Les trois valeurs changées étaient des horodatages
+  de dossier dont la nouvelle valeur est antérieure à l'ouverture de la fenêtre;
+  NTFS ne les avait pas encore écrits quand la ligne de base a été lue. Les deux
+  empreintes sont désormais lues jusqu'à ce que deux lectures concordent.
+- **Statuts historiques réconciliés :** `TASK-0034` et `TASK-0036` disaient
+  encore `IMPLEMENTED` alors qu'`ACTION-0055` et `ACTION-0060` les ont
+  `VERIFIED`.
+- Validations au `HEAD` final : `pnpm check`, frontend **721 PASS** (48
+  fichiers), `pnpm build`, Tauri debug `--no-bundle`, `git diff --check`, audit
+  public readiness (753 fichiers) — tous verts. Aucune CI GitHub distante
+  attachée.
+- **Étape A reste `EN COURS`. Aucune `TASK-0057`. Ni B, ni C, ni D.** Action
+  unique suivante : arbitrage du gap.
+
 ## ACTION-0105 — audit V1 final / TASK-0056 READY — 2026-10-08
 
 - Base : `446a4e4922f46bf4cdd71dd1aff65f08b5318b9d` après ACTION-0104.

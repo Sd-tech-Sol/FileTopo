@@ -6651,3 +6651,80 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
 - TASK-0056 créée comme acceptance pure : campagne P-22 WebView2, matrice P-01..P-22, trois suites Rust complètes capturées, invariants, public readiness et docs.
 - Aucun code produit autorisé; échec => BLOCKED, pas de patch opportuniste.
 - Étapes B/C/D non commencées; aucune TASK-0057.
+---
+
+## 2026-10-08 — TASK-0056 — Acceptance finale V1 / matrice P-01..P-22 / campagne P-22 — `BLOCKED`
+
+**Agent :** Claude Code (Opus 5). **Branche :**
+`build/v0.2-a40-v1-final-parity-acceptance`, base
+`446a4e4922f46bf4cdd71dd1aff65f08b5318b9d`. **Nature :** acceptance pure —
+**aucun fichier de production touché**, prouvé par
+`scripts/task0056-diff-purity.ps1` (21 fichiers modifiés depuis la base, 0 de
+production).
+
+**Verdict : `BLOCKED`.** Un gap produit a été trouvé en exerçant `P-01..P-21`
+dans le vrai hôte, et `TASK-0056` §9 interdit de le corriger ici.
+
+**Le gap.** Sur un cerveau `REAL_ROOT`, `map_relations_open`,
+`map_relations_for_node` et `map_relations_review_queue` passent par
+`BrainRecord::source_fixture()`, qui rend `map_source_not_synthetic` pour une
+racine réelle : le panneau des relations rend sa forme « indisponible », sans
+provenance, sans direction, sans suggestion, sans file de révision. Le moteur,
+lui, est générique et répond sur le même cerveau. Comme `DEC-0033` A fait de la
+racine réelle la seule entrée d'une arborescence personnelle, `P-04`, `P-05` et
+`P-07` sont inatteignables pour les données de l'utilisateur — contrat de parité
+§3 règle 2. Verdict de la matrice : `GAP`, avec le contre-argument écrit (le
+contrat autorise la vérification sur fixtures synthétiques, et la campagne a
+validé la surface là). La clôture `P-04` d'`ACTION-0094` n'est pas révoquée et
+il est écrit qu'elle ne couvre pas une racine réelle. Arbitrage réservé.
+
+**Livré malgré l'arrêt.**
+
+- **Matrice `P-01..P-22`**, lisible et machine-lisible :
+  `docs/product/PARITY_MATRIX_P01_P22.md` **généré** par
+  `scripts/task0056-render-matrix.py` depuis
+  `docs/product/parity-matrix-p01-p22.json`, pour qu'il n'en existe jamais deux
+  versions divergentes. Chaque exigence porte son texte décomposé en
+  sous-critères, ses preuves indépendantes nommées, ses limites, son état et son
+  verdict. Le renderer contrôle la matrice au lieu de lui faire confiance.
+- **Gate de régression Rust à sorties capturées, PASS :** trois
+  `cargo test --lib --offline` consécutifs au même `HEAD`, **901 passed / 0
+  failed / 13 ignored** à chaque fois, exit `0`, durées et hash de log publiés,
+  logs gardés hors du dépôt. Le flake non identifié de `TASK-0055` ne s'est pas
+  reproduit, sans être déclaré inexistant.
+- **Campagne finale `P-22`, PASS comme mesure d'immuabilité :** trois processus
+  Tauri/WebView2 réels, quatre racines synthétiques temporaires, `P-01..P-22`
+  tous couverts par au moins une observation runtime. Empreinte externe stricte
+  **identique** avant et après la fenêtre, horodatages de dernier accès compris,
+  aucun artefact FileTopo sous une racine, chemin copié relu hors du WebView et
+  égal au chemin réel, indisponibilité d'une racine observée puis restaurée sans
+  une seule suppression journalisée, axe-core sans violation en FR, EN, sombre et
+  mouvement réduit.
+- **Statuts historiques réconciliés :** `TASK-0034` et `TASK-0036` disaient
+  encore `IMPLEMENTED` alors qu'`ACTION-0055` et `ACTION-0060` les ont
+  `VERIFIED`.
+
+**Un faux échec, publié.** La première campagne complète a rapporté l'empreinte
+comme changée : trois horodatages **de dossier** dont la nouvelle valeur est un
+instant **antérieur** à l'ouverture de la fenêtre, alors que rien dans les arbres
+ne portait un instant pris dans la fenêtre. NTFS n'avait pas encore écrit ces
+trois horodatages quand la ligne de base a été lue. Les deux empreintes sont
+désormais lues jusqu'à ce que deux lectures consécutives concordent.
+
+**Six corrections de harnais, toutes dans le harnais, aucune dans le produit :**
+le watcher est propriété du cœur et fait sa première vérification quoi qu'on
+règle, donc les deux moitiés de `P-18` sont devenues deux gestes sur deux arbres;
+une attente écrite `?.getAttribute(x) !== null` était vraie quand l'élément était
+absent; la boîte de recherche est contrôlée et deux requêtes s'empilaient;
+le nombre d'arêtes dessinées se compare à ce qu'une vue bornée **peut** dessiner,
+le reste étant déclaré dans la région « extrémités hors de la vue courante »; un
+parcours clavier doit nommer chaque arrêt par son élément, pas par un
+`data-testid` partagé; `map_integrity` refuse une racine réelle par construction.
+
+**Validations au `HEAD` final :** `pnpm check`, frontend **721 PASS** (48
+fichiers), `pnpm build`, Tauri debug `--no-bundle`, `git diff --check`, audit
+public readiness (753 fichiers) — tous verts. **Aucune CI GitHub distante** n'est
+attachée.
+
+**Étape A reste `EN COURS`. Aucune `TASK-0057`. Ni B, ni C, ni D.** Action unique
+suivante : arbitrage du gap, correction dans une tâche séparée.

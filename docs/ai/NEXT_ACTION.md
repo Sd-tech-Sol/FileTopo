@@ -1,30 +1,37 @@
 # Action suivante
 
-## Exécuter TASK-0056 — Final V1 Parity Acceptance
+## Arbitrer le gap trouvé par TASK-0056 — les relations sur une racine réelle
 
-Branche : `build/v0.2-a40-v1-final-parity-acceptance`.
+`TASK-0056` est **`BLOCKED`**. Branche :
+`build/v0.2-a40-v1-final-parity-acceptance`.
 
-Tâche :
-`docs/tasks/TASK-0056-v1-final-parity-acceptance.md`.
+**Le gap, en une phrase :** sur un cerveau `REAL_ROOT`, les trois lectures dont
+la surface des relations a besoin — `map_relations_open`,
+`map_relations_for_node`, `map_relations_review_queue` — passent par
+`BrainRecord::source_fixture()`, qui refuse une racine réelle avec
+`map_source_not_synthetic`; le panneau rend sa forme « indisponible », alors que
+le moteur déterministe répond sur le même cerveau.
 
-Audit :
-`docs/reviews/ACTION-0105-final-v1-audit-after-action0104.md`.
+**Pourquoi c'est bloquant :** depuis `DEC-0033` A, une racine réelle est la
+seule façon dont l'arborescence d'une personne entre dans FileTopo. `P-04`,
+`P-05` et `P-07` sont donc inatteignables pour les données de l'utilisateur,
+ce que le contrat de parité §3 règle 2 assimile à leur suppression.
 
-Prompt :
-`.orchestrator/NEXT_PROMPT.md`.
+**Le contre-argument, pour que l'arbitre l'ait :** le contrat dit qu'un critère
+est vérifiable sur fixtures synthétiques, et la campagne l'a vérifié là — la
+surface fonctionne entièrement sur un cerveau `SYNTHETIC_FIXTURE`.
 
-Agent recommandé : **Claude Code — Claude Opus 5.5 — High**.
+À lire :
 
-**Faire `/clear` avant cette tâche.**
+- `docs/product/PARITY_MATRIX_P01_P22.md` — la matrice et les trois verdicts
+  `GAP`;
+- `docs/tasks/TASK-0056-v1-final-parity-acceptance.md` §11 — le résultat
+  d'exécution;
+- `docs/performance/runs/TASK-0056-p22-webview2.json` — champ `productGaps`,
+  l'observation dans le vrai moteur.
 
-Instruction :
+**Décision attendue :** la correction appartient à une **tâche séparée**.
+`TASK-0056` ne touche aucun code produit, et la pureté du diff est prouvée.
 
-> Synchronise `build/v0.2-a40-v1-final-parity-acceptance` en fast-forward
-> seulement, puis lis et exécute intégralement `.orchestrator/NEXT_PROMPT.md`.
-
-C'est une acceptance pure. Aucun fichier de code produit ne doit changer.
-
-PASS => Stage A candidate CLOSED, puis contrôle indépendant ChatGPT.
-FAIL => TASK-0056 BLOCKED, gap exact, aucune corrective dans la même tâche.
-
-Aucune TASK-0057. Ne commence ni B, ni C, ni D.
+L'étape **A** reste **`EN COURS`**. Aucune `TASK-0057` n'est créée. Ni B, ni C,
+ni D.

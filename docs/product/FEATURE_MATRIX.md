@@ -423,3 +423,32 @@ Les preuves et constats ci-dessous sont inchangés.
 > `IMPLEMENTED` / candidate, et la promesse produit est identique — même objet
 > physique, contenu identique, copie probable, nom similaire et relation logique
 > restent cinq notions distinctes, dont deux ne sont jamais inférées.
+
+> **Note du 2026-10-08 — `TASK-0056`, la surface des relations ne répond pas sur
+> une racine réelle.**
+>
+> L'acceptance finale a trouvé, en exerçant la parité dans le vrai hôte, que les
+> trois lectures dont la surface des relations a besoin —
+> `map_relations_open`, `map_relations_for_node` et
+> `map_relations_review_queue` — passent toutes par
+> `BrainRecord::source_fixture()`, qui refuse un cerveau `REAL_ROOT` avec
+> `map_source_not_synthetic`. Le panneau rend donc sa forme « indisponible » :
+> aucune provenance, aucune direction, aucune suggestion, aucune file de
+> révision. Le **moteur** déterministe, lui, est générique :
+> `map_relation_engine_run` et `map_relation_engine_status` répondent sur le même
+> cerveau — ce qui situe l'écart dans les **lectures**, pas dans le moteur.
+>
+> **Conséquence pour cette matrice :** `F-017`, `F-019`, `F-043`, `F-044` et
+> `F-045` ne sont **exerçables que sur un cerveau `SYNTHETIC_FIXTURE`**. Comme
+> `DEC-0033` A fait de la racine réelle la seule entrée d'une arborescence
+> personnelle, et comme les cerveaux figés sont déclarés « diagnostic de
+> développeur », ces fonctions sont inatteignables pour les données de
+> l'utilisateur. Les exigences de parité correspondantes — `P-04`, `P-05`,
+> `P-07` — sont marquées `GAP` dans
+> [PARITY_MATRIX_P01_P22.md](PARITY_MATRIX_P01_P22.md).
+>
+> **Aucune classification n'est changée ici, aucune fonction n'est descendue, et
+> aucun correctif n'est appliqué :** `TASK-0056` est une acceptance et son §9
+> interdit de toucher au code produit. Le constat est écrit pour arbitrage, pas
+> corrigé en silence. Preuve :
+> `docs/performance/runs/TASK-0056-p22-webview2.json`, champ `productGaps`.
