@@ -126,3 +126,13 @@ NEXT (exactly one action):
   reader, not a derivative published by a privileged file; then W-B's
   group-picture completion, still proven on two topologies only.
 - No TASK-0056. ACTION-0102 §9 asks for a final V1 audit after this control.
+
+
+INDEPENDENT_CONTROL_ACTION_0104:
+- VERDICT: PASS / VERIFIED.
+- Corrected tested head: e9c67473df2c46ce99926869a6a1f8940eba2d4d.
+- ACTION-0103 A and B closed.
+- TASK-0055 / F-046 VERIFIED.
+- One unidentified 900/1 Rust run followed by three 901/0 full runs is carried as a final V1 stability gate; it is not silently discarded.
+- No remote GitHub CI.
+- NEXT: final V1 audit before any new functionality.

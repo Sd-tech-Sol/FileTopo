@@ -2,10 +2,7 @@
 
 - **Date :** 2026-10-07
 - **Date du correctif :** 2026-10-08 (voir §17)
-- **Statut :** `IMPLEMENTED`, jamais auto-`VERIFIED`. Un premier contrôle
-  indépendant (`ACTION-0103`) a rendu `REWORK REQUIRED`; les deux défauts sont
-  corrigés en §17 et la tâche attend un **nouveau** contrôle. Détail :
-  [`VALIDATION.md` sections DK, DL et DM](../ai/VALIDATION.md).
+- **Statut :** `VERIFIED` — contrôle indépendant `ACTION-0104` (2026-10-08). Le premier contrôle `ACTION-0103` avait rendu `REWORK REQUIRED`; les deux correctifs de §17 sont recontrôlés et acceptés. Détail : `VALIDATION.md` sections DK, DL, DM et DN.
 - **Branche :** `build/v0.2-a39-v1-physical-identity-closure`
 - **Base :** `393ac6d190295d979b58c9a03cc4712391d93335`
 - **Sélection :** ACTION-0102
@@ -420,3 +417,20 @@ s'attribue pas `VERIFIED` : le verdict appartient à un nouveau contrôle
 indépendant.
 
 - 2026-10-08 — correctif `ACTION-0103` A et B livré. Toujours `IMPLEMENTED`.
+
+
+## 18. Contrôle indépendant final — ACTION-0104 — 2026-10-08
+
+**Verdict : PASS / VERIFIED.**
+
+- Corrective A : `reconstructible_digest` ne lit plus aucune matière d'identité physique; son ordre est construit uniquement à partir des champs réellement digérés.
+- Preuve d'influence : changer `stable_key` / provenance uniquement ne change pas le digest public; changer taille ou chemin le change.
+- Relabellisation injective des identités : classification physique conservée et surfaces publiques testées inchangées.
+- WebView2 réel : remplacement byte-identique à mêmes horodatages => nouveau nodeId mais digest public identique.
+- Corrective B : le kernel refuse le mauvais alias d'un groupe SYSTEM partagé; D1 reste acceptée pour 1 stored + 1 observed.
+- Produit/harness testés au commit `e9c67473df2c46ce99926869a6a1f8940eba2d4d`; après ce commit, uniquement documentation/artefact.
+- Artefact final `TASK-0055-webview2.json` déclare `headTested=e9c67473…`, deux processus, même sémantique, axe 0 violation, zéro erreur console fatale.
+- Aucune CI GitHub distante attachée.
+- Une exécution Rust complète antérieure a rapporté 1 échec sans nom capturé; trois exécutions complètes suivantes au même code ont rapporté 901 PASS / 0 échec. Cette instabilité non attribuée ne falsifie aucun critère F-046, mais devient un gate explicite de la validation finale V1 : prochaine campagne complète avec sortie capturée, aucun échec inexpliqué accepté.
+
+Conséquence : `TASK-0055 = VERIFIED`; `F-046 = VERIFIED`. Aucun nouveau gap fonctionnel MVP n'est créé par ce contrôle.

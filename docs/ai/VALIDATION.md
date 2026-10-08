@@ -9810,3 +9810,20 @@ liste épinglée de fichiers, pas une preuve de flux. Il attrape un nouveau
 privilégiés publierait lui-même. Les tests d'influence couvrent les deux surfaces
 publiques qui existent aujourd'hui (rapport de construction, page de doublons), pas
 toutes les futures.
+
+
+## DN — ACTION-0104 — re-contrôle indépendant TASK-0055 / F-046 — 2026-10-08
+
+**Verdict : PASS / VERIFIED.**
+
+Contrôle du code/artefact `e9c67473df2c46ce99926869a6a1f8940eba2d4d` et du HEAD documentaire `3bfb1d6e1f8e2b2b02b5f5a4f60e09b360f0441d`.
+
+- `ACTION-0103/A` fermé : digest public sans `stable_key` / provenance; tests d'influence + relabellisation injective + preuve WebView2 réelle.
+- `ACTION-0103/B` fermé : groupe SYSTEM partagé exige l'occurrence au chemin observé; D1 rename/move simple reste autorisée.
+- Artefact courant lié au HEAD testé, deux processus, même digest sémantique, axe 0, fatal console 0, source inchangée.
+- Aucun code produit après le HEAD testé; commits suivants = artefact/docs.
+- Surfaces inspectées : build report, duplicate page, commandes/DTO courants; aucune troisième surface d'identité brute/dérivée trouvée.
+- CI GitHub distante absente.
+- Instabilité Rust : une passe `900/1` sans nom capturé, puis trois passes complètes `901/0` au même code. Historique du projet contient déjà des timeouts/flakes isolés revalidés par rejeu. Accepté pour la **fonction F-046**, mais transféré au gate final V1 : prochaine validation globale doit capturer intégralement les sorties; tout nouvel échec non expliqué bloque la release.
+
+**Clôture :** `TASK-0055 = VERIFIED`; `F-046 = VERIFIED`.

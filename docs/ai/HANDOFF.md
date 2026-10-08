@@ -1,5 +1,14 @@
 # HANDOFF — passage de relais
 
+## Relais — ACTION-0104 — TASK-0055 / F-046 VERIFIED — 2026-10-08
+
+- Code/runtime vérifié : `e9c67473df2c46ce99926869a6a1f8940eba2d4d`.
+- F-046 fermée après corrective ACTION-0103.
+- Digest public désormais indépendant de l'identité physique; kernel shared-group renforcé sans casser D1.
+- Réserve transférée au gate final : une passe Rust complète 900/1 non capturée, puis trois 901/0; la prochaine campagne globale doit capturer toute sortie et bloquer sur tout échec inexpliqué.
+- Aucune CI distante.
+- Prochaine action : audit V1 final avant toute nouvelle fonction.
+
 ## Relais — TASK-0055 — correctif ACTION-0103 livré — 2026-10-08
 
 - Branche : `build/v0.2-a39-v1-physical-identity-closure`. `main` intacte.

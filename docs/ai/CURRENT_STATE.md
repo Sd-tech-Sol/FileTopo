@@ -1,5 +1,14 @@
 # État courant
 
+## ACTION-0104 — TASK-0055 / F-046 VERIFIED — 2026-10-08
+
+- Corrected code/runtime controlled: `e9c67473df2c46ce99926869a6a1f8940eba2d4d`.
+- `TASK-0055 = VERIFIED`; `F-046 = VERIFIED`.
+- ACTION-0103 blocker A (identity-derived public digest) and blocker B (wrong shared alias accepted by kernel) are closed.
+- One unrecorded full-suite Rust failure followed by three full green runs is retained as a final-release stability risk, not hidden.
+- No GitHub Actions CI attached.
+- No named functional MVP gap remains. Next action: final V1 audit; no new feature by inertia.
+
 ## TASK-0055 — correctif ACTION-0103 livré — 2026-10-08
 
 - Les deux défauts d'`ACTION-0103` sont fermés. `TASK-0055` et `F-046` restent

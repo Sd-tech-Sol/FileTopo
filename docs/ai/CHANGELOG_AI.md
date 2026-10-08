@@ -6632,3 +6632,13 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
 - Code et artefact `e9c67473df2c46ce99926869a6a1f8940eba2d4d`. `TASK-0055` et
   `F-046` = `IMPLEMENTED` / candidates, jamais auto-`VERIFIED`. Aucune
   `TASK-0056`.
+
+
+## 2026-10-08 — ACTION-0104 — TASK-0055 / F-046 VERIFIED
+
+- Re-contrôle indépendant de la corrective ACTION-0103 sur `e9c67473…`.
+- Digest reconstructible public indépendant de toute identité physique, prouvé par tests d'influence et WebView2 réel.
+- Kernel incrémental refuse le mauvais alias d'un groupe SYSTEM partagé tout en préservant D1.
+- `TASK-0055 = VERIFIED`; `F-046 = VERIFIED`.
+- Une passe Rust complète non capturée 900/1 suivie de trois 901/0 reste un risque explicite transféré au gate final V1.
+- Aucun nouveau gap fonctionnel MVP nommé; audit final requis avant nouvelle fonction.
