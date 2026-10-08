@@ -17,6 +17,9 @@ pub(super) const MATERIAL_BUDGET: usize = VIEW_BUDGET / 2;
 // every page directory-first, so filling up to this smaller target is what
 // keeps directories over files without any extra sorting here.
 pub(super) const ORDINARY_MATERIAL_TARGET: usize = 64;
+// `TASK-0054`: fewest children a focused page may carry when ancestry alone
+// already reaches the ordinary target.
+pub(super) const MIN_FOCUS_PAGE: usize = 16;
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ViewAggregate {
@@ -60,8 +63,15 @@ pub fn materialize_view(
     // the ordinary product target on a very deep focus; when it does, this
     // call adds nothing beyond it rather than erroring, and the technical
     // ceiling above remains the only refusal.
+    //
+    // `TASK-0054`: past the ordinary target the page used to shrink to a single
+    // child per call (target == ancestry length), so expanding the aggregate of
+    // a folder 200 levels down needed one request per child. Exact, but not a
+    // usable route. A floor of `MIN_FOCUS_PAGE` children keeps every page
+    // useful; `MATERIAL_BUDGET` stays the only hard stop and ancestry is still
+    // never trimmed.
     let effective_target = ORDINARY_MATERIAL_TARGET
-        .max(selected.len())
+        .max(selected.len() + MIN_FOCUS_PAGE)
         .min(MATERIAL_BUDGET);
     let cursor = after.map(ChildCursor::decode).transpose()?;
     let mut next_by_parent = HashMap::new();

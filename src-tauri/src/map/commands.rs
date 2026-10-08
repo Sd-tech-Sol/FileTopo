@@ -2866,6 +2866,10 @@ mod lifecycle_tests;
 mod real_root_tests;
 
 #[cfg(test)]
+#[path = "scale_closure_tests.rs"]
+mod scale_closure_tests;
+
+#[cfg(test)]
 #[path = "legacy_binding_tests.rs"]
 mod legacy_binding_tests;
 
