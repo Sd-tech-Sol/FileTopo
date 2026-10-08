@@ -9787,7 +9787,8 @@ fermé (un id, aucun chemin, aucune clé).
 
 | Contrôle | Résultat |
 |---|---|
-| `cargo test --lib --offline` | **901 PASS**, 0 failed, 13 ignored (depuis 894) |
+| `cargo test --lib --offline` | **901 PASS**, 0 failed, 13 ignored (depuis 894), sur **trois** exécutions complètes au HEAD poussé |
+| Instabilité à dire telle quelle | une **quatrième** exécution complète, antérieure aux trois ci-dessus et au même code, a rapporté `900 passed; 1 failed`. **Le nom du test n'a pas été capturé** : la sortie n'était pas enregistrée. L'échec n'a pas été reproduit sur les trois exécutions complètes suivantes. Il n'est donc **pas attribué** et reste un point ouvert pour le contrôle |
 | `pnpm vitest run` | **721 PASS**, 48 fichiers |
 | `pnpm check`, `pnpm build`, `pnpm tauri build --debug --no-bundle` | PASS |
 | `git diff --check` | PASS |

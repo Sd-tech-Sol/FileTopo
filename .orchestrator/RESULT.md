@@ -77,7 +77,13 @@ NO PRODUCT CODE AFTER THAT HEAD — only documents.
   TASK-0055 WebView2 harness. No TASK-0056.
 
 6. VALIDATIONS
-- cargo test --lib --offline: 901 passed, 0 failed, 13 ignored (from 894).
+- cargo test --lib --offline: 901 passed, 0 failed, 13 ignored (from 894), on
+  THREE full runs at the pushed HEAD.
+- REPORTED AS IT HAPPENED: a fourth full run, earlier and on the same code,
+  reported `900 passed; 1 failed`. The failing test's name was NOT captured — the
+  output was not being recorded — and the failure did not reproduce in the three
+  full runs that followed. It is therefore not attributed, and it is left as an
+  open point for the control rather than explained away.
 - Frontend: 48 files, 721 passed. pnpm check PASS. pnpm build PASS.
   pnpm tauri build --debug --no-bundle PASS. git diff --check PASS.
 - WebView2: two real processes over one sandbox, same semantics digest
