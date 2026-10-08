@@ -370,14 +370,71 @@ if (phase === 1) {
   await until(`document.querySelectorAll('[data-testid="composed-canvas"] [data-node-id]').length > 0`);
   await quiet();
   const openingTransform = await worldTransform();
-  const beforeRefresh = await invoke("map_view", { brainId: ATELIER });
   const mark = wireCalls.length;
+  const expectedChanges = seed.atelierChanges.map((change) => change.nature).sort();
+  const expectedArchives = seed.archivesChanges.map((change) => change.nature).sort();
 
-  // -- P-18 — ONE real click on Actualiser, applied by the incremental kernel ----------
-  const expectedChanges = seed.mutations.map((change) => change.nature).sort();
+  // -- P-18, automatic half — the watcher applies `atelier`'s changes WITHOUT a click ----
+  // The watcher is backend-owned and starts for every REAL_ROOT brain that has an Index,
+  // each with a mandatory full verification. The pre-baseline changes are therefore
+  // applied by it, inside the window, with no gesture at all — which is exactly what
+  // « surveillance automatique » means.
+  await until(`true`);
+  const journalReached = async () =>
+    (await invoke("map_change_journal", { brainId: ATELIER })).total >= seed.atelierChanges.length;
+  for (let attempt = 0; attempt < 600 && !(await journalReached()); attempt += 1) await pause(300);
+  assert(await journalReached(), "the watcher never applied the pre-baseline changes of the first tree");
+  await quiet();
+  const afterWatcher = await invoke("map_view", { brainId: ATELIER });
+  assert.equal(afterWatcher.nodeCount, atelierTotal, "after the watcher converged the Index equals the disk");
+  const watchStatus = await evaluate(`(() => {
+    const badge = document.querySelector('[data-testid="watch-status"]');
+    return badge ? { mode: document.querySelector('[data-testid="watch-status-mode"]')?.textContent?.trim() ?? null, state: badge.getAttribute('data-state'), pending: badge.getAttribute('data-pending') } : null;
+  })()`);
+
+  // -- P-18, manual half, plus F-032 — `archives` opened with its root absent ------------
+  // Its root was moved away by the .ps1 after the baseline fingerprint, so this brain's
+  // watcher found no usable root at startup and sleeps. The manual « Actualiser » is
+  // therefore the gesture that applies ITS pre-baseline changes, once the harness puts
+  // the root back — the one source manipulation the window allows, and it is undone.
+  await click(testid("composition-add-trigger"));
+  await until(`!!document.querySelector('[data-testid="composition-add-item-${ARCHIVES}"]')`);
+  await click(`[data-testid="composition-add-item-${ARCHIVES}"]`);
+  await until(`!!document.querySelector('[data-testid="composition-chip-${ARCHIVES}"]')`);
+  await click(`[data-testid="composition-chip-${ARCHIVES}"]`);
+  await quiet();
+  await until(
+    `['UNAVAILABLE','SOURCE_CHANGED'].includes(document.querySelector('[data-testid="source-observation"]')?.getAttribute('data-state') ?? '')`,
+    120000,
+  );
+  const archivesAbsent = await evaluate(`(() => {
+    const badge = document.querySelector('[data-testid="source-observation"]');
+    return { state: badge?.getAttribute('data-state') ?? null, reason: badge?.getAttribute('data-reason') ?? null,
+      text: badge?.textContent?.trim() ?? null,
+      watch: document.querySelector('[data-testid="watch-status"]')?.getAttribute('data-state') ?? null,
+      cardsStillOnScreen: document.querySelectorAll('[data-testid="composed-canvas"] [data-card="true"]').length };
+  })()`);
+  const archivesBefore = await invoke("map_view", { brainId: ARCHIVES });
+  const archivesJournalBefore = await invoke("map_change_journal", { brainId: ARCHIVES });
+  assert.equal(archivesJournalBefore.total, 0, "an absent root is not a batch of deletions: nothing was journalled");
+  assert(archivesBefore.nodeCount > 0, "the last reliable Index keeps being served");
+  // P-15's refusal, while the target really is gone.
+  const archivesNode = await invoke("map_resolve_node", { brainId: ARCHIVES, relativePath: "lisez-moi.txt" });
+  await click("#map-search-input");
+  await send("Input.insertText", { text: "lisez-moi" });
+  await until(`!!document.querySelector('[data-testid="search-hit"][data-node-id="${archivesNode.nodeId}"]')`);
+  await click(`[data-testid="search-hit"][data-node-id="${archivesNode.nodeId}"]`);
+  await until(`!!document.querySelector('[data-testid="reveal-in-explorer"]')`);
+  await click(testid("reveal-in-explorer"));
+  await until(`!!document.querySelector('[data-testid="reveal-error"]')`, 30000);
+  const revealRefusal = await evaluate(`document.querySelector('[data-testid="reveal-error"]').textContent.trim()`);
+  assert(revealRefusal.length > 0, "a gone target produces an explicit error");
+  await click(testid("search-clear"));
+  // The root comes back, and ONE real click applies the changes incrementally.
+  const parkedArchives = join(dirname(ROOTS.archives), `${basename(ROOTS.archives)}-absent`);
+  await rename(parkedArchives, ROOTS.archives);
   await click(testid("lifecycle-refresh"));
-  await until(`!!document.querySelector('[data-testid="application-mode"]')`);
-  await until(`document.querySelector('[data-testid="application-mode"]')?.getAttribute('data-application-mode') !== null`);
+  await until(`!!document.querySelector('[data-testid="application-mode"]')`, 120000);
   await quiet();
   const applicationMode = await evaluate(
     `document.querySelector('[data-testid="application-mode"]')?.getAttribute('data-application-mode')`,
@@ -387,17 +444,26 @@ if (phase === 1) {
   );
   assert.equal(applicationMode, "INCREMENTAL", `the manual refresh was applied as ${applicationMode}, not incrementally`);
   assert(changeSummary, "the manual refresh must produce a summary of the changes");
-  const afterRefresh = await invoke("map_view", { brainId: ATELIER });
-  assert(afterRefresh.indexRevision > beforeRefresh.indexRevision, "the refresh published a new revision");
-  const watchStatus = await evaluate(`(() => {
-    const badge = document.querySelector('[data-testid="watch-status"]');
-    return badge ? { mode: document.querySelector('[data-testid="watch-status-mode"]')?.textContent ?? null, state: badge.getAttribute('data-state') ?? badge.textContent } : null;
-  })()`);
-  cover("P-18", "one real click on Actualiser applied the pre-baseline changes INCREMENTALLY, produced a summary and never emptied the Index (the revision moved forward, the map stayed on screen)", {
-    applicationMode, changeSummary, revisionBefore: beforeRefresh.indexRevision, revisionAfter: afterRefresh.indexRevision,
-    heavyThresholdsComposedFrom: ["TASK-0040/ACTION-0067 (incremental cost at 1k/10k/100k)", "TASK-0041/ACTION-0068 (manual refresh, forced interruption)", "TASK-0043/ACTION-0072 (10 000-event burst, simulated loss, resume)"],
-    watchStatus,
+  const archivesAfter = await invoke("map_view", { brainId: ARCHIVES });
+  assert(archivesAfter.indexRevision > archivesBefore.indexRevision, "the manual refresh published a new revision");
+  const archivesJournalAfter = await invoke("map_change_journal", { brainId: ARCHIVES });
+  const archivesNatures = [...new Set(archivesJournalAfter.items.map((event) => event.nature))].sort();
+  for (const expected of [...new Set(expectedArchives.map((nature) => nature.toUpperCase()))]) {
+    assert(archivesNatures.includes(expected), `the manual refresh missed the ${expected} events; it has ${archivesNatures}`);
+  }
+  const archivesRecovered = await evaluate(`document.querySelector('[data-testid="source-observation"]')?.getAttribute('data-state') ?? null`);
+  cover("P-18", "both halves, inside the window and on two different trees: the backend-owned watcher applied the first tree's pre-baseline changes with NO gesture at all, and on the third tree — whose root was absent when the window opened, so its watcher slept — ONE real click on « Actualiser » applied its changes INCREMENTALLY, produced a summary of them and published a new revision without ever emptying the Index", {
+    automatic: { brain: "atelier", watchStatus, indexedAfter: afterWatcher.nodeCount, journalTotal: (await invoke("map_change_journal", { brainId: ATELIER })).total },
+    manual: { brain: "archives", applicationMode, changeSummary, revisionBefore: archivesBefore.indexRevision, revisionAfter: archivesAfter.indexRevision, naturesDetected: archivesNatures },
+    unavailableThenRestored: { observed: archivesAbsent, journalledWhileAbsent: archivesJournalBefore.total, indexedWhileAbsent: archivesBefore.nodeCount, observationAfterRestore: archivesRecovered },
+    heavyThresholdsComposedFrom: ["TASK-0040/ACTION-0066+0067 (incremental cost at 1k/10k/100k, ratio 1,533 under the 2,0 ceiling)", "TASK-0041/ACTION-0068 (manual refresh, forced interruption, never empties the Index)", "TASK-0043/ACTION-0072 (10 000-event burst, simulated loss, resume)"],
   });
+  cover("P-15", "while the root of a brain was really absent, a real click on « Ouvrir dans l'Explorateur » produced an explicit error instead of opening something else, and nothing in the source was changed", {
+    refusalOnScreen: revealRefusal,
+  });
+  // Back to the first tree for the rest of the window.
+  await click(`[data-testid="composition-chip-${ATELIER}"]`);
+  await quiet();
 
   // -- P-01 — every source element indexed, and reachable -------------------------------
   const view0 = await invoke("map_view", { brainId: ATELIER });
@@ -1020,11 +1086,6 @@ if (phase === 1) {
   await click(`[data-testid="composition-add-item-${CARNETS}"]`);
   await until(`!!document.querySelector('[data-testid="composition-chip-${CARNETS}"]')`);
   await quiet();
-  await click(testid("composition-add-trigger"));
-  await until(`!!document.querySelector('[data-testid="composition-add-item-${ARCHIVES}"]')`);
-  await click(`[data-testid="composition-add-item-${ARCHIVES}"]`);
-  await until(`!!document.querySelector('[data-testid="composition-chip-${ARCHIVES}"]')`);
-  await quiet();
   await click(`[data-testid="composition-chip-${CARNETS}"]`);
   await quiet();
   const carnetsDisk = await walkDisk(ROOTS.carnets);
@@ -1115,7 +1176,9 @@ await until(`!!document.querySelector('.details')`);
 cover("P-12", "the hidden/shown state of the details panel survived a real restart and the panel came back on one click", { survivedRestart: true });
 
 // -- the watcher, and the temporary unavailability, restored ----------------------------
-await click(`[data-testid="composition-chip-${ARCHIVES}"]`);
+// `carnets` this time, and with the watcher's own cadences short: the guard must notice
+// the root leaving, and notice it coming back, without a single gesture.
+await click(`[data-testid="composition-chip-${CARNETS}"]`);
 await quiet();
 await until(`!!document.querySelector('[data-testid="watch-status"]')`, 120000);
 await until(
@@ -1123,13 +1186,13 @@ await until(
   120000,
 );
 const watchBefore = await evaluate(`(() => { const b = document.querySelector('[data-testid="watch-status"]'); return { state: b.getAttribute('data-state'), mode: document.querySelector('[data-testid="watch-status-mode"]')?.textContent?.trim() ?? null }; })()`);
-const archivesViewBefore = await invoke("map_view", { brainId: ARCHIVES });
-const archivesJournalBefore = await invoke("map_change_journal", { brainId: ARCHIVES });
+const carnetsViewBefore = await invoke("map_view", { brainId: CARNETS });
+const carnetsJournalBefore = await invoke("map_change_journal", { brainId: CARNETS });
 
 // The root leaves, under the product's feet. This is the ONE source manipulation the
 // window allows, and it is undone below, byte for byte.
-const parked = join(dirname(ROOTS.archives), `${basename(ROOTS.archives)}-absent`);
-await rename(ROOTS.archives, parked);
+const parked = join(dirname(ROOTS.carnets), `${basename(ROOTS.carnets)}-absent`);
+await rename(ROOTS.carnets, parked);
 let unavailable = null;
 try {
   // The guard — not a poll from the interface — notices, records the observation and
@@ -1146,26 +1209,12 @@ try {
       cardsStillOnScreen: document.querySelectorAll('[data-testid="composed-canvas"] [data-card="true"]').length };
   })()`);
   // Not one deletion was journalled, and the Index was not emptied.
-  const duringJournal = await invoke("map_change_journal", { brainId: ARCHIVES });
-  const duringView = await invoke("map_view", { brainId: ARCHIVES });
-  assert.equal(duringView.nodeCount, archivesViewBefore.nodeCount, "an absent root is not a batch of deletions: the Index is intact");
-  assert.equal(duringJournal.total, archivesJournalBefore.total, "an absent root journalled nothing");
-  // P-15's refusal: the target is gone, and the product says so instead of inventing.
-  const archivesNode = await invoke("map_resolve_node", { brainId: ARCHIVES, relativePath: "lisez-moi.txt" });
-  await click("#map-search-input");
-  await send("Input.insertText", { text: "lisez-moi" });
-  await until(`!!document.querySelector('[data-testid="search-hit"][data-node-id="${archivesNode.nodeId}"]')`);
-  await click(`[data-testid="search-hit"][data-node-id="${archivesNode.nodeId}"]`);
-  await until(`!!document.querySelector('[data-testid="reveal-in-explorer"]')`);
-  await click(testid("reveal-in-explorer"));
-  await until(`!!document.querySelector('[data-testid="reveal-error"]')`, 30000);
-  const revealRefusal = await evaluate(`document.querySelector('[data-testid="reveal-error"]').textContent.trim()`);
-  assert(revealRefusal.length > 0, "a gone target produces an explicit error");
-  cover("P-15", "with the root of a brain temporarily moved away, a real click on « Ouvrir dans l'Explorateur » produced an explicit error rather than opening something else, and nothing in the source was changed", {
-    refusalOnScreen: revealRefusal,
-  });
+  const duringJournal = await invoke("map_change_journal", { brainId: CARNETS });
+  const duringView = await invoke("map_view", { brainId: CARNETS });
+  assert.equal(duringView.nodeCount, carnetsViewBefore.nodeCount, "an absent root is not a batch of deletions: the Index is intact");
+  assert.equal(duringJournal.total, carnetsJournalBefore.total, "an absent root journalled nothing");
 } finally {
-  await rename(parked, ROOTS.archives);
+  await rename(parked, ROOTS.carnets);
 }
 await until(
   `['SYNCED','UNKNOWN'].includes(document.querySelector('[data-testid="source-observation"]')?.getAttribute('data-state') ?? '')`,
@@ -1176,13 +1225,13 @@ const recovered = await evaluate(`(() => {
   return { state: badge?.getAttribute('data-state') ?? null, text: badge?.textContent?.trim() ?? null,
     watch: document.querySelector('[data-testid="watch-status"]')?.getAttribute('data-state') ?? null };
 })()`);
-const archivesJournalAfter = await invoke("map_change_journal", { brainId: ARCHIVES });
-const archivesViewAfter = await invoke("map_view", { brainId: ARCHIVES });
-assert.equal(archivesViewAfter.nodeCount, archivesViewBefore.nodeCount, "the recovered root did not rewrite the Index");
-cover("P-22", "a root was made temporarily unavailable inside the window and restored: the Index and the preferences stayed intact, the state was signalled on screen, not one deletion was journalled, and the external fingerprint taken after the window is compared to the one taken before by the .ps1", {
-  watchBefore, unavailable, recovered,
-  journalTotalBefore: archivesJournalBefore.total, journalTotalAfter: archivesJournalAfter.total,
-  indexedBefore: archivesViewBefore.nodeCount, indexedAfter: archivesViewAfter.nodeCount,
+const carnetsJournalAfter = await invoke("map_change_journal", { brainId: CARNETS });
+const carnetsViewAfter = await invoke("map_view", { brainId: CARNETS });
+assert.equal(carnetsViewAfter.nodeCount, carnetsViewBefore.nodeCount, "the recovered root did not rewrite the Index");
+cover("P-22", "a root was made temporarily unavailable inside the window, with the watcher's own cadences short, and restored: the guard — not a poll from the interface — noticed it leaving and coming back, the Index and the preferences stayed intact, the state was signalled on screen in words, and not one deletion was journalled. The external fingerprint taken after the window is compared to the one taken before by the .ps1", {
+  brain: "carnets", watchBefore, unavailable, recovered,
+  journalTotalBefore: carnetsJournalBefore.total, journalTotalAfter: carnetsJournalAfter.total,
+  indexedBefore: carnetsViewBefore.nodeCount, indexedAfter: carnetsViewAfter.nodeCount,
 });
 
 // -- P-21, the English half -------------------------------------------------------------

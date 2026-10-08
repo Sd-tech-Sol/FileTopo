@@ -103,8 +103,8 @@ def seed() -> None:
     touch(carnets / "lisez-moi.txt", "racine des carnets\n")
 
     archives = roots["archives"]
-    for name in ("a1", "a2"):
-        touch(archives / "2025" / f"{name}.txt")
+    for name in ("a1", "a2", "a3-jetable"):
+        touch(archives / "2025" / f"{name}.txt", f"archive {name}\n")
     touch(archives / "lisez-moi.txt", "racine des archives\n")
 
     brains = state_root / "brains"
@@ -164,6 +164,43 @@ def seed() -> None:
     )
 
 
+def mutate_archives() -> list[dict]:
+    """The same five natures, on the third tree.
+
+    ``archives`` is the brain whose root is absent when the P-22 window opens, so
+    its watcher sleeps and the **manual** « Actualiser » is what applies these
+    changes — the automatic watcher applies ``atelier``'s. Two different gestures,
+    two different trees, both inside the window.
+    """
+    archives = roots["archives"]
+    changes = []
+
+    touch(archives / "2026" / "nouveau.txt", "cree apres le premier index\n")
+    changes.append({"nature": "created", "relativePath": "2026/nouveau.txt"})
+
+    (archives / "lisez-moi.txt").write_text("racine des archives, modifiee\n", encoding="utf-8")
+    changes.append({"nature": "modified", "relativePath": "lisez-moi.txt"})
+
+    (archives / "2025" / "a1.txt").rename(archives / "2025" / "a1-renommé.txt")
+    changes.append(
+        {
+            "nature": "renamed",
+            "relativePath": "2025/a1-renommé.txt",
+            "fromRelativePath": "2025/a1.txt",
+        }
+    )
+
+    (archives / "2025" / "a2.txt").rename(archives / "2026" / "a2.txt")
+    changes.append(
+        {"nature": "moved", "relativePath": "2026/a2.txt", "fromRelativePath": "2025/a2.txt"}
+    )
+
+    deleted = archives / "2025" / "a3-jetable.txt"
+    deleted.unlink()
+    changes.append({"nature": "deleted", "relativePath": "2025/a3-jetable.txt"})
+    return changes
+
+
 def mutate() -> None:
     """The five natures of change, applied BEFORE the P-22 baseline."""
     atelier = roots["atelier"]
@@ -204,7 +241,7 @@ def mutate() -> None:
     deleted.unlink()
     changes.append({"nature": "deleted", "relativePath": "liens/objet-copie.bin"})
 
-    print(json.dumps({"changes": changes}))
+    print(json.dumps({"atelierChanges": changes, "archivesChanges": mutate_archives()}))
 
 
 if stage == "seed":

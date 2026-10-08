@@ -104,9 +104,10 @@ Invoke-ProofPhase -Phase 0 -Watch $watchAsleep -Payload $seedJson
 Write-Host 'TASK-0056: applying the pre-baseline source changes'
 $mutationJson = python scripts/task0056-seed-proof.py mutate $variant
 if ($LASTEXITCODE -ne 0) { throw 'TASK-0056 pre-baseline mutation failed' }
-$mutations = ($mutationJson | ConvertFrom-Json).changes
+$mutations = $mutationJson | ConvertFrom-Json
 $campaignSeed = ($seed | ConvertTo-Json -Depth 10 | ConvertFrom-Json)
-$campaignSeed | Add-Member -NotePropertyName mutations -NotePropertyValue $mutations
+$campaignSeed | Add-Member -NotePropertyName atelierChanges -NotePropertyValue $mutations.atelierChanges
+$campaignSeed | Add-Member -NotePropertyName archivesChanges -NotePropertyValue $mutations.archivesChanges
 $campaignPayload = $campaignSeed | ConvertTo-Json -Depth 10 -Compress
 
 # -- 4. the baseline fingerprint, taken outside the product ----------------------------
@@ -118,7 +119,19 @@ $before = $beforeJson | ConvertFrom-Json
 if ($before.artefactsFound.Count -ne 0) { throw 'a FileTopo artefact was already under a source before the window' }
 
 # -- 5. the window, part one ------------------------------------------------------------
-Invoke-ProofPhase -Phase 1 -Watch $watchAsleep -Payload $campaignPayload
+# The third root is moved away BEFORE the process starts, so that brain's
+# backend-owned watcher finds no usable root and sleeps: the manual « Actualiser »
+# inside the window is then what applies its pre-baseline changes. The harness itself
+# puts the root back, inside the window, and the closing fingerprint judges the result.
+$parkedArchives = Join-Path (Split-Path -Parent $seed.rootArchives) ((Split-Path -Leaf $seed.rootArchives) + '-absent')
+Rename-Item -LiteralPath $seed.rootArchives -NewName (Split-Path -Leaf $parkedArchives)
+try {
+    Invoke-ProofPhase -Phase 1 -Watch $watchAsleep -Payload $campaignPayload
+} finally {
+    if (Test-Path -LiteralPath $parkedArchives) {
+        Rename-Item -LiteralPath $parkedArchives -NewName (Split-Path -Leaf $seed.rootArchives)
+    }
+}
 
 # -- 6. the clipboard, read outside the WebView ----------------------------------------
 $expectedCopied = Join-Path $seed.rootAtelier 'rapports\rapport-original.txt'
@@ -192,8 +205,9 @@ $artifact = [ordered]@{
         detailKeptOutsideRepository = $true
     }
     preBaseline    = [ordered]@{
-        note    = 'Applied BEFORE the fingerprint, so no change of an analysed tree ever happens inside the judged window.'
-        changes = @($mutations)
+        note            = 'Applied BEFORE the fingerprint, so no change of an analysed tree ever happens inside the judged window. The first tree''s changes are applied by the backend-owned watcher with no gesture; the third tree''s root is absent when the window opens, so its watcher sleeps and the manual « Actualiser » is what applies them.'
+        atelierChanges  = @($mutations.atelierChanges)
+        archivesChanges = @($mutations.archivesChanges)
     }
     copyPath       = [ordered]@{
         node                   = 'rapports/rapport-original.txt'
