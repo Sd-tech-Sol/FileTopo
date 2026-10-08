@@ -657,6 +657,7 @@ if (phase === 1) {
   await until(`!!document.querySelector('[data-testid="search-hit"][data-node-id="${versionsReference.nodeId}"]')`);
   await click(`[data-testid="search-hit"][data-node-id="${versionsReference.nodeId}"]`);
   await until(`!!document.querySelector('[data-testid=\"children-total\"]')?.getAttribute('data-total')`);
+  await until(`document.querySelectorAll('[data-testid="child-node"]').length > 0`);
   await quiet();
   const versionsChildren = await evaluate(
     `[...document.querySelectorAll('[data-testid="child-node"]')].map((b) => Number(b.getAttribute('data-node-id')))`,
