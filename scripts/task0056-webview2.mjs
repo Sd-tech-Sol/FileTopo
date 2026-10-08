@@ -213,6 +213,16 @@ async function reachAndActivate(selector, key = "Enter", limit = 400) {
   }
   throw new Error(`the keyboard order never reached ${selector}`);
 }
+/** Types a query into the real search box, clearing it first so two queries never pile up. */
+async function searchFor(text) {
+  if (await evaluate(`(document.querySelector('#map-search-input')?.value ?? '').length > 0`)) {
+    await click(testid("search-clear"));
+    await until(`(document.querySelector('#map-search-input')?.value ?? '') === ''`);
+  }
+  await click("#map-search-input");
+  await send("Input.insertText", { text });
+  await until(`document.querySelector('#map-search-input').value === ${JSON.stringify(text)}`);
+}
 async function quiet(milliseconds = 900, limit = 90000) {
   const started = Date.now();
   let count = wireCalls.length;
@@ -420,8 +430,7 @@ if (phase === 1) {
   assert(archivesBefore.nodeCount > 0, "the last reliable Index keeps being served");
   // P-15's refusal, while the target really is gone.
   const archivesNode = await invoke("map_resolve_node", { brainId: ARCHIVES, relativePath: "lisez-moi.txt" });
-  await click("#map-search-input");
-  await send("Input.insertText", { text: "lisez-moi" });
+  await searchFor("lisez-moi");
   await until(`!!document.querySelector('[data-testid="search-hit"][data-node-id="${archivesNode.nodeId}"]')`);
   await click(`[data-testid="search-hit"][data-node-id="${archivesNode.nodeId}"]`);
   await until(`!!document.querySelector('[data-testid="reveal-in-explorer"]')`);
@@ -538,8 +547,7 @@ if (phase === 1) {
   const farPath = wideChildren[wideChildren.length - 1];
   const farReference = await invoke("map_resolve_node", { brainId: ATELIER, relativePath: farPath });
   assert(!view0.nodes.some((node) => node.id === farReference.nodeId), "the far row is outside the first view");
-  await click("#map-search-input");
-  await send("Input.insertText", { text: basename(farPath, ".txt") });
+  await searchFor(basename(farPath, ".txt"));
   await until(`!!document.querySelector('[data-testid="search-hit"]')`);
   await click(`[data-testid="search-hit"][data-node-id="${farReference.nodeId}"]`);
   await until(`!!document.querySelector('[data-testid="composed-canvas"] [data-node-id="${farReference.nodeId}"]')`);
@@ -553,8 +561,7 @@ if (phase === 1) {
 
   // The aggregate: declared in words, exact, and never a folder.
   const largeReference = await invoke("map_resolve_node", { brainId: ATELIER, relativePath: "large" });
-  await click("#map-search-input");
-  await send("Input.insertText", { text: "large" });
+  await searchFor("large");
   await until(`!!document.querySelector('[data-testid="search-hit"][data-node-id="${largeReference.nodeId}"]')`);
   await click(`[data-testid="search-hit"][data-node-id="${largeReference.nodeId}"]`);
   await until(`!!document.querySelector('[data-testid="map-aggregate-indicator"][data-parent-id="${largeReference.nodeId}"]')`);
@@ -597,9 +604,7 @@ if (phase === 1) {
   });
 
   // -- P-03 — parent and direct children, paginated, nothing lost -----------------------
-  await click(testid("search-clear"));
-  await click("#map-search-input");
-  await send("Input.insertText", { text: "large" });
+  await searchFor("large");
   await until(`!!document.querySelector('[data-testid="search-hit"][data-node-id="${largeReference.nodeId}"]')`);
   await click(`[data-testid="search-hit"][data-node-id="${largeReference.nodeId}"]`);
   await until(`document.querySelector('[data-testid="children-total"]')?.getAttribute('data-total') === ${JSON.stringify(String(wideChildren.length))}`);
@@ -638,8 +643,7 @@ if (phase === 1) {
   // -- P-13 — the direct content of a folder, as a list --------------------------------
   const versionsReference = await invoke("map_resolve_node", { brainId: ATELIER, relativePath: "versions" });
   await invoke("map_view", { brainId: ATELIER }); // oracle read only
-  await click("#map-search-input");
-  await send("Input.insertText", { text: "versions" });
+  await searchFor("versions");
   await until(`!!document.querySelector('[data-testid="search-hit"][data-node-id="${versionsReference.nodeId}"]')`);
   await click(`[data-testid="search-hit"][data-node-id="${versionsReference.nodeId}"]`);
   await until(`document.querySelector('[data-testid="children-total"]')?.getAttribute('data-total') !== null`);
@@ -660,8 +664,7 @@ if (phase === 1) {
 
   // -- P-12 / P-14 / P-15 — the details panel, the copy, the Explorer ------------------
   const reportReference = await invoke("map_resolve_node", { brainId: ATELIER, relativePath: "rapports/rapport-original.txt" });
-  await click("#map-search-input");
-  await send("Input.insertText", { text: "rapport-original" });
+  await searchFor("rapport-original");
   await until(`!!document.querySelector('[data-testid="search-hit"][data-node-id="${reportReference.nodeId}"]')`);
   await click(`[data-testid="search-hit"][data-node-id="${reportReference.nodeId}"]`);
   await until(`!!document.querySelector('[data-testid="copy-path"]')`);
@@ -688,9 +691,7 @@ if (phase === 1) {
   const revealFileError = await evaluate(`document.querySelector('[data-testid="reveal-error"]')?.textContent ?? null`);
   assert.equal(revealFileError, null, `revealing a file failed: ${revealFileError}`);
   const rapportsReference = await invoke("map_resolve_node", { brainId: ATELIER, relativePath: "rapports" });
-  await click(testid("search-clear"));
-  await click("#map-search-input");
-  await send("Input.insertText", { text: "rapports" });
+  await searchFor("rapports");
   await until(`!!document.querySelector('[data-testid="search-hit"][data-node-id="${rapportsReference.nodeId}"]')`);
   await click(`[data-testid="search-hit"][data-node-id="${rapportsReference.nodeId}"]`);
   await until(`!!document.querySelector('[data-testid="reveal-in-explorer"]')`);
@@ -717,9 +718,7 @@ if (phase === 1) {
   });
 
   // -- P-08 — search --------------------------------------------------------------------
-  await click(testid("search-clear"));
-  await click("#map-search-input");
-  await send("Input.insertText", { text: "fiche-" });
+  await searchFor("fiche-");
   await until(`document.querySelector('[data-testid="search-total"]')?.getAttribute('data-total') !== null`);
   await quiet();
   const searchWide = await evaluate(`(() => {
@@ -741,9 +740,7 @@ if (phase === 1) {
   }
   assert.deepEqual([...new Set(searchCollected)].sort(), wideChildren, "the search pages together return exactly the expected set");
   // Nothing from another brain: `lisez-moi.txt` exists in all three trees.
-  await click(testid("search-clear"));
-  await click("#map-search-input");
-  await send("Input.insertText", { text: "lisez-moi" });
+  await searchFor("lisez-moi");
   await until(`document.querySelector('[data-testid="search-total"]')?.getAttribute('data-total') !== null`);
   const sharedNameTotal = Number(await evaluate(`document.querySelector('[data-testid="search-total"]').getAttribute('data-total')`));
   assert.equal(sharedNameTotal, 1, "a name present in the three trees returns only the active brain's row");
@@ -890,8 +887,7 @@ if (phase === 1) {
   const engineReport = JSON.parse(await evaluate(`document.querySelector('[data-testid="relation-engine-summary"]').getAttribute('data-report')`));
 
   // A deterministic relation: the two identical-content occurrences.
-  await click("#map-search-input");
-  await send("Input.insertText", { text: "rapport-original" });
+  await searchFor("rapport-original");
   await until(`!!document.querySelector('[data-testid="search-hit"][data-node-id="${reportReference.nodeId}"]')`);
   await click(`[data-testid="search-hit"][data-node-id="${reportReference.nodeId}"]`);
   await until(`!!document.querySelector('[data-testid="relation-totals"]')`);
@@ -940,9 +936,7 @@ if (phase === 1) {
   );
   // And a suggestion: a distinct object, explained, never counted as a relation.
   const noteOneReference = await invoke("map_resolve_node", { brainId: ATELIER, relativePath: "versions/note-1.txt" });
-  await click(testid("search-clear"));
-  await click("#map-search-input");
-  await send("Input.insertText", { text: "note-1" });
+  await searchFor("note-1");
   await until(`!!document.querySelector('[data-testid="search-hit"][data-node-id="${noteOneReference.nodeId}"]')`);
   await click(`[data-testid="search-hit"][data-node-id="${noteOneReference.nodeId}"]`);
   await until(`!!document.querySelector('[data-testid="core-suggestion-explanation"]')`);
@@ -980,8 +974,7 @@ if (phase === 1) {
   const targetIncoming = noteTwoAfter.incoming.length;
   assert(sourceOutgoing >= 1 && targetIncoming >= 1, "the approved relation is readable as outgoing on its source and incoming on its target");
   // The panel groups by direction and the entries lead to the element they name.
-  await click("#map-search-input");
-  await send("Input.insertText", { text: "note-1" });
+  await searchFor("note-1");
   await until(`!!document.querySelector('[data-testid="search-hit"][data-node-id="${noteOneReference.nodeId}"]')`);
   await click(`[data-testid="search-hit"][data-node-id="${noteOneReference.nodeId}"]`);
   await until(`!!document.querySelector('[data-testid="relation-totals"]')`);
@@ -1051,8 +1044,7 @@ if (phase === 1) {
   await until(`Number(document.querySelector('[data-testid="journal-unseen-total"]').getAttribute('data-unseen-total')) === ${unseenBefore - 1}`);
   // Mark ONE element seen from its own panel — a different element, a different gesture.
   const modifiedReference = await invoke("map_resolve_node", { brainId: ATELIER, relativePath: "lisez-moi.txt" });
-  await click("#map-search-input");
-  await send("Input.insertText", { text: "lisez-moi" });
+  await searchFor("lisez-moi");
   await until(`!!document.querySelector('[data-testid="search-hit"][data-node-id="${modifiedReference.nodeId}"]')`);
   await click(`[data-testid="search-hit"][data-node-id="${modifiedReference.nodeId}"]`);
   await until(`!!document.querySelector('[data-testid="node-state-badge"]')`);
