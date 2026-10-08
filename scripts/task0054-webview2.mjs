@@ -462,6 +462,8 @@ await press("r");
 await click(testid("fit-composition"));
 await pause(500);
 await quiet();
+await evaluate(`document.querySelector('[data-testid="composed-canvas"]').scrollIntoView({ block: 'center' })`);
+await pause(300);
 const someCardId = await evaluate(`(() => {
   const inside = [...document.querySelectorAll('[data-testid="composed-canvas"] [data-card="true"]')].find((g) => {
     const box = g.getBoundingClientRect();
