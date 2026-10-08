@@ -459,8 +459,18 @@ assert.notEqual(await worldTransform(), w2, "zoom out changed the transform");
 await press("f");
 await press("r");
 // A mouse selection of a drawn card.
-canvas = await readCanvas();
-const someCard = canvas.cards[Math.min(2, canvas.cards.length - 1)];
+await click(testid("fit-composition"));
+await pause(500);
+await quiet();
+const someCardId = await evaluate(`(() => {
+  const inside = [...document.querySelectorAll('[data-testid="composed-canvas"] [data-card="true"]')].find((g) => {
+    const box = g.getBoundingClientRect();
+    return box.width > 0 && box.x >= 0 && box.y >= 0 && box.x + box.width <= window.innerWidth && box.y + box.height <= window.innerHeight;
+  });
+  return inside ? Number(inside.getAttribute('data-node-id')) : null;
+})()`);
+assert(someCardId !== null, "a card is fully visible after fitting the composition");
+const someCard = { nodeId: someCardId };
 await click(`[data-testid="composed-canvas"] [data-card="true"][data-node-id="${someCard.nodeId}"]`);
 await until(`document.querySelector('[data-testid="composed-canvas"] [data-card="true"][data-node-id="${someCard.nodeId}"]')?.getAttribute('aria-selected') === 'true'`);
 const axeGestures = await axeRun();
