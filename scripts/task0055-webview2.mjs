@@ -20,13 +20,16 @@
 //   renamed alias is **not** correlated by supposition;
 // * no stable key, volume serial or file id reaches the DOM, the IPC payloads, the app log or this
 //   artifact — asserted against the forbidden spellings AND against the real key, which the harness
-//   never learns (it checks the two shapes the product could emit).
+//   never learns (it checks the two shapes the product could emit);
+// * and no **derivative** of it either (`ACTION-0103` A): the public `reconstructibleDigest` does
+//   not move when a file is replaced by a byte-identical one, i.e. when the physical identity
+//   changes and nothing logical does — which a spelling scan could never establish.
 //
 // Gestures use real CDP input events. Every count the harness judges is recomputed from the
 // synthetic directory on disk, never taken from FileTopo.
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { readdir, readFile, rename, stat, writeFile } from "node:fs/promises";
+import { readdir, readFile, rename, stat, unlink, utimes, writeFile } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { setTimeout as pause } from "node:timers/promises";
 
@@ -439,6 +442,46 @@ if (pass === 1) {
   check("F-004 intact, and a renamed alias is never correlated by supposition", { f004, hardLinkCycle });
 }
 
+// -- 5bis. the public digest is blind to the physical identity — `ACTION-0103` A ------------
+//
+// Independent control found `MapBuildReport.reconstructible_digest` digesting the stable key and
+// the provenance, so a public value was a function of the Windows physical identity. A substring
+// scan cannot see that: a digest contains none of the forbidden spellings. This is the live
+// influence test instead — replace one file by a byte-identical one and restore every logical
+// field the digest covers. Windows gives the new file its own FileId, so the physical identity
+// really changes (the nodeId proves it) while the logical tree the digest exists to prove is
+// unchanged. The digest must not move by one bit.
+let digestBlindToIdentity = null;
+if (pass === 1) {
+  const replaced = join(ROOT, "dossier/stable.bin");
+  const parent = join(ROOT, "dossier");
+  const before = await invoke("map_refresh", { brainId: BRAIN });
+  await quiet();
+  const idBefore = (await invoke("map_resolve_node", { brainId: BRAIN, relativePath: "dossier/stable.bin" }))
+    .nodeId;
+  const bytes = await readFile(replaced);
+  const was = await stat(replaced);
+  const parentWas = await stat(parent);
+  await unlink(replaced);
+  await writeFile(replaced, bytes);
+  // Same path, name, size and timestamp — on the file and on its directory, whose own mtime a
+  // creation moves. Nothing the digest reads differs; only the object behind the entry does.
+  await utimes(replaced, was.atime, was.mtime);
+  await utimes(parent, parentWas.atime, parentWas.mtime);
+  const after = await invoke("map_refresh", { brainId: BRAIN });
+  await quiet();
+  const idAfter = (await invoke("map_resolve_node", { brainId: BRAIN, relativePath: "dossier/stable.bin" }))
+    .nodeId;
+  assert.notEqual(idAfter, idBefore, "the replacement really is a different physical object");
+  assert.equal(
+    after.reconstructibleDigest,
+    before.reconstructibleDigest,
+    `ACTION-0103 A: the public digest moved when only the identity changed (${before.reconstructibleDigest} -> ${after.reconstructibleDigest})`,
+  );
+  digestBlindToIdentity = { identityChanged: true, nodeIdChanged: true, digestUnchanged: true };
+  check("the public reconstructible digest is blind to the physical identity", digestBlindToIdentity);
+}
+
 // -- 6. no identity ever reaches the DOM, the IPC payloads, the log or this artifact -------
 const markup = await evaluate("document.documentElement.outerHTML");
 const payloads = JSON.stringify(wireBodies);
@@ -496,6 +539,7 @@ record.metrics = {
 record.axe = { version: axeManifest.version, explorerViolations: axeExplorer.violations.length };
 record.f004 = f004;
 record.hardLinkCycle = hardLinkCycle;
+record.digestBlindToIdentity = digestBlindToIdentity;
 record.fatalConsoleErrors = fatal.length;
 record.sourceHashUnchanged = true;
 await writeFile(join(proofRoot, `run-pass${pass}.json`), JSON.stringify(record, null, 2));
