@@ -1,5 +1,19 @@
 # HANDOFF — passage de relais
 
+## Relais — ACTION-0102 / TASK-0055 READY — 2026-10-07
+
+- Branche : `build/v0.2-a39-v1-physical-identity-closure`.
+- Base contrôlée : ACTION-0101, commit `393ac6d190295d979b58c9a03cc4712391d93335`.
+- F-050/F-051 et P-01/P-02/P-03 sont fermés.
+- F-046 est le dernier gap fonctionnel MVP nommé.
+- Ne pas recréer l'identité physique : `stable_key SYSTEM` existe déjà.
+- Correction de modèle : SYSTEM peut être partagé par des hard links; PATH_FALLBACK reste unique; remap group-aware par chemin exact, jamais par heuristique.
+- Schema 6→7 : retirer uniquement l'unicité de l'index stable_key, sous M-B.
+- ExactDuplicateExplorer reçoit seulement PROVEN_SHARED / PROVEN_SINGLE / UNKNOWN + compte safe; aucune clé brute.
+- Agent recommandé : Claude Code, **Opus 5.5 High**.
+- **Faire /clear** avant TASK-0055 : contexte entièrement versionné, sémantique de migration sensible.
+- Aucune TASK-0056.
+
 ## Relais — ACTION-0101 — TASK-0054 VERIFIED — 2026-10-07
 
 - Branche : `build/v0.2-a38-v1-scale-closure`.

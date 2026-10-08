@@ -1,16 +1,32 @@
 # Action suivante
 
-## Audit V1 frais après ACTION-0101
+## Exécuter TASK-0055
 
-Branche : `build/v0.2-a38-v1-scale-closure`.
+Branche : `build/v0.2-a39-v1-physical-identity-closure`.
 
-`TASK-0054 / F-050 / F-051 / P-01 / P-02 / P-03` sont fermés par ACTION-0101.
+Tâche :
+`docs/tasks/TASK-0055-v1-physical-identity-closure.md`.
 
-Avant toute `TASK-0055` :
-1. relire la coupe MVP courante et la matrice;
-2. réévaluer `F-046` contre ses décisions et sous-capacités déjà VERIFIED;
-3. distinguer le dernier gap fonctionnel d'une acceptance finale de release/parité;
-4. vérifier `P-22` et les statuts documentaires encore historiques;
-5. choisir une seule prochaine tranche.
+Décision :
+`docs/decisions/DEC-0052-node-vs-physical-identity.md`.
 
-Aucun agent d'exécution ne part avant cet audit.
+Prompt :
+`.orchestrator/NEXT_PROMPT.md`.
+
+Agent recommandé : **Claude Code — Claude Opus 5.5 — High**.
+
+**Faire `/clear` avant la tâche.**
+
+Instruction :
+
+> Synchronise `build/v0.2-a39-v1-physical-identity-closure` en fast-forward
+> seulement, puis lis et exécute intégralement `.orchestrator/NEXT_PROMPT.md`.
+
+Objectif unique : fermer F-046 en corrigeant le modèle hard-link autour de la
+clé SYSTEM existante et en exposant une classification physique sûre dans
+l'explorateur de contenus identiques.
+
+Pas de nouveau moteur de similarité, pas de nouvelle DB, pas de TASK-0056.
+
+À la fin, TASK-0055/F-046 restent IMPLEMENTED/candidates; le contrôle
+indépendant revient à ChatGPT.

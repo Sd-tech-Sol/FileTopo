@@ -1,5 +1,16 @@
 # État courant
 
+## ACTION-0102 — audit V1 / TASK-0055 READY — 2026-10-07
+
+- Base : `393ac6d190295d979b58c9a03cc4712391d93335` après ACTION-0101.
+- Dernier gap fonctionnel MVP identifié : `F-046`.
+- Texte historique corrigé conceptuellement : l'identité SYSTEM persistante existe déjà depuis TASK-0036/ACTION-0060 et DEC-0035 a fermé le blocage Cloud Files de DEC-0013/F.
+- Gap réel : l'Index impose encore `stable_key UNIQUE`, alors que plusieurs hard links légitimes peuvent partager le même `VolumeSerialNumber + FileId`.
+- DEC-0052 APPROVED : `nodeId` = occurrence; stable_key SYSTEM = objet physique partageable; PATH_FALLBACK reste unique.
+- TASK-0055 READY sur `build/v0.2-a39-v1-physical-identity-closure`.
+- Reuse-first : Index actuel + identité SYSTEM + SHA-256 + ExactDuplicateExplorer; aucun nouveau store/moteur/dépendance.
+- Aucune TASK-0056.
+
 ## ACTION-0101 — TASK-0054 / F-050 / F-051 VERIFIED — 2026-10-07
 
 - Code produit contrôlé : `fd3f6067c47a50bccff4713bda04f7f89bc8af85`; artefacts/harness : `42a06a1add90b9b7286fd8b9b7170c76d4ceac23`.

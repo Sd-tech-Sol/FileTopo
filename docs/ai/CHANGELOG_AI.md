@@ -6547,3 +6547,13 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
 - Boucle de dernière page, recherche proportionnelle, absence de banc portable modeste et focus >256 restent des limites explicites, non des preuves manquantes du contrat courant.
 - `TASK-0054 = VERIFIED`; `F-050/F-051 = VERIFIED`; `P-01/P-02/P-03 = CLOSED / VERIFIED`.
 - Aucune CI GitHub distante attachée. F-046 inchangée. Audit V1 frais requis avant TASK-0055.
+
+## 2026-10-07 — ACTION-0102 — audit V1 / TASK-0055 sélectionnée
+
+- Base post-ACTION-0101 : `393ac6d190295d979b58c9a03cc4712391d93335`.
+- F-046 confirmé comme dernier gap fonctionnel MVP nommé.
+- Correction d'un constat historique : l'identité Windows SYSTEM est déjà persistante depuis TASK-0036/ACTION-0060; DEC-0035 a fermé le blocage DEC-0013/F.
+- Gap réel : l'Index refuse actuellement deux stable_key identiques alors que deux hard links sont deux occurrences partageant légitimement le même objet physique Windows.
+- DEC-0052 approuvée : nodeId unique par occurrence; clé SYSTEM partageable; PATH_FALLBACK toujours unique; remap group-aware sans heuristique.
+- TASK-0055 READY : migration 6→7 minimale, classification physique sûre dans ExactDuplicateExplorer, preuve hardlink/copie/fichiers vides, régressions F-004, watcher/incrémental.
+- Aucun nouveau store, moteur de similarité, dépendance ou TASK-0056.

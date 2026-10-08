@@ -1,180 +1,135 @@
-# NEXT_PROMPT — TASK-0054 — Progressive Scale & Exact Aggregate Global Closure
+# NEXT_PROMPT — TASK-0055 — Physical Object Identity / F-046 Closure
 
 **TARGET_AGENT:** CLAUDE CODE
-**RECOMMENDED_MODEL:** Claude Sonnet 5.5
+**RECOMMENDED_MODEL:** Claude Opus 5.5
 **RECOMMENDED_EFFORT:** High
-**STATUS:** EXECUTED — voir `.orchestrator/RESULT.md`
-**BRANCH:** `build/v0.2-a38-v1-scale-closure`
-**BASE_ORCHESTRATION:** `befd86a73216131eae9675961a758c1df73bffa1`
+**STATUS:** READY
+**BRANCH:** `build/v0.2-a39-v1-physical-identity-closure`
+**BASE_ORCHESTRATION:** `393ac6d190295d979b58c9a03cc4712391d93335`
 
-## Instruction de départ
+## Démarrage
 
-Synchronise cette branche **en fast-forward seulement**, vérifie que l'arbre est
-propre, puis lis et exécute intégralement :
+Fais un fetch puis synchronise la branche **fast-forward seulement**.
+L'arbre doit être propre.
+
+Lis intégralement :
 
 1. `AGENTS.md`;
-2. `docs/reviews/ACTION-0100-v1-gap-audit-after-task0053.md`;
-3. `docs/tasks/TASK-0054-v1-progressive-scale-closure.md`;
-4. `DEC-0029`, `DEC-0031`;
-5. `TASK-0028/ACTION-0045`;
-6. `TASK-0030/ACTION-0047`.
+2. `docs/reviews/ACTION-0102-v1-gap-audit-after-action0101.md`;
+3. `docs/decisions/DEC-0052-node-vs-physical-identity.md`;
+4. `docs/tasks/TASK-0055-v1-physical-identity-closure.md`;
+5. TASK-0036 / ACTION-0060;
+6. DEC-0009, DEC-0013, DEC-0035;
+7. TASK-0023 / ACTION-0039;
+8. TASK-0026 / ACTION-0043.
 
-**Tu peux faire `/clear` avant cette tâche.** Elle est autonome et tout le
-contexte obligatoire est versionné dans le repo.
+**Fais `/clear` avant cette tâche.** Tout le contexte obligatoire est
+versionné et cette tranche touche une sémantique d'identité/migration : ne
+réutilise pas un contexte Claude précédent partiel.
 
 ## Mission
 
-Rendre `F-050` et `F-051` candidates à une fermeture globale indépendante,
-en réutilisant le materializer/projection/agrégats actuels et en construisant
-les preuves manquantes sur le runtime V1 courant.
+Fermer le seul gap fonctionnel F-046 sans ajouter de nouveau moteur.
 
-Ne réarchitecture pas FileTopo.
+Le point central :
 
-## Reuse-first obligatoire
+> `nodes.id` = occurrence unique dans l'arborescence.
+> Une `stable_key` SYSTEM = objet physique Windows et peut être partagée par
+> plusieurs occurrences (hard links).
 
-Avant de modifier du code produit, fais un tableau :
+Le code actuel refuse cette situation. Corrige-la conformément à DEC-0052.
 
-- EXISTE / RÉUTILISER;
-- ADAPTER / INTÉGRER;
-- MANQUANT / DÉVELOPPER.
+## Reuse-first
 
-Inspecte au minimum :
+Avant code, écris le tableau EXISTE / ADAPTER / MANQUANT dans le rapport.
 
-- Index/BrainIndex;
-- `map_view` / materializer / projection;
-- `ViewAggregate`;
-- `children_page` / recherche;
-- REAL_ROOT;
-- MapApp/MapView;
-- branch focus/collapse;
-- scripts TASK-0028 et TASK-0030;
-- harness WebView2/CDP/axe récent.
+Réutilise :
+- GetFileInformationByHandleEx / FILE_ID_INFO existant;
+- stable_key/provenance existants;
+- M-B migrations;
+- SHA-256 existant;
+- ExactDuplicateExplorer;
+- relation engine existant.
 
-**Aucune nouvelle dépendance** sauf nécessité démontrée et arrêt pour décision
-orchestrateur. N'ajoute ni renderer, ni store, ni service.
+**N'ajoute pas FILE_STANDARD_INFO / NumberOfLinks si la clé SYSTEM existante
+suffit.** N'ajoute pas de dépendance Windows.
 
-## Règle principale
+## Migration
 
-Le premier objectif est de **prouver l'existant**, pas de le réécrire.
+Schéma 6→7, minimal :
+- enlever l'unicité SQL de stable_key;
+- recréer l'index non unique;
+- aucune nouvelle colonne par défaut;
+- M-B + rollback + validation.
 
-Si un critère passe déjà :
-- ajoute seulement la garde/preuve discriminante nécessaire.
+## Remap
 
-Si un critère échoue :
-- corrige le minimum;
-- ajoute un test qui échoue sur l'ancien comportement;
-- ne déborde pas vers F-046 ou une autre fonction.
+Implémente les groupes SYSTEM exactement selon DEC-0052 :
+- 1↔1 conserve le comportement historique;
+- multiple = exact relative_path d'abord;
+- aucun appariement ambigu;
+- nouveaux ids monotones;
+- PATH_FALLBACK dupliqué toujours refusé.
 
-## Échelle
+Audit obligatoire de full publish + incremental + watcher + rebase + rebuild.
 
-Exerce le cœur produit sur 10k / 100k / 1M éléments **indexés synthétiques**.
+## Classification produit
 
-Ne crée pas 1M fichiers physiques.
+ExactDuplicateExplorer doit recevoir seulement :
+- PROVEN_SHARED + count;
+- PROVEN_SINGLE + count 1;
+- UNKNOWN.
 
-Mesure et vérifie :
-- cardinalité Index;
-- VIEW_BUDGET;
-- nœuds/agrégats/arêtes;
-- taille sérialisée;
-- layout seulement sur vue;
-- absence whole-graph;
-- cursors/revision;
-- couverture/atteignabilité.
+Brain-scoped.
 
-Réutilise les fixtures/protocoles TASK-0028/0030 lorsqu'ils restent valides.
+**Interdit** : stable_key, VolumeSerialNumber, FileId ou dérivé/hash de ces
+valeurs dans IPC, TypeScript, DOM, logs ou artefacts.
 
-## Atteignabilité
+Affiche clairement que :
+- objet physique = preuve OS;
+- contenu identique = SHA-256;
+- copie probable = non inférée;
+- nom similaire = non inféré;
+- relation logique = indépendante.
 
-Ne prouve pas seulement quelques échantillons UI.
+Aucun algorithme de copie/similarité.
 
-Établis structurellement que les primitives bornées couvrent le corpus :
-pagination exacte, recherche exacte, navigation vers hors-vue, expansion/focus,
-résolution d'une destination.
+## Preuve Windows
 
-Toute omission ou duplication doit faire échouer la preuve.
+Utilise `std::fs::hard_link` si possible.
 
-## Agrégats
+Fixture temporaire :
+- A;
+- B hard link de A;
+- C copie byte-for-byte;
+- deux fichiers vides distincts.
 
-Prouve sur large/profond/mixte :
-- compte exact;
-- raison lisible;
-- pas faux dossier;
-- pas path/open/copy;
-- pas arête inventée;
-- expansion/pagination exacte;
-- distinct de F-042 collapse.
+Prouve la séparation des concepts, le refresh/redémarrage, la stabilité F-004,
+l'absence de relation automatique et l'absence de fuite de clé.
 
-Ajoute une falsification count +1/-1.
-
-## REAL_ROOT
-
-Utilise une racine temporaire synthétique, jamais une donnée personnelle.
-
-Prouve bout-en-bout :
-`REAL_ROOT -> Index canonique -> map_view/materializer -> MapApp`.
-
-Vérifie source inchangée avant/après.
-
-## WebView2 GPU-disabled
-
-Réutilise le harness réel actuel.
-
-Passe normale + passe avec :
-
-`WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--disable-gpu`
-
-Microsoft documente ce mécanisme et ce flag :
-https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/webview-features-flags
-
-Mais **ne considère pas la variable comme preuve** : vérifie de façon
-discriminante que le run observé applique effectivement la configuration.
-
-Exerce pan/zoom/sélection/clavier/navigation/agrégat + axe + console.
-
-Ne revendique aucun SLA sur laptop modeste.
-
-## Interdictions
-
-- pas de whole-graph DTO;
-- pas de second corpus;
-- pas de nouveau renderer;
-- pas de cloud/LLM/MCP;
-- pas de F-046;
-- pas de données personnelles;
-- pas de TASK-0055;
-- pas de VERIFIED auto-attribué.
+Le baseline de fingerprint source commence **après** création de la fixture.
 
 ## Falsifications
 
-Réalise les 11 falsifications de TASK-0054 §11. Une table « on pense que ça
-échouerait » n'est pas suffisante : chaque garde doit être concrète.
+Les 10 falsifications de TASK-0055 §11 doivent être effectives et
+discriminantes. Pas de tableau théorique.
 
-## Validation et artefacts
+## Validation
 
-Exécute TASK-0054 §13.
+Exécute intégralement TASK-0055 §12.
 
-Crée des artefacts TASK-0054 lisibles et liés au HEAD réellement testé.
-Distingue clairement :
-- preuves Rust;
-- preuves frontend;
-- preuves WebView2 normal;
-- preuves WebView2 GPU-disabled;
-- résultats d'exécuteur;
-- NOT_TESTED.
-
-Aucun chemin personnel ou secret.
+Si le changement de modèle révèle qu'un flux incrémental/watcher ne peut pas
+être rendu cohérent sans élargir fortement la portée, STOP et documente
+`BLOCKED` au lieu de bricoler une deuxième règle.
 
 ## Fin
 
-Quand tout est terminé :
-
-- TASK-0054 = IMPLEMENTED / candidate;
-- F-050/F-051 = candidates seulement;
-- P-01/P-02/P-03 candidates seulement si réellement couvertes;
-- F-046 inchangée;
-- RESULT + VALIDATION + CURRENT_STATE + HANDOFF + NEXT_ACTION à jour;
+- TASK-0055 / F-046 = IMPLEMENTED / candidates, jamais VERIFIED;
+- aucune TASK-0056;
+- RESULT/VALIDATION/CURRENT_STATE/HANDOFF/NEXT_ACTION à jour;
+- artefacts publics sans donnée machine;
 - commit/push;
 - git status propre;
 - STOP.
 
-Le prochain geste appartient à ChatGPT : contrôle indépendant.
+Le prochain verdict appartient à ChatGPT.
