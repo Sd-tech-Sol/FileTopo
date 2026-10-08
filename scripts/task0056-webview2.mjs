@@ -1460,7 +1460,9 @@ await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-m
 await pause(400);
 const reducedMotion = await evaluate(`(() => ({
   matches: window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-  computed: document.documentElement.getAttribute('data-motion') ?? getComputedStyle(document.documentElement).getPropertyValue('--motion').trim() || null,
+  dataMotion: document.documentElement.getAttribute('data-motion'),
+  motionVariable: getComputedStyle(document.documentElement).getPropertyValue('--motion').trim(),
+  transitionDuration: getComputedStyle(document.body).transitionDuration,
 }))()`);
 await axeRun("phase 2 — English, reduced motion");
 await send("Emulation.setEmulatedMedia", { features: [] });
