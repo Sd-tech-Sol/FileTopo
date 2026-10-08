@@ -455,19 +455,27 @@ let digestBlindToIdentity = null;
 if (pass === 1) {
   const replaced = join(ROOT, "dossier/stable.bin");
   const parent = join(ROOT, "dossier");
+  // Both timestamps are **set**, never copied back: writing the same instant through the same call
+  // in both states is what makes the comparison about the identity and nothing else. Reading an
+  // mtime and restoring it would compare two values that differ below the millisecond FileTopo
+  // stores, and the test would fail on its own arithmetic.
+  const pinned = new Date(Date.UTC(2020, 0, 2, 3, 4, 5));
+  const pinnedParent = new Date(Date.UTC(2020, 0, 3, 6, 7, 8));
+  const pin = async () => {
+    await utimes(replaced, pinned, pinned);
+    await utimes(parent, pinnedParent, pinnedParent);
+  };
+  await pin();
   const before = await invoke("map_refresh", { brainId: BRAIN });
   await quiet();
   const idBefore = (await invoke("map_resolve_node", { brainId: BRAIN, relativePath: "dossier/stable.bin" }))
     .nodeId;
   const bytes = await readFile(replaced);
-  const was = await stat(replaced);
-  const parentWas = await stat(parent);
   await unlink(replaced);
   await writeFile(replaced, bytes);
   // Same path, name, size and timestamp — on the file and on its directory, whose own mtime a
   // creation moves. Nothing the digest reads differs; only the object behind the entry does.
-  await utimes(replaced, was.atime, was.mtime);
-  await utimes(parent, parentWas.atime, parentWas.mtime);
+  await pin();
   const after = await invoke("map_refresh", { brainId: BRAIN });
   await quiet();
   const idAfter = (await invoke("map_resolve_node", { brainId: BRAIN, relativePath: "dossier/stable.bin" }))
