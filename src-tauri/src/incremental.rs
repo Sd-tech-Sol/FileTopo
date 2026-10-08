@@ -27,10 +27,14 @@
 //!   `DEC-0052` a `SYSTEM` key may be shared by the hard links of one physical
 //!   object. The producer applies [`crate::identity::pair_group`]; the kernel
 //!   **verifies** the answer (the row exists, carries that very key and that
-//!   provenance, and no two upserts claim it) and never re-derives a pairing
-//!   from a key several occurrences may hold. A new occurrence takes the next
-//!   value of the durable, monotone `next_node_id` counter
-//!   ([`crate::index::read_next_node_id`], the very counter `publish` uses).
+//!   provenance, no two upserts claim it, and — once the group is shared, where
+//!   a key names no single row — it is the occurrence at the observed path) and
+//!   never re-derives a pairing from a key several occurrences may hold. A
+//!   producer that invents a correlation between two aliases of one physical
+//!   object is therefore refused at the boundary rather than trusted. A new
+//!   occurrence takes the next value of the durable, monotone `next_node_id`
+//!   counter ([`crate::index::read_next_node_id`], the very counter `publish`
+//!   uses).
 //! * **Journal.** The events are produced by [`change_journal::diff`] — the
 //!   *same* pure function `publish` uses — over only the rows the batch
 //!   touches, so the five natures, the rename+move double event, the "a
@@ -155,10 +159,13 @@ pub(crate) enum BatchError {
     /// `DEC-0052` D — an upsert continues a canonical id that does not exist.
     #[error("batch_unknown_correlation: node {0} does not exist")]
     UnknownCorrelation(i64),
-    /// `DEC-0052` D — an upsert continues a row that carries a different stable
-    /// key. The producer decided the pairing; the kernel refuses to apply one
-    /// it cannot check against the stored identity.
-    #[error("batch_correlation_mismatch: node {0} does not carry the observed stable key")]
+    /// `DEC-0052` D — an upsert continues a row the stored occurrences do not
+    /// support: either it carries a different stable key, or — the group being
+    /// **shared**, where the key alone names no single occurrence — it is not
+    /// the occurrence sitting at the observed relative path (`DEC-0052` D2).
+    /// The producer decided the pairing; the kernel refuses to apply one it
+    /// cannot check against the stored rows.
+    #[error("batch_correlation_mismatch: node {0} is not the stored occurrence observed")]
     CorrelationMismatch(i64),
     /// `DEC-0052` D — two upserts continue the **same** stored occurrence,
     /// which would collapse two occurrences into one row.
@@ -263,8 +270,10 @@ const SQL_ROW_BY_KEY_AND_PATH: &str = concat!(
     row_columns!(),
     " FROM nodes WHERE stable_key = ?1 AND relative_path = ?2"
 );
-/// How many occurrences of one key the Index holds — used only to refuse a new
-/// `PATH_FALLBACK` occurrence whose key is already taken (`DEC-0052` D3).
+/// How many occurrences of one key the Index holds. Two questions need it and
+/// nothing else does: whether a new `PATH_FALLBACK` occurrence reuses a key
+/// already taken (`DEC-0052` D3), and whether a `SYSTEM` group is **shared**,
+/// in which case a continuation must match the observed path (`DEC-0052` D2).
 const SQL_COUNT_BY_KEY: &str = "SELECT COUNT(*) FROM nodes WHERE stable_key = ?1";
 const SQL_CHILD_IDS: &str = "SELECT id FROM nodes WHERE parent_id = ?1";
 const SQL_SIBLING: &str = "SELECT id FROM nodes WHERE parent_id = ?1 AND name = ?2";
@@ -541,7 +550,25 @@ fn apply(transaction: &Transaction<'_>, batch: &UpdateBatch) -> Result<ApplyOutc
     //       picture can say which one an observation continues. What is checked
     //       here is that the producer's answer is true of the stored rows: the
     //       row exists, is not the root, carries that very key and that very
-    //       provenance; and a "new occurrence" is really free.
+    //       provenance; that a continuation inside a **shared** group is the
+    //       occurrence at the observed path, since there the key names no single
+    //       row; and that a "new occurrence" is really free.
+    //
+    //       This is a verification boundary, not a second copy of the policy:
+    //       `identity::pair_group` decides, and a producer that invented a
+    //       correlation is refused here without the kernel supposing anything
+    //       from a name, an order, a date or a size.
+    //
+    //       How many occurrences of each key the batch itself observes: with a
+    //       shared `SYSTEM` key this is the other half of "is the group shared",
+    //       the half the stored rows cannot show — a brand-new hard link is the
+    //       second observation of a key the Index still holds once.
+    let mut observed_per_key: HashMap<&str, usize> = HashMap::new();
+    for node in &batch.upserts {
+        *observed_per_key
+            .entry(node.identity.stable_key.as_str())
+            .or_default() += 1;
+    }
     let mut next_id = read_next_node_id(transaction)?;
     let first_allocated = next_id;
     let mut resolved: Vec<Resolved<'_>> = Vec::with_capacity(batch.upserts.len());
@@ -561,6 +588,20 @@ fn apply(transaction: &Transaction<'_>, batch: &UpdateBatch) -> Result<ApplyOutc
                 }
                 if row.provenance.as_deref() != Some(node.identity.provenance.as_str()) {
                     return Err(BatchError::ProvenanceMismatch);
+                }
+                // `DEC-0052` D1 holds only while the group is a single stored
+                // occurrence seen once: that one may change path and keep its
+                // id. As soon as the stored key has several occurrences, or the
+                // batch observes that key more than once, the key stops naming
+                // one row and the only admissible continuation is the stored
+                // occurrence at this very path. `relative_path` is the
+                // producer's and is itself verified against the parent chain in
+                // step 2 — both refusals happen before the first write.
+                let key = node.identity.stable_key.as_str();
+                let shared = observed_per_key.get(key).copied().unwrap_or(0) > 1
+                    || rows.occurrences_of(key)? > 1;
+                if shared && row.relative_path != node.relative_path {
+                    return Err(BatchError::CorrelationMismatch(existing));
                 }
                 Some(row)
             }

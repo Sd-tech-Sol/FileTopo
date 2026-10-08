@@ -2174,6 +2174,134 @@ fn a_second_occurrence_of_a_shared_system_key_is_applied_as_a_new_row() {
     assert_ne!(alias_row.id, g, "the alias is its own occurrence");
 }
 
+// -- `DEC-0052` D2 at the boundary — a shared key names no single occurrence ---
+//
+// `ACTION-0103` finding B: checking that a continuation carries the same key and
+// the same provenance is enough only while the key names one row. Two hard links
+// of one physical object share the key, so those checks alone let a producer
+// move the original's row onto an alias. The kernel must refuse that on its own,
+// without supposing anything from a name, an order, a date or a size — which
+// means: once the group is shared, a continuation must be the stored occurrence
+// at the **observed path**.
+
+/// Two stored aliases of one physical object; one SYSTEM key for both.
+fn two_aliases() -> (Index, i64, i64, i64) {
+    let mut world = World::new();
+    world.file(0, "a.bin", "K-shared", 11, 110);
+    world.file(0, "b-hardlink.bin", "K-shared", 11, 110);
+    let mut index = in_memory();
+    publish_snap(&mut index, &world.snap());
+    let rows = dump_nodes(&index);
+    let id_of = |path: &str| {
+        rows.iter()
+            .find(|row| row.path == path)
+            .unwrap_or_else(|| panic!("no row at {path:?}"))
+            .id
+    };
+    let (a, b) = (id_of("a.bin"), id_of("b-hardlink.bin"));
+    assert_ne!(a, b, "two occurrences, two rows");
+    let root = canonical_of_key(&index, "K-root");
+    (index, root, a, b)
+}
+
+/// One observation of a file directly in the root, continuing `continues`.
+fn alias_shaped(
+    root: i64,
+    token: i64,
+    key: &str,
+    name: &str,
+    continues: Option<i64>,
+) -> ObservedNode {
+    let mut observed = node(
+        token,
+        key,
+        ParentRef::Existing(root),
+        name,
+        name,
+        1,
+        NodeKind::File,
+    );
+    observed.continues = continues;
+    observed
+}
+
+/// The forged correlation `ACTION-0103` asked for: alias `B` claims to continue
+/// the row of alias `A`. Same key, same provenance, no id continued twice — the
+/// pre-corrective kernel applied it and silently moved `A`'s identity onto `B`.
+#[test]
+fn an_alias_may_not_claim_the_row_of_another_alias_of_the_same_object() {
+    let (mut index, root, a, _b) = two_aliases();
+    let forged = alias_shaped(root, 1, "K-shared", "b-hardlink.bin", Some(a));
+    assert!(matches!(
+        assert_refused(&mut index, &batch(vec![forged], vec![])),
+        BatchError::CorrelationMismatch(id) if id == a
+    ));
+}
+
+/// The same observation, correctly paired, is applied: the refusal above is the
+/// *forgery* being caught, not a shared group being unusable.
+#[test]
+fn the_alias_at_its_own_path_continues_its_own_row() {
+    let (mut index, root, _a, b) = two_aliases();
+    let honest = alias_shaped(root, 1, "K-shared", "b-hardlink.bin", Some(b));
+    let applied = index
+        .apply_update_batch(&batch(vec![honest], vec![]))
+        .expect("the occurrence at its own path continues");
+    assert!(applied.applied);
+    assert_eq!(
+        applied.created, 0,
+        "nothing new: the alias was already stored"
+    );
+    let rows = dump_nodes(&index);
+    let row = rows
+        .iter()
+        .find(|row| row.path == "b-hardlink.bin")
+        .expect("the alias row");
+    assert_eq!(row.id, b, "the alias kept its own id");
+    assert_eq!(row.size, 1, "and took the observed metadata");
+}
+
+/// The other half of "shared", the one the stored rows cannot show: the Index
+/// still holds the key **once**, and the batch observes it **twice** — exactly
+/// what a hard link created beside an indexed file looks like. A rename of the
+/// original is then indistinguishable from a new alias, so a continuation to a
+/// different path must be refused here too.
+#[test]
+fn a_continuation_is_refused_as_soon_as_the_batch_itself_observes_the_key_twice() {
+    let (mut index, ..) = fixture();
+    let root = canonical_of_key(&index, "K-root");
+    let g = canonical_of_key(&index, "K-g");
+    let moved = alias_shaped(root, 1, "K-g", "renomme.txt", Some(g));
+    let fresh = alias_shaped(root, 2, "K-g", "g-hardlink.txt", None);
+    assert!(matches!(
+        assert_refused(&mut index, &batch(vec![moved, fresh], vec![])),
+        BatchError::CorrelationMismatch(id) if id == g
+    ));
+}
+
+/// And `DEC-0052` D1 is untouched: one stored occurrence observed once may
+/// change path and keep its id. Were the new guard a blanket "paths must match",
+/// every `SYSTEM` rename in the product would break; this is the test that would
+/// catch that.
+#[test]
+fn d1_a_lone_system_occurrence_still_renames_without_losing_its_id() {
+    let (mut index, ..) = fixture();
+    let root = canonical_of_key(&index, "K-root");
+    let g = canonical_of_key(&index, "K-g");
+    let renamed = alias_shaped(root, 1, "K-g", "renomme.txt", Some(g));
+    let applied = index
+        .apply_update_batch(&batch(vec![renamed], vec![]))
+        .expect("a lone occurrence renames");
+    assert!(applied.applied);
+    assert_eq!(applied.created, 0);
+    let rows = dump_nodes(&index);
+    let row = rows
+        .iter()
+        .find(|row| row.path == "renomme.txt")
+        .expect("the renamed row");
+    assert_eq!(row.id, g, "D1: the id survived the rename");
+}
+
 #[test]
 fn an_index_with_no_durable_identity_refuses_a_batch_instead_of_guessing() {
     let (mut index, ..) = fixture();
