@@ -996,6 +996,17 @@ if (phase === 1) {
     `the panel's counts (${totalsText}) must be the Index's (${relationsOfNode.outgoingCount}/${relationsOfNode.incomingCount})`,
   );
   // The MAP's own count for the same node, and the shape that carries the direction.
+  // The view is bounded: `relationSegments` draws an edge only when BOTH of its ends are
+  // materialised, and an end that is not drawn is listed in the « endpoints outside the
+  // current view » region with a control that brings it on screen. So the honest check is
+  // two-sided — the map draws exactly the drawable relations, and loses none of the others.
+  const drawnIds = new Set((await readCanvas()).cards.filter((card) => card.brainId === SYNTHETIC).map((card) => card.nodeId));
+  const established = [
+    ...relationsOfNode.outgoing.map((edge) => ({ direction: "outgoing", other: edge.target?.nodeId ?? null })),
+    ...relationsOfNode.incoming.map((edge) => ({ direction: "incoming", other: edge.source?.nodeId ?? null })),
+  ];
+  const drawable = established.filter((edge) => edge.other !== null && drawnIds.has(edge.other));
+  const notDrawable = established.filter((edge) => edge.other === null || !drawnIds.has(edge.other));
   const mapEdges = await evaluate(`(() => {
     const edges = [...document.querySelectorAll('[data-testid="composed-canvas"] [data-edge-kind="established"], [data-testid="composed-canvas"] [data-edge-kind="suggestion"]')];
     return edges.map((e) => ({ kind: e.getAttribute('data-edge-kind'), source: Number(e.getAttribute('data-source-node-id')), target: Number(e.getAttribute('data-target-node-id')),
@@ -1006,9 +1017,22 @@ if (phase === 1) {
   const mapIncoming = establishedEdges.filter((edge) => edge.target === relationNode).length;
   assert.equal(
     mapOutgoing + mapIncoming,
-    relationsOfNode.outgoingCount + relationsOfNode.incomingCount,
-    `the map draws ${mapOutgoing}/${mapIncoming} for the Index's ${relationsOfNode.outgoingCount}/${relationsOfNode.incomingCount}`,
+    drawable.length,
+    `the map draws ${mapOutgoing}/${mapIncoming} for ${drawable.length} drawable relations of the Index's ${relationsOfNode.outgoingCount}/${relationsOfNode.incomingCount}`,
   );
+  const offScreenRegion = await evaluate(`(() => {
+    const section = [...document.querySelectorAll('section[aria-label]')].find((s) => /hors de la vue courante|outside the current view/i.test(s.getAttribute('aria-label') ?? ''));
+    if (!section) return null;
+    return { entries: [...section.querySelectorAll('p')].length, buttons: [...section.querySelectorAll('button')].length,
+      text: section.textContent.trim().slice(0, 200) };
+  })()`);
+  if (notDrawable.length > 0) {
+    assert(offScreenRegion, "a relation whose other end is not drawn must be declared, not silently dropped");
+    assert(
+      offScreenRegion.entries >= 1 && offScreenRegion.buttons >= 1,
+      `the off-screen region must name each such relation and offer to show it: ${JSON.stringify(offScreenRegion)}`,
+    );
+  }
   assert(establishedEdges.every((edge) => edge.hasArrowHead), "an established relation carries its direction as a filled arrow head, not as a colour");
   assert(
     mapEdges.filter((edge) => edge.kind === "suggestion").every((edge) => !edge.hasArrowHead),
@@ -1095,7 +1119,9 @@ if (phase === 1) {
   });
   cover("P-05", "the incoming and outgoing counts shown by the PANEL and drawn on the MAP both equal the Index's for the same node; the direction is carried by a glyph, a heading and a filled arrow head rather than by colour; and approving a suggestion with the real keyboard added exactly one established relation — outgoing on its source and incoming on its target. On a REAL_ROOT brain these counts cannot be read at all: see `productGaps`", {
     panelTotalsText: totalsText, indexOutgoing: relationsOfNode.outgoingCount, indexIncoming: relationsOfNode.incomingCount,
-    mapOutgoing, mapIncoming, establishedEdgesOnTheMap: establishedEdges.length,
+    mapOutgoing, mapIncoming, drawableRelationsOfTheNode: drawable.length,
+    relationsWhoseOtherEndIsNotDrawn: notDrawable.length, declaredInTheOffScreenRegion: offScreenRegion,
+    establishedEdgesOnTheMap: establishedEdges.length,
     suggestionEdgesOnTheMap: mapEdges.length - establishedEdges.length, everyEstablishedEdgeHasAnArrowHead: true,
     approvedWithTheKeyboard: true, tabStepsToTheApproveButton: tabStepsToApprove,
     establishedBefore, establishedAfter, sourceOutgoing, targetIncoming, scope: relationsScope,
