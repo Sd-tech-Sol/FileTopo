@@ -982,7 +982,7 @@ if (phase === 1) {
     const directions = [...document.querySelectorAll('.relation__direction')].map((d) => d.textContent.trim());
     return { rule: document.querySelector('[data-testid="core-deterministic-relation"]')?.textContent?.trim() ?? null,
       provenances, directions, totals: document.querySelector('[data-testid="relation-totals"]').textContent.trim(),
-      types: [...document.querySelectorAll('.relation__type')].map((t) => t.textContent.trim()) };
+      types: [...document.querySelectorAll('.relations__type')].map((t) => t.textContent.trim()) };
   })()`);
   assert(establishedOnScreen.provenances.length > 0, "the provenance of an established relation is on screen");
   assert(
@@ -1092,16 +1092,30 @@ if (phase === 1) {
 
   // The panel groups by direction and every entry leads to the element it names.
   const panelShape = await evaluate(`(() => {
-    const headings = [...document.querySelectorAll('.relations__subtitle, .relations h3')].map((h) => h.textContent.trim());
-    const entries = [...document.querySelectorAll('.relation')].map((row) => ({
-      direction: row.querySelector('.relation__direction')?.textContent?.trim() ?? null,
-      provenance: row.querySelector('.relation__provenance')?.textContent?.trim() ?? null,
-      type: row.querySelector('.relation__type')?.textContent?.trim() ?? null,
-      link: !!row.querySelector('.relation__link') }));
-    return { headings, entries };
+    // Grouped by direction (a section per direction), then by nature (a group per type).
+    const directionSections = [...document.querySelectorAll('.relations__direction')].map((s) => s.getAttribute('aria-label'));
+    const natureGroups = [...document.querySelectorAll('.relations__type-group .relations__type')].map((h) => h.textContent.trim());
+    const entries = [...document.querySelectorAll('.relation__link')].map((row) => ({
+      direction: row.getAttribute('data-direction'),
+      provenance: row.getAttribute('data-provenance'),
+      type: row.getAttribute('data-relation-type'),
+      leadsTo: row.getAttribute('data-endpoint-node-id') || null,
+      directionGlyph: row.querySelector('.relation__direction')?.textContent?.trim() ?? null,
+      provenanceWord: row.querySelector('.relation__provenance')?.textContent?.trim() ?? null,
+      link: row.tagName === 'BUTTON' && !row.disabled }));
+    return { directionSections, natureGroups, entries };
   })()`);
-  assert(panelShape.headings.length >= 2, "the panel groups the relations");
+  assert(panelShape.directionSections.length >= 2, "the panel has a section per direction");
+  assert(panelShape.natureGroups.length >= 1, "inside a direction, the relations are grouped by nature");
   assert(panelShape.entries.length > 0, "the panel lists the relations of the selected element");
+  assert(
+    panelShape.entries.every((entry) => entry.type && entry.direction && entry.provenance && entry.directionGlyph && entry.provenanceWord),
+    "each entry carries its type, its direction and its provenance, as a glyph AND as a word",
+  );
+  assert(
+    panelShape.entries.every((entry) => entry.leadsTo !== null && entry.link),
+    "each entry is an enabled control that leads to the element it names",
+  );
   // The model itself refuses a malformed relation (backend oracle, declared as such).
   const relationsSelfCheck = await invoke("map_relations_self_check", { brainId: SYNTHETIC });
   assert.equal(relationsSelfCheck.allRejected, true, "the model must refuse every malformed relation");
@@ -1127,8 +1141,10 @@ if (phase === 1) {
     establishedBefore, establishedAfter, sourceOutgoing, targetIncoming, scope: relationsScope,
   });
   cover("P-07", "the relations panel lists the selected element's relations grouped by nature and direction, each entry carrying its type, direction and provenance and a control that leads to the element it names. On a REAL_ROOT brain the panel renders its « unavailable » form instead: see `productGaps`", {
-    headings: panelShape.headings, entries: panelShape.entries,
-    everyEntryHasALink: panelShape.entries.every((entry) => entry.link), scope: relationsScope,
+    directionSections: panelShape.directionSections, natureGroups: panelShape.natureGroups,
+    entries: panelShape.entries, everyEntryHasALink: panelShape.entries.every((entry) => entry.link),
+    everyEntryCarriesTypeDirectionAndProvenance: panelShape.entries.every((entry) => entry.type && entry.direction && entry.provenance),
+    scope: relationsScope,
   });
   // Back to the real tree for the journal and the rest of the window.
   await click(`[data-testid="composition-chip-${ATELIER}"]`);
