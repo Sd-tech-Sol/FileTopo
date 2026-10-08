@@ -237,6 +237,13 @@ async function quiet(milliseconds = 900, limit = 90000) {
   }
   throw new Error("page did not become quiet");
 }
+/** Opens a panel if it is closed. A toggle clicked blindly closes what a restart restored. */
+async function ensureVisible(toggle, panelSelector) {
+  if (await evaluate(`!!document.querySelector(${JSON.stringify(panelSelector)})`)) return false;
+  await click(testid(toggle));
+  await until(`!!document.querySelector(${JSON.stringify(panelSelector)})`);
+  return true;
+}
 async function axeRun(label) {
   if (!(await evaluate("typeof window.axe === 'object'"))) await evaluate(axeSource);
   const result = await evaluate(`(async () => {
@@ -782,8 +789,7 @@ if (phase === 1) {
   });
 
   // -- P-10 — the legend explains every coding that is on screen -------------------------
-  await click(testid("map-legend-toggle"));
-  await until(`!!document.querySelector('[data-testid="map-legend"]')`);
+  await ensureVisible("map-legend-toggle", '[data-testid="map-legend"]');
   const legend = await evaluate(`(() => {
     const items = [...document.querySelectorAll('[data-testid="map-legend"] li')];
     return { keys: items.map((li) => li.getAttribute('data-legend-key')),
@@ -1152,8 +1158,7 @@ if (phase === 1) {
 
   // -- P-16 / P-17 — the journal, and new / unseen / mark seen ---------------------------
   await click(testid("search-clear"));
-  await click(testid("journal-toggle"));
-  await until(`!!document.querySelector('[data-testid="journal-total"]')`);
+  await ensureVisible("journal-toggle", '[data-testid="journal-total"]');
   await quiet();
   const journalPage = await evaluate(`(() => {
     const total = document.querySelector('[data-testid="journal-total"]');
@@ -1445,10 +1450,8 @@ const untranslated = await evaluate(`(() => {
   return ['Actualiser','Légende','Journal des changements','Masquer','Afficher le panneau'].filter((word) => text.includes(word));
 })()`);
 assert.deepEqual(untranslated, [], `French labels survived the switch to English: ${untranslated}`);
-await click(testid("journal-toggle"));
-await until(`!!document.querySelector('[data-testid="journal-total"]')`);
-await click(testid("map-legend-toggle"));
-await until(`!!document.querySelector('[data-testid="map-legend"]')`);
+await ensureVisible("journal-toggle", '[data-testid="journal-total"]');
+await ensureVisible("map-legend-toggle", '[data-testid="map-legend"]');
 await axeRun("phase 2 — English, journal and legend open");
 await send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-color-scheme", value: "dark" }] });
 await pause(400);
