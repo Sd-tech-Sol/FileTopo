@@ -461,15 +461,73 @@ if (phase === 1) {
   cover("P-15", "while the root of a brain was really absent, a real click on « Ouvrir dans l'Explorateur » produced an explicit error instead of opening something else, and nothing in the source was changed", {
     refusalOnScreen: revealRefusal,
   });
-  // Back to the first tree for the rest of the window.
+  // Back to the first tree, alone on screen, for the structural part of the window:
+  // removing a brain from the view changes none of its data, and the composition of
+  // several brains is exercised again for P-20 at the end of this phase.
   await click(`[data-testid="composition-chip-${ATELIER}"]`);
   await quiet();
+  await click(`[data-testid="composition-remove-${ARCHIVES}"]`);
+  await until(`!document.querySelector('[data-testid="composition-chip-${ARCHIVES}"]')`);
+  await quiet();
+  const archivesAfterRemoval = await invoke("map_view", { brainId: ARCHIVES });
+  assert.equal(archivesAfterRemoval.nodeCount, archivesAfter.nodeCount, "removing a brain from the view changed none of its data");
+  assert.equal(archivesAfterRemoval.indexRevision, archivesAfter.indexRevision);
 
-  // -- P-01 — every source element indexed, and reachable -------------------------------
+  // -- P-02 — the hierarchy, node by node ------------------------------------------------
+  // Read first, on the view the brain opens with: no projection has been moved yet.
   const view0 = await invoke("map_view", { brainId: ATELIER });
   assert.equal(view0.nodeCount, atelierTotal, `the Index holds ${view0.nodeCount} nodes for ${atelierTotal} on disk`);
   assert.equal(view0.materializedCount + view0.nonMaterializedCount, view0.nodeCount);
   assert(view0.nodes.length + view0.aggregates.length <= view0.viewBudget);
+  let canvas = await readCanvas();
+  // Several brains are on screen; this requirement is judged on the focused one's cards.
+  const atelierCards = () => canvas.cards.filter((card) => card.brainId === ATELIER);
+  assert.equal(atelierCards().length, view0.materializedCount, "every drawn card of the focused brain is a materialised node");
+  const diskPaths = new Set(["", ...atelierDisk.map((entry) => entry.relativePath)]);
+  const hierarchyFailures = [];
+  for (const card of atelierCards()) {
+    const detail = await invoke("map_node_detail", { reference: { brainId: ATELIER, nodeId: card.nodeId } });
+    const own = detail.node.relativePath.replaceAll("\\", "/");
+    // (1) no addition: a drawn node is a real element of the source.
+    if (!diskPaths.has(own)) hierarchyFailures.push({ own, problem: "drawn but absent from the source" });
+    const expectedParent = own === "" ? null : dirname(own).replaceAll("\\", "/").replace(/^\.$/, "");
+    const shownParent = detail.parent ? detail.parent.relativePath.replaceAll("\\", "/") : null;
+    if (expectedParent !== shownParent) hierarchyFailures.push({ own, expectedParent, shownParent });
+    const realChildren = directChildren(atelierDisk, own);
+    if (Number(detail.node.childCount) !== realChildren.length) {
+      hierarchyFailures.push({ own, childCount: detail.node.childCount, realChildren: realChildren.length });
+    }
+  }
+  assert.deepEqual(hierarchyFailures, [], "parent and direct-children count are exact for every drawn node");
+  // No invented edge: both ends real, and really parent/child on disk.
+  const edgeFailures = [];
+  const atelierEdges = canvas.edges.length;
+  for (const edge of canvas.edges) {
+    if (!Number.isFinite(edge.parentId) || !Number.isFinite(edge.childId)) continue;
+    let parent;
+    let child;
+    try {
+      parent = await pathOf(ATELIER, edge.parentId);
+      child = await pathOf(ATELIER, edge.childId);
+    } catch {
+      continue; // an edge of another brain in the composition; judged with its own brain
+    }
+    const expected = child === "" ? null : dirname(child).replaceAll("\\", "/").replace(/^\.$/, "");
+    if (expected !== parent) edgeFailures.push({ parent, child });
+  }
+  assert.deepEqual(edgeFailures, [], "no hierarchy edge on screen is invented, and none is in the wrong branch");
+  // Labels are available at the level the view draws, and an absence would be declared.
+  const labels = await evaluate(`(() => {
+    const cards = [...document.querySelectorAll('[data-testid="composed-canvas"] [data-card="true"]')];
+    return { cards: cards.length, withoutLabel: cards.filter((g) => !(g.getAttribute('aria-label') ?? '').trim()).length };
+  })()`);
+  assert.equal(labels.withoutLabel, 0, "every drawn card carries its label");
+  cover("P-02", "on the view the brain opens with, every drawn node is a real element of the source, its parent and its direct-children count equal the disk, every hierarchy edge on screen has a real parent/child counterpart, and every card carries its label", {
+    drawnNodes: atelierCards().length, materialized: view0.materializedCount, edgesChecked: atelierEdges,
+    mismatches: 0, cardsWithoutALabel: 0,
+  });
+
+  // -- P-01 — every source element indexed, and reachable -------------------------------
   const unresolved = [];
   for (const entry of atelierDisk) {
     const reference = await invoke("map_resolve_node", { brainId: ATELIER, relativePath: entry.relativePath });
@@ -491,38 +549,7 @@ if (phase === 1) {
     materialized: view0.materializedCount, nonMaterialized: view0.nonMaterializedCount,
     everyDiskPathResolves: true, actionsToReachTheFarRow: 2,
   });
-
-  // -- P-02 — the hierarchy, node by node, and the exact aggregate ----------------------
   await click(testid("search-clear"));
-  await click(testid("reset-view"));
-  await quiet();
-  let canvas = await readCanvas();
-  assert.equal(canvas.cards.length, view0.materializedCount, "every drawn card is a materialised node");
-  const hierarchyFailures = [];
-  for (const card of canvas.cards) {
-    const detail = await invoke("map_node_detail", { reference: { brainId: ATELIER, nodeId: card.nodeId } });
-    const own = detail.node.relativePath.replaceAll("\\", "/");
-    const expectedParent = own === "" ? null : dirname(own).replaceAll("\\", "/").replace(/^\.$/, "");
-    const shownParent = detail.parent ? detail.parent.relativePath.replaceAll("\\", "/") : null;
-    if (expectedParent !== shownParent) hierarchyFailures.push({ own, expectedParent, shownParent });
-    const realChildren = directChildren(atelierDisk, own);
-    if (Number(detail.node.childCount) !== realChildren.length) {
-      hierarchyFailures.push({ own, childCount: detail.node.childCount, realChildren: realChildren.length });
-    }
-  }
-  assert.deepEqual(hierarchyFailures, [], "parent and direct-children count are exact for every drawn node");
-  // No invented edge: both ends real, and really parent/child on disk.
-  const edgeFailures = [];
-  for (const edge of canvas.edges) {
-    const parent = await pathOf(ATELIER, edge.parentId);
-    const child = await pathOf(ATELIER, edge.childId);
-    const expected = child === "" ? null : dirname(child).replaceAll("\\", "/").replace(/^\.$/, "");
-    if (expected !== parent) edgeFailures.push({ parent, child });
-  }
-  assert.deepEqual(edgeFailures, [], "no hierarchy edge on screen is invented, and none is in the wrong branch");
-  cover("P-02", "for every drawn node the parent and the direct-children count equal the disk, and every hierarchy edge on screen has a real parent/child counterpart", {
-    drawnNodes: canvas.cards.length, edgesChecked: canvas.edges.length, mismatches: 0,
-  });
 
   // The aggregate: declared in words, exact, and never a folder.
   const largeReference = await invoke("map_resolve_node", { brainId: ATELIER, relativePath: "large" });
