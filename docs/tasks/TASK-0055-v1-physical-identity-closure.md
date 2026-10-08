@@ -1,8 +1,11 @@
 # TASK-0055 — V1 Physical Object Identity / F-046 Closure
 
 - **Date :** 2026-10-07
-- **Statut :** `IMPLEMENTED`, jamais auto-`VERIFIED`. Détail :
-  [`VALIDATION.md` section DK](../ai/VALIDATION.md).
+- **Date du correctif :** 2026-10-08 (voir §17)
+- **Statut :** `IMPLEMENTED`, jamais auto-`VERIFIED`. Un premier contrôle
+  indépendant (`ACTION-0103`) a rendu `REWORK REQUIRED`; les deux défauts sont
+  corrigés en §17 et la tâche attend un **nouveau** contrôle. Détail :
+  [`VALIDATION.md` sections DK, DL et DM](../ai/VALIDATION.md).
 - **Branche :** `build/v0.2-a39-v1-physical-identity-closure`
 - **Base :** `393ac6d190295d979b58c9a03cc4712391d93335`
 - **Sélection :** ACTION-0102
@@ -299,3 +302,121 @@ Distinguer exécution locale, CI éventuelle et NOT_TESTED.
 - 2026-10-07 — `IMPLEMENTED` : `§3` à `§12` livrées. Discrimination des tests
   mesurée en réintroduisant temporairement la règle d'avant la tranche. `F-046` =
   `IMPLEMENTED` / candidate. Aucune `TASK-0056`.
+
+## 17. Correctif après ACTION-0103 (2026-10-08)
+
+Le contrôle indépendant `ACTION-0103` a rendu **`REWORK REQUIRED`** sur le HEAD
+`831ba73` : le modèle central passait, mais deux défauts bloquaient le verdict.
+Les deux sont corrigés ici, sans rien redessiner de `TASK-0055`.
+
+### A — un dérivé de l'identité machine traversait l'IPC (`DEC-0052` F)
+
+**Le défaut.** `BrainIndex::reconstructible_digest` sélectionnait
+`n.stable_key` et `n.identity_provenance`, poussait les deux dans ses octets, et
+la valeur `fnv1a64:` obtenue traversait l'IPC Tauri comme
+`MapBuildReport.reconstructible_digest`, déclarée en TypeScript
+`reconstructibleDigest`. `DEC-0052` F interdit la clé brute, le
+`VolumeSerialNumber`, le `FileId` **et tout condensé ou encodage dérivé** : une
+valeur publique était donc fonction de l'identité physique Windows des fichiers
+analysés. Les tests de fuite de `TASK-0055` ne pouvaient pas le voir : ils
+cherchent des graphies dans la charge sérialisée, et un digest n'en contient
+aucune.
+
+**Le correctif.** Les deux colonnes quittent l'entrée du digest, et aussi son
+`ORDER BY`, où elles servaient de départage. Les lignes sont désormais ordonnées
+par **tous** les champs digérés, donc le résultat est fonction du seul multi-
+ensemble des lignes logiques — déterministe sans emprunter une identité pour
+trancher. Le but `H7` est conservé sur des champs logiques et dérivés de la
+source : chemin, parenté par le chemin relatif du parent, nom, nature,
+profondeur, taille, horodatage, les deux drapeaux de substitut, le compte
+d'enfants, le diagnostic d'accès. **Aucun digest d'identité de remplacement**
+n'est publié, et `F-004` n'est pas affaibli : aucun chemin d'identité ne lit
+cette fonction.
+
+**Tests, tous trois en échec si les colonnes revenaient.**
+
+1. le test discriminant demandé : le digest ne bouge pas quand seuls
+   `stable_key` ou `identity_provenance` changent, y compris vers `NULL`, et il
+   bouge quand un vrai champ reconstructible change (une taille, puis un chemin);
+2. l'audit de fuite généralisé : **réétiqueter injectivement** chaque identité
+   physique — ce qui laisse intacte la structure de partage, donc la
+   classification fermée que `DEC-0052` G autorise — et exiger que chaque octet
+   publié soit identique. Toute valeur dérivée par condensé, encodage ou ordre
+   bouge là, alors qu'aucune graphie interdite n'apparaît jamais;
+3. l'audit structurel, à l'échelle du dépôt : **quels fichiers de production
+   peuvent lire de la matière d'identité** est épinglé au noyau privilégié
+   (`identity`, `index`, `incremental`, `reconcile`, `scope`, `scanner`, plus
+   deux lecteurs à réponse fermée). Un nouveau lecteur ailleurs échoue le test,
+   et `brain_index.rs` ne doit plus jamais en être un.
+
+**Et la preuve vivante**, parce qu'une recherche de graphies ne voit pas un
+dérivé : dans la passe 1 du harnais WebView2, un fichier est remplacé par un
+fichier identique octet pour octet, les deux horodatages — le sien et celui de
+son dossier — étant **fixés** au même instant dans les deux états. Windows donne
+au nouveau fichier son propre `FileId`, donc l'identité physique change
+réellement, ce que le nouveau `nodeId` prouve, et
+`reconstructibleDigest` ne doit pas bouger d'un bit. Mesuré : avec les colonnes
+réintroduites et l'application reconstruite, le vrai WebView2 **échoue** cette
+assertion.
+
+### B — le noyau ne vérifiait pas l'alias d'un groupe partagé (`DEC-0052` D2)
+
+**Le défaut.** Le noyau acceptait un `continues = Some(id)` du producteur dès
+lors que la ligne existait, portait la même clé stable et la même provenance, et
+n'était pas réclamée deux fois. Avec une clé `SYSTEM` partagée, ces contrôles ne
+prouvent rien : l'alias `A` et l'alias `B` d'un même objet physique portent
+exactement la même clé. Un producteur pouvait donc déplacer la ligne de
+l'original sur un alias, et le noyau l'appliquait. Tous les producteurs du
+produit emploient `pair_group` correctement : c'était un trou dans la défense,
+pas un résultat faux sur le terrain — mais le noyau existe pour refuser un
+mauvais producteur, pas pour lui faire confiance.
+
+**Le correctif.** Dès que le groupe est **partagé**, une continuation doit être
+l'occurrence stockée **au chemin relatif observé**. « Partagé » signifie soit
+plusieurs occurrences stockées de cette clé, soit un lot qui observe cette clé
+plus d'une fois — la seconde moitié compte, parce qu'un hard link tout neuf est
+la deuxième observation d'une clé que l'Index ne détient encore qu'une fois, et
+qu'il est sinon indiscernable d'un renommage de l'objet visé. `DEC-0052` D1 est
+préservée exactement : une occurrence stockée observée une fois peut toujours
+changer de chemin et garder son id, ce qui est `F-004`. **Aucune heuristique
+ajoutée** : rien n'est inféré d'un nom, d'un ordre, d'une date ou d'une taille.
+C'est une frontière de vérification, pas une seconde copie de la politique de
+`pair_group`, et elle réutilise le `COUNT` indexé existant et la variante
+`CorrelationMismatch` existante, dont le diagnostic reste fermé (un id, aucun
+chemin, aucune clé).
+
+**Tests, discrimination mesurée** — garde retirée : les deux refus échouent, les
+deux acceptations passent toujours.
+
+1. la falsification demandée : deux alias stockés d'un même objet `SYSTEM`, celui
+   du chemin `B` prétendant continuer la ligne de `A` — refusé;
+2. la moitié côté lot : l'Index détient la clé une fois, le lot l'observe deux
+   fois, et une continuation vers un autre chemin est refusée;
+3. la même observation correctement appariée est appliquée, donc un groupe
+   partagé reste utilisable;
+4. une occurrence `SYSTEM` seule se renomme toujours sans perdre son id, ce qui
+   casserait si la garde était un « les chemins doivent correspondre » aveugle.
+
+### Portée respectée
+
+Inchangés : migration `6 → 7`, modèle SHA-256, sémantique de
+`ExactDuplicateExplorer`, moteur de relations, politique Cloud Files,
+dépendances (`Cargo.toml` et `Cargo.lock` intacts). Aucune `TASK-0056`.
+
+### Revalidation
+
+Rust **901 PASS / 0 failed / 13 ignored** (depuis 894 : 7 tests neufs);
+frontend **721 PASS** (48 fichiers); `pnpm check`, `pnpm build`,
+`pnpm tauri build --debug --no-bundle`, `git diff --check` verts; `clippy`
+26 diagnostics, tous historiques, **aucun** dans les quatre fichiers touchés;
+harnais WebView2 réel rejoué en **deux processus**, même digest sémantique
+`22dfc466…`, axe-core 4.13.0 **0 violation**, 0 erreur console fatale, source
+analysée inchangée. Artefact régénéré : `headTested e9c6747…`.
+
+### Statut
+
+`TASK-0055` et `F-046` restent **`IMPLEMENTED` / candidates**. L'exécuteur ne
+s'attribue pas `VERIFIED` : le verdict appartient à un nouveau contrôle
+indépendant.
+
+- 2026-10-08 — correctif `ACTION-0103` A et B livré. Toujours `IMPLEMENTED`.

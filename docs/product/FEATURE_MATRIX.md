@@ -404,3 +404,22 @@ Les preuves et constats ci-dessous sont inchangés.
 > `IMPLEMENTED` / candidate, en attente d'un contrôle indépendant sur preuves.
 > Aucun moteur de « copie probable » ou de similarité de noms n'existe, et
 > `DEC-0052` G interdit d'en ajouter sous ce nom.
+
+> **Correctif F-046 — ACTION-0103 (2026-10-08).**
+>
+> Le premier contrôle indépendant a rendu `REWORK REQUIRED`. Le modèle était
+> bon, mais deux choses manquaient, toutes deux corrigées sans changer la
+> portée produit.
+>
+> Le digest public reconstructible du rapport de construction digérait
+> `stable_key` et `identity_provenance` : une valeur traversant l'IPC était donc
+> **dérivée** de l'identité physique Windows, ce que `DEC-0052` F interdit au
+> même titre que la valeur brute. Les deux colonnes en sont retirées, l'ordre de
+> digestion ne les emprunte plus pour départager, et aucun digest d'identité de
+> remplacement n'est publié. Et le noyau incrémental refuse désormais lui-même
+> une continuation forgée vers un autre alias d'un même objet physique.
+>
+> **Ce que ce correctif ne change pas :** la ligne `F-046` reste
+> `IMPLEMENTED` / candidate, et la promesse produit est identique — même objet
+> physique, contenu identique, copie probable, nom similaire et relation logique
+> restent cinq notions distinctes, dont deux ne sont jamais inférées.

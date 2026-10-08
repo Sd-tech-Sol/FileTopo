@@ -9738,3 +9738,74 @@ utilisent pair_group correctement, donc ce point est une défense en profondeur,
 mais doit être fermé avant le nouveau contrôle.
 
 Corrective versionnée dans ACTION-0103 / NEXT_PROMPT.
+## DM — TASK-0055 — correctif ACTION-0103 — 2026-10-08
+
+**Statut : `IMPLEMENTED` / candidat, jamais auto-`VERIFIED`.** Les deux points de
+`DL` sont fermés. HEAD du code et de l'artefact : `e9c67473df2c46ce99926869a6a1f8940eba2d4d`.
+
+### A — digest public indépendant de l'identité machine
+
+`BrainIndex::reconstructible_digest` ne lit plus `stable_key` ni
+`identity_provenance`, ni dans ses octets ni dans son `ORDER BY` — où ils
+servaient de départage. Les lignes sont ordonnées par **tous** les champs
+digérés, donc le digest est fonction du seul multi-ensemble des lignes logiques.
+`H7` reste prouvé sur chemin, parenté par chemin relatif du parent, nom, nature,
+profondeur, taille, horodatage, les deux drapeaux de substitut, compte d'enfants
+et diagnostic d'accès. Aucun digest d'identité de remplacement n'est publié.
+`F-004` inchangé.
+
+| Preuve | Résultat |
+|---|---|
+| Test discriminant demandé | digest **identique** quand seuls `stable_key` / `identity_provenance` changent, y compris vers `NULL`; **différent** quand une taille change, puis quand un chemin change |
+| Réétiquetage **injectif** de toutes les identités physiques | structure de partage préservée (`PROVEN_SHARED` + 2 inchangé), digest public **identique**, page de doublons **identique octet pour octet** |
+| Audit structurel, échelle du dépôt | les fichiers de production qui lisent de la matière d'identité sont épinglés au noyau privilégié (`identity`, `index`, `incremental`, `reconcile`, `scope`, `scanner`, `change_journal` pour un `IS NULL`, `watch_ops` pour une comparaison à réponse fermée); `brain_index.rs` n'en fait plus partie et le test l'interdit |
+| Preuve vivante WebView2 | un fichier remplacé par un fichier identique octet pour octet, les deux horodatages **fixés** au même instant dans les deux états : `nodeId` change (l'identité physique a bien changé), `reconstructibleDigest` **ne bouge pas** |
+| Discrimination | colonnes réintroduites + application reconstruite : les 3 tests Rust **échouent** et le vrai WebView2 **échoue** l'assertion vivante |
+
+Pourquoi l'audit précédent ne pouvait pas le voir : il cherche des graphies dans
+la charge sérialisée, et un condensé n'en contient aucune. Les trois preuves
+ci-dessus sont des tests **d'influence**, pas de sous-chaîne.
+
+### B — le noyau refuse une corrélation forgée entre alias (`DEC-0052` D2)
+
+Dès que le groupe est partagé — plusieurs occurrences stockées de la clé, **ou**
+un lot qui observe cette clé plus d'une fois — un `continues` doit être
+l'occurrence stockée **au chemin relatif observé**. `D1` intacte : une occurrence
+stockée observée une fois change de chemin et garde son id. Aucune heuristique;
+réutilise le `COUNT` indexé et la variante `CorrelationMismatch`, diagnostic
+fermé (un id, aucun chemin, aucune clé).
+
+| Preuve | Résultat |
+|---|---|
+| Falsification demandée : deux alias stockés, `B` prétend continuer `A` | **refusé** `CorrelationMismatch(id A)` |
+| Moitié côté lot : Index détient la clé une fois, le lot l'observe deux fois | continuation vers un autre chemin **refusée** |
+| La même observation correctement appariée | **appliquée**, le groupe partagé reste utilisable |
+| `D1` — occurrence `SYSTEM` seule renommée | **garde son id** |
+| Discrimination | garde retirée : les 2 refus **échouent**, les 2 acceptations **passent** |
+
+### Revalidation
+
+| Contrôle | Résultat |
+|---|---|
+| `cargo test --lib --offline` | **901 PASS**, 0 failed, 13 ignored (depuis 894) |
+| `pnpm vitest run` | **721 PASS**, 48 fichiers |
+| `pnpm check`, `pnpm build`, `pnpm tauri build --debug --no-bundle` | PASS |
+| `git diff --check` | PASS |
+| `cargo clippy --all-targets -- -D warnings` | 26 diagnostics, tous historiques, **aucun** dans les 4 fichiers touchés (compté par fichier) |
+| `cargo fmt` | les 4 fichiers touchés sont formatés; la dette historique des autres fichiers est inchangée |
+| WebView2 réel, deux processus | PASS, même digest sémantique `22dfc466…`, axe-core 4.13.0 **0 violation**, 0 erreur console fatale, source analysée inchangée |
+| Artefact | `docs/performance/runs/TASK-0055-webview2.json`, `headTested e9c6747…` |
+
+### Non testé / limites — inchangées, plus une
+
+Aucun fournisseur Cloud Files réel; aucun hard link inter-volume; repli
+non-Windows `UNKNOWN` par construction non exercé; crash physique pendant `M-B`
+non testé; `W-B` sur groupe partagé prouvé sur deux topologies seulement; aucune
+CI distante; aucune mesure de performance.
+
+**Nouvelle limite, à dire clairement :** l'audit structurel d'identité est une
+liste épinglée de fichiers, pas une preuve de flux. Il attrape un nouveau
+**lecteur**; il n'attraperait pas une valeur dérivée que l'un des huit fichiers
+privilégiés publierait lui-même. Les tests d'influence couvrent les deux surfaces
+publiques qui existent aujourd'hui (rapport de construction, page de doublons), pas
+toutes les futures.

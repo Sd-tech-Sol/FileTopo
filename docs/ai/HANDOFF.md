@@ -1,5 +1,25 @@
 # HANDOFF — passage de relais
 
+## Relais — TASK-0055 — correctif ACTION-0103 livré — 2026-10-08
+
+- Branche : `build/v0.2-a39-v1-physical-identity-closure`. `main` intacte.
+- **Ne pas marquer `VERIFIED`** : l'exécuteur ne s'attribue pas le verdict.
+  `TASK-0055` et `F-046` sont `IMPLEMENTED` / candidates et attendent un
+  **nouveau** contrôle indépendant.
+- Correctif A livré : plus aucune matière d'identité dans
+  `reconstructible_digest`, donc plus aucun dérivé en IPC. Correctif B livré : le
+  noyau exige le chemin relatif exact dès que le groupe est partagé, `D1`
+  préservée.
+- HEAD du code **et** de l'artefact : `e9c67473df2c46ce99926869a6a1f8940eba2d4d`.
+  Seuls des documents ont changé après lui.
+- À attaquer d'abord au contrôle : la **liste épinglée** de l'audit structurel
+  d'identité — elle attrape un nouveau lecteur, pas une valeur dérivée qu'un des
+  huit fichiers privilégiés publierait lui-même; puis la complétion d'image de
+  `W-B`, toujours prouvée sur deux topologies seulement.
+- Lire : `TASK-0055` §17, `VALIDATION.md` section **DM**,
+  `docs/performance/runs/TASK-0055-webview2.json`.
+- Aucune `TASK-0056`.
+
 ## Relais — ACTION-0103 — corrective TASK-0055 — 2026-10-08
 
 - Branche : `build/v0.2-a39-v1-physical-identity-closure`.

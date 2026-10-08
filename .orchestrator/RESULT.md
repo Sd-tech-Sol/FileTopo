@@ -1,141 +1,122 @@
-TASK_ID: TASK-0055 — V1 Physical Object Identity / F-046 closure
+TASK_ID: TASK-0055 — corrective after ACTION-0103 (F-046)
 AGENT: CLAUDE CODE (Opus 5)
 RESULT: IMPLEMENTED — candidate only, never self-VERIFIED
 BRANCH: build/v0.2-a39-v1-physical-identity-closure
-BASE: 393ac6d190295d979b58c9a03cc4712391d93335 (fast-forwarded to 7f86417)
-CODE: d55c1faa7f1664a3edeb2a2b7a0b032c50f19e7f
-HEAD TESTED BY THE WEBVIEW2 ARTIFACT: d0502fa1bb3bc993ec4977356e210ceb1349c9eb
+REVIEWED HEAD (ACTION-0103): 831ba733bd79729314366489f7f09ee78a8dbeb2
+CODE AND ARTIFACT HEAD: e9c67473df2c46ce99926869a6a1f8940eba2d4d
+NO PRODUCT CODE AFTER THAT HEAD — only documents.
 
-1. REUSE-FIRST (written before any production change; full table: TASK-0055 §14)
-- REUSE as is: GetFileInformationByHandleEx/FILE_ID_INFO, the Cloud Files
-  boundary, stable_key + identity_provenance, next_node_id, the M-B envelope,
-  sha256-v1, ExactDuplicateExplorer, the relation engine (untouched).
-- ADAPT: the versioned migration dispatcher (one arm), publish's remap, the
-  reconciler, the U-B kernel, W-B, the member DTO, observe_content's root
-  resolution.
-- MISSING, created: identity::pair_group (the one pairing rule) and
-  index::physical_object_fact (the closed classification).
-- NOT added: FILE_STANDARD_INFO.NumberOfLinks, a second store, a similarity
-  engine, any dependency. Cargo.toml and Cargo.lock unchanged.
+1. CORRECTIVE A — the public digest no longer derives from machine identity
+- `BrainIndex::reconstructible_digest` selected `n.stable_key` and
+  `n.identity_provenance`, pushed both into its bytes, and the `fnv1a64:` result
+  crossed Tauri IPC as `MapBuildReport.reconstructible_digest`. DEC-0052 F
+  forbids the raw key, the VolumeSerialNumber, the FileId AND any hash or
+  encoding of them, so a public value was a function of the Windows physical
+  identity of the analysed files.
+- Both columns leave the digest input AND the ORDER BY, where they were
+  tie-breakers. Rows are now ordered by EVERY digested field, so the digest is a
+  function of the multiset of logical rows alone — deterministic without
+  borrowing an identity to break a tie.
+- H7 is kept on logical, source-derived fields only: path, parentage by the
+  parent's relative path, name, kind, depth, size, timestamp, the two
+  placeholder flags, the child count, the access diagnostic.
+- No replacement identity digest is published. F-004 is untouched: no identity
+  path reads this function.
 
-2. MIGRATION 6 -> 7 (DEC-0052 C)
-- DROP INDEX then CREATE INDEX idx_nodes_stable_key, non unique, same expression
-  and same partial predicate. No row rewritten, no column added.
-- Version stamped last inside the step's own transaction; versioned dispatcher;
-  MAP_SCHEMA_VERSION = 7.
-- v7 canonical contract ("index present and not unique") joins M-B step 5, so a
-  half-applied migration is restored instead of served.
-- Proven on a real v6 index reduced to its exact shape: index_id and
-  index_revision unchanged, source not read, safety copy settled, and the case v6
-  refused (a shared SYSTEM key) publishes afterwards.
-- Injected failure on the step's LAST statement, i.e. after DROP and CREATE both
-  ran: user_version stays 6 and the v6 UNIQUE index is back.
+2. WHY THE OLD AUDITS COULD NOT SEE IT, AND WHAT REPLACES THEM
+- The TASK-0055 leak tests search the serialised payload for the key and
+  recognisable spellings. A digest contains none of them. The three new tests are
+  INFLUENCE tests, not substring tests.
+- The required discriminating test: the digest does not move when only
+  stable_key / identity_provenance change (including to NULL), and does move when
+  a genuine reconstructible field changes (a size, then a path).
+- The generalised leak audit: relabel every physical identity INJECTIVELY, which
+  preserves the sharing structure and therefore the closed DEC-0052 G
+  classification, and require every published byte to be identical. Any value
+  derived by hash, encoding or ordering moves there although no forbidden string
+  ever appears.
+- The structural, repo-wide half: which production files may read identity
+  material at all is pinned to the privileged core (identity, index, incremental,
+  reconcile, scope, scanner, plus change_journal for an `IS NULL` and watch_ops
+  for a closed-answer comparison). A new reader anywhere else fails, and
+  brain_index.rs is explicitly forbidden from becoming one again.
+- Live, in the real app: one file is replaced by a byte-identical one with both
+  mtimes — its own and its directory's — SET to the same instant in both states.
+  Windows gives the new file its own FileId, so the physical identity really
+  changes (the new nodeId proves it) and reconstructibleDigest must not move.
 
-3. ONE RULE, FOUR PATHS (DEC-0052 D/E)
-- identity::pair_group: 1 stored + 1 observed => same id (F-004 unchanged);
-  otherwise exact relative_path only; unmatched observed => fresh monotone id;
-  unmatched stored => disappearance; no alias correlated by supposition.
-- Full publish, manual refresh (reconcile + U-B kernel), W-B, exclusion rebase
-  and Reconstruire all go through it. Audited: no path keeps the old assumption.
-- The kernel no longer resolves an id from a key: the producer proves the pairing
-  (ObservedNode::continues) and the kernel verifies it — row exists, carries that
-  very key and provenance, never claimed twice, and a "new" occurrence may not
-  land on a stored one.
-- W-B completes a stable-key group's picture by one targeted re-read before
-  pairing, and only when an observed occurrence has no exact match. Without it a
-  brand-new hard link is indistinguishable from a rename of its target.
+3. CORRECTIVE B — the kernel refuses a forged alias correlation (DEC-0052 D2)
+- The kernel accepted `continues = Some(id)` once the row existed, carried the
+  same key and provenance, and was not claimed twice. With a shared SYSTEM key
+  those checks prove nothing: alias A and alias B carry the same key.
+- Once the group is SHARED, a continuation must be the stored occurrence at the
+  OBSERVED relative path. Shared means several stored occurrences of that key OR
+  a batch observing it more than once — the second half matters because a
+  brand-new hard link is the second observation of a key the Index still holds
+  once, and is otherwise indistinguishable from a rename of its target.
+- DEC-0052 D1 preserved exactly: one stored occurrence observed once may change
+  path and keep its id, which is F-004.
+- No heuristic: nothing inferred from a name, an order, a date or a size. A
+  verification boundary, not a second copy of pair_group's policy. It reuses the
+  existing keyed COUNT and the existing CorrelationMismatch variant, whose
+  diagnostic stays closed (one id, no path, no key).
+- All product producers already used pair_group correctly, so this was a hole in
+  the defence, not a wrong result in the field — stated plainly.
 
-4. PRODUCT SURFACE (DEC-0052 F/G)
-- Per SHA-256 group member: PROVEN_SHARED + brain-scoped occurrence count,
-  PROVEN_SINGLE + 1, or UNKNOWN + null. One read-only handle on the brain's Index
-  per page.
-- FR/EN, the five DEC-0021 notions stated distinctly; "likely copy" and "similar
-  name" declared NOT inferred. No probable-copy or similarity algorithm exists.
-- Forbidden everywhere (IPC, TypeScript, DOM, logs, artifacts): stable_key,
-  VolumeSerialNumber, FileId, any hash or encoding of them.
+4. DISCRIMINATION, MEASURED IN BOTH DIRECTIONS
+- Corrective A: with the two columns put back, the three new Rust tests fail AND
+  the real WebView2 run fails the live assertion after rebuilding the app.
+- Corrective B: with the guard removed, the two refusals fail and the two
+  acceptances still pass — so the guard is not a blanket "paths must match".
 
-5. REAL WINDOWS EVIDENCE
-- Fixture created by the seed BEFORE the first process, therefore before the
-  content campaign's own source-fingerprint baseline: a.bin, a real hard link
-  (os.link / std::fs::hard_link), a byte-for-byte copy, two distinct empty files.
-- Rust 16/16 in physical_identity_tests: two occurrences / two nodeIds / one
-  identity; the copy is PROVEN_SINGLE; the two empty files are one digest group,
-  two objects, zero relation (relation stores compared as bytes); F-004 intact;
-  the four DEC-0052 §5 examples; W-B on two topologies; rebuild + cold reopen;
-  brain-scoped count.
+5. SCOPE RESPECTED
+- Unchanged: migration 6→7, the SHA-256 model, ExactDuplicateExplorer semantics,
+  the relation engine, the Cloud Files policy, Cargo.toml and Cargo.lock.
+- Four source files touched: incremental.rs, map/brain_index.rs,
+  map/incremental_apply_tests.rs, map/physical_identity_tests.rs, plus the
+  TASK-0055 WebView2 harness. No TASK-0056.
+
+6. VALIDATIONS
+- cargo test --lib --offline: 901 passed, 0 failed, 13 ignored (from 894).
+- Frontend: 48 files, 721 passed. pnpm check PASS. pnpm build PASS.
+  pnpm tauri build --debug --no-bundle PASS. git diff --check PASS.
 - WebView2: two real processes over one sandbox, same semantics digest
   (22dfc466...), axe-core 4.13.0 zero violation on the explorer, zero fatal
   console error, analysed tree byte-identical after the session.
-  Artifact: docs/performance/runs/TASK-0055-webview2.json.
+  Artifact regenerated: docs/performance/runs/TASK-0055-webview2.json,
+  headTested e9c6747...
+- cargo clippy --all-targets -- -D warnings: 26 diagnostics, all historical,
+  NONE in the four files this corrective touched (counted per file).
+- cargo fmt: the four touched files are formatted. `cargo fmt -- <files>`
+  reformats the whole crate, so every file outside this corrective was restored;
+  the historical fmt debt is unchanged.
 
-6. THE TEN FALSIFICATIONS OF §11, ALL EFFECTIVE
-1  duplicate PATH_FALLBACK accepted -> refused in publish (both modes), in the
-   batch shape check, and in the kernel (OccupiedOccurrence).
-2  two shared SYSTEM occurrences rejected as a collision -> accepted and proven
-   on a real hard link; the old rule makes this test fail.
-3  an ambiguous alias paired arbitrarily -> pair_group unit tests plus the real
-   rename-of-an-alias replay; no stored occurrence is ever paired twice.
-4  a byte-for-byte copy called the same physical object -> PROVEN_SINGLE, in Rust
-   and in the DOM.
-5  UNKNOWN becoming PROVEN_SINGLE -> PATH_FALLBACK, unstamped row and unknown
-   path all answer UNKNOWN with no count; the frontend asserts the wording too.
-6  a raw SYSTEM key in a DTO -> the real key and each of its two halves are
-   searched in the serialised page; the DTO's field list is scanned in source.
-7  a FileId/volume in the DOM, a log or an artifact -> 12 spellings checked
-   against DOM, IPC payloads, app.log, app-error.log and the artifact.
-8  two empty files creating a relation -> relation stores identical byte for byte.
-9  a v6->v7 migration leaving half a schema -> failure after DROP+CREATE restores
-   v6; a v7 stamp over a UNIQUE index, or over no index, is refused.
-10 refresh/watcher reintroducing a hard-link collision -> refresh and W-B replays,
-   each compared against a full scan of the tree as it then is.
+7. NOT TESTED / LIMITS
+- Carried over: no real Cloud Files provider; no inter-volume hard link (NTFS
+  forbids it, and writing outside the repository is a stop condition); the
+  non-Windows fallback is UNKNOWN by construction and not exercised here; a
+  physical crash during M-B is still untested; W-B on a shared group is proven on
+  two topologies only; no remote CI; no performance measurement.
+- NEW, stated plainly: the structural identity audit is a pinned list of files,
+  not a flow proof. It catches a new READER; it would not catch a derived value
+  that one of the eight privileged files published itself. The two influence
+  tests cover the two public surfaces that exist today — the build report and the
+  duplicate page — not every future one.
 
-7. VALIDATIONS
-- cargo test --lib --offline: 894 passed, 0 failed, 13 ignored (from 862).
-- Discrimination MEASURED: with the pre-TASK-0055 rule temporarily restored,
-  11/16 physical_identity_tests, 5 identity::tests and 2 index::tests fail, then
-  pass again after restoration.
-- Frontend: 48 files, 721 passed. pnpm check PASS. pnpm build PASS.
-  pnpm tauri build --debug --no-bundle PASS.
-- git diff --check PASS. audit-public-readiness.ps1 -AllowRemotes PASS
-  (736 files, no sensitive pattern, no personal path).
-- cargo fmt: every file that was clean at the starting HEAD is formatted.
-  content_signals.rs and watch_ops.rs stay unformatted at their HISTORICAL lines
-  only (verified outside this slice's added blocks).
-- cargo clippy --all-targets -- -D warnings: 27 diagnostics, all historical,
-  none in the files this slice touched (counted per file). The one diagnostic
-  this slice introduced was removed by deleting the function it named.
-
-8. NOT TESTED / LIMITS
-- No real Cloud Files provider, account or placeholder: DEC-0035 stays covered by
-  its decision table and the Win32 call on an ordinary file.
-- No inter-volume hard link (NTFS forbids it; writing outside the repository is a
-  stop condition).
-- Non-Windows fallback is UNKNOWN by construction, not exercised on this host.
-- No performance measurement in this slice.
-- W-B on a shared group is proven on two topologies, not on every hint shape.
-- Physical crash during M-B still untested.
-- No remote GitHub CI attached. Historical Clippy and fmt debt unchanged.
-
-9. GIT
+8. GIT
 - Only build/v0.2-a39-v1-physical-identity-closure. main untouched.
+- Commits: c646609 (fix A), ae67bee (fix B), e0b827e and e9c6747 (harness),
+  then one documentation commit.
 - No PR, no merge, no tag, no release, no new remote, no history rewrite.
 - Remote write limited to pushing commits to this already-published work branch.
 
 NEXT (exactly one action):
-- Independent control of TASK-0055 by an instance distinct from the executor, on
-  evidence. TASK-0055 and F-046 stay IMPLEMENTED / candidates.
-- Read first: identity::pair_group, index.rs::publish, incremental.rs's
-  verification, scope.rs::reconcile_scopes (group-picture completion),
-  content_signals.rs::MapResolver.
-- Attack first: W-B's group-picture completion — the place where a partial
-  reading could still conclude wrongly.
+- A NEW independent control of TASK-0055 by an instance distinct from the
+  executor, on evidence. TASK-0055 and F-046 stay IMPLEMENTED / candidates.
+- Read first: TASK-0055 §17, VALIDATION §DM, then physical_identity_tests.rs's
+  three identity audits, incremental.rs's shared-group guard,
+  brain_index.rs::reconstructible_digest.
+- Attack first: the pinned list of the structural audit — it catches a new
+  reader, not a derivative published by a privileged file; then W-B's
+  group-picture completion, still proven on two topologies only.
 - No TASK-0056. ACTION-0102 §9 asks for a final V1 audit after this control.
-
-
-INDEPENDENT_CONTROL_ACTION_0103:
-- VERDICT: REWORK REQUIRED — NOT VERIFIED.
-- Blocking leak: BrainIndex::reconstructible_digest includes stable_key and identity_provenance; MapBuildReport sends the resulting hash over Tauri IPC. DEC-0052 F forbids hashed/encoded identity derivatives.
-- Defence gap: incremental kernel verifies key/provenance for continues=id but not exact-path membership when a SYSTEM group is shared.
-- Existing hard-link migration/model/UI evidence otherwise accepted as coherent.
-- TASK-0055/F-046 remain IMPLEMENTED candidates.
-- NEXT: execute corrective .orchestrator/NEXT_PROMPT.md; no TASK-0056.

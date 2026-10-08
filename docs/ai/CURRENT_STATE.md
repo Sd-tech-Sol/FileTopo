@@ -1,5 +1,44 @@
 # État courant
 
+## TASK-0055 — correctif ACTION-0103 livré — 2026-10-08
+
+- Les deux défauts d'`ACTION-0103` sont fermés. `TASK-0055` et `F-046` restent
+  **`IMPLEMENTED` / candidates**, jamais auto-`VERIFIED` : la tâche attend un
+  **nouveau** contrôle indépendant.
+- **A — plus aucun dérivé de l'identité machine en public.**
+  `BrainIndex::reconstructible_digest` ne lit plus `stable_key` ni
+  `identity_provenance`, ni dans ses octets ni dans son `ORDER BY`, où ils
+  servaient de départage. Les lignes sont ordonnées par **tous** les champs
+  digérés, donc le digest est fonction du seul multi-ensemble des lignes
+  logiques. Le but `H7` est conservé sur des champs logiques et dérivés de la
+  source. **Aucun digest d'identité de remplacement** n'est publié et `F-004`
+  n'est pas affaibli.
+- Trois tests d'**influence** remplacent la confiance dans les recherches de
+  graphies, qui ne peuvent pas voir un condensé : le digest ne bouge pas quand
+  seule l'identité change et bouge quand un vrai champ reconstructible change;
+  un réétiquetage **injectif** de toutes les identités physiques laisse chaque
+  octet publié identique; et un audit structurel épingle, à l'échelle du dépôt,
+  quels fichiers de production peuvent lire de la matière d'identité.
+- **B — le noyau refuse une corrélation forgée entre alias.** Dès que le groupe
+  est partagé — plusieurs occurrences stockées de la clé, **ou** un lot qui
+  l'observe plus d'une fois — un `continues` doit être l'occurrence stockée **au
+  chemin relatif observé**. `DEC-0052` D1 est intacte : une occurrence seule
+  observée une fois change de chemin et garde son id, ce qui est `F-004`. Aucune
+  heuristique; diagnostic fermé.
+- Portée respectée : migration `6 → 7`, modèle SHA-256, sémantique de
+  `ExactDuplicateExplorer`, moteur de relations, politique Cloud Files et
+  dépendances **inchangés**. Aucune `TASK-0056`.
+- Validations : Rust **901 PASS** / 0 failed / 13 ignored; frontend **721 PASS**;
+  `pnpm check`, `pnpm build`, Tauri debug `--no-bundle`, `git diff --check`
+  verts; WebView2 réel en deux processus, même digest sémantique `22dfc466…`,
+  axe 0 violation. Détail : `VALIDATION.md` section **DM**.
+- Discrimination **mesurée** des deux correctifs, y compris dans la vraie
+  application : avec les colonnes réintroduites, le WebView2 réel échoue
+  l'assertion vivante; avec la garde retirée, les deux refus du noyau échouent et
+  les deux acceptations passent toujours.
+- Code et artefact : `e9c67473df2c46ce99926869a6a1f8940eba2d4d`. Aucun code
+  produit après ce HEAD.
+
 ## ACTION-0103 — TASK-0055 corrective required — 2026-10-08
 
 - Independent control of code `d55c1faa…`, artifact head `d0502fa1…`, docs head `831ba733…`.

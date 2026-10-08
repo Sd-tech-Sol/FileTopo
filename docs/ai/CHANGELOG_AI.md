@@ -6599,3 +6599,36 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
 - Bloqueur confidentialité : le digest public reconstructible dépend de stable_key/provenance et traverse IPC, contrairement à DEC-0052 F qui interdit aussi les dérivés/hash d'identité machine.
 - Défense kernel incomplète : un mauvais alias SYSTEM de même clé/provenance n'est pas rejeté par chemin exact.
 - Corrective TASK-0055 préparée; aucun TASK-0056.
+
+## 2026-10-08 — TASK-0055 — correctif ACTION-0103 livré
+
+- **A.** `BrainIndex::reconstructible_digest` ne digère plus `stable_key` ni
+  `identity_provenance`, et ne les emploie plus comme départage dans son
+  `ORDER BY` : les lignes sont ordonnées par **tous** les champs digérés, donc le
+  digest public est fonction du seul multi-ensemble des lignes logiques. Un
+  dérivé de l'identité physique Windows ne traverse donc plus l'IPC dans
+  `MapBuildReport.reconstructible_digest`. Aucun digest d'identité de
+  remplacement n'est publié; `H7` et `F-004` sont conservés.
+- **B.** Le noyau incrémental refuse une continuation forgée vers un autre alias
+  du même objet : dès que le groupe est partagé — plusieurs occurrences stockées
+  de la clé, **ou** un lot qui l'observe plus d'une fois — `continues` doit être
+  l'occurrence stockée au chemin relatif observé. `DEC-0052` D1 intacte, aucune
+  heuristique, diagnostic fermé, aucune nouvelle variante d'erreur.
+- Sept tests neufs, tous **discriminants et mesurés** : les trois tests
+  d'identité échouent si les colonnes reviennent, les deux refus du noyau
+  échouent si la garde est retirée tandis que les deux acceptations passent
+  toujours. Le harnais WebView2 gagne la preuve vivante — un fichier remplacé par
+  un fichier identique octet pour octet, horodatages fixés, `nodeId` qui change
+  et digest qui ne bouge pas — et le vrai WebView2 **échoue** cette assertion
+  avec le défaut réintroduit.
+- Inchangés : migration `6 → 7`, modèle SHA-256, sémantique de
+  `ExactDuplicateExplorer`, moteur de relations, politique Cloud Files,
+  `Cargo.toml` et `Cargo.lock`.
+- Rust **901 PASS** / 0 failed / 13 ignored; frontend **721 PASS**;
+  `pnpm check`, `pnpm build`, Tauri debug `--no-bundle`, `git diff --check`
+  verts; WebView2 réel en deux processus, même digest sémantique `22dfc466…`,
+  axe-core 4.13.0 **0 violation**; clippy 26 diagnostics, tous historiques,
+  aucun dans les fichiers touchés.
+- Code et artefact `e9c67473df2c46ce99926869a6a1f8940eba2d4d`. `TASK-0055` et
+  `F-046` = `IMPLEMENTED` / candidates, jamais auto-`VERIFIED`. Aucune
+  `TASK-0056`.
