@@ -1,7 +1,7 @@
 # TASK-0054 — V1 Progressive Scale & Exact Aggregate Global Closure / F-050 + F-051
 
 - **Date :** 2026-10-07
-- **Statut :** `READY`
+- **Statut :** `IMPLEMENTED` — candidate au contrôle indépendant (jamais auto-`VERIFIED`)
 - **Branche :** `build/v0.2-a38-v1-scale-closure`
 - **Base :** `befd86a73216131eae9675961a758c1df73bffa1`
 - **Sélection :** `ACTION-0100`
@@ -269,3 +269,26 @@ exactement ce qui n'a pas été exécuté; ne jamais remplacer par « probableme
 - `NEXT_ACTION` = contrôle indépendant de TASK-0054;
 - commit + push sur la branche cible;
 - arbre propre.
+
+
+## Livraison
+
+Code produit `fd3f6067c47a50bccff4713bda04f7f89bc8af85`; artefacts liés au HEAD `42a06a1add90b9b7286fd8b9b7170c76d4ceac23` (les commits intermédiaires ne touchent que
+`scripts/` et `docs/`). Rapport lisible : `docs/performance/TASK-0054-SCALE-CLOSURE-REPORT.md`.
+
+- **Reuse-first** : tableau EXISTE / ADAPTER / MANQUANT dans le rapport §1. Aucune dépendance, aucun renderer,
+  aucun store, aucune copie du corpus.
+- **Rust** (`src-tauri/src/map/scale_closure_tests.rs`) : 10 k / 100 k / 1 M lignes **indexées** synthétiques,
+  trois formes (large, mixte, profond+large); `30 passed` avec les sept tests 1 M (`#[ignore]` en suite
+  ordinaire); artefact `docs/performance/runs/TASK-0054-scale-rust.json`.
+- **Frontend** (`src/map/scaleAggregate.test.tsx`) : 11 tests; suite complète 719 PASS.
+- **WebView2 réel** : normal + `--disable-gpu`, `docs/performance/runs/TASK-0054-webview2.json`; le run
+  GPU-désactivé n'est valide que parce que le navigateur rapporte le flag appliqué (`SystemInfo.getInfo`) et que le
+  même verdict est faux sur le run normal.
+- **Une correction produit** (`projection.rs`, `MIN_FOCUS_PAGE = 16`) : un focus à 200 niveaux paginait un enfant
+  par appel; le test échoue sur l'ancien comportement.
+- **Onze falsifications** : table dans le rapport §3, chacune une garde concrète qui peut échouer.
+- **Limites dites** : aucun banc modeste; recherche proportionnelle au corpus côté backend; focus de vue refusé
+  quand l'ascendance atteint le budget; l'agrégat de la dernière page boucle vers la première page.
+- `F-050`/`F-051` = `IMPLEMENTED` / candidates; `P-01`/`P-02`/`P-03` candidates seulement. `F-046` inchangée.
+  Aucune `TASK-0055`.

@@ -1,0 +1,459 @@
+{
+  "task": "TASK-0054",
+  "headTested": "42a06a1add90b9b7286fd8b9b7170c76d4ceac23",
+  "classification": "DEVELOPMENT_BENCH_ENGINEERING_EVIDENCE",
+  "method": "Synthetic INDEXED corpora written straight through the canonical Index writer (BrainIndex::replace); no physical file at 10k/100k/1M. The oracle is the corpus' own parent links and child counts, never the product's. Search/focus/pagination go through the product's own primitives.",
+  "machine": {
+    "cpu": "Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz",
+    "logicalProcessors": 16,
+    "memoryGiB": 31.9,
+    "note": "Development workstation, more powerful than the modest-laptop target. No SLA is claimed."
+  },
+  "command": "cargo test --lib scale_closure_tests -- --include-ignored --test-threads=1",
+  "result": "test result: ok. 30 passed; 0 failed; 0 ignored; 0 measured; 845 filtered out; finished in 1825.94s",
+  "tests": [
+    {
+      "name": "a_destination_deeper_than_the_budget_is_refused_cleanly",
+      "status": "ok"
+    },
+    {
+      "name": "aggregates_are_exact_at_one_million",
+      "status": "ok"
+    },
+    {
+      "name": "aggregates_are_exact_on_wide_mixed_and_deep_corpora",
+      "status": "ok"
+    },
+    {
+      "name": "an_aggregate_is_not_a_collapse",
+      "status": "ok"
+    },
+    {
+      "name": "exact_search_counts_a_folder_and_all_its_descendants",
+      "status": "ok"
+    },
+    {
+      "name": "falsification_1_whole_graph_dto_is_refused",
+      "status": "ok"
+    },
+    {
+      "name": "falsification_2_view_budget_overflow_is_refused",
+      "status": "ok"
+    },
+    {
+      "name": "falsification_3_corpus_wide_layout_is_refused",
+      "status": "ok"
+    },
+    {
+      "name": "falsification_4_aggregate_count_plus_or_minus_one_is_refused",
+      "status": "ok"
+    },
+    {
+      "name": "falsification_5_aggregate_as_folder_or_path_is_refused",
+      "status": "ok"
+    },
+    {
+      "name": "falsification_6_pagination_omission_or_duplicate_is_refused",
+      "status": "ok"
+    },
+    {
+      "name": "falsification_7_unreachable_destination_is_refused",
+      "status": "ok"
+    },
+    {
+      "name": "falsification_8_stale_and_foreign_cursors_are_refused",
+      "status": "ok"
+    },
+    {
+      "name": "reachability_100k_all_shapes",
+      "status": "ok"
+    },
+    {
+      "name": "reachability_10k_all_shapes",
+      "status": "ok"
+    },
+    {
+      "name": "reachability_1m_deep_wide",
+      "status": "ok"
+    },
+    {
+      "name": "reachability_1m_mixed",
+      "status": "ok"
+    },
+    {
+      "name": "reachability_1m_wide",
+      "status": "ok"
+    },
+    {
+      "name": "real_root_goes_through_the_canonical_index_and_the_bounded_view",
+      "status": "ok"
+    },
+    {
+      "name": "reopening_a_real_root_does_not_create_a_second_canonical_copy",
+      "status": "ok"
+    },
+    {
+      "name": "scale_deep_wide_100k",
+      "status": "ok"
+    },
+    {
+      "name": "scale_deep_wide_10k",
+      "status": "ok"
+    },
+    {
+      "name": "scale_deep_wide_1m",
+      "status": "ok"
+    },
+    {
+      "name": "scale_mixed_100k",
+      "status": "ok"
+    },
+    {
+      "name": "scale_mixed_10k",
+      "status": "ok"
+    },
+    {
+      "name": "scale_mixed_1m",
+      "status": "ok"
+    },
+    {
+      "name": "scale_wide_100k",
+      "status": "ok"
+    },
+    {
+      "name": "scale_wide_10k",
+      "status": "ok"
+    },
+    {
+      "name": "scale_wide_1m",
+      "status": "ok"
+    },
+    {
+      "name": "view_size_does_not_grow_with_the_corpus",
+      "status": "ok"
+    }
+  ],
+  "measurements": {
+    "aggregate-deepwide-10000": {
+      "biggestFolderChildren": 9799,
+      "childrenReachedByExpansion": 9799,
+      "expansionPages": 613,
+      "firstViewOmitted": 9783,
+      "indexed": 10000,
+      "shape": "DeepWide"
+    },
+    "aggregate-deepwide-100000": {
+      "biggestFolderChildren": 99799,
+      "childrenReachedByExpansion": 99799,
+      "expansionPages": 6238,
+      "firstViewOmitted": 99783,
+      "indexed": 100000,
+      "shape": "DeepWide"
+    },
+    "aggregate-mixed-10000": {
+      "biggestFolderChildren": 100,
+      "childrenReachedByExpansion": 100,
+      "expansionPages": 2,
+      "firstViewOmitted": 38,
+      "indexed": 10000,
+      "shape": "Mixed"
+    },
+    "aggregate-mixed-100000": {
+      "biggestFolderChildren": 317,
+      "childrenReachedByExpansion": 317,
+      "expansionPages": 6,
+      "firstViewOmitted": 255,
+      "indexed": 100000,
+      "shape": "Mixed"
+    },
+    "aggregate-mixed-1000000": {
+      "biggestFolderChildren": 1000,
+      "childrenReachedByExpansion": 1000,
+      "expansionPages": 17,
+      "firstViewOmitted": 938,
+      "indexed": 1000000,
+      "shape": "Mixed"
+    },
+    "aggregate-wide-10000": {
+      "biggestFolderChildren": 9999,
+      "childrenReachedByExpansion": 9999,
+      "expansionPages": 159,
+      "firstViewOmitted": 9936,
+      "indexed": 10000,
+      "shape": "Wide"
+    },
+    "aggregate-wide-100000": {
+      "biggestFolderChildren": 99999,
+      "childrenReachedByExpansion": 99999,
+      "expansionPages": 1588,
+      "firstViewOmitted": 99936,
+      "indexed": 100000,
+      "shape": "Wide"
+    },
+    "aggregate-wide-1000000": {
+      "biggestFolderChildren": 999999,
+      "childrenReachedByExpansion": 999999,
+      "expansionPages": 15873,
+      "firstViewOmitted": 999936,
+      "indexed": 1000000,
+      "shape": "Wide"
+    },
+    "reach-deepwide-10000": {
+      "actionsToReachAnyRow": "at most 2 after a search (select hit -> navigate/focus); at most ceil(total/50) page requests per folder otherwise",
+      "childrenPageLimit": 50,
+      "childrenPages": 396,
+      "focusedDestinations": 61,
+      "indexed": 10000,
+      "largestPage": 50,
+      "rowsVisitedByBoundedPages": 9999,
+      "searchAndFocusMs": 8544,
+      "searchedTargets": 61,
+      "shape": "DeepWide",
+      "walkMs": 139
+    },
+    "reach-deepwide-100000": {
+      "actionsToReachAnyRow": "at most 2 after a search (select hit -> navigate/focus); at most ceil(total/50) page requests per folder otherwise",
+      "childrenPageLimit": 50,
+      "childrenPages": 2196,
+      "focusedDestinations": 40,
+      "indexed": 100000,
+      "largestPage": 50,
+      "rowsVisitedByBoundedPages": 99999,
+      "searchAndFocusMs": 51160,
+      "searchedTargets": 40,
+      "shape": "DeepWide",
+      "walkMs": 1226
+    },
+    "reach-deepwide-1000000": {
+      "actionsToReachAnyRow": "at most 2 after a search (select hit -> navigate/focus); at most ceil(total/50) page requests per folder otherwise",
+      "childrenPageLimit": 50,
+      "childrenPages": 20196,
+      "focusedDestinations": 13,
+      "indexed": 1000000,
+      "largestPage": 50,
+      "rowsVisitedByBoundedPages": 999999,
+      "searchAndFocusMs": 160600,
+      "searchedTargets": 13,
+      "shape": "DeepWide",
+      "walkMs": 15809
+    },
+    "reach-mixed-10000": {
+      "actionsToReachAnyRow": "at most 2 after a search (select hit -> navigate/focus); at most ceil(total/50) page requests per folder otherwise",
+      "childrenPageLimit": 50,
+      "childrenPages": 200,
+      "focusedDestinations": 61,
+      "indexed": 10000,
+      "largestPage": 50,
+      "rowsVisitedByBoundedPages": 9999,
+      "searchAndFocusMs": 436,
+      "searchedTargets": 61,
+      "shape": "Mixed",
+      "walkMs": 53
+    },
+    "reach-mixed-100000": {
+      "actionsToReachAnyRow": "at most 2 after a search (select hit -> navigate/focus); at most ceil(total/50) page requests per folder otherwise",
+      "childrenPageLimit": 50,
+      "childrenPages": 2208,
+      "focusedDestinations": 40,
+      "indexed": 100000,
+      "largestPage": 50,
+      "rowsVisitedByBoundedPages": 99999,
+      "searchAndFocusMs": 3263,
+      "searchedTargets": 40,
+      "shape": "Mixed",
+      "walkMs": 636
+    },
+    "reach-mixed-1000000": {
+      "actionsToReachAnyRow": "at most 2 after a search (select hit -> navigate/focus); at most ceil(total/50) page requests per folder otherwise",
+      "childrenPageLimit": 50,
+      "childrenPages": 20000,
+      "focusedDestinations": 25,
+      "indexed": 1000000,
+      "largestPage": 50,
+      "rowsVisitedByBoundedPages": 999999,
+      "searchAndFocusMs": 19914,
+      "searchedTargets": 25,
+      "shape": "Mixed",
+      "walkMs": 6044
+    },
+    "reach-wide-10000": {
+      "actionsToReachAnyRow": "at most 2 after a search (select hit -> navigate/focus); at most ceil(total/50) page requests per folder otherwise",
+      "childrenPageLimit": 50,
+      "childrenPages": 200,
+      "focusedDestinations": 61,
+      "indexed": 10000,
+      "largestPage": 50,
+      "rowsVisitedByBoundedPages": 9999,
+      "searchAndFocusMs": 427,
+      "searchedTargets": 61,
+      "shape": "Wide",
+      "walkMs": 57
+    },
+    "reach-wide-100000": {
+      "actionsToReachAnyRow": "at most 2 after a search (select hit -> navigate/focus); at most ceil(total/50) page requests per folder otherwise",
+      "childrenPageLimit": 50,
+      "childrenPages": 2000,
+      "focusedDestinations": 40,
+      "indexed": 100000,
+      "largestPage": 50,
+      "rowsVisitedByBoundedPages": 99999,
+      "searchAndFocusMs": 3112,
+      "searchedTargets": 40,
+      "shape": "Wide",
+      "walkMs": 605
+    },
+    "reach-wide-1000000": {
+      "actionsToReachAnyRow": "at most 2 after a search (select hit -> navigate/focus); at most ceil(total/50) page requests per folder otherwise",
+      "childrenPageLimit": 50,
+      "childrenPages": 20000,
+      "focusedDestinations": 13,
+      "indexed": 1000000,
+      "largestPage": 50,
+      "rowsVisitedByBoundedPages": 999999,
+      "searchAndFocusMs": 9862,
+      "searchedTargets": 13,
+      "shape": "Wide",
+      "walkMs": 6190
+    },
+    "scale-deepwide-10000": {
+      "aggregates": 1,
+      "buildIndexMs": 6072,
+      "edges": 1,
+      "indexed": 10000,
+      "layoutHeight": 64.0,
+      "layoutSlots": 3,
+      "layoutWidth": 960.0,
+      "materialNodes": 2,
+      "nonMaterialized": 9998,
+      "shape": "DeepWide",
+      "viewBudget": 512,
+      "viewMs": 0,
+      "viewPayloadBytes": 990
+    },
+    "scale-deepwide-100000": {
+      "aggregates": 1,
+      "buildIndexMs": 37330,
+      "edges": 1,
+      "indexed": 100000,
+      "layoutHeight": 64.0,
+      "layoutSlots": 3,
+      "layoutWidth": 960.0,
+      "materialNodes": 2,
+      "nonMaterialized": 99998,
+      "shape": "DeepWide",
+      "viewBudget": 512,
+      "viewMs": 0,
+      "viewPayloadBytes": 992
+    },
+    "scale-deepwide-1000000": {
+      "aggregates": 1,
+      "buildIndexMs": 512790,
+      "edges": 1,
+      "indexed": 1000000,
+      "layoutHeight": 64.0,
+      "layoutSlots": 3,
+      "layoutWidth": 960.0,
+      "materialNodes": 2,
+      "nonMaterialized": 999998,
+      "shape": "DeepWide",
+      "viewBudget": 512,
+      "viewMs": 1,
+      "viewPayloadBytes": 994
+    },
+    "scale-mixed-10000": {
+      "aggregates": 64,
+      "buildIndexMs": 131,
+      "edges": 63,
+      "indexed": 10000,
+      "layoutHeight": 5860.0,
+      "layoutSlots": 128,
+      "layoutWidth": 960.0,
+      "materialNodes": 64,
+      "nonMaterialized": 9936,
+      "shape": "Mixed",
+      "viewBudget": 512,
+      "viewMs": 1,
+      "viewPayloadBytes": 25636
+    },
+    "scale-mixed-100000": {
+      "aggregates": 64,
+      "buildIndexMs": 2340,
+      "edges": 63,
+      "indexed": 100000,
+      "layoutHeight": 5860.0,
+      "layoutSlots": 128,
+      "layoutWidth": 960.0,
+      "materialNodes": 64,
+      "nonMaterialized": 99936,
+      "shape": "Mixed",
+      "viewBudget": 512,
+      "viewMs": 1,
+      "viewPayloadBytes": 25639
+    },
+    "scale-mixed-1000000": {
+      "aggregates": 64,
+      "buildIndexMs": 34037,
+      "edges": 63,
+      "indexed": 1000000,
+      "layoutHeight": 5860.0,
+      "layoutSlots": 128,
+      "layoutWidth": 960.0,
+      "materialNodes": 64,
+      "nonMaterialized": 999936,
+      "shape": "Mixed",
+      "viewBudget": 512,
+      "viewMs": 1,
+      "viewPayloadBytes": 25768
+    },
+    "scale-wide-10000": {
+      "aggregates": 1,
+      "buildIndexMs": 116,
+      "edges": 63,
+      "indexed": 10000,
+      "layoutHeight": 5860.0,
+      "layoutSlots": 65,
+      "layoutWidth": 600.0,
+      "materialNodes": 64,
+      "nonMaterialized": 9936,
+      "shape": "Wide",
+      "viewBudget": 512,
+      "viewMs": 1,
+      "viewPayloadBytes": 16211
+    },
+    "scale-wide-100000": {
+      "aggregates": 1,
+      "buildIndexMs": 1691,
+      "edges": 63,
+      "indexed": 100000,
+      "layoutHeight": 5860.0,
+      "layoutSlots": 65,
+      "layoutWidth": 600.0,
+      "materialNodes": 64,
+      "nonMaterialized": 99936,
+      "shape": "Wide",
+      "viewBudget": 512,
+      "viewMs": 1,
+      "viewPayloadBytes": 16215
+    },
+    "scale-wide-1000000": {
+      "aggregates": 1,
+      "buildIndexMs": 32371,
+      "edges": 63,
+      "indexed": 1000000,
+      "layoutHeight": 5860.0,
+      "layoutSlots": 65,
+      "layoutWidth": 600.0,
+      "materialNodes": 64,
+      "nonMaterialized": 999936,
+      "shape": "Wide",
+      "viewBudget": 512,
+      "viewMs": 1,
+      "viewPayloadBytes": 16219
+    }
+  },
+  "notTested": [
+    "No latency SLA is claimed: times are engineering evidence on a workstation more powerful than the modest-laptop target.",
+    "Memory per process was not measured by this harness.",
+    "A focus whose ancestry reaches the material budget is refused with a fixed error (see limits in the report)."
+  ]
+}

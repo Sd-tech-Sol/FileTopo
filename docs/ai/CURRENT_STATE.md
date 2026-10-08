@@ -1,5 +1,18 @@
 # État courant
 
+## TASK-0054 — F-050 + F-051 — `IMPLEMENTED` (candidates) — 2026-10-07
+
+- Preuve du runtime V1 actuel, sans réarchitecture : 10 k / 100 k / 1 M lignes **indexées** synthétiques (large,
+  mixte, profond+large), vue bornée et indépendante du corpus, atteignabilité structurelle (couverture exacte de
+  tous les ids par les primitives bornées), agrégats exacts contre un oracle indépendant, REAL_ROOT bout en bout,
+  onze falsifications effectives.
+- WebView2 réel normal **et** `--disable-gpu` (appliqué, observé par le navigateur lui-même), même sémantique,
+  axe 0 violation, source inchangée.
+- Une seule correction produit : plancher de 16 enfants par page à focus profond (`MIN_FOCUS_PAGE`).
+- Code `fd3f6067c47a50bccff4713bda04f7f89bc8af85`; artefacts sur `42a06a1add90b9b7286fd8b9b7170c76d4ceac23`. Rapport : `docs/performance/TASK-0054-SCALE-CLOSURE-REPORT.md`.
+- `F-050`/`F-051` = `IMPLEMENTED` / candidates; `P-01`/`P-02`/`P-03` candidates seulement; **jamais auto-VERIFIED**.
+  `F-046` inchangée. Aucune TASK-0055.
+
 ## ACTION-0100 — audit V1 frais / TASK-0054 READY — 2026-10-07
 
 - Base auditée : `befd86a73216131eae9675961a758c1df73bffa1` après ACTION-0099.

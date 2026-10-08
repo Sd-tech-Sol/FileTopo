@@ -6527,3 +6527,12 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
 - Ordre : F-050/F-051 avant F-046, contrairement à l'ordre historique indicatif, parce que le baseline courant les classe P0/MVP et « ensemble ou pas du tout ».
 - TASK-0054 créée : fermeture globale de la vue progressive/agrégats par réutilisation du runtime actuel, preuves 10k/100k/1M indexés, REAL_ROOT temporaire et WebView2 normal/GPU-disabled.
 - Aucune nouvelle architecture/dépendance prévue. Aucune TASK-0055.
+
+## 2026-10-07 — TASK-0054 — F-050 + F-051 fermeture globale (candidate)
+
+- Reuse-first : l'Index, la projection, `ViewAggregate`, `children_page`, la recherche et REAL_ROOT existants suffisent.
+- Ajout de preuves : `scale_closure_tests.rs` (10 k/100 k/1 M indexés, oracle indépendant, atteignabilité, agrégats,
+  onze falsifications), `scaleAggregate.test.tsx`, harness WebView2 normal + `--disable-gpu` avec preuve observée.
+- Correction produit unique : plancher `MIN_FOCUS_PAGE=16` (un focus à 200 niveaux paginait un enfant par appel).
+- Code `fd3f6067c47a50bccff4713bda04f7f89bc8af85`; artefacts sur `42a06a1add90b9b7286fd8b9b7170c76d4ceac23`. `F-050`/`F-051` = `IMPLEMENTED`/candidates; `P-01`/`P-02`/`P-03` candidates;
+  jamais auto-VERIFIED. `F-046` inchangée. Aucune TASK-0055.

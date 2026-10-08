@@ -9588,3 +9588,28 @@ reproduit par la preuve WebView2 (il l'est en Rust); la page n'a pas de moyen de
 - **CI distante : absente** pour `804e1daa29b30e60b098ff677d06b452f02ecad6` (0 workflow run, 0 commit status). Les suites annoncées par l'exécuteur sont des preuves locales, pas une validation GitHub Actions.
 
 **Clôture :** `TASK-0053 = VERIFIED`; `F-052 = VERIFIED`; `M-1 = CLOSED`; `P-19 = CLOSED / VERIFIED`. Limites documentées (crash brutal non testé; reduced-motion OS émulé en CDP) conservées sans abaisser le contrat.
+
+## DI — TASK-0054 / F-050 + F-051 (2026-10-07)
+
+**Statut : `IMPLEMENTED`**, en attente de contrôle indépendant. Code `fd3f6067c47a50bccff4713bda04f7f89bc8af85`; artefacts sur `42a06a1add90b9b7286fd8b9b7170c76d4ceac23`.
+
+Vérifié par l'exécuteur (preuves, non indépendant) :
+
+- `cargo test --lib` : **862 passed; 0 failed; 13 ignored** (839 + 23 nouveaux; 13 = 6 antérieurs + 7 tests 1 M).
+- `cargo test --lib scale_closure_tests -- --include-ignored --test-threads=1` : **30 passed; 0 failed** (1 826 s),
+  `docs/performance/runs/TASK-0054-scale-rust.json`.
+- Frontend : `vitest run` **48 fichiers, 719 passed** (708 + 11); `pnpm check` PASS; `pnpm build` PASS;
+  `pnpm tauri build --debug --no-bundle` PASS (avertissement `SUGGESTION_STATES` préexistant).
+- WebView2 réel normal + GPU-désactivé, `docs/performance/runs/TASK-0054-webview2.json` : même digest de sémantique
+  (`6b1817c7…`), axe-core 4.13.0 0 violation aux 4 états, 0 erreur console fatale, source inchangée (hash).
+  GPU-désactivé : `--disable-gpu` dans la ligne de commande du navigateur, `gpu_compositing=disabled_software`,
+  WebGL logiciel; run normal : `enabled`/matériel et verdict `gpuDisabledApplied=false` (falsification 10).
+- `git diff --check` PASS; `scripts/audit-public-readiness.ps1 -AllowRemotes` PASS (aucun chemin personnel).
+
+Onze falsifications effectives : rapport §3. Une correction produit : `MIN_FOCUS_PAGE=16`.
+
+**Non testé / limites :** matériel modeste; FPS/latence (aucun SLA); mémoire par processus; recherche en balayage
+proportionnel au corpus (environ 0,8 s par recherche+focus à 1 M mixte, environ 12 s à 1 M de chemins de 200 niveaux);
+focus de vue refusé quand l'ascendance atteint 256 nœuds (`a_destination_deeper_than_the_budget_is_refused_cleanly`);
+l'agrégat de la dernière page reboucle vers la première; 1 M = lignes indexées, pas fichiers; un seul cerveau en
+WebView2; aucune CI GitHub distante attachée.

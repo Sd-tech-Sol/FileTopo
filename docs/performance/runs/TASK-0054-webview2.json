@@ -1,0 +1,326 @@
+{
+  "task": "TASK-0054",
+  "headTested": "42a06a1add90b9b7286fd8b9b7170c76d4ceac23",
+  "classification": "DEVELOPMENT_BENCH_ENGINEERING_EVIDENCE",
+  "strategy": "Same scenario twice in the real Tauri/WebView2 app on a disposable synthetic REAL_ROOT; the GPU-disabled run is only valid because the browser reports --disable-gpu as applied (SystemInfo.getInfo) and the same verdict is FALSE on the normal run",
+  "machine": {
+    "cpu": "Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz",
+    "logicalProcessors": 16,
+    "memoryGiB": 31.9,
+    "note": "Development workstation, more powerful than the modest-laptop target. No SLA is claimed."
+  },
+  "normal": {
+    "task": "TASK-0054",
+    "mode": "normal",
+    "headTested": "42a06a1add90b9b7286fd8b9b7170c76d4ceac23",
+    "checks": [
+      {
+        "label": "gpu configuration observed, not assumed",
+        "value": {
+          "gpuDisabledApplied": false
+        }
+      },
+      {
+        "label": "first view bounded, drawn == materialised, Index == disk",
+        "value": {
+          "indexed": 747,
+          "materialized": 5,
+          "aggregates": 3,
+          "payloadBytes": 1980
+        }
+      },
+      {
+        "label": "search -> navigation reaches a row outside the first view",
+        "value": {
+          "actions": "type + click hit"
+        }
+      },
+      {
+        "label": "aggregate expansion pages every real child once, label == exact count",
+        "value": {
+          "pages": 12,
+          "children": 700,
+          "lastPageCyclesToFirst": true
+        }
+      },
+      {
+        "label": "selection, keyboard, zoom, pan, fit, mouse selection",
+        "value": {
+          "selectedViaKeyboard": true
+        }
+      },
+      {
+        "label": "source unchanged, no write on the wire, no fatal console error",
+        "value": {
+          "commandsSeen": [
+            "map_brain_activate",
+            "map_brain_resume_update",
+            "map_content_observation_for_path",
+            "map_content_summary",
+            "map_cross_relations_for_node",
+            "map_cross_relations_open",
+            "map_node_change_state",
+            "map_node_children",
+            "map_node_detail",
+            "map_resolve_node",
+            "map_search_nodes",
+            "map_view"
+          ]
+        }
+      }
+    ],
+    "gpu": {
+      "requestedByEnvironment": false,
+      "systemInfoAvailable": true,
+      "commandLineHasDisableGpu": false,
+      "gpuCompositing": "enabled",
+      "webgl": "enabled",
+      "webglClass": "hardware",
+      "gpuDeviceCount": 2,
+      "browserProduct": "Edg/154.0.4258.62"
+    },
+    "semanticsDigest": "6b1817c7b6ac36a7f87e9b4666a73bd3a61ad73291e63378b9adf5032e3d3ab5",
+    "semantics": {
+      "indexed": 747,
+      "materialized": 5,
+      "aggregateCounts": [
+        1,
+        5,
+        700
+      ],
+      "searchTotal": 1,
+      "pageShapes": [
+        [
+          62,
+          638
+        ],
+        [
+          62,
+          638
+        ],
+        [
+          62,
+          638
+        ],
+        [
+          62,
+          638
+        ],
+        [
+          62,
+          638
+        ],
+        [
+          62,
+          638
+        ],
+        [
+          62,
+          638
+        ],
+        [
+          62,
+          638
+        ],
+        [
+          62,
+          638
+        ],
+        [
+          62,
+          638
+        ],
+        [
+          62,
+          638
+        ],
+        [
+          18,
+          682
+        ]
+      ],
+      "expandedPaths": "700 paths (covered by the digest)"
+    },
+    "metrics": {
+      "indexed": 747,
+      "viewBudget": 512,
+      "firstViewPayloadBytes": 1980,
+      "firstViewCards": 5,
+      "firstViewAggregates": 3,
+      "aggregatePages": 12,
+      "largestPageSlots": 66,
+      "wireCommandCount": 846
+    },
+    "axe": {
+      "version": "4.13.0",
+      "violationsPerState": {
+        "initial": 0,
+        "afterNavigation": 0,
+        "aggregate": 0,
+        "afterGestures": 0
+      }
+    },
+    "fatalConsoleErrors": 0,
+    "sourceHashUnchanged": true
+  },
+  "gpuDisabled": {
+    "task": "TASK-0054",
+    "mode": "gpuoff",
+    "headTested": "42a06a1add90b9b7286fd8b9b7170c76d4ceac23",
+    "checks": [
+      {
+        "label": "gpu configuration observed, not assumed",
+        "value": {
+          "gpuDisabledApplied": true
+        }
+      },
+      {
+        "label": "first view bounded, drawn == materialised, Index == disk",
+        "value": {
+          "indexed": 747,
+          "materialized": 5,
+          "aggregates": 3,
+          "payloadBytes": 1980
+        }
+      },
+      {
+        "label": "search -> navigation reaches a row outside the first view",
+        "value": {
+          "actions": "type + click hit"
+        }
+      },
+      {
+        "label": "aggregate expansion pages every real child once, label == exact count",
+        "value": {
+          "pages": 12,
+          "children": 700,
+          "lastPageCyclesToFirst": true
+        }
+      },
+      {
+        "label": "selection, keyboard, zoom, pan, fit, mouse selection",
+        "value": {
+          "selectedViaKeyboard": true
+        }
+      },
+      {
+        "label": "source unchanged, no write on the wire, no fatal console error",
+        "value": {
+          "commandsSeen": [
+            "map_brain_activate",
+            "map_brain_resume_update",
+            "map_content_observation_for_path",
+            "map_content_summary",
+            "map_cross_relations_for_node",
+            "map_cross_relations_open",
+            "map_node_change_state",
+            "map_node_children",
+            "map_node_detail",
+            "map_resolve_node",
+            "map_search_nodes",
+            "map_view"
+          ]
+        }
+      }
+    ],
+    "gpu": {
+      "requestedByEnvironment": true,
+      "systemInfoAvailable": true,
+      "commandLineHasDisableGpu": true,
+      "gpuCompositing": "disabled_software",
+      "webgl": "unavailable_software",
+      "webglClass": "software",
+      "gpuDeviceCount": 1,
+      "browserProduct": "Edg/154.0.4258.62"
+    },
+    "semanticsDigest": "6b1817c7b6ac36a7f87e9b4666a73bd3a61ad73291e63378b9adf5032e3d3ab5",
+    "semantics": {
+      "indexed": 747,
+      "materialized": 5,
+      "aggregateCounts": [
+        1,
+        5,
+        700
+      ],
+      "searchTotal": 1,
+      "pageShapes": [
+        [
+          62,
+          638
+        ],
+        [
+          62,
+          638
+        ],
+        [
+          62,
+          638
+        ],
+        [
+          62,
+          638
+        ],
+        [
+          62,
+          638
+        ],
+        [
+          62,
+          638
+        ],
+        [
+          62,
+          638
+        ],
+        [
+          62,
+          638
+        ],
+        [
+          62,
+          638
+        ],
+        [
+          62,
+          638
+        ],
+        [
+          62,
+          638
+        ],
+        [
+          18,
+          682
+        ]
+      ],
+      "expandedPaths": "700 paths (covered by the digest)"
+    },
+    "metrics": {
+      "indexed": 747,
+      "viewBudget": 512,
+      "firstViewPayloadBytes": 1980,
+      "firstViewCards": 5,
+      "firstViewAggregates": 3,
+      "aggregatePages": 12,
+      "largestPageSlots": 66,
+      "wireCommandCount": 844
+    },
+    "axe": {
+      "version": "4.13.0",
+      "violationsPerState": {
+        "initial": 0,
+        "afterNavigation": 0,
+        "aggregate": 0,
+        "afterGestures": 0
+      }
+    },
+    "fatalConsoleErrors": 0,
+    "sourceHashUnchanged": true
+  },
+  "sameSemantics": true,
+  "notTested": [
+    "No frame-rate or latency claim: gesture waits include deliberate CDP settling.",
+    "Modest-laptop hardware was not available; the GPU-disabled run proves absence of functional dependence on hardware acceleration, not performance.",
+    "The WebView2 pass uses a 700-row folder physically on disk; 10k/100k/1M rows are proven structurally in Rust."
+  ]
+}

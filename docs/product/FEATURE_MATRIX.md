@@ -367,3 +367,8 @@ Les preuves et constats ci-dessous sont inchangés.
 > fonctions déjà contrôlées restent des constats datés et seront réconciliées
 > lors de la passe documentaire finale. `TASK-0054` porte uniquement la
 > fermeture globale F-050/F-051.
+
+> **TASK-0054 (2026-10-07).** `F-050` et `F-051` restent `IMPLEMENTED` et sont maintenant **candidates** à une
+> fermeture globale indépendante : preuves 10 k / 100 k / 1 M lignes indexées, atteignabilité structurelle, agrégats
+> exacts, REAL_ROOT, WebView2 normal et GPU-désactivé (code `fd3f6067c47a50bccff4713bda04f7f89bc8af85`). Jamais auto-`VERIFIED`.
+> Voir `docs/performance/TASK-0054-SCALE-CLOSURE-REPORT.md`.

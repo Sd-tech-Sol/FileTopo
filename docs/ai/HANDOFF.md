@@ -1,5 +1,21 @@
 # HANDOFF — passage de relais
 
+## Relais — TASK-0054 IMPLEMENTED — 2026-10-07
+
+- Branche `build/v0.2-a38-v1-scale-closure`; code `fd3f6067c47a50bccff4713bda04f7f89bc8af85`; artefacts sur `42a06a1add90b9b7286fd8b9b7170c76d4ceac23`.
+- À contrôler : `src-tauri/src/map/scale_closure_tests.rs` (oracle indépendant, gardes, onze falsifications),
+  `src-tauri/src/map/projection.rs` (seule modification produit : `MIN_FOCUS_PAGE`),
+  `src/map/scaleAggregate.test.tsx`, `scripts/task0054-webview2.mjs` et `.ps1` (preuve GPU-désactivé discriminante),
+  `docs/performance/runs/TASK-0054-scale-rust.json` et `TASK-0054-webview2.json`, rapport
+  `docs/performance/TASK-0054-SCALE-CLOSURE-REPORT.md`.
+- Relancer les tests 1 M : `cargo test --lib scale_closure_tests -- --include-ignored --test-threads=1` (environ 30 min,
+  plusieurs Gio; ne pas les lancer en parallèle). WebView2 : `pnpm build`, `pnpm tauri build --debug --no-bundle`, puis
+  `pwsh scripts/task0054-webview2.ps1` (arbre suivi propre exigé). L'artefact Rust se reconstruit avec
+  `python scripts/task0054-collect-rust-evidence.py`.
+- Limites dites : banc plus puissant que la cible; recherche en balayage proportionnel au corpus; focus de vue refusé
+  quand l'ascendance atteint 256 nœuds; l'agrégat de la dernière page reboucle vers la première (exact, libellé à examiner).
+- F-050/F-051 et P-01/P-02/P-03 : candidates; F-046 inchangée; aucune TASK-0055.
+
 ## Relais — ACTION-0100 / TASK-0054 READY — 2026-10-07
 
 - Nouvelle branche : `build/v0.2-a38-v1-scale-closure`, basée sur `befd86a73216131eae9675961a758c1df73bffa1`.

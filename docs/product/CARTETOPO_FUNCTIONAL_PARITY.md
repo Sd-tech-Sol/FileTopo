@@ -448,3 +448,7 @@ Ils sont écrits ici plutôt que corrigés en silence.
 > éléments indexés atteignables par les primitives bornées. `TASK-0054` ne
 > ferme pas ces exigences elle-même : elle les rend candidates au contrôle
 > indépendant. `F-046` reste séparée.
+
+> **TASK-0054 (2026-10-07).** `P-01`, `P-02`, `P-03` (amendements d'échelle) sont **candidates** : vue exacte/bornée avec
+> omissions déclarées, hiérarchie et agrégats à compte exact (jamais un faux dossier), parent/enfants directs
+> atteignables malgré pagination et agrégats. Non fermées par l'exécuteur; contrôle indépendant requis.

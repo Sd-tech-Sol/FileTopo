@@ -1,23 +1,29 @@
-TASK_ID: ACTION-0100 — Fresh V1 gap audit after TASK-0053
-AGENT: CHATGPT ORCHESTRATOR
-RESULT: CLOSED — TASK-0054 READY
+TASK_ID: TASK-0054 — V1 Progressive Scale & Exact Aggregate Global Closure / F-050 + F-051
+AGENT: CLAUDE CODE (Sonnet 5.5)
+RESULT: DONE — TASK-0054 IMPLEMENTED, candidate à contrôle indépendant
 BRANCH: build/v0.2-a38-v1-scale-closure
-BASE: befd86a73216131eae9675961a758c1df73bffa1
+CODE_COMMIT: fd3f6067c47a50bccff4713bda04f7f89bc8af85
+ARTIFACTS_HEAD: 42a06a1add90b9b7286fd8b9b7170c76d4ceac23
 
 SUMMARY:
-- ACTION-0099 confirmed TASK-0053 / F-052 VERIFIED and M-1 / P-19 CLOSED.
-- Fresh V1 audit reconciled historical stale gap text against independent controls.
-- Remaining functional MVP gaps: F-050 + F-051 (P0, mandatory pair) and F-046 (P1).
-- F-050 + F-051 selected before F-046 because the current MVP baseline makes them P0 and explicitly inseparable.
-- TASK-0054 created for global progressive-scale / exact-aggregate closure.
-- Reuse-first: current Index/materializer/ViewAggregate/REAL_ROOT and TASK-0028/0030 harnesses.
-- Scale proof: 10k/100k/1M indexed synthetic corpora, not 1M physical files.
-- Real WebView2: normal + verified --disable-gpu run.
-- No new dependency, renderer, store, cloud, LLM or MCP by default.
+- Reuse-first : le runtime actuel (Index, projection, ViewAggregate, children_page, recherche, REAL_ROOT) est prouvé, pas réécrit.
+- Rust : 10k/100k/1M lignes indexées synthétiques (large, mixte, profond+large) ; vue constante (16-26 Ko, 65-128 créneaux), couverture exacte de tous les ids par pagination bornée, recherche exacte, focus hors-vue, agrégats exacts contre un oracle indépendant.
+- REAL_ROOT temporaire : register -> refresh -> view == materialize_view ; source inchangée ; une seule base d'Index.
+- WebView2 réel normal ET --disable-gpu : flag observé appliqué par le navigateur (SystemInfo.getInfo), même verdict FAUX sur le run normal ; même sémantique ; axe 0 violation ; source inchangée.
+- Une correction produit : MIN_FOCUS_PAGE=16 (focus à 200 niveaux : 1 enfant par page avant, 613 pages au lieu de 9 799).
+- Onze falsifications effectives (rapport §3).
 
-NEXT:
-- Claude Code, Sonnet 5.5, High.
-- /clear is recommended before execution.
-- Fast-forward branch, then execute .orchestrator/NEXT_PROMPT.md completely.
-- Do not auto-VERIFY.
-- F-046 unchanged; no TASK-0055.
+VALIDATION:
+- cargo test --lib : 862 PASS, 13 ignored ; scale_closure_tests --include-ignored : 30 PASS.
+- Frontend 719 PASS (48 fichiers) ; tsc, build, Tauri debug OK ; git diff --check OK ; audit public OK.
+- Artefacts : docs/performance/runs/TASK-0054-scale-rust.json, TASK-0054-webview2.json ; rapport docs/performance/TASK-0054-SCALE-CLOSURE-REPORT.md.
+
+NOT_TESTED / LIMITS:
+- Banc i9-9900K/31,9 Gio plus puissant que la cible ; aucun SLA, FPS ni mémoire par processus.
+- Recherche en balayage proportionnel au corpus côté backend (environ 0,8 s à 1M mixte) ; non fermée.
+- Focus de vue refusé quand l'ascendance atteint 256 nœuds (erreur fixe) ; destination alors atteignable par recherche/pagination.
+- Agrégat de la dernière page : Entrée reboucle vers la première page (exact, libellé à examiner).
+- 1M = lignes indexées, pas fichiers ; un seul cerveau en WebView2.
+
+GOVERNANCE: TASK-0054 = IMPLEMENTED ; F-050/F-051 candidates ; P-01/P-02/P-03 candidates seulement ; jamais auto-VERIFIED ; F-046 inchangée ; aucune TASK-0055.
+NEXT_ORCHESTRATOR_DECISION: contrôle indépendant de TASK-0054.
