@@ -646,7 +646,7 @@ if (phase === 1) {
   await searchFor("versions");
   await until(`!!document.querySelector('[data-testid="search-hit"][data-node-id="${versionsReference.nodeId}"]')`);
   await click(`[data-testid="search-hit"][data-node-id="${versionsReference.nodeId}"]`);
-  await until(`document.querySelector('[data-testid="children-total"]')?.getAttribute('data-total') !== null`);
+  await until(`!!document.querySelector('[data-testid=\"children-total\"]')?.getAttribute('data-total')`);
   await quiet();
   const versionsChildren = await evaluate(
     `[...document.querySelectorAll('[data-testid="child-node"]')].map((b) => Number(b.getAttribute('data-node-id')))`,
@@ -719,7 +719,7 @@ if (phase === 1) {
 
   // -- P-08 — search --------------------------------------------------------------------
   await searchFor("fiche-");
-  await until(`document.querySelector('[data-testid="search-total"]')?.getAttribute('data-total') !== null`);
+  await until(`!!document.querySelector('[data-testid=\"search-total\"]')?.getAttribute('data-total')`);
   await quiet();
   const searchWide = await evaluate(`(() => {
     const total = document.querySelector('[data-testid="search-total"]');
@@ -741,7 +741,7 @@ if (phase === 1) {
   assert.deepEqual([...new Set(searchCollected)].sort(), wideChildren, "the search pages together return exactly the expected set");
   // Nothing from another brain: `lisez-moi.txt` exists in all three trees.
   await searchFor("lisez-moi");
-  await until(`document.querySelector('[data-testid="search-total"]')?.getAttribute('data-total') !== null`);
+  await until(`!!document.querySelector('[data-testid=\"search-total\"]')?.getAttribute('data-total')`);
   const sharedNameTotal = Number(await evaluate(`document.querySelector('[data-testid="search-total"]').getAttribute('data-total')`));
   assert.equal(sharedNameTotal, 1, "a name present in the three trees returns only the active brain's row");
   cover("P-08", "typing in the search field returned exactly the expected set, paginated and bounded, keyboard-reachable, and a name that exists in all three synthetic trees returned only the active brain's row", {
@@ -753,7 +753,7 @@ if (phase === 1) {
 
   // -- P-09 — filters --------------------------------------------------------------------
   await click(testid("filter-kind-FILE"));
-  await until(`document.querySelector('[data-testid="filter-count"]')?.getAttribute('data-total') !== null`);
+  await until(`!!document.querySelector('[data-testid=\"filter-count\"]')?.getAttribute('data-total')`);
   await quiet();
   const fileFiltered = Number(await evaluate(`document.querySelector('[data-testid="filter-count"]').getAttribute('data-total')`));
   assert.equal(fileFiltered, diskFileCount, "the filtered total equals an independent count of the files on disk");
@@ -762,12 +762,12 @@ if (phase === 1) {
   assert(filterActiveText.length > 0, "an active filter says so");
   // Combine a second criterion: availability LOCAL, on a local synthetic tree.
   await click(testid("filter-availability-LOCAL"));
-  await until(`document.querySelector('[data-testid="filter-count"]')?.getAttribute('data-total') !== null`);
+  await until(`!!document.querySelector('[data-testid=\"filter-count\"]')?.getAttribute('data-total')`);
   await quiet();
   const combined = Number(await evaluate(`document.querySelector('[data-testid="filter-count"]').getAttribute('data-total')`));
   // A third, derived from the journal rather than typed: UNSEEN.
   await click(testid("filter-state-UNSEEN"));
-  await until(`document.querySelector('[data-testid="filter-count"]')?.getAttribute('data-total') !== null`);
+  await until(`!!document.querySelector('[data-testid=\"filter-count\"]')?.getAttribute('data-total')`);
   await quiet();
   const unseenFiltered = Number(await evaluate(`document.querySelector('[data-testid="filter-count"]').getAttribute('data-total')`));
   // Revoked in ONE action.
