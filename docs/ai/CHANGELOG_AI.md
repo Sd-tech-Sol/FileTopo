@@ -6591,3 +6591,11 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
   tests Windows, 5 tests d'`identity` et 2 tests d'`index`.
 - Code `d55c1faa7f1664a3edeb2a2b7a0b032c50f19e7f`; artefacts liés au HEAD testé `d0502fa1bb3bc993ec4977356e210ceb1349c9eb`. `TASK-0055` et `F-046`
   = `IMPLEMENTED` / candidates, jamais auto-`VERIFIED`. Aucune `TASK-0056`.
+
+
+## 2026-10-08 — ACTION-0103 — TASK-0055 rework required
+
+- Contrôle indépendant : modèle hard-link central cohérent, mais F-046 non vérifiable.
+- Bloqueur confidentialité : le digest public reconstructible dépend de stable_key/provenance et traverse IPC, contrairement à DEC-0052 F qui interdit aussi les dérivés/hash d'identité machine.
+- Défense kernel incomplète : un mauvais alias SYSTEM de même clé/provenance n'est pas rejeté par chemin exact.
+- Corrective TASK-0055 préparée; aucun TASK-0056.

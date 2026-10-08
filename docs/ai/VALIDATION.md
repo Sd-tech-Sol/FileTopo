@@ -9710,3 +9710,31 @@ sous-dossier et sur deux occurrences dans un même dossier, pas sur toutes les
 topologies de hints possibles; crash physique pendant `M-B` toujours non testé;
 aucune CI GitHub distante attachée; dette Clippy et `cargo fmt` historique
 inchangée.
+
+
+## DL — ACTION-0103 — contrôle indépendant TASK-0055 — 2026-10-08
+
+**Verdict : REWORK REQUIRED — pas VERIFIED.**
+
+Contrôle indépendant de `d55c1faa7f1664a3edeb2a2b7a0b032c50f19e7f`, de l'artefact
+`d0502fa1bb3bc993ec4977356e210ceb1349c9eb` et du HEAD documentaire
+`831ba733bd79729314366489f7f09ee78a8dbeb2`.
+
+**PASS partiel :** modèle hard-link, pair_group, migration 6→7, full reconcile,
+complétion W-B, classification fermée et WebView2 sont cohérents avec les preuves
+inspectées; aucun code produit après le commit produit; aucune CI distante.
+
+**BLOQUEUR :** `BrainIndex::reconstructible_digest` sélectionne
+`stable_key` + `identity_provenance`, les inclut dans FNV1a, puis
+`MapBuildReport.reconstructible_digest` traverse `map_refresh/map_rebuild`
+vers IPC/TypeScript. DEC-0052 F interdit explicitement une version hashée/encodée
+de l'identité machine. Les tests de fuite TASK-0055 ne détectent que la clé brute
+et les spellings, donc cette dérivation leur échappe.
+
+**Défense à renforcer :** pour un groupe SYSTEM partagé, le kernel vérifie
+actuellement row/key/provenance mais pas le chemin exact du `continues`; un
+producteur forgé pourrait nommer l'autre alias. Les producteurs réels inspectés
+utilisent pair_group correctement, donc ce point est une défense en profondeur,
+mais doit être fermé avant le nouveau contrôle.
+
+Corrective versionnée dans ACTION-0103 / NEXT_PROMPT.

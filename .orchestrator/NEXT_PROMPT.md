@@ -1,135 +1,144 @@
-# NEXT_PROMPT — TASK-0055 — Physical Object Identity / F-046 Closure
+# NEXT_PROMPT — TASK-0055 corrective after ACTION-0103
 
 **TARGET_AGENT:** CLAUDE CODE
 **RECOMMENDED_MODEL:** Claude Opus 5.5
 **RECOMMENDED_EFFORT:** High
-**STATUS:** READY
+**STATUS:** READY — CORRECTIVE
 **BRANCH:** `build/v0.2-a39-v1-physical-identity-closure`
-**BASE_ORCHESTRATION:** `393ac6d190295d979b58c9a03cc4712391d93335`
+**CURRENT_REVIEW_HEAD:** `831ba733bd79729314366489f7f09ee78a8dbeb2`
 
-## Démarrage
+## Session handling
 
-Fais un fetch puis synchronise la branche **fast-forward seulement**.
-L'arbre doit être propre.
+If this is the **same Claude Code session** that just completed TASK-0055,
+**do not /clear**. Keep the implementation context; use `/compact` only if
+needed.
 
-Lis intégralement :
+If this is a new session, this prompt is self-contained: sync the branch
+fast-forward only and read the files below.
 
-1. `AGENTS.md`;
-2. `docs/reviews/ACTION-0102-v1-gap-audit-after-action0101.md`;
-3. `docs/decisions/DEC-0052-node-vs-physical-identity.md`;
-4. `docs/tasks/TASK-0055-v1-physical-identity-closure.md`;
-5. TASK-0036 / ACTION-0060;
-6. DEC-0009, DEC-0013, DEC-0035;
-7. TASK-0023 / ACTION-0039;
-8. TASK-0026 / ACTION-0043.
+## Read first
 
-**Fais `/clear` avant cette tâche.** Tout le contexte obligatoire est
-versionné et cette tranche touche une sémantique d'identité/migration : ne
-réutilise pas un contexte Claude précédent partiel.
+1. `AGENTS.md`
+2. `docs/reviews/ACTION-0103-task0055-independent-control.md`
+3. `docs/decisions/DEC-0052-node-vs-physical-identity.md`
+4. `docs/tasks/TASK-0055-v1-physical-identity-closure.md`
+5. `src-tauri/src/map/brain_index.rs::reconstructible_digest`
+6. `src-tauri/src/map/commands.rs::MapBuildReport`
+7. `src-tauri/src/incremental.rs`
+8. `src-tauri/src/identity.rs::pair_group`
 
-## Mission
+## Corrective A — identity-derived public digest
 
-Fermer le seul gap fonctionnel F-046 sans ajouter de nouveau moteur.
+Independent control found a direct DEC-0052 F violation:
 
-Le point central :
+`BrainIndex::reconstructible_digest()` includes `stable_key` and
+`identity_provenance`; the resulting FNV digest is returned in
+`MapBuildReport.reconstructible_digest` through `map_refresh/map_rebuild` IPC.
 
-> `nodes.id` = occurrence unique dans l'arborescence.
-> Une `stable_key` SYSTEM = objet physique Windows et peut être partagée par
-> plusieurs occurrences (hard links).
+DEC-0052 F forbids not only the raw key/FileId/volume but also a **hashed or
+encoded derivative**.
 
-Le code actuel refuse cette situation. Corrige-la conformément à DEC-0052.
+Fix minimally:
 
-## Reuse-first
+- keep `reconstructibleDigest` only if it becomes independent of all identity
+  material;
+- remove stable_key and identity_provenance from the digest input;
+- preserve the H7 logical/reconstructible purpose using non-sensitive logical
+  fields;
+- do not expose another replacement identity digest;
+- do not weaken F-004 identity internally.
 
-Avant code, écris le tableau EXISTE / ADAPTER / MANQUANT dans le rapport.
+Required discriminating tests:
 
-Réutilise :
-- GetFileInformationByHandleEx / FILE_ID_INFO existant;
-- stable_key/provenance existants;
-- M-B migrations;
-- SHA-256 existant;
-- ExactDuplicateExplorer;
-- relation engine existant.
+1. compute public reconstructible digest;
+2. change only stable_key / identity_provenance in a test Index;
+3. digest must remain identical;
+4. change one genuine logical reconstructible field;
+5. digest must change.
 
-**N'ajoute pas FILE_STANDARD_INFO / NumberOfLinks si la clé SYSTEM existante
-suffit.** N'ajoute pas de dépendance Windows.
+Also audit repo-wide for any other **hash/encoding/derived value** of SYSTEM
+identity reaching IPC, TypeScript, DOM, logs or artifacts. A grep for raw
+spellings alone is insufficient.
 
-## Migration
+## Corrective B — kernel verifies shared alias, not only key
 
-Schéma 6→7, minimal :
-- enlever l'unicité SQL de stable_key;
-- recréer l'index non unique;
-- aucune nouvelle colonne par défaut;
-- M-B + rollback + validation.
+The kernel currently accepts `continues=Some(id)` when id has the same
+stable_key and provenance. With a shared SYSTEM key, that is not enough:
+alias A and alias B have the same key.
 
-## Remap
+Strengthen the kernel boundary so it independently refuses an invented
+correlation.
 
-Implémente les groupes SYSTEM exactement selon DEC-0052 :
-- 1↔1 conserve le comportement historique;
-- multiple = exact relative_path d'abord;
-- aucun appariement ambigu;
-- nouveaux ids monotones;
-- PATH_FALLBACK dupliqué toujours refusé.
+Preserve D1:
+- one stored occurrence + one observed occurrence may change path and keep id.
 
-Audit obligatoire de full publish + incremental + watcher + rebase + rebuild.
+For a shared group:
+- if the stored key has multiple occurrences **or** the batch contains multiple
+  observed occurrences of that SYSTEM key, any `continues=Some(id)` must
+  continue the stored occurrence at the exact same relative_path;
+- otherwise refuse;
+- never infer by name/order/date/size.
 
-## Classification produit
+Add the missing falsification:
+- stored A and B share one SYSTEM key;
+- observed B claims `continues=id(A)`;
+- the kernel must reject it.
 
-ExactDuplicateExplorer doit recevoir seulement :
-- PROVEN_SHARED + count;
-- PROVEN_SINGLE + count 1;
-- UNKNOWN.
+Do not duplicate pair_group policy in producers; this is only a verification
+guard at the trust boundary.
 
-Brain-scoped.
+## Scope
 
-**Interdit** : stable_key, VolumeSerialNumber, FileId ou dérivé/hash de ces
-valeurs dans IPC, TypeScript, DOM, logs ou artefacts.
+Do **not** redesign TASK-0055.
 
-Affiche clairement que :
-- objet physique = preuve OS;
-- contenu identique = SHA-256;
-- copie probable = non inférée;
-- nom similaire = non inféré;
-- relation logique = indépendante.
+Do not change:
+- migration 6→7 unless a regression demands it;
+- SHA-256 model;
+- ExactDuplicateExplorer semantics;
+- relation engine;
+- Cloud Files policy;
+- dependencies.
 
-Aucun algorithme de copie/similarité.
+No TASK-0056.
 
-## Preuve Windows
+## Revalidation
 
-Utilise `std::fs::hard_link` si possible.
+Run:
 
-Fixture temporaire :
-- A;
-- B hard link de A;
-- C copie byte-for-byte;
-- deux fichiers vides distincts.
+- targeted tests for the two fixes;
+- identity/index/reconcile/scope/incremental tests;
+- physical_identity_tests;
+- `cargo test --lib --offline`;
+- frontend targeted + relevant/full suite;
+- `pnpm check`;
+- `pnpm build`;
+- `pnpm tauri build --debug --no-bundle`;
+- TASK-0055 WebView2 replay, two processes;
+- axe;
+- `git diff --check`;
+- public-readiness.
 
-Prouve la séparation des concepts, le refresh/redémarrage, la stabilité F-004,
-l'absence de relation automatique et l'absence de fuite de clé.
+Regenerate `docs/performance/runs/TASK-0055-webview2.json` against the corrected
+HEAD. Confirm no product code changes after the HEAD tested by the final
+artifact.
 
-Le baseline de fingerprint source commence **après** création de la fixture.
+## Documentation / finish
 
-## Falsifications
+Update:
 
-Les 10 falsifications de TASK-0055 §11 doivent être effectives et
-discriminantes. Pas de tableau théorique.
+- TASK-0055 with a corrective section;
+- VALIDATION;
+- CURRENT_STATE;
+- HANDOFF;
+- CHANGELOG_AI;
+- NEXT_ACTION;
+- .orchestrator/RESULT.md.
 
-## Validation
+Status at finish:
+- TASK-0055 = IMPLEMENTED / candidate;
+- F-046 = IMPLEMENTED / candidate;
+- never self-VERIFIED;
+- NEXT_ACTION = independent re-control;
+- no TASK-0056.
 
-Exécute intégralement TASK-0055 §12.
-
-Si le changement de modèle révèle qu'un flux incrémental/watcher ne peut pas
-être rendu cohérent sans élargir fortement la portée, STOP et documente
-`BLOCKED` au lieu de bricoler une deuxième règle.
-
-## Fin
-
-- TASK-0055 / F-046 = IMPLEMENTED / candidates, jamais VERIFIED;
-- aucune TASK-0056;
-- RESULT/VALIDATION/CURRENT_STATE/HANDOFF/NEXT_ACTION à jour;
-- artefacts publics sans donnée machine;
-- commit/push;
-- git status propre;
-- STOP.
-
-Le prochain verdict appartient à ChatGPT.
+Commit and push the branch, clean tree, then STOP.

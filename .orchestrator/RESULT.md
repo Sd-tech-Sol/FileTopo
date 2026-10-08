@@ -130,3 +130,12 @@ NEXT (exactly one action):
 - Attack first: W-B's group-picture completion — the place where a partial
   reading could still conclude wrongly.
 - No TASK-0056. ACTION-0102 §9 asks for a final V1 audit after this control.
+
+
+INDEPENDENT_CONTROL_ACTION_0103:
+- VERDICT: REWORK REQUIRED — NOT VERIFIED.
+- Blocking leak: BrainIndex::reconstructible_digest includes stable_key and identity_provenance; MapBuildReport sends the resulting hash over Tauri IPC. DEC-0052 F forbids hashed/encoded identity derivatives.
+- Defence gap: incremental kernel verifies key/provenance for continues=id but not exact-path membership when a SYSTEM group is shared.
+- Existing hard-link migration/model/UI evidence otherwise accepted as coherent.
+- TASK-0055/F-046 remain IMPLEMENTED candidates.
+- NEXT: execute corrective .orchestrator/NEXT_PROMPT.md; no TASK-0056.

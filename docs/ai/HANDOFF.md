@@ -1,5 +1,16 @@
 # HANDOFF — passage de relais
 
+## Relais — ACTION-0103 — corrective TASK-0055 — 2026-10-08
+
+- Branche : `build/v0.2-a39-v1-physical-identity-closure`.
+- Ne pas marquer VERIFIED.
+- Corrective A bloquante : le digest public `reconstructibleDigest` dépend actuellement de `stable_key` et traverse IPC; DEC-0052 F interdit tout dérivé/hash de l'identité machine.
+- Corrective B : renforcer le kernel pour refuser `continues=id(A)` quand l'observation est l'alias B d'un groupe SYSTEM partagé.
+- Garder D1 : 1 stored + 1 observed peut conserver l'id à travers rename/move.
+- Rejouer TASK-0055 et régénérer l'artefact au HEAD corrigé.
+- Même session Claude : **ne pas /clear**, utiliser /compact si nécessaire. Nouvelle session : prompt autonome.
+- Aucun TASK-0056.
+
 ## Relais — ACTION-0102 / TASK-0055 READY — 2026-10-07
 
 - Branche : `build/v0.2-a39-v1-physical-identity-closure`.

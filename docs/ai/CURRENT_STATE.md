@@ -1,5 +1,14 @@
 # État courant
 
+## ACTION-0103 — TASK-0055 corrective required — 2026-10-08
+
+- Independent control of code `d55c1faa…`, artifact head `d0502fa1…`, docs head `831ba733…`.
+- Verdict: **REWORK REQUIRED**, not VERIFIED.
+- Blocker: `reconstructible_digest` hashes `stable_key` / `identity_provenance` and `MapBuildReport` sends that derived value through Tauri IPC. DEC-0052 F explicitly forbids hashed/encoded identity derivatives.
+- Defence gap: incremental kernel checks key/provenance of `continues` but does not independently reject the wrong alias of a shared SYSTEM group.
+- Existing hard-link model/migration/UI evidence otherwise coherent.
+- TASK-0055/F-046 remain IMPLEMENTED candidates. No TASK-0056.
+
 ## ACTION-0102 — audit V1 / TASK-0055 READY — 2026-10-07
 
 - Base : `393ac6d190295d979b58c9a03cc4712391d93335` après ACTION-0101.
