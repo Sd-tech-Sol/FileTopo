@@ -6728,3 +6728,13 @@ attachée.
 
 **Étape A reste `EN COURS`. Aucune `TASK-0057`. Ni B, ni C, ni D.** Action unique
 suivante : arbitrage du gap, correction dans une tâche séparée.
+
+
+## 2026-10-08 — ACTION-0106 — TASK-0056 BLOCKED confirmé, TASK-0057 sélectionnée
+
+- Acceptance TASK-0056 contrôlée : P-22 et gates globaux passent; diff pur; 3 suites Rust capturées vertes.
+- Seuls GAP : P-04/P-05/P-07 sur REAL_ROOT.
+- Code confirmé : six opérations relationnelles same-brain exigent encore une fixture synthétique; dre-v1 est déjà générique.
+- Arbitrage : preuve synthétique insuffisante si la capacité est inatteignable sur les données utilisateur; Stage A reste EN COURS.
+- DEC-0053 : surface core générique, legacy TASK-0017 fixture-only.
+- TASK-0057 READY; acceptance TASK-0056 devra être rejouée au HEAD corrigé.

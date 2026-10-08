@@ -1,5 +1,18 @@
 # État courant
 
+## ACTION-0106 — TASK-0056 BLOCKED confirmé / TASK-0057 READY — 2026-10-08
+
+- HEAD contrôlé TASK-0056 : `ca17df50d1fa904e8387628347bbf2f9792b9ae8`.
+- Verdict indépendant : l'arrêt BLOCKED est correct.
+- P-22/gates généraux : PASS sur l'ancien produit; 3 suites Rust capturées 901/0; diff acceptance-only; aucune CI distante.
+- Seul GAP de la matrice : P-04/P-05/P-07 sur REAL_ROOT.
+- Cause confirmée : six opérations same-brain de relations passent par une frontière fixture-only; le moteur dre-v1 lui-même est générique.
+- L'ancienne clôture P-04 reste historiquement vraie sur sa portée, mais insuffisante pour la portée produit finale REAL_ROOT.
+- DEC-0053 approuvée; TASK-0057 READY sur `build/v0.2-a41-v1-real-root-relations`.
+- Correction : surface relationnelle générique, legacy TASK-0017/self-check seulement synthétiques; fixtureId nullable sur REAL_ROOT.
+- TASK-0057 doit rejouer le P-22 TASK-0056 + 3× Rust au HEAD corrigé.
+- Aucun Stage B/C/D; aucune TASK-0058.
+
 ## TASK-0056 — acceptance finale V1 — `BLOCKED` — 2026-10-08
 
 - Base `446a4e49`, branche `build/v0.2-a40-v1-final-parity-acceptance`. **Aucun

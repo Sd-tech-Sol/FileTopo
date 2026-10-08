@@ -9970,3 +9970,32 @@ ci-dessus sont des exécutions locales, avec leurs sorties capturées.
 - **Le pavé tactile** de `P-11` n'est pas distinguable de la souris par un
   harnais CDP : la molette et le pointeur sont exercés, le geste tactile propre
   reste **non exécuté** et déclaré tel.
+
+
+## DO — ACTION-0106 — contrôle indépendant TASK-0056 — 2026-10-08
+
+**Verdict : TASK-0056 BLOCKED confirmé.**
+
+HEAD contrôlé : `ca17df50d1fa904e8387628347bbf2f9792b9ae8`.
+
+**Preuves acceptées :**
+- diff acceptance-only depuis `446a4e49…`, zéro fichier produit;
+- Rust gate capturé : 3 × 901 PASS / 0 FAIL / 13 ignored;
+- P-22 : empreintes strictes externes identiques, aucun artefact FileTopo,
+  indisponibilité temporaire restaurée sans suppression, axe 0, fatal console 0;
+- aucune CI GitHub distante;
+- aucun autre GAP dans la matrice machine.
+
+**Blocage confirmé :**
+`BrainRecord::source_fixture` refuse REAL_ROOT. La surface relationnelle
+same-brain appelle pourtant cette frontière via `source_spec` pour
+`open_relations`, `node_relations`, `review_queue`, `approve_suggestion`,
+`reject_suggestion` et `revoke_relation`. Le moteur dre-v1 run/status fonctionne
+sur ce même cerveau : le défaut est la frontière de lecture/action.
+
+Le contre-argument « critères testables sur fixture synthétique » ne ferme pas
+le produit final : §3 interdit qu'une exigence de parité soit inatteignable, et
+REAL_ROOT est le chemin produit des données utilisateur depuis DEC-0033.
+
+**Conséquence :** P-04 portée finale bloquée, P-05/P-07 GAP; Stage A reste EN
+COURS. Corrective séparée TASK-0057 sélectionnée, sans abaissement de contrat.

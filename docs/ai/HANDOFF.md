@@ -1,5 +1,18 @@
 # HANDOFF — passage de relais
 
+## Relais — ACTION-0106 / TASK-0057 READY — 2026-10-08
+
+- Branche : `build/v0.2-a41-v1-real-root-relations`.
+- Base : TASK-0056 BLOCKED, HEAD `ca17df50…`.
+- Gap indépendant confirmé : relations intra-cerveau indisponibles sur REAL_ROOT alors que dre-v1 y fonctionne.
+- Six actions à corriger ensemble : open, node read, review queue, approve, reject, revoke.
+- Legacy frozen derive/seed/self-check reste fixture-only.
+- DTO relationnel `fixtureId` : string sur synthétique, null sur REAL_ROOT; jamais sourceRef/path.
+- Rejouer le harness complet TASK-0056 au produit corrigé; P-04/P-05/P-07 doivent devenir SATISFIED sur REAL_ROOT et P-22 rester strictement identique.
+- Rejouer 3 suites Rust capturées.
+- Agent : Claude Code, Opus 5.5 High; **/clear** avant.
+- Aucun Stage B/C/D, aucune TASK-0058.
+
 ## Passation du 2026-10-08 — TASK-0056, acceptance finale V1, `BLOCKED`
 
 **Où en est l'étape A.** Elle reste **`EN COURS`**. La matrice de preuve

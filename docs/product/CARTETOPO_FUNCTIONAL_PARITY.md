@@ -505,3 +505,13 @@ Ils sont écrits ici plutôt que corrigés en silence.
 > TASK-0056 est une acceptance pure : elle ne peut modifier aucun code produit.
 > Elle doit produire une campagne finale P-22, une matrice P-01..P-22 et une
 > régression globale capturée.
+
+> **Contrôle indépendant TASK-0056 — ACTION-0106 (2026-10-08).**
+> L'arrêt `BLOCKED` est confirmé. La preuve P-22 et les gates de régression
+> passent, et la matrice ne contient aucun autre GAP. En revanche, le défaut
+> REAL_ROOT est réel : les lectures **et décisions** intra-cerveau de relations
+> passent encore par une frontière fixture-only, alors que dre-v1 fonctionne
+> sur la même racine réelle. La clôture historique P-04 reste valable dans sa
+> portée testée mais ne suffit plus à la portée finale : P-04/P-05/P-07 sont
+> bloquées jusqu'à TASK-0057. Le contrat n'est pas abaissé. Stage A reste EN
+> COURS.
