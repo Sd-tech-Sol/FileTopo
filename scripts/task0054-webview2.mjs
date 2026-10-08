@@ -412,6 +412,9 @@ for (let page = 0; page < 40; page += 1) {
     assert.deepEqual(axeAggregate.violations, [], `axe (aggregate): ${JSON.stringify(axeAggregate.violations)}`);
   }
   if (!aggregate) break;
+  // Every real child has been seen once: the walk is complete. (On the last page the aggregate keeps counting
+  // what THIS page does not show, and a further Enter cycles back to the first page; recorded below.)
+  if (new Set(collected).size >= largeChildren.length) break;
   // A real Enter on the aggregate: it is a tree item, not a folder, a path or an openable thing.
   await evaluate(`document.querySelector('[data-testid="map-aggregate-indicator"][data-parent-id="${largeRef.nodeId}"]').focus()`);
   assert.equal(await evaluate(`document.activeElement.getAttribute('role')`), "treeitem");
@@ -420,10 +423,21 @@ for (let page = 0; page < 40; page += 1) {
   await until(`[...document.querySelectorAll('[data-testid="composed-canvas"] [data-card="true"]')].map((g) => g.getAttribute('data-node-id')).join(',') !== ${JSON.stringify(before)} || !document.querySelector('[data-testid="map-aggregate-indicator"][data-parent-id="${largeRef.nodeId}"]')`);
   await quiet();
 }
+// One more Enter on the last page: the aggregate has no further cursor and cycles to the first page.
+const firstPageShape = pagesSeen[0];
+await evaluate(`document.querySelector('[data-testid="map-aggregate-indicator"][data-parent-id="${largeRef.nodeId}"]').focus()`);
+const lastCards = (await readCanvas()).cards.map((card) => card.nodeId).join(",");
+await press("Enter");
+await until(`[...document.querySelectorAll('[data-testid="composed-canvas"] [data-card="true"]')].map((g) => g.getAttribute('data-node-id')).join(',') !== ${JSON.stringify(lastCards)}`);
+await quiet();
+canvas = await readCanvas();
+let wrapShown = 0;
+for (const card of canvas.cards) if (/^large\/[^/]+$/.test(await pathOf(card.nodeId))) wrapShown += 1;
+const wrapsToFirstPage = wrapShown === firstPageShape.shown;
 const unique = new Set(collected);
 assert.equal(unique.size, collected.length, "no row appears twice across the pages");
 assert.deepEqual([...unique].sort(), largeChildren, "the pages together cover exactly the 700 real children");
-check("aggregate expansion pages every real child once, label == exact count", { pages: pagesSeen.length, children: unique.size });
+check("aggregate expansion pages every real child once, label == exact count", { pages: pagesSeen.length, children: unique.size, lastPageCyclesToFirst: wrapsToFirstPage });
 
 // -- 4. selection, keyboard, pan, zoom, fit ----------------------------------------------------------
 await evaluate(`document.querySelector('[role="tree"]').focus()`);
