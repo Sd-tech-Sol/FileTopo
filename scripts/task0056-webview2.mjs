@@ -1224,15 +1224,36 @@ if (phase === 1) {
   // One complete pass of the focus order: it comes back, and it never leaves the document.
   const keyboardWalk = await (async () => {
     await evaluate(`document.activeElement?.blur?.()`);
-    const seen = [];
-    for (let step = 0; step < 400; step += 1) {
+    // Each stop is named by the element's own position in the document, so two controls
+    // that share a `data-testid` are two different stops.
+    const where = `(() => {
+      const active = document.activeElement;
+      if (!active || active === document.body) return null;
+      return [...document.querySelectorAll('*')].indexOf(active) + ':' + (active.getAttribute('data-testid') ?? active.tagName);
+    })()`;
+    const stops = [];
+    const traps = [];
+    let first = null;
+    let previous = null;
+    let cameBackRound = false;
+    for (let step = 0; step < 600; step += 1) {
       await tab();
-      const where = await evaluate(`(() => { const a = document.activeElement; return a && a !== document.body ? (a.getAttribute('data-testid') ?? a.tagName + (a.id ? '#' + a.id : '')) : null; })()`);
-      seen.push(where);
-      if (seen.length > 8 && where !== null && seen.slice(0, -1).includes(where) && seen[seen.length - 2] === seen[seen.length - 1]) break;
+      const here = await evaluate(where);
+      if (here !== null && here === previous) traps.push(here);
+      previous = here;
+      if (here === null) continue; // the focus left the document for the host chrome
+      if (first === null) first = here;
+      else if (here === first) { cameBackRound = true; break; }
+      stops.push(here);
     }
-    return { stops: seen.filter((entry) => entry !== null).length, distinctStops: new Set(seen.filter((entry) => entry !== null)).size, leftTheDocument: seen.filter((entry) => entry === null).length };
+    return {
+      stops: stops.length,
+      distinctStops: new Set(stops).size,
+      cameBackRound,
+      trappingStops: [...new Set(traps)],
+    };
   })();
+  assert.deepEqual(keyboardWalk.trappingStops, [], `a control trapped the focus: ${JSON.stringify(keyboardWalk.trappingStops)}`);
   assert(keyboardWalk.distinctStops > 25, `the focus order is suspiciously short: ${JSON.stringify(keyboardWalk)}`);
   cover("P-21", "the whole session ran in French on a French host, with `<html lang>` and the controls' own words in French; the focus order was walked with real Tab presses without a trap, and axe-core reported no violation on the state with every panel open (the English half and the full matrix of states are read in phase 2 and composed from TASK-0046/ACTION-0077 and TASK-0047/ACTION-0079)", {
     htmlLang: htmlLanguage, frenchLabels, keyboardWalk, axeVersion: axeManifest.version,
