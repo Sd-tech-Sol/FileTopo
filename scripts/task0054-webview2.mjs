@@ -465,7 +465,10 @@ await quiet();
 const someCardId = await evaluate(`(() => {
   const inside = [...document.querySelectorAll('[data-testid="composed-canvas"] [data-card="true"]')].find((g) => {
     const box = g.getBoundingClientRect();
-    return box.width > 0 && box.x >= 0 && box.y >= 0 && box.x + box.width <= window.innerWidth && box.y + box.height <= window.innerHeight;
+    const x = box.x + box.width / 2, y = box.y + box.height / 2;
+    if (!(box.width > 4 && x > 0 && y > 0 && x < window.innerWidth && y < window.innerHeight)) return false;
+    const top = document.elementFromPoint(x, y);
+    return !!top && (top === g || g.contains(top));
   });
   return inside ? Number(inside.getAttribute('data-node-id')) : null;
 })()`);
