@@ -897,21 +897,24 @@ if (phase === 1) {
   });
 
   // -- P-04 / P-05 / P-07 — relations, provenance, suggestions, direction ----------------
-  await click(testid("observe-content"));
-  await until(`!!document.querySelector('[data-testid="content-report"]')`, 180000);
-  await quiet();
-  const contentReport = JSON.parse(await evaluate(`document.querySelector('[data-testid="content-report"]').getAttribute('data-report')`));
-  await click(testid("analyze-relations"));
-  await until(`!!document.querySelector('[data-testid="relation-engine-summary"]')`, 180000);
-  await quiet();
-  const engineReport = JSON.parse(await evaluate(`document.querySelector('[data-testid="relation-engine-summary"]').getAttribute('data-report')`));
-
-  // A deterministic relation: the two identical-content occurrences.
+  // The relations panel only shows the engine's own commands once an element is selected
+  // and its relations are read: select first, then observe the content, then analyse.
   await searchFor("rapport-original");
   await until(`!!document.querySelector('[data-testid="search-hit"][data-node-id="${reportReference.nodeId}"]')`);
   await click(`[data-testid="search-hit"][data-node-id="${reportReference.nodeId}"]`);
   await until(`!!document.querySelector('[data-testid="relation-totals"]')`);
-  await until(`!!document.querySelector('[data-testid="core-deterministic-relation"]')`);
+  await quiet();
+  await click(testid("observe-content"));
+  await until(`!!document.querySelector('[data-testid="content-report"]')`, 180000);
+  await quiet();
+  const contentReport = JSON.parse(await evaluate(`document.querySelector('[data-testid="content-report"]').getAttribute('data-report')`));
+  await until(`!!document.querySelector('[data-testid="analyze-relations"]:not(:disabled)')`, 120000);
+  await click(testid("analyze-relations"));
+  await until(`!!document.querySelector('[data-testid="relation-engine-summary"]')`, 180000);
+  await quiet();
+  const engineReport = JSON.parse(await evaluate(`document.querySelector('[data-testid="relation-engine-summary"]').getAttribute('data-report')`));
+  // The deterministic relation the engine just produced: the two identical-content occurrences.
+  await until(`!!document.querySelector('[data-testid="core-deterministic-relation"]')`, 120000);
   await quiet();
   const deterministicOnScreen = await evaluate(`(() => {
     const rule = document.querySelector('[data-testid="core-deterministic-relation"]');
