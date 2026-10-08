@@ -472,7 +472,13 @@ const someCardId = await evaluate(`(() => {
   });
   return inside ? Number(inside.getAttribute('data-node-id')) : null;
 })()`);
-assert(someCardId !== null, "a card is fully visible after fitting the composition");
+const diag = someCardId !== null ? null : await evaluate(`(() => ({
+  inner: [window.innerWidth, window.innerHeight],
+  fit: !!document.querySelector('[data-testid="fit-composition"]'),
+  world: document.querySelector('[data-testid="composed-world"]')?.getAttribute('transform'),
+  cards: [...document.querySelectorAll('[data-testid="composed-canvas"] [data-card="true"]')].slice(0, 4).map((g) => { const b = g.getBoundingClientRect(); return [Math.round(b.x), Math.round(b.y), Math.round(b.width), Math.round(b.height)]; }),
+}))()`);
+assert(someCardId !== null, `a card is fully visible after fitting the composition ${JSON.stringify(diag)}`);
 const someCard = { nodeId: someCardId };
 await click(`[data-testid="composed-canvas"] [data-card="true"][data-node-id="${someCard.nodeId}"]`);
 await until(`document.querySelector('[data-testid="composed-canvas"] [data-card="true"][data-node-id="${someCard.nodeId}"]')?.getAttribute('aria-selected') === 'true'`);
