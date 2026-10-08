@@ -84,6 +84,8 @@ function memberPage(offset: number): ExactDuplicateMemberPage {
         observedAtUnixMs: 1_700_000_000_000,
         generationId: "generation-1",
         nodeRef: offset === 0 ? { brainId: "brain-alpha", nodeId: 7 } : null,
+        physicalObject: offset === 0 ? "PROVEN_SHARED" : "UNKNOWN",
+        physicalOccurrenceCount: offset === 0 ? 2 : null,
       },
     ],
   };
@@ -141,6 +143,89 @@ describe("TASK-0026 exact duplicate explorer", () => {
 
     fireEvent.click(screen.getByTestId("duplicate-groups-next"));
     await waitFor(() => expect(screen.getByTestId("duplicate-group-page")).toHaveTextContent("51–51"));
+  });
+
+  it("names the physical object per member and never confuses the five notions", async () => {
+    invokeMock.mockImplementation((command: string, args?: { offset?: number }) => {
+      if (command === "map_exact_duplicate_summary") return Promise.resolve(summary);
+      if (command === "map_exact_duplicate_groups")
+        return Promise.resolve(groupPage(args?.offset ?? 0));
+      if (command === "map_exact_duplicate_members")
+        return Promise.resolve(memberPage(args?.offset ?? 0));
+      return Promise.reject(new Error(`unexpected command ${command}`));
+    });
+    render(
+      <ExactDuplicateExplorer locale="fr" brainId="brain-alpha" revision={0} onSelect={vi.fn()} />,
+    );
+    fireEvent.click(await screen.findByTestId("open-duplicate-explorer"));
+    await screen.findByTestId("duplicate-group-page");
+    fireEvent.click(screen.getByTestId("duplicate-group"));
+
+    // `TASK-0055` §7 — `PROVEN_SHARED` says "same physical object" with a count
+    // scoped to this brain, and says it as text, not by colour alone.
+    const shared = await screen.findByTestId("duplicate-member-physical");
+    expect(shared).toHaveAttribute("data-physical-object", "PROVEN_SHARED");
+    expect(shared).toHaveTextContent("même objet physique — 2 chemin(s) dans ce cerveau");
+
+    // The five notions of `DEC-0021`/`DEC-0052` G, each stated and separated.
+    const concepts = screen.getByTestId("duplicate-concepts");
+    expect(concepts).toHaveTextContent("Même objet physique");
+    expect(concepts).toHaveTextContent("Contenu identique");
+    expect(concepts).toHaveTextContent("Copie probable : non inférée par cette vue");
+    expect(concepts).toHaveTextContent("Nom similaire : non inféré par cette vue");
+    expect(concepts).toHaveTextContent("Relation logique : indépendante");
+
+    // `UNKNOWN` never becomes a disguised `PROVEN_SINGLE` — falsification 5.
+    fireEvent.click(screen.getByTestId("duplicate-members-next"));
+    await waitFor(() =>
+      expect(screen.getByTestId("duplicate-member-physical")).toHaveAttribute(
+        "data-physical-object",
+        "UNKNOWN",
+      ),
+    );
+    expect(screen.getByTestId("duplicate-member-physical")).toHaveTextContent(
+      "identité physique non prouvable",
+    );
+    expect(screen.getByTestId("duplicate-member-physical")).not.toHaveTextContent("aucune autre");
+  });
+
+  it("says the same in English, and no identity ever reaches the DOM", async () => {
+    invokeMock.mockImplementation((command: string, args?: { offset?: number }) => {
+      if (command === "map_exact_duplicate_summary") return Promise.resolve(summary);
+      if (command === "map_exact_duplicate_groups")
+        return Promise.resolve(groupPage(args?.offset ?? 0));
+      if (command === "map_exact_duplicate_members")
+        return Promise.resolve(memberPage(args?.offset ?? 0));
+      return Promise.reject(new Error(`unexpected command ${command}`));
+    });
+    const { container } = render(
+      <ExactDuplicateExplorer locale="en" brainId="brain-alpha" revision={0} onSelect={vi.fn()} />,
+    );
+    fireEvent.click(await screen.findByTestId("open-duplicate-explorer"));
+    await screen.findByTestId("duplicate-group-page");
+    fireEvent.click(screen.getByTestId("duplicate-group"));
+    expect(await screen.findByTestId("duplicate-member-physical")).toHaveTextContent(
+      "same physical object — 2 path(s) in this brain",
+    );
+    expect(screen.getByTestId("duplicate-concepts")).toHaveTextContent(
+      "Likely copy: not inferred by this view",
+    );
+
+    // Falsifications 6 and 7: no raw identity, volume serial or file id can be
+    // in the markup, because the DTO this view consumes carries none.
+    const markup = container.innerHTML;
+    for (const forbidden of [
+      "stableKey",
+      "stable_key",
+      "SYS1:",
+      "PFv1:",
+      "volumeSerial",
+      "VolumeSerialNumber",
+      "fileId",
+      "FileId",
+    ]) {
+      expect(markup).not.toContain(forbidden);
+    }
   });
 
   it("reloads the focused brain summary when a content campaign changes revision", async () => {

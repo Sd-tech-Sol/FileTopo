@@ -164,11 +164,17 @@ pub(crate) fn make_tree(root: &Path) {
 
 impl Fx {
     pub(crate) fn new(name: &str) -> Self {
+        Self::with_tree(name, make_tree)
+    }
+
+    /// The same harness over a tree the caller builds — `TASK-0055` needs a
+    /// small one carrying a real hard link rather than `make_tree`'s shape.
+    pub(crate) fn with_tree(name: &str, build: impl FnOnce(&Path)) -> Self {
         let temp = tempfile::tempdir().unwrap();
         let paths = SandboxPaths::under(temp.path().join("filetopo-state"));
         let root = temp.path().join(name);
         fs::create_dir_all(&root).unwrap();
-        make_tree(&root);
+        build(&root);
         let brain = register_real_root(&paths, &root).expect("registered");
         refresh_map(&paths, &brain).expect("baseline");
         Self {

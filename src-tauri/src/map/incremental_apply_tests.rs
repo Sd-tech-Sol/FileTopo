@@ -300,6 +300,27 @@ fn publish_snap(index: &mut Index, snap: &Snap) {
         .expect("reference publication");
 }
 
+/// The canonical id of the occurrence this key names, or `None` if the Index
+/// holds none. Every object of these fixtures has its own key, so one stable
+/// key is one occurrence here and this *is* `DEC-0052` D1 for them.
+fn stored_id_of_key(index: &Index, key: &str) -> Option<i64> {
+    use rusqlite::OptionalExtension;
+    index
+        .connection
+        .query_row("SELECT id FROM nodes WHERE stable_key = ?1", [key], |row| {
+            row.get(0)
+        })
+        .optional()
+        .expect("read the stored occurrence")
+}
+
+/// Marks an observation as continuing the stored occurrence its key names —
+/// what a real producer proves from the group's whole picture (`DEC-0052` D).
+fn continuing(index: &Index, mut observed: ObservedNode) -> ObservedNode {
+    observed.continues = stored_id_of_key(index, &observed.identity.stable_key);
+    observed
+}
+
 fn canonical_of_key(index: &Index, key: &str) -> i64 {
     index
         .connection
@@ -376,6 +397,10 @@ fn derive_batch(index: &Index, old: &Snap, new: &Snap, detected_unix_ms: i64) ->
         };
         let identity = new.identity(node.id).clone();
         batch.upserts.push(ObservedNode {
+            // `DEC-0052` D — the producer's pairing. Every object in this world
+            // model has its own key, so the occurrence a key names is
+            // unambiguous and the lookup *is* the group rule for it.
+            continues: stored_id_of_key(index, &identity.stable_key),
             identity,
             parent,
             name: node.name.clone(),
@@ -1000,6 +1025,7 @@ fn a_batch_may_not_pretend_a_path_fallback_key_was_renamed_or_moved() {
                 stable_key: "PF:docs/avant.txt".into(),
                 provenance: IdentityProvenance::PathFallback,
             },
+            continues: Some(canonical_of_key(&index, "PF:docs/avant.txt")),
             parent: ParentRef::Existing(parent),
             name: "apres.txt".into(),
             relative_path: "docs/apres.txt".into(),
@@ -1177,6 +1203,7 @@ fn an_unchanged_batch_is_a_no_op_without_event_or_revision() {
     };
     for node in snap.nodes.iter().filter(|node| node.parent_id.is_some()) {
         batch.upserts.push(ObservedNode {
+            continues: stored_id_of_key(&pair.a, snap.key(node.id)),
             identity: snap.identity(node.id).clone(),
             parent: ParentRef::Existing(canonical_of_key(
                 &pair.a,
@@ -1495,7 +1522,11 @@ fn the_kernel_path_never_replaces_the_corpus_reads_it_whole_or_counts_it() {
         "DELETE FROM nodes\"",
         "DELETE FROM nodes;",
         "load_previous",
-        "COUNT(*)",
+        // An **unkeyed** count. `DEC-0052` D3 needs one keyed count — how many
+        // occurrences a stable key already has — and the keyed-read assertion
+        // below is what proves it never degenerates into a table scan.
+        "COUNT(*) FROM nodes\"",
+        "COUNT(*) FROM nodes;",
         "SELECT * FROM nodes",
         "FROM nodes\"",
         "FROM nodes ORDER",
@@ -1579,6 +1610,8 @@ fn node(
             stable_key: key.into(),
             provenance: IdentityProvenance::System,
         },
+        // A new occurrence unless the test says otherwise — see [`continuing`].
+        continues: None,
         parent,
         name: name.into(),
         relative_path: path.into(),
@@ -1627,15 +1660,27 @@ fn a_duplicated_token_or_stable_key_or_deletion_is_refused_before_any_write() {
         assert_refused(&mut index, &dup_token),
         BatchError::DuplicateToken(1)
     ));
-    let dup_key = batch(
+    // `DEC-0052` B — two `SYSTEM` occurrences of one key at two paths are two
+    // hard links to one physical object and are **legal**; what is impossible is
+    // one key at one path twice, or a repeated `PATH_FALLBACK` key.
+    let same_occurrence_twice = batch(
         vec![
             file_in_root(1, "K-x", "x.txt"),
-            file_in_root(2, "K-x", "y.txt"),
+            file_in_root(2, "K-x", "x.txt"),
         ],
         vec![],
     );
     assert!(matches!(
-        assert_refused(&mut index, &dup_key),
+        assert_refused(&mut index, &same_occurrence_twice),
+        BatchError::IdentityCollision
+    ));
+    let mut fallback_a = file_in_root(1, "PF:x.txt", "x.txt");
+    fallback_a.identity.provenance = IdentityProvenance::PathFallback;
+    let mut fallback_b = file_in_root(2, "PF:x.txt", "y.txt");
+    fallback_b.identity.provenance = IdentityProvenance::PathFallback;
+    let dup_fallback = batch(vec![fallback_a, fallback_b], vec![]);
+    assert!(matches!(
+        assert_refused(&mut index, &dup_fallback),
         BatchError::IdentityCollision
     ));
     let g = canonical_of_key(&index, "K-g");
@@ -1655,14 +1700,17 @@ fn an_unknown_deletion_and_a_delete_plus_upsert_are_refused() {
     ));
     let g = canonical_of_key(&index, "K-g");
     let both = batch(
-        vec![node(
-            1,
-            "K-g",
-            ParentRef::Existing(1),
-            "g.txt",
-            "g.txt",
-            1,
-            NodeKind::File,
+        vec![continuing(
+            &index,
+            node(
+                1,
+                "K-g",
+                ParentRef::Existing(1),
+                "g.txt",
+                "g.txt",
+                1,
+                NodeKind::File,
+            ),
         )],
         vec![g],
     );
@@ -1699,14 +1747,17 @@ fn the_root_can_neither_be_deleted_reparented_nor_upserted() {
         BatchError::RootImmutable
     ));
     let as_directory = batch(
-        vec![node(
-            1,
-            "K-root",
-            ParentRef::Existing(a),
-            "racine",
-            "a/racine",
-            2,
-            NodeKind::Directory,
+        vec![continuing(
+            &index,
+            node(
+                1,
+                "K-root",
+                ParentRef::Existing(a),
+                "racine",
+                "a/racine",
+                2,
+                NodeKind::Directory,
+            ),
         )],
         vec![],
     );
@@ -1810,14 +1861,17 @@ fn a_cycle_is_refused_even_through_an_untouched_node() {
     // `a` moved under its own untouched descendant `a/n`: a → n → a.
     let n = canonical_of_key(&index, "K-n");
     let cycle = batch(
-        vec![node(
-            1,
-            "K-a",
-            ParentRef::Existing(n),
-            "a",
-            "a/n/a",
-            3,
-            NodeKind::Directory,
+        vec![continuing(
+            &index,
+            node(
+                1,
+                "K-a",
+                ParentRef::Existing(n),
+                "a",
+                "a/n/a",
+                3,
+                NodeKind::Directory,
+            ),
         )],
         vec![],
     );
@@ -1974,12 +2028,150 @@ fn a_name_freed_in_the_same_batch_may_be_reused() {
 #[test]
 fn a_provenance_change_on_a_stored_key_is_refused() {
     let (mut index, ..) = fixture();
-    let mut forged = file_in_root(1, "K-g", "g.txt");
+    let mut forged = continuing(&index, file_in_root(1, "K-g", "g.txt"));
     forged.identity.provenance = IdentityProvenance::PathFallback;
     assert!(matches!(
         assert_refused(&mut index, &batch(vec![forged], vec![])),
         BatchError::ProvenanceMismatch
     ));
+}
+
+// -- `DEC-0052` D — the kernel verifies the producer's pairing ------------------
+//
+// Since a `SYSTEM` key may name several occurrences, the kernel no longer
+// resolves a canonical id from a key: the producer proves the pairing and the
+// kernel checks it against the stored rows. These are the five ways a wrong
+// pairing is caught instead of applied.
+
+#[test]
+fn an_upsert_that_continues_an_unknown_row_is_refused() {
+    let (mut index, ..) = fixture();
+    let mut orphan = file_in_root(1, "K-x", "x.txt");
+    orphan.continues = Some(424_242);
+    assert!(matches!(
+        assert_refused(&mut index, &batch(vec![orphan], vec![])),
+        BatchError::UnknownCorrelation(424_242)
+    ));
+}
+
+#[test]
+fn an_upsert_that_continues_a_row_carrying_another_identity_is_refused() {
+    let (mut index, ..) = fixture();
+    let g = canonical_of_key(&index, "K-g");
+    // The observation says it is object `K-x`, but claims to continue the row
+    // of `K-g`: a pairing the stored identity contradicts.
+    let mut forged = file_in_root(1, "K-x", "g.txt");
+    forged.continues = Some(g);
+    assert!(matches!(
+        assert_refused(&mut index, &batch(vec![forged], vec![])),
+        BatchError::CorrelationMismatch(_)
+    ));
+}
+
+#[test]
+fn two_upserts_may_not_continue_the_same_stored_occurrence() {
+    let (mut index, ..) = fixture();
+    let g = canonical_of_key(&index, "K-g");
+    let mut first = file_in_root(1, "K-g", "g.txt");
+    first.continues = Some(g);
+    let mut second = file_in_root(2, "K-g", "alias.txt");
+    second.continues = Some(g);
+    assert!(matches!(
+        assert_refused(&mut index, &batch(vec![first, second], vec![])),
+        BatchError::DuplicateCorrelation(_)
+    ));
+}
+
+/// Falsification 1 and 3 at the kernel level: an observation that declares
+/// itself a **new** occurrence while a stored row already holds that identity at
+/// that very path is refused — it should have been a continuation.
+#[test]
+fn a_new_occurrence_may_not_land_on_a_stored_one() {
+    let (mut index, ..) = fixture();
+    let mut forged = file_in_root(1, "K-g", "g.txt");
+    forged.continues = None;
+    assert!(matches!(
+        assert_refused(&mut index, &batch(vec![forged], vec![])),
+        BatchError::OccupiedOccurrence { .. }
+    ));
+}
+
+/// `DEC-0052` D3 — a **new** `PATH_FALLBACK` occurrence may not reuse a stored
+/// key at all, at any path: that key *is* the occurrence.
+#[test]
+fn a_new_path_fallback_occurrence_may_not_reuse_a_stored_key() {
+    let mut world = World::new();
+    let dir = world.dir(0, "docs", "K-docs");
+    world.fallback_file(dir, "avant.txt", 3, 30);
+    let mut index = in_memory();
+    publish_snap(&mut index, &world.snap());
+    let parent = canonical_of_key(&index, "K-docs");
+
+    let mut forged = node(
+        1,
+        "PF:docs/avant.txt",
+        ParentRef::Existing(parent),
+        "autre.txt",
+        "docs/autre.txt",
+        2,
+        NodeKind::File,
+    );
+    forged.identity.provenance = IdentityProvenance::PathFallback;
+    forged.continues = None;
+    assert!(matches!(
+        assert_refused(&mut index, &batch(vec![forged], vec![])),
+        BatchError::OccupiedOccurrence { .. }
+    ));
+}
+
+/// And the case the kernel must **accept**: two occurrences of one shared
+/// `SYSTEM` key, one continuing a stored row and one brand new. This is what a
+/// hard link appearing beside an indexed file looks like to the kernel, and it
+/// is refused by the pre-`TASK-0055` code.
+#[test]
+fn a_second_occurrence_of_a_shared_system_key_is_applied_as_a_new_row() {
+    let (mut index, ..) = fixture();
+    let g = canonical_of_key(&index, "K-g");
+    let root = canonical_of_key(&index, "K-root");
+    let mut original = node(
+        1,
+        "K-g",
+        ParentRef::Existing(root),
+        "g.txt",
+        "g.txt",
+        1,
+        NodeKind::File,
+    );
+    original.continues = Some(g);
+    original.size_bytes = 99;
+    let mut alias = node(
+        2,
+        "K-g",
+        ParentRef::Existing(root),
+        "g-hardlink.txt",
+        "g-hardlink.txt",
+        1,
+        NodeKind::File,
+    );
+    alias.continues = None;
+    alias.size_bytes = 99;
+
+    let applied = index
+        .apply_update_batch(&UpdateBatch {
+            upserts: vec![original, alias],
+            deletions: vec![],
+            root: None,
+            detected_unix_ms: 7,
+        })
+        .expect("a shared SYSTEM group applies");
+    assert!(applied.applied);
+    assert_eq!(applied.created, 1, "only the alias is new");
+    let rows = dump_nodes(&index);
+    let alias_row = rows
+        .iter()
+        .find(|row| row.path == "g-hardlink.txt")
+        .expect("the alias row");
+    assert_ne!(alias_row.id, g, "the alias is its own occurrence");
 }
 
 #[test]
@@ -2027,14 +2219,17 @@ fn several_writes(index: &Index) -> UpdateBatch {
     let root = canonical_of_key(index, "K-root");
     let b = canonical_of_key(index, "K-b");
     let f = canonical_of_key(index, "K-f");
-    let mut modified = node(
-        2,
-        "K-g",
-        ParentRef::Existing(root),
-        "g.txt",
-        "g.txt",
-        1,
-        NodeKind::File,
+    let mut modified = continuing(
+        index,
+        node(
+            2,
+            "K-g",
+            ParentRef::Existing(root),
+            "g.txt",
+            "g.txt",
+            1,
+            NodeKind::File,
+        ),
     );
     modified.size_bytes = 12_345;
     batch(
@@ -2121,18 +2316,26 @@ fn a_failure_on_the_very_last_write_the_revision_rolls_everything_back() {
 }
 
 #[test]
-fn a_constraint_failure_rolls_back_and_the_stable_key_index_is_a_real_backstop() {
+fn a_constraint_failure_rolls_back_and_a_shared_system_key_is_accepted_by_the_schema() {
     let (mut index, ..) = fixture();
     let before = dump_everything(&index);
-    // The unique index is what the application-level check falls back on: two
-    // rows with one key are impossible at the storage level, not only refused.
-    let clash = index.connection.execute(
-        "INSERT INTO nodes (id, parent_id, name, relative_path, kind, depth, size_bytes,
+    // `DEC-0052` C — the storage layer must **accept** a second occurrence of a
+    // `SYSTEM` key: two hard links to one physical object are two real rows.
+    // The refusal of what is genuinely impossible moved to the application
+    // level, where `validate_shape` and the producers' pairing enforce it.
+    index
+        .connection
+        .execute(
+            "INSERT INTO nodes (id, parent_id, name, relative_path, kind, depth, size_bytes,
                 online_only, reparse_point, child_count, seen, stable_key, identity_provenance)
-         VALUES (900, 1, 'clash', 'clash', 'file', 1, 0, 0, 0, 0, 0, 'K-g', 'SYSTEM')",
-        [],
-    );
-    assert!(clash.is_err(), "idx_nodes_stable_key is unique");
+             VALUES (900, 1, 'alias', 'alias', 'file', 1, 0, 0, 0, 0, 0, 'K-g', 'SYSTEM')",
+            [],
+        )
+        .expect("a shared SYSTEM key is no longer a storage-level error");
+    index
+        .connection
+        .execute("DELETE FROM nodes WHERE id = 900", [])
+        .expect("undo");
     assert_eq!(dump_everything(&index), before);
 
     // And a constraint hit *inside* the kernel's transaction (a foreign key,

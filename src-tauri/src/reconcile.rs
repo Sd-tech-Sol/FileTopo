@@ -10,15 +10,25 @@
 //! * A pure comparison. It reads the stored rows once, in a stream, and the scan
 //!   the caller already holds. It writes nothing, creates no catalogue and keeps
 //!   no second index: the answer is a batch, or nothing.
-//! * Keyed **only** by stable key (`DEC-0009` I-E). A key already stored is the
-//!   same object and keeps its canonical id; an unknown key is a creation; a
-//!   stored key absent from the scan is a deletion. No heuristic, no similarity,
-//!   no name/size/date correlation, no file content.
+//! * Keyed **only** by stable key (`DEC-0009` I-E), by **groups** of a key since
+//!   `DEC-0052`: a `SYSTEM` key names a Windows physical object several hard
+//!   links may legitimately share. One stored and one scanned occurrence of a
+//!   key are the same object and keep the canonical id, path change included;
+//!   a shared group pairs only by exact `relative_path`
+//!   ([`crate::identity::pair_group`]). An unpaired scanned occurrence is a
+//!   creation, an unpaired stored one a deletion. No heuristic, no similarity,
+//!   no name/size/date correlation, no alias guessed, no file content.
 //! * `PATH_FALLBACK` needs no special case: its key is derived from the path, so
 //!   a rename or a move changes the key and the rule above already yields a
-//!   deletion plus a creation — the very thing `DEC-0009` accepts for it.
+//!   deletion plus a creation — the very thing `DEC-0009` accepts for it. A
+//!   duplicate `PATH_FALLBACK` key is refused (`DEC-0052` D3).
 //! * Deterministic: upserts follow the scan's own order, deletions the stored id
 //!   order.
+//! * Still **one stream**. Only the occurrences of a *contested* group — a key
+//!   the Index already holds more than once, or one the scan sees more than once
+//!   — are held back until the group is whole; everything else is paired as it
+//!   streams past, exactly as before `TASK-0055`. A corpus without hard links
+//!   defers nothing.
 //!
 //! # What it is not
 //!
@@ -56,7 +66,7 @@ pub(crate) enum ReconcileError {
     MissingRoot,
     #[error("reconcile_multiple_roots: the scan has several roots")]
     MultipleRoots,
-    #[error("reconcile_identity_collision: two scanned nodes carry the same stable key")]
+    #[error("reconcile_identity_collision: two scanned nodes claim the same occurrence identity")]
     IdentityCollision,
     #[error("reconcile_not_bijective: identities must name each scanned node exactly once")]
     NotBijective,
@@ -155,11 +165,7 @@ pub(crate) fn reconcile_full_scan(
 ) -> Result<UpdateBatch, ReconcileError> {
     // -- The scan must be a well-formed, single-rooted bijection.
     let mut identity_of: HashMap<i64, &NodeIdentity> = HashMap::with_capacity(identities.len());
-    let mut keys: HashSet<&str> = HashSet::with_capacity(identities.len());
     for candidate in identities {
-        if !keys.insert(candidate.stable_key.as_str()) {
-            return Err(ReconcileError::IdentityCollision);
-        }
         if identity_of.insert(candidate.node_id, candidate).is_some() {
             return Err(ReconcileError::NotBijective);
         }
@@ -194,11 +200,40 @@ pub(crate) fn reconcile_full_scan(
             ),
         });
     }
-    let by_key: HashMap<&str, usize> = nodes
-        .iter()
-        .enumerate()
-        .map(|(position, node)| (identity_of[&node.id].stable_key.as_str(), position))
-        .collect();
+    // -- The scan's occurrence groups — `DEC-0052` B. Two occurrences may share
+    //    a `SYSTEM` key, never at the same path and never under `PATH_FALLBACK`.
+    let mut scan_groups: HashMap<&str, Vec<usize>> = HashMap::with_capacity(nodes.len());
+    let mut occupied: HashSet<(&str, &str)> = HashSet::with_capacity(nodes.len());
+    for (position, node) in nodes.iter().enumerate() {
+        let key = identity_of[&node.id].stable_key.as_str();
+        if !occupied.insert((key, node.relative_path.as_str())) {
+            return Err(ReconcileError::IdentityCollision);
+        }
+        scan_groups.entry(key).or_default().push(position);
+    }
+    if scan_groups.values().any(|group| {
+        group.len() > 1
+            && group.iter().any(|&position| {
+                !crate::identity::may_be_shared(identity_of[&nodes[position].id].provenance)
+            })
+    }) {
+        return Err(ReconcileError::IdentityCollision);
+    }
+
+    // -- Which stored keys the Index already holds more than once. Tiny: one
+    //    row per physical object that several hard links point at.
+    let mut shared_stored: HashSet<String> = HashSet::new();
+    {
+        let mut statement = index.connection.prepare(
+            "SELECT stable_key FROM nodes
+              WHERE stable_key IS NOT NULL
+              GROUP BY stable_key HAVING COUNT(*) > 1",
+        )?;
+        let mut rows = statement.query([])?;
+        while let Some(row) = rows.next()? {
+            shared_stored.insert(row.get(0)?);
+        }
+    }
 
     // -- One streaming pass over the stored rows.
     let root_id = read_root_id(index)?;
@@ -207,6 +242,9 @@ pub(crate) fn reconcile_full_scan(
     let mut same_columns: Vec<bool> = vec![false; nodes.len()];
     let mut deletions: Vec<i64> = Vec::new();
     let mut stored_root: Option<RootObservation> = None;
+    // The occurrences of a contested group, held back in stored id order until
+    // the group is whole. Empty for a corpus with no shared identity.
+    let mut deferred: HashMap<String, Vec<StoredColumns>> = HashMap::new();
     {
         let mut statement = index.connection.prepare(
             "SELECT id, parent_id, name, relative_path, kind, depth, size_bytes,
@@ -239,28 +277,65 @@ pub(crate) fn reconcile_full_scan(
                     reparse_point: stored.reparse_point,
                 });
             }
-            match by_key.get(key) {
-                Some(&position) => {
-                    // The stored root must be the scanned root, and only it.
-                    if (stored.id == root_id) != (position == root_position) {
-                        return Err(ReconcileError::RootIdentityChanged);
-                    }
+            let scanned = scan_groups.get(key).map_or(0, Vec::len);
+            if shared_stored.contains(key) || scanned > 1 {
+                deferred.entry(key.to_string()).or_default().push(stored);
+                continue;
+            }
+            // `DEC-0052` D1: one stored and at most one scanned occurrence, so
+            // the answer needs no group — the pre-`TASK-0055` behaviour exactly.
+            match scan_groups.get(key).map(|group| group[0]) {
+                Some(position) => {
                     canonical[position] = Some(stored.id);
                     stored_parent[position] = stored.parent_id;
                     same_columns[position] = same_columns_but_parent(&stored, &nodes[position]);
                 }
-                None => {
-                    if stored.id == root_id {
-                        return Err(ReconcileError::RootIdentityChanged);
-                    }
-                    deletions.push(stored.id);
-                }
+                None => deletions.push(stored.id),
             }
         }
     }
+
+    // -- The contested groups, now whole: `DEC-0052` D2 by exact path only.
+    for (key, stored_group) in &deferred {
+        let stored_paths = stored_group
+            .iter()
+            .map(|stored| stored.relative_path.as_str())
+            .collect::<Vec<_>>();
+        let empty: Vec<usize> = Vec::new();
+        let scanned = scan_groups.get(key.as_str()).unwrap_or(&empty);
+        let observed_paths = scanned
+            .iter()
+            .map(|&position| nodes[position].relative_path.as_str())
+            .collect::<Vec<_>>();
+        let pairing = crate::identity::pair_group(&stored_paths, &observed_paths);
+        let mut matched_stored: HashSet<usize> = HashSet::with_capacity(pairing.len());
+        for (slot, paired) in pairing.iter().enumerate() {
+            let Some(stored_slot) = *paired else { continue };
+            matched_stored.insert(stored_slot);
+            let position = scanned[slot];
+            let stored = &stored_group[stored_slot];
+            canonical[position] = Some(stored.id);
+            stored_parent[position] = stored.parent_id;
+            same_columns[position] = same_columns_but_parent(stored, &nodes[position]);
+        }
+        for (stored_slot, stored) in stored_group.iter().enumerate() {
+            if !matched_stored.contains(&stored_slot) {
+                deletions.push(stored.id);
+            }
+        }
+    }
+    deletions.sort_unstable();
+
     let stored_root = stored_root.ok_or(ReconcileError::MetadataCorrupt("root row"))?;
-    if canonical[root_position] != Some(root_id) {
+    // The stored root must be the scanned root, and only it — whichever path
+    // above resolved it. `F-032` owns a root that disappeared or was replaced.
+    if deletions.binary_search(&root_id).is_ok() {
         return Err(ReconcileError::RootIdentityChanged);
+    }
+    for (position, paired) in canonical.iter().enumerate() {
+        if (*paired == Some(root_id)) != (position == root_position) {
+            return Err(ReconcileError::RootIdentityChanged);
+        }
     }
 
     // -- Who enters the batch: what is new, and what differs (parent included).
@@ -277,6 +352,9 @@ pub(crate) fn reconcile_full_scan(
         }
         upserts.push(ObservedNode {
             identity: identity_of[&node.id].clone(),
+            // The pairing this module proved from the group's whole picture —
+            // the kernel verifies it and never re-derives one (`DEC-0052` D).
+            continues: canonical[position],
             parent: match canonical[parent] {
                 Some(existing) => ParentRef::Existing(existing),
                 // A parent with no stored row is itself a creation, hence an

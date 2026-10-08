@@ -24,6 +24,16 @@
 //! beside a [`crate::domain::NodeDto`] during scanning and publication, never
 //! inside a DTO that reaches the WebView, a log or an artifact — see
 //! `crate::index::Index::publish_with_identity`.
+//!
+//! # Occurrence versus physical object — `DEC-0052`
+//!
+//! Since `TASK-0055` a `System` key is explicitly the identity of a **Windows
+//! physical object**, not of one entry in the tree: two hard links to the same
+//! object legitimately carry the same `VolumeSerialNumber` + `FileId`, and both
+//! are real, separate occurrences with their own `nodes.id`. A `PathFallback`
+//! key stays an **occurrence** key and is still unique inside one corpus.
+//! [`pair_group`] is the single rule every mutation path uses to decide which
+//! stored occurrence a newly observed one continues.
 
 use crate::domain::NodeKind;
 use crate::path_codec;
@@ -120,6 +130,51 @@ pub fn path_fallback_key(relative: &Path, kind: NodeKind) -> String {
     bytes.push(0);
     bytes.extend_from_slice(kind.as_str().as_bytes());
     format!("{PATH_FALLBACK_VERSION}:{:016x}", fnv1a64(&bytes))
+}
+
+/// Pairs the occurrences of **one** stable-key group — `DEC-0052` D, and the
+/// only place that rule is written.
+///
+/// `stored_paths` are the relative paths of the occurrences the Index already
+/// holds under this key, in any stable order the caller chooses;
+/// `observed_paths` are those of the occurrences the observer's **complete
+/// picture** of that key holds. The answer is, for each observed occurrence,
+/// the index of the stored occurrence it continues, or `None` — a new
+/// occurrence that must receive a fresh monotone id.
+///
+/// Two cases, and deliberately no third:
+///
+/// * **`D1`, the unambiguous group** — exactly one stored and exactly one
+///   observed occurrence. They are the same object, so the id is kept even
+///   when the path changed: this is `F-004`'s intra-volume rename and move,
+///   byte-for-byte the behaviour that existed before `TASK-0055`.
+/// * **`D2`, a shared group** — anything else. Only an **exact
+///   `relative_path`** match pairs. A remaining alias is never paired by
+///   order, name, date, size or proximity: guessing which of several hard
+///   links was "the renamed one" would write an identity nobody proved, which
+///   is exactly what `DEC-0009` I-E forbids. It becomes a new occurrence, and
+///   the stored occurrence nobody matched simply disappears.
+///
+/// The caller supplies the picture; this function never reads a source or a
+/// database, and the complete-picture precondition is what each caller has to
+/// honour (`crate::scope` completes a partial scope reading before asking).
+pub fn pair_group(stored_paths: &[&str], observed_paths: &[&str]) -> Vec<Option<usize>> {
+    if stored_paths.len() == 1 && observed_paths.len() == 1 {
+        return vec![Some(0)];
+    }
+    observed_paths
+        .iter()
+        .map(|observed| stored_paths.iter().position(|stored| stored == observed))
+        .collect()
+}
+
+/// Whether a stable key may be carried by **several** occurrences of one
+/// corpus — `DEC-0052` B. `System` may: it names a physical object Windows can
+/// legitimately expose under several paths. `PathFallback` may not: its key
+/// *is* the occurrence's raw relative path and kind, so a duplicate is a
+/// contradiction, refused explicitly before any mutation (`DEC-0052` D3).
+pub fn may_be_shared(provenance: IdentityProvenance) -> bool {
+    matches!(provenance, IdentityProvenance::System)
 }
 
 /// Whether this node may even be considered for the Windows `SYSTEM`
@@ -389,6 +444,87 @@ mod tests {
             crafted, shorter,
             "a path/kind boundary must never be guessable from concatenated bytes"
         );
+    }
+
+    // -- `DEC-0052` D — the one group-aware pairing rule -------------------
+
+    #[test]
+    fn d1_one_stored_and_one_observed_occurrence_are_the_same_object() {
+        // The historical behaviour, unchanged: a rename or an intra-volume
+        // move keeps the id, because the group is not shared.
+        assert_eq!(pair_group(&["avant.txt"], &["apres.txt"]), vec![Some(0)]);
+        assert_eq!(pair_group(&["a.txt"], &["a.txt"]), vec![Some(0)]);
+    }
+
+    #[test]
+    fn d2_a_new_hard_link_leaves_the_original_path_its_own_id() {
+        // One stored occurrence, two observed: the unchanged path pairs, the
+        // new alias is a new occurrence. Nothing is guessed.
+        assert_eq!(
+            pair_group(&["a.bin"], &["a.bin", "b-hardlink.bin"]),
+            vec![Some(0), None]
+        );
+    }
+
+    #[test]
+    fn d2_two_unchanged_hard_links_both_keep_their_ids() {
+        assert_eq!(
+            pair_group(&["a.bin", "b.bin"], &["a.bin", "b.bin"]),
+            vec![Some(0), Some(1)]
+        );
+        // And in the other order, because the pairing is by path, not by rank.
+        assert_eq!(
+            pair_group(&["a.bin", "b.bin"], &["b.bin", "a.bin"]),
+            vec![Some(1), Some(0)]
+        );
+    }
+
+    #[test]
+    fn d2_a_renamed_alias_among_several_is_never_correlated_by_supposition() {
+        // `b.bin` became `c.bin`. `a.bin` keeps its id; `c.bin` is a new
+        // occurrence; the stored `b.bin` disappears. Pairing `c.bin` with
+        // `b.bin` would be an invented identity — `ACTION-0102` §5.
+        assert_eq!(
+            pair_group(&["a.bin", "b.bin"], &["a.bin", "c.bin"]),
+            vec![Some(0), None]
+        );
+    }
+
+    #[test]
+    fn d2_falling_back_to_one_occurrence_keeps_the_unchanged_path_s_id() {
+        assert_eq!(pair_group(&["a.bin", "b.bin"], &["b.bin"]), vec![Some(1)]);
+    }
+
+    #[test]
+    fn an_unknown_key_is_always_a_new_occurrence() {
+        assert_eq!(pair_group(&[], &["neuf.txt"]), vec![None]);
+        assert_eq!(pair_group(&[], &["x", "y"]), vec![None, None]);
+    }
+
+    /// The rule never hands the same stored occurrence to two observed ones:
+    /// that would break the `nodes.id` bijection the Index depends on.
+    #[test]
+    fn no_stored_occurrence_is_ever_paired_twice() {
+        for (stored, observed) in [
+            (vec!["a", "b"], vec!["a", "b", "c"]),
+            (vec!["a"], vec!["a", "a2"]),
+            (vec!["a", "b", "c"], vec!["c", "a"]),
+        ] {
+            let paired = pair_group(&stored, &observed);
+            let claimed: Vec<usize> = paired.iter().flatten().copied().collect();
+            let unique: std::collections::HashSet<usize> = claimed.iter().copied().collect();
+            assert_eq!(
+                claimed.len(),
+                unique.len(),
+                "stored {stored:?} observed {observed:?} paired {paired:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn only_a_system_key_may_be_shared_by_several_occurrences() {
+        assert!(may_be_shared(IdentityProvenance::System));
+        assert!(!may_be_shared(IdentityProvenance::PathFallback));
     }
 
     // -- `ACTION-0058` D5 / `DEC-0035` — the Cloud Files identity boundary --

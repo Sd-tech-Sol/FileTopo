@@ -1669,6 +1669,41 @@ input[type="text"] {
   overflow-wrap: anywhere;
 }
 
+/* `F-046` / `DEC-0052` F — the physical-object fact of one member. Carried by
+   text, never by colour alone: the sentence says which of the three cases it
+   is, and the emphasis only reinforces it. */
+.duplicates__physical {
+  display: block;
+  font-size: 11px;
+  line-height: 1.45;
+  opacity: 0.85;
+}
+
+.duplicates__physical[data-physical-object="PROVEN_SHARED"] {
+  opacity: 1;
+  font-weight: 600;
+}
+
+/* The five notions `DEC-0021` keeps distinct, stated together so none of them
+   can be read as another. */
+.duplicates__concepts {
+  margin: 10px 0 0;
+  border-left: 3px solid var(--line);
+  padding-left: 8px;
+}
+
+.duplicates__concepts h4 {
+  margin: 0 0 4px;
+  font-size: 12px;
+}
+
+.duplicates__concepts ol {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
 .cross-relations__hint {
   margin: 0;
   font-size: 11px;

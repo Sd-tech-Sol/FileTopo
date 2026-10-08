@@ -332,7 +332,7 @@ fn raw_bytes(database: &Path) -> Vec<u8> {
 /// naming changes for an unrelated reason. Recomputing it independently
 /// means a real behavioural drift is what makes these tests fail, not a
 /// rename.
-fn safety_copy_path(database: &Path) -> PathBuf {
+pub(super) fn safety_copy_path(database: &Path) -> PathBuf {
     let mut name = database.file_name().unwrap().to_os_string();
     name.push(".migration-safety-copy");
     database.with_file_name(name)
@@ -584,7 +584,7 @@ fn a_future_schema_is_refused_and_never_migrated_backward() {
     {
         let connection = rusqlite::Connection::open(&database).unwrap();
         connection
-            .execute_batch("PRAGMA user_version = 7;")
+            .execute_batch("PRAGMA user_version = 8;")
             .unwrap();
     }
     let before = raw_bytes(&database);
@@ -605,7 +605,7 @@ fn a_future_schema_is_refused_and_never_migrated_backward() {
         before,
         "a refused future schema must never be touched, let alone migrated backward"
     );
-    assert_eq!(raw_schema_version(&database), 7);
+    assert_eq!(raw_schema_version(&database), 8);
     assert!(
         !safety_copy_path(&database).exists(),
         "ACTION-0058 D4: a future/unknown schema must never create a safety copy"

@@ -5,10 +5,12 @@ use serde::{Deserialize, Serialize};
 /// Kept in lockstep with `crate::index::SCHEMA_VERSION` by hand: the two
 /// constants describe the same `PRAGMA user_version`, one from the canonical
 /// `Index`'s side and one from `BrainIndex::open_existing`'s compatibility
-/// check. `6` since `TASK-0038` — the journal-derived seen/unseen state; `5`
+/// check. `7` since `TASK-0055` — `stable_key` no longer unique, so a `SYSTEM`
+/// key may be shared by the hard links of one physical object (`DEC-0052` C);
+/// `6` was `TASK-0038`'s journal-derived seen/unseen state; `5`
 /// was `TASK-0037`'s persistent change journal; `4` was
 /// `TASK-0036`'s durable stable-identity columns.
-pub const MAP_SCHEMA_VERSION: i64 = 6;
+pub const MAP_SCHEMA_VERSION: i64 = 7;
 /// Whether the product will migrate a file stamped `version` automatically —
 /// `ACTION-0057` D1, widened by `TASK-0037` from "exactly the previous
 /// version" to the closed range the index's own versioned dispatcher knows

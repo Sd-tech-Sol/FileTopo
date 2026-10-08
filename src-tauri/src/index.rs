@@ -8,6 +8,12 @@ use std::path::Path;
 
 /// Current schema version of the node index.
 ///
+/// `7` since `TASK-0055`: `stable_key` is no longer **unique** —
+/// [`DEC-0052`](../../docs/decisions/DEC-0052-node-vs-physical-identity.md) C.
+/// A `SYSTEM` key names a Windows physical object, which several occurrences
+/// (hard links) may legitimately share; the same index, filtered on
+/// `stable_key IS NOT NULL`, is recreated non-unique. No row is rewritten and
+/// no identity column is added.
 /// `6` since `TASK-0038`: the seen/unseen state derived from the journal —
 /// `seen_change_events` plus the `seen_through_event_id` watermark
 /// ([`crate::change_journal::SEEN_STATE_DDL`]), baselined by the migration.
@@ -19,13 +25,21 @@ use std::path::Path;
 /// [`DEC-0009`](../../docs/decisions/DEC-0009-data-model-and-relations.md) I-E.
 /// `3` was `TASK-0029`'s two generated sort columns and child-order index
 /// ([`DEC-0030`](../../docs/decisions/DEC-0030-bounded-hierarchy-query-contract.md)).
-const SCHEMA_VERSION: i64 = 6;
+const SCHEMA_VERSION: i64 = 7;
 
 /// The schema `TASK-0036` stamped: durable identity columns and id counter.
 const STABLE_IDENTITY_SCHEMA_VERSION: i64 = 4;
 
 /// The schema `TASK-0037` stamped: the `change_events` journal.
 const CHANGE_JOURNAL_SCHEMA_VERSION: i64 = 5;
+
+/// The schema `TASK-0038` stamped: the journal-derived seen state.
+const SEEN_STATE_SCHEMA_VERSION: i64 = 6;
+
+/// The name of the `stable_key` lookup index, in every statement that creates,
+/// drops or inspects it — `DEC-0052` C. It keeps the name it had when it was
+/// unique: the same lookups use it, only the uniqueness constraint is gone.
+pub(crate) const STABLE_KEY_INDEX: &str = "idx_nodes_stable_key";
 
 /// The oldest schema the product will migrate to the current one — the
 /// `TASK-0029` shape. Anything older, unknown or newer is refused, never
@@ -109,7 +123,8 @@ impl Index {
         self.migrate_to_bounded_hierarchy()?;
         self.migrate_to_stable_identity()?;
         self.migrate_to_change_journal()?;
-        self.migrate_to_seen_state()
+        self.migrate_to_seen_state()?;
+        self.migrate_to_shared_physical_identity()
     }
 
     /// Schema `2 → 3` — `DEC-0030 §E`. Idempotent, and safe on a populated
@@ -221,10 +236,24 @@ impl Index {
         let version: i64 = self
             .connection
             .query_row("PRAGMA user_version", [], |row| row.get(0))?;
-        if version >= SCHEMA_VERSION {
+        if version >= SEEN_STATE_SCHEMA_VERSION {
             return Ok(());
         }
         self.run_seen_state_migration()
+    }
+
+    /// Schema `6 → 7` — `TASK-0055`, `DEC-0052` C. Called unconditionally by
+    /// [`initialize`](Self::initialize), like the three steps before it: a
+    /// brand-new file reaches the shared-identity shape through the same step
+    /// an existing v6 file does.
+    fn migrate_to_shared_physical_identity(&self) -> Result<()> {
+        let version: i64 = self
+            .connection
+            .query_row("PRAGMA user_version", [], |row| row.get(0))?;
+        if version >= SCHEMA_VERSION {
+            return Ok(());
+        }
+        self.run_shared_physical_identity_migration()
     }
 
     /// The product-reachable schema upgrade — `ACTION-0057` D1, generalised
@@ -246,7 +275,8 @@ impl Index {
     /// otherwise applies **one versioned step at a time**: `3 → 4`
     /// ([`Self::run_stable_identity_migration`]), `4 → 5`
     /// ([`Self::run_change_journal_migration`]) then `5 → 6`
-    /// ([`Self::run_seen_state_migration`]). Each step is its own atomic
+    /// ([`Self::run_seen_state_migration`]) then `6 → 7`
+    /// ([`Self::run_shared_physical_identity_migration`]). Each step is its own atomic
     /// transaction that stamps its own `user_version` last; a failure between
     /// two steps is the caller's `M-B` restore, which puts back the safety
     /// copy of the file **as it was found**, whichever step failed. Adding a
@@ -268,6 +298,7 @@ impl Index {
                 3 => self.run_stable_identity_migration()?,
                 4 => self.run_change_journal_migration()?,
                 5 => self.run_seen_state_migration()?,
+                6 => self.run_shared_physical_identity_migration()?,
                 other => {
                     return Err(MigrationError::UnsupportedVersion {
                         actual: other,
@@ -387,6 +418,40 @@ impl Index {
             [change_journal::SEEN_WATERMARK_KEY],
         )?;
         transaction.execute_batch(&format!(
+            "PRAGMA user_version={SEEN_STATE_SCHEMA_VERSION};
+             INSERT OR REPLACE INTO schema_meta(key, value)
+             VALUES ('schema_version', '{SEEN_STATE_SCHEMA_VERSION}');",
+        ))?;
+        transaction.commit()
+    }
+
+    /// The atomic body of the `6 → 7` transition — `TASK-0055`, `DEC-0052` C.
+    ///
+    /// The whole migration: the `UNIQUE` constraint on `stable_key` goes away,
+    /// and the same index comes back **non unique** on the same expression and
+    /// the same partial predicate, so every lookup that used it still does.
+    ///
+    /// * **No row is rewritten**, no column is added, no table is created and
+    ///   no second identity store appears: a `SYSTEM` key shared by two hard
+    ///   links was always the truth, only the schema refused to hold it.
+    /// * The DDL is deliberately **strict** — `DROP INDEX`, not
+    ///   `DROP INDEX IF EXISTS`, and `CREATE INDEX`, not
+    ///   `CREATE INDEX IF NOT EXISTS`. Every v4, v5 and v6 file carries this
+    ///   index; one that does not is a foreign or half-migrated file and must
+    ///   fail rather than be adopted. Same discipline as `4 → 5` and `5 → 6`.
+    /// * `PRAGMA user_version`/`schema_meta.schema_version` are written
+    ///   **last, inside this same transaction**. A failure between the `DROP`
+    ///   and the `CREATE` therefore rolls back to the exact v6 file — the
+    ///   half-schema `TASK-0055` §11.9 demands be impossible — and the
+    ///   caller's `M-B` safety copy is still there either way.
+    fn run_shared_physical_identity_migration(&self) -> Result<()> {
+        let transaction = self.connection.unchecked_transaction()?;
+        transaction.execute_batch(&format!("DROP INDEX {STABLE_KEY_INDEX};"))?;
+        transaction.execute_batch(&format!(
+            "CREATE INDEX {STABLE_KEY_INDEX}
+                 ON nodes(stable_key) WHERE stable_key IS NOT NULL;"
+        ))?;
+        transaction.execute_batch(&format!(
             "PRAGMA user_version={SCHEMA_VERSION};
              INSERT OR REPLACE INTO schema_meta(key, value)
              VALUES ('schema_version', '{SCHEMA_VERSION}');",
@@ -404,6 +469,13 @@ impl Index {
     /// supplied, exactly as before `TASK-0036`. Used by every synthetic/test
     /// corpus builder in this codebase, and unaffected by the identity work —
     /// see [`publish`](Self::publish) for why that split is safe.
+    ///
+    /// Two corpus nodes sharing a raw relative path **and** kind are refused,
+    /// as the `UNIQUE` index refused them before `TASK-0055` and for the same
+    /// reason: that is a duplicate `PATH_FALLBACK` occurrence, which
+    /// `DEC-0052` D3 keeps invalid. The refusal keeps this path's historical
+    /// `rusqlite` error type — the constraint moved from the schema to the
+    /// code, not the contract.
     pub(crate) fn replace_nodes_with_metadata(
         &mut self,
         nodes: &[NodeDto],
@@ -413,11 +485,12 @@ impl Index {
         match self.publish(nodes, None, metadata, diagnostics, false) {
             Ok(_) => Ok(()),
             Err(PublishError::Sqlite(error)) => Err(error),
-            Err(PublishError::IdentityCollision | PublishError::IdentityNotBijective) => {
-                unreachable!(
-                    "identities are only checked for a collision or a bijection \
-                     when identities are supplied"
-                )
+            Err(PublishError::IdentityCollision) => Err(rusqlite::Error::SqliteFailure(
+                rusqlite::ffi::Error::new(rusqlite::ffi::SQLITE_CONSTRAINT_UNIQUE),
+                Some("duplicate PATH_FALLBACK identity in the published corpus".into()),
+            )),
+            Err(PublishError::IdentityNotBijective) => {
+                unreachable!("a bijection is only checked when identities are supplied")
             }
         }
     }
@@ -465,14 +538,25 @@ impl Index {
     /// synthetic corpus is free to reuse a path/kind pair across unrelated
     /// test brains with no meaning attached.
     ///
-    /// `identities: Some(list)` is `DEC-0009` I-E in full: a node whose
-    /// stable key matches a key already stored keeps that node's canonical
-    /// `id` — surviving an intra-volume rename or move; an unmatched node
-    /// gets a fresh id from the durable, monotone `next_node_id` counter,
-    /// which never rewinds and therefore never recycles a deleted id. A
-    /// duplicate stable key **within the new scan** is refused before this
-    /// function opens a write transaction, so a collision never leaves a
-    /// half-published or corrupted index — `TASK-0036` C and D.
+    /// `identities: Some(list)` is `DEC-0009` I-E and `DEC-0052` D in full.
+    /// The remap works on **groups of a stable key**, not on single rows,
+    /// because a `SYSTEM` key names a Windows physical object several hard
+    /// links may legitimately share:
+    ///
+    /// * a group with one stored and one scanned occurrence keeps its
+    ///   canonical `id`, surviving an intra-volume rename or move exactly as
+    ///   before `TASK-0055` (`F-004`);
+    /// * a shared group pairs **only** by exact `relative_path`, and never
+    ///   guesses which alias was renamed — [`identity::pair_group`];
+    /// * an unpaired scanned occurrence gets a fresh id from the durable,
+    ///   monotone `next_node_id` counter, which never rewinds and therefore
+    ///   never recycles a deleted id; an unpaired stored occurrence simply
+    ///   disappears with the corpus it was part of.
+    ///
+    /// Refused before this function opens a write transaction, so a refusal
+    /// never leaves a half-published or corrupted index (`TASK-0036` C and D):
+    /// two occurrences claiming the same key **at the same relative path**, and
+    /// a duplicate key whose provenance is `PATH_FALLBACK` (`DEC-0052` D3).
     ///
     /// `seen` is carried two ways, unconditionally OR'd together: by
     /// `relative_path`, exactly as before `TASK-0036` (the only mechanism
@@ -492,11 +576,15 @@ impl Index {
     ) -> PublishResult<PublishOutcome> {
         let mut seen_paths = HashSet::<String>::new();
         let mut seen_ids = HashSet::<i64>::new();
-        let mut previous_by_key = HashMap::<String, i64>::new();
+        // `DEC-0052` B — a stable key is a **group** of occurrences, not one
+        // row: a `SYSTEM` key names a physical object several hard links may
+        // share. Read in `id` order so the group's member order, and therefore
+        // every pairing decision taken from it, is deterministic.
+        let mut previous_by_key = HashMap::<String, Vec<(i64, String)>>::new();
         {
             let mut statement = self
                 .connection
-                .prepare("SELECT id, relative_path, stable_key, seen FROM nodes")?;
+                .prepare("SELECT id, relative_path, stable_key, seen FROM nodes ORDER BY id")?;
             let mut rows = statement.query([])?;
             while let Some(row) = rows.next()? {
                 let id: i64 = row.get(0)?;
@@ -504,11 +592,14 @@ impl Index {
                 let stable_key: Option<String> = row.get(2)?;
                 let seen: bool = row.get(3)?;
                 if seen {
-                    seen_paths.insert(relative_path);
+                    seen_paths.insert(relative_path.clone());
                     seen_ids.insert(id);
                 }
                 if let Some(key) = stable_key {
-                    previous_by_key.insert(key, id);
+                    previous_by_key
+                        .entry(key)
+                        .or_default()
+                        .push((id, relative_path));
                 }
             }
         }
@@ -520,22 +611,24 @@ impl Index {
 
         match identities {
             None => {
+                // Every key here is `PATH_FALLBACK`, so `DEC-0052` D3 applies
+                // in full: a duplicate is refused. Until `TASK-0055` the
+                // `UNIQUE` index did this at the storage level; now that a
+                // `SYSTEM` group may legitimately repeat a key, the refusal is
+                // explicit and happens before the write transaction opens.
+                let mut fallback_keys = HashSet::<String>::with_capacity(nodes.len());
                 for node in nodes {
                     let key =
                         identity::path_fallback_key(Path::new(&node.relative_path), node.kind);
+                    if !fallback_keys.insert(key.clone()) {
+                        return Err(PublishError::IdentityCollision);
+                    }
                     row_identity.insert(node.id, (key, IdentityProvenance::PathFallback.as_str()));
                 }
             }
             Some(list) => {
-                let mut seen_in_scan = HashMap::<&str, i64>::with_capacity(list.len());
                 let mut identity_node_ids = HashSet::<i64>::with_capacity(list.len());
                 for candidate in list {
-                    if seen_in_scan
-                        .insert(candidate.stable_key.as_str(), candidate.node_id)
-                        .is_some()
-                    {
-                        return Err(PublishError::IdentityCollision);
-                    }
                     // `ACTION-0057` §4 — a duplicate `node_id` within
                     // `identities` is refused explicitly here, before it
                     // could otherwise silently overwrite an earlier remap
@@ -557,23 +650,86 @@ impl Index {
                 if node_ids.len() != nodes.len() || identity_node_ids != node_ids {
                     return Err(PublishError::IdentityNotBijective);
                 }
+                let path_of = nodes
+                    .iter()
+                    .map(|node| (node.id, node.relative_path.as_str()))
+                    .collect::<HashMap<i64, &str>>();
+
+                // -- `DEC-0052` D — the scan's own occurrence groups.
+                //
+                // Two occurrences may now share a stable key, but only under
+                // `SYSTEM`, and never at the same relative path: that would be
+                // one occurrence claiming to be two. A duplicate
+                // `PATH_FALLBACK` key stays refused outright — `DEC-0052` D3 —
+                // because that key *is* the occurrence.
+                let mut scan_groups = HashMap::<&str, Vec<usize>>::with_capacity(list.len());
+                let mut occupied = HashSet::<(&str, &str)>::with_capacity(list.len());
+                for (position, candidate) in list.iter().enumerate() {
+                    let key = candidate.stable_key.as_str();
+                    let path = path_of[&candidate.node_id];
+                    if !occupied.insert((key, path)) {
+                        return Err(PublishError::IdentityCollision);
+                    }
+                    scan_groups.entry(key).or_default().push(position);
+                }
+                if scan_groups.values().any(|group| {
+                    group.len() > 1
+                        && group
+                            .iter()
+                            .any(|&position| !identity::may_be_shared(list[position].provenance))
+                }) {
+                    return Err(PublishError::IdentityCollision);
+                }
+
+                // -- The pairing, one group at a time, then ids in scan order.
+                let empty: Vec<(i64, String)> = Vec::new();
+                let mut paired_canonical = vec![None::<i64>; list.len()];
+                for (key, group) in &scan_groups {
+                    let stored = previous_by_key.get(*key).unwrap_or(&empty);
+                    let stored_paths = stored
+                        .iter()
+                        .map(|(_, path)| path.as_str())
+                        .collect::<Vec<_>>();
+                    let observed_paths = group
+                        .iter()
+                        .map(|&position| path_of[&list[position].node_id])
+                        .collect::<Vec<_>>();
+                    for (slot, pairing) in identity::pair_group(&stored_paths, &observed_paths)
+                        .into_iter()
+                        .enumerate()
+                    {
+                        paired_canonical[group[slot]] =
+                            pairing.map(|stored_slot| stored[stored_slot].0);
+                    }
+                }
+
                 let mut next_id = read_next_node_id(&self.connection)?;
-                for candidate in list {
-                    let canonical =
-                        if let Some(&previous_id) = previous_by_key.get(&candidate.stable_key) {
+                for (position, candidate) in list.iter().enumerate() {
+                    let canonical = match paired_canonical[position] {
+                        Some(previous_id) => {
                             outcome.matched += 1;
                             previous_id
-                        } else {
+                        }
+                        None => {
                             outcome.created += 1;
                             let assigned = next_id;
                             next_id += 1;
                             assigned
-                        };
+                        }
+                    };
                     remap.insert(candidate.node_id, canonical);
-                    row_identity.insert(
-                        canonical,
-                        (candidate.stable_key.clone(), candidate.provenance.as_str()),
-                    );
+                    // A canonical id paired twice would silently collapse two
+                    // occurrences into one row. `pair_group` cannot produce
+                    // that, and this refuses it anyway rather than trust it.
+                    if row_identity
+                        .insert(
+                            canonical,
+                            (candidate.stable_key.clone(), candidate.provenance.as_str()),
+                        )
+                        .is_some()
+                    {
+                        return Err(PublishError::IdentityNotBijective);
+                    }
                 }
                 next_node_id_to_persist = Some(next_id);
             }
@@ -730,11 +886,13 @@ impl Index {
 }
 
 /// A refusal from [`Index::publish`]. `Sqlite` covers every I/O and
-/// constraint failure (the `idx_nodes_stable_key` partial unique index is a
-/// defence-in-depth backstop and would surface here too, as an ordinary
-/// constraint violation, if the application-level check below it were ever
-/// bypassed); `IdentityCollision` is the explicit, pre-transaction refusal
-/// `TASK-0036` C requires. `IdentityNotBijective` — `ACTION-0057` §4 — is the
+/// constraint failure. `IdentityCollision` is the explicit, pre-transaction
+/// refusal `TASK-0036` C requires, narrowed by `DEC-0052` to what is actually
+/// impossible: one occurrence claiming a key **at a path another occurrence
+/// already claims**, or a duplicate `PATH_FALLBACK` key. Since schema 7 the
+/// `idx_nodes_stable_key` index is no longer unique, so this application-level
+/// check is the authoritative one rather than a backstop — the storage layer
+/// must accept a shared `SYSTEM` key. `IdentityNotBijective` — `ACTION-0057` §4 — is the
 /// explicit, pre-transaction refusal of a caller that violated
 /// `publish_with_identity`'s documented precondition: an `identities` entry
 /// missing for some node, naming an unknown `node_id`, or repeating a
@@ -801,6 +959,115 @@ pub(crate) fn read_next_node_id(connection: &Connection) -> rusqlite::Result<i64
         }
         Err(other) => Err(other),
     }
+}
+
+/// Whether this file carries the **v7** identity shape — `DEC-0052` C.
+///
+/// Part of the canonical contract `BrainIndex::finish_open_existing` applies
+/// after a migration, i.e. `M-B` step 5: the `stable_key` lookup index exists
+/// and is **not unique**. A file whose `DROP INDEX` landed but whose
+/// `CREATE INDEX` did not — or one still carrying the v4 `UNIQUE` index under a
+/// v7 stamp — is refused here and restored from its safety copy, rather than
+/// served as a half-migrated index.
+pub(crate) fn validate_shared_identity_schema(connection: &Connection) -> rusqlite::Result<bool> {
+    use rusqlite::OptionalExtension;
+    let is_unique: Option<bool> = connection
+        .query_row(
+            "SELECT \"unique\" FROM pragma_index_list('nodes') WHERE name = ?1",
+            [STABLE_KEY_INDEX],
+            |row| row.get(0),
+        )
+        .optional()?;
+    Ok(matches!(is_unique, Some(false)))
+}
+
+/// The **only** physical-identity fact the product may publish — `DEC-0052` F,
+/// `TASK-0055` §6.
+///
+/// Computed from the two columns `TASK-0036` already persists, in the brain's
+/// own Index and nowhere else, and deliberately shaped so the raw key cannot
+/// leave: the answer is a closed classification plus, when it is provable, a
+/// count of occurrences **in this brain**.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
+pub enum PhysicalObjectIdentity {
+    /// Windows proved this object's identity and **several** occurrences of
+    /// this brain carry it: hard links to one physical object.
+    ProvenShared,
+    /// Windows proved this object's identity and exactly **one** occurrence of
+    /// this brain carries it.
+    ProvenSingle,
+    /// The OS, or FileTopo's own policy (`DEC-0035`: a Cloud Files
+    /// placeholder, an ambiguous detection, a reparse point, a non-Windows
+    /// host), does not let the product affirm either. Never a disguised
+    /// `PROVEN_SINGLE`.
+    Unknown,
+}
+
+/// A classification and, only when it is proven, the number of occurrences of
+/// **this brain** that carry the same physical object. `None` for `UNKNOWN`:
+/// an unprovable identity has no honest count.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PhysicalObjectFact {
+    pub identity: PhysicalObjectIdentity,
+    pub occurrence_count: Option<usize>,
+}
+
+impl PhysicalObjectFact {
+    pub(crate) const UNKNOWN: Self = Self {
+        identity: PhysicalObjectIdentity::Unknown,
+        occurrence_count: None,
+    };
+}
+
+/// The physical-object fact of one **relative path** of one brain's Index.
+///
+/// `connection` is that brain's canonical Index, opened read-only by the
+/// caller. The function reads two columns and one count; it never opens a
+/// handle, reads a byte of content, or returns the key, the volume serial, the
+/// `FileId` or anything derived from them.
+///
+/// An absent row, a row with no durable identity and a `PATH_FALLBACK` row all
+/// answer `UNKNOWN`: `PATH_FALLBACK` is an occurrence key, so two paths sharing
+/// one would mean nothing about a physical object — and they cannot, by
+/// `DEC-0052` D3.
+pub(crate) fn physical_object_fact(
+    connection: &Connection,
+    relative_path: &str,
+) -> rusqlite::Result<PhysicalObjectFact> {
+    use rusqlite::OptionalExtension;
+    let stored: Option<(Option<String>, Option<String>)> = connection
+        .query_row(
+            "SELECT stable_key, identity_provenance FROM nodes WHERE relative_path = ?1",
+            [relative_path],
+            |row| Ok((row.get(0)?, row.get(1)?)),
+        )
+        .optional()?;
+    let Some((Some(stable_key), Some(provenance))) = stored else {
+        return Ok(PhysicalObjectFact::UNKNOWN);
+    };
+    if IdentityProvenance::from_db(&provenance) != Some(IdentityProvenance::System) {
+        return Ok(PhysicalObjectFact::UNKNOWN);
+    }
+    let occurrences: i64 = connection.query_row(
+        "SELECT COUNT(*) FROM nodes
+             WHERE stable_key = ?1 AND identity_provenance = 'SYSTEM'",
+        [&stable_key],
+        |row| row.get(0),
+    )?;
+    let count = usize::try_from(occurrences).unwrap_or(0);
+    Ok(match count {
+        0 => PhysicalObjectFact::UNKNOWN,
+        1 => PhysicalObjectFact {
+            identity: PhysicalObjectIdentity::ProvenSingle,
+            occurrence_count: Some(1),
+        },
+        several => PhysicalObjectFact {
+            identity: PhysicalObjectIdentity::ProvenShared,
+            occurrence_count: Some(several),
+        },
+    })
 }
 
 #[allow(dead_code)]
@@ -1639,8 +1906,11 @@ mod tests {
         assert!(!all_ids.contains(&deleted_id));
     }
 
+    /// `DEC-0052` D3 — what is still impossible after `TASK-0055`, and the
+    /// shape of the refusal: it happens before any mutation, and the previous
+    /// index survives it whole.
     #[test]
-    fn publish_with_identity_refuses_a_duplicate_stable_key_and_keeps_the_previous_index_intact() {
+    fn publish_with_identity_refuses_an_impossible_duplicate_and_keeps_the_previous_index_intact() {
         let mut index = Index::in_memory().expect("index");
         let first_scan = vec![node(1, None, "root", "", NodeKind::Root, 0)];
         let first_identities = vec![identity_input(1, "SYS1:root", IdentityProvenance::System)];
@@ -1649,31 +1919,180 @@ mod tests {
             .expect("first publish");
         let revision_before = index.identity().expect("identity").revision;
 
-        let colliding_scan = vec![
+        // A duplicate `PATH_FALLBACK` key: that key *is* the occurrence, so two
+        // of them is a contradiction.
+        let fallback_scan = vec![
             node(1, None, "root", "", NodeKind::Root, 2),
             node(2, Some(1), "a.txt", "a.txt", NodeKind::File, 0),
             node(3, Some(1), "b.txt", "b.txt", NodeKind::File, 0),
         ];
-        let colliding_identities = vec![
+        let fallback_identities = vec![
             identity_input(1, "SYS1:root", IdentityProvenance::System),
-            // Two DIFFERENT files claiming the SAME stable key — an
-            // artificial collision, refused explicitly.
-            identity_input(2, "SYS1:duplicated", IdentityProvenance::System),
-            identity_input(3, "SYS1:duplicated", IdentityProvenance::System),
+            identity_input(2, "PFv1:duplicated", IdentityProvenance::PathFallback),
+            identity_input(3, "PFv1:duplicated", IdentityProvenance::PathFallback),
         ];
-        let error = index
-            .publish_with_identity(&colliding_scan, &colliding_identities, &[], &[])
-            .expect_err("a duplicate stable key must be refused");
-        assert!(matches!(error, PublishError::IdentityCollision));
+        assert!(matches!(
+            index
+                .publish_with_identity(&fallback_scan, &fallback_identities, &[], &[])
+                .expect_err("a duplicate PATH_FALLBACK key must be refused"),
+            PublishError::IdentityCollision
+        ));
 
-        // The previous index is untouched: still exactly one node, still
-        // openable, still at the same revision.
+        // The same identity claimed twice **at the same relative path**: one
+        // occurrence pretending to be two.
+        let same_path_scan = vec![
+            node(1, None, "root", "", NodeKind::Root, 2),
+            node(2, Some(1), "a.txt", "a.txt", NodeKind::File, 0),
+            node(3, Some(1), "a.txt", "a.txt", NodeKind::File, 0),
+        ];
+        let same_path_identities = vec![
+            identity_input(1, "SYS1:root", IdentityProvenance::System),
+            identity_input(2, "SYS1:shared", IdentityProvenance::System),
+            identity_input(3, "SYS1:shared", IdentityProvenance::System),
+        ];
+        assert!(matches!(
+            index
+                .publish_with_identity(&same_path_scan, &same_path_identities, &[], &[])
+                .expect_err("one occurrence may not be published twice"),
+            PublishError::IdentityCollision
+        ));
+
+        // The previous index is untouched by either refusal: still exactly one
+        // node, still openable, still at the same revision.
         let nodes = index.list_nodes(10, 0).expect("nodes after refusal");
         assert_eq!(nodes.len(), 1);
         assert_eq!(
             index.identity().expect("identity").revision,
             revision_before
         );
+    }
+
+    /// `DEC-0052` B and D2 — the case the previous model refused outright: two
+    /// hard links to one physical object are two occurrences with two canonical
+    /// ids, and publishing them succeeds.
+    #[test]
+    fn publish_with_identity_accepts_two_occurrences_of_one_shared_system_identity() {
+        let mut index = Index::in_memory().expect("index");
+        let scan = vec![
+            node(1, None, "root", "", NodeKind::Root, 2),
+            node(2, Some(1), "a.bin", "a.bin", NodeKind::File, 0),
+            node(
+                3,
+                Some(1),
+                "b-hardlink.bin",
+                "b-hardlink.bin",
+                NodeKind::File,
+                0,
+            ),
+        ];
+        let identities = vec![
+            identity_input(1, "SYS1:root", IdentityProvenance::System),
+            identity_input(2, "SYS1:one-object", IdentityProvenance::System),
+            identity_input(3, "SYS1:one-object", IdentityProvenance::System),
+        ];
+        let outcome = index
+            .publish_with_identity(&scan, &identities, &[], &[])
+            .expect("a shared SYSTEM identity is not a collision");
+        assert_eq!(outcome.created, 3);
+
+        let rows = index.list_nodes(10, 0).expect("nodes");
+        let a = rows
+            .iter()
+            .find(|row| row.relative_path == "a.bin")
+            .expect("a");
+        let b = rows
+            .iter()
+            .find(|row| row.relative_path == "b-hardlink.bin")
+            .expect("b");
+        assert_ne!(a.id, b.id, "two occurrences are two nodes");
+        assert_eq!(
+            index.identity_of(a.id).expect("a identity"),
+            index.identity_of(b.id).expect("b identity"),
+            "and both carry the identity of the one physical object"
+        );
+    }
+
+    /// `DEC-0052` §5, the four obligatory examples, replayed end to end against
+    /// the real publication path. Each one fails on the pre-`TASK-0055` code:
+    /// the first publication alone is refused as an `IdentityCollision` there.
+    #[test]
+    fn publish_with_identity_remaps_a_shared_group_by_exact_path_and_never_guesses_an_alias() {
+        let shared = "SYS1:one-object";
+        let scan = |paths: &[&str]| {
+            let mut nodes = vec![node(
+                1,
+                None,
+                "root",
+                "",
+                NodeKind::Root,
+                paths.len() as u32,
+            )];
+            let mut identities = vec![identity_input(1, "SYS1:root", IdentityProvenance::System)];
+            for (offset, path) in paths.iter().enumerate() {
+                let token = 100 + offset as i64;
+                nodes.push(node(token, Some(1), path, path, NodeKind::File, 0));
+                identities.push(identity_input(token, shared, IdentityProvenance::System));
+            }
+            (nodes, identities)
+        };
+        let id_at = |index: &Index, path: &str| -> Option<i64> {
+            index
+                .list_nodes(50, 0)
+                .expect("nodes")
+                .into_iter()
+                .find(|row| row.relative_path == path)
+                .map(|row| row.id)
+        };
+
+        // One path, then a hard link added: the original keeps its id.
+        let mut index = Index::in_memory().expect("index");
+        let (nodes, identities) = scan(&["a.bin"]);
+        index
+            .publish_with_identity(&nodes, &identities, &[], &[])
+            .expect("one occurrence");
+        let original = id_at(&index, "a.bin").expect("a.bin");
+        let (nodes, identities) = scan(&["a.bin", "b.bin"]);
+        index
+            .publish_with_identity(&nodes, &identities, &[], &[])
+            .expect("a hard link appears");
+        assert_eq!(
+            id_at(&index, "a.bin"),
+            Some(original),
+            "exact path keeps its id"
+        );
+        let alias = id_at(&index, "b.bin").expect("b.bin");
+        assert_ne!(alias, original, "the new alias is a new occurrence");
+
+        // Both unchanged: both ids survive.
+        let (nodes, identities) = scan(&["a.bin", "b.bin"]);
+        index
+            .publish_with_identity(&nodes, &identities, &[], &[])
+            .expect("unchanged");
+        assert_eq!(id_at(&index, "a.bin"), Some(original));
+        assert_eq!(id_at(&index, "b.bin"), Some(alias));
+
+        // One alias renamed: the unchanged path keeps its id, and the renamed
+        // alias is **not** correlated by supposition.
+        let (nodes, identities) = scan(&["a.bin", "c.bin"]);
+        index
+            .publish_with_identity(&nodes, &identities, &[], &[])
+            .expect("an alias renamed");
+        assert_eq!(id_at(&index, "a.bin"), Some(original));
+        let renamed = id_at(&index, "c.bin").expect("c.bin");
+        assert_ne!(renamed, alias, "no alias is paired by supposition");
+        assert_ne!(renamed, original);
+        assert!(
+            renamed > alias,
+            "a new occurrence takes a fresh monotone id"
+        );
+
+        // Back to one occurrence, at the unchanged path: it keeps its id.
+        let (nodes, identities) = scan(&["a.bin"]);
+        index
+            .publish_with_identity(&nodes, &identities, &[], &[])
+            .expect("back to one");
+        assert_eq!(id_at(&index, "a.bin"), Some(original));
+        assert_eq!(id_at(&index, "c.bin"), None);
     }
 
     /// `ACTION-0057` §4 — the caller-side bijection `publish_with_identity`

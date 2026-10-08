@@ -283,6 +283,17 @@ impl BrainIndex {
         if !crate::change_journal::validate_seen_schema(&store.index.connection)? {
             return Err(MapError::IndexIncompatible("seen state".into()));
         }
+        // `TASK-0055` — and the v7 canonical contract requires the shared
+        // physical-identity shape: the `stable_key` lookup index present and
+        // **not** unique (`DEC-0052` C). Same `M-B` step 5: a `6 → 7` migration
+        // whose `DROP INDEX` landed but whose `CREATE INDEX` did not is refused
+        // here and goes back to its safety copy, rather than being served as a
+        // half-migrated index.
+        if !crate::index::validate_shared_identity_schema(&store.index.connection)? {
+            return Err(MapError::IndexIncompatible(
+                "shared physical identity".into(),
+            ));
+        }
         Ok(store)
     }
 

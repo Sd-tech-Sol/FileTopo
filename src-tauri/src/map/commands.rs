@@ -2885,6 +2885,11 @@ mod context_panel_tests;
 #[path = "stable_identity_tests.rs"]
 mod stable_identity_tests;
 
+/// `TASK-0055` — one Windows physical object, several occurrences (`DEC-0052`).
+#[cfg(test)]
+#[path = "physical_identity_tests.rs"]
+mod physical_identity_tests;
+
 #[cfg(test)]
 #[path = "change_journal_tests.rs"]
 mod change_journal_tests;

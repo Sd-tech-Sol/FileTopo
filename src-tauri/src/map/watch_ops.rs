@@ -280,7 +280,7 @@ pub(crate) fn apply_scopes(
         ScopeLimits { max_nodes },
         cancelled,
     )?;
-    let (batch, mut counts) = scope::reconcile_scopes(&store.index, &scan, now_ms())?;
+    let (batch, mut counts) = scope::reconcile_scopes(&store.index, &root, &scan, now_ms())?;
     counts.scopes = scopes.len();
     let outcome = store
         .index

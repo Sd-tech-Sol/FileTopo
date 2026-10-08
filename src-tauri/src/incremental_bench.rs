@@ -183,6 +183,7 @@ fn build_batch(fixture: &Fixture, run: usize, changes: usize, first_victim: usiz
     };
     let mut upsert = |batch: &mut UpdateBatch,
                       identity_key: String,
+                      continues: Option<i64>,
                       parent: usize,
                       name: String,
                       size: u64,
@@ -200,6 +201,7 @@ fn build_batch(fixture: &Fixture, run: usize, changes: usize, first_victim: usiz
                 stable_key: identity_key,
                 provenance: IdentityProvenance::System,
             },
+            continues,
             parent: ParentRef::Existing(parent as i64),
             name,
             relative_path: path,
@@ -217,6 +219,7 @@ fn build_batch(fixture: &Fixture, run: usize, changes: usize, first_victim: usiz
         upsert(
             &mut batch,
             format!("K-new-{run}-{n}"),
+            None,
             parent,
             format!("new-{run}-{n}.txt"),
             7,
@@ -229,6 +232,7 @@ fn build_batch(fixture: &Fixture, run: usize, changes: usize, first_victim: usiz
         upsert(
             &mut batch,
             key(id),
+            Some(id as i64),
             node.parent_id.expect("a file has a parent") as usize,
             node.name.clone(),
             node.size_bytes + 1,
@@ -241,6 +245,7 @@ fn build_batch(fixture: &Fixture, run: usize, changes: usize, first_victim: usiz
         upsert(
             &mut batch,
             key(id),
+            Some(id as i64),
             node.parent_id.expect("a file has a parent") as usize,
             format!("ren-{run}-{n}.txt"),
             node.size_bytes,
@@ -260,6 +265,7 @@ fn build_batch(fixture: &Fixture, run: usize, changes: usize, first_victim: usiz
         upsert(
             &mut batch,
             key(id),
+            Some(id as i64),
             target,
             node.name.clone(),
             node.size_bytes,

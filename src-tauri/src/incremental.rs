@@ -21,10 +21,16 @@
 //!
 //! # Reuse, not a second set of rules
 //!
-//! * **Identity.** A stable key already stored keeps its canonical id; a new
-//!   one takes the next value of the durable, monotone `next_node_id` counter
-//!   ([`crate::index::read_next_node_id`], the very counter `publish` uses). The
-//!   `idx_nodes_stable_key` unique index is the storage-level backstop.
+//! * **Identity.** Which stored occurrence an observation continues is decided
+//!   by the producer — [`crate::reconcile`] or [`crate::scope`] — because only
+//!   a producer holds the **complete picture of a stable-key group**, and since
+//!   `DEC-0052` a `SYSTEM` key may be shared by the hard links of one physical
+//!   object. The producer applies [`crate::identity::pair_group`]; the kernel
+//!   **verifies** the answer (the row exists, carries that very key and that
+//!   provenance, and no two upserts claim it) and never re-derives a pairing
+//!   from a key several occurrences may hold. A new occurrence takes the next
+//!   value of the durable, monotone `next_node_id` counter
+//!   ([`crate::index::read_next_node_id`], the very counter `publish` uses).
 //! * **Journal.** The events are produced by [`change_journal::diff`] — the
 //!   *same* pure function `publish` uses — over only the rows the batch
 //!   touches, so the five natures, the rename+move double event, the "a
@@ -80,6 +86,10 @@ pub(crate) enum ParentRef {
 #[derive(Debug, Clone)]
 pub(crate) struct ObservedNode {
     pub identity: NodeIdentity,
+    /// The canonical id of the stored occurrence this observation **continues**,
+    /// or `None` for a new occurrence — `DEC-0052` D, decided by the producer
+    /// from the group's complete picture and verified here.
+    pub continues: Option<i64>,
     pub parent: ParentRef,
     pub name: String,
     pub relative_path: String,
@@ -112,11 +122,11 @@ pub(crate) struct RootObservation {
 /// A batch of already-reconciled changes. Internal to the privileged core:
 /// no `Serialize`, no Tauri command.
 ///
-/// * `upserts` — created or changed nodes, resolved by **stable key**. A key
-///   already stored is the same object (its canonical id is kept); an unknown
-///   key is a new object. A `PATH_FALLBACK` rename or move is *not* an upsert:
-///   its key changes with its path, so the producer sends a deletion and a
-///   creation (`DEC-0009`).
+/// * `upserts` — created or changed nodes, each naming through
+///   [`ObservedNode::continues`] the stored occurrence it continues, or `None`
+///   for a new occurrence (`DEC-0052` D). A `PATH_FALLBACK` rename or move is
+///   *not* a continuation: its key changes with its path, so the producer sends
+///   a deletion and a creation (`DEC-0009`).
 /// * `deletions` — canonical ids that no longer exist.
 /// * A directory whose path or depth changes must come with **every existing
 ///   descendant** (as an upsert carrying the new path, or as a deletion): the
@@ -140,8 +150,25 @@ pub(crate) enum BatchError {
     Sqlite(#[from] rusqlite::Error),
     #[error("batch_duplicate_token: local token {0} is used twice")]
     DuplicateToken(i64),
-    #[error("batch_identity_collision: two upserts carry the same stable key")]
+    #[error("batch_identity_collision: two upserts claim the same occurrence identity")]
     IdentityCollision,
+    /// `DEC-0052` D — an upsert continues a canonical id that does not exist.
+    #[error("batch_unknown_correlation: node {0} does not exist")]
+    UnknownCorrelation(i64),
+    /// `DEC-0052` D — an upsert continues a row that carries a different stable
+    /// key. The producer decided the pairing; the kernel refuses to apply one
+    /// it cannot check against the stored identity.
+    #[error("batch_correlation_mismatch: node {0} does not carry the observed stable key")]
+    CorrelationMismatch(i64),
+    /// `DEC-0052` D — two upserts continue the **same** stored occurrence,
+    /// which would collapse two occurrences into one row.
+    #[error("batch_duplicate_correlation: node {0} is continued twice")]
+    DuplicateCorrelation(i64),
+    /// `DEC-0052` D3 / D — an upsert declares itself a **new** occurrence while
+    /// a stored row already holds that identity at that very path, or already
+    /// holds that `PATH_FALLBACK` key at all.
+    #[error("batch_occupied_occurrence: local token {token} claims a stored occurrence as new")]
+    OccupiedOccurrence { token: i64 },
     #[error("batch_duplicate_deletion: node {0} is deleted twice")]
     DuplicateDeletion(i64),
     #[error("batch_delete_and_upsert: node {0} is both deleted and upserted")]
@@ -211,13 +238,14 @@ struct StoredRow {
     reparse_point: bool,
     child_count: i64,
     provenance: Option<String>,
+    stable_key: Option<String>,
 }
 
 /// The stored columns the kernel reads, in the order [`stored_row`] takes them.
 macro_rules! row_columns {
     () => {
         "id, parent_id, name, relative_path, kind, depth, size_bytes, modified_unix_ms, \
-         online_only, reparse_point, child_count, identity_provenance"
+         online_only, reparse_point, child_count, identity_provenance, stable_key"
     };
 }
 
@@ -226,11 +254,18 @@ macro_rules! row_columns {
 // `parent_id` (`idx_nodes_parent`), which `EXPLAIN QUERY PLAN` proves in the
 // tests from these very constants rather than from a copy of them.
 const SQL_ROW_BY_ID: &str = concat!("SELECT ", row_columns!(), " FROM nodes WHERE id = ?1");
-const SQL_ROW_BY_KEY: &str = concat!(
+/// `DEC-0052` — a stable key alone no longer names **one** row: a `SYSTEM` key
+/// can be held by several occurrences. This asks the only question the kernel
+/// still needs of a key it is told is new: does a stored occurrence already sit
+/// at that very identity **and** that very path?
+const SQL_ROW_BY_KEY_AND_PATH: &str = concat!(
     "SELECT ",
     row_columns!(),
-    " FROM nodes WHERE stable_key = ?1"
+    " FROM nodes WHERE stable_key = ?1 AND relative_path = ?2"
 );
+/// How many occurrences of one key the Index holds — used only to refuse a new
+/// `PATH_FALLBACK` occurrence whose key is already taken (`DEC-0052` D3).
+const SQL_COUNT_BY_KEY: &str = "SELECT COUNT(*) FROM nodes WHERE stable_key = ?1";
 const SQL_CHILD_IDS: &str = "SELECT id FROM nodes WHERE parent_id = ?1";
 const SQL_SIBLING: &str = "SELECT id FROM nodes WHERE parent_id = ?1 AND name = ?2";
 const SQL_HAS_CHILD: &str = "SELECT EXISTS(SELECT 1 FROM nodes WHERE parent_id = ?1)";
@@ -254,9 +289,10 @@ const SQL_CLEAR_DIAGNOSTIC: &str = "DELETE FROM node_diagnostics WHERE relative_
 /// The keyed statements, by name — read by the tests that prove none of them
 /// scans `nodes`. (`SQL_INSERT` has no plan worth reading.)
 #[cfg(test)]
-pub(crate) const KEYED_STATEMENTS: [(&str, &str); 9] = [
+pub(crate) const KEYED_STATEMENTS: [(&str, &str); 10] = [
     ("row by id", SQL_ROW_BY_ID),
-    ("row by stable key", SQL_ROW_BY_KEY),
+    ("row by stable key and path", SQL_ROW_BY_KEY_AND_PATH),
+    ("count by stable key", SQL_COUNT_BY_KEY),
     ("child ids", SQL_CHILD_IDS),
     ("sibling by name", SQL_SIBLING),
     ("has child", SQL_HAS_CHILD),
@@ -282,6 +318,7 @@ fn stored_row(row: &rusqlite::Row<'_>) -> rusqlite::Result<StoredRow> {
         reparse_point: row.get(9)?,
         child_count: row.get(10)?,
         provenance: row.get(11)?,
+        stable_key: row.get(12)?,
     })
 }
 
@@ -312,15 +349,31 @@ impl<'t> Rows<'t> {
         Ok(row)
     }
 
-    fn by_stable_key(&mut self, key: &str) -> rusqlite::Result<Option<StoredRow>> {
+    /// Whether a stored occurrence already holds this exact identity at this
+    /// exact path — the only key-shaped question left since `DEC-0052`.
+    fn occurrence_at(
+        &mut self,
+        key: &str,
+        relative_path: &str,
+    ) -> rusqlite::Result<Option<StoredRow>> {
         let row = self
             .transaction
-            .query_row(SQL_ROW_BY_KEY, [key], stored_row)
+            .query_row(
+                SQL_ROW_BY_KEY_AND_PATH,
+                params![key, relative_path],
+                stored_row,
+            )
             .optional()?;
         if let Some(found) = &row {
             self.by_id.insert(found.id, row.clone());
         }
         Ok(row)
+    }
+
+    /// How many occurrences of `key` the Index holds.
+    fn occurrences_of(&self, key: &str) -> rusqlite::Result<i64> {
+        self.transaction
+            .query_row(SQL_COUNT_BY_KEY, [key], |row| row.get(0))
     }
 
     /// The direct children of `parent_id`, by the `parent_id` index. Used only
@@ -386,9 +439,17 @@ impl Index {
 }
 
 /// The checks that need no database: what the batch says about itself.
+///
+/// `DEC-0052` B narrows what a duplicate key means. Two upserts may now carry
+/// the same `SYSTEM` key — two hard links to one physical object are two real
+/// occurrences — but never at the same **relative path**, which would be one
+/// occurrence claiming to be two, and never under `PATH_FALLBACK`, whose key
+/// *is* the occurrence (`DEC-0052` D3).
 fn validate_shape(batch: &UpdateBatch) -> Result<(), BatchError> {
     let mut tokens = HashSet::with_capacity(batch.upserts.len());
-    let mut keys = HashSet::with_capacity(batch.upserts.len());
+    let mut occurrences = HashSet::with_capacity(batch.upserts.len());
+    let mut unshareable = HashSet::with_capacity(batch.upserts.len());
+    let mut continued = HashSet::with_capacity(batch.upserts.len());
     for node in &batch.upserts {
         if node.kind == NodeKind::Root {
             return Err(BatchError::RootImmutable);
@@ -399,8 +460,17 @@ fn validate_shape(batch: &UpdateBatch) -> Result<(), BatchError> {
         if !tokens.insert(node.token()) {
             return Err(BatchError::DuplicateToken(node.token()));
         }
-        if !keys.insert(node.identity.stable_key.as_str()) {
+        let key = node.identity.stable_key.as_str();
+        if !occurrences.insert((key, node.relative_path.as_str())) {
             return Err(BatchError::IdentityCollision);
+        }
+        if !crate::identity::may_be_shared(node.identity.provenance) && !unshareable.insert(key) {
+            return Err(BatchError::IdentityCollision);
+        }
+        if let Some(existing) = node.continues
+            && !continued.insert(existing)
+        {
+            return Err(BatchError::DuplicateCorrelation(existing));
         }
     }
     let mut deleted = HashSet::with_capacity(batch.deletions.len());
@@ -463,24 +533,55 @@ fn apply(transaction: &Transaction<'_>, batch: &UpdateBatch) -> Result<ApplyOutc
             || root_row.reparse_point != observed.reparse_point
     });
 
-    // -- 1. Identity: every upsert either matches a stored key or is new.
+    // -- 1. Identity: the producer's pairing, **verified** — `DEC-0052` D.
+    //
+    //       The kernel no longer resolves a canonical id from a stable key,
+    //       because since `DEC-0052` a `SYSTEM` key may name several
+    //       occurrences and only a producer holding the group's complete
+    //       picture can say which one an observation continues. What is checked
+    //       here is that the producer's answer is true of the stored rows: the
+    //       row exists, is not the root, carries that very key and that very
+    //       provenance; and a "new occurrence" is really free.
     let mut next_id = read_next_node_id(transaction)?;
     let first_allocated = next_id;
     let mut resolved: Vec<Resolved<'_>> = Vec::with_capacity(batch.upserts.len());
     let mut token_to_canonical = HashMap::with_capacity(batch.upserts.len());
     let mut upsert_ids = HashSet::with_capacity(batch.upserts.len());
     for node in &batch.upserts {
-        let before = rows.by_stable_key(&node.identity.stable_key)?;
-        let canonical = match &before {
-            Some(row) => {
+        let before = match node.continues {
+            Some(existing) => {
+                let row = rows
+                    .by_id(existing)?
+                    .ok_or(BatchError::UnknownCorrelation(existing))?;
                 if row.id == root_id {
                     return Err(BatchError::RootImmutable);
+                }
+                if row.stable_key.as_deref() != Some(node.identity.stable_key.as_str()) {
+                    return Err(BatchError::CorrelationMismatch(existing));
                 }
                 if row.provenance.as_deref() != Some(node.identity.provenance.as_str()) {
                     return Err(BatchError::ProvenanceMismatch);
                 }
-                row.id
+                Some(row)
             }
+            None => {
+                // A new occurrence must not land on an identity a stored row
+                // already holds at this very path, and a new `PATH_FALLBACK`
+                // occurrence must not reuse a stored key at all (`DEC-0052` D3).
+                let key = node.identity.stable_key.as_str();
+                let occupied = rows.occurrence_at(key, &node.relative_path)?.is_some()
+                    || (!crate::identity::may_be_shared(node.identity.provenance)
+                        && rows.occurrences_of(key)? > 0);
+                if occupied {
+                    return Err(BatchError::OccupiedOccurrence {
+                        token: node.token(),
+                    });
+                }
+                None
+            }
+        };
+        let canonical = match &before {
+            Some(row) => row.id,
             None => {
                 let assigned = next_id;
                 next_id += 1;

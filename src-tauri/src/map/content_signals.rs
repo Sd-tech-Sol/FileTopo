@@ -10,6 +10,7 @@ use super::sandbox::SandboxPaths;
 use super::store::MapNode;
 use super::{MapError, commands};
 use crate::domain::NodeKind;
+use crate::index::{PhysicalObjectFact, PhysicalObjectIdentity};
 use rusqlite::{Connection, OptionalExtension, Transaction, params};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -179,6 +180,14 @@ pub struct ExactDuplicateMember {
     pub observed_at_unix_ms: i64,
     pub generation_id: String,
     pub node_ref: Option<BrainNodeRef>,
+    /// `F-046` / `DEC-0052` F — whether the **physical object** behind this
+    /// member is proven, and shared with other occurrences of this brain.
+    /// A closed classification, never the stable key, the volume serial, the
+    /// `FileId` or anything derived from them.
+    pub physical_object: PhysicalObjectIdentity,
+    /// How many occurrences of **this brain** carry the same physical object,
+    /// when that is proven; `null` for `UNKNOWN`.
+    pub physical_occurrence_count: Option<usize>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -823,13 +832,21 @@ fn marker_of(is_link: bool, is_dir: bool, is_file: bool) -> u8 {
     }
 }
 
+/// Observes the bytes of this brain's indexed files.
+///
+/// The root comes from [`super::source::BrainSource`], the one resolver the
+/// scanner, the refresh and the watcher already share: identical to the previous
+/// `fixtures::fixture_root(…)` for a synthetic brain, and **correct** for a
+/// `REAL_ROOT` one, whose root lives in the catalogue and nowhere else.
+/// `TASK-0055` needs it: proving that identical content and the same physical
+/// object are different facts takes a real tree carrying a real hard link.
 pub fn observe_content(
     paths: &SandboxPaths,
     brain: &BrainRecord,
 ) -> Result<ContentObservationReport, MapError> {
     let store = commands::open_store(paths, brain)?;
     let nodes = store.analysis_nodes()?;
-    let root = fixtures::fixture_root(&paths.fixtures, &brain.source_ref);
+    let root = super::source::BrainSource::resolve(paths, brain)?.root(paths);
     observe_root_with_hook(paths, &brain.brain_id, &root, &nodes, &mut |_| Ok(()))
 }
 
@@ -1438,35 +1455,69 @@ pub fn exact_duplicate_groups(
     })
 }
 
-fn map_node_ref_for_path(
-    paths: &SandboxPaths,
-    brain: &BrainRecord,
-    relative_path: &str,
-) -> Result<Option<BrainNodeRef>, MapError> {
-    let database = paths.brain_map_database(&brain.brain_id);
-    if !database.is_file() {
-        return Ok(None);
+/// The brain's canonical map Index, opened **once** read-only for a whole page
+/// of members, or `None` when there is no map to resolve against (absent file,
+/// or a file built for another brain — a brain never reads another's Index).
+///
+/// Answers the two questions a member needs, and only those: which node of this
+/// brain a relative path resolves to, and the physical-object classification of
+/// that path (`DEC-0052` F, computed by
+/// [`crate::index::physical_object_fact`]).
+struct MapResolver {
+    brain_id: String,
+    connection: Option<Connection>,
+}
+
+impl MapResolver {
+    fn open(paths: &SandboxPaths, brain: &BrainRecord) -> Result<Self, MapError> {
+        let database = paths.brain_map_database(&brain.brain_id);
+        let mut connection = None;
+        if database.is_file() {
+            let opened =
+                Connection::open_with_flags(database, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)?;
+            let built_for = opened
+                .query_row(
+                    "SELECT value FROM schema_meta WHERE key='brain_id'",
+                    [],
+                    |row| row.get::<_, String>(0),
+                )
+                .optional()?;
+            if built_for.as_deref() == Some(brain.brain_id.as_str()) {
+                connection = Some(opened);
+            }
+        }
+        Ok(Self {
+            brain_id: brain.brain_id.clone(),
+            connection,
+        })
     }
-    let connection =
-        Connection::open_with_flags(database, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)?;
-    let built_for = connection
-        .query_row(
-            "SELECT value FROM schema_meta WHERE key='brain_id'",
-            [],
-            |row| row.get::<_, String>(0),
-        )
-        .optional()?;
-    if built_for.as_deref() != Some(brain.brain_id.as_str()) {
-        return Ok(None);
+
+    fn node_ref(&self, relative_path: &str) -> Result<Option<BrainNodeRef>, MapError> {
+        let Some(connection) = &self.connection else {
+            return Ok(None);
+        };
+        Ok(connection
+            .query_row(
+                "SELECT id FROM nodes WHERE relative_path=?1",
+                [relative_path],
+                |row| row.get::<_, i64>(0),
+            )
+            .optional()?
+            .map(|node_id| BrainNodeRef::new(&self.brain_id, node_id)))
     }
-    Ok(connection
-        .query_row(
-            "SELECT id FROM nodes WHERE relative_path=?1",
-            [relative_path],
-            |row| row.get::<_, i64>(0),
-        )
-        .optional()?
-        .map(|node_id| BrainNodeRef::new(&brain.brain_id, node_id)))
+
+    /// `UNKNOWN` whenever the map cannot answer — an absent Index, another
+    /// brain's Index, an unresolved path, no durable identity or a
+    /// `PATH_FALLBACK` one. Never a disguised `PROVEN_SINGLE`.
+    fn physical_object(&self, relative_path: &str) -> Result<PhysicalObjectFact, MapError> {
+        let Some(connection) = &self.connection else {
+            return Ok(PhysicalObjectFact::UNKNOWN);
+        };
+        Ok(crate::index::physical_object_fact(
+            connection,
+            relative_path,
+        )?)
+    }
 }
 
 pub fn exact_duplicate_members(
@@ -1522,13 +1573,17 @@ pub fn exact_duplicate_members(
             observation_from_row,
         )?
         .collect::<Result<Vec<_>, _>>()?;
+    // One read-only handle on the brain's own Index for the whole page: the
+    // node reference and the physical-object fact of every member come from it.
+    let resolver = MapResolver::open(paths, brain)?;
     let mut members = Vec::with_capacity(observations.len());
     let mut unresolved_returned = 0;
     for observation in observations {
-        let node_ref = map_node_ref_for_path(paths, brain, &observation.relative_path)?;
+        let node_ref = resolver.node_ref(&observation.relative_path)?;
         if node_ref.is_none() {
             unresolved_returned += 1;
         }
+        let physical = resolver.physical_object(&observation.relative_path)?;
         let name = Path::new(&observation.relative_path)
             .file_name()
             .map(|value| value.to_string_lossy().into_owned())
@@ -1543,6 +1598,8 @@ pub fn exact_duplicate_members(
             observed_at_unix_ms: observation.observed_at_unix_ms,
             generation_id: observation.generation_id,
             node_ref,
+            physical_object: physical.identity,
+            physical_occurrence_count: physical.occurrence_count,
         });
     }
     let returned = members.len();

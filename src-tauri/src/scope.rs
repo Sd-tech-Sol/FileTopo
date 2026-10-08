@@ -11,8 +11,22 @@
 //!   function the full scan calls: the same kind, the same `SYSTEM` /
 //!   `PATH_FALLBACK` identity, the same Cloud Files boundary, reparse points never
 //!   followed, no content ever read.
-//! * **Correlation** — stable key only (`DEC-0009` I-E). No name, size or date
-//!   heuristic.
+//! * **Correlation** — stable key only (`DEC-0009` I-E), by **groups** of a key
+//!   since `DEC-0052`: [`crate::identity::pair_group`], the one rule a full
+//!   publication and a manual refresh also use. No name, size or date
+//!   heuristic, and no alias paired by supposition.
+//!
+//! # Completing a group's picture
+//!
+//! `pair_group` needs the **complete** set of a key's occurrences, and a scope
+//! is by construction a partial reading. A key the Index holds at a path this
+//! scope did not read is therefore re-probed, once, at that path only: if the
+//! entry is still there and still that object, it joins the picture as an
+//! unchanged occurrence. Without that step a brand-new hard link would look
+//! exactly like a rename of the object it points at, and `W-B` would move the
+//! original's row instead of creating one. Probing happens **only** when an
+//! observed occurrence has no exact-path match, so an unchanged scope reads
+//! nothing extra.
 //! * **Events** — none are produced here. The kernel derives the journal from the
 //!   batch with the same diff a full publication uses.
 //!
@@ -226,15 +240,42 @@ fn stored_by_path(index: &Index, path: &str) -> rusqlite::Result<Option<Stored>>
         .optional()
 }
 
-fn stored_by_key(index: &Index, key: &str) -> rusqlite::Result<Option<Stored>> {
+/// Every occurrence the Index holds under one stable key, in stored id order —
+/// one row before `DEC-0052`, possibly several hard links of one physical object
+/// since.
+fn stored_occurrences(index: &Index, key: &str) -> rusqlite::Result<Vec<Stored>> {
+    let mut statement = index.connection.prepare_cached(&format!(
+        "SELECT {STORED_COLUMNS} FROM nodes WHERE stable_key = ?1 ORDER BY id"
+    ))?;
+    statement.query_map([key], stored_from_row)?.collect()
+}
+
+/// The occurrence the Index holds under `key` **at** `path`, if any.
+fn stored_occurrence_at(index: &Index, key: &str, path: &str) -> rusqlite::Result<Option<Stored>> {
     index
         .connection
         .query_row(
-            &format!("SELECT {STORED_COLUMNS} FROM nodes WHERE stable_key = ?1"),
-            [key],
+            &format!(
+                "SELECT {STORED_COLUMNS} FROM nodes
+                  WHERE stable_key = ?1 AND relative_path = ?2"
+            ),
+            rusqlite::params![key, path],
             stored_from_row,
         )
         .optional()
+}
+
+/// Whether the entry the Index records at `path` is **still there and still that
+/// object** — the one extra reading a scope needs to complete a stable-key
+/// group's picture before applying `DEC-0052` D. Metadata only, through the same
+/// [`observe_entry`] every other path uses; a path that cannot be read is simply
+/// not present.
+fn still_the_same_object(root: &Path, key: &str, path: &str) -> bool {
+    let absolute = absolute_of(root, path);
+    let Ok(metadata) = fs::symlink_metadata(&absolute) else {
+        return false;
+    };
+    observe_entry(&absolute, Path::new(path), &metadata).stable_key == key
 }
 
 fn root_id(index: &Index) -> Result<i64, ScopeRefusal> {
@@ -350,16 +391,16 @@ pub(crate) fn resolve_scopes(
     })
 }
 
-/// Whether a child directory must be **entered**: it is unknown to the Index, or the
-/// Index has it somewhere else (or as something else). A directory exactly where the
-/// Index has it is left alone.
+/// Whether a child directory must be **entered**: the Index has no occurrence of
+/// this object *at this path*, or the one it has there is not a directory. A
+/// directory exactly where the Index has it is left alone — and since
+/// `DEC-0052` the question is asked of the occurrence at that path, not of
+/// whichever single row happened to carry the key.
 fn must_enter(index: &Index, key: &str, path: &str) -> Result<bool, ScopeRefusal> {
     Ok(
-        match stored_by_key(index, key).map_err(|_| ScopeRefusal::Store)? {
+        match stored_occurrence_at(index, key, path).map_err(|_| ScopeRefusal::Store)? {
             None => true,
-            Some(stored) => {
-                stored.relative_path != path || stored.kind != NodeKind::Directory.as_str()
-            }
+            Some(stored) => stored.kind != NodeKind::Directory.as_str(),
         },
     )
 }
@@ -506,54 +547,110 @@ fn same_columns_but_parent(stored: &Stored, node: &ScopedNode) -> bool {
 
 /// Derives the **minimal** batch that takes the Index to what the scopes observed.
 ///
-/// * an entry whose key is stored keeps its canonical id and enters the batch only if a
-///   column (or its parent) differs;
-/// * an entry whose key is unknown is a creation;
-/// * a stored **direct child of a listed directory** whose key was not observed anywhere
-///   is a deletion — with its whole stored subtree, except any descendant that was
-///   observed elsewhere by its key (it moved, and its own upsert says where);
+/// * an entry paired with a stored occurrence keeps its canonical id and enters the
+///   batch only if a column (or its parent) differs;
+/// * an entry paired with nothing is a creation;
+/// * a stored **direct child of a listed directory** that no observed entry paired
+///   with is a deletion — with its whole stored subtree, except any descendant that
+///   was paired elsewhere (it moved, and its own upsert says where);
 /// * a `PATH_FALLBACK` rename is a deletion plus a creation, with no special case: its
 ///   key is the path.
+///
+/// Pairing is `DEC-0052` D, over a group whose picture is completed by re-probing the
+/// stored paths this scope did not read.
 ///
 /// Only the scopes' own stored subtrees are compared. Everything outside them is not
 /// read, so it cannot be deleted by accident.
 pub(crate) fn reconcile_scopes(
     index: &Index,
+    root: &Path,
     scan: &ScopeScan,
     detected_unix_ms: i64,
 ) -> Result<(UpdateBatch, ScopeCounts), ScopeRefusal> {
-    let root = root_id(index)?;
+    let root_node = root_id(index)?;
     let store = |error: rusqlite::Error| {
         let _ = error;
         ScopeRefusal::Store
     };
 
-    // -- One picture: every stable key once, every path once.
-    let mut by_key: HashMap<&str, usize> = HashMap::with_capacity(scan.nodes.len());
+    // -- One picture: every path once, and every identity once per path. Two
+    //    occurrences may share a `SYSTEM` key (`DEC-0052` B); a `PATH_FALLBACK`
+    //    key may not be repeated at all (`DEC-0052` D3).
+    let mut scan_groups: HashMap<&str, Vec<usize>> = HashMap::with_capacity(scan.nodes.len());
     let mut by_path: HashMap<&str, usize> = HashMap::with_capacity(scan.nodes.len());
     for (position, node) in scan.nodes.iter().enumerate() {
-        if by_key
-            .insert(node.identity.stable_key.as_str(), position)
+        if by_path
+            .insert(node.relative_path.as_str(), position)
             .is_some()
-            || by_path
-                .insert(node.relative_path.as_str(), position)
-                .is_some()
         {
             return Err(ScopeRefusal::Incoherent);
         }
+        scan_groups
+            .entry(node.identity.stable_key.as_str())
+            .or_default()
+            .push(position);
+    }
+    if scan_groups.values().any(|group| {
+        group.len() > 1
+            && group.iter().any(|&position| {
+                !crate::identity::may_be_shared(scan.nodes[position].identity.provenance)
+            })
+    }) {
+        return Err(ScopeRefusal::Incoherent);
     }
 
-    // -- Stored counterpart of every observed entry, by stable key.
-    let mut stored: Vec<Option<Stored>> = Vec::with_capacity(scan.nodes.len());
-    for node in &scan.nodes {
-        let row = stored_by_key(index, &node.identity.stable_key).map_err(store)?;
-        if row.as_ref().is_some_and(|found| found.id == root) {
+    // -- Stored counterpart of every observed entry — `DEC-0052` D, one group at
+    //    a time, with the group's picture completed first.
+    let mut stored: Vec<Option<Stored>> = vec![None; scan.nodes.len()];
+    let mut paired_stored: HashSet<i64> = HashSet::with_capacity(scan.nodes.len());
+    for (key, group) in &scan_groups {
+        let occurrences = stored_occurrences(index, key).map_err(store)?;
+        if occurrences.iter().any(|found| found.id == root_node) {
             return Err(ScopeRefusal::Incoherent);
         }
-        stored.push(row);
+        let stored_paths = occurrences
+            .iter()
+            .map(|found| found.relative_path.as_str())
+            .collect::<Vec<_>>();
+        let mut observed_paths = group
+            .iter()
+            .map(|&position| scan.nodes[position].relative_path.as_str())
+            .collect::<Vec<_>>();
+        // Complete the picture: a stored occurrence this scope did not read, and
+        // which is still at its path and still this object, is an unchanged
+        // member of the group. Probed only when some observed occurrence has no
+        // exact match, since otherwise the pairing is already determined.
+        let completed: Vec<&str> = if observed_paths
+            .iter()
+            .all(|path| stored_paths.contains(path))
+        {
+            Vec::new()
+        } else {
+            stored_paths
+                .iter()
+                .copied()
+                .filter(|path| !observed_paths.contains(path))
+                .filter(|path| still_the_same_object(root, key, path))
+                .collect()
+        };
+        observed_paths.extend(completed.iter().copied());
+        let pairing = crate::identity::pair_group(&stored_paths, &observed_paths);
+        for (slot, paired) in pairing.iter().enumerate() {
+            let Some(stored_slot) = *paired else { continue };
+            if !paired_stored.insert(occurrences[stored_slot].id) {
+                // `pair_group` never does this; a corrupted group picture could.
+                return Err(ScopeRefusal::Incoherent);
+            }
+            // Slots past the group's own length are the completed members: they
+            // are accounted for as paired (so they are never deleted) but have
+            // no observed entry of this scan to carry.
+            if let Some(&position) = group.get(slot) {
+                stored[position] = Some(occurrences[stored_slot].clone());
+            }
+        }
     }
 
-    // -- Deletions: stored children of a listed directory that nobody observed.
+    // -- Deletions: stored children of a listed directory that nobody paired.
     let mut deletions: Vec<i64> = Vec::new();
     let mut deleted: HashSet<i64> = HashSet::new();
     let mut pending: Vec<i64> = Vec::new();
@@ -565,8 +662,8 @@ pub(crate) fn reconcile_scopes(
             continue; // a new directory: nothing stored under it
         };
         for child in stored_children(index, row.id).map_err(store)? {
-            let key = child.1.ok_or(ScopeRefusal::NotStamped)?;
-            if !by_key.contains_key(key.as_str()) && deleted.insert(child.0) {
+            child.1.ok_or(ScopeRefusal::NotStamped)?;
+            if !paired_stored.contains(&child.0) && deleted.insert(child.0) {
                 deletions.push(child.0);
                 pending.push(child.0);
             }
@@ -574,9 +671,9 @@ pub(crate) fn reconcile_scopes(
     }
     while let Some(id) = pending.pop() {
         for child in stored_children(index, id).map_err(store)? {
-            let key = child.1.ok_or(ScopeRefusal::NotStamped)?;
-            // Observed elsewhere: it moved, and its own upsert carries its new place.
-            if by_key.contains_key(key.as_str()) {
+            child.1.ok_or(ScopeRefusal::NotStamped)?;
+            // Paired elsewhere: it moved, and its own upsert carries its new place.
+            if paired_stored.contains(&child.0) {
                 continue;
             }
             if deleted.insert(child.0) {
@@ -624,6 +721,8 @@ pub(crate) fn reconcile_scopes(
                 stable_key: node.identity.stable_key.clone(),
                 provenance: node.identity.provenance,
             },
+            // The pairing proved above from the group's completed picture.
+            continues: canonical(position),
             parent,
             name: node.name.clone(),
             relative_path: node.relative_path.clone(),

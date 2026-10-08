@@ -6,6 +6,7 @@ import type {
   BrainNodeRef,
   ExactDuplicateGroup,
   ExactDuplicateGroupPage,
+  ExactDuplicateMember,
   ExactDuplicateMemberPage,
   ExactDuplicateSummary,
 } from "./types";
@@ -43,6 +44,17 @@ interface DuplicateStrings {
   unresolvedMember: string;
   previousMembers: string;
   nextMembers: string;
+  /** `TASK-0055` §7 — the physical-object fact, per member. */
+  physicalShared: (count: number) => string;
+  physicalSingle: string;
+  physicalUnknown: string;
+  /** The five concepts `DEC-0021`/`DEC-0052` G keep distinct. */
+  conceptsTitle: string;
+  conceptPhysical: string;
+  conceptContent: string;
+  conceptCopy: string;
+  conceptName: string;
+  conceptRelation: string;
 }
 
 export const DUPLICATE_STRINGS: Record<Locale, DuplicateStrings> = {
@@ -86,6 +98,17 @@ export const DUPLICATE_STRINGS: Record<Locale, DuplicateStrings> = {
     unresolvedMember: "— observation persistée, non résolue dans la carte courante",
     previousMembers: "Membres précédents",
     nextMembers: "Membres suivants",
+    physicalShared: (count) => `même objet physique — ${count} chemin(s) dans ce cerveau`,
+    physicalSingle:
+      "identité OS disponible — aucune autre occurrence du même objet dans ce cerveau",
+    physicalUnknown: "identité physique non prouvable",
+    conceptsTitle: "Cinq notions distinctes",
+    conceptPhysical: "Même objet physique : fait du système d’exploitation, quand il le donne.",
+    conceptContent: "Contenu identique : SHA-256 observé sur les octets lus.",
+    conceptCopy: "Copie probable : non inférée par cette vue.",
+    conceptName: "Nom similaire : non inféré par cette vue.",
+    conceptRelation:
+      "Relation logique : indépendante — moteur de relations et décision de l’utilisateur.",
   },
   en: {
     dateUnavailable: "date unavailable",
@@ -127,8 +150,28 @@ export const DUPLICATE_STRINGS: Record<Locale, DuplicateStrings> = {
     unresolvedMember: "— persisted observation, not resolved in the current map",
     previousMembers: "Previous members",
     nextMembers: "Next members",
+    physicalShared: (count) => `same physical object — ${count} path(s) in this brain`,
+    physicalSingle:
+      "OS identity available — no other occurrence of the same object in this brain",
+    physicalUnknown: "physical identity not provable",
+    conceptsTitle: "Five distinct notions",
+    conceptPhysical: "Same physical object: an operating-system fact, when it gives one.",
+    conceptContent: "Identical content: SHA-256 observed over the bytes read.",
+    conceptCopy: "Likely copy: not inferred by this view.",
+    conceptName: "Similar name: not inferred by this view.",
+    conceptRelation:
+      "Logical relation: independent — the relation engine and the person’s decision.",
   },
 };
+
+/** The member's physical-object fact, in words — `DEC-0052` F. */
+function physicalLabel(member: ExactDuplicateMember, locale: Locale): string {
+  const words = DUPLICATE_STRINGS[locale];
+  if (member.physicalObject === "PROVEN_SHARED") {
+    return words.physicalShared(member.physicalOccurrenceCount ?? 0);
+  }
+  return member.physicalObject === "PROVEN_SINGLE" ? words.physicalSingle : words.physicalUnknown;
+}
 
 function observedAt(unixMs: number | null, locale: Locale): string {
   return unixMs === null
@@ -352,10 +395,32 @@ export default function ExactDuplicateExplorer({ locale, brainId, revision, onSe
                       <span data-testid="duplicate-member-unresolved">
                         {member.relativePath} {words.unresolvedMember}
                       </span>
-                    )}
+                    )}{" "}
+                    <span
+                      className="duplicates__physical"
+                      data-testid="duplicate-member-physical"
+                      data-physical-object={member.physicalObject}
+                      data-physical-occurrences={member.physicalOccurrenceCount ?? ""}
+                    >
+                      {physicalLabel(member, locale)}
+                    </span>
                   </li>
                 ))}
               </ul>
+              <section
+                className="duplicates__concepts"
+                aria-label={words.conceptsTitle}
+                data-testid="duplicate-concepts"
+              >
+                <h4>{words.conceptsTitle}</h4>
+                <ol>
+                  <li>{words.conceptPhysical}</li>
+                  <li>{words.conceptContent}</li>
+                  <li>{words.conceptCopy}</li>
+                  <li>{words.conceptName}</li>
+                  <li>{words.conceptRelation}</li>
+                </ol>
+              </section>
               <div className="duplicates__paging">
                 <button
                   type="button"

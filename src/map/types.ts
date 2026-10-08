@@ -763,6 +763,13 @@ export interface ExactDuplicateGroupPage {
   groups: ExactDuplicateGroup[];
 }
 
+/**
+ * `F-046` / `DEC-0052` F — the only physical-identity fact the backend
+ * publishes. A closed classification: never a stable key, a volume serial, a
+ * `FileId` or anything derived from them.
+ */
+export type PhysicalObjectIdentity = "PROVEN_SHARED" | "PROVEN_SINGLE" | "UNKNOWN";
+
 export interface ExactDuplicateMember {
   relativePath: string;
   name: string;
@@ -773,6 +780,9 @@ export interface ExactDuplicateMember {
   observedAtUnixMs: number;
   generationId: string;
   nodeRef: BrainNodeRef | null;
+  physicalObject: PhysicalObjectIdentity;
+  /** Occurrences of the same physical object **in this brain**; null when unproven. */
+  physicalOccurrenceCount: number | null;
 }
 
 export interface ExactDuplicateMemberPage {

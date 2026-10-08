@@ -664,21 +664,42 @@ fn has_object(database: &Path, name: &str) -> bool {
     count > 0
 }
 
-/// Reduces a real, product-built **v6** index to exactly the **v5** shape
+/// Reduces a real, product-built index to exactly the **v5** shape
 /// `TASK-0037` shipped: the journal stays, the seen state disappears, the
-/// version is stamped `5`. Every event, node, binding, `index_id` and revision
-/// stays exactly as the real pipeline wrote it.
+/// `stable_key` index is unique again — the shape every v4/v5/v6 file carried
+/// before `DEC-0052` — and the version is stamped `5`. Every event, node,
+/// binding, `index_id` and revision stays exactly as the real pipeline wrote it.
 pub(super) fn downgrade_to_schema_v5(database: &Path) {
     rusqlite::Connection::open(database)
         .expect("open for downgrade")
         .execute_batch(
             "DROP TABLE seen_change_events;
              DROP INDEX idx_change_events_node;
+             DROP INDEX idx_nodes_stable_key;
+             CREATE UNIQUE INDEX idx_nodes_stable_key
+                 ON nodes(stable_key) WHERE stable_key IS NOT NULL;
              DELETE FROM schema_meta WHERE key = 'seen_through_event_id';
              UPDATE schema_meta SET value = '5' WHERE key = 'schema_version';
              PRAGMA user_version = 5;",
         )
         .expect("downgrade to the v5 shape");
+}
+
+/// Reduces a real, product-built index to exactly the **v6** shape `TASK-0038`
+/// shipped: everything as it is, except that `stable_key` is unique again and
+/// the version is stamped `6`. Nothing else is touched — a v6 file differs from
+/// a v7 one by that constraint and nothing more (`DEC-0052` C).
+pub(super) fn downgrade_to_schema_v6(database: &Path) {
+    rusqlite::Connection::open(database)
+        .expect("open for downgrade")
+        .execute_batch(
+            "DROP INDEX idx_nodes_stable_key;
+             CREATE UNIQUE INDEX idx_nodes_stable_key
+                 ON nodes(stable_key) WHERE stable_key IS NOT NULL;
+             UPDATE schema_meta SET value = '6' WHERE key = 'schema_version';
+             PRAGMA user_version = 6;",
+        )
+        .expect("downgrade to the v6 shape");
 }
 
 /// A real brain with journal history: a baseline, then three changes.
@@ -702,7 +723,7 @@ fn brain_with_history(
 }
 
 #[test]
-fn a_real_v5_index_with_history_migrates_to_v6_baselined_history_kept_and_nothing_unseen() {
+fn a_real_v5_index_migrates_to_the_current_schema_baselined_history_kept_and_nothing_unseen() {
     let (_temp, paths, root, brain, database) = brain_with_history("racine-v5-historique");
     let events_before = journal(&paths, &brain, &[]);
     let newest = events_before.iter().map(|e| e.event_id).max().unwrap();
@@ -734,7 +755,7 @@ fn a_real_v5_index_with_history_migrates_to_v6_baselined_history_kept_and_nothin
         raw_schema_version(&database),
         crate::map::store::MAP_SCHEMA_VERSION
     );
-    assert_eq!(raw_schema_version(&database), 6);
+    assert_eq!(raw_schema_version(&database), 7);
     assert!(
         !safety_copy_path(&database).exists(),
         "the copy is deleted only after the validation succeeded"
@@ -785,11 +806,11 @@ fn a_real_v5_index_with_an_empty_journal_baselines_at_zero() {
     downgrade_to_schema_v5(&database);
     open_map(&paths, &brain).expect("migrates");
     assert_eq!(watermark_on_disk(&database), Some("0".to_string()));
-    assert_eq!(raw_schema_version(&database), 6);
+    assert_eq!(raw_schema_version(&database), 7);
 }
 
 #[test]
-fn a_v5_to_v6_migration_that_fails_midway_restores_the_v5_file_in_full() {
+fn a_v5_migration_that_fails_midway_restores_the_v5_file_in_full() {
     let (_temp, paths, _root, brain, database) = brain_with_history("racine-v5-echec");
     let events_before = journal(&paths, &brain, &[]);
     downgrade_to_schema_v5(&database);
@@ -830,12 +851,12 @@ fn a_v5_to_v6_migration_that_fails_midway_restores_the_v5_file_in_full() {
         .execute_batch("DROP TABLE idx_change_events_node;")
         .unwrap();
     open_map(&paths, &brain).expect("a retry migrates");
-    assert_eq!(raw_schema_version(&database), 6);
+    assert_eq!(raw_schema_version(&database), 7);
     assert_eq!(journal(&paths, &brain, &[]).len(), events_before.len());
 }
 
 #[test]
-fn a_v5_to_v6_migration_whose_canonical_validation_fails_is_restored_too() {
+fn a_v5_migration_whose_canonical_validation_fails_is_restored_too() {
     let (_temp, paths, _root, brain, database) = brain_with_history("racine-v5-validation");
     downgrade_to_schema_v5(&database);
     // A canonical invariant the migration never touches: the DDL succeeds and
@@ -866,17 +887,18 @@ fn a_v5_to_v6_migration_whose_canonical_validation_fails_is_restored_too() {
         )
         .unwrap();
     open_map(&paths, &brain).expect("repaired retry migrates");
-    assert_eq!(raw_schema_version(&database), 6);
+    assert_eq!(raw_schema_version(&database), 7);
 }
 
 #[test]
-fn a_v6_file_without_its_seen_state_fails_the_canonical_validation() {
+fn a_current_file_without_its_seen_state_fails_the_canonical_validation() {
     let (_temp, paths, _root, brain, database) = built_real_index("racine-v6-sans-etat");
     rusqlite::Connection::open(&database)
         .unwrap()
         .execute_batch("DELETE FROM schema_meta WHERE key = 'seen_through_event_id';")
         .unwrap();
-    let error = open_map(&paths, &brain).expect_err("a v6 file with no watermark is not canonical");
+    let error =
+        open_map(&paths, &brain).expect_err("a current file with no watermark is not canonical");
     assert!(
         error.to_string().starts_with("map_index_incompatible"),
         "{error}"
