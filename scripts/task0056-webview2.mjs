@@ -838,17 +838,37 @@ if (phase === 1) {
   await click(testid("fit-composition"));
   await pause(500);
   await quiet();
-  const pickableId = await evaluate(`(() => {
-    const inside = [...document.querySelectorAll('[data-testid="composed-canvas"] [data-card="true"]')].find((g) => {
-      const box = g.getBoundingClientRect();
-      const x = box.x + box.width / 2, y = box.y + box.height / 2;
-      if (!(box.width > 4 && x > 0 && y > 0 && x < window.innerWidth && y < window.innerHeight)) return false;
-      const top = document.elementFromPoint(x, y);
-      return !!top && (top === g || g.contains(top));
-    });
-    return inside ? Number(inside.getAttribute('data-node-id')) : null;
-  })()`);
-  assert(pickableId !== null, "a card must be fully visible after fitting the composition");
+  const findVisibleCard = () =>
+    evaluate(`(() => {
+      const inside = [...document.querySelectorAll('[data-testid="composed-canvas"] [data-card="true"]')].find((g) => {
+        const box = g.getBoundingClientRect();
+        const x = box.x + box.width / 2, y = box.y + box.height / 2;
+        if (!(box.width > 4 && x > 0 && y > 0 && x < window.innerWidth && y < window.innerHeight)) return false;
+        const top = document.elementFromPoint(x, y);
+        return !!top && (top === g || g.contains(top));
+      });
+      return inside ? Number(inside.getAttribute('data-node-id')) : null;
+    })()`);
+  // The page is long by now: the canvas has to be in the viewport before the browser's
+  // own hit test can resolve a card at all.
+  let pickableId = await findVisibleCard();
+  for (let attempt = 0; attempt < 6 && pickableId === null; attempt += 1) {
+    await evaluate(`document.querySelector('[data-testid="composed-canvas"]').scrollIntoView({ block: 'center', inline: 'center' })`);
+    await pause(400);
+    pickableId = await findVisibleCard();
+    if (pickableId === null) {
+      await click(testid("fit-composition"));
+      await pause(400);
+      pickableId = await findVisibleCard();
+    }
+  }
+  const pickDiagnostic = pickableId !== null ? null : await evaluate(`(() => ({
+    inner: [window.innerWidth, window.innerHeight],
+    world: document.querySelector('[data-testid="composed-world"]')?.getAttribute('transform') ?? null,
+    cards: [...document.querySelectorAll('[data-testid="composed-canvas"] [data-card="true"]')].slice(0, 5)
+      .map((g) => { const b = g.getBoundingClientRect(); return [Math.round(b.x), Math.round(b.y), Math.round(b.width), Math.round(b.height)]; }),
+  }))()`);
+  assert(pickableId !== null, `a card must be fully visible after fitting the composition ${JSON.stringify(pickDiagnostic)}`);
   await click(`[data-testid="composed-canvas"] [data-card="true"][data-node-id="${pickableId}"]`);
   await until(`document.querySelector('[data-testid="composed-canvas"] [data-card="true"][data-node-id="${pickableId}"]')?.getAttribute('aria-selected') === 'true'`);
   const revisionBeforeSelection = (await invoke("map_view", { brainId: ATELIER })).indexRevision;
