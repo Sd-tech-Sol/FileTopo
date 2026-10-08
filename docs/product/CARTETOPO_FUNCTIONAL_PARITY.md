@@ -452,3 +452,16 @@ Ils sont écrits ici plutôt que corrigés en silence.
 > **TASK-0054 (2026-10-07).** `P-01`, `P-02`, `P-03` (amendements d'échelle) sont **candidates** : vue exacte/bornée avec
 > omissions déclarées, hiérarchie et agrégats à compte exact (jamais un faux dossier), parent/enfants directs
 > atteignables malgré pagination et agrégats. Non fermées par l'exécuteur; contrôle indépendant requis.
+
+
+> **Clôture P-01 / P-02 / P-03 — ACTION-0101 (2026-10-07).**
+> Le contrôle indépendant de TASK-0054 ferme les amendements d'échelle par
+> composition avec les preuves déjà VERIFIED : TASK-0022/ACTION-0036
+> (quatre formes, hiérarchie exacte, parent/enfants, labels, souris/clavier),
+> TASK-0047/ACTION-0079 (clavier, focus, non-couleur, agrégats),
+> TASK-0030/ACTION-0047 (Index canonique + projection bornée) et
+> TASK-0054/ACTION-0101 (10k/100k/1M indexés, reachability exhaustive,
+> agrégats exacts, REAL_ROOT et WebView2 GPU-disabled).
+> `P-01 = CLOSED / VERIFIED`; `P-02 = CLOSED / VERIFIED`;
+> `P-03 = CLOSED / VERIFIED`. Les limites déclarées de profondeur,
+> performance de recherche et matériel ne diminuent pas ces critères.

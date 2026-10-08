@@ -1,5 +1,14 @@
 # HANDOFF — passage de relais
 
+## Relais — ACTION-0101 — TASK-0054 VERIFIED — 2026-10-07
+
+- Branche : `build/v0.2-a38-v1-scale-closure`.
+- Produit vérifié : `fd3f6067c47a50bccff4713bda04f7f89bc8af85`; artefacts/harness contrôlés : `42a06a1add90b9b7286fd8b9b7170c76d4ceac23`.
+- `F-050/F-051 = VERIFIED`; `P-01/P-02/P-03 = CLOSED / VERIFIED`.
+- Limites non bloquantes conservées : pas de mesure portable modeste/SLA, recherche proportionnelle, focus >256 refusé, boucle dernière page.
+- Aucun code produit après le commit produit; aucune CI GitHub distante.
+- `F-046` reste inchangée. Faire un audit V1 frais avant toute TASK-0055.
+
 ## Relais — TASK-0054 IMPLEMENTED — 2026-10-07
 
 - Branche `build/v0.2-a38-v1-scale-closure`; code `fd3f6067c47a50bccff4713bda04f7f89bc8af85`; artefacts sur `42a06a1add90b9b7286fd8b9b7170c76d4ceac23`.

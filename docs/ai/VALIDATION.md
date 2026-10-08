@@ -9613,3 +9613,23 @@ proportionnel au corpus (environ 0,8 s par recherche+focus à 1 M mixte, environ
 focus de vue refusé quand l'ascendance atteint 256 nœuds (`a_destination_deeper_than_the_budget_is_refused_cleanly`);
 l'agrégat de la dernière page reboucle vers la première; 1 M = lignes indexées, pas fichiers; un seul cerveau en
 WebView2; aucune CI GitHub distante attachée.
+
+
+## DJ — ACTION-0101 — contrôle indépendant TASK-0054 / F-050 / F-051 — 2026-10-07
+
+**Verdict : PASS / VERIFIED.**
+
+Contrôle indépendant du code `fd3f6067c47a50bccff4713bda04f7f89bc8af85`, des artefacts/harness `42a06a1add90b9b7286fd8b9b7170c76d4ceac23` et du HEAD documentaire `84d3f431ca0396b312e73b31503d90128292668a`.
+
+- Delta produit : `projection.rs` (plancher `MIN_FOCUS_PAGE=16`), quatre lignes de visibilité test dans `commands.rs`; le reste = tests/harness.
+- Aucun code produit après le commit produit. Les cinq commits suivants jusqu'aux artefacts modifient uniquement `scripts/task0054-webview2.mjs`.
+- Rust scale : artefact lié au HEAD harness, 30/30 PASS, dont les trois formes à 10k/100k/1M, reachability, agrégats/oracle, REAL_ROOT, cursors et 8 falsifications Rust.
+- Frontend : agrégat exact FR/EN, non-faux-dossier, activation clavier/clic; suite rapportée 719 PASS.
+- WebView2 : deux processus réels, REAL_ROOT jetable; normal et GPU-disabled produisent le même digest sémantique. `SystemInfo.getInfo` observe `--disable-gpu`, `gpu_compositing=disabled_software`; le même verdict est faux en mode normal.
+- DEC-0034 confirme le renderer produit `React/TypeScript SVG`, sans Canvas/WebGL/Pixi obligatoire. Le contexte WebGL du harness n'est pas une dépendance du renderer.
+- Agrégat dernière page : l'indicateur continue de compter exactement les enfants hors page; l'activation avec curseur nul reboucle vers une projection réelle de première page. Aucun mensonge de cardinalité, aucune perte/duplication. Limite UX de libellé conservée.
+- Focus >256 ancêtres : erreur fixe plutôt que payload hors budget; hors fixtures contractuelles. La couverture exhaustive du corpus par `children_page` et la recherche bornée est prouvée; aucune ligne indexée des corpus d'acceptation n'est perdue.
+- Preuves historiques composées : TASK-0022/ACTION-0036 (quatre formes, hiérarchie, parent/enfants, labels, souris/clavier), TASK-0047/ACTION-0079 (clavier, focus, non-couleur, agrégats), TASK-0030/ACTION-0047 (pipeline borné), TASK-0054 (amendements scale).
+- **CI distante absente** sur code et HEAD : ne pas confondre preuve locale de l'exécuteur et CI indépendante.
+
+**Clôture :** `TASK-0054 = VERIFIED`; `F-050/F-051 = VERIFIED`; `P-01/P-02/P-03 = CLOSED / VERIFIED`. Limites de performance/matériel restent documentées sans devenir des promesses produit.

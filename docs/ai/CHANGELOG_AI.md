@@ -6536,3 +6536,14 @@ rejeter, clavier système. P-19 et P-21 restent PARTIELLES; aucune TASK-0048; au
 - Correction produit unique : plancher `MIN_FOCUS_PAGE=16` (un focus à 200 niveaux paginait un enfant par appel).
 - Code `fd3f6067c47a50bccff4713bda04f7f89bc8af85`; artefacts sur `42a06a1add90b9b7286fd8b9b7170c76d4ceac23`. `F-050`/`F-051` = `IMPLEMENTED`/candidates; `P-01`/`P-02`/`P-03` candidates;
   jamais auto-VERIFIED. `F-046` inchangée. Aucune TASK-0055.
+
+
+## 2026-10-07 — ACTION-0101 — TASK-0054 / F-050 / F-051 VERIFIED
+
+- Contrôle indépendant du code `fd3f6067c47a50bccff4713bda04f7f89bc8af85`, artefacts/harness `42a06a1add90b9b7286fd8b9b7170c76d4ceac23`.
+- Aucun code produit après le commit produit; les ajustements suivants sont limités au harness et à la documentation.
+- 10k/100k/1M indexés, oracle agrégats, reachability, REAL_ROOT, cursors, onze falsifications et WebView2 normal/GPU-disabled acceptés dans la portée.
+- `MIN_FOCUS_PAGE=16` accepté comme corrective minimale, sous le même plafond MATERIAL_BUDGET.
+- Boucle de dernière page, recherche proportionnelle, absence de banc portable modeste et focus >256 restent des limites explicites, non des preuves manquantes du contrat courant.
+- `TASK-0054 = VERIFIED`; `F-050/F-051 = VERIFIED`; `P-01/P-02/P-03 = CLOSED / VERIFIED`.
+- Aucune CI GitHub distante attachée. F-046 inchangée. Audit V1 frais requis avant TASK-0055.

@@ -1,5 +1,15 @@
 # État courant
 
+## ACTION-0101 — TASK-0054 / F-050 / F-051 VERIFIED — 2026-10-07
+
+- Code produit contrôlé : `fd3f6067c47a50bccff4713bda04f7f89bc8af85`; artefacts/harness : `42a06a1add90b9b7286fd8b9b7170c76d4ceac23`.
+- `TASK-0054 = VERIFIED`; `F-050 = VERIFIED`; `F-051 = VERIFIED`.
+- `P-01 / P-02 / P-03 = CLOSED / VERIFIED` par composition de preuves historiques + amendements scale.
+- 10k/100k/1M indexés, REAL_ROOT, agrégats exacts, reachability, WebView2 normal/GPU-disabled : PASS dans la portée contractuelle.
+- Limites conservées : banc puissant, pas de SLA/FPS/mémoire processus, recherche backend proportionnelle, focus >256 refusé proprement, dernière page d'agrégat reboucle.
+- Aucune CI GitHub distante attachée.
+- `F-046` reste inchangée. Prochaine action : audit V1 frais avant toute TASK-0055.
+
 ## TASK-0054 — F-050 + F-051 — `IMPLEMENTED` (candidates) — 2026-10-07
 
 - Preuve du runtime V1 actuel, sans réarchitecture : 10 k / 100 k / 1 M lignes **indexées** synthétiques (large,

@@ -1,7 +1,7 @@
 # TASK-0054 — V1 Progressive Scale & Exact Aggregate Global Closure / F-050 + F-051
 
 - **Date :** 2026-10-07
-- **Statut :** `IMPLEMENTED` — candidate au contrôle indépendant (jamais auto-`VERIFIED`)
+- **Statut :** `VERIFIED` — contrôle indépendant `ACTION-0101` (2026-10-07)
 - **Branche :** `build/v0.2-a38-v1-scale-closure`
 - **Base :** `befd86a73216131eae9675961a758c1df73bffa1`
 - **Sélection :** `ACTION-0100`
@@ -292,3 +292,24 @@ Code produit `fd3f6067c47a50bccff4713bda04f7f89bc8af85`; artefacts liés au HEAD
   quand l'ascendance atteint le budget; l'agrégat de la dernière page boucle vers la première page.
 - `F-050`/`F-051` = `IMPLEMENTED` / candidates; `P-01`/`P-02`/`P-03` candidates seulement. `F-046` inchangée.
   Aucune `TASK-0055`.
+
+
+## Contrôle indépendant — ACTION-0101 — 2026-10-07
+
+Verdict : **PASS / VERIFIED**.
+
+- Code produit contrôlé : `fd3f6067c47a50bccff4713bda04f7f89bc8af85`.
+- Artefacts/harness contrôlés : `42a06a1add90b9b7286fd8b9b7170c76d4ceac23`.
+- HEAD documentaire : `84d3f431ca0396b312e73b31503d90128292668a`.
+- Aucun fichier produit ne change après le commit produit; les commits intermédiaires ne touchent que le harness WebView2.
+- F-050/F-051 : critères globaux couverts par composition des preuves TASK-0030/ACTION-0047, TASK-0022/ACTION-0036, TASK-0047/ACTION-0079 et TASK-0054.
+- P-01/P-02/P-03 : CLOSED / VERIFIED par composition des preuves historiques exactes + amendements scale TASK-0054.
+- 10k/100k/1M = lignes indexées synthétiques; aucune prétention à 1M fichiers physiques.
+- GPU-disabled : preuve discriminante par SystemInfo.getInfo; run normal = verdict faux, run --disable-gpu = verdict vrai; sémantique identique.
+- Le renderer produit reste React/TypeScript SVG (DEC-0034); aucune dépendance fonctionnelle à WebGL n'est introduite.
+- La dernière page d'agrégat reboucle vers la première : compte exact, aucun doublon/omission, mécanisme de continuation conforme à DEC-0034; libellé de fin de parcours conservé comme limite UX non bloquante.
+- Profondeur >= MATERIAL_BUDGET : refus explicite/borné; les fixtures contractuelles et les primitives de pagination/recherche restent couvertes. Aucun dépassement silencieux du budget.
+- Recherche backend proportionnelle au corpus : limite de performance déclarée, distincte du critère de rendu borné F-050.
+- Aucune CI GitHub distante attachée aux commits contrôlés : les 862 Rust / 30 scale / 719 frontend et builds restent des preuves locales de l'exécuteur, relues indépendamment.
+
+Conséquence : `TASK-0054 = VERIFIED`; `F-050 = VERIFIED`; `F-051 = VERIFIED`; `P-01 = CLOSED / VERIFIED`; `P-02 = CLOSED / VERIFIED`; `P-03 = CLOSED / VERIFIED`. `F-046` inchangée.
