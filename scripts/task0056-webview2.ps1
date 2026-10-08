@@ -60,11 +60,15 @@ Write-Host 'TASK-0056: seeding three disposable synthetic roots'
 $seedJson = python scripts/task0056-seed-proof.py seed $variant
 if ($LASTEXITCODE -ne 0) { throw 'TASK-0056 seeding failed' }
 $seed = $seedJson | ConvertFrom-Json
+# The fourth root is the frozen synthetic fixture the relations surface needs: it is
+# materialised by phase 0 and judged for immutability like the other three.
 $roots = @(
     "atelier=$($seed.rootAtelier)",
     "carnets=$($seed.rootCarnets)",
-    "archives=$($seed.rootArchives)"
+    "archives=$($seed.rootArchives)",
+    "fixture=$($seed.rootSynthetic)"
 )
+$rootLabels = @('atelier', 'carnets', 'archives', 'fixture')
 
 function Invoke-ProofPhase {
     param([int]$Phase, [hashtable]$Watch, [string]$Payload)
@@ -154,7 +158,7 @@ $after = $afterJson | ConvertFrom-Json
 $identical = $before.strictDigest -eq $after.strictDigest
 $accessIdentical = $before.accessDigest -eq $after.accessDigest
 $perRoot = [ordered]@{}
-foreach ($label in @('atelier', 'carnets', 'archives')) {
+foreach ($label in $rootLabels) {
     $perRoot[$label] = [ordered]@{
         entryCountBefore   = $before.roots.$label.entryCount
         entryCountAfter    = $after.roots.$label.entryCount
@@ -173,6 +177,7 @@ $coverage = @($phase1.coverage) + @($phase2.coverage)
 $requirements = 1..21 | ForEach-Object { 'P-{0:00}' -f $_ }
 $missing = @($requirements | Where-Object { $name = $_; -not ($coverage | Where-Object { $_.requirement -eq $name }) })
 if ($missing.Count -ne 0) { throw "the campaign has no runtime observation for: $($missing -join ', ')" }
+$productGaps = @($phase1.productGaps) + @($phase2.productGaps) | Where-Object { $null -ne $_ }
 
 $cpu = Get-CimInstance Win32_Processor | Select-Object -First 1
 $memoryGiB = [math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB, 1)
@@ -181,7 +186,11 @@ $artifact = [ordered]@{
     section        = 'Final P-22 campaign (TASK-0056 §4 and §5)'
     headTested     = $head
     classification = 'DEVELOPMENT_BENCH_ENGINEERING_EVIDENCE'
+    # The P-22 verdict is about immutability only. A product gap found while exercising
+    # P-01..P-21 is reported separately and blocks TASK-0056, not this measurement.
     verdict        = if ($identical -and $after.artefactsFound.Count -eq 0 -and $copyMatchedTheRealPath) { 'PASS' } else { 'FAIL' }
+    taskVerdict    = if ($productGaps.Count -eq 0) { 'PASS' } else { 'BLOCKED — a product gap was found; see productGaps' }
+    productGaps    = @($productGaps)
     strategy       = 'Three disposable synthetic REAL_ROOT trees; the brains are indexed and the source is changed BEFORE the baseline; three real Tauri/WebView2 processes then exercise P-01..P-21 inside the window, including one root made temporarily unavailable and restored; an external fingerprint taken by a separate tool before and after the window must be identical.'
     machine        = [ordered]@{
         cpu               = $cpu.Name.Trim()

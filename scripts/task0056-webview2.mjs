@@ -59,6 +59,7 @@ const seed = JSON.parse(
 const ATELIER = seed.atelier;
 const CARNETS = seed.carnets;
 const ARCHIVES = seed.archives;
+const SYNTHETIC = seed.synthetic;
 const ROOTS = { atelier: seed.rootAtelier, carnets: seed.rootCarnets, archives: seed.rootArchives };
 
 const axeSource = await readFile("node_modules/axe-core/axe.min.js", "utf8");
@@ -344,7 +345,9 @@ await until("!!window.__TAURI_INTERNALS__");
 /* ================================================================================= */
 
 if (phase === 0) {
-  for (const brainId of [ATELIER, CARNETS, ARCHIVES]) {
+  // The synthetic fixture has to exist on disk before the baseline fingerprint covers it.
+  await invoke("map_prepare_synthetic_source", { brainId: SYNTHETIC });
+  for (const brainId of [ATELIER, CARNETS, ARCHIVES, SYNTHETIC]) {
     await invoke("map_refresh", { brainId });
     const view = await invoke("map_view", { brainId });
     assert(view.nodeCount > 0, "a brain must be indexed before the window opens");
@@ -897,12 +900,68 @@ if (phase === 1) {
   });
 
   // -- P-04 / P-05 / P-07 — relations, provenance, suggestions, direction ----------------
-  // The relations panel only shows the engine's own commands once an element is selected
-  // and its relations are read: select first, then observe the content, then analyse.
-  await searchFor("rapport-original");
-  await until(`!!document.querySelector('[data-testid="search-hit"][data-node-id="${reportReference.nodeId}"]')`);
-  await click(`[data-testid="search-hit"][data-node-id="${reportReference.nodeId}"]`);
-  await until(`!!document.querySelector('[data-testid="relation-totals"]')`);
+  // FOUND HERE, AND REPORTED RATHER THAN PATCHED: on a brain whose source is a real
+  // folder, the three reads the relations surface needs all refuse with
+  // `map_source_not_synthetic`. The engine itself is generic and runs, but nothing can
+  // read what it produced, so the panel stays on « unavailable » and P-04, P-05 and P-07
+  // are unreachable on the only kind of brain the shipped product lets a person create.
+  const refusalOf = async (command, args) => {
+    try {
+      await invoke(command, args);
+      return null;
+    } catch (error) {
+      return String(error.message ?? error).slice(0, 300);
+    }
+  };
+  const realRootRefusals = {
+    map_relations_open: await refusalOf("map_relations_open", { brainId: ATELIER }),
+    map_relations_for_node: await refusalOf("map_relations_for_node", { reference: { brainId: ATELIER, nodeId: reportReference.nodeId } }),
+    map_relations_review_queue: await refusalOf("map_relations_review_queue", { brainId: ATELIER, offset: 0, limit: 10 }),
+  };
+  const engineOnRealRoot = await refusalOf("map_relation_engine_status", { brainId: ATELIER });
+  const panelOnRealRoot = await evaluate(`(() => {
+    const section = [...document.querySelectorAll('section.relations')][0];
+    return { hasEngineCommand: !!document.querySelector('[data-testid="analyze-relations"]'),
+      hasTotals: !!document.querySelector('[data-testid="relation-totals"]'),
+      text: section?.textContent?.trim().slice(0, 200) ?? null };
+  })()`);
+  record.productGaps = record.productGaps ?? [];
+  if (realRootRefusals.map_relations_open || realRootRefusals.map_relations_for_node) {
+    record.productGaps.push({
+      requirements: ["P-04", "P-05", "P-07"],
+      functions: ["F-017", "F-019", "F-043", "F-044", "F-045"],
+      summary:
+        "On a REAL_ROOT brain the relations surface is unreachable: `map_relations_open`, `map_relations_for_node` and `map_relations_review_queue` all go through `BrainRecord::source_fixture()`, which refuses a real folder with `map_source_not_synthetic`. The relations panel therefore renders its « unavailable » form, with no provenance, no direction, no suggestion and no review queue — although `map_relation_engine_run`/`_status` are generic and do work on the same brain. Since DEC-0033 a real folder is the ONLY way a person's tree enters FileTopo, so these three parity requirements are unreachable for a person's own data, which the contract §3 rule 2 says amounts to removing them.",
+      observed: { realRootRefusals, engineStatusOnTheSameBrain: engineOnRealRoot === null ? "succeeds" : engineOnRealRoot, panelOnRealRoot },
+      notPatched: "TASK-0056 is an acceptance: no production file is touched. The gap is reported for arbitration.",
+    });
+  }
+
+  // The surface is exercised where it is reachable at all: the synthetic-fixture brain.
+  // The parity contract allows a criterion to be verified on synthetic fixtures, so this
+  // is a real observation of the behaviour — and it isolates the gap above to the SOURCE
+  // KIND rather than to the engine or the panel.
+  await click(testid("composition-add-trigger"));
+  await until(`!!document.querySelector('[data-testid="composition-add-item-${SYNTHETIC}"]')`);
+  await click(`[data-testid="composition-add-item-${SYNTHETIC}"]`);
+  await until(`!!document.querySelector('[data-testid="composition-chip-${SYNTHETIC}"]')`);
+  await click(`[data-testid="composition-chip-${SYNTHETIC}"]`);
+  await quiet();
+  const syntheticView = await invoke("map_view", { brainId: SYNTHETIC });
+  const reportReferenceSynthetic = { nodeId: syntheticView.rootId };
+  // A node that really carries relations: take one from the brain's own overview.
+  const syntheticOverview = await invoke("map_relations_open", { brainId: SYNTHETIC });
+  const anEndpoint = (syntheticOverview.established ?? []).flatMap((edge) => [edge.source, edge.target]).find((end) => end.nodeId !== null);
+  assert(anEndpoint, "the synthetic relations fixture must carry at least one established relation");
+  const relationNode = anEndpoint.nodeId;
+  await click(`[data-testid="composed-canvas"] [data-card="true"][data-node-id="${relationNode}"]`).catch(async () => {
+    await invoke("map_node_detail", { reference: { brainId: SYNTHETIC, nodeId: relationNode } });
+    const detail = await invoke("map_node_detail", { reference: { brainId: SYNTHETIC, nodeId: relationNode } });
+    await searchFor(detail.node.name);
+    await until(`!!document.querySelector('[data-testid="search-hit"][data-node-id="${relationNode}"]')`);
+    await click(`[data-testid="search-hit"][data-node-id="${relationNode}"]`);
+  });
+  await until(`!!document.querySelector('[data-testid="relation-totals"]')`, 120000);
   await quiet();
   await click(testid("observe-content"));
   await until(`!!document.querySelector('[data-testid="content-report"]')`, 180000);
@@ -913,25 +972,29 @@ if (phase === 1) {
   await until(`!!document.querySelector('[data-testid="relation-engine-summary"]')`, 180000);
   await quiet();
   const engineReport = JSON.parse(await evaluate(`document.querySelector('[data-testid="relation-engine-summary"]').getAttribute('data-report')`));
-  // The deterministic relation the engine just produced: the two identical-content occurrences.
-  await until(`!!document.querySelector('[data-testid="core-deterministic-relation"]')`, 120000);
+  // The established relations of this brain, read on a node that really carries one.
+  await until(`!!document.querySelector('[data-testid="relation-totals"]')`, 120000);
   await quiet();
-  const deterministicOnScreen = await evaluate(`(() => {
-    const rule = document.querySelector('[data-testid="core-deterministic-relation"]');
+  const relationsOfNode = await invoke("map_relations_for_node", { reference: { brainId: SYNTHETIC, nodeId: relationNode } });
+  const establishedOnScreen = await evaluate(`(() => {
     const provenances = [...document.querySelectorAll('.relation__provenance')].map((p) => ({
       text: p.textContent.trim(), className: p.getAttribute('class'), glyph: p.querySelector('[aria-hidden="true"]')?.textContent?.trim() ?? null }));
     const directions = [...document.querySelectorAll('.relation__direction')].map((d) => d.textContent.trim());
-    return { rule: rule?.textContent?.trim() ?? null, provenances, directions,
-      totals: document.querySelector('[data-testid="relation-totals"]').textContent.trim() };
+    return { rule: document.querySelector('[data-testid="core-deterministic-relation"]')?.textContent?.trim() ?? null,
+      provenances, directions, totals: document.querySelector('[data-testid="relation-totals"]').textContent.trim(),
+      types: [...document.querySelectorAll('.relation__type')].map((t) => t.textContent.trim()) };
   })()`);
-  assert(deterministicOnScreen.rule, "an established relation names the rule that produced it");
-  assert(deterministicOnScreen.provenances.length > 0, "the provenance of an established relation is on screen");
+  assert(establishedOnScreen.provenances.length > 0, "the provenance of an established relation is on screen");
   assert(
-    deterministicOnScreen.provenances.every((entry) => entry.glyph && entry.text.replace(entry.glyph, "").trim().length > 0),
+    establishedOnScreen.provenances.every((entry) => entry.glyph && entry.text.replace(entry.glyph, "").trim().length > 0),
     "the provenance is carried by a glyph and a word, never by colour alone",
   );
-  const reportRelations = await invoke("map_relations_for_node", { reference: { brainId: ATELIER, nodeId: reportReference.nodeId } });
-  const totalsText = deterministicOnScreen.totals;
+  assert(establishedOnScreen.directions.length > 0, "each entry says its direction");
+  const totalsText = establishedOnScreen.totals;
+  assert(
+    new RegExp(`\\b${relationsOfNode.outgoingCount}\\b`).test(totalsText) && new RegExp(`\\b${relationsOfNode.incomingCount}\\b`).test(totalsText),
+    `the panel's counts (${totalsText}) must be the Index's (${relationsOfNode.outgoingCount}/${relationsOfNode.incomingCount})`,
+  );
   // The MAP's own count for the same node, and the shape that carries the direction.
   const mapEdges = await evaluate(`(() => {
     const edges = [...document.querySelectorAll('[data-testid="composed-canvas"] [data-edge-kind="established"], [data-testid="composed-canvas"] [data-edge-kind="suggestion"]')];
@@ -939,100 +1002,111 @@ if (phase === 1) {
       hasArrowHead: !!e.querySelector('.map-edge__arrow'), legendKeys: (e.getAttribute('data-legend-keys') ?? '').split(' ').filter(Boolean) }));
   })()`);
   const establishedEdges = mapEdges.filter((edge) => edge.kind === "established");
-  const mapOutgoing = establishedEdges.filter((edge) => edge.source === reportReference.nodeId).length;
-  const mapIncoming = establishedEdges.filter((edge) => edge.target === reportReference.nodeId).length;
-  assert(
-    mapOutgoing + mapIncoming === reportRelations.outgoingCount + reportRelations.incomingCount,
-    `the map draws ${mapOutgoing}/${mapIncoming} for the Index's ${reportRelations.outgoingCount}/${reportRelations.incomingCount}`,
+  const mapOutgoing = establishedEdges.filter((edge) => edge.source === relationNode).length;
+  const mapIncoming = establishedEdges.filter((edge) => edge.target === relationNode).length;
+  assert.equal(
+    mapOutgoing + mapIncoming,
+    relationsOfNode.outgoingCount + relationsOfNode.incomingCount,
+    `the map draws ${mapOutgoing}/${mapIncoming} for the Index's ${relationsOfNode.outgoingCount}/${relationsOfNode.incomingCount}`,
   );
-  assert(
-    establishedEdges.every((edge) => edge.hasArrowHead),
-    "an established relation carries its direction as a filled arrow head, not as a colour",
-  );
+  assert(establishedEdges.every((edge) => edge.hasArrowHead), "an established relation carries its direction as a filled arrow head, not as a colour");
   assert(
     mapEdges.filter((edge) => edge.kind === "suggestion").every((edge) => !edge.hasArrowHead),
     "a suggestion is drawn differently from an established relation, by shape",
   );
-  assert(
-    new RegExp(`\\b${reportRelations.outgoingCount}\\b`).test(totalsText) && new RegExp(`\\b${reportRelations.incomingCount}\\b`).test(totalsText),
-    `the panel's counts (${totalsText}) must be the Index's (${reportRelations.outgoingCount}/${reportRelations.incomingCount})`,
-  );
-  // And a suggestion: a distinct object, explained, never counted as a relation.
-  const noteOneReference = await invoke("map_resolve_node", { brainId: ATELIER, relativePath: "versions/note-1.txt" });
-  await searchFor("note-1");
-  await until(`!!document.querySelector('[data-testid="search-hit"][data-node-id="${noteOneReference.nodeId}"]')`);
-  await click(`[data-testid="search-hit"][data-node-id="${noteOneReference.nodeId}"]`);
-  await until(`!!document.querySelector('[data-testid="core-suggestion-explanation"]')`);
+
+  // And a suggestion: a distinct object, explained, never counted as a relation, then
+  // approved with the real keyboard so it becomes an APPROVED relation with a direction.
+  const pending = (syntheticOverview.pendingSuggestions ?? []).find((suggestion) => suggestion.source.nodeId !== null && suggestion.target.nodeId !== null);
+  assert(pending, "the synthetic relations fixture must carry at least one pending suggestion");
+  const suggestionSource = pending.source.nodeId;
+  const suggestionTarget = pending.target.nodeId;
+  const sourceDetail = await invoke("map_node_detail", { reference: { brainId: SYNTHETIC, nodeId: suggestionSource } });
+  await searchFor(sourceDetail.node.name);
+  await until(`!!document.querySelector('[data-testid="search-hit"][data-node-id="${suggestionSource}"]')`);
+  await click(`[data-testid="search-hit"][data-node-id="${suggestionSource}"]`);
+  await until(`!!document.querySelector('.suggestion[data-suggestion-key]')`, 120000);
   await quiet();
   const suggestionOnScreen = await evaluate(`(() => {
-    const item = document.querySelector('.suggestion');
+    const item = document.querySelector('.suggestion[data-suggestion-key]');
     return { key: item?.getAttribute('data-suggestion-key') ?? null,
       tag: item?.querySelector('.suggestion__tag')?.textContent?.trim() ?? null,
       state: item?.querySelector('.suggestion__state')?.textContent?.trim() ?? null,
       explanation: document.querySelector('[data-testid="core-suggestion-explanation"]')?.textContent?.trim() ?? null,
+      basis: item?.querySelector('.suggestion__basis')?.textContent?.trim() ?? null,
       signals: [...document.querySelectorAll('.suggestion__signals dt')].map((dt) => dt.textContent.trim()),
       totals: document.querySelector('[data-testid="relation-totals"]').textContent.trim() };
   })()`);
   assert(suggestionOnScreen.key, "a suggestion is its own object, with its own key");
   assert(suggestionOnScreen.tag && suggestionOnScreen.state, "a suggestion says it is one, in words");
-  assert(/même dossier|same folder/i.test(suggestionOnScreen.explanation ?? ""), "the suggestion is explained in ordinary language");
-  const noteOneRelations = await invoke("map_relations_for_node", { reference: { brainId: ATELIER, nodeId: noteOneReference.nodeId } });
-  assert(noteOneRelations.suggestions.length > 0, "the Index has the suggestion");
-  const establishedBefore = noteOneRelations.outgoingCount + noteOneRelations.incomingCount;
-  // Approve it with the real keyboard: it becomes an established APPROVED relation, directional.
+  assert(
+    (suggestionOnScreen.explanation ?? suggestionOnScreen.basis ?? "").length > 0,
+    "a suggestion is explained in ordinary language, by its rule or by its basis",
+  );
+  const sourceBefore = await invoke("map_relations_for_node", { reference: { brainId: SYNTHETIC, nodeId: suggestionSource } });
+  assert(sourceBefore.suggestions.length > 0, "the Index has the suggestion");
+  const establishedBefore = sourceBefore.outgoingCount + sourceBefore.incomingCount;
+  assert(
+    !sourceBefore.outgoing.concat(sourceBefore.incoming).some((edge) => edge.provenance === "SUGGESTED"),
+    "a suggestion never appears as a provenance of an established relation",
+  );
   const tabStepsToApprove = await reachAndActivate(
     `[data-testid="approve-core-suggestion"][data-suggestion-key="${suggestionOnScreen.key}"]`,
     "Enter",
   );
-  await until(`!document.querySelector('[data-suggestion-key="${suggestionOnScreen.key}"]')`);
+  await until(`!document.querySelector('[data-suggestion-key="${suggestionOnScreen.key}"]')`, 120000);
   await quiet();
-  const noteOneAfter = await invoke("map_relations_for_node", { reference: { brainId: ATELIER, nodeId: noteOneReference.nodeId } });
-  const establishedAfter = noteOneAfter.outgoingCount + noteOneAfter.incomingCount;
+  const sourceAfter = await invoke("map_relations_for_node", { reference: { brainId: SYNTHETIC, nodeId: suggestionSource } });
+  const establishedAfter = sourceAfter.outgoingCount + sourceAfter.incomingCount;
   assert.equal(establishedAfter, establishedBefore + 1, "approving the suggestion added exactly one established relation");
-  const approvedProvenances = [...new Set([...noteOneAfter.outgoing, ...noteOneAfter.incoming].map((edge) => edge.provenance))];
+  const approvedProvenances = [...new Set([...sourceAfter.outgoing, ...sourceAfter.incoming].map((edge) => edge.provenance))];
   assert(approvedProvenances.every((value) => value === "DETERMINISTIC" || value === "APPROVED"), `a third provenance appeared: ${approvedProvenances}`);
-  const noteTwoReference = await invoke("map_resolve_node", { brainId: ATELIER, relativePath: "versions/note-2.txt" });
-  const noteTwoAfter = await invoke("map_relations_for_node", { reference: { brainId: ATELIER, nodeId: noteTwoReference.nodeId } });
-  const sourceOutgoing = noteOneAfter.outgoing.length;
-  const targetIncoming = noteTwoAfter.incoming.length;
+  const targetAfter = await invoke("map_relations_for_node", { reference: { brainId: SYNTHETIC, nodeId: suggestionTarget } });
+  const sourceOutgoing = sourceAfter.outgoing.length;
+  const targetIncoming = targetAfter.incoming.length;
   assert(sourceOutgoing >= 1 && targetIncoming >= 1, "the approved relation is readable as outgoing on its source and incoming on its target");
-  // The panel groups by direction and the entries lead to the element they name.
-  await searchFor("note-1");
-  await until(`!!document.querySelector('[data-testid="search-hit"][data-node-id="${noteOneReference.nodeId}"]')`);
-  await click(`[data-testid="search-hit"][data-node-id="${noteOneReference.nodeId}"]`);
-  await until(`!!document.querySelector('[data-testid="relation-totals"]')`);
-  await quiet();
+
+  // The panel groups by direction and every entry leads to the element it names.
   const panelShape = await evaluate(`(() => {
-    const sections = [...document.querySelectorAll('.relations section, .relations > div')];
     const headings = [...document.querySelectorAll('.relations__subtitle, .relations h3')].map((h) => h.textContent.trim());
     const entries = [...document.querySelectorAll('.relation')].map((row) => ({
       direction: row.querySelector('.relation__direction')?.textContent?.trim() ?? null,
       provenance: row.querySelector('.relation__provenance')?.textContent?.trim() ?? null,
       type: row.querySelector('.relation__type')?.textContent?.trim() ?? null,
       link: !!row.querySelector('.relation__link') }));
-    return { headings, entries, sections: sections.length };
+    return { headings, entries };
   })()`);
   assert(panelShape.headings.length >= 2, "the panel groups the relations");
-  // The model itself refuses a relation without provenance (backend oracle, declared).
-  const relationsSelfCheck = await invoke("map_relations_self_check", { brainId: ATELIER });
+  assert(panelShape.entries.length > 0, "the panel lists the relations of the selected element");
+  // The model itself refuses a malformed relation (backend oracle, declared as such).
+  const relationsSelfCheck = await invoke("map_relations_self_check", { brainId: SYNTHETIC });
   assert.equal(relationsSelfCheck.allRejected, true, "the model must refuse every malformed relation");
   assert.deepEqual(relationsSelfCheck.suggestionsInEstablished, [], "a suggestion must never be counted as an established relation");
   assert.deepEqual(relationsSelfCheck.inventedInverses, [], "no inverse is invented");
-  cover("P-04", "a content campaign then a real « Analyser » produced an established relation whose rule, version and provenance are on screen in words and glyphs (never colour alone); a suggestion was shown as a distinct, explained object with its own state and was never counted as a relation; the model's own refusals were re-exercised", {
+  const relationsScope = {
+    exercisedOn: "a SYNTHETIC_FIXTURE brain, the only source kind on which the relations surface answers at all",
+    refusedOn: "every REAL_ROOT brain — see `productGaps`",
+  };
+  cover("P-04", "on the brain where the surface answers, a content campaign then a real « Analyser » produced established relations whose type and provenance are on screen in words and glyphs (never colour alone); a suggestion was shown as a distinct, explained object with its own state, was never a provenance of an established relation, and the model's own refusals were re-exercised. On a REAL_ROOT brain the same surface refuses: see `productGaps`", {
     engineReport, contentReport: { hashed: contentReport.hashedCount, files: contentReport.indexedFileCount, algorithm: contentReport.hashAlgorithm },
-    deterministicRule: deterministicOnScreen.rule, provenancesSeen: deterministicOnScreen.provenances.map((p) => p.text),
-    suggestionExplained: true, suggestionSignals: suggestionOnScreen.signals, malformedRelationsAllRejected: true,
+    deterministicRule: establishedOnScreen.rule, provenancesSeen: establishedOnScreen.provenances.map((p) => p.text),
+    typesSeen: establishedOnScreen.types, suggestionExplained: true, suggestionSignals: suggestionOnScreen.signals,
+    malformedRelationsAllRejected: true, scope: relationsScope,
   });
-  cover("P-05", "the incoming and outgoing counts shown by the PANEL and drawn on the MAP both equal the Index's for the same node; the direction is carried by a glyph, a heading and a filled arrow head rather than by colour; and approving a suggestion with the real keyboard added exactly one established relation — outgoing on its source and incoming on its target", {
-    panelTotalsText: totalsText, indexOutgoing: reportRelations.outgoingCount, indexIncoming: reportRelations.incomingCount,
+  cover("P-05", "the incoming and outgoing counts shown by the PANEL and drawn on the MAP both equal the Index's for the same node; the direction is carried by a glyph, a heading and a filled arrow head rather than by colour; and approving a suggestion with the real keyboard added exactly one established relation — outgoing on its source and incoming on its target. On a REAL_ROOT brain these counts cannot be read at all: see `productGaps`", {
+    panelTotalsText: totalsText, indexOutgoing: relationsOfNode.outgoingCount, indexIncoming: relationsOfNode.incomingCount,
     mapOutgoing, mapIncoming, establishedEdgesOnTheMap: establishedEdges.length,
     suggestionEdgesOnTheMap: mapEdges.length - establishedEdges.length, everyEstablishedEdgeHasAnArrowHead: true,
     approvedWithTheKeyboard: true, tabStepsToTheApproveButton: tabStepsToApprove,
-    establishedBefore, establishedAfter, sourceOutgoing, targetIncoming,
+    establishedBefore, establishedAfter, sourceOutgoing, targetIncoming, scope: relationsScope,
   });
-  cover("P-07", "the relations panel lists the selected element's relations grouped by nature and direction, each entry carrying its type, direction and provenance and a control that leads to the element it names", {
-    headings: panelShape.headings, entries: panelShape.entries, everyEntryHasALink: panelShape.entries.every((entry) => entry.link),
+  cover("P-07", "the relations panel lists the selected element's relations grouped by nature and direction, each entry carrying its type, direction and provenance and a control that leads to the element it names. On a REAL_ROOT brain the panel renders its « unavailable » form instead: see `productGaps`", {
+    headings: panelShape.headings, entries: panelShape.entries,
+    everyEntryHasALink: panelShape.entries.every((entry) => entry.link), scope: relationsScope,
   });
+  // Back to the real tree for the journal and the rest of the window.
+  await click(`[data-testid="composition-chip-${ATELIER}"]`);
+  await quiet();
 
   // -- P-16 / P-17 — the journal, and new / unseen / mark seen ---------------------------
   await click(testid("search-clear"));
@@ -1135,9 +1209,18 @@ if (phase === 1) {
   assert.equal(carnetsView.nodeCount, carnetsDisk.length + 1, "the second brain's Index equals its own tree");
   const carnetsJournalUnseen = (await invoke("map_change_journal", { brainId: CARNETS })).unseenTotal;
   assert.equal(carnetsJournalUnseen, 0, "marking changes seen in one brain left the other brain's state alone");
+  // The third real tree comes back on screen too, so the composition really holds three
+  // independent REAL_ROOT brains at once.
+  await click(testid("composition-add-trigger"));
+  await until(`!!document.querySelector('[data-testid="composition-add-item-${ARCHIVES}"]')`);
+  await click(`[data-testid="composition-add-item-${ARCHIVES}"]`);
+  await until(`!!document.querySelector('[data-testid="composition-chip-${ARCHIVES}"]')`);
+  await quiet();
   // Each displayed element names its brain of origin without ambiguity.
   const territories = await evaluate(`[...document.querySelectorAll('[data-testid="composed-canvas"] [data-brain-id]')].map((g) => g.getAttribute('data-brain-id'))`);
   const brainsOnScreen = [...new Set(territories)].sort();
+  const chipsOnScreen = await evaluate(`[...document.querySelectorAll('[data-testid^="composition-chip-"]')].length`);
+  assert(brainsOnScreen.length >= 3, `three brains must really be drawn at once: ${brainsOnScreen.length}`);
   await click(`[data-testid="composition-chip-${ATELIER}"]`);
   await quiet();
   // The French state the restart must give back.
@@ -1147,7 +1230,7 @@ if (phase === 1) {
   await quiet();
   const workspaceBefore = await invoke("map_workspace_restore");
   cover("P-20", "three independent brains were composed through real clicks, each keeping its own Index and its own seen/unseen state, and every drawn element names the brain it comes from", {
-    brains: 3, brainsNamedOnScreen: brainsOnScreen.length, atelierIndexed: view0.nodeCount,
+    brainsDrawnAtOnce: brainsOnScreen.length, chipsOnScreen, atelierIndexed: view0.nodeCount,
     carnetsIndexed: carnetsView.nodeCount, carnetsUnseenAfterMarkingAtelier: carnetsJournalUnseen,
     closureComposedFrom: ["TASK-0018/ACTION-0029", "TASK-0038/ACTION-0064", "TASK-0044/ACTION-0073", "TASK-0045/ACTION-0075 (P-20 CLOSED by ACTION-0075)"],
   });
@@ -1202,7 +1285,7 @@ const restored = await evaluate(`(() => ({
 assert.equal(restored.detailsPanel, false, "the hidden details panel came back hidden");
 assert.equal(restored.density, "true", "the chosen density came back");
 assert.equal(restored.locale, "fr", "the chosen language came back");
-assert.equal(restored.chips.length, 3, "the three composed brains came back");
+assert(restored.chips.length >= 3, `the composed brains came back: ${restored.chips.length}`);
 const journalAfterRestart = await invoke("map_change_journal", { brainId: ATELIER });
 assert.equal(journalAfterRestart.unseenTotal, expectedState.unseenAtClose, "the seen/unseen state survived the restart");
 const corrections = await evaluate(`document.querySelector('[data-testid="workspace-corrections"]')?.textContent?.trim() ?? null`);

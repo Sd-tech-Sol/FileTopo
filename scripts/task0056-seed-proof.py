@@ -114,6 +114,12 @@ def seed() -> None:
         ("real-" + str(uuid.uuid4()), "Carnets", "#A8552F", "C", "carnets", 2),
         ("real-" + str(uuid.uuid4()), "Archives", "#4F8F3A", "R", "archives", 3),
     ]
+    # A fourth brain, on the frozen synthetic fixture `quasi-empty`. The relations
+    # surface of the product refuses a `REAL_ROOT` source, so the only brain on which
+    # `P-04`, `P-05` and `P-07` can be exercised at all is a synthetic one. The
+    # campaign exercises them there AND records the refusal on a real root, which is
+    # the gap it reports.
+    synthetic_brain = "synth-" + str(uuid.uuid4())
     with sqlite3.connect(brains / "catalog.sqlite") as database:
         database.execute(
             """CREATE TABLE brains (
@@ -145,6 +151,20 @@ def seed() -> None:
                     position,
                 ),
             )
+        database.execute(
+            "INSERT INTO brains VALUES (?,?,?,?,?,?,?,?,?)",
+            (
+                synthetic_brain,
+                "Atelier synthétique",
+                "#6B4FA8",
+                "S",
+                "SYNTHETIC_FIXTURE",
+                "quasi-empty",
+                "quasi-empty",
+                None,
+                4,
+            ),
+        )
         database.execute("INSERT INTO catalog_meta VALUES ('active_brain_id', ?)", (spec[0][0],))
         database.execute("INSERT INTO catalog_meta VALUES ('schema_version', '2')")
         database.execute("PRAGMA user_version=2")
@@ -155,9 +175,11 @@ def seed() -> None:
                 "atelier": spec[0][0],
                 "carnets": spec[1][0],
                 "archives": spec[2][0],
+                "synthetic": synthetic_brain,
                 "rootAtelier": str(roots["atelier"].resolve()),
                 "rootCarnets": str(roots["carnets"].resolve()),
                 "rootArchives": str(roots["archives"].resolve()),
+                "rootSynthetic": str((state_root / "fixtures" / "quasi-empty").resolve()),
                 "wideChildren": WIDE_CHILDREN,
             }
         )
