@@ -300,9 +300,11 @@ const check = (label, value = true) => {
   record.checks.push({ label, value });
   return value;
 };
-/** Nothing in this slice may write a source, rebuild, or touch a relation store. */
+/** Nothing in this slice may write a source, rebuild, or **mutate** a relation
+ *  store. Reading relations when a node is selected is what the panel does and
+ *  is not a mutation; the stores' own bytes are checked separately. */
 const FORBIDDEN_DURING_READS =
-  /^map_(rebuild|prepare_|reveal_node|copy_node_path|write_run_artifact|brain_exclusions_replace|brain_choose_real_root|relations_|cross_relations_)/;
+  /^map_(rebuild|prepare_|reveal_node|copy_node_path|write_run_artifact|brain_exclusions_replace|brain_choose_real_root|(cross_)?relations_(approve|reject|revoke)|relation_engine_run)/;
 
 await until("!!window.__TAURI_INTERNALS__");
 
