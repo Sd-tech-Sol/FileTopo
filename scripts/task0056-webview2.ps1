@@ -96,6 +96,28 @@ function Invoke-ProofPhase {
     }
 }
 
+# NTFS updates a directory's last-write time lazily: a reading taken in the same second as
+# a change can still carry the previous value and settle a moment later. A baseline that
+# caught such a value would make P-22 fail for a change that happened BEFORE the window.
+# So a fingerprint is read until two consecutive readings agree: the baseline is a steady
+# state, and the number of readings it took is published.
+function Get-SettledFingerprint {
+    param([string]$Path, [string[]]$Roots, [int]$MaxReadings = 12, [int]$GapMilliseconds = 1500)
+
+    $previous = $null
+    for ($reading = 1; $reading -le $MaxReadings; $reading += 1) {
+        $json = python scripts/task0056-fingerprint.py $Path @Roots
+        if ($LASTEXITCODE -ne 0) { throw 'TASK-0056 fingerprint failed' }
+        $current = $json | ConvertFrom-Json
+        if ($previous -and $previous.strictDigest -eq $current.strictDigest) {
+            return [pscustomobject]@{ fingerprint = $current; readings = $reading; settled = $true }
+        }
+        $previous = $current
+        Start-Sleep -Milliseconds $GapMilliseconds
+    }
+    return [pscustomobject]@{ fingerprint = $previous; readings = $MaxReadings; settled = $false }
+}
+
 # A watcher that must not act: the manual Actualiser of phase 1 is the gesture under test.
 $watchAsleep = @{ FILETOPO_WATCH_GUARD_MS = '600000'; FILETOPO_WATCH_COALESCE_MS = '600000'; FILETOPO_WATCH_CALM_MS = '600000'; FILETOPO_WATCH_PERIODIC_MS = '600000' }
 # A watcher that must really act: phase 2 reads the root leaving and coming back.
@@ -117,10 +139,11 @@ $campaignPayload = $campaignSeed | ConvertTo-Json -Depth 10 -Compress
 # -- 4. the baseline fingerprint, taken outside the product ----------------------------
 Write-Host 'TASK-0056: external fingerprint BEFORE the P-22 window'
 $beforePath = Join-Path $work 'task0056-fingerprint-before.json'
-$beforeJson = python scripts/task0056-fingerprint.py $beforePath @roots
-if ($LASTEXITCODE -ne 0) { throw 'TASK-0056 baseline fingerprint failed' }
-$before = $beforeJson | ConvertFrom-Json
+$beforeReading = Get-SettledFingerprint -Path $beforePath -Roots $roots
+$before = $beforeReading.fingerprint
+if (-not $beforeReading.settled) { throw 'the baseline never settled: the trees are still changing' }
 if ($before.artefactsFound.Count -ne 0) { throw 'a FileTopo artefact was already under a source before the window' }
+Write-Host "  baseline settled after $($beforeReading.readings) readings"
 
 # -- 5. the window, part one ------------------------------------------------------------
 # The third root is moved away BEFORE the process starts, so that brain's
@@ -151,9 +174,9 @@ Invoke-ProofPhase -Phase 2 -Watch $watchAwake -Payload $campaignPayload
 # -- 8. the fingerprint after the window ------------------------------------------------
 Write-Host 'TASK-0056: external fingerprint AFTER the P-22 window'
 $afterPath = Join-Path $work 'task0056-fingerprint-after.json'
-$afterJson = python scripts/task0056-fingerprint.py $afterPath @roots
-if ($LASTEXITCODE -ne 0) { throw 'TASK-0056 closing fingerprint failed' }
-$after = $afterJson | ConvertFrom-Json
+$afterReading = Get-SettledFingerprint -Path $afterPath -Roots $roots
+$after = $afterReading.fingerprint
+Write-Host "  closing reading settled after $($afterReading.readings) readings"
 
 $identical = $before.strictDigest -eq $after.strictDigest
 $accessIdentical = $before.accessDigest -eq $after.accessDigest
@@ -209,6 +232,12 @@ $artifact = [ordered]@{
         accessDigestAfter      = $after.accessDigest
         accessTimesIdentical   = $accessIdentical
         accessTimeNote         = 'The last-access time is digested separately and reported on its own line. Reading a file is what a read-only analyser does; where the volume records last access, a changed access time is a consequence of reading, never a change of content, name, structure or contractual timestamp.'
+        settling               = [ordered]@{
+            baselineReadings = $beforeReading.readings
+            closingReadings  = $afterReading.readings
+            rule             = 'Each fingerprint is read until two consecutive readings agree, so neither is a value NTFS had not yet flushed.'
+            why              = 'NTFS updates a directory last-write time lazily: a reading taken in the same second as a change can carry the previous value and settle a moment later. A first run of this campaign failed on exactly that — three directory timestamps settled AFTER the baseline, all of them to instants BEFORE the window opened, while nothing in the trees ever carried an instant from inside the window.'
+        }
         filetopoArtefactsUnderTheSources = @($after.artefactsFound)
         perRoot                = $perRoot
         detailKeptOutsideRepository = $true
