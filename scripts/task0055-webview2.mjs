@@ -238,6 +238,26 @@ const sha = (value) => createHash("sha256").update(JSON.stringify(value)).digest
 const digestOf = async (relativePath) =>
   createHash("sha256").update(await readFile(join(ROOT, relativePath))).digest("hex");
 
+/** Every relation-bearing store of this sandbox, as a digest or `null` when the
+ *  file does not exist. Comparing these before and after is how this harness
+ *  says "no relation was created": not by trusting a counter, by reading the
+ *  stores. The paths are the ones `SandboxPaths` defines, inside the repository
+ *  sandbox this run owns. */
+async function relationStores() {
+  const brains = join(".filetopo-sandbox", "variants", variant, "brains");
+  const files = [
+    join(brains, BRAIN, "relations", "relations.sqlite"),
+    join(brains, "interbrain", "relations.sqlite"),
+  ];
+  const state = {};
+  for (const file of files) {
+    const bytes = await readFile(file).catch(() => null);
+    state[relative(brains, file).replaceAll("\\", "/")] =
+      bytes === null ? null : createHash("sha256").update(bytes).digest("hex");
+  }
+  return state;
+}
+
 /* --- the explorer, as the person sees it ----------------------------------------- */
 
 /** Every member row of the open group: its path and the physical fact next to it. */
@@ -356,10 +376,12 @@ check("identical content and same physical object are separate facts, in words",
 });
 
 // -- 3. two distinct empty files: one digest group, two objects, no relation --------------
-// The relation stores' own self-checks are the honest "nothing was created"
-// witness: they count every deterministic, approved and suggested relation.
-const relationsBefore = await invoke("map_relations_self_check", { brainId: BRAIN });
-const crossBefore = await invoke("map_cross_relations_self_check", {});
+// The relation stores themselves are the honest "nothing was created" witness:
+// their bytes, before and after. (`map_relations_self_check` is
+// synthetic-fixture only, so it cannot answer for a REAL_ROOT brain.) A store
+// that does not exist stays absent, which is the strongest answer of all.
+const relationsBefore = await relationStores();
+const crossBefore = relationsBefore;
 await openGroup(emptyDigest);
 const empties = byPath(await readMembers());
 assert.deepEqual(Object.keys(empties).sort(), ["vide-deux.bin", "vide-un.bin"], JSON.stringify(empties));
@@ -367,10 +389,9 @@ for (const path of ["vide-un.bin", "vide-deux.bin"]) {
   assert.equal(empties[path].physicalObject, "PROVEN_SINGLE", `${path} is its own object`);
   assert.equal(empties[path].occurrences, "1");
 }
-const relationsAfter = await invoke("map_relations_self_check", { brainId: BRAIN });
-const crossAfter = await invoke("map_cross_relations_self_check", {});
-assert.deepEqual(relationsAfter, relationsBefore, "no intra-brain relation was created");
-assert.deepEqual(crossAfter, crossBefore, "no inter-brain relation was created");
+const relationsAfter = await relationStores();
+assert.deepEqual(relationsAfter, relationsBefore, "no relation store was created or changed");
+assert.deepEqual(relationsAfter, crossBefore, "neither the brain's nor the inter-brain store moved");
 check("two empty files: identical content, two objects, zero relation", {
   members: Object.keys(empties).sort(), relationsUnchanged: true,
 });
