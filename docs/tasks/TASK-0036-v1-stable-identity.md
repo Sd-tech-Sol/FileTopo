@@ -1,7 +1,12 @@
 # TASK-0036 — V1 Stable Identity Foundation
 
 - Date : 2026-09-11
-- Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`. Détail :
+- Statut : `VERIFIED` dans sa portée le 2026-09-12, par le contrôle indépendant
+  final [`ACTION-0060`](../reviews/ACTION-0060-independent-final-recontrol.md),
+  qui clôt `ACTION-0057`, `ACTION-0058` et `ACTION-0059`. *(Cet en-tête disait
+  encore `IMPLEMENTED`; réconcilié le 2026-10-08 par `TASK-0056` §8, sans
+  toucher au corps de la fiche ni à l'historique des passes correctives
+  ci-dessous.)* Détail :
   [`VALIDATION.md` section BM](../ai/VALIDATION.md). **Passe corrective 1**
   exigée par [`ACTION-0057`](../reviews/ACTION-0057-independent-control.md)
   (D1/D2/D3 + réserve R1), livrée le 2026-09-11 : détail

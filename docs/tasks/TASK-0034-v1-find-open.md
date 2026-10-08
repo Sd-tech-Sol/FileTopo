@@ -1,7 +1,11 @@
 # TASK-0034 — V1 Find & Open
 
 - Date : 2026-09-10
-- Statut : `IMPLEMENTED`, jamais auto-`VERIFIED`. Exécuteur : Claude Code.
+- Statut : `VERIFIED` dans sa portée le 2026-09-11, par le contrôle indépendant
+  [`ACTION-0055`](../reviews/ACTION-0055-independent-recontrol.md), après
+  `ACTION-0052`, `ACTION-0053` et `ACTION-0054`. Exécuteur : Claude Code.
+  *(Cet en-tête disait encore `IMPLEMENTED`; réconcilié le 2026-10-08 par
+  `TASK-0056` §8, sans toucher au corps de la fiche.)*
 - Branche : `build/v0.2-a18-v1-find-open`
 - Prérequis : `TASK-0033 = VERIFIED` par `ACTION-0051`
 - Décisions applicables : `DEC-0031`, `DEC-0033`, `DEC-0034`
