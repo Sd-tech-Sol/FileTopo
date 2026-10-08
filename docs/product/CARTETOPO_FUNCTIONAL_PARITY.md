@@ -465,3 +465,12 @@ Ils sont écrits ici plutôt que corrigés en silence.
 > `P-01 = CLOSED / VERIFIED`; `P-02 = CLOSED / VERIFIED`;
 > `P-03 = CLOSED / VERIFIED`. Les limites déclarées de profondeur,
 > performance de recherche et matériel ne diminuent pas ces critères.
+
+> **Audit final Stage A — ACTION-0105 (2026-10-08).**
+> Après ACTION-0104, aucun gap fonctionnel MVP nommé ne reste ouvert.
+> Les clôtures formelles existantes couvrent P-01..P-04 et P-19..P-21.
+> P-05..P-18 doivent être réconciliées sous leur texte courant avec les preuves
+> indépendantes existantes; P-22 n'a encore aucune clôture et reste bloquante.
+> TASK-0056 est une acceptance pure : elle ne peut modifier aucun code produit.
+> Elle doit produire une campagne finale P-22, une matrice P-01..P-22 et une
+> régression globale capturée.

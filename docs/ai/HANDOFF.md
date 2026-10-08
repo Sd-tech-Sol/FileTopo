@@ -1,5 +1,18 @@
 # HANDOFF — passage de relais
 
+## Relais — ACTION-0105 / TASK-0056 READY — 2026-10-08
+
+- Branche : `build/v0.2-a40-v1-final-parity-acceptance`.
+- Base : ACTION-0104 `446a4e4922f46bf4cdd71dd1aff65f08b5318b9d`.
+- Aucun nouveau développement fonctionnel : TASK-0056 = acceptance/preuves/docs seulement.
+- P-05..P-18 : composer les preuves indépendantes existantes et chercher les vrais sous-critères manquants.
+- P-22 : nouvelle campagne globale non destructive, couverture machine-lisible P-01..P-21.
+- 3 suites Rust complètes capturées; le flake inconnu de TASK-0055 devient un gate.
+- Aucun code produit ne peut changer; sinon STOP/BLOCKED.
+- Agent : Claude Code, Opus 5.5 High.
+- **Faire /clear** avant la tâche.
+- Aucune TASK-0057; ne pas commencer B/C/D.
+
 ## Relais — ACTION-0104 — TASK-0055 / F-046 VERIFIED — 2026-10-08
 
 - Code/runtime vérifié : `e9c67473df2c46ce99926869a6a1f8940eba2d4d`.

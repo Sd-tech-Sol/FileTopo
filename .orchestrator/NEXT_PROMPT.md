@@ -1,144 +1,131 @@
-# NEXT_PROMPT — TASK-0055 corrective after ACTION-0103
+# NEXT_PROMPT — TASK-0056 — Final V1 Parity Acceptance / Stage A Closure
 
 **TARGET_AGENT:** CLAUDE CODE
 **RECOMMENDED_MODEL:** Claude Opus 5.5
 **RECOMMENDED_EFFORT:** High
-**STATUS:** READY — CORRECTIVE
-**BRANCH:** `build/v0.2-a39-v1-physical-identity-closure`
-**CURRENT_REVIEW_HEAD:** `831ba733bd79729314366489f7f09ee78a8dbeb2`
+**STATUS:** READY
+**BRANCH:** `build/v0.2-a40-v1-final-parity-acceptance`
+**BASE:** `446a4e4922f46bf4cdd71dd1aff65f08b5318b9d`
 
-## Session handling
+## Session
 
-If this is the **same Claude Code session** that just completed TASK-0055,
-**do not /clear**. Keep the implementation context; use `/compact` only if
-needed.
+**Fais /clear avant cette tâche.**
 
-If this is a new session, this prompt is self-contained: sync the branch
-fast-forward only and read the files below.
+C'est une nouvelle phase d'acceptance, indépendante de l'implémentation
+TASK-0055. Tout le contexte est versionné.
 
-## Read first
+Synchronise la branche en fast-forward seulement, arbre propre.
 
-1. `AGENTS.md`
-2. `docs/reviews/ACTION-0103-task0055-independent-control.md`
-3. `docs/decisions/DEC-0052-node-vs-physical-identity.md`
-4. `docs/tasks/TASK-0055-v1-physical-identity-closure.md`
-5. `src-tauri/src/map/brain_index.rs::reconstructible_digest`
-6. `src-tauri/src/map/commands.rs::MapBuildReport`
-7. `src-tauri/src/incremental.rs`
-8. `src-tauri/src/identity.rs::pair_group`
+Lis intégralement :
 
-## Corrective A — identity-derived public digest
+1. `AGENTS.md`;
+2. `docs/reviews/ACTION-0105-final-v1-audit-after-action0104.md`;
+3. `docs/tasks/TASK-0056-v1-final-parity-acceptance.md`;
+4. `docs/product/CARTETOPO_FUNCTIONAL_PARITY.md`;
+5. `docs/product/REQUIREMENTS_BASELINE.md`;
+6. `docs/product/FEATURE_MATRIX.md`;
+7. `ROADMAP.md`;
+8. `docs/release-checklist.md`;
+9. ACTION-0104 et les ACTION de clôture citées par la parité.
 
-Independent control found a direct DEC-0052 F violation:
+## Mission
 
-`BrainIndex::reconstructible_digest()` includes `stable_key` and
-`identity_provenance`; the resulting FNV digest is returned in
-`MapBuildReport.reconstructible_digest` through `map_refresh/map_rebuild` IPC.
+Faire une **acceptance**, pas du développement.
 
-DEC-0052 F forbids not only the raw key/FileId/volume but also a **hashed or
-encoded derivative**.
+**Aucun fichier de code produit ne peut être modifié.**
 
-Fix minimally:
+Si un critère ne passe pas, STOP/BLOCKED. Ne le répare pas.
 
-- keep `reconstructibleDigest` only if it becomes independent of all identity
-  material;
-- remove stable_key and identity_provenance from the digest input;
-- preserve the H7 logical/reconstructible purpose using non-sensitive logical
-  fields;
-- do not expose another replacement identity digest;
-- do not weaken F-004 identity internally.
+## 1. Reuse-first
 
-Required discriminating tests:
+Commence par un tableau des harness/preuves existants et réutilise-les.
+Cherche les scenario runners déjà présents avant d'écrire un nouveau grand
+script.
 
-1. compute public reconstructible digest;
-2. change only stable_key / identity_provenance in a test Index;
-3. digest must remain identical;
-4. change one genuine logical reconstructible field;
-5. digest must change.
+La valeur de TASK-0056 est :
+- la composition des preuves;
+- le vrai gate P-22;
+- la régression globale capturée;
+pas une réimplémentation des scénarios historiques.
 
-Also audit repo-wide for any other **hash/encoding/derived value** of SYSTEM
-identity reaching IPC, TypeScript, DOM, logs or artifacts. A grep for raw
-spellings alone is insufficient.
+## 2. Matrice P-01..P-22
 
-## Corrective B — kernel verifies shared alias, not only key
+Construis la matrice exacte demandée par TASK-0056 §3.
 
-The kernel currently accepts `continues=Some(id)` when id has the same
-stable_key and provenance. With a shared SYSTEM key, that is not enough:
-alias A and alias B have the same key.
+Pour P-05..P-18, pars des tâches/actions VERIFIED, puis vérifie chaque
+sous-critère du texte courant. Une fonction « IMPLEMENTED » ne suffit jamais.
 
-Strengthen the kernel boundary so it independently refuses an invented
-correlation.
+Ne marque aucune P CLOSED toi-même.
 
-Preserve D1:
-- one stored occurrence + one observed occurrence may change path and keep id.
+## 3. P-22
 
-For a shared group:
-- if the stored key has multiple occurrences **or** the batch contains multiple
-  observed occurrences of that SYSTEM key, any `continues=Some(id)` must
-  continue the stored occurrence at the exact same relative_path;
-- otherwise refuse;
-- never infer by name/order/date/size.
+Construis une campagne Tauri/WebView2 réelle sur source synthétique temporaire.
 
-Add the missing falsification:
-- stored A and B share one SYSTEM key;
-- observed B claims `continues=id(A)`;
-- the kernel must reject it.
+Prends l'empreinte externe complète **avant** la fenêtre P-22, puis exerce
+P-01..P-21 par de vrais gestes/runtime et reprends exactement la même empreinte
+après.
 
-Do not duplicate pair_group policy in producers; this is only a verification
-guard at the trust boundary.
+La couverture P-01..P-21 doit être machine-lisible : une ligne par P, avec la
+preuve/observation de cette campagne et, lorsque le critère lourd vient d'une
+campagne historique, la référence canonique correspondante.
 
-## Scope
+Inclure l'indisponibilité temporaire et retour sans suppression massive.
 
-Do **not** redesign TASK-0055.
+Aucun chemin personnel dans l'artefact.
 
-Do not change:
-- migration 6→7 unless a regression demands it;
-- SHA-256 model;
-- ExactDuplicateExplorer semantics;
-- relation engine;
-- Cloud Files policy;
-- dependencies.
+## 4. Le flake TASK-0055 devient un gate
 
-No TASK-0056.
+Exécute **3 fois consécutivement** :
 
-## Revalidation
+`cargo test --lib --offline`
 
-Run:
+au même HEAD, avec sortie capturée.
 
-- targeted tests for the two fixes;
-- identity/index/reconcile/scope/incremental tests;
-- physical_identity_tests;
-- `cargo test --lib --offline`;
-- frontend targeted + relevant/full suite;
-- `pnpm check`;
-- `pnpm build`;
-- `pnpm tauri build --debug --no-bundle`;
-- TASK-0055 WebView2 replay, two processes;
-- axe;
-- `git diff --check`;
-- public-readiness.
+Pour chaque run, publie dans l'artefact :
+- exit code;
+- counts;
+- failed test names;
+- hash du log;
+- durée.
 
-Regenerate `docs/performance/runs/TASK-0055-webview2.json` against the corrected
-HEAD. Confirm no product code changes after the HEAD tested by the final
-artifact.
+Si un run échoue : STOP/BLOCKED jusqu'à diagnostic exact. Pas de « probablement
+flake ».
 
-## Documentation / finish
+Ne committe pas des logs gigantesques; garde les logs de travail hors repo et
+publie un résumé déterministe + hash + extraits d'échec s'il y en a.
 
-Update:
+## 5. Autres validations
 
-- TASK-0055 with a corrective section;
-- VALIDATION;
-- CURRENT_STATE;
-- HANDOFF;
-- CHANGELOG_AI;
-- NEXT_ACTION;
-- .orchestrator/RESULT.md.
+- frontend complet;
+- pnpm check;
+- pnpm build;
+- Tauri debug;
+- axe sur campagne finale;
+- git diff --check;
+- audit public readiness.
 
-Status at finish:
-- TASK-0055 = IMPLEMENTED / candidate;
-- F-046 = IMPLEMENTED / candidate;
-- never self-VERIFIED;
-- NEXT_ACTION = independent re-control;
-- no TASK-0056.
+Si une CI distante existe, distingue-la des runs locaux. N'en invente pas.
 
-Commit and push the branch, clean tree, then STOP.
+## 6. Diff purity
+
+Avant le commit final, prouve que depuis la base de TASK-0056 aucun fichier de
+production n'a changé.
+
+Si un fichier produit a changé, TASK-0056 est invalide : STOP.
+
+## 7. Gouvernance
+
+PASS :
+- TASK-0056 IMPLEMENTED / candidate;
+- P-05..P-18/P-22 candidates;
+- Stage A candidate CLOSED;
+- aucune TASK-0057;
+- NEXT_ACTION contrôle indépendant ChatGPT.
+
+FAIL :
+- TASK-0056 BLOCKED;
+- Stage A EN COURS;
+- rapport exact;
+- aucune correction produit.
+
+Ne commence ni B, ni C, ni D.

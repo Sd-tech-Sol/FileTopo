@@ -1,5 +1,15 @@
 # État courant
 
+## ACTION-0105 — audit V1 final / TASK-0056 READY — 2026-10-08
+
+- Base : `446a4e4922f46bf4cdd71dd1aff65f08b5318b9d` après ACTION-0104.
+- `TASK-0055 / F-046 = VERIFIED`; aucun gap fonctionnel MVP nommé ne reste ouvert.
+- Étape A du ROADMAP n'est pas encore fermable : P-05..P-18 doivent être réconciliées formellement et P-22 n'a aucune clôture.
+- TASK-0056 sélectionnée comme acceptance pure : aucune modification de code produit permise.
+- Gate final : 3 suites Rust complètes consécutives avec sorties capturées; tout échec non expliqué bloque.
+- P-22 : vraie campagne Tauri/WebView2, source synthétique temporaire, couverture P-01..P-21 et empreinte source strictement identique avant/après.
+- B/C/D restent hors portée. Aucune TASK-0057.
+
 ## ACTION-0104 — TASK-0055 / F-046 VERIFIED — 2026-10-08
 
 - Corrected code/runtime controlled: `e9c67473df2c46ce99926869a6a1f8940eba2d4d`.

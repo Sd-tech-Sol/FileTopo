@@ -1,19 +1,30 @@
 # Action suivante
 
-## Audit V1 final après ACTION-0104
+## Exécuter TASK-0056 — Final V1 Parity Acceptance
 
-Branche : `build/v0.2-a39-v1-physical-identity-closure`.
+Branche : `build/v0.2-a40-v1-final-parity-acceptance`.
 
-Tous les gaps fonctionnels MVP nommés par les audits récents sont maintenant
-fermés, y compris `F-046`.
+Tâche :
+`docs/tasks/TASK-0056-v1-final-parity-acceptance.md`.
 
-Avant toute nouvelle fonctionnalité :
-1. réconcilier les 52 fonctions avec leurs contrôles indépendants;
-2. réconcilier P-01..P-22 avec les preuves existantes;
-3. identifier les seules acceptances finales réellement non fermées;
-4. traiter explicitement `P-22`, invariant bloquant de lecture seule;
-5. transformer l'instabilité Rust non attribuée de TASK-0055 en gate de
-   validation globale avec sorties capturées;
-6. distinguer V1 produit terminée de signature/publication humaine.
+Audit :
+`docs/reviews/ACTION-0105-final-v1-audit-after-action0104.md`.
 
-Aucun agent d'exécution avant cet audit.
+Prompt :
+`.orchestrator/NEXT_PROMPT.md`.
+
+Agent recommandé : **Claude Code — Claude Opus 5.5 — High**.
+
+**Faire `/clear` avant cette tâche.**
+
+Instruction :
+
+> Synchronise `build/v0.2-a40-v1-final-parity-acceptance` en fast-forward
+> seulement, puis lis et exécute intégralement `.orchestrator/NEXT_PROMPT.md`.
+
+C'est une acceptance pure. Aucun fichier de code produit ne doit changer.
+
+PASS => Stage A candidate CLOSED, puis contrôle indépendant ChatGPT.
+FAIL => TASK-0056 BLOCKED, gap exact, aucune corrective dans la même tâche.
+
+Aucune TASK-0057. Ne commence ni B, ni C, ni D.
