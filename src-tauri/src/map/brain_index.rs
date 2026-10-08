@@ -758,23 +758,40 @@ impl BrainIndex {
             next_cursor,
         })
     }
+    /// `H7`'s inter-generation proof: what a rebuild from the source must
+    /// reproduce, as one public digest.
+    ///
+    /// **It carries no identity material at all** — `DEC-0052` F forbids the
+    /// WebView to receive a stable key, a `VolumeSerialNumber`, a `FileId`
+    /// *or any hash or encoding derived from them*, and this digest crosses IPC
+    /// inside `MapBuildReport`. Before `ACTION-0103` it digested `stable_key`
+    /// and `identity_provenance`, so its bytes were influenced by the Windows
+    /// physical identity of the analysed files; both are now absent, and no
+    /// replacement identity digest is published in their place.
+    ///
+    /// What remains is logical and source-derived only: path, parentage by the
+    /// parent's relative path, name, kind, depth, size, timestamp, the two
+    /// placeholder flags, the child count and the access diagnostic. No row id
+    /// or parent id enters the bytes. Rows are ordered by **every** field that
+    /// is digested, so the result is a function of the multiset of logical rows
+    /// alone, independent of allocation order and of anything not digested.
+    /// View geometry, revision and the rest of the explicitly
+    /// non-reconstructible state are deliberately absent.
+    ///
+    /// Identity is proven separately and internally (`F-004`), which this
+    /// change does not weaken: nothing here is read by the identity paths.
     pub fn reconstructible_digest(&self) -> Result<String, MapError> {
-        // Inter-generation logical proof: no row id or parent id enters the
-        // bytes. Parentage is represented by the parent's relative path, and
-        // rows are ordered by logical fields rather than allocation order.
-        // View geometry, revision and other explicitly non-reconstructible
-        // state are deliberately absent.
         let mut bytes = Vec::new();
         let mut statement = self.index.connection.prepare(
             "SELECT n.relative_path, p.relative_path, n.name, n.kind, n.depth,
                     n.size_bytes, n.modified_unix_ms, n.online_only,
-                    n.reparse_point, n.child_count, d.code, n.stable_key,
-                    n.identity_provenance
+                    n.reparse_point, n.child_count, d.code
              FROM nodes n
              LEFT JOIN nodes p ON p.id = n.parent_id
              LEFT JOIN node_diagnostics d ON d.relative_path = n.relative_path
-             ORDER BY n.relative_path, n.kind, n.name,
-                      COALESCE(n.stable_key, ''), COALESCE(n.identity_provenance, '')",
+             ORDER BY n.relative_path, p.relative_path, n.name, n.kind,
+                      n.depth, n.size_bytes, n.modified_unix_ms, n.online_only,
+                      n.reparse_point, n.child_count, COALESCE(d.code, '')",
         )?;
         let mut rows = statement.query([])?;
         while let Some(row) = rows.next()? {
@@ -789,8 +806,6 @@ impl BrainIndex {
             let reparse_point: bool = row.get(8)?;
             let child_count: i64 = row.get(9)?;
             let diagnostic: Option<String> = row.get(10)?;
-            let stable_key: Option<String> = row.get(11)?;
-            let provenance: Option<String> = row.get(12)?;
 
             push_digest_field(&mut bytes, relative_path.as_bytes());
             match parent_path {
@@ -815,8 +830,6 @@ impl BrainIndex {
             bytes.push(u8::from(reparse_point));
             bytes.extend_from_slice(&child_count.to_le_bytes());
             push_digest_field(&mut bytes, diagnostic.as_deref().unwrap_or("").as_bytes());
-            push_digest_field(&mut bytes, stable_key.as_deref().unwrap_or("").as_bytes());
-            push_digest_field(&mut bytes, provenance.as_deref().unwrap_or("").as_bytes());
         }
         Ok(format!("fnv1a64:{:016x}", fnv1a64(&bytes)))
     }

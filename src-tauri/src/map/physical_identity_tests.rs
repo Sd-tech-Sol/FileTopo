@@ -96,6 +96,13 @@ fn classify(fx: &Fx, relative: &str) -> (PhysicalObjectIdentity, Option<usize>) 
 /// content campaign.
 fn duplicate_members(paths: &SandboxPaths, brain: &BrainRecord) -> Vec<ExactDuplicateMember> {
     observe_content(paths, brain).expect("content campaign");
+    served_members(paths, brain)
+}
+
+/// The same page, **read only** — what the explorer receives when it opens on an
+/// Index whose content campaign already ran. No second campaign, so the
+/// campaign's own `observedAtUnixMs` and `generationId` are the stored ones.
+fn served_members(paths: &SandboxPaths, brain: &BrainRecord) -> Vec<ExactDuplicateMember> {
     let summary = exact_duplicate_summary(paths, brain).expect("summary");
     assert!(summary.exact_group_count >= 1, "{summary:?}");
     let groups = exact_duplicate_groups(paths, brain, 0, 100).expect("groups");
@@ -591,6 +598,217 @@ fn the_duplicate_dto_names_no_identity_field_in_source() {
     assert!(
         fields.contains("physical_object: PhysicalObjectIdentity"),
         "it carries the closed classification instead: {fields}"
+    );
+}
+
+// ==========================================================================
+// `ACTION-0103` A — no **derivative** of the physical identity reaches the
+// product either
+// ==========================================================================
+//
+// The audits above search the serialised payload for the key and its halves.
+// Independent control showed what that technique cannot see: a *digest* of the
+// identity contains none of those strings. `BrainIndex::reconstructible_digest`
+// fed `stable_key` and `identity_provenance` into its bytes and the result
+// crossed IPC as `MapBuildReport.reconstructible_digest`, so a public value was
+// influenced by the Windows physical identity of the analysed files. `DEC-0052`
+// F forbids exactly that — the raw values *and* any hash or encoding of them.
+//
+// The three tests below are influence tests, not substring tests: they change
+// the identity material and require the public value not to move.
+
+/// The public digest of a path, as `MapBuildReport` publishes it.
+fn public_digest(fx: &Fx) -> String {
+    open_store(&fx.paths, &fx.brain)
+        .expect("open")
+        .reconstructible_digest()
+        .expect("digest")
+}
+
+/// The required discriminating test, in its five steps: the public digest must
+/// be **blind** to identity material and **sensitive** to the logical tree it
+/// exists to prove (`H7`).
+#[test]
+#[cfg(windows)]
+fn the_public_reconstructible_digest_ignores_identity_and_follows_the_logical_tree() {
+    let fx = Fx::with_tree("racine-digest", fixture);
+    let before = public_digest(&fx);
+
+    // 2 and 3. Only the identity material changes — to the most extreme value a
+    // test can write, one key for every row and a provenance the product would
+    // never put on a Windows file. The digest may not move by one bit.
+    force(&fx, "UPDATE nodes SET stable_key = 'SYS1:0:0'");
+    assert_eq!(
+        public_digest(&fx),
+        before,
+        "the public digest must not see a stable key"
+    );
+    force(
+        &fx,
+        "UPDATE nodes SET identity_provenance = 'PATH_FALLBACK'",
+    );
+    assert_eq!(public_digest(&fx), before, "nor a provenance");
+    force(
+        &fx,
+        "UPDATE nodes SET stable_key = NULL, identity_provenance = NULL",
+    );
+    assert_eq!(public_digest(&fx), before, "nor the absence of both");
+
+    // 4 and 5. A genuine reconstructible field moves it, otherwise the digest
+    // would prove nothing at all.
+    force(
+        &fx,
+        "UPDATE nodes SET size_bytes = size_bytes + 1 WHERE relative_path = 'a.bin'",
+    );
+    let after_size = public_digest(&fx);
+    assert_ne!(after_size, before, "a size is reconstructible");
+    force(
+        &fx,
+        "UPDATE nodes SET relative_path = 'a-renomme.bin', name = 'a-renomme.bin' \
+         WHERE relative_path = 'a.bin'",
+    );
+    assert_ne!(public_digest(&fx), after_size, "so is a path");
+}
+
+/// The generalised leak audit: relabel every physical identity **injectively**.
+/// The sharing structure is untouched — the two hard links still share one key,
+/// the copy still has its own — so the closed classification `DEC-0052` G does
+/// allow in the DTO is unchanged by construction, and *everything else the
+/// product publishes must be byte-identical*. Any value derived from the
+/// identity, by hash, encoding or ordering, moves here even though no forbidden
+/// string ever appears.
+#[test]
+#[cfg(windows)]
+fn an_injective_relabelling_of_the_physical_identities_changes_nothing_public() {
+    let fx = Fx::with_tree("racine-relabel", fixture);
+    let members_before = serde_json::to_string(&duplicate_members(&fx.paths, &fx.brain))
+        .expect("serialize the page");
+    let digest_before = public_digest(&fx);
+    let (shared_before, _) = stored_identity(&fx, "a.bin");
+
+    // `hex()` of the stored key: a different value for every different key, the
+    // same value for equal keys. The relabelling is therefore injective and
+    // preserves which occurrences share an object.
+    force(
+        &fx,
+        "UPDATE nodes SET stable_key = 'SYS1:relabel:' || hex(stable_key)",
+    );
+    let (shared_after, _) = stored_identity(&fx, "a.bin");
+    assert_ne!(shared_before, shared_after, "the identities really changed");
+    assert_eq!(
+        stored_identity(&fx, "b-hardlink.bin").0,
+        shared_after,
+        "and the two hard links still share one object"
+    );
+
+    assert_eq!(
+        public_digest(&fx),
+        digest_before,
+        "the public digest is not a function of the identities"
+    );
+    assert_eq!(
+        serde_json::to_string(&served_members(&fx.paths, &fx.brain)).expect("serialize the page"),
+        members_before,
+        "nor is any byte of the duplicate page"
+    );
+}
+
+/// The structural half of the audit, repo-wide. A payload scan cannot see a
+/// hash, so what is pinned here is **which production files may read identity
+/// material at all**: the privileged core that computes, stores and correlates
+/// it. A new reader anywhere else — including one that only hashes the value —
+/// fails this test and has to be looked at.
+#[test]
+fn only_the_privileged_core_reads_identity_material_in_production() {
+    /// Each file, and why it is allowed to see a stable key or a provenance.
+    const PRIVILEGED: [(&str, &str); 8] = [
+        (
+            "identity.rs",
+            "computes the identity and owns the pairing rule",
+        ),
+        ("index.rs", "stores it and classifies the physical object"),
+        ("incremental.rs", "verifies the producer's pairing"),
+        ("reconcile.rs", "producer: full-scan pairing"),
+        ("scope.rs", "producer: W-B pairing"),
+        ("scanner.rs", "carries it from the OS to the publication"),
+        (
+            "change_journal.rs",
+            "tests `stable_key IS NULL`, never the value",
+        ),
+        (
+            "watch_ops.rs",
+            "compares the root's own key, returns a closed reason",
+        ),
+    ];
+    // The benchmark is a `#[cfg(feature = "bench")]` harness, not a product path.
+    const NOT_PRODUCT: [&str; 1] = ["incremental_bench.rs"];
+
+    let mut offenders = Vec::new();
+    let mut seen = BTreeSet::new();
+    let root = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+    let mut stack = vec![root.clone()];
+    while let Some(directory) = stack.pop() {
+        let mut entries = fs::read_dir(&directory)
+            .expect("read the crate source")
+            .map(|entry| entry.expect("source entry").path())
+            .collect::<Vec<_>>();
+        entries.sort();
+        for path in entries {
+            if path.is_dir() {
+                stack.push(path);
+                continue;
+            }
+            let name = path
+                .file_name()
+                .and_then(|name| name.to_str())
+                .unwrap_or_default()
+                .to_string();
+            // Tests are not the product surface, and `#[cfg(test)]` code never
+            // ships: this audit is about what a release binary can read.
+            if !name.ends_with(".rs")
+                || name.ends_with("_tests.rs")
+                || NOT_PRODUCT.contains(&name.as_str())
+            {
+                continue;
+            }
+            let source = fs::read_to_string(&path).expect("read a source file");
+            let production = source
+                .split_once("mod tests {")
+                .map_or(source.as_str(), |(before, _)| before)
+                .lines()
+                // A comment may name what a module deliberately does not read —
+                // `brain_index.rs` documents this very corrective — so only code
+                // counts.
+                .filter(|line| {
+                    let trimmed = line.trim_start();
+                    !trimmed.starts_with("//") && !trimmed.starts_with("*")
+                })
+                .collect::<Vec<_>>()
+                .join("\n");
+            if production.contains("stable_key") || production.contains("identity_provenance") {
+                seen.insert(name.clone());
+                if !PRIVILEGED.iter().any(|(allowed, _)| *allowed == name) {
+                    offenders.push(name);
+                }
+            }
+        }
+    }
+
+    assert!(
+        offenders.is_empty(),
+        "these files read identity material and are not declared privileged: {offenders:?}"
+    );
+    // And the list does not rot: every declared file must still be a reader.
+    for (allowed, why) in PRIVILEGED {
+        assert!(
+            seen.contains(allowed),
+            "{allowed} no longer reads identity material ({why}); remove it from the list"
+        );
+    }
+    // The one that must not come back.
+    assert!(
+        !seen.contains("brain_index.rs"),
+        "`ACTION-0103` A: the public digest's module must not read identity material again"
     );
 }
 
