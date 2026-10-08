@@ -11,7 +11,9 @@
 - **Contrat de référence :** [CARTETOPO_FUNCTIONAL_PARITY.md](CARTETOPO_FUNCTIONAL_PARITY.md)
 - **Nature :** acceptance — composition de preuves existantes plus une campagne runtime finale; aucun code produit modifié
 - **Preuve runtime finale :** `docs/performance/runs/TASK-0056-p22-webview2.json`
-- **Verdict d'ensemble de TASK-0056 :** **SATISFIED** — aucun sous-critère nommé sans preuve
+- **Verdict d'ensemble de TASK-0056 :** **GAP** — manques : P-04, P-05, P-07
+
+> **Constat d'ensemble.** Un gap produit a été trouvé pendant l'exercice de P-01..P-21 : la surface des relations (`P-04`, `P-05`, `P-07`) est inatteignable sur un cerveau `REAL_ROOT`. Conformément à TASK-0056 §9 et à ACTION-0105 §5, la tâche s'arrête : `TASK-0056 = BLOCKED`, étape A `EN COURS`, aucune correction produit. Tout le reste de l'acceptance est livré : la matrice, le gate de régression Rust à sorties capturées (3/3 vertes), la campagne finale P-22 (empreinte source strictement identique sur quatre racines) et la pureté du diff.
 
 > **Autorité.** Cette matrice ne ferme AUCUNE exigence. L'exécuteur ne s'attribue pas VERIFIED : chaque verdict ci-dessous est au mieux une candidature au contrôle indépendant.
 
@@ -34,10 +36,10 @@ La campagne finale P-22. Son tableau `coverage` porte une ligne par exigence P-0
 | `P-01` | Carte construite depuis l'arborescence réelle (amendée par P-SCALE-R1) | `F-001`, `F-003`, `F-006`, `F-007`, `F-050`, `F-051` | `CLOSED/VERIFIED` | ACTION-0101 (2026-10-07) | **SATISFIED** |
 | `P-02` | Hiérarchie lisible et non ambiguë (corrigée par P02-R1, amendée par P-SCALE-R1) | `F-007`, `F-008`, `F-042`, `F-050`, `F-051` | `CLOSED/VERIFIED` | ACTION-0101 (2026-10-07) | **SATISFIED** |
 | `P-03` | Parent et enfants directs (amendée par P-SCALE-R1) | `F-016`, `F-050`, `F-051` | `CLOSED/VERIFIED` | ACTION-0101 (2026-10-07) | **SATISFIED** |
-| `P-04` | Relations transversales explicites, avec provenance | `F-017` | `CLOSED/VERIFIED` | ACTION-0094 (2026-10-05) | **SATISFIED** |
-| `P-05` | Relations entrantes et sortantes distinguées | `F-019` | `CANDIDATE` | — | **SATISFIED** |
+| `P-04` | Relations transversales explicites, avec provenance | `F-017` | `CLOSED/VERIFIED` | ACTION-0094 (2026-10-05) | **GAP** |
+| `P-05` | Relations entrantes et sortantes distinguées | `F-019` | `CANDIDATE` | — | **GAP** |
 | `P-06` | Sélection, accentuation des liés, atténuation du reste | `F-015`, `F-018` | `CANDIDATE` | — | **SATISFIED** |
-| `P-07` | Panneau des relations | `F-016`, `F-017`, `F-019` | `CANDIDATE` | — | **SATISFIED** |
+| `P-07` | Panneau des relations | `F-016`, `F-017`, `F-019` | `CANDIDATE` | — | **GAP** |
 | `P-08` | Recherche | `F-020` | `CANDIDATE` | — | **SATISFIED** |
 | `P-09` | Filtres | `F-022` | `CANDIDATE` | — | **SATISFIED** |
 | `P-10` | Légende | `F-014` | `CANDIDATE` | — | **SATISFIED** |
@@ -89,6 +91,10 @@ La campagne finale P-22. Son tableau `coverage` porte une ligne par exigence P-0
 - les chiffres d'échelle viennent d'un banc de développement; réserve R8 en vigueur, aucune performance publiée
 - une profondeur de focus supérieure à 256 est refusée proprement et déclarée
 
+**Preuve runtime de la campagne finale :**
+
+- *(phase 1)* the map was built from the real tree alone; the Index equals the disk element for element, and a row absent from the bounded first view was reached by two real gestures (type, click)
+
 ### `P-02` — Hiérarchie lisible et non ambiguë (corrigée par P02-R1, amendée par P-SCALE-R1)
 
 - **Fonctions propriétaires :** `F-007`, `F-008`, `F-042`, `F-050`, `F-051`
@@ -123,6 +129,11 @@ La campagne finale P-22. Son tableau `coverage` porte une ligne par exigence P-0
 - aucun algorithme de disposition n'est imposé par le contrat et aucun n'est jugé ici
 - la dernière page d'un agrégat reboucle sur la première : déclaré depuis TASK-0054
 
+**Preuve runtime de la campagne finale :**
+
+- *(phase 1)* on the view the brain opens with, every drawn node is a real element of the source, its parent and its direct-children count equal the disk, every hierarchy edge on screen has a real parent/child counterpart, and every card carries its label
+- *(phase 1)* a real Enter on the aggregate paged every real child of the wide folder exactly once; the label is the exact count of what the page does not show, it is a tree item and no path resolves to it
+
 ### `P-03` — Parent et enfants directs (amendée par P-SCALE-R1)
 
 - **Fonctions propriétaires :** `F-016`, `F-050`, `F-051`
@@ -148,12 +159,18 @@ La campagne finale P-22. Son tableau `coverage` porte une ligne par exigence P-0
 
 - le total annoncé vient de la colonne durable `child_count`, jamais d'un COUNT(*) : c'est une propriété de l'index, contrôlée comme telle
 
+**Preuve runtime de la campagne finale :**
+
+- *(phase 1)* the details panel announced the exact total of direct children and paged through all of them without losing one; not a single grandchild appeared; the parent and a child were reached with real arrow keys on the canvas
+
 ### `P-04` — Relations transversales explicites, avec provenance
 
 - **Fonctions propriétaires :** `F-017`
 - **État courant :** `CLOSED/VERIFIED`, fermée par **ACTION-0094 (2026-10-05)**
-- **Verdict de TASK-0056 :** **SATISFIED**
-- **Régression postérieure à la clôture :** aucune. La campagne finale a produit une relation déterministe et une suggestion dans le vrai moteur, lu leur provenance à l'écran et réexercé les refus du modèle.
+- **Verdict de TASK-0056 :** **GAP**
+- **Régression postérieure à la clôture :** La clôture `ACTION-0094` repose sur des preuves prises sur cerveaux synthétiques; la campagne finale montre que la surface refuse sur une racine réelle. TASK-0056 ne révoque aucune clôture — l'exécuteur n'en a pas l'autorité — et rapporte que cette clôture **ne couvre pas** une racine réelle. L'arbitrage appartient au contrôle indépendant.
+
+> **Manque.** GAP TROUVÉ PAR LA CAMPAGNE FINALE, rapporté et non corrigé. Sur un cerveau dont la source est un **vrai dossier**, les trois lectures dont la surface des relations a besoin — `map_relations_open`, `map_relations_for_node` et `map_relations_review_queue` — passent toutes par `BrainRecord::source_fixture()` (`src-tauri/src/map/brains.rs`), qui refuse un `REAL_ROOT` avec `map_source_not_synthetic`. Le panneau des relations rend donc sa forme « indisponible » : aucune provenance, aucune direction, aucune suggestion, aucune file de révision. Le moteur lui-même est générique — `map_relation_engine_run` et `map_relation_engine_status` répondent sur le même cerveau — mais rien ne peut lire ce qu'il produit. Or, depuis `DEC-0033` A, **une racine réelle est la seule façon dont l'arborescence d'une personne entre dans FileTopo**; les cerveaux synthétiques figés sont déclarés « diagnostic de développeur ». L'exigence est donc **inatteignable pour les données de l'utilisateur**, ce que le contrat §3 règle 2 assimile à sa suppression. Contre-argument, écrit pour que l'arbitre l'ait : le contrat dit qu'un critère est **vérifiable sur fixtures synthétiques** (§1.2, §9), et la campagne l'a effectivement vérifié là. Ce qui tranche, à notre lecture, est §1.1 point 3 — généraliser à **n'importe quelle** arborescence — plus le fait que le code et `ACTION-0040`/`ACTION-0041` déclarent eux-mêmes l'intention inverse : « `source_spec()` valide la source de n'importe quel cerveau ». L'écart est donc entre l'intention décidée et l'implémentation, pas une portée assumée. **Aucun correctif n'est appliqué par TASK-0056** (§9). Preuve : `docs/performance/runs/TASK-0056-p22-webview2.json`, champ `productGaps`.
 
 **Sous-critères du texte courant, un par un :**
 
@@ -175,12 +192,19 @@ La campagne finale P-22. Son tableau `coverage` porte une ligne par exigence P-0
 **Limites, écrites plutôt que corrigées en silence :**
 
 - les relations DETERMINISTIC ne sont pas révocables par ce geste : elles disparaissent quand la règle ne les produit plus. Déclaré par ACTION-0094
+- Exercée dans la campagne finale sur un cerveau `SYNTHETIC_FIXTURE`, le seul genre de source sur lequel la surface répond. Sur une racine réelle, elle refuse — voir le champ `gap`.
+
+**Preuve runtime de la campagne finale :**
+
+- *(phase 1)* on the brain where the surface answers, a content campaign then a real « Analyser » produced established relations whose type and provenance are on screen in words and glyphs (never colour alone); a suggestion was shown as a distinct, explained object with its own state, was never a provenance of an established relation, and the model's own refusals were re-exercised. On a REAL_ROOT brain the same surface refuses: see `productGaps`
 
 ### `P-05` — Relations entrantes et sortantes distinguées
 
 - **Fonctions propriétaires :** `F-019`
 - **État courant :** `CANDIDATE`
-- **Verdict de TASK-0056 :** **SATISFIED**
+- **Verdict de TASK-0056 :** **GAP**
+
+> **Manque.** GAP TROUVÉ PAR LA CAMPAGNE FINALE, rapporté et non corrigé. Sur un cerveau dont la source est un **vrai dossier**, les trois lectures dont la surface des relations a besoin — `map_relations_open`, `map_relations_for_node` et `map_relations_review_queue` — passent toutes par `BrainRecord::source_fixture()` (`src-tauri/src/map/brains.rs`), qui refuse un `REAL_ROOT` avec `map_source_not_synthetic`. Le panneau des relations rend donc sa forme « indisponible » : aucune provenance, aucune direction, aucune suggestion, aucune file de révision. Le moteur lui-même est générique — `map_relation_engine_run` et `map_relation_engine_status` répondent sur le même cerveau — mais rien ne peut lire ce qu'il produit. Or, depuis `DEC-0033` A, **une racine réelle est la seule façon dont l'arborescence d'une personne entre dans FileTopo**; les cerveaux synthétiques figés sont déclarés « diagnostic de développeur ». L'exigence est donc **inatteignable pour les données de l'utilisateur**, ce que le contrat §3 règle 2 assimile à sa suppression. Contre-argument, écrit pour que l'arbitre l'ait : le contrat dit qu'un critère est **vérifiable sur fixtures synthétiques** (§1.2, §9), et la campagne l'a effectivement vérifié là. Ce qui tranche, à notre lecture, est §1.1 point 3 — généraliser à **n'importe quelle** arborescence — plus le fait que le code et `ACTION-0040`/`ACTION-0041` déclarent eux-mêmes l'intention inverse : « `source_spec()` valide la source de n'importe quel cerveau ». L'écart est donc entre l'intention décidée et l'implémentation, pas une portée assumée. **Aucun correctif n'est appliqué par TASK-0056** (§9). Preuve : `docs/performance/runs/TASK-0056-p22-webview2.json`, champ `productGaps`.
 
 **Sous-critères du texte courant, un par un :**
 
@@ -199,6 +223,11 @@ La campagne finale P-22. Son tableau `coverage` porte une ligne par exigence P-0
 **Limites, écrites plutôt que corrigées en silence :**
 
 - une suggestion n'entre dans aucun compte : c'est le contrat, pas une limite, mais il faut le lire ainsi quand on compare un total à l'écran
+- Exercée dans la campagne finale sur un cerveau `SYNTHETIC_FIXTURE`, le seul genre de source sur lequel la surface répond. Sur une racine réelle, elle refuse — voir le champ `gap`.
+
+**Preuve runtime de la campagne finale :**
+
+- *(phase 1)* the incoming and outgoing counts shown by the PANEL and drawn on the MAP both equal the Index's for the same node; the direction is carried by a glyph, a heading and a filled arrow head rather than by colour; and approving a suggestion with the real keyboard added exactly one established relation — outgoing on its source and incoming on its target. On a REAL_ROOT brain these counts cannot be read at all: see `productGaps`
 
 ### `P-06` — Sélection, accentuation des liés, atténuation du reste
 
@@ -225,11 +254,17 @@ La campagne finale P-22. Son tableau `coverage` porte une ligne par exigence P-0
 
 - l'accentuation porte sur le voisinage hiérarchique et les relations du nœud; elle ne prétend pas accentuer un voisinage transitif
 
+**Preuve runtime de la campagne finale :**
+
+- *(phase 1)* the same element was selected with the mouse and with the keyboard, the canvas and the semantic tree name the same node, the emphasised and dimmed states are named tokens rather than colours, nothing dimmed is erased or unreachable, and no Index value moved
+
 ### `P-07` — Panneau des relations
 
 - **Fonctions propriétaires :** `F-016`, `F-017`, `F-019`
 - **État courant :** `CANDIDATE`
-- **Verdict de TASK-0056 :** **SATISFIED**
+- **Verdict de TASK-0056 :** **GAP**
+
+> **Manque.** GAP TROUVÉ PAR LA CAMPAGNE FINALE, rapporté et non corrigé. Sur un cerveau dont la source est un **vrai dossier**, les trois lectures dont la surface des relations a besoin — `map_relations_open`, `map_relations_for_node` et `map_relations_review_queue` — passent toutes par `BrainRecord::source_fixture()` (`src-tauri/src/map/brains.rs`), qui refuse un `REAL_ROOT` avec `map_source_not_synthetic`. Le panneau des relations rend donc sa forme « indisponible » : aucune provenance, aucune direction, aucune suggestion, aucune file de révision. Le moteur lui-même est générique — `map_relation_engine_run` et `map_relation_engine_status` répondent sur le même cerveau — mais rien ne peut lire ce qu'il produit. Or, depuis `DEC-0033` A, **une racine réelle est la seule façon dont l'arborescence d'une personne entre dans FileTopo**; les cerveaux synthétiques figés sont déclarés « diagnostic de développeur ». L'exigence est donc **inatteignable pour les données de l'utilisateur**, ce que le contrat §3 règle 2 assimile à sa suppression. Contre-argument, écrit pour que l'arbitre l'ait : le contrat dit qu'un critère est **vérifiable sur fixtures synthétiques** (§1.2, §9), et la campagne l'a effectivement vérifié là. Ce qui tranche, à notre lecture, est §1.1 point 3 — généraliser à **n'importe quelle** arborescence — plus le fait que le code et `ACTION-0040`/`ACTION-0041` déclarent eux-mêmes l'intention inverse : « `source_spec()` valide la source de n'importe quel cerveau ». L'écart est donc entre l'intention décidée et l'implémentation, pas une portée assumée. **Aucun correctif n'est appliqué par TASK-0056** (§9). Preuve : `docs/performance/runs/TASK-0056-p22-webview2.json`, champ `productGaps`.
 
 **Sous-critères du texte courant, un par un :**
 
@@ -251,6 +286,11 @@ La campagne finale P-22. Son tableau `coverage` porte une ligne par exigence P-0
 **Limites, écrites plutôt que corrigées en silence :**
 
 - TASK-0017 avait déclaré que l'activation au clavier d'une entrée de panneau n'avait pas été jouée par une frappe de confiance. La campagne finale la joue avec un vrai `Input.dispatchKeyEvent` : la limite historique est levée par observation, pas par déclaration
+- Exercée dans la campagne finale sur un cerveau `SYNTHETIC_FIXTURE`, le seul genre de source sur lequel la surface répond. Sur une racine réelle, elle refuse — voir le champ `gap`.
+
+**Preuve runtime de la campagne finale :**
+
+- *(phase 1)* the relations panel lists the selected element's relations grouped by nature and direction, each entry carrying its type, direction and provenance and a control that leads to the element it names. On a REAL_ROOT brain the panel renders its « unavailable » form instead: see `productGaps`
 
 ### `P-08` — Recherche
 
@@ -277,6 +317,10 @@ La campagne finale P-22. Son tableau `coverage` porte une ligne par exigence P-0
 
 - la recherche backend reste proportionnelle au corpus : déclaré par TASK-0054; aucun chiffre de latence n'est publié (réserve R8)
 
+**Preuve runtime de la campagne finale :**
+
+- *(phase 1)* typing in the search field returned exactly the expected set, paginated and bounded, keyboard-reachable, and a name that exists in all three synthetic trees returned only the active brain's row
+
 ### `P-09` — Filtres
 
 - **Fonctions propriétaires :** `F-022`
@@ -302,6 +346,10 @@ La campagne finale P-22. Son tableau `coverage` porte une ligne par exigence P-0
 
 - les facettes dynamiques dérivées des données restent hors du critère MVP : REQUIREMENTS_BASELINE F-022 le déclare
 
+**Preuve runtime de la campagne finale :**
+
+- *(phase 1)* three criteria of different kinds were combined through real clicks and all three totals were derived from the Index; the FILE total equals an independent count of the files on disk; an active filter is visible and was revoked in a single action
+
 ### `P-10` — Légende
 
 - **Fonctions propriétaires :** `F-014`
@@ -324,6 +372,10 @@ La campagne finale P-22. Son tableau `coverage` porte une ligne par exigence P-0
 **Limites, écrites plutôt que corrigées en silence :**
 
 - TASK-0050 a déclaré deux états de la légende non atteignables par son harnais reproductible (21/23) et les a publiés comme tels; ACTION-0091 a clos la tâche avec cette limite écrite
+
+**Preuve runtime de la campagne finale :**
+
+- *(phase 1)* every visual coding token present on the rendered map is listed in the legend with its meaning in words; the legend was opened and closed through the real keyboard order
 
 ### `P-11` — Panoramique, zoom, ajuster à l'écran, réinitialiser
 
@@ -351,6 +403,10 @@ La campagne finale P-22. Son tableau `coverage` porte une ligne par exigence P-0
 
 - le pavé tactile n'est pas distinguable de la souris par un harnais CDP : la molette et le pointeur sont exercés, le geste tactile propre reste non testé et déclaré tel
 
+**Preuve runtime de la campagne finale :**
+
+- *(phase 1)* pan, zoom, fit and reset were exercised with real keys and with real clicks; the zoom is bounded (further presses no longer move the transform), panning left the selection unchanged, and reset is deterministic
+
 ### `P-12` — Panneau de détails masquable
 
 - **Fonctions propriétaires :** `F-013`, `F-023`
@@ -375,6 +431,11 @@ La campagne finale P-22. Son tableau `coverage` porte une ligne par exigence P-0
 
 - le défilement du panneau n'est pas une valeur persistée distincte : il est conservé parce que le panneau n'est pas démonté, ce qui est la façon dont le critère est tenu, pas une valeur comparée
 
+**Preuve runtime de la campagne finale :**
+
+- *(phase 1)* the details panel showed the Index's own values for the selection, with the access diagnostic on screen rather than hidden; hiding and showing it again kept the selection, the search text and the filters; the hidden/shown state is a stored preference (its survival across the restart is read in phase 2)
+- *(phase 2)* the hidden/shown state of the details panel survived a real restart and the panel came back on one click
+
 ### `P-13` — Contenu direct d'un dossier
 
 - **Fonctions propriétaires :** `F-026`
@@ -392,6 +453,10 @@ La campagne finale P-22. Son tableau `coverage` porte une ligne par exigence P-0
 
 - TASK-0035/ACTION-0056 — `map_node_children` sur `Index::children_page()`, page bornée à 50, curseur refusé s'il vient d'un autre index, d'une révision périmée ou d'un autre parent; `detail.children` retiré de cet usage; sélectionner un enfant passe par la fonction de sélection existante
 - TASK-0054/ACTION-0101 — la pagination d'un dossier large ne perd aucun enfant
+
+**Preuve runtime de la campagne finale :**
+
+- *(phase 1)* the list showed exactly the direct children of the selected folder, and one entry was activated through the real keyboard order
 
 ### `P-14` — Copier le chemin
 
@@ -416,6 +481,10 @@ La campagne finale P-22. Son tableau `coverage` porte une ligne par exigence P-0
 
 - la vérification du presse-papiers se fait hors du WebView : ni le chemin ni le contenu du presse-papiers n'est publié dans un artefact
 
+**Preuve runtime de la campagne finale :**
+
+- *(phase 1)* a real click on « Copier le chemin » copied the exact real path of the selected element (checked against the real path by the .ps1, outside this process, on a unicode and long-named tree); no error was shown and no path travelled to the artifact
+
 ### `P-15` — Ouvrir dans l'Explorateur
 
 - **Fonctions propriétaires :** `F-025`
@@ -437,6 +506,11 @@ La campagne finale P-22. Son tableau `coverage` porte une ligne par exigence P-0
 **Limites, écrites plutôt que corrigées en silence :**
 
 - la fenêtre `explorer.exe` qu'un vrai dévoilement ouvre est laissée à Windows : TASK-0034/0035 interdisent de tuer le processus globalement
+
+**Preuve runtime de la campagne finale :**
+
+- *(phase 1)* while the root of a brain was really absent, a real click on « Ouvrir dans l'Explorateur » produced an explicit error instead of opening something else, and nothing in the source was changed
+- *(phase 1)* a real click opened the Explorer on a folder of the synthetic fixture and selected a file in its folder, without an error and without touching the source; the refusal of a target outside the root or gone is exercised in phase 2 on the unavailable root and composed from TASK-0034/ACTION-0055
 
 ### `P-16` — Détection et historique des changements
 
@@ -463,6 +537,10 @@ La campagne finale P-22. Son tableau `coverage` porte une ligne par exigence P-0
 
 - une suppression massive réelle n'est pas provoquée : l'indisponibilité de racine est traitée avant tout scan, ce qui est précisément la défense de F-032
 
+**Preuve runtime de la campagne finale :**
+
+- *(phase 1)* the five natures of change applied to the source BEFORE the baseline were detected, journalled, grouped by the revision that found them and attributed to the right element; the page announces the Index's own total and is filterable
+
 ### `P-17` — Nouveaux, non vus, marquer vu, tout marquer vu
 
 - **Fonctions propriétaires :** `F-022`, `F-028`
@@ -482,6 +560,10 @@ La campagne finale P-22. Son tableau `coverage` porte une ligne par exigence P-0
 - TASK-0039/ACTION-0065 — les filtres « nouveaux » et « non vus » appellent le prédicat de DEC-0036, ils ne le recopient pas
 - TASK-0044/ACTION-0073 — l'état d'un cerveau ne rejoint jamais celui d'un autre, bien que l'id numérique d'un nœud puisse être le même dans trois cerveaux
 - TASK-0053/ACTION-0099 — vu/non-vu garde son propriétaire existant dans la répartition de M-1
+
+**Preuve runtime de la campagne finale :**
+
+- *(phase 1)* « nouveau » and « non vu » are derived from the journal, not typed; the deleted element's change was marked seen through the real keyboard order and a different element was marked seen from its own panel, both with a badge in words as well as a symbol; « tout marquer vu » opens a confirmation and cancelling it changed nothing
 
 ### `P-18` — Actualisation manuelle et surveillance incrémentale
 
@@ -508,6 +590,10 @@ La campagne finale P-22. Son tableau `coverage` porte une ligne par exigence P-0
 - les mesures de F-031 viennent d'un banc de développement au profil déclaré; aucune performance produit n'est publiée, réserve R8 en vigueur
 - la campagne finale n'a pas refait la rafale de 10 000 ni la courbe de coût : elle a exercé un vrai « Actualiser » incrémental et laissé les seuils lourds à leurs campagnes propres, comme TASK-0056 §5 l'autorise
 
+**Preuve runtime de la campagne finale :**
+
+- *(phase 1)* both halves, inside the window and on two different trees: the backend-owned watcher applied the first tree's pre-baseline changes with NO gesture at all, and on the third tree — whose root was absent when the window opened, so its watcher slept — ONE real click on « Actualiser » applied its changes INCREMENTALLY, produced a summary of them and published a new revision without ever emptying the Index
+
 ### `P-19` — Persistance des préférences et de l'état
 
 - **Fonctions propriétaires :** `F-012`, `F-013`, `F-022`, `F-033`, `F-034`, `F-052`
@@ -529,6 +615,10 @@ La campagne finale P-22. Son tableau `coverage` porte une ligne par exigence P-0
 
 - l'état `branch focus + collapsed ids` était volontairement session-only au HEAD de TASK-0052; TASK-0053 l'a repris dans F-052
 
+**Preuve runtime de la campagne finale :**
+
+- *(phase 2)* a real close and relaunch of the process gave back the panel, the density, the language, the composition and the seen/unseen state value by value; anything the backend had to correct would have been declared on screen
+
 ### `P-20` — Plusieurs cerveaux indépendants
 
 - **Fonctions propriétaires :** `F-002`, `F-033`, `F-034`
@@ -549,6 +639,10 @@ La campagne finale P-22. Son tableau `coverage` porte une ligne par exigence P-0
 - TASK-0038/ACTION-0064 — vu/non-vu porté par cerveau
 - TASK-0044/ACTION-0073 — vue, sélection, filtres et panneau restaurés sur trois cerveaux après un vrai redémarrage
 - TASK-0045/ACTION-0075 — nom, couleur et icône modifiables et persistants par l'interface
+
+**Preuve runtime de la campagne finale :**
+
+- *(phase 1)* three independent brains were composed through real clicks, each keeping its own Index and its own seen/unseen state, and every drawn element names the brain it comes from
 
 ### `P-21` — FR/EN et accessibilité
 
@@ -580,6 +674,11 @@ La campagne finale P-22. Son tableau `coverage` porte une ligne par exigence P-0
 - aucune certification WCAG générale n'est revendiquée : le niveau visé est contrôlé par axe-core plus un parcours clavier, sur les états retenus
 - aucun lecteur d'écran réel n'est exercé
 
+**Preuve runtime de la campagne finale :**
+
+- *(phase 1)* the whole session ran in French on a French host, with `<html lang>` and the controls' own words in French; the focus order was walked with real Tab presses without a trap, and axe-core reported no violation on the state with every panel open (the English half and the full matrix of states are read in phase 2 and composed from TASK-0046/ACTION-0077 and TASK-0047/ACTION-0079)
+- *(phase 2)* the interface was switched to English with a real click: `<html lang>`, `aria-pressed` and the controls' own words followed, and no French label survived; axe-core reported no violation in English, in the dark scheme and with reduced motion honoured
+
 ### `P-22` — Aucun changement physique des fichiers analysés
 
 - **Fonctions propriétaires :** `I-1`, `I-2`, `F-003`
@@ -603,13 +702,17 @@ La campagne finale P-22. Son tableau `coverage` porte une ligne par exigence P-0
 - les seuils lourds (100k/1M, 10 000 événements, matrice complète de contrastes) ne sont pas refaits dans la fenêtre : ils restent composés depuis leurs campagnes propres
 - la campagne porte sur trois racines synthétiques temporaires; elle ne dit rien d'un volume réseau, d'un fournisseur Cloud Files ni d'un système de fichiers autre que NTFS
 
+**Preuve runtime de la campagne finale :**
+
+- *(phase 2)* a root was made temporarily unavailable inside the window, with the watcher's own cadences short, and restored: the guard — not a poll from the interface — noticed it leaving and coming back, the Index and the preferences stayed intact, the state was signalled on screen in words, and not one deletion was journalled. The external fingerprint taken after the window is compared to the one taken before by the .ps1
+
 ## 3. Invariants I-1 à I-3
 
 | # | Invariant | Verdict | Preuve |
 |---|---|---|---|
 | `I-1` | Lecture seule absolue sur les documents analysés | **SATISFIED** | Campagne finale P-22 : empreinte externe stricte identique avant et après la fenêtre, sur trois racines, couvrant chemin relatif, nature, taille, SHA-256 du contenu, nombre de liens physiques, horodatage de modification et de création, et les métadonnées de la racine elle-même. Plus : aucune commande d'écriture ou de reconstruction sur le fil IPC pendant la fenêtre. |
 | `I-2` | Rien de FileTopo ne vit dans l'arborescence analysée | **SATISFIED** | Campagne finale P-22 : l'outil d'empreinte cherche tout artefact FileTopo sous chaque racine (index, journal, cache, magasin de relations, rapport) avant et après la fenêtre, et n'en trouve aucun; `map_integrity` du produit lui-même le confirme pour les trois cerveaux. L'espace applicatif reste `.filetopo-sandbox/variants/<variant>`. |
-| `I-3` | Rien n'est inventé silencieusement | **SATISFIED** | Provenance d'une relation établie limitée à DETERMINISTIC ou APPROVED, suggestion objet distinct, règle nommée et versionnée (TASK-0024/ACTION-0041, TASK-0051/ACTION-0094); agrégat à compte exact jamais présenté comme un dossier (TASK-0054/ACTION-0101); légende fermée qui rend observable tout codage non expliqué (TASK-0050/ACTION-0091); diagnostic d'accès affiché plutôt que masqué (TASK-0035/ACTION-0056). Aucune surface IPC ni capability n'est élargie par TASK-0056 : le diff ne touche aucun fichier de production. |
+| `I-3` | Rien n'est inventé silencieusement | **SATISFIED** | Provenance d'une relation établie limitée à DETERMINISTIC ou APPROVED, suggestion objet distinct, règle nommée et versionnée (TASK-0024/ACTION-0041, TASK-0051/ACTION-0094); agrégat à compte exact jamais présenté comme un dossier (TASK-0054/ACTION-0101); légende fermée qui rend observable tout codage non expliqué (TASK-0050/ACTION-0091); diagnostic d'accès affiché plutôt que masqué (TASK-0035/ACTION-0056). Aucune surface IPC ni capability n'est élargie par TASK-0056 : le diff ne touche aucun fichier de production. Le refus `map_source_not_synthetic` de la surface des relations sur une racine réelle est lui-même explicite et nommé, jamais un silence : c'est un gap de portée, pas une invention silencieuse. |
 
 ## 4. Audit reuse-first
 
@@ -635,4 +738,5 @@ Inventaire exigé par TASK-0056 §2, fait avant d'écrire le moindre harnais.
 
 - P-22 — il n'existait aucune campagne exerçant P-01..P-21 dans UNE session et mesurant l'immuabilité de la source par une empreinte externe prise avant et après cette session. C'est le seul harnais neuf de TASK-0056 : scripts/task0056-seed-proof.py, scripts/task0056-fingerprint.py, scripts/task0056-webview2.mjs, scripts/task0056-webview2.ps1
 - Le gate de régression Rust à sorties capturées — trois suites complètes consécutives au même HEAD avec code de sortie, comptes, noms des tests en échec, hash du log et durée : scripts/task0056-rust-gate.ps1
+- Rien n'a été écrit pour « réparer » le gap des relations : TASK-0056 est une acceptance et §9 l'interdit. La preuve du gap est une observation de la campagne, dans le vrai moteur, à travers l'IPC réel.
 

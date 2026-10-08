@@ -1,0 +1,911 @@
+{
+  "task": "TASK-0056",
+  "section": "Final P-22 campaign (TASK-0056 §4 and §5)",
+  "headTested": "2356a0b36421ab8b3e18c6ac28bd248d41bbdfe1",
+  "classification": "DEVELOPMENT_BENCH_ENGINEERING_EVIDENCE",
+  "verdict": "PASS",
+  "taskVerdict": "BLOCKED — a product gap was found; see productGaps",
+  "productGaps": [
+    {
+      "requirements": [
+        "P-04",
+        "P-05",
+        "P-07"
+      ],
+      "functions": [
+        "F-017",
+        "F-019",
+        "F-043",
+        "F-044",
+        "F-045"
+      ],
+      "summary": "On a REAL_ROOT brain the relations surface is unreachable: `map_relations_open`, `map_relations_for_node` and `map_relations_review_queue` all go through `BrainRecord::source_fixture()`, which refuses a real folder with `map_source_not_synthetic`. The relations panel therefore renders its « unavailable » form, with no provenance, no direction, no suggestion and no review queue — although `map_relation_engine_run`/`_status` are generic and do work on the same brain. Since DEC-0033 a real folder is the ONLY way a person's tree enters FileTopo, so these three parity requirements are unreachable for a person's own data, which the contract §3 rule 2 says amounts to removing them.",
+      "observed": {
+        "realRootRefusals": {
+          "map_relations_open": "{\"exceptionId\":1,\"text\":\"Uncaught (in promise)\",\"lineNumber\":0,\"columnNumber\":0,\"exception\":{\"type\":\"string\",\"value\":\"map_source_not_synthetic: real-3a3da23f-9227-48b7-b84e-15215d767a9f\"}}",
+          "map_relations_for_node": "{\"exceptionId\":2,\"text\":\"Uncaught (in promise)\",\"lineNumber\":0,\"columnNumber\":0,\"exception\":{\"type\":\"string\",\"value\":\"map_source_not_synthetic: real-3a3da23f-9227-48b7-b84e-15215d767a9f\"}}",
+          "map_relations_review_queue": "{\"exceptionId\":3,\"text\":\"Uncaught (in promise)\",\"lineNumber\":0,\"columnNumber\":0,\"exception\":{\"type\":\"string\",\"value\":\"map_source_not_synthetic: real-3a3da23f-9227-48b7-b84e-15215d767a9f\"}}"
+        },
+        "engineStatusOnTheSameBrain": "succeeds",
+        "panelOnRealRoot": {
+          "hasEngineCommand": false,
+          "hasTotals": false,
+          "text": "Relations internes au cerveauRelations indisponibles pour ce cerveau."
+        }
+      },
+      "notPatched": "TASK-0056 is an acceptance: no production file is touched. The gap is reported for arbitration."
+    }
+  ],
+  "strategy": "Three disposable synthetic REAL_ROOT trees; the brains are indexed and the source is changed BEFORE the baseline; three real Tauri/WebView2 processes then exercise P-01..P-21 inside the window, including one root made temporarily unavailable and restored; an external fingerprint taken by a separate tool before and after the window must be identical.",
+  "machine": {
+    "cpu": "Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz",
+    "logicalProcessors": 16,
+    "memoryGiB": 31.9,
+    "note": "Development workstation. No SLA and no performance figure is claimed: this campaign measures immutability and behaviour, never speed."
+  },
+  "fingerprint": {
+    "tool": "scripts/task0056-fingerprint.py",
+    "outsideTheProduct": true,
+    "covers": [
+      "relative path",
+      "kind",
+      "size",
+      "sha256 of the content",
+      "hard-link count",
+      "modification time (ns)",
+      "creation time (ns)",
+      "the root directory metadata itself"
+    ],
+    "strictDigestBefore": "1232671671fdafd683d39e1f49c262b146aff0b665b2b1f0f8beee47db1a9c46",
+    "strictDigestAfter": "1232671671fdafd683d39e1f49c262b146aff0b665b2b1f0f8beee47db1a9c46",
+    "strictIdentical": true,
+    "accessDigestBefore": "92b1babeeb3945c154ab5a7fa0642292de315e450aabd7d4b089321e906a185c",
+    "accessDigestAfter": "92b1babeeb3945c154ab5a7fa0642292de315e450aabd7d4b089321e906a185c",
+    "accessTimesIdentical": true,
+    "accessTimeNote": "The last-access time is digested separately and reported on its own line. Reading a file is what a read-only analyser does; where the volume records last access, a changed access time is a consequence of reading, never a change of content, name, structure or contractual timestamp.",
+    "settling": {
+      "baselineReadings": 3,
+      "closingReadings": 2,
+      "rule": "Each fingerprint is read until two consecutive readings agree, so neither is a value NTFS had not yet flushed.",
+      "why": "NTFS updates a directory last-write time lazily: a reading taken in the same second as a change can carry the previous value and settle a moment later. A first run of this campaign failed on exactly that — three directory timestamps settled AFTER the baseline, all of them to instants BEFORE the window opened, while nothing in the trees ever carried an instant from inside the window."
+    },
+    "filetopoArtefactsUnderTheSources": [],
+    "perRoot": {
+      "atelier": {
+        "entryCountBefore": 180,
+        "entryCountAfter": 180,
+        "fileCountAfter": 164,
+        "totalBytesAfter": 1841,
+        "strictDigestBefore": "757e9fd6b8f58586f68c98e737572a28880d261e87406633657b7b17e849b1dd",
+        "strictDigestAfter": "757e9fd6b8f58586f68c98e737572a28880d261e87406633657b7b17e849b1dd",
+        "strictIdentical": true,
+        "accessIdentical": true
+      },
+      "carnets": {
+        "entryCountBefore": 8,
+        "entryCountAfter": 8,
+        "fileCountAfter": 6,
+        "totalBytesAfter": 85,
+        "strictDigestBefore": "5bddefc84e5af3274d0d63eb2852afac17c954dfa1405173ee57f51a1613ca79",
+        "strictDigestAfter": "5bddefc84e5af3274d0d63eb2852afac17c954dfa1405173ee57f51a1613ca79",
+        "strictIdentical": true,
+        "accessIdentical": true
+      },
+      "archives": {
+        "entryCountBefore": 6,
+        "entryCountAfter": 6,
+        "fileCountAfter": 4,
+        "totalBytesAfter": 84,
+        "strictDigestBefore": "b15d108eb4cb96fa97ab9719759d8e8cfd735426f3f5e040cf52761ce649ff42",
+        "strictDigestAfter": "b15d108eb4cb96fa97ab9719759d8e8cfd735426f3f5e040cf52761ce649ff42",
+        "strictIdentical": true,
+        "accessIdentical": true
+      },
+      "fixture": {
+        "entryCountBefore": 11,
+        "entryCountAfter": 11,
+        "fileCountAfter": 8,
+        "totalBytesAfter": 1424,
+        "strictDigestBefore": "9606f850896b44ba24d022ae8247406dba01281a5d841cc5d46b732ad7dff04e",
+        "strictDigestAfter": "9606f850896b44ba24d022ae8247406dba01281a5d841cc5d46b732ad7dff04e",
+        "strictIdentical": true,
+        "accessIdentical": true
+      }
+    },
+    "detailKeptOutsideRepository": true
+  },
+  "preBaseline": {
+    "note": "Applied BEFORE the fingerprint, so no change of an analysed tree ever happens inside the judged window. The first tree's changes are applied by the backend-owned watcher with no gesture; the third tree's root is absent when the window opens, so its watcher sleeps and the manual « Actualiser » is what applies them.",
+    "atelierChanges": [
+      {
+        "nature": "created",
+        "relativePath": "journal/cree.txt"
+      },
+      {
+        "nature": "modified",
+        "relativePath": "lisez-moi.txt"
+      },
+      {
+        "nature": "renamed",
+        "relativePath": "dossier-éàç/note-renommée.txt",
+        "fromRelativePath": "dossier-éàç/note-accentuée.txt"
+      },
+      {
+        "nature": "moved",
+        "relativePath": "journal/essai.txt",
+        "fromRelativePath": "brouillons/essai.txt"
+      },
+      {
+        "nature": "deleted",
+        "relativePath": "liens/objet-copie.bin"
+      }
+    ],
+    "archivesChanges": [
+      {
+        "nature": "created",
+        "relativePath": "2026/nouveau.txt"
+      },
+      {
+        "nature": "modified",
+        "relativePath": "lisez-moi.txt"
+      },
+      {
+        "nature": "renamed",
+        "relativePath": "2025/a1-renommé.txt",
+        "fromRelativePath": "2025/a1.txt"
+      },
+      {
+        "nature": "moved",
+        "relativePath": "2026/a2.txt",
+        "fromRelativePath": "2025/a2.txt"
+      },
+      {
+        "nature": "deleted",
+        "relativePath": "2025/a3-jetable.txt"
+      }
+    ]
+  },
+  "copyPath": {
+    "node": "rapports/rapport-original.txt",
+    "comparedOutsideTheWebView": true,
+    "matchedTheRealPath": true,
+    "note": "The clipboard was read by this script and compared to the real path; neither the path nor the clipboard content is published."
+  },
+  "coverage": [
+    {
+      "requirement": "P-18",
+      "phase": 1,
+      "observation": "both halves, inside the window and on two different trees: the backend-owned watcher applied the first tree's pre-baseline changes with NO gesture at all, and on the third tree — whose root was absent when the window opened, so its watcher slept — ONE real click on « Actualiser » applied its changes INCREMENTALLY, produced a summary of them and published a new revision without ever emptying the Index",
+      "evidence": {
+        "automatic": {
+          "brain": "atelier",
+          "watchStatus": {
+            "mode": "mécanisme du système",
+            "state": "VERIFYING",
+            "pending": "false"
+          },
+          "indexedAfter": 181,
+          "journalTotal": 6
+        },
+        "manual": {
+          "brain": "archives",
+          "applicationMode": "INCREMENTAL",
+          "changeSummary": {
+            "baselineEstablished": false,
+            "created": 2,
+            "modified": 1,
+            "renamed": 1,
+            "moved": 1,
+            "deleted": 1,
+            "total": 6
+          },
+          "revisionBefore": 1,
+          "revisionAfter": 2,
+          "naturesDetected": [
+            "CREATED",
+            "DELETED",
+            "MODIFIED",
+            "MOVED",
+            "RENAMED"
+          ]
+        },
+        "unavailableThenRestored": {
+          "observed": {
+            "state": "UNAVAILABLE",
+            "reason": "ROOT_NOT_FOUND",
+            "text": "⚠Source indisponible — dernier index conservéle dossier est introuvableDernière observation : 8 oct. 2026, 11 h 39 · dernier index synchronisé : révision 1",
+            "watch": "DEGRADED",
+            "cardsStillOnScreen": 15
+          },
+          "journalledWhileAbsent": 0,
+          "indexedWhileAbsent": 6,
+          "observationAfterRestore": "SYNCED"
+        },
+        "heavyThresholdsComposedFrom": [
+          "TASK-0040/ACTION-0066+0067 (incremental cost at 1k/10k/100k, ratio 1,533 under the 2,0 ceiling)",
+          "TASK-0041/ACTION-0068 (manual refresh, forced interruption, never empties the Index)",
+          "TASK-0043/ACTION-0072 (10 000-event burst, simulated loss, resume)"
+        ]
+      }
+    },
+    {
+      "requirement": "P-15",
+      "phase": 1,
+      "observation": "while the root of a brain was really absent, a real click on « Ouvrir dans l'Explorateur » produced an explicit error instead of opening something else, and nothing in the source was changed",
+      "evidence": {
+        "refusalOnScreen": "Cet élément est introuvable ou inaccessible."
+      }
+    },
+    {
+      "requirement": "P-02",
+      "phase": 1,
+      "observation": "on the view the brain opens with, every drawn node is a real element of the source, its parent and its direct-children count equal the disk, every hierarchy edge on screen has a real parent/child counterpart, and every card carries its label",
+      "evidence": {
+        "drawnNodes": 12,
+        "materialized": 12,
+        "edgesChecked": 11,
+        "mismatches": 0,
+        "cardsWithoutALabel": 0
+      }
+    },
+    {
+      "requirement": "P-01",
+      "phase": 1,
+      "observation": "the map was built from the real tree alone; the Index equals the disk element for element, and a row absent from the bounded first view was reached by two real gestures (type, click)",
+      "evidence": {
+        "indexedNodes": 181,
+        "diskElements": 181,
+        "viewBudget": 512,
+        "materialized": 12,
+        "nonMaterialized": 169,
+        "everyDiskPathResolves": true,
+        "actionsToReachTheFarRow": 2
+      }
+    },
+    {
+      "requirement": "P-02",
+      "phase": 1,
+      "observation": "a real Enter on the aggregate paged every real child of the wide folder exactly once; the label is the exact count of what the page does not show, it is a tree item and no path resolves to it",
+      "evidence": {
+        "realChildren": 150,
+        "pages": 3,
+        "pageShapes": [
+          [
+            62,
+            88
+          ],
+          [
+            62,
+            88
+          ],
+          [
+            26,
+            124
+          ]
+        ]
+      }
+    },
+    {
+      "requirement": "P-03",
+      "phase": 1,
+      "observation": "the details panel announced the exact total of direct children and paged through all of them without losing one; not a single grandchild appeared; the parent and a child were reached with real arrow keys on the canvas",
+      "evidence": {
+        "announcedTotal": 150,
+        "pages": [
+          50,
+          50,
+          50
+        ],
+        "grandchildrenShown": 0,
+        "keyboardWalk": [
+          "Home",
+          "ArrowRight",
+          "ArrowLeft"
+        ]
+      }
+    },
+    {
+      "requirement": "P-13",
+      "phase": 1,
+      "observation": "the list showed exactly the direct children of the selected folder, and one entry was activated through the real keyboard order",
+      "evidence": {
+        "folder": "versions",
+        "listed": [
+          "versions/note-1.txt",
+          "versions/note-2.txt"
+        ],
+        "keyboardActivated": true
+      }
+    },
+    {
+      "requirement": "P-14",
+      "phase": 1,
+      "observation": "a real click on « Copier le chemin » copied the exact real path of the selected element (checked against the real path by the .ps1, outside this process, on a unicode and long-named tree); no error was shown and no path travelled to the artifact",
+      "evidence": {
+        "node": "rapports/rapport-original.txt",
+        "copyError": null,
+        "clipboardComparedBy": "scripts/task0056-webview2.ps1"
+      }
+    },
+    {
+      "requirement": "P-15",
+      "phase": 1,
+      "observation": "a real click opened the Explorer on a folder of the synthetic fixture and selected a file in its folder, without an error and without touching the source; the refusal of a target outside the root or gone is exercised in phase 2 on the unavailable root and composed from TASK-0034/ACTION-0055",
+      "evidence": {
+        "file": "rapports/rapport-original.txt",
+        "folder": "rapports",
+        "errors": []
+      }
+    },
+    {
+      "requirement": "P-12",
+      "phase": 1,
+      "observation": "the details panel showed the Index's own values for the selection, with the access diagnostic on screen rather than hidden; hiding and showing it again kept the selection, the search text and the filters; the hidden/shown state is a stored preference (its survival across the restart is read in phase 2)",
+      "evidence": {
+        "panelFieldsCompared": 5,
+        "selectionKept": true,
+        "storedPreference": {
+          "detailsPanelVisible": true
+        }
+      }
+    },
+    {
+      "requirement": "P-08",
+      "phase": 1,
+      "observation": "typing in the search field returned exactly the expected set, paginated and bounded, keyboard-reachable, and a name that exists in all three synthetic trees returned only the active brain's row",
+      "evidence": {
+        "query": "fiche-",
+        "total": 150,
+        "limit": 50,
+        "pages": [
+          50,
+          50,
+          50
+        ],
+        "sharedNameQuery": "lisez-moi",
+        "sharedNameTotal": 1,
+        "heavyThresholdComposedFrom": [
+          "TASK-0029/ACTION-0046 and TASK-0054/ACTION-0101 (100 000 and 1 000 000 indexed rows)"
+        ]
+      }
+    },
+    {
+      "requirement": "P-09",
+      "phase": 1,
+      "observation": "three criteria of different kinds were combined through real clicks and all three totals were derived from the Index; the FILE total equals an independent count of the files on disk; an active filter is visible and was revoked in a single action",
+      "evidence": {
+        "fileTotal": 164,
+        "diskFileCount": 164,
+        "directoriesOnDisk": 16,
+        "fileAndLocalTotal": 164,
+        "unseenTotal": 4,
+        "revokedInOneAction": true
+      }
+    },
+    {
+      "requirement": "P-10",
+      "phase": 1,
+      "observation": "every visual coding token present on the rendered map is listed in the legend with its meaning in words; the legend was opened and closed through the real keyboard order",
+      "evidence": {
+        "codingsOnScreen": [
+          "aggregate",
+          "hierarchy-normal",
+          "hierarchy-touching",
+          "node-directory",
+          "node-file",
+          "node-related",
+          "node-root",
+          "node-selected",
+          "territory-focused"
+        ],
+        "legendEntries": 24,
+        "unexplained": 0,
+        "tabStepsToTheLegendToggle": 61
+      }
+    },
+    {
+      "requirement": "P-11",
+      "phase": 1,
+      "observation": "pan, zoom, fit and reset were exercised with real keys and with real clicks; the zoom is bounded (further presses no longer move the transform), panning left the selection unchanged, and reset is deterministic",
+      "evidence": {
+        "transformsDistinct": 5,
+        "zoomBounded": true,
+        "resetSameFromKeyAndButton": true,
+        "openingTransform": "differs from the reset view (a selection was made since opening)",
+        "fittedByMouse": true
+      }
+    },
+    {
+      "requirement": "P-06",
+      "phase": 1,
+      "observation": "the same element was selected with the mouse and with the keyboard, the canvas and the semantic tree name the same node, the emphasised and dimmed states are named tokens rather than colours, nothing dimmed is erased or unreachable, and no Index value moved",
+      "evidence": {
+        "selectedByMouse": true,
+        "selectedByKeyboard": true,
+        "cardsOnScreen": 12,
+        "erasedCards": 0
+      }
+    },
+    {
+      "requirement": "P-04",
+      "phase": 1,
+      "observation": "on the brain where the surface answers, a content campaign then a real « Analyser » produced established relations whose type and provenance are on screen in words and glyphs (never colour alone); a suggestion was shown as a distinct, explained object with its own state, was never a provenance of an established relation, and the model's own refusals were re-exercised. On a REAL_ROOT brain the same surface refuses: see `productGaps`",
+      "evidence": {
+        "engineReport": {
+          "brainId": "synth-41d3c603-1e0a-4722-a497-64f8a2e35ffd",
+          "engineVersion": "dre-v1",
+          "runId": "dre1-6feefec5b817afa7",
+          "mapDigest": "fnv1a64:521f0879abc903b5",
+          "contentGenerationId": "bb247f44-0b4a-4ecb-bd0c-2843f12eecee",
+          "rulesEvaluated": [
+            "core.identical-content/v1",
+            "core.numbered-sibling-revision-candidate/v1"
+          ],
+          "rulesSkipped": [],
+          "deterministicRelationsProduced": 0,
+          "suggestionsProduced": 0,
+          "emptyContentGroupsSkipped": 0,
+          "establishedCollisionSuppressions": 4,
+          "approvedSuggestionPreservations": 0,
+          "rejectedSuggestionPreservations": 0,
+          "sourceReadOnlyConfirmed": true,
+          "inputState": "CURRENT"
+        },
+        "contentReport": {
+          "hashed": 8,
+          "files": 8,
+          "algorithm": "sha256-v1"
+        },
+        "deterministicRule": "Règle : homonymes version v1",
+        "provenancesSeen": [
+          "◆ déterministe",
+          "◆ déterministe",
+          "◆ déterministe",
+          "● approuvée"
+        ],
+        "typesSeen": [
+          "référence 2",
+          "révision de 1",
+          "référence 1"
+        ],
+        "suggestionExplained": true,
+        "suggestionSignals": [],
+        "malformedRelationsAllRejected": true,
+        "scope": {
+          "exercisedOn": "a SYNTHETIC_FIXTURE brain, the only source kind on which the relations surface answers at all",
+          "refusedOn": "every REAL_ROOT brain — see `productGaps`"
+        }
+      }
+    },
+    {
+      "requirement": "P-05",
+      "phase": 1,
+      "observation": "the incoming and outgoing counts shown by the PANEL and drawn on the MAP both equal the Index's for the same node; the direction is carried by a glyph, a heading and a filled arrow head rather than by colour; and approving a suggestion with the real keyboard added exactly one established relation — outgoing on its source and incoming on its target. On a REAL_ROOT brain these counts cannot be read at all: see `productGaps`",
+      "evidence": {
+        "panelTotalsText": "3 sortante(s) · 1 entrante(s) · 1 suggestion(s) non comptée(s)",
+        "indexOutgoing": 3,
+        "indexIncoming": 1,
+        "mapOutgoing": 0,
+        "mapIncoming": 0,
+        "drawableRelationsOfTheNode": 0,
+        "relationsWhoseOtherEndIsNotDrawn": 4,
+        "declaredInTheOffScreenRegion": {
+          "entries": 20,
+          "buttons": 20,
+          "text": "note-2.txt — relation hors de la vue courante.Afficher note-2.txtnote-1.txt — relation hors de la vue courante.Afficher note-1.txtnote-1.txt — relation hors de la vue courante.Afficher note-1.txtnote-"
+        },
+        "establishedEdgesOnTheMap": 0,
+        "suggestionEdgesOnTheMap": 0,
+        "everyEstablishedEdgeHasAnArrowHead": true,
+        "approvedWithTheKeyboard": true,
+        "tabStepsToTheApproveButton": 54,
+        "establishedBefore": 4,
+        "establishedAfter": 5,
+        "sourceOutgoing": 4,
+        "targetIncoming": 2,
+        "scope": {
+          "exercisedOn": "a SYNTHETIC_FIXTURE brain, the only source kind on which the relations surface answers at all",
+          "refusedOn": "every REAL_ROOT brain — see `productGaps`"
+        }
+      }
+    },
+    {
+      "requirement": "P-07",
+      "phase": 1,
+      "observation": "the relations panel lists the selected element's relations grouped by nature and direction, each entry carrying its type, direction and provenance and a control that leads to the element it names. On a REAL_ROOT brain the panel renders its « unavailable » form instead: see `productGaps`",
+      "evidence": {
+        "directionSections": [
+          "Sortantes (4)",
+          "Entrantes (1)"
+        ],
+        "natureGroups": [
+          "référence 3",
+          "révision de 1",
+          "référence 1"
+        ],
+        "entries": [
+          {
+            "direction": "outgoing",
+            "provenance": "DETERMINISTIC",
+            "type": "reference",
+            "leadsTo": "9",
+            "directionGlyph": "→",
+            "provenanceWord": "◆ déterministe",
+            "link": true
+          },
+          {
+            "direction": "outgoing",
+            "provenance": "DETERMINISTIC",
+            "type": "reference",
+            "leadsTo": "11",
+            "directionGlyph": "→",
+            "provenanceWord": "◆ déterministe",
+            "link": true
+          },
+          {
+            "direction": "outgoing",
+            "provenance": "APPROVED",
+            "type": "reference",
+            "leadsTo": "5",
+            "directionGlyph": "→",
+            "provenanceWord": "● approuvée",
+            "link": true
+          },
+          {
+            "direction": "outgoing",
+            "provenance": "DETERMINISTIC",
+            "type": "revision",
+            "leadsTo": "7",
+            "directionGlyph": "→",
+            "provenanceWord": "◆ déterministe",
+            "link": true
+          },
+          {
+            "direction": "incoming",
+            "provenance": "APPROVED",
+            "type": "reference",
+            "leadsTo": "12",
+            "directionGlyph": "←",
+            "provenanceWord": "● approuvée",
+            "link": true
+          }
+        ],
+        "everyEntryHasALink": true,
+        "everyEntryCarriesTypeDirectionAndProvenance": true,
+        "scope": {
+          "exercisedOn": "a SYNTHETIC_FIXTURE brain, the only source kind on which the relations surface answers at all",
+          "refusedOn": "every REAL_ROOT brain — see `productGaps`"
+        }
+      }
+    },
+    {
+      "requirement": "P-16",
+      "phase": 1,
+      "observation": "the five natures of change applied to the source BEFORE the baseline were detected, journalled, grouped by the revision that found them and attributed to the right element; the page announces the Index's own total and is filterable",
+      "evidence": {
+        "naturesExpected": [
+          "created",
+          "deleted",
+          "modified",
+          "moved",
+          "renamed"
+        ],
+        "naturesInTheJournal": [
+          "CREATED",
+          "DELETED",
+          "MODIFIED",
+          "MOVED",
+          "RENAMED"
+        ],
+        "journalTotal": 6,
+        "pageLimit": 50,
+        "revisionGroups": [
+          2
+        ]
+      }
+    },
+    {
+      "requirement": "P-17",
+      "phase": 1,
+      "observation": "« nouveau » and « non vu » are derived from the journal, not typed; the deleted element's change was marked seen through the real keyboard order and a different element was marked seen from its own panel, both with a badge in words as well as a symbol; « tout marquer vu » opens a confirmation and cancelling it changed nothing",
+      "evidence": {
+        "unseenBefore": 6,
+        "unseenAfterOneMark": 5,
+        "elementUnseenBefore": {
+          "state": "unseen",
+          "unseen": 1,
+          "text": "● Non vu · 1 changement(s) non vu(s)"
+        },
+        "elementAfterMark": {
+          "state": "seen",
+          "unseen": 0
+        },
+        "markAllConfirmed": true,
+        "unseenAfterCancel": 4,
+        "persistenceAcrossRestartReadIn": "phase 2"
+      }
+    },
+    {
+      "requirement": "P-21",
+      "phase": 1,
+      "observation": "the whole session ran in French on a French host, with `<html lang>` and the controls' own words in French; the focus order was walked with real Tab presses without a trap, and axe-core reported no violation on the state with every panel open (the English half and the full matrix of states are read in phase 2 and composed from TASK-0046/ACTION-0077 and TASK-0047/ACTION-0079)",
+      "evidence": {
+        "htmlLang": "fr",
+        "frenchLabels": {
+          "refresh": "Actualiser",
+          "legend": "Fermer la légende",
+          "journal": "Masquer les changements",
+          "details": "Masquer les détails"
+        },
+        "keyboardWalk": {
+          "stops": 600,
+          "distinctStops": 122,
+          "cameBackRound": false,
+          "trappingStops": []
+        },
+        "axeVersion": "4.13.0"
+      }
+    },
+    {
+      "requirement": "P-20",
+      "phase": 1,
+      "observation": "three independent brains were composed through real clicks, each keeping its own Index and its own seen/unseen state, and every drawn element names the brain it comes from",
+      "evidence": {
+        "brainsDrawnAtOnce": 4,
+        "chipsOnScreen": 4,
+        "atelierIndexed": 181,
+        "carnetsIndexed": 9,
+        "carnetsUnseenAfterMarkingAtelier": 0,
+        "closureComposedFrom": [
+          "TASK-0018/ACTION-0029",
+          "TASK-0038/ACTION-0064",
+          "TASK-0044/ACTION-0073",
+          "TASK-0045/ACTION-0075 (P-20 CLOSED by ACTION-0075)"
+        ]
+      }
+    },
+    {
+      "requirement": "P-19",
+      "phase": 2,
+      "observation": "a real close and relaunch of the process gave back the panel, the density, the language, the composition and the seen/unseen state value by value; anything the backend had to correct would have been declared on screen",
+      "evidence": {
+        "restored": {
+          "detailsPanel": false,
+          "density": "true",
+          "locale": "fr",
+          "legend": true,
+          "chips": [
+            "composition-chip-real-3a3da23f-9227-48b7-b84e-15215d767a9f",
+            "composition-chip-real-71201929-575e-437e-98a1-7c1619e1b1a9",
+            "composition-chip-real-21b72d0d-e947-49a1-8143-6ca2d79181c6",
+            "composition-chip-synth-41d3c603-1e0a-4722-a497-64f8a2e35ffd"
+          ]
+        },
+        "unseenBefore": 4,
+        "unseenAfter": 4,
+        "declaredCorrections": null,
+        "closureComposedFrom": [
+          "TASK-0044/ACTION-0073",
+          "TASK-0053/ACTION-0099 (P-19 and M-1 CLOSED)"
+        ]
+      }
+    },
+    {
+      "requirement": "P-12",
+      "phase": 2,
+      "observation": "the hidden/shown state of the details panel survived a real restart and the panel came back on one click",
+      "evidence": {
+        "survivedRestart": true
+      }
+    },
+    {
+      "requirement": "P-22",
+      "phase": 2,
+      "observation": "a root was made temporarily unavailable inside the window, with the watcher's own cadences short, and restored: the guard — not a poll from the interface — noticed it leaving and coming back, the Index and the preferences stayed intact, the state was signalled on screen in words, and not one deletion was journalled. The external fingerprint taken after the window is compared to the one taken before by the .ps1",
+      "evidence": {
+        "brain": "carnets",
+        "watchBefore": {
+          "state": "WATCHING",
+          "mode": "mécanisme du système"
+        },
+        "unavailable": {
+          "state": "UNAVAILABLE",
+          "text": "⚠Source indisponible — dernier index conservéle dossier est introuvableDernière observation : 8 oct. 2026, 11 h 41 · dernier index synchronisé : révision 1",
+          "reason": "le dossier est introuvable",
+          "watch": "DEGRADED",
+          "cardsStillOnScreen": 11
+        },
+        "recovered": {
+          "state": "SYNCED",
+          "text": "✓À jour à la dernière vérificationDernière observation : 8 oct. 2026, 11 h 41",
+          "watch": "WATCHING"
+        },
+        "journalTotalBefore": 0,
+        "journalTotalAfter": 0,
+        "indexedBefore": 9,
+        "indexedAfter": 9
+      }
+    },
+    {
+      "requirement": "P-21",
+      "phase": 2,
+      "observation": "the interface was switched to English with a real click: `<html lang>`, `aria-pressed` and the controls' own words followed, and no French label survived; axe-core reported no violation in English, in the dark scheme and with reduced motion honoured",
+      "evidence": {
+        "englishLabels": {
+          "lang": "en",
+          "refresh": "Refresh",
+          "legend": "Close legend",
+          "journal": "Show changes",
+          "details": "Hide details",
+          "pressed": "true"
+        },
+        "frenchLabelsLeftBehind": 0,
+        "reducedMotion": {
+          "matches": true,
+          "dataMotion": "system",
+          "motionVariable": "",
+          "transitionDuration": "0s"
+        },
+        "axeStates": [
+          "phase 2 — English, journal and legend open",
+          "phase 2 — English, dark scheme",
+          "phase 2 — English, reduced motion"
+        ],
+        "closureComposedFrom": [
+          "TASK-0046/ACTION-0077 (FR/EN completeness)",
+          "TASK-0047/ACTION-0079 (P-21 CLOSED: axe matrix, keyboard, contrast, non-colour alternatives)"
+        ]
+      }
+    }
+  ],
+  "phase1": {
+    "checks": [],
+    "axe": {
+      "version": "4.13.0",
+      "states": [
+        {
+          "state": "phase 1 — French, every panel open",
+          "violations": 0,
+          "incomplete": [
+            "color-contrast"
+          ],
+          "passes": 28
+        }
+      ]
+    },
+    "wire": {
+      "commandsSeen": [
+        "map_brain_activate",
+        "map_brain_exclusions",
+        "map_brain_resume_restore",
+        "map_brain_resume_update",
+        "map_change_journal",
+        "map_change_mark_seen",
+        "map_content_identical_members",
+        "map_content_observation_for_path",
+        "map_content_observe",
+        "map_content_summary",
+        "map_copy_node_path",
+        "map_cross_relations_for_node",
+        "map_cross_relations_open",
+        "map_exact_duplicate_summary",
+        "map_log",
+        "map_node_change_state",
+        "map_node_children",
+        "map_node_detail",
+        "map_node_mark_seen",
+        "map_open",
+        "map_refresh",
+        "map_relation_engine_run",
+        "map_relation_engine_status",
+        "map_relations_approve",
+        "map_relations_for_node",
+        "map_relations_open",
+        "map_relations_review_queue",
+        "map_relations_self_check",
+        "map_resolve_node",
+        "map_reveal_node",
+        "map_search_nodes",
+        "map_source_observation",
+        "map_ui_preferences",
+        "map_view",
+        "map_watch_status",
+        "map_workspace_restore",
+        "map_workspace_update"
+      ],
+      "callCount": 825
+    },
+    "fatalConsoleErrors": 0,
+    "semanticsDigest": "127e055bec167e2295e3e706a5c56773d905639ed5fef0b222f344ba556beff7"
+  },
+  "phase2": {
+    "checks": [],
+    "axe": {
+      "version": "4.13.0",
+      "states": [
+        {
+          "state": "phase 2 — English, journal and legend open",
+          "violations": 0,
+          "incomplete": [
+            "color-contrast"
+          ],
+          "passes": 28
+        },
+        {
+          "state": "phase 2 — English, dark scheme",
+          "violations": 0,
+          "incomplete": [
+            "color-contrast"
+          ],
+          "passes": 28
+        },
+        {
+          "state": "phase 2 — English, reduced motion",
+          "violations": 0,
+          "incomplete": [
+            "color-contrast"
+          ],
+          "passes": 28
+        }
+      ]
+    },
+    "wire": {
+      "commandsSeen": [
+        "map_brain_activate",
+        "map_brain_exclusions",
+        "map_brain_resume_restore",
+        "map_brain_resume_update",
+        "map_brains",
+        "map_change_journal",
+        "map_content_observation_for_path",
+        "map_content_summary",
+        "map_cross_relations_for_node",
+        "map_cross_relations_open",
+        "map_exact_duplicate_summary",
+        "map_fixtures",
+        "map_host_info",
+        "map_integrity",
+        "map_log",
+        "map_node_change_state",
+        "map_node_children",
+        "map_node_detail",
+        "map_open",
+        "map_relation_engine_status",
+        "map_relations_open",
+        "map_relations_review_queue",
+        "map_source_observation",
+        "map_ui_preferences",
+        "map_view",
+        "map_watch_status",
+        "map_workspace_restore",
+        "map_workspace_update"
+      ],
+      "callCount": 83
+    },
+    "fatalConsoleErrors": 0,
+    "integrity": {
+      "fixture": {
+        "filetopoArtifacts": []
+      },
+      "atelier": {
+        "productIntegrityReport": "{\"exceptionId\":1,\"text\":\"Uncaught (in promise)\",\"lineNumber\":0,\"columnNumber\":0,\"exception\":{\"type\":\"string\",\"value\":\"map_source_not_synthetic: real-3a3da23f-9227-48b7-b84e-15215d767a9f\"}}",
+        "note": "A real root has no frozen fixture plan to compare to; I-2 is judged for this root by the external fingerprint."
+      },
+      "carnets": {
+        "productIntegrityReport": "{\"exceptionId\":2,\"text\":\"Uncaught (in promise)\",\"lineNumber\":0,\"columnNumber\":0,\"exception\":{\"type\":\"string\",\"value\":\"map_source_not_synthetic: real-71201929-575e-437e-98a1-7c1619e1b1a9\"}}",
+        "note": "A real root has no frozen fixture plan to compare to; I-2 is judged for this root by the external fingerprint."
+      },
+      "archives": {
+        "productIntegrityReport": "{\"exceptionId\":3,\"text\":\"Uncaught (in promise)\",\"lineNumber\":0,\"columnNumber\":0,\"exception\":{\"type\":\"string\",\"value\":\"map_source_not_synthetic: real-21b72d0d-e947-49a1-8143-6ca2d79181c6\"}}",
+        "note": "A real root has no frozen fixture plan to compare to; I-2 is judged for this root by the external fingerprint."
+      }
+    }
+  },
+  "notTested": [
+    "No heavy threshold is re-measured here: 100 000 and 1 000 000 indexed rows, the 10 000-event burst, the incremental cost curve and the complete contrast matrix stay composed from their own VERIFIED campaigns, named in the coverage rows.",
+    "No performance figure, no FPS and no memory figure is produced; reserve R8 is untouched.",
+    "No remote GitHub Actions CI is attached: every result here is a local run with its output captured.",
+    "The Explorer windows a real reveal opens are left for Windows to manage, as TASK-0034/0035 require.",
+    "A real screen reader is not exercised; the accessibility evidence is axe-core plus a real keyboard walk, as in TASK-0047."
+  ]
+}

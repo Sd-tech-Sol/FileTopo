@@ -26,7 +26,14 @@
     {
       "id": "P-01",
       "title": "Carte construite depuis l'arborescence réelle (amendée par P-SCALE-R1)",
-      "owners": ["F-001", "F-003", "F-006", "F-007", "F-050", "F-051"],
+      "owners": [
+        "F-001",
+        "F-003",
+        "F-006",
+        "F-007",
+        "F-050",
+        "F-051"
+      ],
       "subCriteria": [
         "sur quatre arbres de formes différentes, l'ensemble des nœuds indexés égale l'ensemble attendu",
         "chaque élément indexé est atteignable en un nombre borné et déclaré d'actions",
@@ -50,12 +57,20 @@
       "closedBy": "ACTION-0101 (2026-10-07)",
       "verdict": "SATISFIED",
       "regressionAfterClosure": "aucune : les seules livraisons postérieures sont TASK-0055 (identité physique, VERIFIED par ACTION-0104) et TASK-0056 (acceptance sans code produit). La campagne finale a réexercé le critère et retrouvé l'index égal au disque élément par élément.",
-      "runtimeRows": ["P-01"]
+      "runtimeRows": [
+        "P-01"
+      ]
     },
     {
       "id": "P-02",
       "title": "Hiérarchie lisible et non ambiguë (corrigée par P02-R1, amendée par P-SCALE-R1)",
-      "owners": ["F-007", "F-008", "F-042", "F-050", "F-051"],
+      "owners": [
+        "F-007",
+        "F-008",
+        "F-042",
+        "F-050",
+        "F-051"
+      ],
       "subCriteria": [
         "(1) ensemble de nœuds matérialisés sous-ensemble exact de l'index, sans ajout",
         "(2) parent exact pour chaque nœud matérialisé",
@@ -84,12 +99,18 @@
       "closedBy": "ACTION-0101 (2026-10-07)",
       "verdict": "SATISFIED",
       "regressionAfterClosure": "aucune. La campagne finale a recomparé, pour chaque nœud dessiné, le parent et le compte d'enfants directs au disque, et chaque arête de hiérarchie affichée à sa contrepartie réelle.",
-      "runtimeRows": ["P-02"]
+      "runtimeRows": [
+        "P-02"
+      ]
     },
     {
       "id": "P-03",
       "title": "Parent et enfants directs (amendée par P-SCALE-R1)",
-      "owners": ["F-016", "F-050", "F-051"],
+      "owners": [
+        "F-016",
+        "F-050",
+        "F-051"
+      ],
       "subCriteria": [
         "le parent affiché égale celui de l'index, pour chaque nœud",
         "l'ensemble des enfants directs atteignables par pagination ou expansion égale celui de l'index",
@@ -109,12 +130,16 @@
       "closedBy": "ACTION-0101 (2026-10-07)",
       "verdict": "SATISFIED",
       "regressionAfterClosure": "aucune. La campagne finale a paginé les 150 enfants réels d'un dossier large sans en perdre un, sans afficher un seul petit-enfant, et a marché parent/enfant au clavier.",
-      "runtimeRows": ["P-03"]
+      "runtimeRows": [
+        "P-03"
+      ]
     },
     {
       "id": "P-04",
       "title": "Relations transversales explicites, avec provenance",
-      "owners": ["F-017"],
+      "owners": [
+        "F-017"
+      ],
       "subCriteria": [
         "une relation établie expose son type et sa provenance, `déterministe` ou `approuvée`, sans troisième valeur",
         "le modèle rend une relation sans provenance non représentable",
@@ -131,18 +156,24 @@
         "TASK-0051/ACTION-0094 — révocation de toute relation APPROVED, intra et inter, y compris quand l'état devient STALE"
       ],
       "limits": [
-        "les relations DETERMINISTIC ne sont pas révocables par ce geste : elles disparaissent quand la règle ne les produit plus. Déclaré par ACTION-0094"
+        "les relations DETERMINISTIC ne sont pas révocables par ce geste : elles disparaissent quand la règle ne les produit plus. Déclaré par ACTION-0094",
+        "Exercée dans la campagne finale sur un cerveau `SYNTHETIC_FIXTURE`, le seul genre de source sur lequel la surface répond. Sur une racine réelle, elle refuse — voir le champ `gap`."
       ],
       "status": "CLOSED/VERIFIED",
       "closedBy": "ACTION-0094 (2026-10-05)",
-      "verdict": "SATISFIED",
-      "regressionAfterClosure": "aucune. La campagne finale a produit une relation déterministe et une suggestion dans le vrai moteur, lu leur provenance à l'écran et réexercé les refus du modèle.",
-      "runtimeRows": ["P-04"]
+      "verdict": "GAP",
+      "regressionAfterClosure": "La clôture `ACTION-0094` repose sur des preuves prises sur cerveaux synthétiques; la campagne finale montre que la surface refuse sur une racine réelle. TASK-0056 ne révoque aucune clôture — l'exécuteur n'en a pas l'autorité — et rapporte que cette clôture **ne couvre pas** une racine réelle. L'arbitrage appartient au contrôle indépendant.",
+      "runtimeRows": [
+        "P-04"
+      ],
+      "gap": "GAP TROUVÉ PAR LA CAMPAGNE FINALE, rapporté et non corrigé. Sur un cerveau dont la source est un **vrai dossier**, les trois lectures dont la surface des relations a besoin — `map_relations_open`, `map_relations_for_node` et `map_relations_review_queue` — passent toutes par `BrainRecord::source_fixture()` (`src-tauri/src/map/brains.rs`), qui refuse un `REAL_ROOT` avec `map_source_not_synthetic`. Le panneau des relations rend donc sa forme « indisponible » : aucune provenance, aucune direction, aucune suggestion, aucune file de révision. Le moteur lui-même est générique — `map_relation_engine_run` et `map_relation_engine_status` répondent sur le même cerveau — mais rien ne peut lire ce qu'il produit. Or, depuis `DEC-0033` A, **une racine réelle est la seule façon dont l'arborescence d'une personne entre dans FileTopo**; les cerveaux synthétiques figés sont déclarés « diagnostic de développeur ». L'exigence est donc **inatteignable pour les données de l'utilisateur**, ce que le contrat §3 règle 2 assimile à sa suppression. Contre-argument, écrit pour que l'arbitre l'ait : le contrat dit qu'un critère est **vérifiable sur fixtures synthétiques** (§1.2, §9), et la campagne l'a effectivement vérifié là. Ce qui tranche, à notre lecture, est §1.1 point 3 — généraliser à **n'importe quelle** arborescence — plus le fait que le code et `ACTION-0040`/`ACTION-0041` déclarent eux-mêmes l'intention inverse : « `source_spec()` valide la source de n'importe quel cerveau ». L'écart est donc entre l'intention décidée et l'implémentation, pas une portée assumée. **Aucun correctif n'est appliqué par TASK-0056** (§9). Preuve : `docs/performance/runs/TASK-0056-p22-webview2.json`, champ `productGaps`."
     },
     {
       "id": "P-05",
       "title": "Relations entrantes et sortantes distinguées",
-      "owners": ["F-019"],
+      "owners": [
+        "F-019"
+      ],
       "subCriteria": [
         "les comptes entrants et sortants du panneau coïncident exactement avec ceux de l'index",
         "les comptes entrants et sortants de la carte coïncident exactement avec ceux de l'index",
@@ -156,18 +187,25 @@
         "TASK-0051/ACTION-0094 — les comptes restent justes après révocation"
       ],
       "limits": [
-        "une suggestion n'entre dans aucun compte : c'est le contrat, pas une limite, mais il faut le lire ainsi quand on compare un total à l'écran"
+        "une suggestion n'entre dans aucun compte : c'est le contrat, pas une limite, mais il faut le lire ainsi quand on compare un total à l'écran",
+        "Exercée dans la campagne finale sur un cerveau `SYNTHETIC_FIXTURE`, le seul genre de source sur lequel la surface répond. Sur une racine réelle, elle refuse — voir le champ `gap`."
       ],
       "status": "CANDIDATE",
       "closedBy": null,
-      "verdict": "SATISFIED",
+      "verdict": "GAP",
       "regressionAfterClosure": null,
-      "runtimeRows": ["P-05"]
+      "runtimeRows": [
+        "P-05"
+      ],
+      "gap": "GAP TROUVÉ PAR LA CAMPAGNE FINALE, rapporté et non corrigé. Sur un cerveau dont la source est un **vrai dossier**, les trois lectures dont la surface des relations a besoin — `map_relations_open`, `map_relations_for_node` et `map_relations_review_queue` — passent toutes par `BrainRecord::source_fixture()` (`src-tauri/src/map/brains.rs`), qui refuse un `REAL_ROOT` avec `map_source_not_synthetic`. Le panneau des relations rend donc sa forme « indisponible » : aucune provenance, aucune direction, aucune suggestion, aucune file de révision. Le moteur lui-même est générique — `map_relation_engine_run` et `map_relation_engine_status` répondent sur le même cerveau — mais rien ne peut lire ce qu'il produit. Or, depuis `DEC-0033` A, **une racine réelle est la seule façon dont l'arborescence d'une personne entre dans FileTopo**; les cerveaux synthétiques figés sont déclarés « diagnostic de développeur ». L'exigence est donc **inatteignable pour les données de l'utilisateur**, ce que le contrat §3 règle 2 assimile à sa suppression. Contre-argument, écrit pour que l'arbitre l'ait : le contrat dit qu'un critère est **vérifiable sur fixtures synthétiques** (§1.2, §9), et la campagne l'a effectivement vérifié là. Ce qui tranche, à notre lecture, est §1.1 point 3 — généraliser à **n'importe quelle** arborescence — plus le fait que le code et `ACTION-0040`/`ACTION-0041` déclarent eux-mêmes l'intention inverse : « `source_spec()` valide la source de n'importe quel cerveau ». L'écart est donc entre l'intention décidée et l'implémentation, pas une portée assumée. **Aucun correctif n'est appliqué par TASK-0056** (§9). Preuve : `docs/performance/runs/TASK-0056-p22-webview2.json`, champ `productGaps`."
     },
     {
       "id": "P-06",
       "title": "Sélection, accentuation des liés, atténuation du reste",
-      "owners": ["F-015", "F-018"],
+      "owners": [
+        "F-015",
+        "F-018"
+      ],
       "subCriteria": [
         "la sélection est possible à la souris et au clavier",
         "carte et liste sémantique désignent le même nœud à tout instant",
@@ -188,12 +226,18 @@
       "closedBy": null,
       "verdict": "SATISFIED",
       "regressionAfterClosure": null,
-      "runtimeRows": ["P-06"]
+      "runtimeRows": [
+        "P-06"
+      ]
     },
     {
       "id": "P-07",
       "title": "Panneau des relations",
-      "owners": ["F-016", "F-017", "F-019"],
+      "owners": [
+        "F-016",
+        "F-017",
+        "F-019"
+      ],
       "subCriteria": [
         "pour chaque nœud, le contenu du panneau égale l'ensemble des relations de l'index pour ce nœud",
         "chaque entrée porte type, direction et provenance",
@@ -210,18 +254,24 @@
         "TASK-0047/ACTION-0079 — accessibilité du panneau"
       ],
       "limits": [
-        "TASK-0017 avait déclaré que l'activation au clavier d'une entrée de panneau n'avait pas été jouée par une frappe de confiance. La campagne finale la joue avec un vrai `Input.dispatchKeyEvent` : la limite historique est levée par observation, pas par déclaration"
+        "TASK-0017 avait déclaré que l'activation au clavier d'une entrée de panneau n'avait pas été jouée par une frappe de confiance. La campagne finale la joue avec un vrai `Input.dispatchKeyEvent` : la limite historique est levée par observation, pas par déclaration",
+        "Exercée dans la campagne finale sur un cerveau `SYNTHETIC_FIXTURE`, le seul genre de source sur lequel la surface répond. Sur une racine réelle, elle refuse — voir le champ `gap`."
       ],
       "status": "CANDIDATE",
       "closedBy": null,
-      "verdict": "SATISFIED",
+      "verdict": "GAP",
       "regressionAfterClosure": null,
-      "runtimeRows": ["P-07"]
+      "runtimeRows": [
+        "P-07"
+      ],
+      "gap": "GAP TROUVÉ PAR LA CAMPAGNE FINALE, rapporté et non corrigé. Sur un cerveau dont la source est un **vrai dossier**, les trois lectures dont la surface des relations a besoin — `map_relations_open`, `map_relations_for_node` et `map_relations_review_queue` — passent toutes par `BrainRecord::source_fixture()` (`src-tauri/src/map/brains.rs`), qui refuse un `REAL_ROOT` avec `map_source_not_synthetic`. Le panneau des relations rend donc sa forme « indisponible » : aucune provenance, aucune direction, aucune suggestion, aucune file de révision. Le moteur lui-même est générique — `map_relation_engine_run` et `map_relation_engine_status` répondent sur le même cerveau — mais rien ne peut lire ce qu'il produit. Or, depuis `DEC-0033` A, **une racine réelle est la seule façon dont l'arborescence d'une personne entre dans FileTopo**; les cerveaux synthétiques figés sont déclarés « diagnostic de développeur ». L'exigence est donc **inatteignable pour les données de l'utilisateur**, ce que le contrat §3 règle 2 assimile à sa suppression. Contre-argument, écrit pour que l'arbitre l'ait : le contrat dit qu'un critère est **vérifiable sur fixtures synthétiques** (§1.2, §9), et la campagne l'a effectivement vérifié là. Ce qui tranche, à notre lecture, est §1.1 point 3 — généraliser à **n'importe quelle** arborescence — plus le fait que le code et `ACTION-0040`/`ACTION-0041` déclarent eux-mêmes l'intention inverse : « `source_spec()` valide la source de n'importe quel cerveau ». L'écart est donc entre l'intention décidée et l'implémentation, pas une portée assumée. **Aucun correctif n'est appliqué par TASK-0056** (§9). Preuve : `docs/performance/runs/TASK-0056-p22-webview2.json`, champ `productGaps`."
     },
     {
       "id": "P-08",
       "title": "Recherche",
-      "owners": ["F-020"],
+      "owners": [
+        "F-020"
+      ],
       "subCriteria": [
         "sur une fixture de 100 000 nœuds, une requête retourne exactement l'ensemble attendu",
         "le résultat est paginé et borné",
@@ -242,12 +292,16 @@
       "closedBy": null,
       "verdict": "SATISFIED",
       "regressionAfterClosure": null,
-      "runtimeRows": ["P-08"]
+      "runtimeRows": [
+        "P-08"
+      ]
     },
     {
       "id": "P-09",
       "title": "Filtres",
-      "owners": ["F-022"],
+      "owners": [
+        "F-022"
+      ],
       "subCriteria": [
         "les filtres de base — tout, nouveaux, non vus — plus type et disponibilité sont combinables",
         "ils sont dérivés de l'index",
@@ -268,12 +322,16 @@
       "closedBy": null,
       "verdict": "SATISFIED",
       "regressionAfterClosure": null,
-      "runtimeRows": ["P-09"]
+      "runtimeRows": [
+        "P-09"
+      ]
     },
     {
       "id": "P-10",
       "title": "Légende",
-      "owners": ["F-014"],
+      "owners": [
+        "F-014"
+      ],
       "subCriteria": [
         "chaque couleur, forme ou motif porteur de sens figure dans la légende avec sa signification",
         "la légende est atteignable au clavier",
@@ -292,12 +350,19 @@
       "closedBy": null,
       "verdict": "SATISFIED",
       "regressionAfterClosure": null,
-      "runtimeRows": ["P-10"]
+      "runtimeRows": [
+        "P-10"
+      ]
     },
     {
       "id": "P-11",
       "title": "Panoramique, zoom, ajuster à l'écran, réinitialiser",
-      "owners": ["F-009", "F-010", "F-011", "F-012"],
+      "owners": [
+        "F-009",
+        "F-010",
+        "F-011",
+        "F-012"
+      ],
       "subCriteria": [
         "panoramique souris, pavé tactile et clavier; après déplacement la sélection est inchangée",
         "zoom borné par un facteur minimal et maximal déclarés, centré de façon prévisible, atteignable au clavier",
@@ -319,12 +384,17 @@
       "closedBy": null,
       "verdict": "SATISFIED",
       "regressionAfterClosure": null,
-      "runtimeRows": ["P-11"]
+      "runtimeRows": [
+        "P-11"
+      ]
     },
     {
       "id": "P-12",
       "title": "Panneau de détails masquable",
-      "owners": ["F-013", "F-023"],
+      "owners": [
+        "F-013",
+        "F-023"
+      ],
       "subCriteria": [
         "pour chaque nœud, nom, type, chemin réel, taille, dates, parent, enfants et état affichés égalent ceux de l'index",
         "les diagnostics d'accès sont affichés, jamais masqués",
@@ -344,12 +414,16 @@
       "closedBy": null,
       "verdict": "SATISFIED",
       "regressionAfterClosure": null,
-      "runtimeRows": ["P-12"]
+      "runtimeRows": [
+        "P-12"
+      ]
     },
     {
       "id": "P-13",
       "title": "Contenu direct d'un dossier",
-      "owners": ["F-026"],
+      "owners": [
+        "F-026"
+      ],
       "subCriteria": [
         "la liste affiche exactement les enfants directs du nœud — ni les petits-enfants, ni une liste globale filtrée",
         "elle est paginée",
@@ -365,12 +439,16 @@
       "closedBy": null,
       "verdict": "SATISFIED",
       "regressionAfterClosure": null,
-      "runtimeRows": ["P-13"]
+      "runtimeRows": [
+        "P-13"
+      ]
     },
     {
       "id": "P-14",
       "title": "Copier le chemin",
-      "owners": ["F-024"],
+      "owners": [
+        "F-024"
+      ],
       "subCriteria": [
         "la copie reproduit le chemin réel exact",
         "contrôlée sur une fixture à noms longs et à caractères non ASCII",
@@ -389,12 +467,16 @@
       "closedBy": null,
       "verdict": "SATISFIED",
       "regressionAfterClosure": null,
-      "runtimeRows": ["P-14"]
+      "runtimeRows": [
+        "P-14"
+      ]
     },
     {
       "id": "P-15",
       "title": "Ouvrir dans l'Explorateur",
-      "owners": ["F-025"],
+      "owners": [
+        "F-025"
+      ],
       "subCriteria": [
         "un dossier s'ouvre",
         "un fichier est sélectionné dans son dossier",
@@ -412,12 +494,17 @@
       "closedBy": null,
       "verdict": "SATISFIED",
       "regressionAfterClosure": null,
-      "runtimeRows": ["P-15"]
+      "runtimeRows": [
+        "P-15"
+      ]
     },
     {
       "id": "P-16",
       "title": "Détection et historique des changements",
-      "owners": ["F-027", "F-030"],
+      "owners": [
+        "F-027",
+        "F-030"
+      ],
       "subCriteria": [
         "un scénario portant les cinq natures produit exactement les événements attendus",
         "ils sont ordonnés",
@@ -438,12 +525,17 @@
       "closedBy": null,
       "verdict": "SATISFIED",
       "regressionAfterClosure": null,
-      "runtimeRows": ["P-16"]
+      "runtimeRows": [
+        "P-16"
+      ]
     },
     {
       "id": "P-17",
       "title": "Nouveaux, non vus, marquer vu, tout marquer vu",
-      "owners": ["F-022", "F-028"],
+      "owners": [
+        "F-022",
+        "F-028"
+      ],
       "subCriteria": [
         "« nouveau » et « non vu » sont dérivés du journal, pas saisis",
         "marquer un élément, marquer un changement et « tout marquer vu » persistent au redémarrage",
@@ -461,12 +553,18 @@
       "closedBy": null,
       "verdict": "SATISFIED",
       "regressionAfterClosure": null,
-      "runtimeRows": ["P-17"]
+      "runtimeRows": [
+        "P-17"
+      ]
     },
     {
       "id": "P-18",
       "title": "Actualisation manuelle et surveillance incrémentale",
-      "owners": ["F-029", "F-030", "F-031"],
+      "owners": [
+        "F-029",
+        "F-030",
+        "F-031"
+      ],
       "subCriteria": [
         "manuelle : produit un résumé des changements",
         "manuelle : ne vide jamais l'index courant avant d'avoir un remplacement valide, vérifié par interruption forcée en cours d'opération",
@@ -487,12 +585,21 @@
       "closedBy": null,
       "verdict": "SATISFIED",
       "regressionAfterClosure": null,
-      "runtimeRows": ["P-18"]
+      "runtimeRows": [
+        "P-18"
+      ]
     },
     {
       "id": "P-19",
       "title": "Persistance des préférences et de l'état",
-      "owners": ["F-012", "F-013", "F-022", "F-033", "F-034", "F-052"],
+      "owners": [
+        "F-012",
+        "F-013",
+        "F-022",
+        "F-033",
+        "F-034",
+        "F-052"
+      ],
       "subCriteria": [
         "après redémarrage, chacune de ces valeurs est identique à celle d'avant fermeture, comparée valeur par valeur sur trois cerveaux",
         "une valeur non restaurable est déclarée et énumérée, jamais silencieusement réinitialisée"
@@ -508,12 +615,18 @@
       "closedBy": "ACTION-0099 (2026-10-07)",
       "verdict": "SATISFIED",
       "regressionAfterClosure": "aucune. La campagne finale a refermé et relancé le processus et retrouvé le panneau, la densité, la langue, la composition et l'état vu/non-vu.",
-      "runtimeRows": ["P-19"]
+      "runtimeRows": [
+        "P-19"
+      ]
     },
     {
       "id": "P-20",
       "title": "Plusieurs cerveaux indépendants",
-      "owners": ["F-002", "F-033", "F-034"],
+      "owners": [
+        "F-002",
+        "F-033",
+        "F-034"
+      ],
       "subCriteria": [
         "deux cerveaux ne partagent aucune ligne d'index, aucune préférence et aucun état vu/non vu",
         "basculer d'un cerveau à l'autre charge son index, sa carte, ses filtres et sa vue",
@@ -531,12 +644,17 @@
       "closedBy": "ACTION-0075 (2026-09-25)",
       "verdict": "SATISFIED",
       "regressionAfterClosure": "aucune. La campagne finale a composé trois cerveaux par de vrais clics; marquer des changements vus dans l'un a laissé l'autre intact.",
-      "runtimeRows": ["P-20"]
+      "runtimeRows": [
+        "P-20"
+      ]
     },
     {
       "id": "P-21",
       "title": "FR/EN et accessibilité",
-      "owners": ["F-035", "F-036"],
+      "owners": [
+        "F-035",
+        "F-036"
+      ],
       "subCriteria": [
         "les deux langues couvrent l'intégralité des libellés",
         "le choix persiste au redémarrage",
@@ -561,12 +679,18 @@
       "closedBy": "ACTION-0079 (2026-09-26)",
       "verdict": "SATISFIED",
       "regressionAfterClosure": "aucune. La campagne finale a tourné en français, basculé en anglais par un vrai clic, vérifié qu'aucun libellé français ne survivait, et passé axe-core sans violation en FR, en EN, en sombre et en mouvement réduit.",
-      "runtimeRows": ["P-21"]
+      "runtimeRows": [
+        "P-21"
+      ]
     },
     {
       "id": "P-22",
       "title": "Aucun changement physique des fichiers analysés",
-      "owners": ["I-1", "I-2", "F-003"],
+      "owners": [
+        "I-1",
+        "I-2",
+        "F-003"
+      ],
       "subCriteria": [
         "empreinte de l'arborescence synthétique — contenu, noms, structure, horodatages — identique avant et après une session complète exerçant toutes les exigences P-01 à P-21",
         "indisponibilité temporaire comprise",
@@ -585,7 +709,9 @@
       "closedBy": null,
       "verdict": "SATISFIED",
       "regressionAfterClosure": null,
-      "runtimeRows": ["P-22"]
+      "runtimeRows": [
+        "P-22"
+      ]
     }
   ],
   "invariants": [
@@ -604,7 +730,7 @@
     {
       "id": "I-3",
       "statement": "Rien n'est inventé silencieusement",
-      "evidence": "Provenance d'une relation établie limitée à DETERMINISTIC ou APPROVED, suggestion objet distinct, règle nommée et versionnée (TASK-0024/ACTION-0041, TASK-0051/ACTION-0094); agrégat à compte exact jamais présenté comme un dossier (TASK-0054/ACTION-0101); légende fermée qui rend observable tout codage non expliqué (TASK-0050/ACTION-0091); diagnostic d'accès affiché plutôt que masqué (TASK-0035/ACTION-0056). Aucune surface IPC ni capability n'est élargie par TASK-0056 : le diff ne touche aucun fichier de production.",
+      "evidence": "Provenance d'une relation établie limitée à DETERMINISTIC ou APPROVED, suggestion objet distinct, règle nommée et versionnée (TASK-0024/ACTION-0041, TASK-0051/ACTION-0094); agrégat à compte exact jamais présenté comme un dossier (TASK-0054/ACTION-0101); légende fermée qui rend observable tout codage non expliqué (TASK-0050/ACTION-0091); diagnostic d'accès affiché plutôt que masqué (TASK-0035/ACTION-0056). Aucune surface IPC ni capability n'est élargie par TASK-0056 : le diff ne touche aucun fichier de production. Le refus `map_source_not_synthetic` de la surface des relations sur une racine réelle est lui-même explicite et nommé, jamais un silence : c'est un gap de portée, pas une invention silencieuse.",
       "verdict": "SATISFIED"
     }
   ],
@@ -626,7 +752,9 @@
     ],
     "missing": [
       "P-22 — il n'existait aucune campagne exerçant P-01..P-21 dans UNE session et mesurant l'immuabilité de la source par une empreinte externe prise avant et après cette session. C'est le seul harnais neuf de TASK-0056 : scripts/task0056-seed-proof.py, scripts/task0056-fingerprint.py, scripts/task0056-webview2.mjs, scripts/task0056-webview2.ps1",
-      "Le gate de régression Rust à sorties capturées — trois suites complètes consécutives au même HEAD avec code de sortie, comptes, noms des tests en échec, hash du log et durée : scripts/task0056-rust-gate.ps1"
+      "Le gate de régression Rust à sorties capturées — trois suites complètes consécutives au même HEAD avec code de sortie, comptes, noms des tests en échec, hash du log et durée : scripts/task0056-rust-gate.ps1",
+      "Rien n'a été écrit pour « réparer » le gap des relations : TASK-0056 est une acceptance et §9 l'interdit. La preuve du gap est une observation de la campagne, dans le vrai moteur, à travers l'IPC réel."
     ]
-  }
+  },
+  "overallFinding": "Un gap produit a été trouvé pendant l'exercice de P-01..P-21 : la surface des relations (`P-04`, `P-05`, `P-07`) est inatteignable sur un cerveau `REAL_ROOT`. Conformément à TASK-0056 §9 et à ACTION-0105 §5, la tâche s'arrête : `TASK-0056 = BLOCKED`, étape A `EN COURS`, aucune correction produit. Tout le reste de l'acceptance est livré : la matrice, le gate de régression Rust à sorties capturées (3/3 vertes), la campagne finale P-22 (empreinte source strictement identique sur quatre racines) et la pureté du diff."
 }

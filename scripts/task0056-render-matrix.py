@@ -73,6 +73,9 @@ add(f"- **Preuve runtime finale :** `{matrix['runtimeEvidence']['artifact']}`")
 add(f"- **Verdict d'ensemble de TASK-0056 :** **{overall}**"
     + (f" — manques : {', '.join(gaps)}" if gaps else " — aucun sous-critère nommé sans preuve"))
 add("")
+if matrix.get("overallFinding"):
+    add(f"> **Constat d'ensemble.** {matrix['overallFinding']}")
+    add("")
 add(f"> **Autorité.** {matrix['authority']}")
 add("")
 add("## Comment lire ce document")
@@ -126,6 +129,9 @@ for requirement in matrix["requirements"]:
     if requirement.get("regressionAfterClosure"):
         add(f"- **Régression postérieure à la clôture :** {requirement['regressionAfterClosure']}")
     add("")
+    if requirement.get("gap"):
+        add(f"> **Manque.** {requirement['gap']}")
+        add("")
     add("**Sous-critères du texte courant, un par un :**")
     add("")
     for item in requirement["subCriteria"]:
