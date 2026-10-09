@@ -372,28 +372,81 @@ const READ_FIRST_SCREEN = `(() => {
 
   /* --- B03: "really on the first screen", for one element -----------------------------
    *
-   * Three conditions, and all three are needed, because each one alone lies:
+   * Four conditions, and each one alone lies:
    *
    *   laid out   a control inside a closed \`<details>\` has no box at all, so a box test
    *              alone would call it "absent" when it is merely closed;
    *   in window  a control inside a band that scrolls itself has a box, and that box can be
    *              entirely above or below the band's own fold;
-   *   hit test   a control can be in the window and covered by something else.
+   *   NOT CLIPPED by the bands. A control's own rectangle says nothing about how much of it
+   *              the band it lives in actually paints. B02 made three regions scroll inside
+   *              themselves, so clipping by the WINDOW is the wrong clip: the right one is
+   *              the window intersected with the client box of every scrolling ancestor.
+   *              Measured the wrong way, a button showing 20 px of its 35 reads as whole;
+   *   hit test   a control can be inside every box and covered by something else.
    *
-   * \`onScreen\` is the conjunction. It is never used to decide whether a command EXISTS —
-   * that is the DOM inventory, counted separately and kept identical to B02. */
+   * \`onScreen\` is the conjunction, and the hit test is taken at the centre of the CLIPPED
+   * rectangle, not of the element: that is the point a person can actually aim at.
+   * \`fullyVisible\` is published beside it, and the two are never merged — a half-painted
+   * button is a different fact from a hidden one, and from a whole one.
+   *
+   * None of this decides whether a command EXISTS: that is the DOM inventory, counted
+   * separately and kept identical to B02. */
+  const clipToAncestors = (el, r) => {
+    let left = Math.max(r.left, 0);
+    let top = Math.max(r.top, 0);
+    let right = Math.min(r.right, viewportWidth);
+    let bottom = Math.min(r.bottom, viewportHeight);
+    const clippedBy = [];
+    for (let parent = el.parentElement; parent; parent = parent.parentElement) {
+      const style = getComputedStyle(parent);
+      const clips = /auto|scroll|hidden|clip/.test(style.overflowX + ' ' + style.overflowY);
+      if (!clips) continue;
+      const box = parent.getBoundingClientRect();
+      // The CLIENT box: a scrollbar paints no content, and the border is not content either.
+      const padLeft = box.left + parent.clientLeft;
+      const padTop = box.top + parent.clientTop;
+      const next = {
+        left: Math.max(left, padLeft),
+        top: Math.max(top, padTop),
+        right: Math.min(right, padLeft + parent.clientWidth),
+        bottom: Math.min(bottom, padTop + parent.clientHeight),
+      };
+      if (next.left > left || next.top > top || next.right < right || next.bottom < bottom) {
+        clippedBy.push(String(parent.className).slice(0, 40) || parent.tagName);
+      }
+      ({ left, top, right, bottom } = next);
+    }
+    return { left, top, right, bottom, w: Math.max(0, right - left), h: Math.max(0, bottom - top), clippedBy };
+  };
   const firstScreenStateOf = (el) => {
     const laidOut = !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
-    if (!laidOut) return { laidOut, onScreen: false, visibleHeightPx: 0, visibleWidthPx: 0 };
+    if (!laidOut) {
+      return {
+        laidOut, onScreen: false, fullyVisible: false,
+        visibleHeightPx: 0, visibleWidthPx: 0, ownHeightPx: 0, clippedBy: [],
+      };
+    }
     const r = el.getBoundingClientRect();
-    const h = visibleHeight(r);
-    const w = visibleWidth(r);
-    if (h < 4 || w < 4) return { laidOut, onScreen: false, visibleHeightPx: round(h), visibleWidthPx: round(w) };
-    const x = Math.max(r.left, 0) + w / 2;
-    const y = Math.max(r.top, 0) + h / 2;
-    const top = document.elementFromPoint(x, y);
+    const clip = clipToAncestors(el, r);
+    const base = {
+      laidOut,
+      visibleHeightPx: round(clip.h),
+      visibleWidthPx: round(clip.w),
+      ownHeightPx: round(r.height),
+      // Window-clipped only, kept so the two clips can be compared in the artifact.
+      windowHeightPx: round(visibleHeight(r)),
+      clippedBy: clip.clippedBy,
+    };
+    if (clip.h < 4 || clip.w < 4) return { ...base, onScreen: false, fullyVisible: false };
+    const top = document.elementFromPoint(clip.left + clip.w / 2, clip.top + clip.h / 2);
     const hit = !!top && (top === el || el.contains(top));
-    return { laidOut, onScreen: hit, visibleHeightPx: round(h), visibleWidthPx: round(w) };
+    return {
+      ...base,
+      onScreen: hit,
+      // Whole, not merely reachable: no band ate any of it and the window holds all of it.
+      fullyVisible: hit && clip.h >= r.height - 1 && clip.w >= r.width - 1,
+    };
   };
 
   /* --- B01 tripwires, kept verbatim: a first screen must not cost a command -------- */
@@ -472,6 +525,7 @@ const READ_FIRST_SCREEN = `(() => {
       summaryText: (summary?.textContent ?? '').trim().slice(0, 120),
       summaryHeightPx: summary ? round(summary.getBoundingClientRect().height) : null,
       summaryOnFirstScreen: summary ? firstScreenStateOf(summary).onScreen : null,
+      summaryFullyVisible: summary ? firstScreenStateOf(summary).fullyVisible : null,
       summaryTabbable: summary ? summary.tabIndex >= 0 : null,
       // What it holds, counted in the DOM: a closed group hides nothing from the Index.
       focusableInside: body
@@ -625,6 +679,8 @@ const READ_FIRST_SCREEN = `(() => {
     commandsInDom: commands.length,
     commandsLaidOut: commands.filter((command) => command.laidOut).length,
     commandsOnFirstScreen: commands.filter((command) => command.onScreen).length,
+    commandsFullyVisible: commands.filter((command) => command.fullyVisible).length,
+    commandsClippedByABand: commands.filter((command) => command.onScreen && !command.fullyVisible).length,
     commandsInClosedGroups: commands.filter((command) => command.groupOpen === false).length,
     commandsOnFirstScreenIds: commands.filter((command) => command.onScreen).map((command) => command.id).sort(),
     groups,
@@ -1157,7 +1213,11 @@ const primaryByState = matrix.map((entry) => {
       inDom: found !== null,
       laidOut: found?.laidOut ?? false,
       onFirstScreen: found?.onScreen ?? false,
+      // Whole, not merely aimable: how much of it the bands actually paint.
+      fullyVisible: found?.fullyVisible ?? false,
       visibleHeightPx: found?.visibleHeightPx ?? 0,
+      ownHeightPx: found?.ownHeightPx ?? 0,
+      clippedBy: found?.clippedBy ?? [],
       group: found?.group ?? null,
     };
   });
@@ -1167,16 +1227,25 @@ const primaryByState = matrix.map((entry) => {
     commandsInDom: entry.layout.commandsInDom,
     commandsLaidOut: entry.layout.commandsLaidOut,
     commandsOnFirstScreen: entry.layout.commandsOnFirstScreen,
+    commandsFullyVisible: entry.layout.commandsFullyVisible,
+    commandsClippedByABand: entry.layout.commandsClippedByABand,
     commandsInClosedGroups: entry.layout.commandsInClosedGroups,
     groups: entry.layout.groups,
     primary: rows,
     primaryOnFirstScreen: rows.filter((row) => row.onFirstScreen).length,
+    primaryFullyVisible: rows.filter((row) => row.fullyVisible).length,
     primaryMissingFromFirstScreen: rows.filter((row) => !row.onFirstScreen).map((row) => row.id),
+    primaryClippedByABand: rows
+      .filter((row) => row.onFirstScreen && !row.fullyVisible)
+      .map((row) => `${row.id} ${row.visibleHeightPx}/${row.ownHeightPx}px`),
     primaryMissingFromDom: rows.filter((row) => !row.inDom).map((row) => row.id),
   };
 });
 const statesMissingAPrimaryCommand = primaryByState.filter(
   (entry) => entry.primaryMissingFromFirstScreen.length > 0,
+);
+const statesClippingAPrimaryCommand = primaryByState.filter(
+  (entry) => entry.primaryClippedByABand.length > 0,
 );
 const statesMissingAPrimaryCommandFromDom = primaryByState.filter(
   (entry) => entry.primaryMissingFromDom.length > 0,
@@ -1192,7 +1261,14 @@ record.verdict = {
   statesMissingAPrimaryCommandFromDom: statesMissingAPrimaryCommandFromDom.map(
     (entry) => `${entry.size}/${entry.state}: ${entry.primaryMissingFromDom.join(",")}`,
   ),
+  // The stronger reading of the same contract: whole, not merely aimable.
+  primaryContractSatisfiedWhole: statesClippingAPrimaryCommand.length === 0 && statesMissingAPrimaryCommand.length === 0,
+  statesClippingAPrimaryCommand: statesClippingAPrimaryCommand.map(
+    (entry) => `${entry.size}/${entry.state}: ${entry.primaryClippedByABand.join(", ")}`,
+  ),
   worstPrimaryOnFirstScreen: Math.min(...primaryByState.map((entry) => entry.primaryOnFirstScreen)),
+  worstPrimaryFullyVisible: Math.min(...primaryByState.map((entry) => entry.primaryFullyVisible)),
+  worstCommandsFullyVisible: Math.min(...primaryByState.map((entry) => entry.commandsFullyVisible)),
   worstCommandsOnFirstScreen: Math.min(...primaryByState.map((entry) => entry.commandsOnFirstScreen)),
   bestCommandsOnFirstScreen: Math.max(...primaryByState.map((entry) => entry.commandsOnFirstScreen)),
   worstCommandsInDom: Math.min(...primaryByState.map((entry) => entry.commandsInDom)),
@@ -1253,9 +1329,12 @@ record.chromeDefectProven =
 
 check("criterion 1 — the usual commands are REALLY on the opening screen, every state", {
   satisfied: record.verdict.primaryContractSatisfied,
+  satisfiedWhole: record.verdict.primaryContractSatisfiedWhole,
   commandsInContract: PRIMARY_COMMANDS.length,
   worstPrimaryOnFirstScreen: record.verdict.worstPrimaryOnFirstScreen,
+  worstPrimaryFullyVisible: record.verdict.worstPrimaryFullyVisible,
   statesMissingAPrimaryCommand: record.verdict.statesMissingAPrimaryCommand,
+  statesClippingAPrimaryCommand: record.verdict.statesClippingAPrimaryCommand,
   statesMissingAPrimaryCommandFromDom: record.verdict.statesMissingAPrimaryCommandFromDom,
 });
 check("criterion 1 bis — the map does not regress below what B02 MEASURED, not merely below what it was asked for", {
@@ -1614,6 +1693,7 @@ record.layoutDigest = sha(
     entry.layout.commandsInDom,
     entry.layout.commandsLaidOut,
     entry.layout.commandsOnFirstScreen,
+    entry.layout.commandsFullyVisible,
   ]),
 );
 await writeFile(join(proofRoot, `run-${phase}-pass${pass}.json`), JSON.stringify(record, null, 2));
@@ -1623,7 +1703,9 @@ for (const capture of captures) {
 console.log(JSON.stringify({
   phase, pass, ok: true,
   primaryContractSatisfied: record.verdict.primaryContractSatisfied,
+  primaryContractSatisfiedWhole: record.verdict.primaryContractSatisfiedWhole,
   worstPrimaryOnFirstScreen: record.verdict.worstPrimaryOnFirstScreen,
+  worstPrimaryFullyVisible: record.verdict.worstPrimaryFullyVisible,
   worstCommandsOnFirstScreen: record.verdict.worstCommandsOnFirstScreen,
   firstScreenSatisfied: record.verdict.firstScreenSatisfied,
   worstVisibleMapHeightPx: record.verdict.worstVisibleMapHeightPx,
