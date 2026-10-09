@@ -916,7 +916,12 @@ export type SuggestionState = "pending" | "approved" | "rejected";
  */
 export interface SuggestionReviewQueue {
   brainId: string;
-  fixtureId: string;
+  /**
+   * The synthetic source behind the brain — a developer diagnostic, and
+   * `null` on a `REAL_ROOT`, which has no fixture (`DEC-0053` D). Never a
+   * path, a path hash or any other surrogate of the chosen folder.
+   */
+  fixtureId: string | null;
   /** Pending only. Approved and rejected suggestions are not counted. */
   totalPending: number;
   offset: number;
@@ -942,7 +947,12 @@ export interface RelationRuleInfo {
 
 export interface RelationsOverview {
   brainId: string;
-  fixtureId: string;
+  /**
+   * The synthetic source behind the brain — a developer diagnostic, and
+   * `null` on a `REAL_ROOT`, which has no fixture (`DEC-0053` D). Never a
+   * path, a path hash or any other surrogate of the chosen folder.
+   */
+  fixtureId: string | null;
   /** Where this brain's relations live, relative to the sandbox — `K3`. */
   relationsPath: string;
   schemaVersion: number;
@@ -1022,7 +1032,12 @@ export interface RelationEngineStatus {
 
 export interface NodeRelations {
   brainId: string;
-  fixtureId: string;
+  /**
+   * The synthetic source behind the brain — a developer diagnostic, and
+   * `null` on a `REAL_ROOT`, which has no fixture (`DEC-0053` D). Never a
+   * path, a path hash or any other surrogate of the chosen folder.
+   */
+  fixtureId: string | null;
   /** The node this panel is about, as the pair that identifies it. */
   reference: BrainNodeRef;
   endpointKey: string;

@@ -5,7 +5,7 @@
 //! meet, so an unresolved endpoint is reported rather than silently dropped —
 //! `J10` needs the difference to be visible.
 
-use super::brains::{BrainNodeRef, BrainRecord};
+use super::brains::{BrainNodeRef, BrainRecord, SourceKind};
 use super::relations::{
     EXPECTED_COUNTS, FORBIDDEN_INVERSES, MAX_REVIEW_QUEUE_LIMIT, RELATIONS_FIXTURE,
     RELATIONS_SCHEMA_VERSION, RejectionOutcome, RelationError, RelationStore, SEEDED_SUGGESTIONS,
@@ -92,8 +92,10 @@ pub struct RelationsOverview {
     /// is the brain — `TASK-0018` §4.5 — so `S-005` may legitimately exist,
     /// pending in one brain and approved in another.
     pub brain_id: String,
-    /// The synthetic source behind the brain. A developer diagnostic.
-    pub fixture_id: String,
+    /// The synthetic source behind the brain. A developer diagnostic, and
+    /// `None` on a `REAL_ROOT`, which has no fixture — `DEC-0053` D. Never a
+    /// path, a path hash or any surrogate of the real root.
+    pub fixture_id: Option<String>,
     /// Where this brain's relations really live, named relative to the
     /// sandbox. `K3` compares these across brains.
     pub relations_path: String,
@@ -145,7 +147,8 @@ pub struct NodeRelationEntry {
 #[serde(rename_all = "camelCase")]
 pub struct NodeRelations {
     pub brain_id: String,
-    pub fixture_id: String,
+    /// `None` on a `REAL_ROOT` — `DEC-0053` D, as in [`RelationsOverview`].
+    pub fixture_id: Option<String>,
     /// The node this panel is about, as the **pair** that identifies it.
     ///
     /// Handed back so the interface carries a reference rather than a loose
@@ -303,34 +306,71 @@ fn index_by_key<'a>(brain_id: &str, nodes: &'a [MapNode]) -> HashMap<String, &'a
 /// stay confined to `quasi-empty`, because `homonymes` is quadratic and would
 /// produce hundreds of thousands of pairs on `wide`.
 ///
-/// `None` for any other **valid** fixture. That is not a refusal: it says the
-/// legacy demonstration relations do not apply, and nothing more. An unknown
-/// fixture stays a normal error, raised by `source_fixture()` itself.
+/// `None` for any other **valid** fixture, and for a `REAL_ROOT`. That is not a
+/// refusal: it says the legacy demonstration relations do not apply, and
+/// nothing more. An unknown **synthetic** fixture stays a normal error, raised
+/// by `source_fixture()` itself.
+///
+/// `TASK-0057` / `DEC-0053` B is why the `REAL_ROOT` arm answers without
+/// consulting the fixture table at all: asking `source_fixture()` first made
+/// « does the legacy fixture apply? » impossible to answer for a real folder,
+/// because the question refused before it was asked.
 fn legacy_fixture_spec(
     brain: &BrainRecord,
 ) -> Result<Option<&'static fixtures::FixtureSpec>, MapError> {
-    let spec = brain.source_fixture()?;
-    Ok((spec.id == RELATIONS_FIXTURE).then_some(spec))
+    match brain.source_kind {
+        SourceKind::RealRoot => Ok(None),
+        SourceKind::SyntheticFixture => {
+            let spec = brain.source_fixture()?;
+            Ok((spec.id == RELATIONS_FIXTURE).then_some(spec))
+        }
+    }
 }
 
-/// The source of a brain, valid or refused — with **no** scope judgement.
+/// The source of a brain, validated — **without requiring a fixture**.
 ///
-/// `TASK-0024` splits the two questions the old `ensure_in_scope` conflated:
+/// `TASK-0024` split the two questions the old `ensure_in_scope` conflated:
 /// « is this source real? » is asked of every brain, while « does the legacy
-/// `TASK-0017` fixture apply? » is asked only of the legacy producers. The core
-/// engine `dre-v1` is generic, so the reads that surround it must not inherit
-/// the legacy scope.
-fn source_spec(brain: &BrainRecord) -> Result<&'static fixtures::FixtureSpec, MapError> {
-    brain.source_fixture()
+/// `TASK-0017` fixture apply? » is asked only of the legacy producers. It left
+/// a third one hidden inside the first: « is this source *synthetic*? ». The
+/// core engine `dre-v1` never asked it, but every read around it did, through
+/// `source_fixture()` — which is exactly what `TASK-0056` found, and why
+/// `P-04`, `P-05` and `P-07` were unreachable on a person's own folder.
+///
+/// `DEC-0053` A and C separate it: the relation surface is a capability of a
+/// **brain**. A synthetic brain still resolves its fixture, so an unknown
+/// fixture is still an error and the developer diagnostic keeps its value; a
+/// `REAL_ROOT` resolves to `None`, which is an answer and not a refusal.
+fn generic_source_spec(
+    brain: &BrainRecord,
+) -> Result<Option<&'static fixtures::FixtureSpec>, MapError> {
+    match brain.source_kind {
+        SourceKind::RealRoot => Ok(None),
+        SourceKind::SyntheticFixture => brain.source_fixture().map(Some),
+    }
+}
+
+/// The `fixtureId` a generic relation DTO carries — `DEC-0053` D.
+///
+/// `Some(id)` for a synthetic brain, unchanged from before `TASK-0057`;
+/// `None` for a `REAL_ROOT`. Nothing derived from the real path is ever put
+/// here: no absolute path, no root hash, no account, no source-ref UUID. The
+/// field says « which frozen synthetic source is behind this », and a real
+/// folder is simply not one.
+fn fixture_diagnostic(spec: Option<&'static fixtures::FixtureSpec>) -> Option<String> {
+    spec.map(|spec| spec.id.to_string())
 }
 
 /// Refuses a brain whose source is outside the frozen **legacy** scope, in
 /// words.
 ///
 /// Kept for `self_check` alone: it verifies the frozen `TASK-0017` contract,
-/// which only `quasi-empty` can satisfy. `J12` must not be weakened.
+/// which only `quasi-empty` can satisfy. `J12` must not be weakened, and
+/// `DEC-0053` B keeps this command explicitly synthetic — a `REAL_ROOT` is
+/// refused here by `source_fixture()` itself, by name, because a frozen
+/// expectation has no meaning on a folder no plan describes.
 fn ensure_in_scope(brain: &BrainRecord) -> Result<&'static fixtures::FixtureSpec, MapError> {
-    let spec = source_spec(brain)?;
+    let spec = brain.source_fixture()?;
     match legacy_fixture_spec(brain)? {
         Some(spec) => Ok(spec),
         None => {
@@ -357,13 +397,14 @@ fn ensure_in_scope(brain: &BrainRecord) -> Result<&'static fixtures::FixtureSpec
 ///   opened and read as it stands, so a brain that has never run `dre-v1`
 ///   returns a valid, empty overview rather than a refusal.
 ///
-/// Opening is never an act of invention: a brain on `deep` gets whatever the
-/// core engine and the human approvals actually put in its own store.
+/// Opening is never an act of invention: a brain on `deep`, or on a folder the
+/// person chose, gets whatever the core engine and the human approvals actually
+/// put in its own store.
 pub fn open_relations(
     paths: &SandboxPaths,
     brain: &BrainRecord,
 ) -> Result<RelationsOverview, MapError> {
-    let spec = source_spec(brain)?;
+    let spec = generic_source_spec(brain)?;
     let legacy_scope = legacy_fixture_spec(brain)?.is_some();
     let snapshot = commands::analysis_input(paths, brain)?;
     // One store per brain. `brain-alpha` and `brain-gamma` read the same tree
@@ -383,7 +424,7 @@ pub fn open_relations(
     overview(
         &store,
         brain,
-        spec.id,
+        spec,
         legacy_scope,
         paths.relative_name(&database),
         &snapshot.nodes,
@@ -395,7 +436,7 @@ pub fn open_relations(
 fn overview(
     store: &RelationStore,
     brain: &BrainRecord,
-    fixture_id: &str,
+    spec: Option<&'static fixtures::FixtureSpec>,
     legacy_in_scope: bool,
     relations_path: String,
     nodes: &[MapNode],
@@ -450,7 +491,7 @@ fn overview(
 
     Ok(RelationsOverview {
         brain_id: brain.brain_id.clone(),
-        fixture_id: fixture_id.to_string(),
+        fixture_id: fixture_diagnostic(spec),
         relations_path,
         schema_version: RELATIONS_SCHEMA_VERSION,
         endpoint_key_scheme: super::relations::ENDPOINT_KEY_SCHEME.to_string(),
@@ -501,9 +542,11 @@ pub fn node_relations(
     brain: &BrainRecord,
     reference: &BrainNodeRef,
 ) -> Result<NodeRelations, MapError> {
-    // Validity of the source, never the legacy scope: a node of `brain-beta`
-    // has core relations to read like any other — `TASK-0024`.
-    let spec = source_spec(brain)?;
+    // Validity of the source, never the legacy scope and never its *kind*: a
+    // node of `brain-beta` has core relations to read like any other
+    // (`TASK-0024`), and so has a node of a folder the person chose
+    // (`TASK-0057`, `DEC-0053` A).
+    let spec = generic_source_spec(brain)?;
     // The pair is the boundary — `TASK-0018` §4.1 rule 4. A reference minted
     // in another brain is refused before any store is opened.
     if !reference.belongs_to(&brain.brain_id) {
@@ -593,7 +636,7 @@ pub fn node_relations(
 
     Ok(NodeRelations {
         brain_id: brain.brain_id.clone(),
-        fixture_id: spec.id.to_string(),
+        fixture_id: fixture_diagnostic(spec),
         reference: BrainNodeRef::new(&brain.brain_id, node_id),
         endpoint_key: key,
         relative_path: node.relative_path.clone(),
@@ -616,8 +659,9 @@ pub fn approve_suggestion(
     suggestion_key: &str,
 ) -> Result<RelationsOverview, MapError> {
     // Approving a **core** suggestion is a generic act. The refusal that
-    // matters here is staleness, below, not the legacy fixture.
-    let spec = source_spec(brain)?;
+    // matters here is staleness, below, not the legacy fixture and not the
+    // kind of source — `DEC-0053` F.
+    let spec = generic_source_spec(brain)?;
     let legacy_scope = legacy_fixture_spec(brain)?.is_some();
     let snapshot = commands::analysis_input(paths, brain)?;
     // Opened on **this** brain's store, so the approval cannot reach another
@@ -639,7 +683,7 @@ pub fn approve_suggestion(
     overview(
         &store,
         brain,
-        spec.id,
+        spec,
         legacy_scope,
         paths.relative_name(&database),
         &snapshot.nodes,
@@ -666,7 +710,7 @@ pub fn revoke_relation(
     suggestion_key: &str,
 ) -> Result<RelationsOverview, MapError> {
     let provenance = Provenance::parse(provenance)?;
-    let spec = source_spec(brain)?;
+    let spec = generic_source_spec(brain)?;
     let legacy_scope = legacy_fixture_spec(brain)?.is_some();
     let snapshot = commands::analysis_input(paths, brain)?;
     let database = paths.brain_relations_database(&brain.brain_id);
@@ -679,7 +723,7 @@ pub fn revoke_relation(
     overview(
         &store,
         brain,
-        spec.id,
+        spec,
         legacy_scope,
         paths.relative_name(&database),
         &snapshot.nodes,
@@ -696,7 +740,8 @@ pub fn revoke_relation(
 #[serde(rename_all = "camelCase")]
 pub struct SuggestionReviewQueue {
     pub brain_id: String,
-    pub fixture_id: String,
+    /// `None` on a `REAL_ROOT` — `DEC-0053` D, as in [`RelationsOverview`].
+    pub fixture_id: Option<String>,
     /// **Pending only, and exact.** Approved and rejected suggestions are not
     /// counted here — a queue that mixed decided items into its total would
     /// tell the user there is work left when there is none.
@@ -742,7 +787,7 @@ pub fn review_queue(
     offset: usize,
     limit: usize,
 ) -> Result<SuggestionReviewQueue, MapError> {
-    let spec = source_spec(brain)?;
+    let spec = generic_source_spec(brain)?;
     let snapshot = commands::analysis_input(paths, brain)?;
     let store = RelationStore::open(&paths.brain_relations_database(&brain.brain_id))?;
     let engine_current = super::rule_engine::is_current(paths, brain)?;
@@ -774,7 +819,7 @@ pub fn review_queue(
 
     Ok(SuggestionReviewQueue {
         brain_id: brain.brain_id.clone(),
-        fixture_id: spec.id.to_string(),
+        fixture_id: fixture_diagnostic(spec),
         total_pending,
         offset,
         limit,
@@ -806,7 +851,7 @@ pub fn reject_suggestion(
     // Rejecting a **core** suggestion is a generic act, exactly like approving
     // one. The refusal that matters here is staleness, below, not the legacy
     // fixture.
-    let spec = source_spec(brain)?;
+    let spec = generic_source_spec(brain)?;
     let legacy_scope = legacy_fixture_spec(brain)?.is_some();
     let snapshot = commands::analysis_input(paths, brain)?;
     // Opened on **this** brain's store, so a refusal cannot reach another
@@ -832,7 +877,7 @@ pub fn reject_suggestion(
     overview(
         &store,
         brain,
-        spec.id,
+        spec,
         legacy_scope,
         paths.relative_name(&database),
         &snapshot.nodes,
@@ -1096,7 +1141,7 @@ mod tests {
 
         assert!(overview.legacy_in_scope);
         assert_eq!(overview.brain_id, "brain-alpha");
-        assert_eq!(overview.fixture_id, RELATIONS_FIXTURE);
+        assert_eq!(overview.fixture_id.as_deref(), Some(RELATIONS_FIXTURE));
         assert_eq!(overview.established.len(), 12);
         assert_eq!(overview.deterministic_count, 8);
         assert_eq!(overview.approved_count, 4);
@@ -1428,7 +1473,7 @@ mod tests {
         // apply rather than refusing the brain.
         let overview = open_relations(&paths, &beta()).expect("beta relations open");
         assert_eq!(overview.brain_id, "brain-beta");
-        assert_eq!(overview.fixture_id, "deep");
+        assert_eq!(overview.fixture_id.as_deref(), Some("deep"));
         assert!(
             !overview.legacy_in_scope,
             "TASK-0017 legacy relations must not be claimed on `deep`"
@@ -1505,7 +1550,7 @@ mod tests {
             node_relations(&paths, &beta(), &BrainNodeRef::new("brain-beta", node.id))
                 .expect("beta node relations");
         assert_eq!(node_view.brain_id, "brain-beta");
-        assert_eq!(node_view.fixture_id, "deep");
+        assert_eq!(node_view.fixture_id.as_deref(), Some("deep"));
         assert_eq!(node_view.relative_path, node.relative_path);
         assert!(node_view.endpoint_key.contains("brain-beta"));
 
