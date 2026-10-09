@@ -1,7 +1,7 @@
 # TASK-0058 — Stage B / B01 — Visual Baseline & Responsive Shell
 
 - **Date :** 2026-10-09
-- **Status :** `IMPLEMENTED` — 2026-10-09, **en attente de vérification indépendante**.
+- **Status :** `VERIFIED` — contrôle indépendant ACTION-0109 (2026-10-09), dans la portée B01 seulement.\n  Aucun défaut horizontal; B01-O1 reporté à TASK-0059.
   Démarrée le 2026-10-09 après vérification du point fixe : Stage A `CLOSED`,
   `P-01..P-22` = 22/22 `CLOSED/VERIFIED` dans `docs/product/parity-matrix-p01-p22.json`,
   aucune autre tâche `IN_PROGRESS`, `.orchestrator/NEXT_PROMPT.md` seul GO technique

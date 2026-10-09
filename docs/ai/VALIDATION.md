@@ -10284,3 +10284,15 @@ colonne carte commence à 727 px du haut du document et le document atteint
 fiche. Le correctif changerait le `viewport` de `MapView` et donc la caméra, que
 le critère d'acceptation interdit de déplacer involontairement. **Décision
 réservée à l'orchestrateur.**
+
+
+## DS — ACTION-0109 — vérification documentaire indépendante TASK-0058 — 2026-10-09
+
+- GitHub ref B01 contrôlée : `672da90dfb3c8c5720ee99273896b282fb0e5d72`. Descendance depuis ACTION-0108 : six commits; depuis le HEAD de preuve `de6c9e6048def459a22f9332e7d17ca2407d73a1` jusqu'au HEAD final : uniquement docs/JSON/PNG, pas de source produit ni script de harnais modifié.
+- Diff B01 : `src/map/responsiveLayout.test.ts` seul ajout sous `src/`; `src/map/map.css`, `MapApp.tsx`, `MapView.tsx`, Rust, config, dépendances inchangés.
+- `TASK-0058-visual-baseline.json` relu : 3 tailles × 6 états réels déclarés; mesures 0 overflow horizontal/0 escaper/0 scroll latéral/0 perte de contrôle/0 overlay; 45 Tab jusqu'au panneau depuis ancre nommée; axe 0 violation, incomplete contrastes 12-20 par état; deuxième processus restaure EN + compact + reduce + légende ouverte et détails masqués.
+- Inspection directe de PNG réels sur GitHub, au moins deux états 960×640 et 1280×800 : confirme présentation visible de haut de page et espace de carte absent 960×640. B01-O1 documenté sans correction; défilement VERTICAL permis par B01, mais dette B02.
+- Preuve P-22 relatée : strict digest identique `fe9d9f55…`; access digest identique; 160 entrées et 0 artefact sous la racine. 726 tests, pnpm check/build et campagne WebView2 sont **exécutés par Claude**, non indépendamment par ChatGPT.
+- API GitHub Actions et commit checks = **0** pour B01; aucun statut CI vert inventé. `main` non fusionné.
+- **PASS/VERIFIED TASK-0058 seule** sur ses critères conditionnels; reste hors scope P-01..P-22 complet (avant clôture Stage B), vrai lecteur d'écran, panneaux relation/review/cross à largeur réduite, contraste incomplet et réserve R8.
+- Prochaine tâche B02 créée par justification `B01-O1`, pas par séquence automatique.

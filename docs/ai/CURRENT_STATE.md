@@ -1,5 +1,16 @@
 # État courant
 
+## ACTION-0109 — TASK-0058 VERIFIED / B02 prête — 2026-10-09
+
+- Contrôle GitHub indépendant sur `672da90dfb3c8c5720ee99273896b282fb0e5d72`: diff depuis ACTION-0108 = aucun code produit touché, juste test responsive + harnais/artefacts/docs.
+- 18 états WebView2 (3 tailles × 6), aucun débordement horizontal, aucune commande perdue; 4 PNG réels; P-22 stricte identique; tests 726 frontend PASS **rapportés par l'agent, non rejoués par ChatGPT**.
+- TASK-0058 = VERIFIED dans son scope B01; Stage A reste CLOSED; Stage B maintenant EN COURS mais loin d'être CLOSED.
+- B01-O1 = dette visuelle non fermée : carte commence sous la fenêtre 960×640; grande hauteur de document; actions et panneaux restent atteignables par scroll/clavier.
+- Test `responsiveLayout.test.ts` figé sur le CSS courant = témoin de baseline, à adapter si Stage B transforme la disposition.
+- ACTION-0109 sélectionne **une** suite motivée : TASK-0059 APPROVED / NOT STARTED sur `build/v0.2-b02-first-screen-map` (carte visible sans défiler).
+- R8 non levée, aucune CI distante, pas de Stage C/D, main intacte.
+
+
 ## TASK-0058 — Stage B / B01 — baseline visuelle WebView2 — `IMPLEMENTED` — 2026-10-09
 
 - Branche `build/v0.2-b01-responsive-shell`, base `cd59d1d` (ACTION-0108); `HEAD` mesuré `de6c9e6048def459a22f9332e7d17ca2407d73a1`.

@@ -6870,3 +6870,8 @@ clôture `P-04` d'`ACTION-0094` n'est ni révoquée ni étendue ici. Aucune
 ### Non fait, volontairement
 
 - Aucun correctif CSS, aucun `TASK-0059`, aucun Stage C/D, aucune PR, aucune fusion vers `main`, aucune dépendance ajoutée.
+
+
+## 2026-10-09 — ACTION-0109 — contrôle TASK-0058, arbitrage B01-O1
+
+**Orchestrateur ChatGPT, audit GitHub et captures réelles publiées.** PASS / VERIFIED pour TASK-0058 : aucune régression ni défaut horizontal démontré dans 18 mesures WebView2; aucune ligne de code produit modifiée; limites d'axe incomplete et CI absente conservées. B01-O1 (carte hors fenêtre à 960×640) identifié comme première dette visuelle à résoudre. `TASK-0059` APPROVED sur `build/v0.2-b02-first-screen-map`, prompt versionné pour Claude Code Sonnet/HIGH. Stage A CLOSED, Stage B EN COURS, C/D inchangées, main non fusionnée.

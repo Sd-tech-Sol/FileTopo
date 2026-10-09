@@ -1,5 +1,15 @@
 # HANDOFF — passage de relais
 
+## Relais — ACTION-0109 / B02 premier écran — 2026-10-09
+
+- B01 indépendante : `TASK-0058 = VERIFIED` au HEAD `672da90dfb3c8c5720ee99273896b282fb0e5d72` (ACTION-0109). Validation scope horizontal/focus uniquement; pas de CSS modifié et aucune CI GitHub.
+- B01-O1 : sur une fenêtre réelle 960×640, la carte commence à 727px; le premier écran n'affiche pas la carte. Le rapport garde 1719px pour atteindre une carte et un document jusqu'à 4185px. Constat corroboré par captures publiées.
+- Début `<main className="app__main">` seulement après header/brains/exclusions/contrôles développeur/reports dans MapApp; `map.css` construit des colonnes 1fr+360px et un long document non borné en hauteur.
+- Choix ACTION-0109 : une seule tâche B02, `TASK-0059`, sur `build/v0.2-b02-first-screen-map`. Faire apparaître carte/nœud utile dans la première fenêtre **par présentation seulement**, sans refactor du moteur, ni perte des opérations existantes.
+- Préserver caméra et état restauré P-19, clavier/FR-EN/dark-light/reduced-motion, source P-22 inchangée. Les tests B01 peuvent être adaptés si la baseline change, mais en gardant preuve comportementale.
+- `.orchestrator/NEXT_PROMPT.md` est le GO unique. Claude rend IMPLEMENTED/BLOCKED; ChatGPT contrôle. Stage C/D non commencées, pas de TASK-0060.
+
+
 ## Relais — TASK-0058 / Stage B B01 mesurée, produit non touché — 2026-10-09
 
 - Branche `build/v0.2-b01-responsive-shell`; `HEAD` mesuré `de6c9e6048def459a22f9332e7d17ca2407d73a1`.

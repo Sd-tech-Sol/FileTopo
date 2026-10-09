@@ -1,18 +1,16 @@
-# NEXT_PROMPT — TASK-0058 / Stage B B01
+# NEXT_PROMPT — TASK-0059 / Stage B B02
 
-**STATE:** `APPROVED / NOT STARTED`
-**Executor:** Claude Code — Sonnet, effort MEDIUM
-**Branch:** `build/v0.2-b01-responsive-shell`
-**Base branch HEAD before audit:** `81e7c4fa0135652fd4afae7f6c566628a64ef003`
-**Source of truth:** `docs/reviews/ACTION-0108-stage-b-audit.md` and `docs/tasks/TASK-0058-stage-b-visual-baseline-responsive-shell.md`.
+**TÂCHE APPROVED, NON COMMENCÉE.**
+**Agent : Claude Code — Sonnet / effort HIGH.**
+**Branche distante : `build/v0.2-b02-first-screen-map`.**
+**Source de vérité :** `docs/reviews/ACTION-0109-task0058-independent-control.md`, `docs/tasks/TASK-0059-stage-b-first-screen-map.md`.
 
-1. Synchronise `build/v0.2-b01-responsive-shell` en **fast-forward uniquement** depuis `origin`, confirme la branche et un arbre propre. N'utilise pas reset --hard, clean, force push, merge main ou rebase destructif. Un ancien répertoire local sur une autre branche exige un fetch puis un checkout sûr; en cas de modifications locales inattendues, STOP.
-2. Lis `AGENTS.md`, `docs/ai/START_HERE.md`, `docs/ai/CURRENT_STATE.md`, `docs/ai/NEXT_ACTION.md`, `docs/reviews/ACTION-0108-stage-b-audit.md` et **l'intégralité** de `docs/tasks/TASK-0058-stage-b-visual-baseline-responsive-shell.md`. Suis la portée de la fiche, sans anticiper B02/C/D.
-3. Vérifie le point fixe : Stage A CLOSED, 22 P CLOSED/VERIFIED, aucune TASK IN_PROGRESS, et ce prompt est le seul GO technique courant. Passe `TASK-0058` à IN_PROGRESS seulement après ces vérifications.
-4. Première chose : mesure visuelle réelle et étalon AVANT correction CSS. Si aucun échec reproductible du chrome à 960x640/1280x800/1366x768, ne touche pas au produit; livre plutôt le résultat et les preuves. Si échec, ne corrige que `src/map/map.css` (chrome responsive) avec test ciblé et recontrôle WebView2.
-5. Laisse `MapView`, graphe, Rust, IPC, data model, configuration Windows minimale, déps et logique intacts. Aucune donnée personnelle. Les résultats de test non exécutés restent NON TESTÉS.
-6. Tests/gates et preuves : respecte la fiche; ne transforme pas les preuves historiques en nouveaux résultats. Documente tous les échecs/anomalies.
-7. Mets les documents de passation à jour; écris un `.orchestrator/RESULT.md` clair avec commit(s), diff, fichiers, commandes, artefacts, limites, statut `IMPLEMENTED` ou `BLOCKED` — jamais VERIFIED par toi. Commit et push non forcé vers `build/v0.2-b01-responsive-shell`; arrête-toi.
-8. **Ne prépare pas TASK-0059, aucune PR/merge/main/release/tag.**
+1. Synchronise `origin/build/v0.2-b02-first-screen-map` par **fast-forward uniquement**, confirme la branche/HEAD attendu et un arbre Git propre. Pas de reset, clean, force push, merge/rebase destructif. Si un travail local non prévu existe, STOP.
+2. Lis `AGENTS.md`, `docs/ai/START_HERE.md`, `docs/ai/CURRENT_STATE.md`, `docs/ai/NEXT_ACTION.md`, ACTION-0109, puis **l'intégralité** de TASK-0059.
+3. Fais d'abord une **mesure visuelle reproductible dans le vrai Tauri/WebView2** du défaut B01-O1 à 960×640 / 1280×800 / 1366×768, sur REAL_ROOT synthétique. La carte est sous la première fenêtre. Une capture à `scrollY=0` et les bounding boxes sont obligatoires avant tout changement.
+4. Livre le **plus petit correctif de présentation** qui rende la carte et un nœud de contexte visibles immédiatement à 960×640, sans cacher définitivement les commandes, ni changer backend, Index, IPC, modèles, MapView/algorithme/caméra métier. Utilise et adapte les composants existants. Si cela exige de sortir des fichiers permis ou de casser P-19, **BLOCKED et STOP**.
+5. Rejoue les contrôles de la fiche dans WebView2, clavier, FR/EN, clair/sombre, compact/reduced motion, P-22, réouverture et tests frontend. Les tests CSS historiques peuvent être adaptés pour prouver un nouveau comportement, jamais simplement effacés. Publie les échecs et limites.
+6. Complète `.orchestrator/RESULT.md` et les docs de mémoire, puis commit/push sur `build/v0.2-b02-first-screen-map`. Statut **IMPLEMENTED** ou **BLOCKED**, **jamais VERIFIED**; aucune TASK-0060 ni Stage C/D ni PR/merge/main.
+7. Arrête-toi. ChatGPT vérifiera directement GitHub.
 
-Une fois terminé, l'orchestrateur relira directement GitHub. Cette tâche part d'une session propre : `/clear` est approprié avant son lancement car tout le contexte nécessaire est versionné.
+Une nouvelle session `/clear` est adaptée : les décisions, preuves et contraintes sont versionnées.
