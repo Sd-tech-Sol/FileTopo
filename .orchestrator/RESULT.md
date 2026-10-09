@@ -5,7 +5,7 @@ BRANCH: build/v0.2-b02-first-screen-map
 BASE: afd6bf8 (ACTION-0109)
 HEAD_MEASURED_BEFORE: 0b6de20 (produit inchangé, harnais seul)
 HEAD_MEASURED_AFTER: 921dacb
-HEAD_PUSHED: voir dernier commit de la branche
+HEAD_PUSHED: ac7559a etait la doc; ce fichier la complete, donc le HEAD a controler est le dernier commit de la branche. Les preuves, elles, sont figees a cec519f.
 
 BEFORE: a scrollY=0, 0 px de .map-view visible et 0 carte, dans les 18 etats ET aux 3 tailles — pas seulement 960x640. Document jusqu'a 3545 px. Bandes au-dessus de <main> 517-727 px; pile de commandes DANS la colonne carte 633 px; surface de carte a 1360 px de document; asideScrollsInside=false partout.
 
