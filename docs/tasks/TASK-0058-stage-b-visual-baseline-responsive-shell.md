@@ -1,7 +1,9 @@
 # TASK-0058 — Stage B / B01 — Visual Baseline & Responsive Shell
 
 - **Date :** 2026-10-09
-- **Status :** `APPROVED` — **NOT STARTED**
+- **Status :** `IN_PROGRESS` — démarrée le 2026-10-09 (point fixe vérifié : Stage A `CLOSED`,
+  `P-01..P-22` = 22/22 `CLOSED/VERIFIED` dans `docs/product/parity-matrix-p01-p22.json`,
+  aucune autre tâche `IN_PROGRESS`, `.orchestrator/NEXT_PROMPT.md` seul GO technique courant)
 - **Branch :** `build/v0.2-b01-responsive-shell`
 - **Base :** `81e7c4fa0135652fd4afae7f6c566628a64ef003` (ACTION-0107 Stage A CLOSED)
 - **Chosen by :** `ACTION-0108`
