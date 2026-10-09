@@ -1,17 +1,15 @@
-# NEXT_PROMPT — correction TASK-0060 / ACTION-0111
+# NEXT_PROMPT — TASK-0061 / Stage B B04
 
-**Même tâche TASK-0060 / Stage B B03. NE PAS commencer TASK-0061.**  
-**Branche :** `build/v0.2-b03-primary-chrome`  
-**Base à synchroniser :** commit documentaire ACTION-0111, sur `79128682d61cedf22b39ea18fb1f022c33149c39`.  
+**Une seule tâche APPROVED / NOT STARTED.**  
+**Branche :** `build/v0.2-b04-multibrain-shell`  
+**Base historique vérifiée :** `c055181d8236a6681c97aea4d5ed77731d9d1e30` (ACTION-0112 sur B03).  
 **Agent suggéré :** Claude Code Sonnet, effort HIGH.
 
-L'audit indépendant `docs/reviews/ACTION-0111-task0060-independent-control.md` est le GO de correction. Le rapport d'exécution positif ne vaut pas VERIFIED.
+1. Synchronise `origin/build/v0.2-b04-multibrain-shell` par **fast-forward uniquement** sur worktree propre et vérifie le HEAD après le commit documentaire ACTION-0112. Pas de reset/clean/force push.
+2. Lis `AGENTS.md`, `docs/ai/START_HERE.md`, `docs/ai/CURRENT_STATE.md`, `docs/ai/NEXT_ACTION.md`, `docs/reviews/ACTION-0112-task0060-independent-control.md`, puis **TOUT** `docs/tasks/TASK-0061-stage-b-multibrain-shell.md`.
+3. B03 est VERIFIED, mais sa rangée unique n'est **pas mesurée** pour 2–3 cerveaux, noms longs/Unicode, statut/corrections et menu de composition ouvert. Construis des fixtures **REAL_ROOT synthétiques jetables** et rejoue une vraie matrice Tauri/WebView2 960×640/1280×800/1366×768, FR/EN, light/dark, compact/reduced-motion. Sauvegarde mesures et captures de première fenêtre.
+4. **Mesure d'abord.** Ne modifie le code produit que si une régression est démontrée. Si oui, plus petit patch UI permis dans TASK-0061, et rejouer tout. Préserver 13 primaires entièrement visibles, les trois résumés accessibles, carte ≥240px, pas d'overflow, sélection/focus, références de tous cerveaux dans Diagnostics, P-19 et P-22.
+5. Vérifie vrai clavier/souris/menus, gates pnpm, axe sans attribuer de certification, et signale explicitement tout état non couvert. Pas de changement moteur/Rust/Index/IPC/MapView/lockfile.
+6. Mets à jour `.orchestrator/RESULT.md` (`IMPLEMENTED` ou `BLOCKED`, **jamais VERIFIED**), docs de mémoire, preuves, commit/push B04 puis STOP. **Ne prépare aucune TASK-0062, aucune Stage C/D, aucune PR, release, tag ou merge main.**
 
-1. `git fetch`, synchronise `origin/build/v0.2-b03-primary-chrome` **en fast-forward seulement**, worktree propre, puis lis `AGENTS.md`, `docs/ai/START_HERE.md`, ACTION-0111, l'intégralité de `docs/tasks/TASK-0060-stage-b-primary-chrome.md` et les preuves AFTER.
-2. **B03-O1 prouvé à 960x640 (comfortable)** : `Ajouter un dossier`, `Ouvrir`, `Actualiser` ne montrent que 20/35px; les résumés outils avancés et diagnostics sont encore 25/70px sous le pli. Les 13 commandes sont simplement cliquables au test de pointage, pas toutes entièrement visibles : `primaryContractSatisfiedWhole=false` et 10/13 au pire. **Ce n'est pas encore accepté.**
-3. Corrige **dans les mêmes fichiers UI autorisés B03**, par la plus petite réorganisation responsable, sans retirer de contrôles ni réduire `MapView` sous 240px, pour obtenir **13/13 commandes usuelles ENTIERES** et un point d'entrée avancé/diagnostic clairement visible au premier écran à 960x640 confortable, FR/EN, clair/sombre; préserver les autres tailles, compact, reduced motion. Réduis hauteur/encombrement du chrome par son organisation; ne déguise pas un bouton partiel en « visible ».
-4. Ajoute une vérification WebView2 de `fullyVisible` / hit test des 13 primaires et des accès aux groupes **depuis la première fenêtre sans scroll préalable** dans 18/18 états. Après ouverture d'un groupe par clavier et souris, contrôle des commandes cachées; protège leurs tests de régression sans laisser jsdom interpréter un `<details>` fermé comme preuve. La restauration P-19 et empreinte P-22 demeurent exigées.
-5. Rejoue campagnes réelles WebView2, captures et rapports nouveaux, `pnpm test`, `pnpm check`, `pnpm build`, `git diff --check`. Si un blocage hors portée apparaît : `BLOCKED`, preuves et STOP. Ne change pas Rust, Index, IPC, View, dépendances, ni main.
-6. Mets à jour `.orchestrator/RESULT.md`, TASK-0060 et les docs d'état. Commit/push B03 **sans force**, STOP. Statut `IMPLEMENTED` ou `BLOCKED` seulement; ChatGPT décide VERIFIED.
-
-`/clear` est possible, la source de vérité se trouve dans GitHub.
+Une nouvelle session `/clear` est possible, le dépôt contient toutes les instructions.

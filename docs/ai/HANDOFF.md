@@ -1,5 +1,14 @@
 # HANDOFF — passage de relais
 
+## ACTION-0112 — TASK-0060 VERIFIED / B04 approuvée — 2026-10-09
+
+- Ref B03 contrôlée `c055181d8236a6681c97aea4d5ed77731d9d1e30` (artefact WebView2 AFTER testé au HEAD `fb01e3cdbe5fa76538e01f597965bac32412fe63` et docs seulement ensuite). Action ACTION-0111 close : les 13 actions primaires sont **entièrement** visibles, les trois groupes avancés entièrement détectables et souris/clavier dans 18/18 états réels, carte visible entre 261 et 535px, aucune commande perdue, P-19/P-22 conservées.
+- Contre-épreuve harnais `TASK-0060-primary-chrome-previous-product.json` échoue sur l'ancien produit (10/13 entières, groupes rognés), preuve anti-faux PASS. Captures 960 FR clair/sombre et 1280 FR clair inspectées.
+- `pnpm test 781/781` 2 fois, check/build/diff-check PASS **rapportés par Claude seulement**, non relancés par ChatGPT. CI distant 0. Rust non touché/non rejoué.
+- **VERDICT : TASK-0060 VERIFIED dans la portée B03. Stage B demeure EN COURS.**
+- Dette ciblée suivante : absence d'essais avec 2–3 cerveaux, noms longs/Unicode, statut et menu de composition. TASK-0061 B04 approuvée (mesure d'abord; patch UI uniquement si besoin) sur `build/v0.2-b04-multibrain-shell`, agent Sonnet/HIGH. Aucune task après B04, R8/C/D/main intacts.
+
+
 ## Relais — correction ACTION-0111 de TASK-0060 (`B03-O1`) — 2026-10-09
 
 - Branche `build/v0.2-b03-primary-chrome`; `HEAD` mesuré `fb01e3c`. Le diagnostic « arithmétique » de `B03-O1` — « il faut reprendre des pixels à la carte ou retirer du contenu » — était **faux** : le chrome tenait 125 px, pas 281, dès qu'on a rangé les mêmes éléments autrement. Un budget calculé à la main sur une disposition n'est pas une preuve qu'aucune autre n'existe; ACTION-0111 avait raison de le dire.

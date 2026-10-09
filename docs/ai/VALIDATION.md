@@ -10478,3 +10478,14 @@ L'objectif **souhaitable** de 300 px de carte à 960x640 n'est **pas atteint**
 ### DX.4 Non testé — dit explicitement
 
 Lecteur d'écran réel; `color-contrast` (`INCOMPLETE`); marche clavier jusqu'à la commande la plus éloignée de chaque groupe hors 960x640; rangée composition avec plusieurs cerveaux, un nom long ou une ligne de statut (marge 51 px, non mesurée); panneaux relations / révision / inter-cerveaux non peuplés par la fixture; `composition__menu` non ouvert; commandes pilotées par rôle ou libellé dans les tests jsdom (hors portée de la garde statique); `P-01..P-22` (réservées à la clôture de Stage B). `jsdom` ne prouve rien sur un `<details>` fermé.
+
+
+## DX — ACTION-0112 — audit indépendant de la correction B03-O1 — 2026-10-09
+
+- GitHub ref B03 = `c055181d8236a6681c97aea4d5ed77731d9d1e30`, correction depuis ACTION-0111 en 3 commits. Produit et tests en `7085674`, harnais en `fb01e3cdbe5fa76538e01f597965bac32412fe63`, un commit de preuves/docs seulement ensuite. Aucun changement post-mesure du code/harnas.
+- ACTION-0111 demande 13/13 primaires **fullyVisible** et résumés avancés/diagnostics visibles sans scroll dans 18 états. `TASK-0060-primary-chrome-after.json`, `headTested=fb01e3cdbe5fa76538e01f597965bac32412fe63` : `primaryContractSatisfiedWhole=true`, `worstPrimaryFullyVisible=13`, `groupEntryPointsWholeEveryState=true`, `groupsOpenedByMouseEveryState=true`, `groupsOpenedByKeyboardEveryState=true`, `accessibilityTreeSaysExpandedEveryState=true`, `statesWhereTheChromeBandScrollsAtOpening=[]`.
+- Contrôles de première fenêtre et clavier/souris, fermeture de groupe, contenu masqué/affiché et focus cohérents; 59 commandes persistantes dans DOM, aucun scroll document ou latéral, carte 261–535 px (>240px), caméra stable, P-19 restart, P-22 strict/access digest inchangé 160 entrées, zéro artefact source.
+- Contre-épreuve harnais publiée `TASK-0060-primary-chrome-previous-product.json` : ancien produit B03 10/13 primaires entières, group entrypoints fails, souris ne révèle pas tout; le même harnais discrimine défaut et correction.
+- Captures PNG FINAL AFTER à 960x640 FR light/dark et 1280x800 FR light inspectées visuellement depuis GitHub. Les commandes et accès avancés sont entiers sur ces écrans.
+- `pnpm test 781/781` deux runs, pnpm check/build, diff-check : **rapportés par Claude; non rejoués indépendamment**. Aucune CI Github distante HEAD (0 run / 0 check). Pas de Rust touché.
+- **PASS / VERIFIED TASK-0060 B03 seulement**, contre-épreuve et scope suffisants. Réserves inchangées : 2+ cerveaux/noms longs/statuts/menu composition, panneaux relation/review/cross narrow, axe color-contrast INCOMPLETE, lecteur d'écran, pavé tactile/clipboard réels, replay complet P-01..P-22 avant Stage B CLOSED, réserve R8 Stage C.

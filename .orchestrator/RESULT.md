@@ -1,41 +1,16 @@
-# TASK-0060 — Stage B / B03 — correction B03-O1 (ACTION-0111)
-AGENT: CLAUDE CODE (Sonnet 5.5, effort HIGH)
-BRANCH: build/v0.2-b03-primary-chrome
-BASE: 340b612 (documentaire ACTION-0111, sur 79128682d61cedf22b39ea18fb1f022c33149c39) — fast-forward depuis origin, arbre propre
-MEASURED_HEAD: fb01e3cdbe5fa76538e01f597965bac32412fe63 (campagne WebView2 `after` : produit 7085674 + harnais fb01e3c, tous deux commités avant la mesure)
-STATUS: IMPLEMENTED — jamais VERIFIED par l'exécuteur (c'est à l'orchestrateur)
-COMMITS: 7085674 fix(task0060) produit + tests jsdom; fb01e3c test(task0060) harnais; puis un commit documentaire + preuves.
-CODE_DIFF: src/map/MapApp.tsx, src/map/map.css, src/map/mapStrings.ts, src/map/responsiveLayout.test.ts, scripts/task0060-primary-chrome.{mjs,ps1}, et — tests jsdom directement touchés — src/map/{brainIdentity,localeRuntime,resumeMapApp,watchMapApp,workspaceMapApp}.test.tsx + nouveau petit helper src/test/disclosure.ts. Aucun Rust/src-tauri, Index, SQLite, IPC, modèle, MapView.tsx, viewState, resumeState, dépendance, verrou, ni main.
-
-## Résultat (campagne WebView2 réelle, 18 états, 2 processus)
-- primaryContractSatisfiedWhole = TRUE; worstPrimaryFullyVisible = 13/13 dans les 18 états (avant correction : 10/13, 5 états à 960x640 confortable avec 20/35px sur 3 boutons).
-- groupEntryPointsWholeEveryState = TRUE : les 3 résumés (outils avancés du cerveau, diagnostics, outils avancés de la carte) sont ENTIERS et répondent au test de pointage dans 18/18 états, sans aucun défilement préalable. Aucun état où la bande de chrome défile à l'ouverture (avant : 6 états sur 6 à 960x640, contenu 281px dans 176px).
-- Mesure interactionnelle explicite, dans les 18 états, depuis la première fenêtre (rien n'est défilé avant) : clic souris réel au centre du résumé, marche Tab réelle jusqu'au résumé + Entrée + Entrée, état `expanded` lu dans l'arbre d'accessibilité lui-même (Accessibility.getPartialAXTree, rôle DisclosureTriangle), focus conservé sur le résumé, document à scrollY=0, groupe refermé ensuite. Verdicts : mouse/keyboard/ax/focus/document/restored = TRUE dans 18/18.
-- Commandes cachées : un groupe fermé masque VRAIMENT ce qu'il contient (aucune commande ni corps ne répond à un test de pointage, même après défilement de la bande) = TRUE dans 18/18; après ouverture, souris ET clavier, toutes les commandes du groupe sont atteignables au test de pointage = TRUE dans 18/18 (9 commandes pour les outils avancés du cerveau, le corps seul pour Diagnostics qui ne contient aucun bouton, 19 pour les outils de la carte).
-- Réorganisation (mêmes éléments, mêmes data-testid, aucun contrôle supprimé) : (1) en-tête sur UNE rangée (titre, langue, densité, mouvement) : 99 -> 35px; (2) composition + les 3 actions lifecycle sur UNE rangée : 82 -> 35px; (3) les deux groupes du chrome côte à côte dans `.app__groups` (un groupe ouvert prend toute la rangée) : 70 -> 35px; (4) la légende de tranche (`subtitle`) devient la première ligne du groupe Diagnostics; (5) la référence de source de chaque pastille (`showSource`, 36 caractères, 290px) est un diagnostic développeur : elle sort de la pastille et apparaît EN ENTIER, non tronquée, dans le groupe Diagnostics (`data-testid="brain-sources"`); (6) FR : deux indices de groupe raccourcis ("identité, exclusions, reconstruction" / "moteur, sources, rapports") pour tenir sur une ligne. Bande de chrome à 960x640 : 125px de contenu pour 176px disponibles (99 en compact) — elle ne défile plus (125/125) et rend 51px à la carte ou aux imprévus.
-- Carte visible : 261 (pire) à 535 (meilleur); 304 à 960x640 hors légende, 480 à 1280x800, 448 à 1366x768. Plancher 240 respecté; l'objectif souhaitable de 300 à 960 est atteint hors état légende (261 avec légende ouverte).
-- Invariants : 59 commandes dans le DOM (pass 1) dans les 18 états, mêmes data-testid; débordement horizontal 0; scroll vertical du document 0; 0 élément rogné / 0 défileur latéral (le tripwire B01 a d'ailleurs refusé une première version à ellipse — voir ci-dessous); caméra identique à travers 960->1280->1366->960; P-19 : second processus, tout restauré, les 3 groupes reviennent fermés (non-persistance assumée); P-22 : empreintes stricte ET accès identiques, 160 entrées, 0 artefact, 0 écriture sur le fil; P-02/05/07/11/21 ciblées; axe-core 4.13.0 : 0 violation, color-contrast INCOMPLETE; 0 erreur console fatale.
-
-## Falsification du harnais (les nouvelles mesures mordent)
-Le harnais corrigé a été rejoué sur le produit PRÉCÉDENT (arbre `src/` identique à 7912868, commit jetable local 61c18d4, branche supprimée, jamais poussée) : `docs/performance/runs/TASK-0060-primary-chrome-previous-product.json` → primaryContractSatisfiedWhole=FALSE (10/13 au pire, 5 états : 20/35px sur les 3 boutons), groupEntryPointsWholeEveryState=FALSE (6 états), groupsOpenedByMouseEveryState=FALSE (la souris ne touche pas des résumés rognés), 6 états où la bande de chrome défile. Le défaut B03-O1 est donc détecté par les nouvelles mesures, pas seulement corrigé.
-Autres falsifications exécutées : retirer un `openGroup(...)` d'un test jsdom, et poser `text-overflow` sur `.app__group-hint`, font échouer exactement les gardes qui les nomment (responsiveLayout).
-Première version rejetée par la campagne elle-même (publiée dans l'historique de session, pas dans les artefacts) : source en ellipse -> le tripwire « défileur latéral » l'a refusée; source sur une seconde ligne -> la rangée composition s'est repliée (103px). Les deux ont conduit au déplacement du diagnostic de source.
-
-## Tests
-- `pnpm test` 781/781 (49 fichiers), exécuté DEUX FOIS sur le HEAD final (770 -> 781 : +11 tests de forme ACTION-0111 dans responsiveLayout.test.ts, 49 -> 60). `pnpm check`, `pnpm build`, `git diff --check` : passés. Rust NON exécuté (aucun code Rust touché).
-- Tests existants touchés, couverture sémantique inchangée ou renforcée (ils ouvrent maintenant le groupe par un clic sur son <summary> avant d'agir, via `openGroup()` de src/test/disclosure.ts, qui refuse de continuer si le groupe ne s'est pas ouvert) : brainIdentity (brain-identity-open, chrome-advanced-tools), localeRuntime (filter-state-NEW, cross-check), resumeMapApp (filter-kind-FILE/filter-reset), watchMapApp (filter-state-NEW), workspaceMapApp (branch-exit, branch-toggle). Une garde dans responsiveLayout.test.ts rend cette ouverture OBLIGATOIRE pour tout test MapApp qui nomme un data-testid de groupe. Limite honnête : une commande trouvée par rôle ou libellé, sans data-testid, échappe à cette garde statique; jsdom ne prouve toujours RIEN sur le disclosure — seule la campagne WebView2 le mesure.
-
-## Non testé / limites
-- Aucun lecteur d'écran réel; l'état `expanded` est lu dans l'arbre d'accessibilité de Chromium, pas annoncé par un lecteur. color-contrast reste INCOMPLETE, non tranché.
-- La marche clavier jusqu'à la commande la PLUS ÉLOIGNÉE de chaque groupe n'est mesurée qu'à 960x640; la marche Tab jusqu'au résumé + ouverture/fermeture l'est dans les 18 états.
-- Un nom de cerveau long, plusieurs cerveaux affichés ou une ligne de statut peuvent replier la rangée composition/actions : non mesuré. Budget restant à 960x640 comfortable : 51px (176-125); la ligne de statut vient APRÈS la rangée des groupes et défile dans la bande si besoin, sans masquer un contrôle ni un résumé.
-- Panneaux relations / file de révision / inter-cerveaux toujours non peuplés par la fixture; menu composition__menu non ouvert; la ligne `Rechercher un dossier ou fichier` dont le libellé frôle le champ en 960 est préexistante et hors portée.
-- Le `headTested` du JSON `previous-product` (61c18d4) est un commit local jeté : son arbre `src/` est identique à celui de 7912868 (vérifié par `git rev-parse`).
-- P-01..P-22 non rejouées (réservées à la clôture de Stage B). Aucune CI distante : 0 workflow, 0 contrôle sur ce HEAD. R8 non levée.
-- Décision de portée à signaler : la légende de tranche et la référence de source par cerveau ont changé d'EMPLACEMENT (premier écran -> groupe Diagnostics), sans suppression; l'orchestrateur peut les trancher autrement.
-
-## Git et actions distantes
-REMOTE_WRITE: push de commits vers la branche de travail déjà publiée build/v0.2-b03-primary-chrome, sans force ni réécriture d'historique publié (la squash des commits WIP a eu lieu AVANT tout push). Aucune PR, étiquette, release, fusion vers main, nouveau distant. Aucune opération hors dépôt. Opérations locales, non publiées : `git reset --soft` de mes propres commits WIP avant tout push; `git checkout --` limité aux artefacts de campagne que j'avais moi-même régénérés (explorations); `git branch -D` de la branche jetable locale tmp-falsify-0060 que j'avais créée pour la falsification.
-NEXT: contrôle indépendant de TASK-0060 par l'orchestrateur sur GitHub, puis VERIFIED ou refus.
-STAGE_A: CLOSED/VERIFIED. STAGE_B: IN_PROGRESS, NOT CLOSED. B01/B02 VERIFIED. B03 IMPLEMENTED, en attente.
-HOLD: pas de TASK-0061, pas de Stage C/D, pas de PR, pas de fusion vers main.
+# ACTION-0112 — Audit indépendant de TASK-0060, B03
+AGENT: CHATGPT ORCHESTRATOR
+VERDICT: TASK-0060 PASS / VERIFIED, dans sa portée B03 uniquement.
+CONTROLLED_BRANCH: build/v0.2-b03-primary-chrome
+CONTROLLED_HEAD: c055181d8236a6681c97aea4d5ed77731d9d1e30
+MEASURED_AFTER_HEAD: fb01e3cdbe5fa76538e01f597965bac32412fe63
+EVIDENCE: diff exact, .orchestrator/RESULT, TASK-0060, JSON BEFORE/AFTER/PREVIOUS-PRODUCT, captures PNG 960 FR light/dark et 1280, tests & harnais publiés.
+INDEPENDENT_LIMIT: revue GitHub indépendante, PAS de lancement Windows WebView2 ou pnpm par ChatGPT.
+RESULTS: 13/13 primaires entières 18/18, 3 résumés entiers et ouverts par souris/clavier 18/18, 59 commandes intactes, carte 261–535px, 0 scroll horizontal/document, caméra P-19/P-22 préservées. Contre-épreuve précédente échoue bien (10/13), nouvelle passe réussit.
+LOCAL_TESTS_CLAUDE: pnpm test 781/781 x2, pnpm check/build/diff-check PASS rapportés; Rust non exécuté.
+CI_REMOTE: ZERO / NO CI VERIFIED.
+RESERVES: multi-cerveaux, longs noms, statut/corrections, menu composition non testés; panneaux relation/review/cross à 960, contrastes axe INCOMPLETE, lecteur d'écran, P-14, pavé tactile P-11, R8.
+STAGE_A: CLOSED/VERIFIED.
+STAGE_B: IN_PROGRESS, NOT CLOSED.
+NEXT: TASK-0061 APPROVED / NOT STARTED, branch build/v0.2-b04-multibrain-shell, multi-cerveaux/hardening B04.
+HOLD: aucune TASK-0062, C/D, PR, merge, tag, release.

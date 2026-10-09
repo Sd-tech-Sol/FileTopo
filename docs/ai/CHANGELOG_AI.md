@@ -7023,3 +7023,8 @@ Aucun fichier interdit touché; aucun témoin affaibli; pas de `TASK-0061`, de S
 ### Portes
 
 `pnpm test` **781/781** deux fois, `pnpm check`, `pnpm build`, `git diff --check`; Rust non exécuté.
+
+
+## 2026-10-09 — ACTION-0112 — B03 VERIFIED, TASK-0061 B04 préparée
+
+Contrôle indépendant de la correction ACTION-0111 au HEAD B03 `c055181d8236a6681c97aea4d5ed77731d9d1e30` (preuve réelle WebView2 sur `fb01e3cdbe5fa76538e01f597965bac32412fe63`). 13/13 primaires et 3 groupes entièrement visibles dans 18 états, carte 261–535px, P-19/P-22, contre-épreuve ancienne version qui échoue. Tests frontend 781/781 deux fois rapportés (non relancés ici), 0 CI distante. TASK-0060 = VERIFIED dans scope B03; Stage B EN COURS. Une seule TASK-0061 B04 autorisée pour mesurer les cas multi-cerveaux/noms longs/menu/statut; aucun code produit modifié par cet audit, main inchangée.

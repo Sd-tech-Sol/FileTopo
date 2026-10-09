@@ -1,7 +1,8 @@
-# Action suivante — contrôle indépendant de TASK-0060 après la correction ACTION-0111
+# Action suivante — ACTION-0112 / Stage B B04
 
-**UNE action seulement :** l'orchestrateur (ChatGPT) relit sur GitHub la correction de `B03-O1` livrée sur `build/v0.2-b03-primary-chrome` au `HEAD` de la branche (mesure au `fb01e3cdbe5fa76538e01f597965bac32412fe63`) — diff, `.orchestrator/RESULT.md`, `TASK-0060-primary-chrome-after.json`, `TASK-0060-primary-chrome-previous-product.json`, captures `TASK-0060-after-*.png` — puis rend `VERIFIED` ou refuse. Aucune `TASK-0061`, aucun Stage C/D tant que ce verdict n'est pas rendu.
+**UNE SEULE action :** exécuter `TASK-0061` approuvée, **NON COMMENCÉE**, sur `build/v0.2-b04-multibrain-shell` par Claude Code Sonnet/HIGH. Le prompt versionné `.orchestrator/NEXT_PROMPT.md` est l'unique GO.
 
-- Statut de l'exécuteur : `IMPLEMENTED`, jamais `VERIFIED`. `primaryContractSatisfiedWhole = true`, 13/13 entières dans 18 états, trois résumés de groupe entiers sans défilement, bande de chrome 125 px qui ne défile plus, carte 261–535 px, 781/781 tests deux fois. Falsifié sur le produit précédent (10/13, 6 entrées de groupe non entières).
-- À regarder en particulier : la légende de tranche et la référence de source par cerveau ont changé d'**emplacement** (premier écran → groupe Diagnostics) sans suppression — décision de présentation que l'orchestrateur peut trancher autrement; la rangée composition n'est pas mesurée avec plusieurs cerveaux ou une ligne de statut (marge 51 px).
-- Stage A CLOSED; B01 et B02 VERIFIED; B03 non VERIFIED; Stage B EN COURS, `P-01..P-22` relues à sa clôture; R8/Stage C/D inchangés, pas de PR ni de fusion vers `main`.
+- Vérification indépendante B03 : `TASK-0060 = VERIFIED` au HEAD `c055181d8236a6681c97aea4d5ed77731d9d1e30`, ACTION-0112. `B03-O1` levé : 13/13 primaires et trois points d'entrée avancés entièrement visibles dans 18 états, carte 261–535 px, P-19/P-22 préservées; preuve de contre-épreuve.
+- Tests de Claude 781/781 deux fois, check/build : RAPPORTÉS, non relancés indépendamment; CI GitHub absente; contraste INCOMPLETE.
+- Risque précis choisi pour B04 : B03 a mis titre/commandes/composition sur une ligne en mono-cerveau; **plusieurs cerveaux, noms longs, notices, menu de composition n'ont pas été exercés**. B04 doit mesurer d'abord sur racines synthétiques, corriger seulement si défaut prouvé.
+- Stage A CLOSED / VERIFIED, B01/B02/B03 VERIFIED dans leurs scopes, Stage B EN COURS mais non close. Full P-01..P-22 + WCAG à vérifier avant sortie B. R8 et Stage C/D intacts. Ne pas créer TASK-0062 ni toucher main.
