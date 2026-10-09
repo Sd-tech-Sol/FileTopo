@@ -423,6 +423,75 @@ button:disabled {
   content: "✗ ";
 }
 
+/*
+ * `TASK-0060` / Stage B B03 — the named groups that hold the advanced tools.
+ *
+ * `B02-O1`: the bands fitted in their boxes, but at 960x640 the chrome band showed 176 px
+ * of 723 and the map's own band 134 px of 625, so the actions one takes every time — add,
+ * open, refresh, search — opened below a fold. The answer is `<details>`, native, with no
+ * application state and no persistence: the engine owns `open`, `summary` is a focusable
+ * control because of what it is, and a closed group still holds every command, every
+ * `data-testid` and every label in both languages.
+ *
+ * The rules below are presentation only. Nothing here sizes, positions or hides a command:
+ * what a closed group costs is one row, and what it saves is everything it holds.
+ */
+.app__group {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+/* The closed row. `list-style` on both the element and the WebKit pseudo-element, because
+   WebView2 needs the second one to stop drawing its own marker; the triangle is drawn as
+   text so it inherits the ink colour in both schemes. */
+.app__group > summary {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-weight: 600;
+  list-style: none;
+}
+
+.app__group > summary::-webkit-details-marker {
+  display: none;
+}
+
+.app__group > summary::before {
+  content: "▸";
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+
+.app__group[open] > summary::before {
+  content: "▾";
+}
+
+.app__group > summary:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* What the group holds, said before it is opened: the hint is the summary's own accessible
+   name, so a screen reader announces the contents with the label. */
+.app__group-hint {
+  font-weight: 400;
+  color: var(--ink-soft);
+  font-size: 12px;
+}
+
+/* The same column, the same gap as the band the group sits in, so opening a group changes
+   nothing about how its contents are spaced. */
+.app__group-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 0 12px 12px;
+}
+
 .app__main {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);

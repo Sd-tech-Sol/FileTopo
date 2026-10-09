@@ -54,6 +54,24 @@ export interface MapStrings {
   compositionSource: string;
   compositionBusy: string;
   identity: BrainIdentityStrings;
+  /**
+   * `TASK-0060` / Stage B B03 — the named groups that hold the advanced tools.
+   *
+   * `B02-O1` measured the cost of showing everything at once: at 960x640 the band above
+   * the map held 723 px of content in a 176 px box, so the usual actions — load, refresh,
+   * search — were behind two scrolls on the opening screen. These are the labels of the
+   * three native `<details>` groups that now hold what is not a usual action. They are
+   * labels, not state: nothing is removed, and the hint says what is inside before it is
+   * opened.
+   */
+  groups: {
+    advancedTools: string;
+    advancedToolsHint: string;
+    diagnostics: string;
+    diagnosticsHint: string;
+    mapAdvanced: string;
+    mapAdvancedHint: string;
+  };
   addRealRoot: string;
   addRealRootBusy: string;
   addRealRootCancelled: string;
@@ -293,6 +311,14 @@ export const strings: Record<Locale, MapStrings> = {
       iconInvalid: "L'icône doit compter 1 ou 2 caractères.",
       unchanged: "Aucun changement : le cerveau reste tel quel.",
       refused: "Enregistrement refusé :",
+    },
+    groups: {
+      advancedTools: "Outils avancés du cerveau",
+      advancedToolsHint: "identité, exclusions, reconstruction et contrôles",
+      diagnostics: "Diagnostics et environnement",
+      diagnosticsHint: "moteur, sources synthétiques et rapports",
+      mapAdvanced: "Outils avancés de la carte",
+      mapAdvancedHint: "cadrage, projection, filtres et observation",
     },
     addRealRoot: "Ajouter un dossier",
     addRealRootBusy: "Sélection…",
@@ -627,6 +653,14 @@ export const strings: Record<Locale, MapStrings> = {
       iconInvalid: "The icon must be 1 or 2 characters long.",
       unchanged: "No change: the brain stays as it is.",
       refused: "Save refused:",
+    },
+    groups: {
+      advancedTools: "Advanced brain tools",
+      advancedToolsHint: "identity, exclusions, rebuild and checks",
+      diagnostics: "Diagnostics and environment",
+      diagnosticsHint: "engine, synthetic sources and reports",
+      mapAdvanced: "Advanced map tools",
+      mapAdvancedHint: "framing, projection, filters and observation",
     },
     addRealRoot: "Add a folder",
     addRealRootBusy: "Selecting…",

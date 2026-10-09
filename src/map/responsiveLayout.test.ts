@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import mapCss from "./map.css?raw";
+import appSource from "./MapApp.tsx?raw";
+import { strings } from "./mapStrings";
 
 /*
  * The static half of the responsive contract, rewritten by `TASK-0059` / Stage B B02.
@@ -24,6 +26,22 @@ import mapCss from "./map.css?raw";
  * jsdom test lays anything out, so none of them can tell you how many pixels of map are on
  * screen. Only the campaign can, and it is the campaign that must be re-run if a later
  * slice changes any rule named here.
+ *
+ * `TASK-0060` / Stage B B03 adds a second half, below: the primary/advanced organisation.
+ * Its campaign is
+ *
+ *   before  `docs/performance/runs/TASK-0060-primary-chrome-before.json`
+ *   after   `docs/performance/runs/TASK-0060-primary-chrome-after.json`
+ *
+ * and the same warning applies twice over here, because **jsdom does not implement a
+ * closed `<details>`**: it gives the children of a closed group a box, a computed
+ * `display`, a place in the accessibility tree and a reachable `fireEvent` target. That is
+ * why the whole existing suite went on passing unchanged when the groups were introduced —
+ * which is useful (no semantic coverage was lost) and proves nothing about the disclosure.
+ * The assertions below are therefore about the SHAPE of the organisation: which commands
+ * are inside a group and which are not, that the groups are native and stateless, and that
+ * both languages name them. What a closed group does on screen is measured in WebView2 and
+ * nowhere else.
  */
 
 /** Every `selector { body }` rule of the stylesheet, flattened (media blocks included). */
@@ -162,6 +180,19 @@ describe("one code path for every window size", () => {
     expect(queries).toContain("(prefers-reduced-motion: reduce)");
   });
 
+  it("gives the disclosure groups no media query of their own either", () => {
+    // `TASK-0060` adds presentation, not breakpoints: the same three groups exist at 960
+    // and at 1366, which is why one eighteen-state campaign describes all of them.
+    const groupRules = all.filter((rule) => rule.selector.includes(".app__group"));
+    expect(groupRules.length).toBeGreaterThan(0);
+    const insideAMediaBlock = [...mapCss.matchAll(/@media([^{]*)\{([\s\S]*?)\n\}/g)].filter((match) =>
+      match[2].includes(".app__group"),
+    );
+    for (const match of insideAMediaBlock) {
+      expect(match[1].trim(), match[1]).not.toMatch(/\b(min|max)-(width|height)\b|\borientation\b/);
+    }
+  });
+
   it("keeps the compact density out of the map's own geometry", () => {
     // `DEC-0051` H: compact tightens the application's chrome and never the map. The new
     // bands inherit their gap from `.app`, so the compact override still reaches them
@@ -173,5 +204,217 @@ describe("one code path for every window size", () => {
     }
     expect(chromeRules[0].body, "the bands follow .app's gap, compact density included")
       .toMatch(/gap:\s*inherit/);
+  });
+});
+
+/*
+ * `TASK-0060` / Stage B B03 — the primary/advanced organisation of the two bands.
+ *
+ * `B02-O1`, measured: at 960x640 the chrome band showed 176 CSS px of 723 and the map's
+ * own band 134 of 625, so of the thirteen commands `TASK-0060` names as usual, only seven
+ * were really on the opening screen at worst, and the three lifecycle actions — add a
+ * folder, open, refresh — were below a fold in **18 of 18** states, at all three sizes
+ * (`docs/performance/runs/TASK-0060-primary-chrome-before.json`).
+ *
+ * The answer is three named native `<details>` groups. These assertions are the shape of
+ * that answer, each falsifiable by moving one command across one boundary.
+ */
+
+/** The opening tag of one named group, and everything up to its own `</details>`. The three
+ *  groups are siblings, never nested, so the first `</details>` after the opening tag is the
+ *  right one — and a nested group would break this helper loudly rather than quietly. */
+function groupBlock(testid: string): string {
+  const opening = `<details className="app__group" data-testid="${testid}">`;
+  const start = appSource.indexOf(opening);
+  expect(start, `the group ${testid} must exist, written exactly as the campaign measured it`)
+    .toBeGreaterThan(-1);
+  const end = appSource.indexOf("</details>", start);
+  expect(end).toBeGreaterThan(start);
+  return appSource.slice(start, end);
+}
+
+const GROUPS = ["chrome-advanced-tools", "chrome-diagnostics", "map-advanced-tools"] as const;
+
+/** Every command that must stay OUT of every group: the usual ones, by `data-testid`. The
+ *  campaign checks the same list by hit test in the real engine; this is the cheap half. */
+const PRIMARY_TESTIDS = [
+  "brain-add-real-root",
+  "lifecycle-open",
+  "lifecycle-refresh",
+  "search-panel",
+  "search-input",
+  "search-clear",
+  "fit-composition",
+  "reset-view",
+  "map-legend-toggle",
+] as const;
+
+/** Every command that must stay IN the group named beside it. Nothing was deleted: each one
+ *  of these was on the first level in B02 and is now one summary away. */
+const ADVANCED_TESTIDS: [string, (typeof GROUPS)[number]][] = [
+  ["lifecycle-prepare", "chrome-advanced-tools"],
+  ["lifecycle-rebuild", "chrome-advanced-tools"],
+  ["cross-check", "chrome-advanced-tools"],
+  ["report-brain", "chrome-diagnostics"],
+  ["composed-total", "chrome-diagnostics"],
+  ["layout-algorithm", "chrome-diagnostics"],
+  ["cross-store-path", "chrome-diagnostics"],
+  ["observe-content", "map-advanced-tools"],
+  ["content-report", "map-advanced-tools"],
+  ["projection-controls", "map-advanced-tools"],
+  ["expand-aggregate", "map-advanced-tools"],
+];
+
+describe("the advanced tools are grouped, named, and native", () => {
+  it("declares exactly the three groups the campaign measured, in the order it measured them", () => {
+    const declared = [...appSource.matchAll(/<details className="app__group" data-testid="([^"]+)">/g)].map(
+      (match) => match[1],
+    );
+    expect(declared).toEqual([...GROUPS]);
+  });
+
+  for (const testid of GROUPS) {
+    it(`${testid} is a native, stateless disclosure with its own summary`, () => {
+      const block = groupBlock(testid);
+      // A `<summary>` is what puts the group in the keyboard order and gives it a name; no
+      // `role`, no `tabIndex`, no `onClick` is needed or wanted, and `open` as a React prop
+      // would turn a browser behaviour into application state — which `TASK-0060` forbids.
+      expect(block).toContain("<summary>");
+      expect(block.slice(0, block.indexOf("<summary>")), "no open= prop on the group itself")
+        .not.toMatch(/\bopen=/);
+      const summary = block.slice(block.indexOf("<summary>"), block.indexOf("</summary>"));
+      expect(summary).not.toMatch(/onClick|role=|tabIndex|aria-expanded/);
+      expect(block).toContain('<div className="app__group-body">');
+    });
+  }
+
+  it("adds no state and no persistence for whether a group is open", () => {
+    // The engine owns `open`. Nothing reads it, writes it, stores it or resumes it: that is
+    // the whole reason a native element was chosen, and `P-19` in the artifact says the
+    // restart therefore finds every group closed, deliberately.
+    expect(appSource).not.toMatch(/groupOpen|setGroupOpen|advancedOpen|setAdvancedOpen|diagnosticsOpen/);
+    // No `<details>` anywhere in the shell is driven by a prop: a controlled `open` is the
+    // application state this slice is not allowed to add.
+    for (const tag of appSource.match(/<details[^>]*>/g) ?? []) {
+      expect(tag, tag).not.toMatch(/\bopen[=\s>]/);
+    }
+    for (const testid of GROUPS) {
+      expect(appSource).not.toContain(`"${testid}-open"`);
+    }
+  });
+
+  it("names every group in both languages, with a hint of what it holds", () => {
+    for (const key of ["advancedTools", "diagnostics", "mapAdvanced"] as const) {
+      const fr = strings.fr.groups[key];
+      const en = strings.en.groups[key];
+      const frHint = strings.fr.groups[`${key}Hint` as keyof typeof strings.fr.groups];
+      const enHint = strings.en.groups[`${key}Hint` as keyof typeof strings.en.groups];
+      for (const value of [fr, en, frHint, enHint]) {
+        expect(value.trim().length, `${key} must be written in both languages`).toBeGreaterThan(0);
+      }
+      // A label that reads the same in both languages is a label nobody translated — the
+      // same rule `localeCompleteness.test.tsx` applies to every other dictionary.
+      expect(fr).not.toBe(en);
+      expect(frHint).not.toBe(enHint);
+    }
+  });
+
+  it("renders each summary from the dictionary, never from a literal", () => {
+    const summaries = [...appSource.matchAll(/<summary>([\s\S]*?)<\/summary>/g)].map((match) => match[1]);
+    expect(summaries).toHaveLength(GROUPS.length);
+    for (const summary of summaries) {
+      expect(summary).toMatch(/\{t\.groups\.\w+\}/);
+      expect(summary).toMatch(/className="app__group-hint"/);
+      // Strip the JSX expressions and the tags: what is left is the literal text of the
+      // row, and a group label written in one language only would show up here as letters.
+      const literalText = summary.replace(/\{[^{}]*\}/g, "").replace(/<[^>]*>/g, "");
+      expect(literalText, "a summary must hold no word that is not in the dictionary")
+        .not.toMatch(/[A-Za-zÀ-ÿ]/);
+    }
+  });
+});
+
+describe("what is usual stays in the open, what is occasional is one summary away", () => {
+  for (const testid of PRIMARY_TESTIDS) {
+    it(`${testid} is outside every group`, () => {
+      const needle = `data-testid="${testid}"`;
+      expect(appSource, `${testid} must still exist`).toContain(needle);
+      for (const group of GROUPS) {
+        expect(groupBlock(group), `${testid} must not be inside ${group}`).not.toContain(needle);
+      }
+    });
+  }
+
+  for (const [testid, group] of ADVANCED_TESTIDS) {
+    it(`${testid} is inside ${group}, present and not deleted`, () => {
+      expect(groupBlock(group)).toContain(`data-testid="${testid}"`);
+    });
+  }
+
+  it("keeps the panels B02 inventoried, each in the band that owns it", () => {
+    // The components have no `data-testid` of their own at this level, so they are checked
+    // by name: none of them was removed, and each is inside the group that names it.
+    expect(groupBlock("chrome-advanced-tools")).toContain("<BrainIdentityEditor");
+    expect(groupBlock("chrome-advanced-tools")).toContain("<ExclusionsPanel");
+    expect(groupBlock("chrome-diagnostics")).toContain('className="app__host"');
+    expect(groupBlock("chrome-diagnostics")).toContain('className="app__sources"');
+    expect(groupBlock("map-advanced-tools")).toContain("<FilterPanel");
+    expect(groupBlock("map-advanced-tools")).toContain("<BranchFocusPanel");
+    // And the composition itself is NOT in a group: it is how one reads which brain is
+    // active, which `TASK-0060` names first among the usual things.
+    for (const group of GROUPS) {
+      expect(groupBlock(group)).not.toContain("<CompositionBar");
+    }
+  });
+
+  it("leaves the status line and the corrections notice in the open", () => {
+    // Both speak about something that just happened; a disclosure would be a way of not
+    // saying it. They sit between the two chrome groups, outside either.
+    for (const group of GROUPS) {
+      expect(groupBlock(group)).not.toContain('className="app__status"');
+      expect(groupBlock(group)).not.toContain("<WorkspaceCorrections");
+    }
+  });
+
+  it("leaves the map, the right panel and the keyboard hint outside every group", () => {
+    for (const group of GROUPS) {
+      const block = groupBlock(group);
+      expect(block).not.toContain("<MapView");
+      expect(block).not.toContain('className="app__aside"');
+      expect(block).not.toContain('className="toolbar__hint"');
+    }
+  });
+});
+
+describe("a group costs one row and hides nothing by stylesheet", () => {
+  const groupRules = all.filter((rule) => rule.selector.startsWith(".app__group"));
+  const summaryRule = all.filter((rule) => rule.selector === ".app__group > summary");
+  const bodyRule = all.filter((rule) => rule.selector === ".app__group-body");
+
+  it("styles the summary as the control it is", () => {
+    expect(summaryRule).toHaveLength(1);
+    expect(summaryRule[0].body).toMatch(/cursor:\s*pointer/);
+    // WebView2 draws its own marker through a pseudo-element; the group supplies the
+    // triangle as text instead, so it inherits the ink colour in both schemes.
+    expect(summaryRule[0].body).toMatch(/list-style:\s*none/);
+    expect(all.some((rule) => rule.selector.includes("::-webkit-details-marker"))).toBe(true);
+  });
+
+  it("never hides a command with the stylesheet: the engine owns that, not the CSS", () => {
+    // A `display: none` or a `visibility: hidden` written here would take a command out of
+    // the DOM's reach even when the group is OPEN, which is exactly the loss of a command
+    // `TASK-0060` forbids. Only the marker pseudo-element may be hidden.
+    for (const rule of groupRules.concat(bodyRule)) {
+      if (rule.selector.includes("::-webkit-details-marker")) continue;
+      expect(rule.body, rule.selector).not.toMatch(/display:\s*none|visibility:\s*hidden/);
+      expect(rule.body, rule.selector).not.toMatch(/max-height|position:\s*(fixed|absolute)/);
+    }
+  });
+
+  it("spaces an opened group exactly like the band it sits in", () => {
+    expect(bodyRule).toHaveLength(1);
+    expect(bodyRule[0].body).toMatch(/display:\s*flex/);
+    expect(bodyRule[0].body).toMatch(/flex-direction:\s*column/);
+    expect(bodyRule[0].body).toMatch(/gap:\s*10px/);
   });
 });

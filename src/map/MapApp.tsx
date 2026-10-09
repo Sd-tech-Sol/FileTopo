@@ -3400,6 +3400,15 @@ export default function MapApp() {
         live in a box that scrolls ITSELF when the window is short, instead of growing the
         document until the map starts below the fold — which is what `B01-O1` measured
         (map column at 727px in a 640px window, document up to 4185px).
+
+        `TASK-0060` / Stage B B03 — what B02 left behind, `B02-O1`: the band fitted in its
+        box, but its box showed 176 px of 723, so the usual actions were behind a scroll on
+        the opening screen. The band is now explicitly ordered — what one does every time
+        stays in the open, what one does occasionally moves into a NAMED native
+        `<details>` group. Still the same elements, the same order within each level and the
+        same `data-testid`: a closed group hides nothing from the Index, the keyboard or the
+        accessibility tree once its own summary is activated, and no application state or
+        persistence was added to carry it.
       */}
       <div className="app__chrome">
       <header className="app__header">
@@ -3436,26 +3445,6 @@ export default function MapApp() {
           onDensity={setDensity}
           onMotion={setMotion}
         />
-        {host ? (
-          <dl className="app__host">
-            <div>
-              <dt>{t.engine}</dt>
-              <dd>
-                WebView2 {host.webviewVersion} · {host.platform}
-              </dd>
-            </div>
-            <div>
-              <dt>Tauri · SQLite</dt>
-              <dd>
-                {host.tauriVersion} · {host.sqliteVersion}
-              </dd>
-            </div>
-            <div>
-              <dt>{t.sandbox}</dt>
-              <dd className="app__sandbox">{sandboxDisplay(host.sandboxRoot, t)}</dd>
-            </div>
-          </dl>
-        ) : null}
       </header>
 
       <nav className="app__brains" aria-label={t.composition}>
@@ -3482,24 +3471,9 @@ export default function MapApp() {
             showSource
           />
         ) : null}
-        {composed ? (
-          <BrainIdentityEditor
-            brains={catalog?.brains ?? []}
-            focusedBrainId={composed.focusedBrainId}
-            disabled={busy || measuring}
-            onSave={saveBrainIdentity}
-            onNotice={() => setStatus(say((words) => words.identity.unchanged))}
-            strings={t.identity}
-          />
-        ) : null}
-        {composed ? (
-          <ExclusionsPanel
-            brainId={composed.focusedBrainId}
-            locale={locale}
-            disabled={busy || measuring}
-            onApplied={reloadForWatch}
-          />
-        ) : null}
+        {/* The three actions one takes every time, and nothing else: add a folder, open
+            what is composed, bring it up to date. `B02-O1` measured the cost of putting
+            the other six here — the band's own 723 px of content in a 176 px box. */}
         <div className="app__actions">
           {/* `DEC-0033` A — the only way a real folder enters FileTopo, and it
               creates a brain without reading a single byte of it. */}
@@ -3520,47 +3494,83 @@ export default function MapApp() {
             onClick={() => composed && void applyComposition(composed, { action: "refresh" })}>
             {focusedNeedsIndex ? t.indexBrain : t.refresh}
           </button>
-          <button type="button" data-testid="lifecycle-prepare" disabled={!composed || busy || measuring}
-            onClick={async () => {
-              if (!composed) return;
-              setBusy(true);
-              try {
-                for (const brainId of composed.displayedBrainIds) await invoke("map_prepare_synthetic_source", { brainId });
-                setStatus(say((words) => words.status.syntheticPrepared));
-              } catch (error) { setStatus(say((words, l) => words.status.syntheticRefused(describeError(error, l)))); }
-              finally { setBusy(false); }
-            }}>{t.prepareSynthetic}</button>
-          <button
-            type="button"
-            disabled={!composed || busy || measuring}
-            data-testid="lifecycle-rebuild"
-            onClick={() => composed && void applyComposition(composed, { action: "rebuild" })}
-          >
-            {busy ? t.building : t.rebuild}
-          </button>
-          <button type="button" disabled={!composed || measuring} onClick={runSelfCheck}>
-            {t.selfCheck}
-          </button>
-          <button
-            type="button"
-            disabled={!selectedOverview || measuring}
-            onClick={runRelationsCheck}
-          >
-            {t.relationsCheck}
-          </button>
-          <button
-            type="button"
-            data-testid="cross-check"
-            disabled={measuring}
-            onClick={runCrossCheck}
-          >
-            {t.crossCheck}
-          </button>
-          <button type="button" disabled={measuring || busy} onClick={runMeasurement}>
-            {measuring ? t.measuring : t.measure}
-          </button>
         </div>
       </nav>
+
+      {/*
+        `TASK-0060` — the occasional half of the composition band, in a group that says
+        what it holds before it is opened. A native `<details>`: the engine owns the open
+        state, so nothing here is application state, nothing is persisted, and `summary`
+        is a focusable control in the keyboard order because of what it is. Every control
+        inside keeps its own `data-testid` and its own position.
+      */}
+      <details className="app__group" data-testid="chrome-advanced-tools">
+        <summary>
+          {t.groups.advancedTools}
+          <span className="app__group-hint"> · {t.groups.advancedToolsHint}</span>
+        </summary>
+        <div className="app__group-body">
+          {composed ? (
+            <BrainIdentityEditor
+              brains={catalog?.brains ?? []}
+              focusedBrainId={composed.focusedBrainId}
+              disabled={busy || measuring}
+              onSave={saveBrainIdentity}
+              onNotice={() => setStatus(say((words) => words.identity.unchanged))}
+              strings={t.identity}
+            />
+          ) : null}
+          {composed ? (
+            <ExclusionsPanel
+              brainId={composed.focusedBrainId}
+              locale={locale}
+              disabled={busy || measuring}
+              onApplied={reloadForWatch}
+            />
+          ) : null}
+          <div className="app__actions">
+            <button type="button" data-testid="lifecycle-prepare" disabled={!composed || busy || measuring}
+              onClick={async () => {
+                if (!composed) return;
+                setBusy(true);
+                try {
+                  for (const brainId of composed.displayedBrainIds) await invoke("map_prepare_synthetic_source", { brainId });
+                  setStatus(say((words) => words.status.syntheticPrepared));
+                } catch (error) { setStatus(say((words, l) => words.status.syntheticRefused(describeError(error, l)))); }
+                finally { setBusy(false); }
+              }}>{t.prepareSynthetic}</button>
+            <button
+              type="button"
+              disabled={!composed || busy || measuring}
+              data-testid="lifecycle-rebuild"
+              onClick={() => composed && void applyComposition(composed, { action: "rebuild" })}
+            >
+              {busy ? t.building : t.rebuild}
+            </button>
+            <button type="button" disabled={!composed || measuring} onClick={runSelfCheck}>
+              {t.selfCheck}
+            </button>
+            <button
+              type="button"
+              disabled={!selectedOverview || measuring}
+              onClick={runRelationsCheck}
+            >
+              {t.relationsCheck}
+            </button>
+            <button
+              type="button"
+              data-testid="cross-check"
+              disabled={measuring}
+              onClick={runCrossCheck}
+            >
+              {t.crossCheck}
+            </button>
+            <button type="button" disabled={measuring || busy} onClick={runMeasurement}>
+              {measuring ? t.measuring : t.measure}
+            </button>
+          </div>
+        </div>
+      </details>
 
       <WorkspaceCorrections
         strings={t.workspace}
@@ -3572,6 +3582,40 @@ export default function MapApp() {
         <p className="app__status" role="status">
           {status}
         </p>
+      ) : null}
+
+      {/*
+        `TASK-0060` — the readings: the host's own versions, the synthetic sources and
+        every report the checks above produce. None of them is an action, all of them are
+        evidence one consults, and together they were 121 px of the 723 the band held at
+        960x640 while the engine row alone wrapped the header onto a third line. Grouped,
+        named, and still the same sections with the same `aria-label` and `data-testid`.
+      */}
+      <details className="app__group" data-testid="chrome-diagnostics">
+        <summary>
+          {t.groups.diagnostics}
+          <span className="app__group-hint"> · {t.groups.diagnosticsHint}</span>
+        </summary>
+        <div className="app__group-body">
+      {host ? (
+        <dl className="app__host">
+          <div>
+            <dt>{t.engine}</dt>
+            <dd>
+              WebView2 {host.webviewVersion} · {host.platform}
+            </dd>
+          </div>
+          <div>
+            <dt>Tauri · SQLite</dt>
+            <dd>
+              {host.tauriVersion} · {host.sqliteVersion}
+            </dd>
+          </div>
+          <div>
+            <dt>{t.sandbox}</dt>
+            <dd className="app__sandbox">{sandboxDisplay(host.sandboxRoot, t)}</dd>
+          </div>
+        </dl>
       ) : null}
 
       {/*
@@ -3714,6 +3758,8 @@ export default function MapApp() {
           <span data-testid="cross-store-path">{crossCheck.storePath}</span>
         </section>
       ) : null}
+        </div>
+      </details>
       </div>
 
       <main className="app__main">
@@ -3722,6 +3768,12 @@ export default function MapApp() {
             `TASK-0059` — the map column's own controls, in one band, for the same reason:
             at 960 px wide this stack alone was 633 px tall, so the map surface began at
             1360 px of document. It scrolls itself now; the map keeps a floor.
+
+            `TASK-0060` — and ordered, for the reason `B02-O1` measured: the band showed
+            134 px of 625, so the search field — the one control of this column one reaches
+            for constantly — opened below its own fold. The camera one needs every time and
+            the search stay in the open; framing a selection, changing the projection,
+            filtering and observing content move into the named group at the end.
           */}
           <div className="app__map-controls">
           <div className="toolbar" role="toolbar" aria-label={t.map}>
@@ -3767,28 +3819,6 @@ export default function MapApp() {
             </button>
             <button
               type="button"
-              disabled={!selectedNode || !selectedTerritory}
-              onClick={() =>
-                selectedNode &&
-                selectedTerritory &&
-                setView(
-                  fitToBox(
-                    {
-                      x: selectedNode.rect.x + selectedTerritory.offsetX,
-                      y: selectedNode.rect.y + selectedTerritory.offsetY,
-                      w: selectedNode.rect.w,
-                      h: selectedNode.rect.h,
-                    },
-                    world,
-                    viewport,
-                  ),
-                )
-              }
-            >
-              {t.fitSelection}
-            </button>
-            <button
-              type="button"
               data-testid="reset-view"
               onClick={() => {
                 const anchor = focusAnchorRect(composition);
@@ -3796,27 +3826,6 @@ export default function MapApp() {
               }}
             >
               {t.reset}
-            </button>
-            <button
-              type="button"
-              disabled={!focusedBrain}
-              onClick={() =>
-                focusedBrain &&
-                selectNode({
-                  brainId: focusedBrain.record.brainId,
-                  nodeId: focusedBrain.snapshot.rootId,
-                })
-              }
-            >
-              {t.selectRoot}
-            </button>
-            <button
-              type="button"
-              data-testid="observe-content"
-              disabled={!focusedBrain || contentCampaignRunning}
-              onClick={() => void observeFocusedContent()}
-            >
-              {contentCampaignRunning ? t.observing : t.observe}
             </button>
             <button
               type="button"
@@ -3828,21 +3837,6 @@ export default function MapApp() {
               {legendOpen ? t.legend.close : t.legend.open}
             </button>
           </div>
-
-          {contentReport ? (
-            <output
-              className="content-report"
-              data-testid="content-report"
-              data-brain-id={contentReport.brainId}
-              data-generation-id={contentReport.generationId}
-              data-files-opened={contentReport.filesOpenedForHash}
-              data-bytes-read={contentReport.bytesRead}
-              data-digests-computed={contentReport.digestsComputed}
-              data-report={JSON.stringify(contentReport)}
-            >
-              {contentReport.hashedCount}/{contentReport.indexedFileCount} · {contentReport.hashAlgorithm}
-            </output>
-          ) : null}
 
           {focusedBrain ? (
             <section aria-label={t.searchLabel} data-testid="search-panel">
@@ -3923,6 +3917,80 @@ export default function MapApp() {
             </section>
           ) : null}
 
+          {/*
+            `TASK-0060` — the map tools one reaches for when there is something particular
+            to do: frame a selection, go back to a root, observe content, filter, focus a
+            branch, change the projection. The same sections, the same `data-testid`, the
+            same order; what changed is that the engine no longer has to lay all of them
+            out above the search field.
+          */}
+          <details className="app__group" data-testid="map-advanced-tools">
+            <summary>
+              {t.groups.mapAdvanced}
+              <span className="app__group-hint"> · {t.groups.mapAdvancedHint}</span>
+            </summary>
+            <div className="app__group-body">
+          <div className="app__actions">
+            <button
+              type="button"
+              disabled={!selectedNode || !selectedTerritory}
+              onClick={() =>
+                selectedNode &&
+                selectedTerritory &&
+                setView(
+                  fitToBox(
+                    {
+                      x: selectedNode.rect.x + selectedTerritory.offsetX,
+                      y: selectedNode.rect.y + selectedTerritory.offsetY,
+                      w: selectedNode.rect.w,
+                      h: selectedNode.rect.h,
+                    },
+                    world,
+                    viewport,
+                  ),
+                )
+              }
+            >
+              {t.fitSelection}
+            </button>
+            <button
+              type="button"
+              disabled={!focusedBrain}
+              onClick={() =>
+                focusedBrain &&
+                selectNode({
+                  brainId: focusedBrain.record.brainId,
+                  nodeId: focusedBrain.snapshot.rootId,
+                })
+              }
+            >
+              {t.selectRoot}
+            </button>
+            <button
+              type="button"
+              data-testid="observe-content"
+              disabled={!focusedBrain || contentCampaignRunning}
+              onClick={() => void observeFocusedContent()}
+            >
+              {contentCampaignRunning ? t.observing : t.observe}
+            </button>
+          </div>
+
+          {contentReport ? (
+            <output
+              className="content-report"
+              data-testid="content-report"
+              data-brain-id={contentReport.brainId}
+              data-generation-id={contentReport.generationId}
+              data-files-opened={contentReport.filesOpenedForHash}
+              data-bytes-read={contentReport.bytesRead}
+              data-digests-computed={contentReport.digestsComputed}
+              data-report={JSON.stringify(contentReport)}
+            >
+              {contentReport.hashedCount}/{contentReport.indexedFileCount} · {contentReport.hashAlgorithm}
+            </output>
+          ) : null}
+
           <FilterPanel
             locale={locale}
             filter={filter.filter}
@@ -3979,6 +4047,8 @@ export default function MapApp() {
               </button>)}
             </section>
           ) : null}
+            </div>
+          </details>
           </div>
 
           {renderedBrains.length > 0 && composed ? (
