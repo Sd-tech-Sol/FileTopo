@@ -1094,6 +1094,12 @@ if (phase === 1) {
       totals: document.querySelector('[data-testid="relation-totals"]').textContent.trim() };
   })()`);
   assert(suggestionOnScreen.key, "a suggestion is its own object, with its own key");
+  assert.equal(
+    suggestionOnScreen.key,
+    toApprove.suggestionKey,
+    "the panel of the selected element must offer the suggestion that touches it, and no other",
+  );
+  assert.notEqual(toApprove.suggestionKey, toReject.suggestionKey, "approval and rejection must fall on two different objects");
   assert(suggestionOnScreen.tag && suggestionOnScreen.state, "a suggestion says it is one, in words");
   assert(
     (suggestionOnScreen.explanation ?? suggestionOnScreen.basis ?? "").length > 0,
