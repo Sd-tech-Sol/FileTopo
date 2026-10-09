@@ -397,7 +397,17 @@ const READ_LAYOUT = `(() => {
 /** A real Tab walk from the top of the document until focus lands inside the right
  *  panel: the number of presses, and whether the engine actually paints a focus ring. */
 async function tabToAside(limit = 80) {
-  await evaluate(`(() => { window.scrollTo(0, 0); document.body.focus?.(); (document.activeElement ?? document.body).blur?.(); })()`);
+  // The walk starts from the chrome's first control, never from wherever the previous
+  // state's click left focus: Chromium keeps a sequential focus navigation starting
+  // point at the last blurred element, so a count taken that way would be a fact about
+  // the harness and not about the interface.
+  const from = await evaluate(`(() => {
+    window.scrollTo(0, 0);
+    const first = document.querySelector('.app button, .app input, .app select');
+    if (!first) return null;
+    first.focus();
+    return first.getAttribute('data-testid') ?? (first.textContent ?? '').trim().slice(0, 40);
+  })()`);
   for (let presses = 1; presses <= limit; presses += 1) {
     await press("Tab");
     const landed = await evaluate(`(() => {
@@ -414,9 +424,9 @@ async function tabToAside(limit = 80) {
         width: Math.round(r.width), height: Math.round(r.height),
       };
     })()`);
-    if (landed) return { presses, ...landed };
+    if (landed) return { from, presses, ...landed };
   }
-  return { presses: null, reached: false };
+  return { from, presses: null, reached: false };
 }
 
 /* --- the matrix ---------------------------------------------------------------------- */
