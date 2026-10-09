@@ -1,5 +1,12 @@
 # HANDOFF — passage de relais
 
+## ACTION-0113 — contrôle indépendant B04 / correction requise — 2026-10-09
+
+- Contrôle GitHub B04 au `b964c45359bf2427d38ce177c09119ca5195a417` : 14 commits, après 30 états WebView2 et 18 de baseline B03, 13/13 primaires entières, carte 253,4–496px, noms et menu des 2–4 cerveaux, P-19/P-22. Contre-épreuve ancien produit 9/13, tests 787/787 ×2 RAPPORTÉS, CI distante absente.
+- **TASK-0061 IMPLEMENTED / NOT VERIFIED / CORRECTION REQUIRED.** B04-O1 : dans 6 états menu ouvert, Diagnostics est recouvert et son activation n'a pas été testée. B04-O2 : à 960x640, retours de statut refus/index absent visibles à 0/35px, corrections et bouton de fermeture sous le pli; certains boutons de fermeture aussi rognés à 1280 FR.
+- Même tâche, même branche B04, prompt ACTION-0113 publié. Ne pas créer TASK-0062; Stage B reste EN COURS et main/Stage C/D/R8 intacts.
+
+
 ## TASK-0061 — B04 `IMPLEMENTED`, relais au contrôle indépendant — 2026-10-09
 
 - Lecture à faire : `.orchestrator/RESULT.md`, `docs/tasks/TASK-0061-stage-b-multibrain-shell.md`, `docs/performance/runs/TASK-0061-multibrain-shell-{after,previous-product}.json`, `TASK-0061-b03-baseline-harness-on-b04.json`, `TASK-0061-status-visibility-*.json` et les captures `TASK-0061-{after,previous-product}-*.png`.

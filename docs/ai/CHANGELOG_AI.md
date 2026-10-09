@@ -7049,3 +7049,8 @@ Aucun fichier interdit touché; aucun témoin affaibli (la garde « pas d'ellips
 ### Portes
 
 `pnpm test` **787/787** deux fois, `pnpm check`, `pnpm build`, `git diff --check`; Rust non exécuté.
+
+
+## 2026-10-09 — ACTION-0113 — B04 multi-cerveaux auditée, correction ciblée exigée
+
+Audit GitHub indépendant de TASK-0061 : 14 commits sur B04, 30/30 états WebView2 à 13/13 commandes entières, baseline B03 maintenue et ancien produit échouant aux tests. Deux critères ouverts : menu superposé à l'entrée Diagnostics dans six états et statuts/corrections hors première fenêtre à 960. `TASK-0061` reste IMPLEMENTED / NOT VERIFIED, correction sur même branche, prompt versionné. Tests 787/787 ×2 déclarés par Claude, 0 CI distante; aucune validation intégrale Stage B et aucune modification de main.

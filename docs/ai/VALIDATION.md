@@ -10508,3 +10508,13 @@ Lecteur d'écran réel; `color-contrast` (`INCOMPLETE`); marche clavier jusqu'à
 | Rust, CI distante | non touchés / aucune | — |
 
 **Non testé :** lecteur d'écran; contraste (axe `color-contrast` INCOMPLETE); P-14; pavé tactile P-11; panneaux relations/review/cross; plus de 4 pastilles; nom à 80 caractères; P-01..P-22 intégral. **Limites constatées non corrigées :** Diagnostics ouvert sous le plafond de la bande à 960×640; statut sous le pli à 960×640; surcouche du menu sur Diagnostics; noms de 4–8 caractères avec 4 pastilles à 960.
+
+
+## DY — ACTION-0113 — audit indépendant de TASK-0061 — 2026-10-09
+
+- HEAD `b964c45359bf2427d38ce177c09119ca5195a417`, descendant de ACTION-0112 par 14 commits. Produit dans CompositionBar.tsx/map.css uniquement, tests brains/responsive; Rust/Index/IPC/MapView/lockfile inchangés. Depuis HEAD produit `9b68c1ac6b1ebc9f199cfdd25376e0fcc7eebf99`, seulement scripts/preuves/docs. JSON AFTER (30 états, pass2/pass3), BEFORE ancien produit, baseline B03 (18), visibilité de statuts, PNG multi/menu/notice/restored consultés sur GitHub.
+- Avancées confirmées : 13/13 commandes essentielles entièrement visibles sur les 30 états; toutes les pastilles et ×, noms longs accessibles et titre complet, menu items visibles; caméra intacte au resize, pan légitime au focus; map 253,4–496px, 0 scroll horizontal, P-19 et P-22 strict/access fingerprint identique 4 racines, aucun artefact. Baseline B03 13/13 et 3 groupes entiers dans 18/18. Contre-épreuve ancien produit 9/13 au pire; harnais sensible.
+- **Critère non satisfait B04-O1 :** `groupEntryPointsWholeEveryState=false`, 6 états menu ouvert sous couche de menu sur `chrome-diagnostics`, `statesWhereGroupActivationWasNotMeasured` identiques. Sous menus fermés, groupes entiers et marche clavier déclarée; aucune preuve de compatibilité totale d'accès avec menu ouvert.
+- **Critère non satisfait B04-O2 :** `TASK-0061-status-visibility-after.json` : 960 statut index absent et refus suppression 0/35px; corrections 0/154px FR, 51,6/138 EN compact; dismiss 0px; 1280 FR corrections dismiss 11/35px. Le retour d'opération n'est pas perçu visuellement sans défilement de chrome.
+- Résultat Claude IMPLEMENTED; tests `pnpm test 787/787` ×2, check/build/diff-check PASS **rapportés et non relancés par ChatGPT**. 0 run/check CI sur HEAD (GitHub). Axe color-contrast INCOMPLETE, lecteur d'écran non essayé; P-01..P-22 full replay prévu avant clôture Stage B.
+- **Décision orchestrateur : CORRECTION REQUIRED dans TASK-0061, même branche B04.** Séparer problèmes bloquants des autres réserves : Diagnostics summary défilé lorsque ouvert, 4 pastilles noms 4–8 caractères mais titre et aria complets; ne pas faire de changement de contrat en silence.

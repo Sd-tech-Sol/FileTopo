@@ -1,3 +1,5 @@
+> **REVUE INDÉPENDANTE ACTION-0113 — NOT VERIFIED / CORRECTION REQUIRED.** Six états avec Diagnostics sous la surcouche du menu et retours d'erreur/corrections hors fenêtre 960. Rapport de Claude ci-dessous préservé.
+
 # TASK-0061 — Stage B / B04 — barre multi-cerveaux
 AGENT: CLAUDE CODE (Sonnet 5.5, HIGH)
 RESULT: IMPLEMENTED — jamais VERIFIED par l'exécuteur; contrôle indépendant à venir (ChatGPT).

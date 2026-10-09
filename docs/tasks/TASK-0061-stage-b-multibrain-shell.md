@@ -1,7 +1,7 @@
 # TASK-0061 — Stage B / B04 — Robustesse de la barre multi-cerveaux
 
 - **Date :** 2026-10-09
-- **État :** `IMPLEMENTED` (2026-10-09, exécuteur Claude) — contrôle indépendant à venir; l'exécuteur ne s'attribue pas `VERIFIED`.
+- **État :** `IMPLEMENTED / NOT VERIFIED — CORRECTION REQUIRED` par ACTION-0113 (2026-10-09); livraison technique terminée par Claude, vérification indépendante refusée pour B04-O1 et B04-O2.
 - **Branche :** `build/v0.2-b04-multibrain-shell`
 - **Base :** `c055181d8236a6681c97aea4d5ed77731d9d1e30` (TASK-0060 B03 VERIFIED, ACTION-0112).
 - **Exécuteur :** Claude Code Sonnet, effort HIGH; basculer vers Opus uniquement si un obstacle justifié et le signaler.
@@ -45,3 +45,8 @@ Campagne WebView2 réelle `scripts/task0061-multibrain-shell.ps1` (3 processus s
 - **Après** (`TASK-0061-multibrain-shell-after.json`, HEAD produit `9b68c1a`) : 30/30 états à 13/13, pastilles/×/éléments de menu entiers, carte 253,4–496 px, 0 débordement, axe 0 violation, P-19/P-22 conservées; contre-épreuve et baseline B03 rejouée (`TASK-0061-b03-baseline-harness-on-b04.json`, 13/13, 261–535 px).
 - **Limites non corrigées** : Diagnostics ouvert sous le plafond de la bande à 960×640 (2+ rangées); statut entièrement sous le pli à 960×640 (déjà vrai avant); surcouche du menu sur l'entrée Diagnostics; 4 pastilles à 960 = 4–8 caractères visibles.
 - **Critère 4 (caméra)** : identique aux trois tailles; un changement de focus **panoramique** (DEC-0034 E) sans changer d'échelle, ce que le code existant fait déjà et que B04 n'a pas touché.
+
+
+## ACTION-0113 — correction avant vérification
+
+Contrôle indépendant : `docs/reviews/ACTION-0113-task0061-independent-control.md`. Six scénarios « menu de composition ouvert » masquent `chrome-diagnostics` et n'en vérifient pas l'activation; statut « index absent/refus » à 960 visible sur 0/35px, corrections et fermeture souvent hors bande. Sur même B04, corriger et publier une nouvelle campagne vérifiable; ne pas créer TASK-0062.
