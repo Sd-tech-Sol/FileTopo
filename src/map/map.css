@@ -64,12 +64,50 @@ body {
   font-size: 14px;
 }
 
+/*
+ * `TASK-0059` / Stage B B02 — the shell is the window, not the content.
+ *
+ * `B01` measured the chrome and found no horizontal defect; what it found instead, and
+ * reported as `B01-O1`, is that this shell was sized by its own content. `min-height:
+ * 100vh` is a floor, never a ceiling, so the right column's panels grew the grid row, the
+ * row grew `.app__main`, and the document reached 4185 px in a 640 px window. The map
+ * column then started at 727 px of document and the first screen held **no map at all**:
+ * measured at 0 visible map pixels in all eighteen states of
+ * `docs/performance/runs/TASK-0059-first-screen-before.json`, at the three sizes, not only
+ * at 960x640.
+ *
+ * `height` turns the floor into the window. From there the three regions that hold content
+ * — the bands above the map, the map's own controls, the right panel — each scroll inside
+ * themselves, which is what `.app__aside`'s own `overflow: auto` always meant and never
+ * got the chance to do. No command is removed, hidden or moved: every element, every
+ * order, every `data-testid` is the one B01 inventoried.
+ */
 .app {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  height: 100vh;
   gap: 10px;
   padding: 14px 18px 18px;
+  /* The document itself must not scroll: that is criterion 1 of `TASK-0059`. Every
+     region that can outgrow its box says so for itself, just below. */
+  overflow: hidden;
+}
+
+/* The bands above the map — header, composition, actions, status, diagnostics, reports.
+   `gap: inherit` keeps them spaced exactly as they were, including under the compact
+   density, which sets the gap on `.app` alone. */
+.app__chrome {
+  display: flex;
+  flex-direction: column;
+  gap: inherit;
+  flex: 0 1 auto;
+  min-height: 0;
+  /* A ceiling AND a floor for the map below: whichever binds first, a short window still
+     shows a map. 38vh is 243 px at 640 and 304 px at 800; the 340 px cap keeps a tall
+     screen from spending half of itself on chrome. */
+  max-height: min(38vh, 340px);
+  overflow-y: auto;
 }
 
 .app__header {
@@ -390,7 +428,11 @@ button:disabled {
   grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
   gap: 14px;
   flex: 1;
-  min-height: 0;
+  /* `TASK-0059` — the floor the map is guaranteed. `min-height: 0` alone let the flex
+     algorithm give this row nothing once the bands above wanted everything; 66vh is
+     422 px at 640 and the 430 px cap stops a tall screen from starving the chrome. The
+     two columns still share it exactly as the track pair above says. */
+  min-height: min(430px, 66vh);
 }
 
 .app__map {
@@ -398,11 +440,27 @@ button:disabled {
   flex-direction: column;
   gap: 8px;
   min-height: 0;
+  /* Its own control stack was 633 px tall at 960 px wide, so the map began at 1360 px of
+     document. The stack scrolls itself now; nothing of it leaves the column. */
+  overflow: hidden;
+}
+
+.app__map-controls {
+  display: flex;
+  flex-direction: column;
+  gap: inherit;
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .map-view {
   flex: 1;
-  min-height: 420px;
+  /* Was a flat `420px`, which in a 640 px window asked for more than the whole shell had
+     and so was answered by growing the document. A floor expressed against the window
+     cannot do that: 240 px at every measured size, above the 200 px criterion 1 asks for
+     and measured as such, not asserted. */
+  min-height: min(240px, 38vh);
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--panel);

@@ -3393,6 +3393,15 @@ export default function MapApp() {
 
   return (
     <div className="app">
+      {/*
+        `TASK-0059` / Stage B B02 — the bands above the map, in one band of their own.
+        Nothing moved into or out of them: they are the same elements, in the same order,
+        with the same controls and the same `data-testid`. What changed is that they now
+        live in a box that scrolls ITSELF when the window is short, instead of growing the
+        document until the map starts below the fold — which is what `B01-O1` measured
+        (map column at 727px in a 640px window, document up to 4185px).
+      */}
+      <div className="app__chrome">
       <header className="app__header">
         <div>
           <h1 className="app__title">{t.appTitle}</h1>
@@ -3705,9 +3714,16 @@ export default function MapApp() {
           <span data-testid="cross-store-path">{crossCheck.storePath}</span>
         </section>
       ) : null}
+      </div>
 
       <main className="app__main">
         <div className="app__map">
+          {/*
+            `TASK-0059` — the map column's own controls, in one band, for the same reason:
+            at 960 px wide this stack alone was 633 px tall, so the map surface began at
+            1360 px of document. It scrolls itself now; the map keeps a floor.
+          */}
+          <div className="app__map-controls">
           <div className="toolbar" role="toolbar" aria-label={t.map}>
             <button
               type="button"
@@ -3963,6 +3979,8 @@ export default function MapApp() {
               </button>)}
             </section>
           ) : null}
+          </div>
+
           {renderedBrains.length > 0 && composed ? (
             <MapView
               locale={locale}

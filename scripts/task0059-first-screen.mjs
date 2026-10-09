@@ -387,22 +387,55 @@ const READ_FIRST_SCREEN = `(() => {
   visibleCards.sort((l, r) => r.visibleArea - l.visibleArea);
   const rootCard = visibleCards.find((card) => card.level === 1) ?? null;
 
-  /* --- the chrome ledger: where every band above <main> spends its pixels ---------- */
+  /* --- the chrome ledger: where every band above the map spends its pixels ---------- */
+  //
+  // Walked one level deep, because the fix puts the bands inside `.app__chrome`: the
+  // ledger must keep naming the header, the composition nav, the diagnostics and the
+  // reports individually, before and after, or the two phases compare nothing.
   const bands = [];
   const shell = document.querySelector('.app');
   const main = document.querySelector('.app__main');
+  const chrome = document.querySelector('.app__chrome');
   if (shell && main) {
-    for (const child of shell.children) {
-      if (child === main) break;
+    const describe = (child, depth) => {
       const r = rectOf(child);
       bands.push({
+        depth,
         tag: child.tagName,
         cls: String(child.className).slice(0, 60) || null,
         testid: child.getAttribute('data-testid'),
         h: r.h, documentTop: r.documentTop, visibleHeight: round(visibleHeight(r)),
         scrollsInside: child.scrollHeight - child.clientHeight > 1,
       });
+    };
+    for (const child of shell.children) {
+      if (child === main) break;
+      describe(child, 0);
+      if (child === chrome) for (const band of child.children) describe(band, 1);
     }
+  }
+
+  /* --- the three regions that are allowed to scroll, and nothing else -------------- */
+  const scrollRegions = {};
+  for (const [name, selector] of [
+    ['chrome', '.app__chrome'],
+    ['mapControls', '.app__map-controls'],
+    ['aside', '.app__aside'],
+  ]) {
+    const el = document.querySelector(selector);
+    scrollRegions[name] = el
+      ? {
+          present: true,
+          height: round(el.getBoundingClientRect().height),
+          clientHeight: el.clientHeight,
+          scrollHeight: el.scrollHeight,
+          scrollsInside: el.scrollHeight - el.clientHeight > 1,
+          overflowY: getComputedStyle(el).overflowY,
+          // A scroll container that holds focusable controls is reachable by keyboard,
+          // which is what axe's scrollable-region rule and criterion 2 both ask.
+          focusableInside: el.querySelectorAll('button, input, select, a[href], summary, [tabindex]:not([tabindex="-1"])').length,
+        }
+      : { present: false };
   }
 
   return {
@@ -432,6 +465,7 @@ const READ_FIRST_SCREEN = `(() => {
       contextCardVisible: visibleCards[0] ?? null,
     },
     chromeBands: bands,
+    scrollRegions,
     chromeHeightAboveMainPx: main ? round(main.getBoundingClientRect().y + window.scrollY) : null,
     columns: {
       main: box('.app__main'),
@@ -576,21 +610,36 @@ async function setLegend(open) {
   }
 }
 
-/** The workbench disclosure of the fix, opened or closed on purpose.
+/** Criterion 2, the half a box measurement cannot answer: a command that sits past the
+ *  fold of a band which scrolls inside itself must still be reachable by the keyboard, and
+ *  the engine must bring it into view WITHOUT scrolling the document.
  *
- *  It does not exist in the `before` build, and a harness that required it would measure
- *  itself: every call reports what it found, and absence is a legitimate answer. */
-async function setWorkbench(open) {
-  const state = await evaluate(`(() => {
-    const el = document.querySelector('[data-testid="chrome-workbench"]');
-    return el ? el.open : null;
+ *  The walk starts at the shell's first control and presses Tab until it reaches the named
+ *  control, then reports where that control ended up and what the document did. */
+async function tabToControl(selector, limit = 120) {
+  await evaluate(`(() => {
+    window.scrollTo(0, 0);
+    const first = document.querySelector('.app button, .app input, .app select');
+    first?.focus();
   })()`);
-  if (state === null) return { present: false };
-  if (state !== open) {
-    await click('[data-testid="chrome-workbench"] > summary');
-    await until(`document.querySelector('[data-testid="chrome-workbench"]').open === ${open}`);
+  for (let presses = 1; presses <= limit; presses += 1) {
+    await press("Tab");
+    const landed = await evaluate(`(() => {
+      const wanted = document.querySelector(${JSON.stringify(selector)});
+      if (!wanted || document.activeElement !== wanted) return null;
+      const r = wanted.getBoundingClientRect();
+      const style = getComputedStyle(wanted);
+      return {
+        inViewport: r.top >= -1 && r.bottom <= innerHeight + 1 && r.left >= -1 && r.right <= innerWidth + 1,
+        visibleHeight: Math.round(Math.max(0, Math.min(r.bottom, innerHeight) - Math.max(r.top, 0))),
+        documentScrollY: Math.round(window.scrollY),
+        outlineStyle: style.outlineStyle,
+        outlineWidth: style.outlineWidth,
+      };
+    })()`);
+    if (landed) return { selector, presses, ...landed };
   }
-  return { present: true, open };
+  return { selector, presses: null, reached: false };
 }
 
 /* --- scenario ------------------------------------------------------------------------ */
@@ -641,9 +690,6 @@ if (pass === 1) {
       await setDensity(state.density);
       await setMotion(state.appMotion);
       await setLegend(state.legend);
-      // The first screen is the one the application opens with, so the workbench
-      // disclosure is measured CLOSED: its own open state gets its own check below.
-      const workbench = await setWorkbench(false);
       await quiet();
       await pause(500); // let the ResizeObserver-driven re-render settle
 
@@ -675,7 +721,6 @@ if (pass === 1) {
         size: size.label,
         state: state.id,
         requested: { ...state },
-        workbench,
         hostWindow: granted,
         layout,
         keyboardToAside: keyboard,
@@ -700,7 +745,6 @@ if (pass === 1) {
     size: "1280x800",
     state: "restored",
     requested: { id: "restored" },
-    workbench: { present: await evaluate(`!!document.querySelector('[data-testid="chrome-workbench"]')`) },
     hostWindow: granted,
     layout,
     keyboardToAside: keyboard,
@@ -714,9 +758,13 @@ if (pass === 1) {
     detailsPanelPresent: await evaluate(`!!document.querySelector('.details')`),
     selectedNodeId: await evaluate(`Number(document.querySelector('[data-card="true"][aria-selected="true"]')?.getAttribute('data-node-id') ?? 0) || null`),
     camera: layout.camera,
-    // `P-19` in B02 terms: the workbench disclosure is presentation, so it is NOT
-    // persisted and a new process must find it closed, like any first screen.
-    workbenchOpen: await evaluate(`document.querySelector('[data-testid="chrome-workbench"]')?.open ?? null`),
+    // `P-19` in B02 terms: the bands are presentation, so a restart must find the map on
+    // the first screen again, with the preferences the previous process left behind.
+    firstScreen: {
+      mapViewVisibleHeightPx: layout.firstScreen.mapViewVisibleHeightPx,
+      visibleCardCount: layout.firstScreen.visibleCardCount,
+      documentVerticalScrollPx: layout.documentVerticalScrollPx,
+    },
   };
 }
 
@@ -818,7 +866,6 @@ if (pass === 1) {
   await setLocale("fr");
   await setDensity("comfortable");
   await setMotion("system");
-  await setWorkbench(false);
   await quiet();
 
   // P-02 — the parent and its aggregate: the omitted count is the real one.
@@ -976,6 +1023,42 @@ if (pass === 1) {
   };
   check("criterion 3 — world coordinates and camera scale survive three window heights", record.cameraInvariants);
 
+  // Criterion 2's other half, at the hardest size: the commands that now sit past the fold
+  // of a band which scrolls inside itself. A box measurement cannot answer this — only a
+  // real Tab walk can — so three of them are walked to, by name:
+  //
+  //   `brain-add-real-root` the first action of the composition band;
+  //   `cross-check`         the LAST button of that band, the one furthest down;
+  //   `map-legend-toggle`   the last button of the map column's own control band.
+  //
+  // Each must be reached, must end up inside the viewport, and the DOCUMENT must still be
+  // at `scrollY=0` afterwards: the band scrolled, not the page.
+  //
+  // This runs BEFORE the `P-19` block below, which deliberately leaves a non-default
+  // workspace for the second process; resetting the language after that would erase the
+  // very thing the restart is meant to restore.
+  await resizeTo(960, 640);
+  await emulate("light", "no-preference");
+  await setLocale("fr");
+  await setDensity("comfortable");
+  await quiet();
+  const keyboardReach = {
+    firstAction: await tabToControl('[data-testid="brain-add-real-root"]'),
+    lastChromeCommand: await tabToControl('[data-testid="cross-check"]'),
+    lastMapCommand: await tabToControl('[data-testid="map-legend-toggle"]'),
+  };
+  const regions = (await evaluate(READ_FIRST_SCREEN)).scrollRegions;
+  record.keyboardReach = keyboardReach;
+  record.scrollRegionsAt960 = regions;
+  check("criterion 2 — a command past a band's fold is reached by Tab, in view, document still at the top", {
+    ...keyboardReach,
+    regions,
+    documentStayedAtTheTop: Object.values(keyboardReach).every(
+      (entry) => entry.presses !== null && entry.documentScrollY === 0,
+    ),
+    everyCommandReached: Object.values(keyboardReach).every((entry) => entry.presses !== null),
+  });
+
   // P-19 / P-21 — the toggles, then the state this pass deliberately leaves behind for
   // the second process to restore.
   const detailsBefore = await evaluate(`!!document.querySelector('.details')`);
@@ -997,38 +1080,6 @@ if (pass === 1) {
   })`);
   record.leftBehind = left;
   check("P-19 / P-21 panel, language, density, motion and legend toggle; a non-default workspace is left for the restart", left);
-
-  // Criterion 2's other half: every command of the workbench is still reachable, and the
-  // disclosure is a native one the keyboard opens.
-  const workbench = await evaluate(`(() => {
-    const el = document.querySelector('[data-testid="chrome-workbench"]');
-    if (!el) return { present: false };
-    const summary = el.querySelector(':scope > summary');
-    return {
-      present: true,
-      open: el.open,
-      summaryTag: summary ? summary.tagName : null,
-      summaryFocusable: summary ? summary.tabIndex >= 0 : null,
-      summaryText: summary ? (summary.textContent ?? '').trim().slice(0, 60) : null,
-      controlsInside: el.querySelectorAll('button, input, select').length,
-    };
-  })()`);
-  if (workbench.present) {
-    await setWorkbench(true);
-    const opened = await evaluate(`(() => {
-      const el = document.querySelector('[data-testid="chrome-workbench"]');
-      const controls = [...el.querySelectorAll('button, input, select')];
-      const hittable = controls.filter((c) => {
-        const r = c.getBoundingClientRect();
-        return r.width > 0 && r.height > 0;
-      });
-      return { controls: controls.length, laidOut: hittable.length, documentScrolls: document.documentElement.scrollHeight > document.documentElement.clientHeight };
-    })()`);
-    workbench.whenOpen = opened;
-    await setWorkbench(false);
-  }
-  record.workbench = workbench;
-  check("criterion 2 — the folded commands are a native disclosure, keyboard-operable, nothing removed", workbench);
 }
 
 /* --- nothing outside the contract happened -------------------------------------------- */
