@@ -1,0 +1,5855 @@
+{
+  "task": "TASK-0059",
+  "stage": "B / B02",
+  "phase": "before",
+  "headTested": "0b6de2086e58b02548b43bb5f9faffecdf1c2265",
+  "classification": "DEVELOPMENT_BENCH_ENGINEERING_EVIDENCE",
+  "question": "At scrollY=0, on a real Tauri/WebView2 host, is at least 200 CSS px of a usable MapView surface and one identifiable root or context node already on screen, without scrolling the document, at 960x640 / 1280x800 / 1366x768, in FR and EN, light and dark, compact and reduced motion?",
+  "strategy": "Two real Tauri/WebView2 processes over one disposable synthetic REAL_ROOT. The window is resized NATIVELY through Win32 SetWindowPos (scripts/task0058-resize.ps1, reused unchanged) to 960x640, 1280x800 and 1366x768 client pixels; prefers-color-scheme and prefers-reduced-motion are set explicitly with Emulation.setEmulatedMedia so no state inherits the workstation theme. Six states are measured at every size. The second process proves what a restart restored. No emulated device metrics, no third-party service, no telemetry.",
+  "machine": {
+    "cpu": "Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz",
+    "logicalProcessors": 16,
+    "memoryGiB": 31.9,
+    "note": "Development workstation. This slice measures layout, not performance; no SLA is claimed."
+  },
+  "windowContract": {
+    "source": "src-tauri/tauri.conf.json",
+    "width": 1280,
+    "height": 800,
+    "minWidth": 960,
+    "minHeight": 640,
+    "note": "The host floor was not modified. 960x640 is the smallest declared window, and the resize helper publishes what Windows actually granted."
+  },
+  "pass1": {
+    "task": "TASK-0059",
+    "phase": "before",
+    "pass": 1,
+    "headTested": "0b6de2086e58b02548b43bb5f9faffecdf1c2265",
+    "mapFloorPx": 200,
+    "checks": [
+      {
+        "label": "criterion 1 — a usable map and an identifiable node at scrollY=0",
+        "value": {
+          "satisfied": false,
+          "floorPx": 200,
+          "worstVisibleMapHeightPx": 0,
+          "failing": [
+            "960x640/fr-light",
+            "960x640/fr-dark-legend",
+            "960x640/en-light-legend",
+            "960x640/en-dark",
+            "960x640/fr-light-compact-legend",
+            "960x640/fr-light-reduced-motion",
+            "1280x800/fr-light",
+            "1280x800/fr-dark-legend",
+            "1280x800/en-light-legend",
+            "1280x800/en-dark",
+            "1280x800/fr-light-compact-legend",
+            "1280x800/fr-light-reduced-motion",
+            "1366x768/fr-light",
+            "1366x768/fr-dark-legend",
+            "1366x768/en-light-legend",
+            "1366x768/en-dark",
+            "1366x768/fr-light-compact-legend",
+            "1366x768/fr-light-reduced-motion"
+          ]
+        }
+      },
+      {
+        "label": "criterion 2 — a restricted window removes no command",
+        "value": {
+          "controlDigestsPerState": {
+            "fr-light": 1,
+            "fr-dark-legend": 1,
+            "en-light-legend": 1,
+            "en-dark": 1,
+            "fr-light-compact-legend": 1,
+            "fr-light-reduced-motion": 1
+          },
+          "commandsLostAtSomeSize": [],
+          "panelReachableByKeyboard": true,
+          "horizontalOverflow": "none at any size or state"
+        }
+      },
+      {
+        "label": "P-02 parent and aggregate recognised, exact omitted count",
+        "value": {
+          "parent": "archives",
+          "shown": 0,
+          "omitted": 120,
+          "realChildren": 120,
+          "role": "treeitem"
+        }
+      },
+      {
+        "label": "P-05 edges drawn, a row outside the first view reached, view bounded, target still visible",
+        "value": {
+          "farRowWasInFirstView": false,
+          "edgesBefore": 5,
+          "edgesAfter": 2,
+          "budget": 512,
+          "slotsAfter": 5,
+          "navigatedTargetVisible": {
+            "visibleWidth": 240,
+            "visibleHeight": 0,
+            "scrollY": 0
+          }
+        }
+      },
+      {
+        "label": "P-07 selection at 960x640 WITHOUT scrolling the document",
+        "value": {
+          "selected": false,
+          "why": "no card is visible and hittable at scrollY=0: this is the B01-O1 defect, measured, not worked around",
+          "scrollY": 0
+        }
+      },
+      {
+        "label": "P-11 wheel and keyboard zoom at 960x640 (same WheelEvent primitive as a touchpad)",
+        "value": {
+          "wheelMoved": true,
+          "keyboardMoved": true
+        }
+      },
+      {
+        "label": "criterion 3 — world coordinates and camera scale survive three window heights",
+        "value": {
+          "selectionBefore": 126,
+          "trail": [
+            {
+              "size": "960x640",
+              "camera": {
+                "tx": -1199.5054228239858,
+                "ty": 0,
+                "scale": 1.9344728533297966,
+                "transform": "translate(-1199.5054228239858 0) scale(1.9344728533297966)"
+              },
+              "mapViewHeight": 1224.1,
+              "selected": 126,
+              "selectedStillVisible": false
+            },
+            {
+              "size": "1280x800",
+              "camera": {
+                "tx": -1187.803333116265,
+                "ty": 0,
+                "scale": 1.9344728533297966,
+                "transform": "translate(-1187.803333116265 0) scale(1.9344728533297966)"
+              },
+              "mapViewHeight": 1318.1,
+              "selected": 126,
+              "selectedStillVisible": false
+            },
+            {
+              "size": "1366x768",
+              "camera": {
+                "tx": -1101.803333116265,
+                "ty": 0,
+                "scale": 1.9344728533297966,
+                "transform": "translate(-1101.803333116265 0) scale(1.9344728533297966)"
+              },
+              "mapViewHeight": 1318.1,
+              "selected": 126,
+              "selectedStillVisible": false
+            },
+            {
+              "size": "960x640",
+              "camera": {
+                "tx": -1101.803333116265,
+                "ty": 0,
+                "scale": 1.9344728533297966,
+                "transform": "translate(-1101.803333116265 0) scale(1.9344728533297966)"
+              },
+              "mapViewHeight": 1224.1,
+              "selected": 126,
+              "selectedStillVisible": false
+            }
+          ],
+          "distinctScales": [
+            1.9344728533297966
+          ],
+          "scaleUnchangedAcrossHeights": true,
+          "worldCoordinatesStable": true,
+          "selectionKept": true,
+          "cardsCompared": 3
+        }
+      },
+      {
+        "label": "P-19 / P-21 panel, language, density, motion and legend toggle; a non-default workspace is left for the restart",
+        "value": {
+          "locale": "true",
+          "density": "compact",
+          "motion": "reduce",
+          "legend": "true",
+          "details": false,
+          "selected": 126
+        }
+      },
+      {
+        "label": "criterion 2 — the folded commands are a native disclosure, keyboard-operable, nothing removed",
+        "value": {
+          "present": false
+        }
+      },
+      {
+        "label": "P-22 in this scope: source byte-identical, no artefact under the root, no write on the wire",
+        "value": {
+          "commandsSeen": [
+            "map_brain_activate",
+            "map_brain_resume_update",
+            "map_content_observation_for_path",
+            "map_content_summary",
+            "map_cross_relations_for_node",
+            "map_cross_relations_open",
+            "map_node_change_state",
+            "map_node_children",
+            "map_node_detail",
+            "map_relations_for_node",
+            "map_resolve_node",
+            "map_search_nodes",
+            "map_source_observation",
+            "map_view",
+            "map_workspace_update"
+          ],
+          "indexRevisionStable": true
+        }
+      }
+    ],
+    "findings": [],
+    "index": {
+      "indexed": 161,
+      "viewBudget": 512,
+      "materialized": 6,
+      "aggregates": 3,
+      "indexRevision": 1
+    },
+    "verdict": {
+      "firstScreenSatisfied": false,
+      "statesFailingFirstScreen": [
+        "960x640/fr-light",
+        "960x640/fr-dark-legend",
+        "960x640/en-light-legend",
+        "960x640/en-dark",
+        "960x640/fr-light-compact-legend",
+        "960x640/fr-light-reduced-motion",
+        "1280x800/fr-light",
+        "1280x800/fr-dark-legend",
+        "1280x800/en-light-legend",
+        "1280x800/en-dark",
+        "1280x800/fr-light-compact-legend",
+        "1280x800/fr-light-reduced-motion",
+        "1366x768/fr-light",
+        "1366x768/fr-dark-legend",
+        "1366x768/en-light-legend",
+        "1366x768/en-dark",
+        "1366x768/fr-light-compact-legend",
+        "1366x768/fr-light-reduced-motion"
+      ],
+      "worstVisibleMapHeightPx": 0,
+      "worstDocumentVerticalScrollPx": 3545,
+      "worstChromeHeightAboveMainPx": 727,
+      "firstScreenByState": [
+        {
+          "size": "960x640",
+          "state": "fr-light",
+          "documentHeight": 2729,
+          "viewportHeight": 640,
+          "documentVerticalScrollPx": 2089,
+          "chromeHeightAboveMainPx": 727,
+          "mapViewVisibleHeightPx": 0,
+          "mapUsableAtTop": false,
+          "visibleCardCount": 0,
+          "rootCardVisible": null,
+          "contextCard": null,
+          "asideScrollsInside": false,
+          "satisfiesCriterion1": false
+        },
+        {
+          "size": "960x640",
+          "state": "fr-dark-legend",
+          "documentHeight": 4185,
+          "viewportHeight": 640,
+          "documentVerticalScrollPx": 3545,
+          "chromeHeightAboveMainPx": 727,
+          "mapViewVisibleHeightPx": 0,
+          "mapUsableAtTop": false,
+          "visibleCardCount": 0,
+          "rootCardVisible": null,
+          "contextCard": null,
+          "asideScrollsInside": false,
+          "satisfiesCriterion1": false
+        },
+        {
+          "size": "960x640",
+          "state": "en-light-legend",
+          "documentHeight": 4130,
+          "viewportHeight": 640,
+          "documentVerticalScrollPx": 3490,
+          "chromeHeightAboveMainPx": 703,
+          "mapViewVisibleHeightPx": 0,
+          "mapUsableAtTop": false,
+          "visibleCardCount": 0,
+          "rootCardVisible": null,
+          "contextCard": null,
+          "asideScrollsInside": false,
+          "satisfiesCriterion1": false
+        },
+        {
+          "size": "960x640",
+          "state": "en-dark",
+          "documentHeight": 2674,
+          "viewportHeight": 640,
+          "documentVerticalScrollPx": 2034,
+          "chromeHeightAboveMainPx": 703,
+          "mapViewVisibleHeightPx": 0,
+          "mapUsableAtTop": false,
+          "visibleCardCount": 0,
+          "rootCardVisible": null,
+          "contextCard": null,
+          "asideScrollsInside": false,
+          "satisfiesCriterion1": false
+        },
+        {
+          "size": "960x640",
+          "state": "fr-light-compact-legend",
+          "documentHeight": 3949,
+          "viewportHeight": 640,
+          "documentVerticalScrollPx": 3309,
+          "chromeHeightAboveMainPx": 635,
+          "mapViewVisibleHeightPx": 0,
+          "mapUsableAtTop": false,
+          "visibleCardCount": 0,
+          "rootCardVisible": null,
+          "contextCard": null,
+          "asideScrollsInside": false,
+          "satisfiesCriterion1": false
+        },
+        {
+          "size": "960x640",
+          "state": "fr-light-reduced-motion",
+          "documentHeight": 2729,
+          "viewportHeight": 640,
+          "documentVerticalScrollPx": 2089,
+          "chromeHeightAboveMainPx": 727,
+          "mapViewVisibleHeightPx": 0,
+          "mapUsableAtTop": false,
+          "visibleCardCount": 0,
+          "rootCardVisible": null,
+          "contextCard": null,
+          "asideScrollsInside": false,
+          "satisfiesCriterion1": false
+        },
+        {
+          "size": "1280x800",
+          "state": "fr-light",
+          "documentHeight": 2630,
+          "viewportHeight": 800,
+          "documentVerticalScrollPx": 1830,
+          "chromeHeightAboveMainPx": 628,
+          "mapViewVisibleHeightPx": 0,
+          "mapUsableAtTop": false,
+          "visibleCardCount": 0,
+          "rootCardVisible": null,
+          "contextCard": null,
+          "asideScrollsInside": false,
+          "satisfiesCriterion1": false
+        },
+        {
+          "size": "1280x800",
+          "state": "fr-dark-legend",
+          "documentHeight": 4086,
+          "viewportHeight": 800,
+          "documentVerticalScrollPx": 3286,
+          "chromeHeightAboveMainPx": 628,
+          "mapViewVisibleHeightPx": 0,
+          "mapUsableAtTop": false,
+          "visibleCardCount": 0,
+          "rootCardVisible": null,
+          "contextCard": null,
+          "asideScrollsInside": false,
+          "satisfiesCriterion1": false
+        },
+        {
+          "size": "1280x800",
+          "state": "en-light-legend",
+          "documentHeight": 4012,
+          "viewportHeight": 800,
+          "documentVerticalScrollPx": 3212,
+          "chromeHeightAboveMainPx": 585,
+          "mapViewVisibleHeightPx": 0,
+          "mapUsableAtTop": false,
+          "visibleCardCount": 0,
+          "rootCardVisible": null,
+          "contextCard": null,
+          "asideScrollsInside": false,
+          "satisfiesCriterion1": false
+        },
+        {
+          "size": "1280x800",
+          "state": "en-dark",
+          "documentHeight": 2556,
+          "viewportHeight": 800,
+          "documentVerticalScrollPx": 1756,
+          "chromeHeightAboveMainPx": 585,
+          "mapViewVisibleHeightPx": 0,
+          "mapUsableAtTop": false,
+          "visibleCardCount": 0,
+          "rootCardVisible": null,
+          "contextCard": null,
+          "asideScrollsInside": false,
+          "satisfiesCriterion1": false
+        },
+        {
+          "size": "1280x800",
+          "state": "fr-light-compact-legend",
+          "documentHeight": 3831,
+          "viewportHeight": 800,
+          "documentVerticalScrollPx": 3031,
+          "chromeHeightAboveMainPx": 517,
+          "mapViewVisibleHeightPx": 0,
+          "mapUsableAtTop": false,
+          "visibleCardCount": 0,
+          "rootCardVisible": null,
+          "contextCard": null,
+          "asideScrollsInside": false,
+          "satisfiesCriterion1": false
+        },
+        {
+          "size": "1280x800",
+          "state": "fr-light-reduced-motion",
+          "documentHeight": 2630,
+          "viewportHeight": 800,
+          "documentVerticalScrollPx": 1830,
+          "chromeHeightAboveMainPx": 628,
+          "mapViewVisibleHeightPx": 0,
+          "mapUsableAtTop": false,
+          "visibleCardCount": 0,
+          "rootCardVisible": null,
+          "contextCard": null,
+          "asideScrollsInside": false,
+          "satisfiesCriterion1": false
+        },
+        {
+          "size": "1366x768",
+          "state": "fr-light",
+          "documentHeight": 2587,
+          "viewportHeight": 768,
+          "documentVerticalScrollPx": 1819,
+          "chromeHeightAboveMainPx": 585,
+          "mapViewVisibleHeightPx": 0,
+          "mapUsableAtTop": false,
+          "visibleCardCount": 0,
+          "rootCardVisible": null,
+          "contextCard": null,
+          "asideScrollsInside": false,
+          "satisfiesCriterion1": false
+        },
+        {
+          "size": "1366x768",
+          "state": "fr-dark-legend",
+          "documentHeight": 4043,
+          "viewportHeight": 768,
+          "documentVerticalScrollPx": 3275,
+          "chromeHeightAboveMainPx": 585,
+          "mapViewVisibleHeightPx": 0,
+          "mapUsableAtTop": false,
+          "visibleCardCount": 0,
+          "rootCardVisible": null,
+          "contextCard": null,
+          "asideScrollsInside": false,
+          "satisfiesCriterion1": false
+        },
+        {
+          "size": "1366x768",
+          "state": "en-light-legend",
+          "documentHeight": 4012,
+          "viewportHeight": 768,
+          "documentVerticalScrollPx": 3244,
+          "chromeHeightAboveMainPx": 585,
+          "mapViewVisibleHeightPx": 0,
+          "mapUsableAtTop": false,
+          "visibleCardCount": 0,
+          "rootCardVisible": null,
+          "contextCard": null,
+          "asideScrollsInside": false,
+          "satisfiesCriterion1": false
+        },
+        {
+          "size": "1366x768",
+          "state": "en-dark",
+          "documentHeight": 2556,
+          "viewportHeight": 768,
+          "documentVerticalScrollPx": 1788,
+          "chromeHeightAboveMainPx": 585,
+          "mapViewVisibleHeightPx": 0,
+          "mapUsableAtTop": false,
+          "visibleCardCount": 0,
+          "rootCardVisible": null,
+          "contextCard": null,
+          "asideScrollsInside": false,
+          "satisfiesCriterion1": false
+        },
+        {
+          "size": "1366x768",
+          "state": "fr-light-compact-legend",
+          "documentHeight": 3831,
+          "viewportHeight": 768,
+          "documentVerticalScrollPx": 3063,
+          "chromeHeightAboveMainPx": 517,
+          "mapViewVisibleHeightPx": 0,
+          "mapUsableAtTop": false,
+          "visibleCardCount": 0,
+          "rootCardVisible": null,
+          "contextCard": null,
+          "asideScrollsInside": false,
+          "satisfiesCriterion1": false
+        },
+        {
+          "size": "1366x768",
+          "state": "fr-light-reduced-motion",
+          "documentHeight": 2587,
+          "viewportHeight": 768,
+          "documentVerticalScrollPx": 1819,
+          "chromeHeightAboveMainPx": 585,
+          "mapViewVisibleHeightPx": 0,
+          "mapUsableAtTop": false,
+          "visibleCardCount": 0,
+          "rootCardVisible": null,
+          "contextCard": null,
+          "asideScrollsInside": false,
+          "satisfiesCriterion1": false
+        }
+      ],
+      "horizontalOverflowWorstPx": 0,
+      "statesWithViewportEscapers": [],
+      "statesWithSidewaysScrollers": [],
+      "statesWithClippedControls": [],
+      "statesWithColumnOverlap": [],
+      "statesWherePanelUnreachableByKeyboard": [],
+      "statesWithoutVisibleFocusRing": [],
+      "commandsLostAtSomeSize": [],
+      "controlCountByState": [
+        {
+          "size": "960x640",
+          "state": "fr-light",
+          "controls": 59
+        },
+        {
+          "size": "960x640",
+          "state": "fr-dark-legend",
+          "controls": 59
+        },
+        {
+          "size": "960x640",
+          "state": "en-light-legend",
+          "controls": 59
+        },
+        {
+          "size": "960x640",
+          "state": "en-dark",
+          "controls": 59
+        },
+        {
+          "size": "960x640",
+          "state": "fr-light-compact-legend",
+          "controls": 59
+        },
+        {
+          "size": "960x640",
+          "state": "fr-light-reduced-motion",
+          "controls": 59
+        },
+        {
+          "size": "1280x800",
+          "state": "fr-light",
+          "controls": 59
+        },
+        {
+          "size": "1280x800",
+          "state": "fr-dark-legend",
+          "controls": 59
+        },
+        {
+          "size": "1280x800",
+          "state": "en-light-legend",
+          "controls": 59
+        },
+        {
+          "size": "1280x800",
+          "state": "en-dark",
+          "controls": 59
+        },
+        {
+          "size": "1280x800",
+          "state": "fr-light-compact-legend",
+          "controls": 59
+        },
+        {
+          "size": "1280x800",
+          "state": "fr-light-reduced-motion",
+          "controls": 59
+        },
+        {
+          "size": "1366x768",
+          "state": "fr-light",
+          "controls": 59
+        },
+        {
+          "size": "1366x768",
+          "state": "fr-dark-legend",
+          "controls": 59
+        },
+        {
+          "size": "1366x768",
+          "state": "en-light-legend",
+          "controls": 59
+        },
+        {
+          "size": "1366x768",
+          "state": "en-dark",
+          "controls": 59
+        },
+        {
+          "size": "1366x768",
+          "state": "fr-light-compact-legend",
+          "controls": 59
+        },
+        {
+          "size": "1366x768",
+          "state": "fr-light-reduced-motion",
+          "controls": 59
+        }
+      ],
+      "axeViolations": [],
+      "axeIncompleteByState": [
+        {
+          "size": "960x640",
+          "state": "fr-light",
+          "incomplete": [
+            "color-contrastx12"
+          ]
+        },
+        {
+          "size": "960x640",
+          "state": "fr-dark-legend",
+          "incomplete": [
+            "color-contrastx16"
+          ]
+        },
+        {
+          "size": "960x640",
+          "state": "en-light-legend",
+          "incomplete": [
+            "color-contrastx16"
+          ]
+        },
+        {
+          "size": "960x640",
+          "state": "en-dark",
+          "incomplete": [
+            "color-contrastx12"
+          ]
+        },
+        {
+          "size": "960x640",
+          "state": "fr-light-compact-legend",
+          "incomplete": [
+            "color-contrastx16"
+          ]
+        },
+        {
+          "size": "960x640",
+          "state": "fr-light-reduced-motion",
+          "incomplete": [
+            "color-contrastx12"
+          ]
+        },
+        {
+          "size": "1280x800",
+          "state": "fr-light",
+          "incomplete": [
+            "color-contrastx15"
+          ]
+        },
+        {
+          "size": "1280x800",
+          "state": "fr-dark-legend",
+          "incomplete": [
+            "color-contrastx19"
+          ]
+        },
+        {
+          "size": "1280x800",
+          "state": "en-light-legend",
+          "incomplete": [
+            "color-contrastx19"
+          ]
+        },
+        {
+          "size": "1280x800",
+          "state": "en-dark",
+          "incomplete": [
+            "color-contrastx15"
+          ]
+        },
+        {
+          "size": "1280x800",
+          "state": "fr-light-compact-legend",
+          "incomplete": [
+            "color-contrastx20"
+          ]
+        },
+        {
+          "size": "1280x800",
+          "state": "fr-light-reduced-motion",
+          "incomplete": [
+            "color-contrastx16"
+          ]
+        },
+        {
+          "size": "1366x768",
+          "state": "fr-light",
+          "incomplete": [
+            "color-contrastx16"
+          ]
+        },
+        {
+          "size": "1366x768",
+          "state": "fr-dark-legend",
+          "incomplete": [
+            "color-contrastx20"
+          ]
+        },
+        {
+          "size": "1366x768",
+          "state": "en-light-legend",
+          "incomplete": [
+            "color-contrastx20"
+          ]
+        },
+        {
+          "size": "1366x768",
+          "state": "en-dark",
+          "incomplete": [
+            "color-contrastx16"
+          ]
+        },
+        {
+          "size": "1366x768",
+          "state": "fr-light-compact-legend",
+          "incomplete": [
+            "color-contrastx20"
+          ]
+        },
+        {
+          "size": "1366x768",
+          "state": "fr-light-reduced-motion",
+          "incomplete": [
+            "color-contrastx16"
+          ]
+        }
+      ]
+    },
+    "chromeDefectProven": false,
+    "selectionAtTop": {
+      "scrollY": 0,
+      "selectable": null
+    },
+    "cameraInvariants": {
+      "selectionBefore": 126,
+      "trail": [
+        {
+          "size": "960x640",
+          "camera": {
+            "tx": -1199.5054228239858,
+            "ty": 0,
+            "scale": 1.9344728533297966,
+            "transform": "translate(-1199.5054228239858 0) scale(1.9344728533297966)"
+          },
+          "mapViewHeight": 1224.1,
+          "selected": 126,
+          "selectedStillVisible": false
+        },
+        {
+          "size": "1280x800",
+          "camera": {
+            "tx": -1187.803333116265,
+            "ty": 0,
+            "scale": 1.9344728533297966,
+            "transform": "translate(-1187.803333116265 0) scale(1.9344728533297966)"
+          },
+          "mapViewHeight": 1318.1,
+          "selected": 126,
+          "selectedStillVisible": false
+        },
+        {
+          "size": "1366x768",
+          "camera": {
+            "tx": -1101.803333116265,
+            "ty": 0,
+            "scale": 1.9344728533297966,
+            "transform": "translate(-1101.803333116265 0) scale(1.9344728533297966)"
+          },
+          "mapViewHeight": 1318.1,
+          "selected": 126,
+          "selectedStillVisible": false
+        },
+        {
+          "size": "960x640",
+          "camera": {
+            "tx": -1101.803333116265,
+            "ty": 0,
+            "scale": 1.9344728533297966,
+            "transform": "translate(-1101.803333116265 0) scale(1.9344728533297966)"
+          },
+          "mapViewHeight": 1224.1,
+          "selected": 126,
+          "selectedStillVisible": false
+        }
+      ],
+      "distinctScales": [
+        1.9344728533297966
+      ],
+      "scaleUnchangedAcrossHeights": true,
+      "worldCoordinatesStable": true,
+      "selectionKept": true,
+      "cardsCompared": 3
+    },
+    "leftBehind": {
+      "locale": "true",
+      "density": "compact",
+      "motion": "reduce",
+      "legend": "true",
+      "details": false,
+      "selected": 126
+    },
+    "workbench": {
+      "present": false
+    },
+    "matrix": [
+      {
+        "size": "960x640",
+        "state": "fr-light",
+        "requested": {
+          "id": "fr-light",
+          "locale": "fr",
+          "scheme": "light",
+          "motion": "no-preference",
+          "density": "comfortable",
+          "appMotion": "system",
+          "legend": false
+        },
+        "workbench": {
+          "present": false
+        },
+        "hostWindow": {
+          "askedClient": [
+            960,
+            640
+          ],
+          "grantedClient": [
+            960,
+            640
+          ],
+          "grantedWindow": [
+            976,
+            679
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            960,
+            640
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            960,
+            640
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            945,
+            640
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            945,
+            2729
+          ],
+          "documentOverflowX": 0,
+          "documentVerticalScrollPx": 2089,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|composition-remove-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "firstScreen": {
+            "mapViewVisibleHeightPx": 0,
+            "mapViewVisibleWidthPx": 535,
+            "canvasVisibleHeightPx": 0,
+            "mapHitTest": null,
+            "visibleCardCount": 0,
+            "visibleCards": [],
+            "rootCardVisible": null,
+            "contextCardVisible": null
+          },
+          "chromeBands": [
+            {
+              "tag": "HEADER",
+              "cls": "app__header",
+              "testid": null,
+              "h": 163,
+              "documentTop": 14,
+              "visibleHeight": 163,
+              "scrollsInside": false
+            },
+            {
+              "tag": "NAV",
+              "cls": "app__brains",
+              "testid": null,
+              "h": 389,
+              "documentTop": 187,
+              "visibleHeight": 389,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__sources",
+              "testid": null,
+              "h": 38,
+              "documentTop": 586,
+              "visibleHeight": 38,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__report",
+              "testid": null,
+              "h": 83,
+              "documentTop": 634,
+              "visibleHeight": 6,
+              "scrollsInside": false
+            }
+          ],
+          "chromeHeightAboveMainPx": 727,
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 727,
+              "w": 909,
+              "h": 1984.1,
+              "right": 927,
+              "bottom": 2711.1,
+              "documentTop": 727,
+              "scrollWidth": 909,
+              "clientWidth": 909,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "map": {
+              "x": 18,
+              "y": 727,
+              "w": 535,
+              "h": 1984.1,
+              "right": 553,
+              "bottom": 2711.1,
+              "documentTop": 727,
+              "scrollWidth": 535,
+              "clientWidth": 535,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "aside": {
+              "x": 567,
+              "y": 727,
+              "w": 360,
+              "h": 1984.1,
+              "right": 927,
+              "bottom": 2711.1,
+              "documentTop": 727,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1360,
+              "w": 535,
+              "h": 1311.1,
+              "right": 553,
+              "bottom": 2671.1,
+              "documentTop": 1360,
+              "scrollWidth": 533,
+              "clientWidth": 533,
+              "scrollHeight": 1309,
+              "clientHeight": 1309
+            },
+            "canvas": {
+              "x": 19,
+              "y": 1361,
+              "w": 533,
+              "h": 1309.1,
+              "right": 552,
+              "bottom": 2670.1,
+              "documentTop": 1361,
+              "scrollWidth": 533,
+              "clientWidth": 533,
+              "scrollHeight": 1309,
+              "clientHeight": 1309
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 909,
+              "h": 163,
+              "right": 927,
+              "bottom": 177,
+              "documentTop": 14,
+              "scrollWidth": 909,
+              "clientWidth": 909,
+              "scrollHeight": 163,
+              "clientHeight": 163
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 727,
+              "w": 535,
+              "h": 121,
+              "right": 553,
+              "bottom": 848,
+              "documentTop": 727,
+              "scrollWidth": 535,
+              "clientWidth": 535,
+              "scrollHeight": 121,
+              "clientHeight": 121
+            },
+            "overlapArea": 0,
+            "asidePosition": "static",
+            "asideScrollsInside": false
+          },
+          "gridTemplate": "535px 360px",
+          "mediaMatches": {
+            "dark": false,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "system",
+            "lang": "fr"
+          },
+          "buttonTransition": "0s",
+          "camera": {
+            "tx": 0,
+            "ty": 0,
+            "scale": 1,
+            "transform": "translate(0 0) scale(1)"
+          },
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 12
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "960x640",
+        "state": "fr-dark-legend",
+        "requested": {
+          "id": "fr-dark-legend",
+          "locale": "fr",
+          "scheme": "dark",
+          "motion": "no-preference",
+          "density": "comfortable",
+          "appMotion": "system",
+          "legend": true
+        },
+        "workbench": {
+          "present": false
+        },
+        "hostWindow": {
+          "askedClient": [
+            960,
+            640
+          ],
+          "grantedClient": [
+            960,
+            640
+          ],
+          "grantedWindow": [
+            976,
+            679
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            960,
+            640
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            960,
+            640
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            945,
+            640
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            945,
+            4185
+          ],
+          "documentOverflowX": 0,
+          "documentVerticalScrollPx": 3545,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|composition-remove-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "firstScreen": {
+            "mapViewVisibleHeightPx": 0,
+            "mapViewVisibleWidthPx": 535,
+            "canvasVisibleHeightPx": 0,
+            "mapHitTest": null,
+            "visibleCardCount": 0,
+            "visibleCards": [],
+            "rootCardVisible": null,
+            "contextCardVisible": null
+          },
+          "chromeBands": [
+            {
+              "tag": "HEADER",
+              "cls": "app__header",
+              "testid": null,
+              "h": 163,
+              "documentTop": 14,
+              "visibleHeight": 163,
+              "scrollsInside": false
+            },
+            {
+              "tag": "NAV",
+              "cls": "app__brains",
+              "testid": null,
+              "h": 389,
+              "documentTop": 187,
+              "visibleHeight": 389,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__sources",
+              "testid": null,
+              "h": 38,
+              "documentTop": 586,
+              "visibleHeight": 38,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__report",
+              "testid": null,
+              "h": 83,
+              "documentTop": 634,
+              "visibleHeight": 6,
+              "scrollsInside": false
+            }
+          ],
+          "chromeHeightAboveMainPx": 727,
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 727,
+              "w": 909,
+              "h": 3440.1,
+              "right": 927,
+              "bottom": 4167.1,
+              "documentTop": 727,
+              "scrollWidth": 909,
+              "clientWidth": 909,
+              "scrollHeight": 3440,
+              "clientHeight": 3440
+            },
+            "map": {
+              "x": 18,
+              "y": 727,
+              "w": 535,
+              "h": 3440.1,
+              "right": 553,
+              "bottom": 4167.1,
+              "documentTop": 727,
+              "scrollWidth": 535,
+              "clientWidth": 535,
+              "scrollHeight": 3440,
+              "clientHeight": 3440
+            },
+            "aside": {
+              "x": 567,
+              "y": 727,
+              "w": 360,
+              "h": 3440.1,
+              "right": 927,
+              "bottom": 4167.1,
+              "documentTop": 727,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 3440,
+              "clientHeight": 3440
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1360,
+              "w": 535,
+              "h": 2767.1,
+              "right": 553,
+              "bottom": 4127.1,
+              "documentTop": 1360,
+              "scrollWidth": 533,
+              "clientWidth": 533,
+              "scrollHeight": 2765,
+              "clientHeight": 2765
+            },
+            "canvas": {
+              "x": 19,
+              "y": 1361,
+              "w": 533,
+              "h": 2765.1,
+              "right": 552,
+              "bottom": 4126.1,
+              "documentTop": 1361,
+              "scrollWidth": 533,
+              "clientWidth": 533,
+              "scrollHeight": 2765,
+              "clientHeight": 2765
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 909,
+              "h": 163,
+              "right": 927,
+              "bottom": 177,
+              "documentTop": 14,
+              "scrollWidth": 909,
+              "clientWidth": 909,
+              "scrollHeight": 163,
+              "clientHeight": 163
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 727,
+              "w": 535,
+              "h": 121,
+              "right": 553,
+              "bottom": 848,
+              "documentTop": 727,
+              "scrollWidth": 535,
+              "clientWidth": 535,
+              "scrollHeight": 121,
+              "clientHeight": 121
+            },
+            "overlapArea": 0,
+            "asidePosition": "static",
+            "asideScrollsInside": false
+          },
+          "gridTemplate": "535px 360px",
+          "mediaMatches": {
+            "dark": true,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "system",
+            "lang": "fr"
+          },
+          "buttonTransition": "0s",
+          "camera": {
+            "tx": -491,
+            "ty": 0,
+            "scale": 1,
+            "transform": "translate(-491 0) scale(1)"
+          },
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 16
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "960x640",
+        "state": "en-light-legend",
+        "requested": {
+          "id": "en-light-legend",
+          "locale": "en",
+          "scheme": "light",
+          "motion": "no-preference",
+          "density": "comfortable",
+          "appMotion": "system",
+          "legend": true
+        },
+        "workbench": {
+          "present": false
+        },
+        "hostWindow": {
+          "askedClient": [
+            960,
+            640
+          ],
+          "grantedClient": [
+            960,
+            640
+          ],
+          "grantedWindow": [
+            976,
+            679
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            960,
+            640
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            960,
+            640
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            945,
+            640
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            945,
+            4130
+          ],
+          "documentOverflowX": 0,
+          "documentVerticalScrollPx": 3490,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Back to the root|Check H1–H5|Check J1–J5, J10|Explore the selection|Frame the selection|Measure in WebView2|Select the root|Zoom in|Zoom out|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|composition-remove-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "firstScreen": {
+            "mapViewVisibleHeightPx": 0,
+            "mapViewVisibleWidthPx": 535,
+            "canvasVisibleHeightPx": 0,
+            "mapHitTest": null,
+            "visibleCardCount": 0,
+            "visibleCards": [],
+            "rootCardVisible": null,
+            "contextCardVisible": null
+          },
+          "chromeBands": [
+            {
+              "tag": "HEADER",
+              "cls": "app__header",
+              "testid": null,
+              "h": 163,
+              "documentTop": 14,
+              "visibleHeight": 163,
+              "scrollsInside": false
+            },
+            {
+              "tag": "NAV",
+              "cls": "app__brains",
+              "testid": null,
+              "h": 389,
+              "documentTop": 187,
+              "visibleHeight": 389,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__sources",
+              "testid": null,
+              "h": 38,
+              "documentTop": 586,
+              "visibleHeight": 38,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__report",
+              "testid": null,
+              "h": 59,
+              "documentTop": 634,
+              "visibleHeight": 6,
+              "scrollsInside": false
+            }
+          ],
+          "chromeHeightAboveMainPx": 703,
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 703,
+              "w": 909,
+              "h": 3409.2,
+              "right": 927,
+              "bottom": 4112.2,
+              "documentTop": 703,
+              "scrollWidth": 909,
+              "clientWidth": 909,
+              "scrollHeight": 3409,
+              "clientHeight": 3409
+            },
+            "map": {
+              "x": 18,
+              "y": 703,
+              "w": 535,
+              "h": 3409.2,
+              "right": 553,
+              "bottom": 4112.2,
+              "documentTop": 703,
+              "scrollWidth": 535,
+              "clientWidth": 535,
+              "scrollHeight": 3409,
+              "clientHeight": 3409
+            },
+            "aside": {
+              "x": 567,
+              "y": 703,
+              "w": 360,
+              "h": 3409.2,
+              "right": 927,
+              "bottom": 4112.2,
+              "documentTop": 703,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 3409,
+              "clientHeight": 3409
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1293,
+              "w": 535,
+              "h": 2779.2,
+              "right": 553,
+              "bottom": 4072.2,
+              "documentTop": 1293,
+              "scrollWidth": 533,
+              "clientWidth": 533,
+              "scrollHeight": 2777,
+              "clientHeight": 2777
+            },
+            "canvas": {
+              "x": 19,
+              "y": 1294,
+              "w": 533,
+              "h": 2777.2,
+              "right": 552,
+              "bottom": 4071.2,
+              "documentTop": 1294,
+              "scrollWidth": 533,
+              "clientWidth": 533,
+              "scrollHeight": 2777,
+              "clientHeight": 2777
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 909,
+              "h": 163,
+              "right": 927,
+              "bottom": 177,
+              "documentTop": 14,
+              "scrollWidth": 909,
+              "clientWidth": 909,
+              "scrollHeight": 163,
+              "clientHeight": 163
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 703,
+              "w": 535,
+              "h": 78,
+              "right": 553,
+              "bottom": 781,
+              "documentTop": 703,
+              "scrollWidth": 535,
+              "clientWidth": 535,
+              "scrollHeight": 78,
+              "clientHeight": 78
+            },
+            "overlapArea": 0,
+            "asidePosition": "static",
+            "asideScrollsInside": false
+          },
+          "gridTemplate": "535px 360px",
+          "mediaMatches": {
+            "dark": false,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "system",
+            "lang": "en"
+          },
+          "buttonTransition": "0s",
+          "camera": {
+            "tx": -491,
+            "ty": 0,
+            "scale": 1,
+            "transform": "translate(-491 0) scale(1)"
+          },
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 16
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "960x640",
+        "state": "en-dark",
+        "requested": {
+          "id": "en-dark",
+          "locale": "en",
+          "scheme": "dark",
+          "motion": "no-preference",
+          "density": "comfortable",
+          "appMotion": "system",
+          "legend": false
+        },
+        "workbench": {
+          "present": false
+        },
+        "hostWindow": {
+          "askedClient": [
+            960,
+            640
+          ],
+          "grantedClient": [
+            960,
+            640
+          ],
+          "grantedWindow": [
+            976,
+            679
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            960,
+            640
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            960,
+            640
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            945,
+            640
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            945,
+            2674
+          ],
+          "documentOverflowX": 0,
+          "documentVerticalScrollPx": 2034,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Back to the root|Check H1–H5|Check J1–J5, J10|Explore the selection|Frame the selection|Measure in WebView2|Select the root|Zoom in|Zoom out|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|composition-remove-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "firstScreen": {
+            "mapViewVisibleHeightPx": 0,
+            "mapViewVisibleWidthPx": 535,
+            "canvasVisibleHeightPx": 0,
+            "mapHitTest": null,
+            "visibleCardCount": 0,
+            "visibleCards": [],
+            "rootCardVisible": null,
+            "contextCardVisible": null
+          },
+          "chromeBands": [
+            {
+              "tag": "HEADER",
+              "cls": "app__header",
+              "testid": null,
+              "h": 163,
+              "documentTop": 14,
+              "visibleHeight": 163,
+              "scrollsInside": false
+            },
+            {
+              "tag": "NAV",
+              "cls": "app__brains",
+              "testid": null,
+              "h": 389,
+              "documentTop": 187,
+              "visibleHeight": 389,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__sources",
+              "testid": null,
+              "h": 38,
+              "documentTop": 586,
+              "visibleHeight": 38,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__report",
+              "testid": null,
+              "h": 59,
+              "documentTop": 634,
+              "visibleHeight": 6,
+              "scrollsInside": false
+            }
+          ],
+          "chromeHeightAboveMainPx": 703,
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 703,
+              "w": 909,
+              "h": 1953.2,
+              "right": 927,
+              "bottom": 2656.2,
+              "documentTop": 703,
+              "scrollWidth": 909,
+              "clientWidth": 909,
+              "scrollHeight": 1953,
+              "clientHeight": 1953
+            },
+            "map": {
+              "x": 18,
+              "y": 703,
+              "w": 535,
+              "h": 1953.2,
+              "right": 553,
+              "bottom": 2656.2,
+              "documentTop": 703,
+              "scrollWidth": 535,
+              "clientWidth": 535,
+              "scrollHeight": 1953,
+              "clientHeight": 1953
+            },
+            "aside": {
+              "x": 567,
+              "y": 703,
+              "w": 360,
+              "h": 1953.2,
+              "right": 927,
+              "bottom": 2656.2,
+              "documentTop": 703,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 1953,
+              "clientHeight": 1953
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1293,
+              "w": 535,
+              "h": 1323.2,
+              "right": 553,
+              "bottom": 2616.2,
+              "documentTop": 1293,
+              "scrollWidth": 533,
+              "clientWidth": 533,
+              "scrollHeight": 1321,
+              "clientHeight": 1321
+            },
+            "canvas": {
+              "x": 19,
+              "y": 1294,
+              "w": 533,
+              "h": 1321.2,
+              "right": 552,
+              "bottom": 2615.2,
+              "documentTop": 1294,
+              "scrollWidth": 533,
+              "clientWidth": 533,
+              "scrollHeight": 1321,
+              "clientHeight": 1321
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 909,
+              "h": 163,
+              "right": 927,
+              "bottom": 177,
+              "documentTop": 14,
+              "scrollWidth": 909,
+              "clientWidth": 909,
+              "scrollHeight": 163,
+              "clientHeight": 163
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 703,
+              "w": 535,
+              "h": 78,
+              "right": 553,
+              "bottom": 781,
+              "documentTop": 703,
+              "scrollWidth": 535,
+              "clientWidth": 535,
+              "scrollHeight": 78,
+              "clientHeight": 78
+            },
+            "overlapArea": 0,
+            "asidePosition": "static",
+            "asideScrollsInside": false
+          },
+          "gridTemplate": "535px 360px",
+          "mediaMatches": {
+            "dark": true,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "system",
+            "lang": "en"
+          },
+          "buttonTransition": "0s",
+          "camera": {
+            "tx": -491,
+            "ty": 0,
+            "scale": 1,
+            "transform": "translate(-491 0) scale(1)"
+          },
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 12
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "960x640",
+        "state": "fr-light-compact-legend",
+        "requested": {
+          "id": "fr-light-compact-legend",
+          "locale": "fr",
+          "scheme": "light",
+          "motion": "no-preference",
+          "density": "compact",
+          "appMotion": "system",
+          "legend": true
+        },
+        "workbench": {
+          "present": false
+        },
+        "hostWindow": {
+          "askedClient": [
+            960,
+            640
+          ],
+          "grantedClient": [
+            960,
+            640
+          ],
+          "grantedWindow": [
+            976,
+            679
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            960,
+            640
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            960,
+            640
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            945,
+            640
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            945,
+            3949
+          ],
+          "documentOverflowX": 0,
+          "documentVerticalScrollPx": 3309,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|composition-remove-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "firstScreen": {
+            "mapViewVisibleHeightPx": 0,
+            "mapViewVisibleWidthPx": 547,
+            "canvasVisibleHeightPx": 0,
+            "mapHitTest": null,
+            "visibleCardCount": 0,
+            "visibleCards": [],
+            "rootCardVisible": null,
+            "contextCardVisible": null
+          },
+          "chromeBands": [
+            {
+              "tag": "HEADER",
+              "cls": "app__header",
+              "testid": null,
+              "h": 139,
+              "documentTop": 8,
+              "visibleHeight": 139,
+              "scrollsInside": false
+            },
+            {
+              "tag": "NAV",
+              "cls": "app__brains",
+              "testid": null,
+              "h": 355,
+              "documentTop": 152,
+              "visibleHeight": 355,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__sources",
+              "testid": null,
+              "h": 38,
+              "documentTop": 512,
+              "visibleHeight": 38,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__report",
+              "testid": null,
+              "h": 75,
+              "documentTop": 555,
+              "visibleHeight": 75,
+              "scrollsInside": false
+            }
+          ],
+          "chromeHeightAboveMainPx": 635,
+          "columns": {
+            "main": {
+              "x": 12,
+              "y": 635,
+              "w": 921,
+              "h": 3304.1,
+              "right": 933,
+              "bottom": 3939.1,
+              "documentTop": 635,
+              "scrollWidth": 921,
+              "clientWidth": 921,
+              "scrollHeight": 3304,
+              "clientHeight": 3304
+            },
+            "map": {
+              "x": 12,
+              "y": 635,
+              "w": 547,
+              "h": 3304.1,
+              "right": 559,
+              "bottom": 3939.1,
+              "documentTop": 635,
+              "scrollWidth": 547,
+              "clientWidth": 547,
+              "scrollHeight": 3304,
+              "clientHeight": 3304
+            },
+            "aside": {
+              "x": 573,
+              "y": 635,
+              "w": 360,
+              "h": 3304.1,
+              "right": 933,
+              "bottom": 3939.1,
+              "documentTop": 635,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 3304,
+              "clientHeight": 3304
+            },
+            "mapView": {
+              "x": 12,
+              "y": 1175,
+              "w": 547,
+              "h": 2724.1,
+              "right": 559,
+              "bottom": 3899.1,
+              "documentTop": 1175,
+              "scrollWidth": 545,
+              "clientWidth": 545,
+              "scrollHeight": 2722,
+              "clientHeight": 2722
+            },
+            "canvas": {
+              "x": 13,
+              "y": 1176,
+              "w": 545,
+              "h": 2722.1,
+              "right": 558,
+              "bottom": 3898.1,
+              "documentTop": 1176,
+              "scrollWidth": 545,
+              "clientWidth": 545,
+              "scrollHeight": 2722,
+              "clientHeight": 2722
+            },
+            "header": {
+              "x": 12,
+              "y": 8,
+              "w": 921,
+              "h": 139,
+              "right": 933,
+              "bottom": 147,
+              "documentTop": 8,
+              "scrollWidth": 921,
+              "clientWidth": 921,
+              "scrollHeight": 139,
+              "clientHeight": 139
+            },
+            "toolbar": {
+              "x": 12,
+              "y": 635,
+              "w": 547,
+              "h": 62,
+              "right": 559,
+              "bottom": 697,
+              "documentTop": 635,
+              "scrollWidth": 547,
+              "clientWidth": 547,
+              "scrollHeight": 62,
+              "clientHeight": 62
+            },
+            "overlapArea": 0,
+            "asidePosition": "static",
+            "asideScrollsInside": false
+          },
+          "gridTemplate": "547px 360px",
+          "mediaMatches": {
+            "dark": false,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "compact",
+            "motion": "system",
+            "lang": "fr"
+          },
+          "buttonTransition": "0s",
+          "camera": {
+            "tx": -491,
+            "ty": 0,
+            "scale": 1,
+            "transform": "translate(-491 0) scale(1)"
+          },
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 27
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 16
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "960x640",
+        "state": "fr-light-reduced-motion",
+        "requested": {
+          "id": "fr-light-reduced-motion",
+          "locale": "fr",
+          "scheme": "light",
+          "motion": "reduce",
+          "density": "comfortable",
+          "appMotion": "reduce",
+          "legend": false
+        },
+        "workbench": {
+          "present": false
+        },
+        "hostWindow": {
+          "askedClient": [
+            960,
+            640
+          ],
+          "grantedClient": [
+            960,
+            640
+          ],
+          "grantedWindow": [
+            976,
+            679
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            960,
+            640
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            960,
+            640
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            945,
+            640
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            945,
+            2729
+          ],
+          "documentOverflowX": 0,
+          "documentVerticalScrollPx": 2089,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|composition-remove-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "firstScreen": {
+            "mapViewVisibleHeightPx": 0,
+            "mapViewVisibleWidthPx": 535,
+            "canvasVisibleHeightPx": 0,
+            "mapHitTest": null,
+            "visibleCardCount": 0,
+            "visibleCards": [],
+            "rootCardVisible": null,
+            "contextCardVisible": null
+          },
+          "chromeBands": [
+            {
+              "tag": "HEADER",
+              "cls": "app__header",
+              "testid": null,
+              "h": 163,
+              "documentTop": 14,
+              "visibleHeight": 163,
+              "scrollsInside": false
+            },
+            {
+              "tag": "NAV",
+              "cls": "app__brains",
+              "testid": null,
+              "h": 389,
+              "documentTop": 187,
+              "visibleHeight": 389,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__sources",
+              "testid": null,
+              "h": 38,
+              "documentTop": 586,
+              "visibleHeight": 38,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__report",
+              "testid": null,
+              "h": 83,
+              "documentTop": 634,
+              "visibleHeight": 6,
+              "scrollsInside": false
+            }
+          ],
+          "chromeHeightAboveMainPx": 727,
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 727,
+              "w": 909,
+              "h": 1984.1,
+              "right": 927,
+              "bottom": 2711.1,
+              "documentTop": 727,
+              "scrollWidth": 909,
+              "clientWidth": 909,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "map": {
+              "x": 18,
+              "y": 727,
+              "w": 535,
+              "h": 1984.1,
+              "right": 553,
+              "bottom": 2711.1,
+              "documentTop": 727,
+              "scrollWidth": 535,
+              "clientWidth": 535,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "aside": {
+              "x": 567,
+              "y": 727,
+              "w": 360,
+              "h": 1984.1,
+              "right": 927,
+              "bottom": 2711.1,
+              "documentTop": 727,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1360,
+              "w": 535,
+              "h": 1311.1,
+              "right": 553,
+              "bottom": 2671.1,
+              "documentTop": 1360,
+              "scrollWidth": 533,
+              "clientWidth": 533,
+              "scrollHeight": 1309,
+              "clientHeight": 1309
+            },
+            "canvas": {
+              "x": 19,
+              "y": 1361,
+              "w": 533,
+              "h": 1309.1,
+              "right": 552,
+              "bottom": 2670.1,
+              "documentTop": 1361,
+              "scrollWidth": 533,
+              "clientWidth": 533,
+              "scrollHeight": 1309,
+              "clientHeight": 1309
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 909,
+              "h": 163,
+              "right": 927,
+              "bottom": 177,
+              "documentTop": 14,
+              "scrollWidth": 909,
+              "clientWidth": 909,
+              "scrollHeight": 163,
+              "clientHeight": 163
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 727,
+              "w": 535,
+              "h": 121,
+              "right": 553,
+              "bottom": 848,
+              "documentTop": 727,
+              "scrollWidth": 535,
+              "clientWidth": 535,
+              "scrollHeight": 121,
+              "clientHeight": 121
+            },
+            "overlapArea": 0,
+            "asidePosition": "static",
+            "asideScrollsInside": false
+          },
+          "gridTemplate": "535px 360px",
+          "mediaMatches": {
+            "dark": false,
+            "reduceMotion": true
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "reduce",
+            "lang": "fr"
+          },
+          "buttonTransition": "0s",
+          "camera": {
+            "tx": -491,
+            "ty": 0,
+            "scale": 1,
+            "transform": "translate(-491 0) scale(1)"
+          },
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 12
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "1280x800",
+        "state": "fr-light",
+        "requested": {
+          "id": "fr-light",
+          "locale": "fr",
+          "scheme": "light",
+          "motion": "no-preference",
+          "density": "comfortable",
+          "appMotion": "system",
+          "legend": false
+        },
+        "workbench": {
+          "present": false
+        },
+        "hostWindow": {
+          "askedClient": [
+            1280,
+            800
+          ],
+          "grantedClient": [
+            1280,
+            800
+          ],
+          "grantedWindow": [
+            1296,
+            839
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            1280,
+            800
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            1280,
+            800
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            1265,
+            800
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            1265,
+            2630
+          ],
+          "documentOverflowX": 0,
+          "documentVerticalScrollPx": 1830,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|composition-remove-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "firstScreen": {
+            "mapViewVisibleHeightPx": 0,
+            "mapViewVisibleWidthPx": 855,
+            "canvasVisibleHeightPx": 0,
+            "mapHitTest": null,
+            "visibleCardCount": 0,
+            "visibleCards": [],
+            "rootCardVisible": null,
+            "contextCardVisible": null
+          },
+          "chromeBands": [
+            {
+              "tag": "HEADER",
+              "cls": "app__header",
+              "testid": null,
+              "h": 112,
+              "documentTop": 14,
+              "visibleHeight": 112,
+              "scrollsInside": false
+            },
+            {
+              "tag": "NAV",
+              "cls": "app__brains",
+              "testid": null,
+              "h": 389,
+              "documentTop": 136,
+              "visibleHeight": 389,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__sources",
+              "testid": null,
+              "h": 15,
+              "documentTop": 535,
+              "visibleHeight": 15,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__report",
+              "testid": null,
+              "h": 58,
+              "documentTop": 560,
+              "visibleHeight": 58,
+              "scrollsInside": false
+            }
+          ],
+          "chromeHeightAboveMainPx": 628,
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 628,
+              "w": 1229,
+              "h": 1984.1,
+              "right": 1247,
+              "bottom": 2612.1,
+              "documentTop": 628,
+              "scrollWidth": 1229,
+              "clientWidth": 1229,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "map": {
+              "x": 18,
+              "y": 628,
+              "w": 855,
+              "h": 1984.1,
+              "right": 873,
+              "bottom": 2612.1,
+              "documentTop": 628,
+              "scrollWidth": 855,
+              "clientWidth": 855,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "aside": {
+              "x": 887,
+              "y": 628,
+              "w": 360,
+              "h": 1984.1,
+              "right": 1247,
+              "bottom": 2612.1,
+              "documentTop": 628,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1218,
+              "w": 855,
+              "h": 1370.1,
+              "right": 873,
+              "bottom": 2588.1,
+              "documentTop": 1218,
+              "scrollWidth": 853,
+              "clientWidth": 853,
+              "scrollHeight": 1368,
+              "clientHeight": 1368
+            },
+            "canvas": {
+              "x": 19,
+              "y": 1219,
+              "w": 853,
+              "h": 1368.1,
+              "right": 872,
+              "bottom": 2587.1,
+              "documentTop": 1219,
+              "scrollWidth": 853,
+              "clientWidth": 853,
+              "scrollHeight": 1368,
+              "clientHeight": 1368
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 1229,
+              "h": 112,
+              "right": 1247,
+              "bottom": 126,
+              "documentTop": 14,
+              "scrollWidth": 1229,
+              "clientWidth": 1229,
+              "scrollHeight": 112,
+              "clientHeight": 112
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 628,
+              "w": 855,
+              "h": 78,
+              "right": 873,
+              "bottom": 706,
+              "documentTop": 628,
+              "scrollWidth": 855,
+              "clientWidth": 855,
+              "scrollHeight": 78,
+              "clientHeight": 78
+            },
+            "overlapArea": 0,
+            "asidePosition": "static",
+            "asideScrollsInside": false
+          },
+          "gridTemplate": "855px 360px",
+          "mediaMatches": {
+            "dark": false,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "system",
+            "lang": "fr"
+          },
+          "buttonTransition": "0s",
+          "camera": {
+            "tx": -201,
+            "ty": 0,
+            "scale": 1,
+            "transform": "translate(-201 0) scale(1)"
+          },
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 15
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "1280x800",
+        "state": "fr-dark-legend",
+        "requested": {
+          "id": "fr-dark-legend",
+          "locale": "fr",
+          "scheme": "dark",
+          "motion": "no-preference",
+          "density": "comfortable",
+          "appMotion": "system",
+          "legend": true
+        },
+        "workbench": {
+          "present": false
+        },
+        "hostWindow": {
+          "askedClient": [
+            1280,
+            800
+          ],
+          "grantedClient": [
+            1280,
+            800
+          ],
+          "grantedWindow": [
+            1296,
+            839
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            1280,
+            800
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            1280,
+            800
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            1265,
+            800
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            1265,
+            4086
+          ],
+          "documentOverflowX": 0,
+          "documentVerticalScrollPx": 3286,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|composition-remove-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "firstScreen": {
+            "mapViewVisibleHeightPx": 0,
+            "mapViewVisibleWidthPx": 855,
+            "canvasVisibleHeightPx": 0,
+            "mapHitTest": null,
+            "visibleCardCount": 0,
+            "visibleCards": [],
+            "rootCardVisible": null,
+            "contextCardVisible": null
+          },
+          "chromeBands": [
+            {
+              "tag": "HEADER",
+              "cls": "app__header",
+              "testid": null,
+              "h": 112,
+              "documentTop": 14,
+              "visibleHeight": 112,
+              "scrollsInside": false
+            },
+            {
+              "tag": "NAV",
+              "cls": "app__brains",
+              "testid": null,
+              "h": 389,
+              "documentTop": 136,
+              "visibleHeight": 389,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__sources",
+              "testid": null,
+              "h": 15,
+              "documentTop": 535,
+              "visibleHeight": 15,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__report",
+              "testid": null,
+              "h": 58,
+              "documentTop": 560,
+              "visibleHeight": 58,
+              "scrollsInside": false
+            }
+          ],
+          "chromeHeightAboveMainPx": 628,
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 628,
+              "w": 1229,
+              "h": 3440.1,
+              "right": 1247,
+              "bottom": 4068.1,
+              "documentTop": 628,
+              "scrollWidth": 1229,
+              "clientWidth": 1229,
+              "scrollHeight": 3440,
+              "clientHeight": 3440
+            },
+            "map": {
+              "x": 18,
+              "y": 628,
+              "w": 855,
+              "h": 3440.1,
+              "right": 873,
+              "bottom": 4068.1,
+              "documentTop": 628,
+              "scrollWidth": 855,
+              "clientWidth": 855,
+              "scrollHeight": 3440,
+              "clientHeight": 3440
+            },
+            "aside": {
+              "x": 887,
+              "y": 628,
+              "w": 360,
+              "h": 3440.1,
+              "right": 1247,
+              "bottom": 4068.1,
+              "documentTop": 628,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 3440,
+              "clientHeight": 3440
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1218,
+              "w": 855,
+              "h": 2826.1,
+              "right": 873,
+              "bottom": 4044.1,
+              "documentTop": 1218,
+              "scrollWidth": 853,
+              "clientWidth": 853,
+              "scrollHeight": 2824,
+              "clientHeight": 2824
+            },
+            "canvas": {
+              "x": 19,
+              "y": 1219,
+              "w": 853,
+              "h": 2824.1,
+              "right": 872,
+              "bottom": 4043.1,
+              "documentTop": 1219,
+              "scrollWidth": 853,
+              "clientWidth": 853,
+              "scrollHeight": 2824,
+              "clientHeight": 2824
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 1229,
+              "h": 112,
+              "right": 1247,
+              "bottom": 126,
+              "documentTop": 14,
+              "scrollWidth": 1229,
+              "clientWidth": 1229,
+              "scrollHeight": 112,
+              "clientHeight": 112
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 628,
+              "w": 855,
+              "h": 78,
+              "right": 873,
+              "bottom": 706,
+              "documentTop": 628,
+              "scrollWidth": 855,
+              "clientWidth": 855,
+              "scrollHeight": 78,
+              "clientHeight": 78
+            },
+            "overlapArea": 0,
+            "asidePosition": "static",
+            "asideScrollsInside": false
+          },
+          "gridTemplate": "855px 360px",
+          "mediaMatches": {
+            "dark": true,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "system",
+            "lang": "fr"
+          },
+          "buttonTransition": "0s",
+          "camera": {
+            "tx": -201,
+            "ty": 0,
+            "scale": 1,
+            "transform": "translate(-201 0) scale(1)"
+          },
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 19
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "1280x800",
+        "state": "en-light-legend",
+        "requested": {
+          "id": "en-light-legend",
+          "locale": "en",
+          "scheme": "light",
+          "motion": "no-preference",
+          "density": "comfortable",
+          "appMotion": "system",
+          "legend": true
+        },
+        "workbench": {
+          "present": false
+        },
+        "hostWindow": {
+          "askedClient": [
+            1280,
+            800
+          ],
+          "grantedClient": [
+            1280,
+            800
+          ],
+          "grantedWindow": [
+            1296,
+            839
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            1280,
+            800
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            1280,
+            800
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            1265,
+            800
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            1265,
+            4012
+          ],
+          "documentOverflowX": 0,
+          "documentVerticalScrollPx": 3212,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Back to the root|Check H1–H5|Check J1–J5, J10|Explore the selection|Frame the selection|Measure in WebView2|Select the root|Zoom in|Zoom out|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|composition-remove-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "firstScreen": {
+            "mapViewVisibleHeightPx": 0,
+            "mapViewVisibleWidthPx": 855,
+            "canvasVisibleHeightPx": 0,
+            "mapHitTest": null,
+            "visibleCardCount": 0,
+            "visibleCards": [],
+            "rootCardVisible": null,
+            "contextCardVisible": null
+          },
+          "chromeBands": [
+            {
+              "tag": "HEADER",
+              "cls": "app__header",
+              "testid": null,
+              "h": 112,
+              "documentTop": 14,
+              "visibleHeight": 112,
+              "scrollsInside": false
+            },
+            {
+              "tag": "NAV",
+              "cls": "app__brains",
+              "testid": null,
+              "h": 346,
+              "documentTop": 136,
+              "visibleHeight": 346,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__sources",
+              "testid": null,
+              "h": 15,
+              "documentTop": 492,
+              "visibleHeight": 15,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__report",
+              "testid": null,
+              "h": 58,
+              "documentTop": 517,
+              "visibleHeight": 58,
+              "scrollsInside": false
+            }
+          ],
+          "chromeHeightAboveMainPx": 585,
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 585,
+              "w": 1229,
+              "h": 3409.2,
+              "right": 1247,
+              "bottom": 3994.2,
+              "documentTop": 585,
+              "scrollWidth": 1229,
+              "clientWidth": 1229,
+              "scrollHeight": 3409,
+              "clientHeight": 3409
+            },
+            "map": {
+              "x": 18,
+              "y": 585,
+              "w": 855,
+              "h": 3409.2,
+              "right": 873,
+              "bottom": 3994.2,
+              "documentTop": 585,
+              "scrollWidth": 855,
+              "clientWidth": 855,
+              "scrollHeight": 3409,
+              "clientHeight": 3409
+            },
+            "aside": {
+              "x": 887,
+              "y": 585,
+              "w": 360,
+              "h": 3409.2,
+              "right": 1247,
+              "bottom": 3994.2,
+              "documentTop": 585,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 3409,
+              "clientHeight": 3409
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1097,
+              "w": 855,
+              "h": 2873.2,
+              "right": 873,
+              "bottom": 3970.2,
+              "documentTop": 1097,
+              "scrollWidth": 853,
+              "clientWidth": 853,
+              "scrollHeight": 2871,
+              "clientHeight": 2871
+            },
+            "canvas": {
+              "x": 19,
+              "y": 1098,
+              "w": 853,
+              "h": 2871.2,
+              "right": 872,
+              "bottom": 3969.2,
+              "documentTop": 1098,
+              "scrollWidth": 853,
+              "clientWidth": 853,
+              "scrollHeight": 2871,
+              "clientHeight": 2871
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 1229,
+              "h": 112,
+              "right": 1247,
+              "bottom": 126,
+              "documentTop": 14,
+              "scrollWidth": 1229,
+              "clientWidth": 1229,
+              "scrollHeight": 112,
+              "clientHeight": 112
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 585,
+              "w": 855,
+              "h": 35,
+              "right": 873,
+              "bottom": 620,
+              "documentTop": 585,
+              "scrollWidth": 855,
+              "clientWidth": 855,
+              "scrollHeight": 35,
+              "clientHeight": 35
+            },
+            "overlapArea": 0,
+            "asidePosition": "static",
+            "asideScrollsInside": false
+          },
+          "gridTemplate": "855px 360px",
+          "mediaMatches": {
+            "dark": false,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "system",
+            "lang": "en"
+          },
+          "buttonTransition": "0s",
+          "camera": {
+            "tx": -201,
+            "ty": 0,
+            "scale": 1,
+            "transform": "translate(-201 0) scale(1)"
+          },
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 19
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "1280x800",
+        "state": "en-dark",
+        "requested": {
+          "id": "en-dark",
+          "locale": "en",
+          "scheme": "dark",
+          "motion": "no-preference",
+          "density": "comfortable",
+          "appMotion": "system",
+          "legend": false
+        },
+        "workbench": {
+          "present": false
+        },
+        "hostWindow": {
+          "askedClient": [
+            1280,
+            800
+          ],
+          "grantedClient": [
+            1280,
+            800
+          ],
+          "grantedWindow": [
+            1296,
+            839
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            1280,
+            800
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            1280,
+            800
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            1265,
+            800
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            1265,
+            2556
+          ],
+          "documentOverflowX": 0,
+          "documentVerticalScrollPx": 1756,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Back to the root|Check H1–H5|Check J1–J5, J10|Explore the selection|Frame the selection|Measure in WebView2|Select the root|Zoom in|Zoom out|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|composition-remove-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "firstScreen": {
+            "mapViewVisibleHeightPx": 0,
+            "mapViewVisibleWidthPx": 855,
+            "canvasVisibleHeightPx": 0,
+            "mapHitTest": null,
+            "visibleCardCount": 0,
+            "visibleCards": [],
+            "rootCardVisible": null,
+            "contextCardVisible": null
+          },
+          "chromeBands": [
+            {
+              "tag": "HEADER",
+              "cls": "app__header",
+              "testid": null,
+              "h": 112,
+              "documentTop": 14,
+              "visibleHeight": 112,
+              "scrollsInside": false
+            },
+            {
+              "tag": "NAV",
+              "cls": "app__brains",
+              "testid": null,
+              "h": 346,
+              "documentTop": 136,
+              "visibleHeight": 346,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__sources",
+              "testid": null,
+              "h": 15,
+              "documentTop": 492,
+              "visibleHeight": 15,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__report",
+              "testid": null,
+              "h": 58,
+              "documentTop": 517,
+              "visibleHeight": 58,
+              "scrollsInside": false
+            }
+          ],
+          "chromeHeightAboveMainPx": 585,
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 585,
+              "w": 1229,
+              "h": 1953.2,
+              "right": 1247,
+              "bottom": 2538.2,
+              "documentTop": 585,
+              "scrollWidth": 1229,
+              "clientWidth": 1229,
+              "scrollHeight": 1953,
+              "clientHeight": 1953
+            },
+            "map": {
+              "x": 18,
+              "y": 585,
+              "w": 855,
+              "h": 1953.2,
+              "right": 873,
+              "bottom": 2538.2,
+              "documentTop": 585,
+              "scrollWidth": 855,
+              "clientWidth": 855,
+              "scrollHeight": 1953,
+              "clientHeight": 1953
+            },
+            "aside": {
+              "x": 887,
+              "y": 585,
+              "w": 360,
+              "h": 1953.2,
+              "right": 1247,
+              "bottom": 2538.2,
+              "documentTop": 585,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 1953,
+              "clientHeight": 1953
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1097,
+              "w": 855,
+              "h": 1417.2,
+              "right": 873,
+              "bottom": 2514.2,
+              "documentTop": 1097,
+              "scrollWidth": 853,
+              "clientWidth": 853,
+              "scrollHeight": 1415,
+              "clientHeight": 1415
+            },
+            "canvas": {
+              "x": 19,
+              "y": 1098,
+              "w": 853,
+              "h": 1415.2,
+              "right": 872,
+              "bottom": 2513.2,
+              "documentTop": 1098,
+              "scrollWidth": 853,
+              "clientWidth": 853,
+              "scrollHeight": 1415,
+              "clientHeight": 1415
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 1229,
+              "h": 112,
+              "right": 1247,
+              "bottom": 126,
+              "documentTop": 14,
+              "scrollWidth": 1229,
+              "clientWidth": 1229,
+              "scrollHeight": 112,
+              "clientHeight": 112
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 585,
+              "w": 855,
+              "h": 35,
+              "right": 873,
+              "bottom": 620,
+              "documentTop": 585,
+              "scrollWidth": 855,
+              "clientWidth": 855,
+              "scrollHeight": 35,
+              "clientHeight": 35
+            },
+            "overlapArea": 0,
+            "asidePosition": "static",
+            "asideScrollsInside": false
+          },
+          "gridTemplate": "855px 360px",
+          "mediaMatches": {
+            "dark": true,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "system",
+            "lang": "en"
+          },
+          "buttonTransition": "0s",
+          "camera": {
+            "tx": -201,
+            "ty": 0,
+            "scale": 1,
+            "transform": "translate(-201 0) scale(1)"
+          },
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 15
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "1280x800",
+        "state": "fr-light-compact-legend",
+        "requested": {
+          "id": "fr-light-compact-legend",
+          "locale": "fr",
+          "scheme": "light",
+          "motion": "no-preference",
+          "density": "compact",
+          "appMotion": "system",
+          "legend": true
+        },
+        "workbench": {
+          "present": false
+        },
+        "hostWindow": {
+          "askedClient": [
+            1280,
+            800
+          ],
+          "grantedClient": [
+            1280,
+            800
+          ],
+          "grantedWindow": [
+            1296,
+            839
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            1280,
+            800
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            1280,
+            800
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            1265,
+            800
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            1265,
+            3831
+          ],
+          "documentOverflowX": 0,
+          "documentVerticalScrollPx": 3031,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|composition-remove-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "firstScreen": {
+            "mapViewVisibleHeightPx": 0,
+            "mapViewVisibleWidthPx": 867,
+            "canvasVisibleHeightPx": 0,
+            "mapHitTest": null,
+            "visibleCardCount": 0,
+            "visibleCards": [],
+            "rootCardVisible": null,
+            "contextCardVisible": null
+          },
+          "chromeBands": [
+            {
+              "tag": "HEADER",
+              "cls": "app__header",
+              "testid": null,
+              "h": 104,
+              "documentTop": 8,
+              "visibleHeight": 104,
+              "scrollsInside": false
+            },
+            {
+              "tag": "NAV",
+              "cls": "app__brains",
+              "testid": null,
+              "h": 320,
+              "documentTop": 117,
+              "visibleHeight": 320,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__sources",
+              "testid": null,
+              "h": 15,
+              "documentTop": 442,
+              "visibleHeight": 15,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__report",
+              "testid": null,
+              "h": 50,
+              "documentTop": 462,
+              "visibleHeight": 50,
+              "scrollsInside": false
+            }
+          ],
+          "chromeHeightAboveMainPx": 517,
+          "columns": {
+            "main": {
+              "x": 12,
+              "y": 517,
+              "w": 1241,
+              "h": 3304.1,
+              "right": 1253,
+              "bottom": 3821.1,
+              "documentTop": 517,
+              "scrollWidth": 1241,
+              "clientWidth": 1241,
+              "scrollHeight": 3304,
+              "clientHeight": 3304
+            },
+            "map": {
+              "x": 12,
+              "y": 517,
+              "w": 867,
+              "h": 3304.1,
+              "right": 879,
+              "bottom": 3821.1,
+              "documentTop": 517,
+              "scrollWidth": 867,
+              "clientWidth": 867,
+              "scrollHeight": 3304,
+              "clientHeight": 3304
+            },
+            "aside": {
+              "x": 893,
+              "y": 517,
+              "w": 360,
+              "h": 3304.1,
+              "right": 1253,
+              "bottom": 3821.1,
+              "documentTop": 517,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 3304,
+              "clientHeight": 3304
+            },
+            "mapView": {
+              "x": 12,
+              "y": 1030,
+              "w": 867,
+              "h": 2767.1,
+              "right": 879,
+              "bottom": 3797.1,
+              "documentTop": 1030,
+              "scrollWidth": 865,
+              "clientWidth": 865,
+              "scrollHeight": 2765,
+              "clientHeight": 2765
+            },
+            "canvas": {
+              "x": 13,
+              "y": 1031,
+              "w": 865,
+              "h": 2765.1,
+              "right": 878,
+              "bottom": 3796.1,
+              "documentTop": 1031,
+              "scrollWidth": 865,
+              "clientWidth": 865,
+              "scrollHeight": 2765,
+              "clientHeight": 2765
+            },
+            "header": {
+              "x": 12,
+              "y": 8,
+              "w": 1241,
+              "h": 104,
+              "right": 1253,
+              "bottom": 112,
+              "documentTop": 8,
+              "scrollWidth": 1241,
+              "clientWidth": 1241,
+              "scrollHeight": 104,
+              "clientHeight": 104
+            },
+            "toolbar": {
+              "x": 12,
+              "y": 517,
+              "w": 867,
+              "h": 62,
+              "right": 879,
+              "bottom": 579,
+              "documentTop": 517,
+              "scrollWidth": 867,
+              "clientWidth": 867,
+              "scrollHeight": 62,
+              "clientHeight": 62
+            },
+            "overlapArea": 0,
+            "asidePosition": "static",
+            "asideScrollsInside": false
+          },
+          "gridTemplate": "867px 360px",
+          "mediaMatches": {
+            "dark": false,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "compact",
+            "motion": "system",
+            "lang": "fr"
+          },
+          "buttonTransition": "0s",
+          "camera": {
+            "tx": -189,
+            "ty": 0,
+            "scale": 1,
+            "transform": "translate(-189 0) scale(1)"
+          },
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 27
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 20
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "1280x800",
+        "state": "fr-light-reduced-motion",
+        "requested": {
+          "id": "fr-light-reduced-motion",
+          "locale": "fr",
+          "scheme": "light",
+          "motion": "reduce",
+          "density": "comfortable",
+          "appMotion": "reduce",
+          "legend": false
+        },
+        "workbench": {
+          "present": false
+        },
+        "hostWindow": {
+          "askedClient": [
+            1280,
+            800
+          ],
+          "grantedClient": [
+            1280,
+            800
+          ],
+          "grantedWindow": [
+            1296,
+            839
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            1280,
+            800
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            1280,
+            800
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            1265,
+            800
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            1265,
+            2630
+          ],
+          "documentOverflowX": 0,
+          "documentVerticalScrollPx": 1830,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|composition-remove-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "firstScreen": {
+            "mapViewVisibleHeightPx": 0,
+            "mapViewVisibleWidthPx": 855,
+            "canvasVisibleHeightPx": 0,
+            "mapHitTest": null,
+            "visibleCardCount": 0,
+            "visibleCards": [],
+            "rootCardVisible": null,
+            "contextCardVisible": null
+          },
+          "chromeBands": [
+            {
+              "tag": "HEADER",
+              "cls": "app__header",
+              "testid": null,
+              "h": 112,
+              "documentTop": 14,
+              "visibleHeight": 112,
+              "scrollsInside": false
+            },
+            {
+              "tag": "NAV",
+              "cls": "app__brains",
+              "testid": null,
+              "h": 389,
+              "documentTop": 136,
+              "visibleHeight": 389,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__sources",
+              "testid": null,
+              "h": 15,
+              "documentTop": 535,
+              "visibleHeight": 15,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__report",
+              "testid": null,
+              "h": 58,
+              "documentTop": 560,
+              "visibleHeight": 58,
+              "scrollsInside": false
+            }
+          ],
+          "chromeHeightAboveMainPx": 628,
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 628,
+              "w": 1229,
+              "h": 1984.1,
+              "right": 1247,
+              "bottom": 2612.1,
+              "documentTop": 628,
+              "scrollWidth": 1229,
+              "clientWidth": 1229,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "map": {
+              "x": 18,
+              "y": 628,
+              "w": 855,
+              "h": 1984.1,
+              "right": 873,
+              "bottom": 2612.1,
+              "documentTop": 628,
+              "scrollWidth": 855,
+              "clientWidth": 855,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "aside": {
+              "x": 887,
+              "y": 628,
+              "w": 360,
+              "h": 1984.1,
+              "right": 1247,
+              "bottom": 2612.1,
+              "documentTop": 628,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1218,
+              "w": 855,
+              "h": 1370.1,
+              "right": 873,
+              "bottom": 2588.1,
+              "documentTop": 1218,
+              "scrollWidth": 853,
+              "clientWidth": 853,
+              "scrollHeight": 1368,
+              "clientHeight": 1368
+            },
+            "canvas": {
+              "x": 19,
+              "y": 1219,
+              "w": 853,
+              "h": 1368.1,
+              "right": 872,
+              "bottom": 2587.1,
+              "documentTop": 1219,
+              "scrollWidth": 853,
+              "clientWidth": 853,
+              "scrollHeight": 1368,
+              "clientHeight": 1368
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 1229,
+              "h": 112,
+              "right": 1247,
+              "bottom": 126,
+              "documentTop": 14,
+              "scrollWidth": 1229,
+              "clientWidth": 1229,
+              "scrollHeight": 112,
+              "clientHeight": 112
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 628,
+              "w": 855,
+              "h": 78,
+              "right": 873,
+              "bottom": 706,
+              "documentTop": 628,
+              "scrollWidth": 855,
+              "clientWidth": 855,
+              "scrollHeight": 78,
+              "clientHeight": 78
+            },
+            "overlapArea": 0,
+            "asidePosition": "static",
+            "asideScrollsInside": false
+          },
+          "gridTemplate": "855px 360px",
+          "mediaMatches": {
+            "dark": false,
+            "reduceMotion": true
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "reduce",
+            "lang": "fr"
+          },
+          "buttonTransition": "0s",
+          "camera": {
+            "tx": -189,
+            "ty": 0,
+            "scale": 1,
+            "transform": "translate(-189 0) scale(1)"
+          },
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 16
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "1366x768",
+        "state": "fr-light",
+        "requested": {
+          "id": "fr-light",
+          "locale": "fr",
+          "scheme": "light",
+          "motion": "no-preference",
+          "density": "comfortable",
+          "appMotion": "system",
+          "legend": false
+        },
+        "workbench": {
+          "present": false
+        },
+        "hostWindow": {
+          "askedClient": [
+            1366,
+            768
+          ],
+          "grantedClient": [
+            1366,
+            768
+          ],
+          "grantedWindow": [
+            1382,
+            807
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            1366,
+            768
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            1366,
+            768
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            1351,
+            768
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            1351,
+            2587
+          ],
+          "documentOverflowX": 0,
+          "documentVerticalScrollPx": 1819,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|composition-remove-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "firstScreen": {
+            "mapViewVisibleHeightPx": 0,
+            "mapViewVisibleWidthPx": 941,
+            "canvasVisibleHeightPx": 0,
+            "mapHitTest": null,
+            "visibleCardCount": 0,
+            "visibleCards": [],
+            "rootCardVisible": null,
+            "contextCardVisible": null
+          },
+          "chromeBands": [
+            {
+              "tag": "HEADER",
+              "cls": "app__header",
+              "testid": null,
+              "h": 112,
+              "documentTop": 14,
+              "visibleHeight": 112,
+              "scrollsInside": false
+            },
+            {
+              "tag": "NAV",
+              "cls": "app__brains",
+              "testid": null,
+              "h": 346,
+              "documentTop": 136,
+              "visibleHeight": 346,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__sources",
+              "testid": null,
+              "h": 15,
+              "documentTop": 492,
+              "visibleHeight": 15,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__report",
+              "testid": null,
+              "h": 58,
+              "documentTop": 517,
+              "visibleHeight": 58,
+              "scrollsInside": false
+            }
+          ],
+          "chromeHeightAboveMainPx": 585,
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 585,
+              "w": 1315,
+              "h": 1984.1,
+              "right": 1333,
+              "bottom": 2569.1,
+              "documentTop": 585,
+              "scrollWidth": 1315,
+              "clientWidth": 1315,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "map": {
+              "x": 18,
+              "y": 585,
+              "w": 941,
+              "h": 1984.1,
+              "right": 959,
+              "bottom": 2569.1,
+              "documentTop": 585,
+              "scrollWidth": 941,
+              "clientWidth": 941,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "aside": {
+              "x": 973,
+              "y": 585,
+              "w": 360,
+              "h": 1984.1,
+              "right": 1333,
+              "bottom": 2569.1,
+              "documentTop": 585,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1140,
+              "w": 941,
+              "h": 1405.1,
+              "right": 959,
+              "bottom": 2545.1,
+              "documentTop": 1140,
+              "scrollWidth": 939,
+              "clientWidth": 939,
+              "scrollHeight": 1403,
+              "clientHeight": 1403
+            },
+            "canvas": {
+              "x": 19,
+              "y": 1141,
+              "w": 939,
+              "h": 1403.1,
+              "right": 958,
+              "bottom": 2544.1,
+              "documentTop": 1141,
+              "scrollWidth": 939,
+              "clientWidth": 939,
+              "scrollHeight": 1403,
+              "clientHeight": 1403
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 1315,
+              "h": 112,
+              "right": 1333,
+              "bottom": 126,
+              "documentTop": 14,
+              "scrollWidth": 1315,
+              "clientWidth": 1315,
+              "scrollHeight": 112,
+              "clientHeight": 112
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 585,
+              "w": 941,
+              "h": 78,
+              "right": 959,
+              "bottom": 663,
+              "documentTop": 585,
+              "scrollWidth": 941,
+              "clientWidth": 941,
+              "scrollHeight": 78,
+              "clientHeight": 78
+            },
+            "overlapArea": 0,
+            "asidePosition": "static",
+            "asideScrollsInside": false
+          },
+          "gridTemplate": "941px 360px",
+          "mediaMatches": {
+            "dark": false,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "system",
+            "lang": "fr"
+          },
+          "buttonTransition": "0s",
+          "camera": {
+            "tx": -115,
+            "ty": 0,
+            "scale": 1,
+            "transform": "translate(-115 0) scale(1)"
+          },
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 16
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "1366x768",
+        "state": "fr-dark-legend",
+        "requested": {
+          "id": "fr-dark-legend",
+          "locale": "fr",
+          "scheme": "dark",
+          "motion": "no-preference",
+          "density": "comfortable",
+          "appMotion": "system",
+          "legend": true
+        },
+        "workbench": {
+          "present": false
+        },
+        "hostWindow": {
+          "askedClient": [
+            1366,
+            768
+          ],
+          "grantedClient": [
+            1366,
+            768
+          ],
+          "grantedWindow": [
+            1382,
+            807
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            1366,
+            768
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            1366,
+            768
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            1351,
+            768
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            1351,
+            4043
+          ],
+          "documentOverflowX": 0,
+          "documentVerticalScrollPx": 3275,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|composition-remove-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "firstScreen": {
+            "mapViewVisibleHeightPx": 0,
+            "mapViewVisibleWidthPx": 941,
+            "canvasVisibleHeightPx": 0,
+            "mapHitTest": null,
+            "visibleCardCount": 0,
+            "visibleCards": [],
+            "rootCardVisible": null,
+            "contextCardVisible": null
+          },
+          "chromeBands": [
+            {
+              "tag": "HEADER",
+              "cls": "app__header",
+              "testid": null,
+              "h": 112,
+              "documentTop": 14,
+              "visibleHeight": 112,
+              "scrollsInside": false
+            },
+            {
+              "tag": "NAV",
+              "cls": "app__brains",
+              "testid": null,
+              "h": 346,
+              "documentTop": 136,
+              "visibleHeight": 346,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__sources",
+              "testid": null,
+              "h": 15,
+              "documentTop": 492,
+              "visibleHeight": 15,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__report",
+              "testid": null,
+              "h": 58,
+              "documentTop": 517,
+              "visibleHeight": 58,
+              "scrollsInside": false
+            }
+          ],
+          "chromeHeightAboveMainPx": 585,
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 585,
+              "w": 1315,
+              "h": 3440.1,
+              "right": 1333,
+              "bottom": 4025.1,
+              "documentTop": 585,
+              "scrollWidth": 1315,
+              "clientWidth": 1315,
+              "scrollHeight": 3440,
+              "clientHeight": 3440
+            },
+            "map": {
+              "x": 18,
+              "y": 585,
+              "w": 941,
+              "h": 3440.1,
+              "right": 959,
+              "bottom": 4025.1,
+              "documentTop": 585,
+              "scrollWidth": 941,
+              "clientWidth": 941,
+              "scrollHeight": 3440,
+              "clientHeight": 3440
+            },
+            "aside": {
+              "x": 973,
+              "y": 585,
+              "w": 360,
+              "h": 3440.1,
+              "right": 1333,
+              "bottom": 4025.1,
+              "documentTop": 585,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 3440,
+              "clientHeight": 3440
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1140,
+              "w": 941,
+              "h": 2861.1,
+              "right": 959,
+              "bottom": 4001.1,
+              "documentTop": 1140,
+              "scrollWidth": 939,
+              "clientWidth": 939,
+              "scrollHeight": 2859,
+              "clientHeight": 2859
+            },
+            "canvas": {
+              "x": 19,
+              "y": 1141,
+              "w": 939,
+              "h": 2859.1,
+              "right": 958,
+              "bottom": 4000.1,
+              "documentTop": 1141,
+              "scrollWidth": 939,
+              "clientWidth": 939,
+              "scrollHeight": 2859,
+              "clientHeight": 2859
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 1315,
+              "h": 112,
+              "right": 1333,
+              "bottom": 126,
+              "documentTop": 14,
+              "scrollWidth": 1315,
+              "clientWidth": 1315,
+              "scrollHeight": 112,
+              "clientHeight": 112
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 585,
+              "w": 941,
+              "h": 78,
+              "right": 959,
+              "bottom": 663,
+              "documentTop": 585,
+              "scrollWidth": 941,
+              "clientWidth": 941,
+              "scrollHeight": 78,
+              "clientHeight": 78
+            },
+            "overlapArea": 0,
+            "asidePosition": "static",
+            "asideScrollsInside": false
+          },
+          "gridTemplate": "941px 360px",
+          "mediaMatches": {
+            "dark": true,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "system",
+            "lang": "fr"
+          },
+          "buttonTransition": "0s",
+          "camera": {
+            "tx": -115,
+            "ty": 0,
+            "scale": 1,
+            "transform": "translate(-115 0) scale(1)"
+          },
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 20
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "1366x768",
+        "state": "en-light-legend",
+        "requested": {
+          "id": "en-light-legend",
+          "locale": "en",
+          "scheme": "light",
+          "motion": "no-preference",
+          "density": "comfortable",
+          "appMotion": "system",
+          "legend": true
+        },
+        "workbench": {
+          "present": false
+        },
+        "hostWindow": {
+          "askedClient": [
+            1366,
+            768
+          ],
+          "grantedClient": [
+            1366,
+            768
+          ],
+          "grantedWindow": [
+            1382,
+            807
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            1366,
+            768
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            1366,
+            768
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            1351,
+            768
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            1351,
+            4012
+          ],
+          "documentOverflowX": 0,
+          "documentVerticalScrollPx": 3244,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Back to the root|Check H1–H5|Check J1–J5, J10|Explore the selection|Frame the selection|Measure in WebView2|Select the root|Zoom in|Zoom out|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|composition-remove-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "firstScreen": {
+            "mapViewVisibleHeightPx": 0,
+            "mapViewVisibleWidthPx": 941,
+            "canvasVisibleHeightPx": 0,
+            "mapHitTest": null,
+            "visibleCardCount": 0,
+            "visibleCards": [],
+            "rootCardVisible": null,
+            "contextCardVisible": null
+          },
+          "chromeBands": [
+            {
+              "tag": "HEADER",
+              "cls": "app__header",
+              "testid": null,
+              "h": 112,
+              "documentTop": 14,
+              "visibleHeight": 112,
+              "scrollsInside": false
+            },
+            {
+              "tag": "NAV",
+              "cls": "app__brains",
+              "testid": null,
+              "h": 346,
+              "documentTop": 136,
+              "visibleHeight": 346,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__sources",
+              "testid": null,
+              "h": 15,
+              "documentTop": 492,
+              "visibleHeight": 15,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__report",
+              "testid": null,
+              "h": 58,
+              "documentTop": 517,
+              "visibleHeight": 58,
+              "scrollsInside": false
+            }
+          ],
+          "chromeHeightAboveMainPx": 585,
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 585,
+              "w": 1315,
+              "h": 3409.2,
+              "right": 1333,
+              "bottom": 3994.2,
+              "documentTop": 585,
+              "scrollWidth": 1315,
+              "clientWidth": 1315,
+              "scrollHeight": 3409,
+              "clientHeight": 3409
+            },
+            "map": {
+              "x": 18,
+              "y": 585,
+              "w": 941,
+              "h": 3409.2,
+              "right": 959,
+              "bottom": 3994.2,
+              "documentTop": 585,
+              "scrollWidth": 941,
+              "clientWidth": 941,
+              "scrollHeight": 3409,
+              "clientHeight": 3409
+            },
+            "aside": {
+              "x": 973,
+              "y": 585,
+              "w": 360,
+              "h": 3409.2,
+              "right": 1333,
+              "bottom": 3994.2,
+              "documentTop": 585,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 3409,
+              "clientHeight": 3409
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1097,
+              "w": 941,
+              "h": 2873.2,
+              "right": 959,
+              "bottom": 3970.2,
+              "documentTop": 1097,
+              "scrollWidth": 939,
+              "clientWidth": 939,
+              "scrollHeight": 2871,
+              "clientHeight": 2871
+            },
+            "canvas": {
+              "x": 19,
+              "y": 1098,
+              "w": 939,
+              "h": 2871.2,
+              "right": 958,
+              "bottom": 3969.2,
+              "documentTop": 1098,
+              "scrollWidth": 939,
+              "clientWidth": 939,
+              "scrollHeight": 2871,
+              "clientHeight": 2871
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 1315,
+              "h": 112,
+              "right": 1333,
+              "bottom": 126,
+              "documentTop": 14,
+              "scrollWidth": 1315,
+              "clientWidth": 1315,
+              "scrollHeight": 112,
+              "clientHeight": 112
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 585,
+              "w": 941,
+              "h": 35,
+              "right": 959,
+              "bottom": 620,
+              "documentTop": 585,
+              "scrollWidth": 941,
+              "clientWidth": 941,
+              "scrollHeight": 35,
+              "clientHeight": 35
+            },
+            "overlapArea": 0,
+            "asidePosition": "static",
+            "asideScrollsInside": false
+          },
+          "gridTemplate": "941px 360px",
+          "mediaMatches": {
+            "dark": false,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "system",
+            "lang": "en"
+          },
+          "buttonTransition": "0s",
+          "camera": {
+            "tx": -115,
+            "ty": 0,
+            "scale": 1,
+            "transform": "translate(-115 0) scale(1)"
+          },
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 20
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "1366x768",
+        "state": "en-dark",
+        "requested": {
+          "id": "en-dark",
+          "locale": "en",
+          "scheme": "dark",
+          "motion": "no-preference",
+          "density": "comfortable",
+          "appMotion": "system",
+          "legend": false
+        },
+        "workbench": {
+          "present": false
+        },
+        "hostWindow": {
+          "askedClient": [
+            1366,
+            768
+          ],
+          "grantedClient": [
+            1366,
+            768
+          ],
+          "grantedWindow": [
+            1382,
+            807
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            1366,
+            768
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            1366,
+            768
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            1351,
+            768
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            1351,
+            2556
+          ],
+          "documentOverflowX": 0,
+          "documentVerticalScrollPx": 1788,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Back to the root|Check H1–H5|Check J1–J5, J10|Explore the selection|Frame the selection|Measure in WebView2|Select the root|Zoom in|Zoom out|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|composition-remove-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "firstScreen": {
+            "mapViewVisibleHeightPx": 0,
+            "mapViewVisibleWidthPx": 941,
+            "canvasVisibleHeightPx": 0,
+            "mapHitTest": null,
+            "visibleCardCount": 0,
+            "visibleCards": [],
+            "rootCardVisible": null,
+            "contextCardVisible": null
+          },
+          "chromeBands": [
+            {
+              "tag": "HEADER",
+              "cls": "app__header",
+              "testid": null,
+              "h": 112,
+              "documentTop": 14,
+              "visibleHeight": 112,
+              "scrollsInside": false
+            },
+            {
+              "tag": "NAV",
+              "cls": "app__brains",
+              "testid": null,
+              "h": 346,
+              "documentTop": 136,
+              "visibleHeight": 346,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__sources",
+              "testid": null,
+              "h": 15,
+              "documentTop": 492,
+              "visibleHeight": 15,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__report",
+              "testid": null,
+              "h": 58,
+              "documentTop": 517,
+              "visibleHeight": 58,
+              "scrollsInside": false
+            }
+          ],
+          "chromeHeightAboveMainPx": 585,
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 585,
+              "w": 1315,
+              "h": 1953.2,
+              "right": 1333,
+              "bottom": 2538.2,
+              "documentTop": 585,
+              "scrollWidth": 1315,
+              "clientWidth": 1315,
+              "scrollHeight": 1953,
+              "clientHeight": 1953
+            },
+            "map": {
+              "x": 18,
+              "y": 585,
+              "w": 941,
+              "h": 1953.2,
+              "right": 959,
+              "bottom": 2538.2,
+              "documentTop": 585,
+              "scrollWidth": 941,
+              "clientWidth": 941,
+              "scrollHeight": 1953,
+              "clientHeight": 1953
+            },
+            "aside": {
+              "x": 973,
+              "y": 585,
+              "w": 360,
+              "h": 1953.2,
+              "right": 1333,
+              "bottom": 2538.2,
+              "documentTop": 585,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 1953,
+              "clientHeight": 1953
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1097,
+              "w": 941,
+              "h": 1417.2,
+              "right": 959,
+              "bottom": 2514.2,
+              "documentTop": 1097,
+              "scrollWidth": 939,
+              "clientWidth": 939,
+              "scrollHeight": 1415,
+              "clientHeight": 1415
+            },
+            "canvas": {
+              "x": 19,
+              "y": 1098,
+              "w": 939,
+              "h": 1415.2,
+              "right": 958,
+              "bottom": 2513.2,
+              "documentTop": 1098,
+              "scrollWidth": 939,
+              "clientWidth": 939,
+              "scrollHeight": 1415,
+              "clientHeight": 1415
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 1315,
+              "h": 112,
+              "right": 1333,
+              "bottom": 126,
+              "documentTop": 14,
+              "scrollWidth": 1315,
+              "clientWidth": 1315,
+              "scrollHeight": 112,
+              "clientHeight": 112
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 585,
+              "w": 941,
+              "h": 35,
+              "right": 959,
+              "bottom": 620,
+              "documentTop": 585,
+              "scrollWidth": 941,
+              "clientWidth": 941,
+              "scrollHeight": 35,
+              "clientHeight": 35
+            },
+            "overlapArea": 0,
+            "asidePosition": "static",
+            "asideScrollsInside": false
+          },
+          "gridTemplate": "941px 360px",
+          "mediaMatches": {
+            "dark": true,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "system",
+            "lang": "en"
+          },
+          "buttonTransition": "0s",
+          "camera": {
+            "tx": -115,
+            "ty": 0,
+            "scale": 1,
+            "transform": "translate(-115 0) scale(1)"
+          },
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 16
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "1366x768",
+        "state": "fr-light-compact-legend",
+        "requested": {
+          "id": "fr-light-compact-legend",
+          "locale": "fr",
+          "scheme": "light",
+          "motion": "no-preference",
+          "density": "compact",
+          "appMotion": "system",
+          "legend": true
+        },
+        "workbench": {
+          "present": false
+        },
+        "hostWindow": {
+          "askedClient": [
+            1366,
+            768
+          ],
+          "grantedClient": [
+            1366,
+            768
+          ],
+          "grantedWindow": [
+            1382,
+            807
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            1366,
+            768
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            1366,
+            768
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            1351,
+            768
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            1351,
+            3831
+          ],
+          "documentOverflowX": 0,
+          "documentVerticalScrollPx": 3063,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|composition-remove-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "firstScreen": {
+            "mapViewVisibleHeightPx": 0,
+            "mapViewVisibleWidthPx": 953,
+            "canvasVisibleHeightPx": 0,
+            "mapHitTest": null,
+            "visibleCardCount": 0,
+            "visibleCards": [],
+            "rootCardVisible": null,
+            "contextCardVisible": null
+          },
+          "chromeBands": [
+            {
+              "tag": "HEADER",
+              "cls": "app__header",
+              "testid": null,
+              "h": 104,
+              "documentTop": 8,
+              "visibleHeight": 104,
+              "scrollsInside": false
+            },
+            {
+              "tag": "NAV",
+              "cls": "app__brains",
+              "testid": null,
+              "h": 320,
+              "documentTop": 117,
+              "visibleHeight": 320,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__sources",
+              "testid": null,
+              "h": 15,
+              "documentTop": 442,
+              "visibleHeight": 15,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__report",
+              "testid": null,
+              "h": 50,
+              "documentTop": 462,
+              "visibleHeight": 50,
+              "scrollsInside": false
+            }
+          ],
+          "chromeHeightAboveMainPx": 517,
+          "columns": {
+            "main": {
+              "x": 12,
+              "y": 517,
+              "w": 1327,
+              "h": 3304.1,
+              "right": 1339,
+              "bottom": 3821.1,
+              "documentTop": 517,
+              "scrollWidth": 1327,
+              "clientWidth": 1327,
+              "scrollHeight": 3304,
+              "clientHeight": 3304
+            },
+            "map": {
+              "x": 12,
+              "y": 517,
+              "w": 953,
+              "h": 3304.1,
+              "right": 965,
+              "bottom": 3821.1,
+              "documentTop": 517,
+              "scrollWidth": 953,
+              "clientWidth": 953,
+              "scrollHeight": 3304,
+              "clientHeight": 3304
+            },
+            "aside": {
+              "x": 979,
+              "y": 517,
+              "w": 360,
+              "h": 3304.1,
+              "right": 1339,
+              "bottom": 3821.1,
+              "documentTop": 517,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 3304,
+              "clientHeight": 3304
+            },
+            "mapView": {
+              "x": 12,
+              "y": 1030,
+              "w": 953,
+              "h": 2767.1,
+              "right": 965,
+              "bottom": 3797.1,
+              "documentTop": 1030,
+              "scrollWidth": 951,
+              "clientWidth": 951,
+              "scrollHeight": 2765,
+              "clientHeight": 2765
+            },
+            "canvas": {
+              "x": 13,
+              "y": 1031,
+              "w": 951,
+              "h": 2765.1,
+              "right": 964,
+              "bottom": 3796.1,
+              "documentTop": 1031,
+              "scrollWidth": 951,
+              "clientWidth": 951,
+              "scrollHeight": 2765,
+              "clientHeight": 2765
+            },
+            "header": {
+              "x": 12,
+              "y": 8,
+              "w": 1327,
+              "h": 104,
+              "right": 1339,
+              "bottom": 112,
+              "documentTop": 8,
+              "scrollWidth": 1327,
+              "clientWidth": 1327,
+              "scrollHeight": 104,
+              "clientHeight": 104
+            },
+            "toolbar": {
+              "x": 12,
+              "y": 517,
+              "w": 953,
+              "h": 62,
+              "right": 965,
+              "bottom": 579,
+              "documentTop": 517,
+              "scrollWidth": 953,
+              "clientWidth": 953,
+              "scrollHeight": 62,
+              "clientHeight": 62
+            },
+            "overlapArea": 0,
+            "asidePosition": "static",
+            "asideScrollsInside": false
+          },
+          "gridTemplate": "953px 360px",
+          "mediaMatches": {
+            "dark": false,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "compact",
+            "motion": "system",
+            "lang": "fr"
+          },
+          "buttonTransition": "0s",
+          "camera": {
+            "tx": -103,
+            "ty": 0,
+            "scale": 1,
+            "transform": "translate(-103 0) scale(1)"
+          },
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 27
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 20
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "1366x768",
+        "state": "fr-light-reduced-motion",
+        "requested": {
+          "id": "fr-light-reduced-motion",
+          "locale": "fr",
+          "scheme": "light",
+          "motion": "reduce",
+          "density": "comfortable",
+          "appMotion": "reduce",
+          "legend": false
+        },
+        "workbench": {
+          "present": false
+        },
+        "hostWindow": {
+          "askedClient": [
+            1366,
+            768
+          ],
+          "grantedClient": [
+            1366,
+            768
+          ],
+          "grantedWindow": [
+            1382,
+            807
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            1366,
+            768
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            1366,
+            768
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            1351,
+            768
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            1351,
+            2587
+          ],
+          "documentOverflowX": 0,
+          "documentVerticalScrollPx": 1819,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|composition-remove-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "firstScreen": {
+            "mapViewVisibleHeightPx": 0,
+            "mapViewVisibleWidthPx": 941,
+            "canvasVisibleHeightPx": 0,
+            "mapHitTest": null,
+            "visibleCardCount": 0,
+            "visibleCards": [],
+            "rootCardVisible": null,
+            "contextCardVisible": null
+          },
+          "chromeBands": [
+            {
+              "tag": "HEADER",
+              "cls": "app__header",
+              "testid": null,
+              "h": 112,
+              "documentTop": 14,
+              "visibleHeight": 112,
+              "scrollsInside": false
+            },
+            {
+              "tag": "NAV",
+              "cls": "app__brains",
+              "testid": null,
+              "h": 346,
+              "documentTop": 136,
+              "visibleHeight": 346,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__sources",
+              "testid": null,
+              "h": 15,
+              "documentTop": 492,
+              "visibleHeight": 15,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__report",
+              "testid": null,
+              "h": 58,
+              "documentTop": 517,
+              "visibleHeight": 58,
+              "scrollsInside": false
+            }
+          ],
+          "chromeHeightAboveMainPx": 585,
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 585,
+              "w": 1315,
+              "h": 1984.1,
+              "right": 1333,
+              "bottom": 2569.1,
+              "documentTop": 585,
+              "scrollWidth": 1315,
+              "clientWidth": 1315,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "map": {
+              "x": 18,
+              "y": 585,
+              "w": 941,
+              "h": 1984.1,
+              "right": 959,
+              "bottom": 2569.1,
+              "documentTop": 585,
+              "scrollWidth": 941,
+              "clientWidth": 941,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "aside": {
+              "x": 973,
+              "y": 585,
+              "w": 360,
+              "h": 1984.1,
+              "right": 1333,
+              "bottom": 2569.1,
+              "documentTop": 585,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1140,
+              "w": 941,
+              "h": 1405.1,
+              "right": 959,
+              "bottom": 2545.1,
+              "documentTop": 1140,
+              "scrollWidth": 939,
+              "clientWidth": 939,
+              "scrollHeight": 1403,
+              "clientHeight": 1403
+            },
+            "canvas": {
+              "x": 19,
+              "y": 1141,
+              "w": 939,
+              "h": 1403.1,
+              "right": 958,
+              "bottom": 2544.1,
+              "documentTop": 1141,
+              "scrollWidth": 939,
+              "clientWidth": 939,
+              "scrollHeight": 1403,
+              "clientHeight": 1403
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 1315,
+              "h": 112,
+              "right": 1333,
+              "bottom": 126,
+              "documentTop": 14,
+              "scrollWidth": 1315,
+              "clientWidth": 1315,
+              "scrollHeight": 112,
+              "clientHeight": 112
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 585,
+              "w": 941,
+              "h": 78,
+              "right": 959,
+              "bottom": 663,
+              "documentTop": 585,
+              "scrollWidth": 941,
+              "clientWidth": 941,
+              "scrollHeight": 78,
+              "clientHeight": 78
+            },
+            "overlapArea": 0,
+            "asidePosition": "static",
+            "asideScrollsInside": false
+          },
+          "gridTemplate": "941px 360px",
+          "mediaMatches": {
+            "dark": false,
+            "reduceMotion": true
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "reduce",
+            "lang": "fr"
+          },
+          "buttonTransition": "0s",
+          "camera": {
+            "tx": -103,
+            "ty": 0,
+            "scale": 1,
+            "transform": "translate(-103 0) scale(1)"
+          },
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 16
+            }
+          ],
+          "passes": 28
+        }
+      }
+    ],
+    "captures": [
+      {
+        "key": "960x640/fr-light",
+        "file": "TASK-0059-before-960x640-fr-light.png",
+        "bytes": 53772,
+        "sha256": "3dd25b660ca0875c8342e8ceb4c8cbf7c4a35026371001a656124e366fa63a5a",
+        "scrollYAtCapture": 0
+      },
+      {
+        "key": "960x640/fr-dark-legend",
+        "file": "TASK-0059-before-960x640-fr-dark-legend.png",
+        "bytes": 54120,
+        "sha256": "9d087654720f9859d2e26e456ff3ada76a0a24684c3d5c1c32a1068ddb8066ee",
+        "scrollYAtCapture": 0
+      },
+      {
+        "key": "960x640/en-light-legend",
+        "file": "TASK-0059-before-960x640-en-light-legend.png",
+        "bytes": 50995,
+        "sha256": "5806c27cd7ebc6b189e0b392e94307e7e2c57b767e66b8f18833e4f098e91538",
+        "scrollYAtCapture": 0
+      },
+      {
+        "key": "960x640/fr-light-compact-legend",
+        "file": "TASK-0059-before-960x640-fr-light-compact-legend.png",
+        "bytes": 64485,
+        "sha256": "098b5744ff789f04390489425fd3215625f94cbdfee9d38ab869d15c19acf4dc",
+        "scrollYAtCapture": 0
+      },
+      {
+        "key": "1280x800/fr-light",
+        "file": "TASK-0059-before-1280x800-fr-light.png",
+        "bytes": 79550,
+        "sha256": "164c5058a690bfb3ad9c9deea6904adc6f256fbea8bc52d58bd8f0a5553eba8e",
+        "scrollYAtCapture": 0
+      },
+      {
+        "key": "1366x768/fr-light",
+        "file": "TASK-0059-before-1366x768-fr-light.png",
+        "bytes": 80150,
+        "sha256": "baeb89095119f2075f7fcf6609fc1df0760e04012c0eeb6e91923baf2b5bfd4a",
+        "scrollYAtCapture": 0
+      }
+    ],
+    "fatalConsoleErrors": 0,
+    "layoutDigest": "8bb00a3217481bfff4c622e0fd7b3c882a296c56c0fa6428898e3b9d679ac4cc"
+  },
+  "pass2": {
+    "task": "TASK-0059",
+    "phase": "before",
+    "pass": 2,
+    "headTested": "0b6de2086e58b02548b43bb5f9faffecdf1c2265",
+    "mapFloorPx": 200,
+    "checks": [
+      {
+        "label": "criterion 1 — a usable map and an identifiable node at scrollY=0",
+        "value": {
+          "satisfied": false,
+          "floorPx": 200,
+          "worstVisibleMapHeightPx": 0,
+          "failing": [
+            "1280x800/restored"
+          ]
+        }
+      },
+      {
+        "label": "criterion 2 — a restricted window removes no command",
+        "value": {
+          "controlDigestsPerState": {
+            "restored": 1
+          },
+          "commandsLostAtSomeSize": [],
+          "panelReachableByKeyboard": true,
+          "horizontalOverflow": "none at any size or state"
+        }
+      },
+      {
+        "label": "P-22 in this scope: source byte-identical, no artefact under the root, no write on the wire",
+        "value": {
+          "commandsSeen": [
+            "map_brain_resume_update"
+          ],
+          "indexRevisionStable": true
+        }
+      }
+    ],
+    "findings": [],
+    "index": {
+      "indexed": 161,
+      "viewBudget": 512,
+      "materialized": 6,
+      "aggregates": 3,
+      "indexRevision": 1
+    },
+    "restored": {
+      "locale": "en",
+      "density": "compact",
+      "motion": "reduce",
+      "legendOpen": true,
+      "detailsPanelPresent": false,
+      "selectedNodeId": 126,
+      "camera": {
+        "tx": -1101.803333116265,
+        "ty": 0,
+        "scale": 1.9344728533297968,
+        "transform": "translate(-1101.803333116265 0) scale(1.9344728533297968)"
+      },
+      "workbenchOpen": null
+    },
+    "verdict": {
+      "firstScreenSatisfied": false,
+      "statesFailingFirstScreen": [
+        "1280x800/restored"
+      ],
+      "worstVisibleMapHeightPx": 0,
+      "worstDocumentVerticalScrollPx": 2497,
+      "worstChromeHeightAboveMainPx": 517,
+      "firstScreenByState": [
+        {
+          "size": "1280x800",
+          "state": "restored",
+          "documentHeight": 3297,
+          "viewportHeight": 800,
+          "documentVerticalScrollPx": 2497,
+          "chromeHeightAboveMainPx": 517,
+          "mapViewVisibleHeightPx": 0,
+          "mapUsableAtTop": false,
+          "visibleCardCount": 0,
+          "rootCardVisible": null,
+          "contextCard": null,
+          "asideScrollsInside": false,
+          "satisfiesCriterion1": false
+        }
+      ],
+      "horizontalOverflowWorstPx": 0,
+      "statesWithViewportEscapers": [],
+      "statesWithSidewaysScrollers": [],
+      "statesWithClippedControls": [],
+      "statesWithColumnOverlap": [],
+      "statesWherePanelUnreachableByKeyboard": [],
+      "statesWithoutVisibleFocusRing": [],
+      "commandsLostAtSomeSize": [],
+      "controlCountByState": [
+        {
+          "size": "1280x800",
+          "state": "restored",
+          "controls": 51
+        }
+      ],
+      "axeViolations": [],
+      "axeIncompleteByState": [
+        {
+          "size": "1280x800",
+          "state": "restored",
+          "incomplete": [
+            "color-contrastx9"
+          ]
+        }
+      ]
+    },
+    "chromeDefectProven": false,
+    "matrix": [
+      {
+        "size": "1280x800",
+        "state": "restored",
+        "requested": {
+          "id": "restored"
+        },
+        "workbench": {
+          "present": false
+        },
+        "hostWindow": {
+          "askedClient": [
+            1280,
+            800
+          ],
+          "grantedClient": [
+            1280,
+            800
+          ],
+          "grantedWindow": [
+            1296,
+            839
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            1280,
+            800
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            1280,
+            800
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            1265,
+            800
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            1265,
+            3297
+          ],
+          "documentOverflowX": 0,
+          "documentVerticalScrollPx": 2497,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 51,
+          "controlIdsDigest": "Back to the root|Check H1–H5|Check J1–J5, J10|Explore the selection|Frame the selection|Measure in WebView2|Select the root|Zoom in|Zoom out|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|composition-add-trigger|composition-chip-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|composition-remove-real-a33a7e62-9afe-43f8-a3fb-1c871ed15ac4|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|search-clear|search-input",
+          "firstScreen": {
+            "mapViewVisibleHeightPx": 0,
+            "mapViewVisibleWidthPx": 867,
+            "canvasVisibleHeightPx": 0,
+            "mapHitTest": null,
+            "visibleCardCount": 0,
+            "visibleCards": [],
+            "rootCardVisible": null,
+            "contextCardVisible": null
+          },
+          "chromeBands": [
+            {
+              "tag": "HEADER",
+              "cls": "app__header",
+              "testid": null,
+              "h": 104,
+              "documentTop": 8,
+              "visibleHeight": 104,
+              "scrollsInside": false
+            },
+            {
+              "tag": "NAV",
+              "cls": "app__brains",
+              "testid": null,
+              "h": 320,
+              "documentTop": 117,
+              "visibleHeight": 320,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__sources",
+              "testid": null,
+              "h": 15,
+              "documentTop": 442,
+              "visibleHeight": 15,
+              "scrollsInside": false
+            },
+            {
+              "tag": "SECTION",
+              "cls": "app__report",
+              "testid": null,
+              "h": 50,
+              "documentTop": 462,
+              "visibleHeight": 50,
+              "scrollsInside": false
+            }
+          ],
+          "chromeHeightAboveMainPx": 517,
+          "columns": {
+            "main": {
+              "x": 12,
+              "y": 517,
+              "w": 1241,
+              "h": 2770.2,
+              "right": 1253,
+              "bottom": 3287.2,
+              "documentTop": 517,
+              "scrollWidth": 1241,
+              "clientWidth": 1241,
+              "scrollHeight": 2770,
+              "clientHeight": 2770
+            },
+            "map": {
+              "x": 12,
+              "y": 517,
+              "w": 867,
+              "h": 2770.2,
+              "right": 879,
+              "bottom": 3287.2,
+              "documentTop": 517,
+              "scrollWidth": 867,
+              "clientWidth": 867,
+              "scrollHeight": 2770,
+              "clientHeight": 2770
+            },
+            "aside": {
+              "x": 893,
+              "y": 517,
+              "w": 360,
+              "h": 2770.2,
+              "right": 1253,
+              "bottom": 3287.2,
+              "documentTop": 517,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 2770,
+              "clientHeight": 2770
+            },
+            "mapView": {
+              "x": 12,
+              "y": 1042,
+              "w": 867,
+              "h": 2221.2,
+              "right": 879,
+              "bottom": 3263.2,
+              "documentTop": 1042,
+              "scrollWidth": 865,
+              "clientWidth": 865,
+              "scrollHeight": 2219,
+              "clientHeight": 2219
+            },
+            "canvas": {
+              "x": 13,
+              "y": 1043,
+              "w": 865,
+              "h": 2219.2,
+              "right": 878,
+              "bottom": 3262.2,
+              "documentTop": 1043,
+              "scrollWidth": 865,
+              "clientWidth": 865,
+              "scrollHeight": 2219,
+              "clientHeight": 2219
+            },
+            "header": {
+              "x": 12,
+              "y": 8,
+              "w": 1241,
+              "h": 104,
+              "right": 1253,
+              "bottom": 112,
+              "documentTop": 8,
+              "scrollWidth": 1241,
+              "clientWidth": 1241,
+              "scrollHeight": 104,
+              "clientHeight": 104
+            },
+            "toolbar": {
+              "x": 12,
+              "y": 517,
+              "w": 867,
+              "h": 27,
+              "right": 879,
+              "bottom": 544,
+              "documentTop": 517,
+              "scrollWidth": 867,
+              "clientWidth": 867,
+              "scrollHeight": 27,
+              "clientHeight": 27
+            },
+            "overlapArea": 0,
+            "asidePosition": "static",
+            "asideScrollsInside": false
+          },
+          "gridTemplate": "867px 360px",
+          "mediaMatches": {
+            "dark": false,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "compact",
+            "motion": "reduce",
+            "lang": "en"
+          },
+          "buttonTransition": "0s",
+          "camera": {
+            "tx": -1101.803333116265,
+            "ty": 0,
+            "scale": 1.9344728533297968,
+            "transform": "translate(-1101.803333116265 0) scale(1.9344728533297968)"
+          },
+          "drawn": {
+            "cards": 3,
+            "aggregates": 2,
+            "hierarchyEdges": 2
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 42,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 27
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 9
+            }
+          ],
+          "passes": 28
+        }
+      }
+    ],
+    "captures": [],
+    "fatalConsoleErrors": 0,
+    "layoutDigest": "bf5d5cf3d20f994be80eea90f2b7403a1978efa17e8ceb4b0d82ab8b786ec7c7"
+  },
+  "captures": [
+    {
+      "file": "docs/performance/runs/TASK-0059-before-960x640-fr-light.png",
+      "state": "960x640/fr-light",
+      "bytes": 53772,
+      "sha256": "3dd25b660ca0875c8342e8ceb4c8cbf7c4a35026371001a656124e366fa63a5a",
+      "scrollYAtCapture": 0,
+      "note": "The window at the top of the document — scrollY=0 — in the state the matrix row of the same name measured. This is the first screen, not a scrolled page."
+    },
+    {
+      "file": "docs/performance/runs/TASK-0059-before-960x640-fr-dark-legend.png",
+      "state": "960x640/fr-dark-legend",
+      "bytes": 54120,
+      "sha256": "9d087654720f9859d2e26e456ff3ada76a0a24684c3d5c1c32a1068ddb8066ee",
+      "scrollYAtCapture": 0,
+      "note": "The window at the top of the document — scrollY=0 — in the state the matrix row of the same name measured. This is the first screen, not a scrolled page."
+    },
+    {
+      "file": "docs/performance/runs/TASK-0059-before-960x640-en-light-legend.png",
+      "state": "960x640/en-light-legend",
+      "bytes": 50995,
+      "sha256": "5806c27cd7ebc6b189e0b392e94307e7e2c57b767e66b8f18833e4f098e91538",
+      "scrollYAtCapture": 0,
+      "note": "The window at the top of the document — scrollY=0 — in the state the matrix row of the same name measured. This is the first screen, not a scrolled page."
+    },
+    {
+      "file": "docs/performance/runs/TASK-0059-before-960x640-fr-light-compact-legend.png",
+      "state": "960x640/fr-light-compact-legend",
+      "bytes": 64485,
+      "sha256": "098b5744ff789f04390489425fd3215625f94cbdfee9d38ab869d15c19acf4dc",
+      "scrollYAtCapture": 0,
+      "note": "The window at the top of the document — scrollY=0 — in the state the matrix row of the same name measured. This is the first screen, not a scrolled page."
+    },
+    {
+      "file": "docs/performance/runs/TASK-0059-before-1280x800-fr-light.png",
+      "state": "1280x800/fr-light",
+      "bytes": 79550,
+      "sha256": "164c5058a690bfb3ad9c9deea6904adc6f256fbea8bc52d58bd8f0a5553eba8e",
+      "scrollYAtCapture": 0,
+      "note": "The window at the top of the document — scrollY=0 — in the state the matrix row of the same name measured. This is the first screen, not a scrolled page."
+    },
+    {
+      "file": "docs/performance/runs/TASK-0059-before-1366x768-fr-light.png",
+      "state": "1366x768/fr-light",
+      "bytes": 80150,
+      "sha256": "baeb89095119f2075f7fcf6609fc1df0760e04012c0eeb6e91923baf2b5bfd4a",
+      "scrollYAtCapture": 0,
+      "note": "The window at the top of the document — scrollY=0 — in the state the matrix row of the same name measured. This is the first screen, not a scrolled page."
+    }
+  ],
+  "p22": {
+    "tool": "scripts/task0056-fingerprint.py (reused unchanged)",
+    "readingsBefore": 3,
+    "readingsAfter": 2,
+    "strictDigestBefore": "0004655ecc6981b94465eed1a41e74298dbb3a779f7555018eaa06122450d8d8",
+    "strictDigestAfter": "0004655ecc6981b94465eed1a41e74298dbb3a779f7555018eaa06122450d8d8",
+    "strictDigestIdentical": true,
+    "accessDigestBefore": "0a9bb47af65c1b90f601e0999351d0d894a37b5a51a3a2d6f67271e36da0efac",
+    "accessDigestAfter": "0a9bb47af65c1b90f601e0999351d0d894a37b5a51a3a2d6f67271e36da0efac",
+    "accessDigestIdentical": true,
+    "artefactsFoundUnderRoot": [],
+    "entryCountBefore": 160,
+    "entryCountAfter": 160,
+    "note": "The access digest is published separately on purpose: reading a file is what a read-only analyser does, and on a volume with last-access updates enabled that is a legitimate consequence of reading, never a change of content, name, structure or contractual timestamp."
+  },
+  "notTested": [
+    "No screen reader was driven: the keyboard reach of the right panel and the axe-core run are what this slice measured, and no WCAG certification is claimed.",
+    "No OS theme switch: prefers-color-scheme and prefers-reduced-motion were set as media-feature overrides in the real engine, not by changing Windows settings, which would be an operation outside the repository.",
+    "No window narrower than 960 or shorter than 640 was measured: the host floor of src-tauri/tauri.conf.json was deliberately left untouched, and Windows refuses smaller.",
+    "No performance claim: the waits in this harness include deliberate settling.",
+    "P-14 clipboard and the P-11 touchpad device keep the exceptions ACTION-0107 published; neither was re-exercised here.",
+    "The relations, review-queue and cross-brain panels of the right column were not populated by this fixture, so their own narrow-width behaviour is UNMEASURED.",
+    "The 22 P requirements are NOT replayed by this slice; ACTION-0108 reserves that for the Stage B closure.",
+    "The colour-contrast rows axe-core reports as INCOMPLETE are published state by state and are NOT turned into a contrast claim either way."
+  ]
+}
