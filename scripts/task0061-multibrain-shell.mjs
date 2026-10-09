@@ -1580,7 +1580,9 @@ function judge(entry) {
   const menu = entry.composition.menu;
   const menuItems = (menu?.items ?? []).map((item) => {
     const command = byId.get(`composition-add-item-${item.brainId}`) ?? null;
-    const own = byBrainId.get(item.brainId);
+    // The catalogue also holds the product's three built-in synthetic brains: their names are
+    // read from the catalogue the product itself reported, never assumed.
+    const own = byBrainId.get(item.brainId) ?? { name: record.catalogue.find((brain) => brain.brainId === item.brainId)?.name ?? null };
     return {
       key: keyOfBrain(item.brainId), whole: command?.fullyVisible === true, onScreen: command?.onScreen === true,
       nameInFull: item.text === own.name, visibleHeightPx: command?.visibleHeightPx ?? 0, ownHeightPx: command?.ownHeightPx ?? 0,
@@ -1771,6 +1773,7 @@ if (pass === 1 && !only) {
       if (scenario.notice) await raiseNotice(scenario);
       if (scenario.menu) await setMenu(true);
       matrix.push(await measureState({ size, granted, scenario, aside: scenario.aside === true }));
+      await writeFile(join(proofRoot, "matrix-progress.json"), JSON.stringify({ record: { ...record, matrix }, seed: seed.brains.map((entry) => ({ ...entry, root: undefined })) }));
       if (scenario.menu) await setMenu(false);
     }
   }
@@ -1780,8 +1783,14 @@ if (pass === 1 && matrix.length > 0) {
   // The matrix is the expensive half: it is written the moment it exists, so a later
   // failure of the keyboard or camera segments cannot lose it.
   record.matrix = matrix;
-  record.verdictPartial = summarise(matrix);
   await writeFile(join(proofRoot, "run-measure-pass1.matrix-only.json"), JSON.stringify(record, null, 2));
+  try {
+    record.verdictPartial = summarise(matrix);
+    await writeFile(join(proofRoot, "run-measure-pass1.matrix-only.json"), JSON.stringify(record, null, 2));
+  } catch (error) {
+    process.stderr.write(`summarise failed on the matrix-only write: ${error.stack}
+`);
+  }
   delete record.matrix;
   delete record.verdictPartial;
 }
