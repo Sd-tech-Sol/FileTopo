@@ -313,17 +313,45 @@ body {
  * and their order are untouched — `DEC-0017` point 12 still reads the active brain in
  * words, not in colour, and this adds nothing to that and takes nothing from it.
  */
+/*
+ * `TASK-0061` / Stage B B04 — the bar keeps one row of chips with several brains.
+ *
+ * Measured on the B03 product (`docs/performance/runs/TASK-0061-multibrain-shell-before.json`),
+ * at 960x640: with two brains the group summaries of the chrome band were already under its
+ * fold, with three the three lifecycle actions were 18 px of 35, and with the add menu open
+ * four of the thirteen usual commands had no visible pixel — at 1280x800 and 1366x768 too.
+ * Two causes, both layout: a chip's text wrapped, so each long name made its row taller, and
+ * the menu was a list in the flow, so opening it grew the band by the whole list.
+ *
+ * So a chip may shrink, and what no longer fits is shortened with an ellipsis. That is
+ * deliberate, and it is the one place where B03's rule "no text-overflow on the first rows"
+ * is lifted: the name is also the button's `title`, the button's accessible name is its
+ * whole text, and the word that marks the active brain is a fixed-width sibling that never
+ * shrinks, so the active chip stays determinable. A chip never grows beyond its own text, so
+ * a short name is never padded.
+ *
+ * The hint of a non-active chip ("rendre actif") stays in the DOM, in the accessible name,
+ * and is hidden from the eye only: it is what the chip does, not what it is.
+ */
 .composition {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
+  flex: 0 1 auto;
+  flex-wrap: nowrap;
+  align-items: center;
+  min-width: 0;
   gap: 4px 10px;
+}
+
+.composition__label {
+  flex: none;
 }
 
 .composition__chips {
   display: flex;
+  flex: 1 1 0;
   flex-wrap: wrap;
   align-items: center;
+  min-width: 0;
   gap: 8px;
   margin: 0;
   padding: 0;
@@ -332,17 +360,87 @@ body {
 
 .composition__chip {
   display: flex;
-  flex-wrap: wrap;
+  flex: 1 1 8rem;
+  flex-wrap: nowrap;
   align-items: center;
+  min-width: 0;
+  max-width: max-content;
   gap: 4px;
 }
 
+.composition__chip--add {
+  flex: none;
+  max-width: none;
+}
+
 .composition__focus {
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
   align-items: center;
+  min-width: 0;
   gap: 6px;
   text-align: left;
+}
+
+.composition__remove {
+  flex: none;
+}
+
+.composition__icon,
+.composition__swatch,
+.composition__state {
+  flex: none;
+}
+
+.composition__name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.composition__hint {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/*
+ * The add menu is a layer over the window, not a list in the flow: `CompositionBar` writes its
+ * `top`, `left`, `width` and `max-height` from the trigger's own rectangle. `fixed` is what lets
+ * it leave the chrome band, which scrolls and would otherwise clip it.
+ */
+.composition__menu {
+  position: fixed;
+  z-index: 30;
+  box-sizing: border-box;
+  max-width: calc(100vw - 16px);
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+}
+
+.composition__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+}
+
+.composition__item .composition__name {
+  flex: 1 1 auto;
 }
 
 /* Les sources synthétiques restent visibles, en diagnostic développeur. */

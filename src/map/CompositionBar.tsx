@@ -16,6 +16,15 @@
  * a real key, walks on the arrows, chooses on `Enter` and closes on `Escape`.
  * Nothing depends on a pointer, and nothing is activated programmatically.
  *
+ * **`TASK-0061` / Stage B B04 — the bar keeps its shape with several brains.** `B03` measured one
+ * brain. With two, three or four, and names of 60 to 75 characters, the chips wrapped onto
+ * several rows and the add menu, an in-flow list, pushed the three lifecycle actions and the
+ * group summaries under the fold of the chrome band. The chip's name now shortens with an
+ * ellipsis rather than wrapping, and the menu is a window-anchored layer rather than a list
+ * in the flow. Nothing is lost by either: the button's accessible name is still its full
+ * text, its `title` carries the full name, the active brain is still marked in words and by
+ * `aria-current`, and the menu item shows the name the same way.
+ *
  * **The `×` of the last displayed brain stays pressable and refuses.** A
  * `disabled` button cannot be focused, so a keyboard user could neither reach
  * it nor learn why — and `L12` step 14 asks for a real keystroke to *attempt*
@@ -24,7 +33,7 @@
  * model.
  */
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { addableBrains, canRemove, type ComposedView } from "./composedView";
 import type { BrainRecord } from "./types";
 
@@ -70,6 +79,9 @@ export default function CompositionBar({
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const menuId = useId();
+  // Where the open menu sits, in window coordinates: a `position: fixed` layer is not clipped by
+  // the chrome band it is written in, and is placed against the trigger that opens it.
+  const [menuBox, setMenuBox] = useState<{ top: number; left: number; width: number; maxHeight: number } | null>(null);
 
   const byId = new Map(brains.map((brain) => [brain.brainId, brain]));
   const displayed = view.displayedBrainIds
@@ -77,6 +89,36 @@ export default function CompositionBar({
     .filter((brain): brain is BrainRecord => brain !== null);
   const addable = addableBrains(view, brains);
   const removable = canRemove(view);
+
+  const placeMenu = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+    const box = trigger.getBoundingClientRect();
+    const margin = 8;
+    const width = Math.min(448, window.innerWidth - 2 * margin);
+    const top = box.bottom + 4;
+    setMenuBox({
+      top,
+      left: Math.max(margin, Math.min(box.left, window.innerWidth - width - margin)),
+      width,
+      maxHeight: Math.max(96, window.innerHeight - top - margin),
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setMenuBox(null);
+      return;
+    }
+    placeMenu();
+    window.addEventListener("resize", placeMenu);
+    // Any scroll — the chrome band's own included — moves the trigger under a fixed layer.
+    window.addEventListener("scroll", placeMenu, true);
+    return () => {
+      window.removeEventListener("resize", placeMenu);
+      window.removeEventListener("scroll", placeMenu, true);
+    };
+  }, [open, placeMenu]);
 
   // Focus follows the keyboard rather than the mouse: an open menu whose focus
   // stayed on the trigger would announce nothing and accept no arrow key.
@@ -184,6 +226,8 @@ export default function CompositionBar({
               <button
                 type="button"
                 className="composition__focus"
+                // The name may be shortened by the stylesheet; this is where it is read in full.
+                title={brain.displayName}
                 data-testid={`composition-chip-${brain.brainId}`}
                 data-brain-id={brain.brainId}
                 aria-current={isFocused ? "true" : undefined}
@@ -263,7 +307,13 @@ export default function CompositionBar({
           </button>
 
           {open && addable.length > 0 ? (
-            <ul className="composition__menu" id={menuId} role="menu" aria-label={strings.add}>
+            <ul
+              className="composition__menu"
+              id={menuId}
+              role="menu"
+              aria-label={strings.add}
+              style={menuBox ?? undefined}
+            >
               {addable.map((brain, index) => (
                 <li key={brain.brainId} role="none">
                   <button
@@ -272,6 +322,7 @@ export default function CompositionBar({
                     className="composition__item"
                     data-testid={`composition-add-item-${brain.brainId}`}
                     data-brain-id={brain.brainId}
+                    title={brain.displayName}
                     ref={(element) => {
                       itemRefs.current[index] = element;
                     }}

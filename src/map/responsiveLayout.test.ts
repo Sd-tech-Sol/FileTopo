@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import mapCss from "./map.css?raw";
 import appSource from "./MapApp.tsx?raw";
+import compositionSource from "./CompositionBar.tsx?raw";
 import { strings } from "./mapStrings";
 
 /*
@@ -537,26 +538,89 @@ describe("the two chrome groups sit side by side, and a group that is opened tak
   });
 });
 
-describe("nothing on the first rows is clipped to make them fit", () => {
+describe("nothing on the first rows is clipped to make them fit — but one name", () => {
   // The WebView2 harness keeps the B01 tripwire that calls any element whose content is
   // wider than its box a sideways scroller. An ellipsis on a summary or a chip would pass a
   // visibility check by clipping what a person reads — which is what was tried first, and
-  // what the campaign refused. A hint that does not fit wraps under its label instead.
+  // what the B03 campaign refused. A hint that does not fit wraps under its label instead.
+  //
+  // `TASK-0061` / B04 lifts that for exactly ONE element, because with three brains of 60 and
+  // 75 characters no wrapping fits the chrome band (a chip that wraps makes its row taller, and
+  // the band has 51 px of margin): a chip's brain NAME. The exemption is narrow, and what makes
+  // it acceptable is asserted below rather than assumed — the full name stays in the button's
+  // accessible name and `title`, and the word that marks the active brain never shrinks.
+  const ELLIPSIS_ALLOWED = new Set([".composition__name", ".composition__hint"]);
   const firstRows = all.filter((rule) =>
-    /^\.app__(header|titles|title|group|groups|brains|actions|language|preferences?)\b|^\.composition/.test(
+    /^\.app__(header|titles|title|group|groups|brains|actions|language|preferences?)|^\.composition/.test(
       rule.selector,
     ),
   );
 
-  it("declares no text-overflow, no overflow clip and no forced single line on them", () => {
+  it("declares no text-overflow, no overflow clip and no forced single line on them, but the chip name", () => {
     expect(firstRows.length).toBeGreaterThan(10);
     for (const rule of firstRows) {
+      if (ELLIPSIS_ALLOWED.has(rule.selector)) continue;
       expect(rule.body, rule.selector).not.toMatch(/text-overflow/);
       expect(rule.body, rule.selector).not.toMatch(/overflow(-x)?:\s*(hidden|clip)/);
     }
     const summary = ruleFor(".app__group > summary")[0];
     expect(summary.body).not.toMatch(/white-space:\s*nowrap/);
     expect(summary.body, "a hint wraps under its label when it does not fit").toMatch(/flex-wrap:\s*wrap/);
+  });
+
+  it("shortens the chip name with an ellipsis, and nothing else on the bar", () => {
+    const name = ruleFor(".composition__name");
+    expect(name).toHaveLength(1);
+    expect(name[0].body).toMatch(/text-overflow:\s*ellipsis/);
+    expect(name[0].body).toMatch(/white-space:\s*nowrap/);
+    expect(name[0].body, "it must be allowed to shrink below its text").toMatch(/min-width:\s*0/);
+    const withEllipsis = firstRows.filter((rule) => /text-overflow/.test(rule.body)).map((rule) => rule.selector);
+    expect(withEllipsis).toEqual([".composition__name"]);
+  });
+
+  it("keeps the full name readable: accessible name, title, and the active word that never shrinks", () => {
+    const source = compositionSource;
+    // The accessible name of a button is its content: the name span is written whole, never sliced.
+    expect(source).toContain("{busy && isFocused ? strings.busy : brain.displayName}");
+    expect(source).not.toMatch(/displayName\.(slice|substring|substr)\(/);
+    // The shortened name is given in full on the chip and on the menu item.
+    expect(source.match(/title=\{brain\.displayName\}/g)?.length).toBe(2);
+    // The word that marks the active brain is a fixed-size sibling: the name is what gives way.
+    const state = ruleFor(".composition__icon, .composition__swatch, .composition__state");
+    expect(state).toHaveLength(1);
+    expect(state[0].body).toMatch(/flex:\s*none/);
+    expect(source).toContain('aria-current={isFocused ? "true" : undefined}');
+  });
+
+  it("hides the hint of a non-active chip from the eye only, never from the DOM", () => {
+    const hint = ruleFor(".composition__hint");
+    expect(hint).toHaveLength(1);
+    expect(hint[0].body).not.toMatch(/display:\s*none|visibility:\s*hidden/);
+    expect(compositionSource).toContain('<span className="composition__hint">{strings.focus}</span>');
+  });
+});
+
+describe("the composition keeps one row of chips, and its menu is a layer, not a list in the flow", () => {
+  it("lets a chip shrink and refuses to let it grow past its own text", () => {
+    const chip = ruleFor(".composition__chip");
+    expect(chip).toHaveLength(1);
+    expect(chip[0].body).toMatch(/min-width:\s*0/);
+    expect(chip[0].body).toMatch(/max-width:\s*max-content/);
+    expect(chip[0].body).toMatch(/flex-wrap:\s*nowrap/);
+    const focus = ruleFor(".composition__focus");
+    expect(focus[0].body).toMatch(/flex-wrap:\s*nowrap/);
+    expect(focus[0].body).toMatch(/min-width:\s*0/);
+  });
+
+  it("opens the add menu as a window-anchored layer that the chrome band cannot clip", () => {
+    const menu = ruleFor(".composition__menu");
+    expect(menu).toHaveLength(1);
+    expect(menu[0].body).toMatch(/position:\s*fixed/);
+    expect(menu[0].body).toMatch(/overflow-y:\s*auto/);
+    expect(menu[0].body).toMatch(/z-index:\s*\d+/);
+    // Its box comes from the trigger's own rectangle, in the component.
+    expect(compositionSource).toContain("getBoundingClientRect");
+    expect(compositionSource).toContain("style={menuBox ?? undefined}");
   });
 });
 

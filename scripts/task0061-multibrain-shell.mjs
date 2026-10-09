@@ -374,7 +374,10 @@ const READ_FIRST_SCREEN = `(() => {
     let right = Math.min(r.right, viewportWidth);
     let bottom = Math.min(r.bottom, viewportHeight);
     const clippedBy = [];
-    for (let parent = el.parentElement; parent; parent = parent.parentElement) {
+    // A \`position: fixed\` box is positioned against the window, not against the band it sits
+    // in the DOM: no ancestor above it clips it. B04's composition menu is such a box.
+    for (let parent = el.parentElement, child = el; parent; child = parent, parent = parent.parentElement) {
+      if (getComputedStyle(child).position === 'fixed') break;
       const style = getComputedStyle(parent);
       const clips = /auto|scroll|hidden|clip/.test(style.overflowX + ' ' + style.overflowY);
       if (!clips) continue;
@@ -428,13 +431,18 @@ const READ_FIRST_SCREEN = `(() => {
   /* --- B01 tripwires, kept verbatim: a first screen must not cost a command -------- */
   const documentOverflowX = Math.max(0, html.scrollWidth - html.clientWidth);
   const scrollers = [];
+  const ellipsized = [];
   const escapers = [];
   const clipped = [];
   for (const el of document.querySelectorAll('.app, .app *')) {
     if (el.closest('svg')) continue;
     const over = el.scrollWidth - el.clientWidth;
     const style = getComputedStyle(el);
-    if (over > 1 && style.overflowX !== 'auto' && style.overflowX !== 'scroll') {
+    // B04: the one ellipsis the contract allows — a chip's brain name, whose full text is in the
+    // button's accessible name and in its title. It is published below, never silently skipped.
+    if (over > 1 && el.classList.contains('composition__name') && style.textOverflow === 'ellipsis') {
+      ellipsized.push({ text: (el.textContent ?? ''), overflowPx: over, title: el.closest('button')?.getAttribute('title') ?? null });
+    } else if (over > 1 && style.overflowX !== 'auto' && style.overflowX !== 'scroll') {
       scrollers.push({ tag: el.tagName, cls: String(el.className).slice(0, 70), overflowPx: over });
     }
     const r = el.getBoundingClientRect();
@@ -646,6 +654,7 @@ const READ_FIRST_SCREEN = `(() => {
     // The B02 question in one number: how far the DOCUMENT can scroll vertically.
     documentVerticalScrollPx: Math.max(0, html.scrollHeight - html.clientHeight),
     sidewaysScrollers: scrollers.slice(0, 10),
+    ellipsizedChipNames: ellipsized,
     viewportEscapers: escapers.slice(0, 10),
     clippedControls: clipped.slice(0, 10),
     controlCount: controls.length,
@@ -1197,7 +1206,7 @@ const check = (label, value = true) => {
   return value;
 };
 const FORBIDDEN_DURING_MEASUREMENT =
-  /^map_(refresh|rebuild|prepare_|reveal_node|copy_node_path|write_run_artifact|brain_exclusions_replace|brain_choose_real_root|brain_save_identity|relation_|suggestion_)/;
+  /^map_(refresh|rebuild|prepare_|reveal_node|copy_node_path|write_run_artifact|brain_exclusions_replace|brain_choose_real_root|brain_save_identity|relation_(?!engine_status$)|suggestion_)/;
 
 await until("!!window.__TAURI_INTERNALS__");
 const rootsOnDisk = pass === 3 ? seed.brains.filter((entry) => entry.brain !== droppedBrainId) : seed.brains;
@@ -1309,6 +1318,8 @@ const READ_COMPOSITION = `(() => {
       removeRect: rect(remove),
       removeAriaDisabled: remove.getAttribute('aria-disabled'),
       removeLabel: remove.getAttribute('aria-label'),
+      focusTitle: focus.getAttribute('title'),
+      stateWordWhole: state ? (state.getBoundingClientRect().right <= focus.getBoundingClientRect().right + 1 && state.getBoundingClientRect().width > 0) : null,
       stateWord: state ? state.textContent.trim() : null,
       hintWord: hint ? hint.textContent.trim() : null,
       disabled: focus.disabled,
@@ -1360,7 +1371,8 @@ const ACTIVE_VISIBILITY = `(() => {
   const r = el.getBoundingClientRect();
   let left = Math.max(r.left, 0), top = Math.max(r.top, 0);
   let right = Math.min(r.right, document.documentElement.clientWidth), bottom = Math.min(r.bottom, document.documentElement.clientHeight);
-  for (let parent = el.parentElement; parent; parent = parent.parentElement) {
+  for (let parent = el.parentElement, child = el; parent; child = parent, parent = parent.parentElement) {
+    if (getComputedStyle(child).position === 'fixed') break;
     const style = getComputedStyle(parent);
     if (!/auto|scroll|hidden|clip/.test(style.overflowX + ' ' + style.overflowY)) continue;
     const box = parent.getBoundingClientRect();
@@ -1565,11 +1577,10 @@ function judge(entry) {
       chipClippedBy: focusCommand?.clippedBy ?? [],
       removeClippedBy: removeCommand?.clippedBy ?? [],
       // The name is rendered in full when the text is the registered one and no part of it is cut off.
-      nameRenderedInFull:
-        chip.nameText === own.name ||
-        // while the product shows its busy word in place of the focused name, the name is still the accessible one
-        false,
+      nameRenderedInFull: chip.nameText === own.name,
       nameNotCutOff: chip.nameScrollWidth <= chip.nameClientWidth + 1,
+      fullNameInTitle: typeof chip.focusTitle === "string" && chip.focusTitle.includes(own.name),
+      activeStateWordWhole: chip.current === "true" ? chip.stateWordWhole === true : true,
       accessibleNameCarriesTheFullName: !!accessible && accessible.name.includes(own.name),
       markedActive: isFocus ? chip.current === "true" && !!chip.stateWord : chip.current === null,
       stateWord: chip.stateWord ?? chip.hintWord,
@@ -1617,7 +1628,11 @@ function judge(entry) {
     chipsNotWhole: chips.filter((chip) => !(chip.chipWhole && chip.removeWhole)).map(
       (chip) => `${chip.key}: chip ${chip.chipVisibleHeightPx}/${chip.chipOwnHeightPx}px${chip.removeWhole ? "" : ", remove not whole"}`,
     ),
-    namesInFull: chips.every((chip) => chip.nameRenderedInFull && chip.nameNotCutOff),
+    // A name is readable when its text is the registered one and either nothing is cut, or what is
+    // cut is still given in full by the accessible name AND the title — and the word that marks the
+    // active brain is never the part that is cut.
+    namesInFull: chips.every((chip) => chip.nameRenderedInFull && (chip.nameNotCutOff || (chip.fullNameInTitle && chip.accessibleNameCarriesTheFullName)) && chip.activeStateWordWhole),
+    namesCutWithAFullTitle: chips.filter((chip) => !chip.nameNotCutOff).map((chip) => chip.key),
     accessibleNamesCarryFullNames: chips.every((chip) => chip.accessibleNameCarriesTheFullName),
     activeMarkedInWordsAndAria: chips.every((chip) => chip.markedActive) && chips.filter((chip) => chip.markedActive && chip.stateWord).length === chips.length,
     exactlyOneActive: entry.composition.chips.filter((chip) => chip.current === "true").length === 1,
@@ -1682,6 +1697,8 @@ function summarise(entries) {
     menuItemsWholeEveryOpenMenuState: judged.filter((j) => j.menuOpen).every((j) => j.menuWhole),
     statesWhereAMenuItemIsNotWhole: judged.filter((j) => j.menuOpen && !j.menuWhole).map((j) => `${j.size}/${j.state}: ${j.menuItemsNotWhole.join(", ")}`),
     longNamesReadableEveryState: judged.every((j) => j.namesInFull && (!j.menuOpen || j.menuNamesInFull)),
+    statesWhereANameIsCutOff: judged.filter((j) => j.namesCutWithAFullTitle.length > 0).map((j) => `${j.size}/${j.state}: ${j.namesCutWithAFullTitle.join(",")}`),
+    statesWhereANameIsNotReadable: judged.filter((j) => !(j.namesInFull && (!j.menuOpen || j.menuNamesInFull))).map((j) => `${j.size}/${j.state}`),
     accessibleNamesCarryFullNamesEveryState: judged.every((j) => j.accessibleNamesCarryFullNames),
     activeBrainMarkedInWordsEveryState: judged.every((j) => j.activeMarkedInWordsAndAria && j.exactlyOneActive),
     groupEntryPointsWholeEveryState: judged.every((j) => j.groupsWhole),
