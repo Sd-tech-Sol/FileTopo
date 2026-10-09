@@ -389,7 +389,7 @@ const READ_FIRST_SCREEN = `(() => {
 
   /* --- the chrome ledger: where every band above the map spends its pixels ---------- */
   //
-  // Walked one level deep, because the fix puts the bands inside `.app__chrome`: the
+  // Walked one level deep, because the fix puts the bands inside the chrome band: the
   // ledger must keep naming the header, the composition nav, the diagnostics and the
   // reports individually, before and after, or the two phases compare nothing.
   const bands = [];
