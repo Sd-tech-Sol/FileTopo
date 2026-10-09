@@ -6842,3 +6842,10 @@ clôture `P-04` d'`ACTION-0094` n'est ni révoquée ni étendue ici. Aucune
 - Les 22 exigences P-01..P-22 sont CLOSED / VERIFIED.
 - ROADMAP Stage A = CLOSED.
 - Aucune TASK-0058; audit Stage B requis avant tout nouveau prompt exécuteur.
+
+## 2026-10-09 — ACTION-0108 — audit Stage B et préparation TASK-0058
+
+**Agent :** ChatGPT orchestrateur / audit documentaire GitHub indépendant.
+**Résultat :** contrat Stage B assez clair; Stage A demeure CLOSED, Stage B non close; `TASK-0058` APPROVED / NOT STARTED.
+**Livrables :** `docs/reviews/ACTION-0108-stage-b-audit.md`, `docs/tasks/TASK-0058-stage-b-visual-baseline-responsive-shell.md`, nouvelle branche `build/v0.2-b01-responsive-shell`, prompt et passation versionnés.
+**Suite :** Claude Code Sonnet / MEDIUM : baseline WebView2 puis éventuel correctif CSS chrome responsive uniquement. Aucun code produit modifié dans l'audit, aucun test local rejoué, aucun merge vers main.

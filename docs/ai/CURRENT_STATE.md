@@ -1,5 +1,16 @@
 # État courant
 
+## ACTION-0108 — audit Stage B / TASK-0058 APPROVED — 2026-10-09
+
+- Source : `docs/reviews/ACTION-0108-stage-b-audit.md`; branche `build/v0.2-b01-responsive-shell` depuis `81e7c4fa0135652fd4afae7f6c566628a64ef003`.
+- Stage A reste CLOSED / VERIFIED (P-01..P-22 et I-1..I-3); aucune preuve nouvelle de tests produit aujourd'hui.
+- Stage B audité : finition visuelle seulement, sans rearchitecture, sans mise en cause de R8.
+- Dette statique vérifiée : grille du chrome en deux colonnes fixe sans media query de largeur; défaut utilisateur à confirmer, pas présumé.
+- Première tranche : `TASK-0058`, APPROVED / NOT STARTED, baseline WebView2 et correction CSS responsive conditionnelle; aucune nouvelle dépendance.
+- Agent Claude Code Sonnet / MEDIUM; `.orchestrator/NEXT_PROMPT.md` est le GO borné.
+- Stage C et D non commencées; aucune TASK-0059, aucune fusion vers main.
+
+
 ## ACTION-0107 — Stage A CLOSED — 2026-10-09
 
 - TASK-0057 = VERIFIED.

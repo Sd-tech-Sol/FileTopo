@@ -1,17 +1,10 @@
-# Action suivante
+# Action suivante — ACTION-0108 / Stage B
 
-## Audit frais de l'étape B — finition visuelle moderne
+**UNE action seulement :** Claude Code (Sonnet, effort MEDIUM) exécute `TASK-0058` en lisant `.orchestrator/NEXT_PROMPT.md` sur `build/v0.2-b01-responsive-shell` après fast-forward et état propre.
 
-L'étape A « Parité fonctionnelle MVP » est **CLOSED** par ACTION-0107.
-
-Aucune TASK-0058 n'est créée.
-
-Avant de donner un nouveau prompt à Claude/Codex, ChatGPT doit auditer :
-1. le contrat exact de l'étape B dans ROADMAP / DEC-0015;
-2. les dettes visuelles déjà nommées;
-3. les fonctions différées qui ne doivent surtout pas remonter;
-4. les preuves de parité qui devront être rejouées après refonte;
-5. la frontière entre finition visuelle et changement fonctionnel;
-6. les réserves R8 et Stage C, qui restent hors B.
-
-**Aucun agent d'exécution pour l'instant.**
+- Stage A = CLOSED / VERIFIED par ACTION-0107; 22/22 parités SATISFIED.
+- ACTION-0108 = audit indépendant Stage B terminé, contrat GO borné.
+- TASK-0058 = APPROVED / NOT STARTED; aucun correctif produit encore exécuté.
+- Première mesure WebView2 à 960x640 / 1280x800 / 1366x768, correction conditionnelle CSS chrome uniquement.
+- L'exécuteur rend IMPLEMENTED ou BLOCKED, jamais VERIFIED; ChatGPT fera le prochain contrôle indépendant.
+- Pas de TASK-0059, pas de Stage C/D, pas de PR/merge main.

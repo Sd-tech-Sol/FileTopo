@@ -97,6 +97,14 @@ attend un contrôle indépendant avant la suivante.
    une fiche `DEC` écrite, jamais par omission silencieuse — contrat de parité
    §3.
 
+> **ACTION-0108 (2026-10-09) — audit d'entrée Stage B.**
+> Stage A reste CLOSED. Le contrat Stage B a été relu et le GO technique est
+> borné à `TASK-0058` (APPROVED / NOT STARTED), sur
+> `build/v0.2-b01-responsive-shell` : mesure réelle du chrome responsive puis correction CSS
+> seulement si un défaut est reproduit. Ce GO ne signifie ni que Stage B est
+> VERIFIED ni que la réserve R8 est levée. Les étapes C/D restent PROPOSED.
+> Voir [ACTION-0108](docs/reviews/ACTION-0108-stage-b-audit.md).
+
 ## Phases historiques
 
 | Phase | Objet | État | Sortie attendue |

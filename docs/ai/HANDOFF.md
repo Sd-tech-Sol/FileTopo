@@ -1,5 +1,18 @@
 # HANDOFF — passage de relais
 
+## Relais — ACTION-0108 / début contrôlé de Stage B — 2026-10-09
+
+- Branche de travail B01 : `build/v0.2-b01-responsive-shell`; base Stage A `81e7c4fa0135652fd4afae7f6c566628a64ef003`.
+- ACTION-0108 audite Stage B et sélectionne seulement `TASK-0058` (APPROVED, non démarrée).
+- Contrat : présentation CSS/visuelle; préserve cartes SVG, projection, modèle, IPC, données, clavier, FR/EN, couleurs non exclusives, reduced motion, P-01..P-22.
+- Code existant : `src/map/map.css` est la feuille du vrai écran `src/map/MapApp.tsx`, pas `src/App.css` historique.
+- Fait vérifié : `.app__main` à deux colonnes; aucune media query largeur; fenêtre Tauri `minWidth=960` / `minHeight=640`. **Bug visuel non prouvé sans WebView2.**
+- Exécuteur : mesurer d'abord en WebView2; corriger uniquement CSS chrome si défaut; sinon preuve sans modification produit. Ne pas changer l'intérieur SVG ni l'algorithme `layered-tree-cards-v1`.
+- Tests avant PASS : FR/EN, light/dark, 960x640/1280x800/1366x768, clavier/focus, axe, motion reduce, P-22 source inchangée, checks/test/build.
+- Anciennes limites P-05/P-11/P-14 et R8 restent documentées; aucune nouvelle preuve d'exécution dans ACTION-0108.
+- Prochaine action UNIQUE : exécuter intégralement `.orchestrator/NEXT_PROMPT.md`. Stop après IMPLEMENTED/BLOCKED, contrôle indépendant par ChatGPT, pas de TASK-0059.
+
+
 ## Relais — ACTION-0107 — Stage A CLOSED — 2026-10-09
 
 - Branche contrôlée : `build/v0.2-a41-v1-real-root-relations`.

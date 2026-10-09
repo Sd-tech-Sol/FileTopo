@@ -10237,3 +10237,14 @@ ci-dessus sont des exécutions locales, sorties capturées.
 - P-11 pavé tactile : même chemin produit `React.WheelEvent/deltaY` que la molette; aucune branche périphérique distincte.
 
 **Clôtures :** TASK-0057 VERIFIED; P-04 portée REAL_ROOT revalidée; P-05..P-18 et P-22 CLOSED/VERIFIED; P-01..P-22 tous fermés; ROADMAP Stage A CLOSED.
+
+
+## DR — ACTION-0108 — audit documentaire Stage B / première tranche — 2026-10-09
+
+- GitHub API ref `build/v0.2-a41-v1-real-root-relations` => `81e7c4fa0135652fd4afae7f6c566628a64ef003`; dernier commit `docs(action0107): close Stage A after TASK-0057`.
+- Comparaison `7f43d60a...81e7c4fa` : 4 commits documentaires/preuves, aucun code produit après le HEAD testé. Arbre 822 entrées, `ACTION-0107` et `TASK-0057` présents, `TASK-0058` absent avant création.
+- Vérification programmatique en lecture seule de la matrice JSON : 22/22 `CLOSED/VERIFIED` et `SATISFIED`, I-1/I-2/I-3 `SATISFIED`. Ce sont des **preuves historisées**, pas de nouveaux tests.
+- Contrôle statique : `src/main.tsx` monte `MapApp`; `map.css` a une grille `.app__main` à deux colonnes et aucune règle `@media` de largeur; `tauri.conf.json` : fenêtre 1280x800, minimum 960x640. Aucune capture WebView2 du chrome produite dans cet audit.
+- Contrôle GitHub Actions : 0 workflow run attaché à `81e7c4fa0135652fd4afae7f6c566628a64ef003`. Un fichier `.github/workflows/ci.yml` est présent; il ne vaut pas exécution.
+- **NON EXÉCUTÉS par ChatGPT dans ACTION-0108 :** pnpm, Rust, WebView2, axe-core, capture d'écran, lecture de fichiers utilisateur. Aucun verdict de qualité visuelle final.
+- Verdict : audit de portée PASS, `TASK-0058` APPROVED et encore NOT STARTED; revue indépendante après livraison nécessaire.
