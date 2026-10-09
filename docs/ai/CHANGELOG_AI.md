@@ -6909,3 +6909,8 @@ périmètre écrit de cette tranche. **Arbitrage orchestrateur.**
 
 Aucune `TASK-0060`, aucun Stage C/D, aucune PR, aucune fusion vers `main`, aucune
 étiquette, aucune dépendance ajoutée, aucun fichier hors de la liste autorisée.
+
+
+## 2026-10-09 — ACTION-0110 — contrôle indépendant B02 et préparation B03
+
+L'orchestrateur a inspecté le HEAD GitHub `f5da1d41226c7fcf34a24351af8fe55b3bb4525b`, les diffs UI, les deux campagnes WebView2 de 18 états, les douze captures, les témoins de tests et l'absence de CI distante. TASK-0059 est VERIFIED dans sa portée B02 : carte visible immédiatement sur 240px dans 18/18 états, caméra et P-19/P-22 préservées. Le problème B02-O1 de trois régions défilantes et outils primaires invisibles à l'ouverture est transmis à TASK-0060 APPROVED sur `build/v0.2-b03-primary-chrome`. Stage B reste IN PROGRESS, Stage C/D non commencées.

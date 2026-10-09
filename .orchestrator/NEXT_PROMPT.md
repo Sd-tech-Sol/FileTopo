@@ -1,16 +1,16 @@
-# NEXT_PROMPT — TASK-0059 / Stage B B02
+# NEXT_PROMPT — TASK-0060 / Stage B B03
 
-**TÂCHE APPROVED, NON COMMENCÉE.**
-**Agent : Claude Code — Sonnet / effort HIGH.**
-**Branche distante : `build/v0.2-b02-first-screen-map`.**
-**Source de vérité :** `docs/reviews/ACTION-0109-task0058-independent-control.md`, `docs/tasks/TASK-0059-stage-b-first-screen-map.md`.
+**Une seule tâche APPROVED, NOT STARTED.**
+**Branche :** `build/v0.2-b03-primary-chrome`
+**Base requise :** `f5da1d41226c7fcf34a24351af8fe55b3bb4525b`
+**Agent conseillé :** Claude Code, Sonnet / effort HIGH.
+**Source de vérité :** `docs/reviews/ACTION-0110-task0059-independent-control.md` et `docs/tasks/TASK-0060-stage-b-primary-chrome.md`.
 
-1. Synchronise `origin/build/v0.2-b02-first-screen-map` par **fast-forward uniquement**, confirme la branche/HEAD attendu et un arbre Git propre. Pas de reset, clean, force push, merge/rebase destructif. Si un travail local non prévu existe, STOP.
-2. Lis `AGENTS.md`, `docs/ai/START_HERE.md`, `docs/ai/CURRENT_STATE.md`, `docs/ai/NEXT_ACTION.md`, ACTION-0109, puis **l'intégralité** de TASK-0059.
-3. Fais d'abord une **mesure visuelle reproductible dans le vrai Tauri/WebView2** du défaut B01-O1 à 960×640 / 1280×800 / 1366×768, sur REAL_ROOT synthétique. La carte est sous la première fenêtre. Une capture à `scrollY=0` et les bounding boxes sont obligatoires avant tout changement.
-4. Livre le **plus petit correctif de présentation** qui rende la carte et un nœud de contexte visibles immédiatement à 960×640, sans cacher définitivement les commandes, ni changer backend, Index, IPC, modèles, MapView/algorithme/caméra métier. Utilise et adapte les composants existants. Si cela exige de sortir des fichiers permis ou de casser P-19, **BLOCKED et STOP**.
-5. Rejoue les contrôles de la fiche dans WebView2, clavier, FR/EN, clair/sombre, compact/reduced motion, P-22, réouverture et tests frontend. Les tests CSS historiques peuvent être adaptés pour prouver un nouveau comportement, jamais simplement effacés. Publie les échecs et limites.
-6. Complète `.orchestrator/RESULT.md` et les docs de mémoire, puis commit/push sur `build/v0.2-b02-first-screen-map`. Statut **IMPLEMENTED** ou **BLOCKED**, **jamais VERIFIED**; aucune TASK-0060 ni Stage C/D ni PR/merge/main.
-7. Arrête-toi. ChatGPT vérifiera directement GitHub.
+1. Synchronise `origin/build/v0.2-b03-primary-chrome` en **fast-forward uniquement**, confirme un worktree propre et le HEAD attendu après le commit documentaire ACTION-0110. Pas de reset/clean/force push.
+2. Lis `AGENTS.md`, `docs/ai/START_HERE.md`, `CURRENT_STATE.md`, `NEXT_ACTION.md`, ACTION-0110, TASK-0060 **en entier**, puis les références UX et le harnais WebView2 cité.
+3. La B02 est VERIFIED, mais ses trois régions défilantes masquent les commandes primaires (B02-O1). Fais d'abord un inventaire des commandes/test IDs et des dépendances tests + un relevé **avant** avec captures en vrai WebView2.
+4. Réorganise **minimement** primaire/avancé dans les fichiers UI autorisés. Conserve tous les contrôles, les intitulés FR/EN, la navigabilité clavier et la projection/caméra. Mesure au moins 240px de carte immédiatement visible dans chaque état; recherche, changement/activation cerveau et caméra facilement accessibles. Mesure l'amélioration, ne l'invente pas.
+5. Exécute les campagnes après, compare les preuves, tests complets, P-19/P-22 ciblés, effets sur tests existants. Arrête **BLOCKED** si hors-scope, fuite source, perte de commande, échec inexpliqué, ou absence de preuves.
+6. Complète `.orchestrator/RESULT.md` (`IMPLEMENTED` ou `BLOCKED`, jamais `VERIFIED`), docs état/validation/HANDOFF, commit/push **B03 uniquement**, puis STOP. Ne crée pas TASK-0061, ne commence pas Stage C/D, ne fusionne rien.
 
-Une nouvelle session `/clear` est adaptée : les décisions, preuves et contraintes sont versionnées.
+`/clear` au début d'une nouvelle session est acceptable : toute la mémoire nécessaire est versionnée dans GitHub.

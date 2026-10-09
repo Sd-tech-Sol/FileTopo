@@ -1,8 +1,9 @@
 # TASK-0059 — Stage B / B02 — Carte visible dès le premier écran
 
 - **Date :** 2026-10-09
-- **Statut :** `IMPLEMENTED` — livré, en attente de vérification indépendante.
-  **Jamais `VERIFIED` par l'exécuteur.** Voir « Exécution » en fin de fiche.
+- **Statut :** `VERIFIED` — contrôle indépendant ACTION-0110 (2026-10-09), dans la portée B02 seulement.
+  L'exécuteur avait correctement livré `IMPLEMENTED`; B02-O1 (trois scrolls imbriqués) est transmis à TASK-0060.
+  Voir « Exécution » en fin de fiche.
 - **Branch :** `build/v0.2-b02-first-screen-map`
 - **Base :** `672da90dfb3c8c5720ee99273896b282fb0e5d72` (TASK-0058 VERIFIED par ACTION-0109).
 - **Décision :** `docs/reviews/ACTION-0109-task0058-independent-control.md`

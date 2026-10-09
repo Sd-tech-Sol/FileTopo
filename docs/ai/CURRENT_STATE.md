@@ -1,5 +1,17 @@
 # État courant
 
+## ACTION-0110 — TASK-0059 VERIFIED / B03 prête — 2026-10-09
+
+- Audit GitHub : B02 HEAD `f5da1d41226c7fcf34a24351af8fe55b3bb4525b`, preuves WebView2 sur `921dacb1591e4a1d076705b4cfaae13bc08bdab7` et seulement docs/artefacts ensuite. UI : MapApp.tsx + map.css, test responsiveLayout; Rust/backend inchangés.
+- BEFORE : 0px de carte au premier écran (18/18 états). AFTER : 240px visibles et exploités (18/18), document vertical 0; 59 commandes préservées, focus 3px, 0 axe violation, `color-contrast` incomplet.
+- Caméra stable à toutes tailles et redémarrage P-19 (epsilon machine au redémarrage); P-22 source stricte et accès inchangés, 160 entrées, aucun artefact.
+- Tests frontend 736 PASS, check/build PASS **rapportés**; un échec isolé non reproduit; aucune CI GitHub. Ces tests n'ont pas été relancés par ChatGPT.
+- **TASK-0059 VERIFIED pour sa portée seulement**, Stage A CLOSED, Stage B EN COURS.
+- **B02-O1** : trois régions verticales scrollables; chrome 176/723, outils map 134/625, aside 422/2192 à 960. Actions primaires enfouies.
+- ACTION-0110 prépare `TASK-0060` APPROVED / NOT STARTED sur `build/v0.2-b03-primary-chrome`: organisation primaire/avancé, visibilité de la carte maintenue. Agent Sonnet/HIGH.
+- Aucun Stage C/D, aucune fermeture Stage B, R8 non levée, main intacte.
+
+
 ## TASK-0059 — Stage B / B02 — carte dès le premier écran — `IMPLEMENTED` — 2026-10-09
 
 - Branche `build/v0.2-b02-first-screen-map`, base `afd6bf8` (ACTION-0109). `HEAD` mesuré `before` = `0b6de20` (produit inchangé), `after` = `921dacb`.

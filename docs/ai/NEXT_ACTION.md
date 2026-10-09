@@ -1,11 +1,8 @@
-# Action suivante — contrôle indépendant de TASK-0059
+# Action suivante — ACTION-0110 / Stage B B03
 
-**UNE action :** contrôler indépendamment `TASK-0059` sur
-`build/v0.2-b02-first-screen-map` au `HEAD` poussé, puis prononcer `VERIFIED` ou
-refuser. L'exécuteur ne s'attribue pas `VERIFIED`.
+**UNE action :** Claude Code **Sonnet / effort HIGH** synchronise `build/v0.2-b03-primary-chrome` par fast-forward, lit et exécute intégralement `.orchestrator/NEXT_PROMPT.md` pour **TASK-0060 APPROVED / NOT STARTED**, puis commit/push et STOP.
 
-- Livré `IMPLEMENTED` : la carte est sur le premier écran dans les 18 états et aux trois tailles — 240 px de `.map-view` visible et exploitable pour un plancher demandé de 200, **0 px** de défilement vertical du document, contre **0 px** de carte visible et jusqu'à 3545 px de document avant.
-- Preuves à relire : `docs/performance/runs/TASK-0059-first-screen-before.json` et `…-after.json`, les 12 captures `TASK-0059-*.png` prises à `scrollY=0`, et la section « Exécution » de `docs/tasks/TASK-0059-stage-b-first-screen-map.md`.
-- Points à contrôler en priorité : aucune commande perdue (59 contrôles par état, mêmes identifiants que B01); caméra identique au bit près à travers les trois hauteurs et retour; `P-19` restauré par un second processus; `P-22` empreintes identiques; `responsiveLayout.test.ts` adapté sans effacer les garde-fous fonctionnels de B01.
-- **Réserve ouverte à arbitrer :** les bandes de chrome défilent dans elles-mêmes à toutes les tailles mesurées (176 px montrés sur 723 à 960×640). Aucune commande n'est perdue et le clavier les atteint toutes, mais la nav composition/identité/exclusions pèse 389 px à elle seule. La compacter relève de l'organisation produit, hors de cette tranche.
-- Stage A CLOSED, Stage B EN COURS et **non close**, R8 maintenue. Aucune `TASK-0060`, aucun Stage C/D, aucune PR, aucune fusion vers `main`.
+- ACTION-0110 a vérifié TASK-0059 dans sa portée B02 sur GitHub au HEAD `f5da1d41226c7fcf34a24351af8fe55b3bb4525b` : carte visible **240px** dès `scrollY=0` dans 18/18 états, aucune commande perdue, caméra protégée, P-22 sources intactes. Tests 736 PASS **rapportés**, non rejoués indépendamment.
+- B02-O1 non clos : triple scroll simultané; à 960x640, chrome visible 176/723px et contrôles carte 134/625px, aside 422/2192px. Compacter accès primaire/avancé sans masquer des commandes est la seule suite autorisée.
+- Réserves : contraste axe incomplete, lecteur d'écran et panneaux complexes en mode étroit non testés; échec test isolé non reproduit; CI distante absente.
+- Stage A CLOSED / VERIFIED; Stage B EN COURS **non fermé**; P-01..P-22 seront rejoués au contrôle de sortie Stage B. R8 inchangée, Stage C/D non lancées. Pas de TASK-0061, PR, merge main.

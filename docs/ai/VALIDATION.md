@@ -10342,3 +10342,15 @@ composition/identité/exclusions pèse **389 px** à elle seule, à 960 comme à
 La compacter rendrait de la hauteur à la carte sans retoucher les règles posées
 ici, mais relève de l'**organisation produit**, pas de la présentation, et sort du
 périmètre écrit de cette tranche. **Décision réservée à l'orchestrateur.**
+
+
+## DU — ACTION-0110 — contrôle indépendant TASK-0059 — 2026-10-09
+
+- Ref B02 : `f5da1d41226c7fcf34a24351af8fe55b3bb4525b`, huit commits après base ACTION-0109. Campagne réelle après au `921dacb1591e4a1d076705b4cfaae13bc08bdab7` ; comparaison jusque HEAD : 3 commits **uniquement documents et artefacts**, aucun code/harnais post-test.
+- Sources : `docs/performance/runs/TASK-0059-first-screen-{before,after}.json`, 12 PNG et scripts publiés. Lecture directe JSON et inspection PNG après 960 FR clair, sombre, 1280 FR clair. Les captures attestent l'apparition d'une vraie carte SVG avec nœuds; les tests de pointage sont décrits et consignés dans l'artefact.
+- BEFORE : 18/18 états carte visible=0, scroll document jusqu'à 3545 px. AFTER : 18/18 carte visible 240px, 3/4 cartes visibles et hittables, 0 scroll document, 0 overflow horizontal, 0 commande perdue, 59 contrôles/état, panneau clavier/focus 3px, 0 axe violations, contrastes incomplete (9–18).
+- Caméra AFTER au même tx=-1011.4244474643147, ty=-355.88032191913, scale=1.9344728533297966 entre 960/1280/1366/960; restauration P-19 après restart a des écarts de précision machine, non bit-identique. Source P-22 stricte/access identique, 160 entrées, 0 artefact sous racine.
+- Code productif : MapApp.tsx (deux wrappers à DOM préservé) + map.css (height:100vh, trois régions de scroll, plancher carte min(240px,38vh)), test responsiveLayout adapté 5→15, sans backend/Index/IPC/viewState/MapView modifié. 
+- `pnpm test 736/736`, `check`, `build`, `diff --check` : **résultats de Claude, pas relancés par ChatGPT**. Un échec workspaceMapApp.test.tsx sous charge non reproduit, cause non prouvée; conservé comme réserve. GitHub API : 0 workflow run et 0 check HEAD.
+- **PASS / VERIFIED TASK-0059 seulement**, Stage B non fermée. `B02-O1` doit rester visible : chrome 176/723px et commandes carte 134/625px à 960, plus aside 422/2192. Le prochain scope B03 vise l'organisation des commandes primaires/avancées et leur accès effectif au clavier/souris.
+- Ne pas confondre 0 violation axe avec certification WCAG. P-14, pavé tactile P-11, lecteur d'écran, panneaux relations/review/cross en vue étroite et sortie intégrale P-01..P-22 hors cette tranche; Stage C R8 non levée.

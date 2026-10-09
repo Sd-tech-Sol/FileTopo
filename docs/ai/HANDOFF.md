@@ -1,5 +1,15 @@
 # HANDOFF — passage de relais
 
+## Relais — ACTION-0110 / Stage B B03 — 2026-10-09
+
+- B02 = VERIFIED sur GitHub `f5da1d41226c7fcf34a24351af8fe55b3bb4525b` (preuves enregistrées à `921dacb1591e4a1d076705b4cfaae13bc08bdab7`). Lecture indépendante diffs/JSON/captures; aucun test local relancé par ChatGPT. 18/18 = carte visible 240px; parité ciblée P-02/05/07/11/19/21/22 toujours dans les limites publiées.
+- Problème restant `B02-O1` : UX a une bande en haut 176px pour 723px de contenus, une bande de commandes carte 134 pour 625, aside 422 pour 2192 à 960x640. La fonction de scroll clavier marche, mais les commandes ne sont pas lisibles en premier écran.
+- B03 `TASK-0060` sur `build/v0.2-b03-primary-chrome` : organiser primaire (cerveau, ouvrir/actualiser, recherche, caméra) vs avancé (diagnostics, outils secondaires, exclusions), préserver 59 commandes, tester au moins 240px de carte; ne pas confondre commandes dans DOM et visibles avec disclosure fermé.
+- Nouvelles chaînes localisées dans mapStrings.ts seulement si nécessaires. Réutiliser natif details/summary, pas de dépendance/UI framework, conserver P-19, P-22, caméra/Index.
+- CI distante absente; tests PNPM rapportés 736 PASS, un échec workspaceMapApp ponctuel sous charge à surveiller. Contraste INCOMPLETE, lecteur d'écran et panneaux relations/review/cross non mesurés.
+- `.orchestrator/NEXT_PROMPT.md` = unique GO, l'agent s'arrête après IMPLEMENTED/BLOCKED et push. Ne pas lancer TASK-0061/Stage C/D ni modifier main.
+
+
 ## Relais — TASK-0059 / Stage B B02, la carte est sur le premier écran — 2026-10-09
 
 - Branche `build/v0.2-b02-first-screen-map`; `HEAD` mesuré `before` `0b6de20`, `after` `921dacb`.
