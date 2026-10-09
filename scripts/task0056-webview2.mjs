@@ -692,9 +692,14 @@ if (phase === 1) {
   // Copy: a real click, then the clipboard is read OUTSIDE this process by the .ps1.
   await click(testid("copy-path"));
   await pause(600);
-  assert.equal(await evaluate(`!!document.querySelector('[data-testid="copy-error"]')`), false, "the copy reported an error");
+  // The motif is published on failure. The Windows clipboard is a shared, single-owner
+  // resource: a copy can be refused because another process holds it, and that is a
+  // different finding from a copy that wrote the wrong path. Asserting on presence alone
+  // made the two indistinguishable.
+  const copyError = await evaluate(`document.querySelector('[data-testid="copy-error"]')?.textContent?.trim() ?? null`);
+  assert.equal(copyError, null, `the copy reported an error: ${copyError}`);
   cover("P-14", "a real click on « Copier le chemin » copied the exact real path of the selected element (checked against the real path by the .ps1, outside this process, on a unicode and long-named tree); no error was shown and no path travelled to the artifact", {
-    node: "rapports/rapport-original.txt", copyError: null, clipboardComparedBy: "scripts/task0056-webview2.ps1",
+    node: "rapports/rapport-original.txt", copyError, clipboardComparedBy: "scripts/task0056-webview2.ps1",
   });
   // Open in Explorer, on a file then on a folder of the synthetic fixture.
   await click(testid("reveal-in-explorer"));
