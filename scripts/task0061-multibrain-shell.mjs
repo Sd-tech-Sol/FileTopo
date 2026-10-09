@@ -1101,7 +1101,23 @@ async function measureGroupEntryPoints() {
     // The summary may have moved (an opened group takes a whole row): aim at it again.
     const whereNow = await evaluate(READ_GROUP(group.testid));
     await mouseClickAt(whereNow.x, whereNow.y);
-    const afterMouseClose = await evaluate(READ_GROUP(group.testid));
+    let afterMouseClose = await evaluate(READ_GROUP(group.testid));
+    // B04: an opened group takes the whole row, so its own summary can land under the fold of a band
+    // that cannot grow (960x640 with two rows of composition). B03's click, at the place the summary
+    // was read, then hits something else and leaves the group open — and the next measurements of the
+    // sequence would measure that leftover instead of the group. The strict result is kept as it is;
+    // the person's remedy — bringing the summary back into view with the band's own scroll — is
+    // tried next, and published separately, so the limit is a number and not a silent retry.
+    const closedWithoutScrolling = afterMouseClose?.open === false;
+    let closedAfterBandScroll = null;
+    if (!closedWithoutScrolling) {
+      await evaluate(`document.querySelector(${JSON.stringify(summarySelector)}).scrollIntoView({ block: 'nearest', inline: 'nearest' })`);
+      const scrolled = await evaluate(READ_GROUP(group.testid));
+      await mouseClickAt(scrolled.x, scrolled.y);
+      afterMouseClose = await evaluate(READ_GROUP(group.testid));
+      closedAfterBandScroll = afterMouseClose?.open === false;
+      await evaluate(RESET_SCROLL);
+    }
     const axClosedByMouse = await axOf(summarySelector);
 
     // The keyboard: real Tab presses from the first control, then Enter, then Enter.
@@ -1159,6 +1175,10 @@ async function measureGroupEntryPoints() {
         reached: reachedByMouse,
         axExpandedWhenOpen: axOpenedByMouse?.expanded ?? null,
         closed: afterMouseClose?.open === false,
+        closedWithoutScrolling,
+        closedAfterBandScroll,
+        // Where the summary was once the group was open, and whether anything but it answers there.
+        summaryOnTheFirstScreenWhenOpened: whereNow?.hit === true,
         axExpandedWhenClosed: axClosedByMouse?.expanded ?? null,
         documentScrollY: Math.max(byMouse?.scrollY ?? 0, afterMouseClose?.scrollY ?? 0),
         revealsEverythingItHolds: opensWhole(byMouse, reachedByMouse, axOpenedByMouse),
@@ -1696,6 +1716,11 @@ function summarise(entries) {
       focusKeptOnSummary: interactions.length > 0 && interactions.every((group) => group.present && group.keyboard.focusKeptOnSummary),
       documentNeverScrolled: interactions.length > 0 && interactions.every((group) => group.present && group.opening.scrollY === 0 && group.mouse.documentScrollY === 0 && group.keyboard.documentScrollY === 0),
       restoredClosed: interactions.length > 0 && interactions.every((group) => group.present && group.restoredClosed),
+      // B04: once opened, does the group's own summary stay on the first screen, so that the same
+      // mouse closes it where the person just clicked? And when it does not, does the band's scroll fix it?
+      openedSummaryStaysOnFirstScreen: interactions.length > 0 && interactions.every((group) => group.present && group.mouse.summaryOnTheFirstScreenWhenOpened),
+      groupsWhoseOpenedSummaryLeftTheFirstScreen: interactions.filter((group) => group.present && !group.mouse.summaryOnTheFirstScreenWhenOpened).map((group) => group.group),
+      closedByMouseOnlyAfterScrollingTheBand: interactions.filter((group) => group.present && group.mouse.closedWithoutScrolling === false).every((group) => group.mouse.closedAfterBandScroll === true),
     };
   });
   const measuredEntries = entryBy.filter((e) => e.measured);
@@ -1741,6 +1766,9 @@ function summarise(entries) {
     focusKeptOnSummaryEveryMeasuredState: everyMeasured("focusKeptOnSummary"),
     documentNeverScrolledByAGroupEveryMeasuredState: everyMeasured("documentNeverScrolled"),
     groupsRestoredClosedEveryMeasuredState: everyMeasured("restoredClosed"),
+    openedGroupKeepsItsSummaryOnTheFirstScreenEveryMeasuredState: everyMeasured("openedSummaryStaysOnFirstScreen"),
+    statesWhereAnOpenedGroupLeavesItsSummaryUnderTheBandFold: entryBy.filter((e) => e.measured && !e.openedSummaryStaysOnFirstScreen).map((e) => `${e.size}/${e.state}: ${e.groupsWhoseOpenedSummaryLeftTheFirstScreen.join(",")}`),
+    everyGroupThatLeftTheFirstScreenCouldStillBeClosedAfterScrollingTheBand: entryBy.filter((e) => e.measured).every((e) => e.closedByMouseOnlyAfterScrollingTheBand),
     statesWhereGroupActivationWasNotMeasured: entryBy.filter((e) => !e.measured).map((e) => `${e.size}/${e.state}`),
     mapAtLeastFloorEveryState: judged.every((j) => j.mapOk),
     statesFailingMapFloor: failing((j) => j.mapOk),
