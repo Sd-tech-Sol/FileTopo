@@ -287,6 +287,54 @@ body {
   color: var(--ink-soft);
 }
 
+/*
+ * `TASK-0060` / Stage B B03 — the composition reads as a row of chips, which is what it has
+ * been called since `TASK-0018`.
+ *
+ * It had no rule of its own. `CompositionBar` writes a `<ul>`, so the browser's own list
+ * defaults applied: a marker, 40 px of inline padding, and one chip per line. The B03
+ * `before` campaign is what made the consequence countable — at 960x640 that stack alone
+ * made `nav.app__brains` 117 px tall and put `composition-add-trigger` at 205 px of a band
+ * 176 px high: inside the window by its own rectangle, and clipped away by the band, which
+ * is why the hit test refused it in 6 states out of 6 at that size
+ * (`docs/performance/runs/TASK-0060-primary-chrome-before.json`).
+ *
+ * Layout only: no colour, no size, no font. The chips, their labels, their `data-testid`
+ * and their order are untouched — `DEC-0017` point 12 still reads the active brain in
+ * words, not in colour, and this adds nothing to that and takes nothing from it.
+ */
+.composition {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+
+.composition__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.composition__chip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.composition__focus {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  text-align: left;
+}
+
 /* Les sources synthétiques restent visibles, en diagnostic développeur. */
 .app__sources {
   display: flex;

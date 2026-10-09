@@ -529,6 +529,32 @@ const READ_FIRST_SCREEN = `(() => {
   visibleCards.sort((l, r) => r.visibleArea - l.visibleArea);
   const rootCard = visibleCards.find((card) => card.level === 1) ?? null;
 
+  /* --- B03: where every drawn card is, whether or not it counts as visible ------------
+   *
+   * \`visibleCardCount\` answers "is a card on the first screen"; it cannot say why not.
+   * B03 gives the map more pixels, so the camera clamp lands somewhere else on a restored
+   * view, and a zero has to be explainable rather than merely reported. Every drawn card's
+   * rectangle is published here, against the map's own box, so the reader can see whether
+   * a card is off to the side, behind a panel, or simply not where the camera is. */
+  const cardGeometry = [];
+  for (const card of document.querySelectorAll('[data-testid="composed-canvas"] [data-card="true"]')) {
+    const r = card.getBoundingClientRect();
+    const m = mapViewBox;
+    cardGeometry.push({
+      nodeId: Number(card.getAttribute('data-node-id')),
+      level: Number(card.getAttribute('aria-level')),
+      rect: { x: round(r.x), y: round(r.y), w: round(r.width), h: round(r.height) },
+      insideWindowPx: { w: round(visibleWidth(r)), h: round(visibleHeight(r)) },
+      insideMapBoxPx: m
+        ? {
+            w: round(Math.max(0, Math.min(r.right, m.right) - Math.max(r.x, m.x))),
+            h: round(Math.max(0, Math.min(r.bottom, m.bottom) - Math.max(r.y, m.y))),
+          }
+        : null,
+    });
+  }
+  cardGeometry.sort((l, r) => l.nodeId - r.nodeId);
+
   /* --- the chrome ledger: where every band above the map spends its pixels ---------- */
   //
   // Walked one level deep, because the fix puts the bands inside the chrome band: the
@@ -610,6 +636,8 @@ const READ_FIRST_SCREEN = `(() => {
       visibleCardCount: visibleCards.length,
       visibleCards: visibleCards.slice(0, 6),
       rootCardVisible: rootCard,
+      // B03 — every drawn card's rectangle, so a zero above is explainable.
+      cardGeometry,
       // A context node is any identifiable card really on screen; the root is the one
       // criterion 1 names first, and either satisfies it.
       contextCardVisible: visibleCards[0] ?? null,
@@ -1092,6 +1120,12 @@ const firstScreenByState = matrix.map((entry) => ({
   mapViewVisibleHeightPx: entry.layout.firstScreen.mapViewVisibleHeightPx,
   mapUsableAtTop: entry.layout.firstScreen.mapHitTest?.inside === true,
   visibleCardCount: entry.layout.firstScreen.visibleCardCount,
+  // B03 — when the count above is zero, this says where the cards actually were.
+  cardsDrawn: entry.layout.firstScreen.cardGeometry.length,
+  cardsOverlappingTheMapBox: entry.layout.firstScreen.cardGeometry.filter(
+    (card) => (card.insideMapBoxPx?.w ?? 0) > 2 && (card.insideMapBoxPx?.h ?? 0) > 2,
+  ).length,
+  cardGeometry: entry.layout.firstScreen.cardGeometry,
   rootCardVisible: entry.layout.firstScreen.rootCardVisible?.nodeId ?? null,
   contextCard: entry.layout.firstScreen.contextCardVisible?.label ?? null,
   asideScrollsInside: entry.layout.columns.asideScrollsInside,
