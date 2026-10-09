@@ -110,22 +110,33 @@ body {
   overflow-y: auto;
 }
 
+/*
+ * `TASK-0060` / `ACTION-0111` — the header is ONE row: the title, then the language and the
+ * two preferences. It was two (title block over the preferences), 99 px of the 176 the
+ * chrome band has at 960x640; as one row it is the height of its tallest button. The title
+ * block takes the slack so the controls sit together at the right. `wrap` stays, so a
+ * window narrower than any measured one still stacks them instead of overflowing.
+ */
 .app__header {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.app__titles {
+  flex: 1 1 auto;
 }
 
 .app__title {
   margin: 0;
-  font-size: 20px;
+  font-size: 18px;
   letter-spacing: -0.01em;
 }
 
+/* The slice caption now opens the diagnostics group, which is what it describes. */
 .app__subtitle {
-  margin: 2px 0 0;
+  margin: 0;
   color: var(--ink-soft);
 }
 
@@ -133,7 +144,6 @@ body {
 .app__language {
   display: inline-flex;
   gap: 0;
-  align-self: flex-start;
 }
 
 .app__language button {
@@ -490,6 +500,28 @@ button:disabled {
   background: var(--panel);
 }
 
+/*
+ * `ACTION-0111` — the two chrome groups share ONE row. `B03-O1` measured the second one 70 px
+ * under the band's fold at 960x640 because each took a row of its own; side by side their
+ * two summaries cost one row and both answer the first screen. A group that is opened takes
+ * the whole row, so what it holds keeps the width it was designed for.
+ */
+.app__groups {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: inherit;
+}
+
+.app__groups > .app__group {
+  flex: 1 1 280px;
+  min-width: 0;
+}
+
+.app__groups > .app__group[open] {
+  flex-basis: 100%;
+}
+
 /* The closed row. `list-style` on both the element and the WebKit pseudo-element, because
    WebView2 needs the second one to stop drawing its own marker; the triangle is drawn as
    text so it inherits the ink colour in both schemes. */
@@ -502,6 +534,9 @@ button:disabled {
   cursor: pointer;
   font-weight: 600;
   list-style: none;
+  /* The hint follows the label when it fits and wraps under it when it does not: a
+     closed group is one row at every measured size, and nothing is ever clipped. */
+  flex-wrap: wrap;
 }
 
 .app__group > summary::-webkit-details-marker {
@@ -1030,7 +1065,6 @@ input[type="text"] {
   display: flex;
   flex-wrap: wrap;
   gap: 8px 16px;
-  align-self: flex-start;
 }
 
 .app__preference {

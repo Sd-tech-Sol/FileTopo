@@ -71,6 +71,7 @@ export interface MapStrings {
     diagnosticsHint: string;
     mapAdvanced: string;
     mapAdvancedHint: string;
+    brainSources: string;
   };
   addRealRoot: string;
   addRealRootBusy: string;
@@ -314,11 +315,12 @@ export const strings: Record<Locale, MapStrings> = {
     },
     groups: {
       advancedTools: "Outils avancés du cerveau",
-      advancedToolsHint: "identité, exclusions, reconstruction et contrôles",
+      advancedToolsHint: "identité, exclusions, reconstruction",
       diagnostics: "Diagnostics et environnement",
-      diagnosticsHint: "moteur, sources synthétiques et rapports",
+      diagnosticsHint: "moteur, sources, rapports",
       mapAdvanced: "Outils avancés de la carte",
       mapAdvancedHint: "cadrage, projection, filtres et observation",
+      brainSources: "Source lue par chaque cerveau affiché",
     },
     addRealRoot: "Ajouter un dossier",
     addRealRootBusy: "Sélection…",
@@ -661,6 +663,7 @@ export const strings: Record<Locale, MapStrings> = {
       diagnosticsHint: "engine, synthetic sources and reports",
       mapAdvanced: "Advanced map tools",
       mapAdvancedHint: "framing, projection, filters and observation",
+      brainSources: "Source read by each displayed brain",
     },
     addRealRoot: "Add a folder",
     addRealRootBusy: "Selecting…",

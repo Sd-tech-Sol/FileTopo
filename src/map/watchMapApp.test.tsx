@@ -2,6 +2,7 @@ import { withHostLanguages } from "../test/hostLanguage";
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import MapApp from "./MapApp";
+import { openGroup } from "../test/disclosure";
 import type { MapProjection, SourceObservation, WatchStatus } from "./types";
 
 /**
@@ -344,6 +345,9 @@ describe("a new revision of the displayed brain reloads it, in place", () => {
   it("re-reads an active new / unseen filter on the new revision", async () => {
     await boot();
     await emit(status({ state: "WATCHING", reason: null, sequence: 3 }));
+    // `TASK-0060`: this command lives in a native `<details>`; jsdom would let the click through
+    // with the group closed, so the group is opened first, as a person opens it.
+    openGroup("map-advanced-tools");
     fireEvent.click(screen.getByTestId("filter-state-NEW"));
     await waitFor(() =>
       expect(called("map_view", A).some((call) => (call.args as { filter?: unknown }).filter)).toBe(true),

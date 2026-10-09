@@ -2,6 +2,7 @@ import { withHostLanguages } from "../test/hostLanguage";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import MapApp from "./MapApp";
+import { openGroup } from "../test/disclosure";
 import { composeTerritories } from "./territories";
 import type { MapProjection, WatchStatus } from "./types";
 import { clampView, isWithinBounds, type View } from "./viewState";
@@ -490,6 +491,9 @@ describe("the filter is logical and belongs to its brain", () => {
 
   it("a filter chosen by the person is written as a logical filter; clearing it is written too", async () => {
     await boot();
+    // `TASK-0060`: this command lives in a native `<details>`; jsdom would let the click through
+    // with the group closed, so the group is opened first, as a person opens it.
+    openGroup("map-advanced-tools");
     fireEvent.click(screen.getByTestId("filter-kind-FILE"));
     await waitFor(() => expect(screen.getByTestId("filter-count")).toBeTruthy());
     await settle();

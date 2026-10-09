@@ -2,6 +2,7 @@ import { withHostLanguages } from "../test/hostLanguage";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import MapApp from "./MapApp";
+import { openGroup } from "../test/disclosure";
 import { validateIdentity } from "./BrainIdentityEditor";
 import type { BrainRecord, MapProjection } from "./types";
 
@@ -162,6 +163,9 @@ async function addGamma() {
 }
 
 const openEditor = async () => {
+  // `TASK-0060`: this command lives in a native `<details>`; jsdom would let the click through
+  // with the group closed, so the group is opened first, as a person opens it.
+  openGroup("chrome-advanced-tools");
   fireEvent.click(screen.getByTestId("brain-identity-open"));
   return (await screen.findByTestId("brain-identity-form")) as HTMLFormElement;
 };

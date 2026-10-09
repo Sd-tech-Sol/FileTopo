@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LOCALE_STORAGE_KEY } from "../lib/locale";
 import { withHostLanguages } from "../test/hostLanguage";
 import MapApp from "./MapApp";
+import { openGroup } from "../test/disclosure";
 import type { BrainRecord, MapProjection } from "./types";
 
 /**
@@ -237,6 +238,10 @@ async function openEverySurface() {
   await waitFor(() => expect(screen.getByTestId("node-state-badge")).toBeTruthy());
   await waitFor(() => expect(screen.getByTestId("content-observations")).toBeTruthy());
   // A filter, the journal, the duplicates explorer and the review queue, all opened.
+  // `TASK-0060`: this command lives in a native `<details>`; jsdom would let the click through
+  // with the group closed, so the group is opened first, as a person opens it.
+  openGroup("map-advanced-tools");
+  openGroup("chrome-advanced-tools");
   fireEvent.click(screen.getByTestId("filter-state-NEW"));
   await waitFor(() => expect(screen.getByTestId("filter-count")).toBeTruthy());
   fireEvent.click(screen.getByTestId("journal-toggle"));

@@ -3412,9 +3412,8 @@ export default function MapApp() {
       */}
       <div className="app__chrome">
       <header className="app__header">
-        <div>
+        <div className="app__titles">
           <h1 className="app__title">{t.appTitle}</h1>
-          <p className="app__subtitle">{t.subtitle}</p>
         </div>
         {/* `TASK-0046` — the one explicit choice of the interface language. A native
             button per language, so it is in the keyboard order because of what it is;
@@ -3468,7 +3467,6 @@ export default function MapApp() {
               source: t.compositionSource,
               busy: t.compositionBusy,
             }}
-            showSource
           />
         ) : null}
         {/* The three actions one takes every time, and nothing else: add a folder, open
@@ -3504,6 +3502,7 @@ export default function MapApp() {
         is a focusable control in the keyboard order because of what it is. Every control
         inside keeps its own `data-testid` and its own position.
       */}
+      <div className="app__groups">
       <details className="app__group" data-testid="chrome-advanced-tools">
         <summary>
           {t.groups.advancedTools}
@@ -3572,18 +3571,6 @@ export default function MapApp() {
         </div>
       </details>
 
-      <WorkspaceCorrections
-        strings={t.workspace}
-        corrections={workspaceCorrections}
-        onDismiss={() => setWorkspaceCorrections([])}
-      />
-
-      {status ? (
-        <p className="app__status" role="status">
-          {status}
-        </p>
-      ) : null}
-
       {/*
         `TASK-0060` — the readings: the host's own versions, the synthetic sources and
         every report the checks above produce. None of them is an action, all of them are
@@ -3597,6 +3584,26 @@ export default function MapApp() {
           <span className="app__group-hint"> · {t.groups.diagnosticsHint}</span>
         </summary>
         <div className="app__group-body">
+      <p className="app__subtitle">{t.subtitle}</p>
+      {/* `ACTION-0111` — which source each displayed brain reads. It was a developer
+          diagnostic written INSIDE every chip of the composition row (`showSource`): 36
+          characters beside the name, which pushed the three lifecycle actions onto a second
+          row and under the chrome band's fold. It is the same information, now where
+          diagnostics live, in full and unclipped. */}
+      {composed ? (
+        <section className="app__sources" aria-label={t.groups.brainSources} data-testid="brain-sources">
+          <span className="app__sources-title">{t.groups.brainSources}</span>
+          <ul>
+            {(catalog?.brains ?? [])
+              .filter((brain) => composed.displayedBrainIds.includes(brain.brainId))
+              .map((brain) => (
+                <li key={brain.brainId}>
+                  {brain.displayName} · {t.compositionSource} {brain.sourceRef}
+                </li>
+              ))}
+          </ul>
+        </section>
+      ) : null}
       {host ? (
         <dl className="app__host">
           <div>
@@ -3760,6 +3767,19 @@ export default function MapApp() {
       ) : null}
         </div>
       </details>
+      </div>
+
+      <WorkspaceCorrections
+        strings={t.workspace}
+        corrections={workspaceCorrections}
+        onDismiss={() => setWorkspaceCorrections([])}
+      />
+
+      {status ? (
+        <p className="app__status" role="status">
+          {status}
+        </p>
+      ) : null}
       </div>
 
       <main className="app__main">

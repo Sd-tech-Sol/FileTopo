@@ -369,7 +369,7 @@ describe("what is usual stays in the open, what is occasional is one summary awa
 
   it("leaves the status line and the corrections notice in the open", () => {
     // Both speak about something that just happened; a disclosure would be a way of not
-    // saying it. They sit between the two chrome groups, outside either.
+    // saying it. They sit after the groups row, outside every group (`ACTION-0111`).
     for (const group of GROUPS) {
       expect(groupBlock(group)).not.toContain('className="app__status"');
       expect(groupBlock(group)).not.toContain("<WorkspaceCorrections");
@@ -417,4 +417,205 @@ describe("a group costs one row and hides nothing by stylesheet", () => {
     expect(bodyRule[0].body).toMatch(/flex-direction:\s*column/);
     expect(bodyRule[0].body).toMatch(/gap:\s*10px/);
   });
+});
+
+/*
+ * `ACTION-0111` / `B03-O1` — the first row of the window, and the entry points of the groups.
+ *
+ * The independent review of `TASK-0060` measured, at 960x640 in comfortable density, that
+ * `brain-add-real-root`, `lifecycle-open` and `lifecycle-refresh` showed 20 px of their 35,
+ * and that the two chrome summaries sat 25 and 70 px below the band's fold: aimable by a
+ * test point, not whole, and not discoverable without scrolling the band. The correction is
+ * an ORGANISATION of the same elements — one header row, the composition and its three
+ * actions on one row, the two chrome groups side by side — and these assertions are its
+ * shape, each falsifiable by undoing one piece. They are tripwires. The proof that every
+ * usual command is whole and every group entry point is on the opening screen is the
+ * eighteen-state WebView2 campaign (`primaryContractSatisfiedWhole`,
+ * `worstPrimaryFullyVisible = 13`, `groupEntryPointsWholeEveryState`): jsdom lays nothing
+ * out, so nothing below can say how many pixels anything has.
+ */
+
+/** The text between an opening marker and the first following closing marker. */
+function between(source: string, opening: string, closing: string): string {
+  const start = source.indexOf(opening);
+  expect(start, `${opening} must exist`).toBeGreaterThan(-1);
+  const end = source.indexOf(closing, start);
+  expect(end, `${closing} must follow ${opening}`).toBeGreaterThan(start);
+  return source.slice(start, end);
+}
+
+describe("the header is one row", () => {
+  const headerRules = ruleFor(".app__header");
+  const header = between(appSource, '<header className="app__header">', "</header>");
+
+  it("lays the title, the language and the two preferences out on one centred row", () => {
+    expect(headerRules).toHaveLength(1);
+    expect(headerRules[0].body).toMatch(/display:\s*flex/);
+    expect(headerRules[0].body).toMatch(/align-items:\s*center/);
+    // `wrap` stays: a window narrower than any measured one stacks them rather than overflow.
+    expect(headerRules[0].body).toMatch(/flex-wrap:\s*wrap/);
+    // `space-between` would strand the language switch in the middle of the row.
+    expect(headerRules[0].body).not.toMatch(/justify-content:\s*space-between/);
+    expect(header).toContain('className="app__titles"');
+    expect(header).toContain('data-testid="language-switch"');
+    expect(header).toContain("<WorkspacePreferences");
+  });
+
+  it("keeps the slice caption, now at the head of the diagnostics group it describes", () => {
+    expect(header, "the caption no longer takes a line of the header").not.toContain("app__subtitle");
+    expect(groupBlock("chrome-diagnostics")).toContain('<p className="app__subtitle">{t.subtitle}</p>');
+    for (const locale of ["fr", "en"] as const) {
+      expect(strings[locale].subtitle.trim().length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("the composition and its three actions share one row", () => {
+  const nav = between(appSource, '<nav className="app__brains"', "</nav>");
+
+  it("keeps the composition, then the three lifecycle actions, in the open", () => {
+    expect(nav).toContain("<CompositionBar");
+    for (const testid of ["brain-add-real-root", "lifecycle-open", "lifecycle-refresh"]) {
+      expect(nav).toContain(`data-testid="${testid}"`);
+    }
+    expect(ruleFor(".app__brains")[0].body).toMatch(/flex-wrap:\s*wrap/);
+  });
+
+  it("no longer writes the source reference inside every chip, and says where it went instead", () => {
+    // `showSource` put a 36-character developer diagnostic beside each brain name: 290 px on
+    // one chip, which is what pushed the three actions onto a second row under the fold.
+    expect(nav).not.toMatch(/\bshowSource\b/);
+    const diagnostics = groupBlock("chrome-diagnostics");
+    expect(diagnostics, "the same information, in full, among the diagnostics").toContain(
+      'data-testid="brain-sources"',
+    );
+    expect(diagnostics).toContain("brain.sourceRef");
+    expect(diagnostics).toContain("t.compositionSource");
+    for (const locale of ["fr", "en"] as const) {
+      expect(strings[locale].groups.brainSources.trim().length).toBeGreaterThan(0);
+    }
+    expect(strings.fr.groups.brainSources).not.toBe(strings.en.groups.brainSources);
+  });
+});
+
+describe("the two chrome groups sit side by side, and a group that is opened takes the row", () => {
+  const beforeTheMap = appSource.slice(
+    appSource.indexOf('<div className="app__groups">'),
+    appSource.indexOf('<main className="app__main">'),
+  );
+
+  it("wraps exactly the two chrome groups, never the map's", () => {
+    expect(beforeTheMap.length).toBeGreaterThan(0);
+    const declared = [...beforeTheMap.matchAll(/<details className="app__group" data-testid="([^"]+)">/g)].map(
+      (match) => match[1],
+    );
+    // The map group is declared later, inside `.app__main`.
+    expect(declared).toEqual(["chrome-advanced-tools", "chrome-diagnostics"]);
+  });
+
+  it("is a wrapping flex row whose children share it, and an open child takes all of it", () => {
+    const row = ruleFor(".app__groups");
+    expect(row).toHaveLength(1);
+    expect(row[0].body).toMatch(/display:\s*flex/);
+    expect(row[0].body).toMatch(/flex-wrap:\s*wrap/);
+    const child = ruleFor(".app__groups > .app__group");
+    expect(child).toHaveLength(1);
+    expect(child[0].body).toMatch(/flex:\s*1\s+1\s+\d+px/);
+    expect(child[0].body).toMatch(/min-width:\s*0/);
+    const opened = ruleFor(".app__groups > .app__group[open]");
+    expect(opened).toHaveLength(1);
+    expect(opened[0].body).toMatch(/flex-basis:\s*100%/);
+  });
+
+  it("leaves the status line and the corrections notice outside every group, after the row", () => {
+    // They speak about something that just happened; a disclosure would be a way of not
+    // saying it. They now follow the groups row instead of sitting between its two groups.
+    const lastGroupEnd = beforeTheMap.lastIndexOf("</details>");
+    expect(lastGroupEnd).toBeGreaterThan(-1);
+    expect(beforeTheMap.indexOf('className="app__status"')).toBeGreaterThan(lastGroupEnd);
+    expect(beforeTheMap.indexOf("<WorkspaceCorrections")).toBeGreaterThan(lastGroupEnd);
+  });
+});
+
+describe("nothing on the first rows is clipped to make them fit", () => {
+  // The WebView2 harness keeps the B01 tripwire that calls any element whose content is
+  // wider than its box a sideways scroller. An ellipsis on a summary or a chip would pass a
+  // visibility check by clipping what a person reads — which is what was tried first, and
+  // what the campaign refused. A hint that does not fit wraps under its label instead.
+  const firstRows = all.filter((rule) =>
+    /^\.app__(header|titles|title|group|groups|brains|actions|language|preferences?)\b|^\.composition/.test(
+      rule.selector,
+    ),
+  );
+
+  it("declares no text-overflow, no overflow clip and no forced single line on them", () => {
+    expect(firstRows.length).toBeGreaterThan(10);
+    for (const rule of firstRows) {
+      expect(rule.body, rule.selector).not.toMatch(/text-overflow/);
+      expect(rule.body, rule.selector).not.toMatch(/overflow(-x)?:\s*(hidden|clip)/);
+    }
+    const summary = ruleFor(".app__group > summary")[0];
+    expect(summary.body).not.toMatch(/white-space:\s*nowrap/);
+    expect(summary.body, "a hint wraps under its label when it does not fit").toMatch(/flex-wrap:\s*wrap/);
+  });
+});
+
+describe("a jsdom test that drives a command inside a group opens the group first", () => {
+  // jsdom lets a click through to the child of a CLOSED `<details>`, so such a test passes
+  // whether or not the disclosure works. `src/test/disclosure.ts` opens a group the way a
+  // person does and refuses to go on if it did not open; this guard is what makes using it
+  // compulsory rather than remembered. It reads the test files, not the application, and
+  // covers the `data-testid` the files name — a command found only by role or by label is
+  // outside what a static guard can see, which is why the WebView2 campaign exists.
+  const testFiles = import.meta.glob(["./*.test.ts", "./*.test.tsx"], {
+    query: "?raw",
+    import: "default",
+    eager: true,
+  }) as Record<string, string>;
+
+  /** The components that render the commands of each group; their `data-testid` count too. */
+  const componentsOf: Record<(typeof GROUPS)[number], string[]> = {
+    "chrome-advanced-tools": ["BrainIdentityEditor", "ExclusionsPanel"],
+    "chrome-diagnostics": [],
+    "map-advanced-tools": ["FilterPanel", "BranchFocusPanel", "ContentObservationsPanel"],
+  };
+  const componentSources = import.meta.glob("./*.tsx", { query: "?raw", import: "default", eager: true }) as Record<
+    string,
+    string
+  >;
+
+  function testidsOf(group: (typeof GROUPS)[number]): string[] {
+    const found = new Set<string>();
+    const sources = [
+      groupBlock(group),
+      ...componentsOf[group].map((name) => componentSources[`./${name}.tsx`] ?? ""),
+    ];
+    for (const source of sources) {
+      for (const match of source.matchAll(/data-testid=\{?[`"]([^`"}$]+)/g)) found.add(match[1]);
+    }
+    found.delete(group);
+    return [...found];
+  }
+
+  for (const group of GROUPS) {
+    it(`${group}: every MapApp test that drives one of its commands opens the group`, () => {
+      const ids = testidsOf(group);
+      if (group !== "chrome-diagnostics") {
+        expect(ids.length, "the group's commands must be found, or this guard guards nothing").toBeGreaterThan(3);
+      }
+      const offenders: string[] = [];
+      for (const [file, source] of Object.entries(testFiles)) {
+        if (file.endsWith("responsiveLayout.test.ts")) continue;
+        // Component tests that mount a panel on its own never go through the group.
+        if (!/from "\.\/MapApp"/.test(source)) continue;
+        for (const id of ids) {
+          const drive = new RegExp(`(click|change|keyDown|input|submit)\\([^;]{0,80}["\`]${id}`);
+          if (drive.test(source) && !source.includes(`openGroup("${group}")`)) {
+            offenders.push(`${file}: ${id}`);
+          }
+        }
+      }
+      expect(offenders, "open the group with openGroup() before driving what it holds").toEqual([]);
+    });
+  }
 });

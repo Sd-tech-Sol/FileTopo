@@ -2,6 +2,7 @@ import { withHostLanguages } from "../test/hostLanguage";
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import MapApp from "./MapApp";
+import { openGroup } from "../test/disclosure";
 import { composeTerritories } from "./territories";
 import type { MapProjection } from "./types";
 import { clampView, type View } from "./viewState";
@@ -416,6 +417,9 @@ describe("a branch focus survives a restart", () => {
   it("« Quitter le focus » puts back the composition, the camera and the selection of before the focus", async () => {
     store.workspace = branched();
     await boot();
+    // `TASK-0060`: this command lives in a native `<details>`; jsdom would let the click through
+    // with the group closed, so the group is opened first, as a person opens it.
+    openGroup("map-advanced-tools");
     fireEvent.click(screen.getByTestId("branch-exit"));
     await settle(600);
     expect(screen.getByTestId("branch-focus-panel").getAttribute("data-branch-active")).toBe("false");
@@ -433,6 +437,7 @@ describe("a branch focus survives a restart", () => {
     store.workspace = branched(2);
     await boot();
     // Collapse the focused root: a real gesture on the real button.
+    openGroup("map-advanced-tools");
     fireEvent.click(screen.getByTestId("branch-toggle"));
     await waitFor(() => expect(called("map_branch_view").length).toBeGreaterThan(1));
     await settle(600);
