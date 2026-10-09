@@ -907,11 +907,14 @@ if (phase === 1) {
   });
 
   // -- P-04 / P-05 / P-07 — relations, provenance, suggestions, direction ----------------
-  // FOUND HERE, AND REPORTED RATHER THAN PATCHED: on a brain whose source is a real
-  // folder, the three reads the relations surface needs all refuse with
-  // `map_source_not_synthetic`. The engine itself is generic and runs, but nothing can
-  // read what it produced, so the panel stays on « unavailable » and P-04, P-05 and P-07
-  // are unreachable on the only kind of brain the shipped product lets a person create.
+  // TASK-0056 found these three UNREACHABLE on a REAL_ROOT brain: `map_relations_open`,
+  // `map_relations_for_node` and `map_relations_review_queue` all resolved their source
+  // through `BrainRecord::source_fixture()`, which refuses a real folder by name. The
+  // engine was already generic, so the panel stayed on « unavailable » with a store full
+  // of relations behind it. TASK-0057 / DEC-0053 moved the six generic same-brain actions
+  // off that helper, and this is the same campaign as before — run where the requirement
+  // actually has to hold: the folder a person chose. Nothing here is weakened; the
+  // expected refusal became an expected success, and the refusal is now what fails.
   const refusalOf = async (command, args) => {
     try {
       await invoke(command, args);
@@ -920,69 +923,89 @@ if (phase === 1) {
       return String(error.message ?? error).slice(0, 300);
     }
   };
-  const realRootRefusals = {
+  record.productGaps = record.productGaps ?? [];
+
+  // The exact measurement that found the gap, kept and re-run. A refusal naming the
+  // SOURCE KIND is the regression returning: it is published as a gap AND it fails.
+  const realRootAnswers = {
     map_relations_open: await refusalOf("map_relations_open", { brainId: ATELIER }),
     map_relations_for_node: await refusalOf("map_relations_for_node", { reference: { brainId: ATELIER, nodeId: reportReference.nodeId } }),
     map_relations_review_queue: await refusalOf("map_relations_review_queue", { brainId: ATELIER, offset: 0, limit: 10 }),
+    map_relation_engine_status: await refusalOf("map_relation_engine_status", { brainId: ATELIER }),
   };
-  const engineOnRealRoot = await refusalOf("map_relation_engine_status", { brainId: ATELIER });
-  const panelOnRealRoot = await evaluate(`(() => {
-    const section = [...document.querySelectorAll('section.relations')][0];
-    return { hasEngineCommand: !!document.querySelector('[data-testid="analyze-relations"]'),
-      hasTotals: !!document.querySelector('[data-testid="relation-totals"]'),
-      text: section?.textContent?.trim().slice(0, 200) ?? null };
-  })()`);
-  record.productGaps = record.productGaps ?? [];
-  if (realRootRefusals.map_relations_open || realRootRefusals.map_relations_for_node) {
+  const sourceKindRefusals = Object.entries(realRootAnswers).filter(([, text]) => text !== null && /source_not_synthetic/.test(text));
+  if (sourceKindRefusals.length > 0) {
     record.productGaps.push({
       requirements: ["P-04", "P-05", "P-07"],
       functions: ["F-017", "F-019", "F-043", "F-044", "F-045"],
       summary:
-        "On a REAL_ROOT brain the relations surface is unreachable: `map_relations_open`, `map_relations_for_node` and `map_relations_review_queue` all go through `BrainRecord::source_fixture()`, which refuses a real folder with `map_source_not_synthetic`. The relations panel therefore renders its « unavailable » form, with no provenance, no direction, no suggestion and no review queue — although `map_relation_engine_run`/`_status` are generic and do work on the same brain. Since DEC-0033 a real folder is the ONLY way a person's tree enters FileTopo, so these three parity requirements are unreachable for a person's own data, which the contract §3 rule 2 says amounts to removing them.",
-      observed: { realRootRefusals, engineStatusOnTheSameBrain: engineOnRealRoot === null ? "succeeds" : engineOnRealRoot, panelOnRealRoot },
-      notPatched: "TASK-0056 is an acceptance: no production file is touched. The gap is reported for arbitration.",
+        "The TASK-0056 gap is back: a generic same-brain relation action refuses a REAL_ROOT brain with `map_source_not_synthetic`, so the relations surface is unreachable for a person's own folder — parity contract §3 rule 2. DEC-0053 C forbids a generic relation path from requiring a fixture.",
+      observed: realRootAnswers,
     });
   }
+  assert.deepEqual(
+    sourceKindRefusals.map(([name]) => name),
+    [],
+    `a relation read refused the real root for its source kind: ${JSON.stringify(realRootAnswers)}`,
+  );
 
-  // The surface is exercised where it is reachable at all: the synthetic-fixture brain.
-  // The parity contract allows a criterion to be verified on synthetic fixtures, so this
-  // is a real observation of the behaviour — and it isolates the gap above to the SOURCE
-  // KIND rather than to the engine or the panel.
-  await click(testid("composition-add-trigger"));
-  await until(`!!document.querySelector('[data-testid="composition-add-item-${SYNTHETIC}"]')`);
-  await click(`[data-testid="composition-add-item-${SYNTHETIC}"]`);
-  await until(`!!document.querySelector('[data-testid="composition-chip-${SYNTHETIC}"]')`);
-  await click(`[data-testid="composition-chip-${SYNTHETIC}"]`);
-  await quiet();
-  const syntheticView = await invoke("map_view", { brainId: SYNTHETIC });
-  const reportReferenceSynthetic = { nodeId: syntheticView.rootId };
-  // A node that really carries relations: take one from the brain's own overview.
-  const syntheticOverview = await invoke("map_relations_open", { brainId: SYNTHETIC });
-  const anEndpoint = (syntheticOverview.established ?? []).flatMap((edge) => [edge.source, edge.target]).find((end) => end.nodeId !== null);
-  assert(anEndpoint, "the synthetic relations fixture must carry at least one established relation");
-  const relationNode = anEndpoint.nodeId;
-  await click(`[data-testid="composed-canvas"] [data-card="true"][data-node-id="${relationNode}"]`).catch(async () => {
-    await invoke("map_node_detail", { reference: { brainId: SYNTHETIC, nodeId: relationNode } });
-    const detail = await invoke("map_node_detail", { reference: { brainId: SYNTHETIC, nodeId: relationNode } });
-    await searchFor(detail.node.name);
-    await until(`!!document.querySelector('[data-testid="search-hit"][data-node-id="${relationNode}"]')`);
-    await click(`[data-testid="search-hit"][data-node-id="${relationNode}"]`);
-  });
+  // 1. the engine, run from the real interface, on the real folder ----------------------
+  // The relations panel renders its commands only once an element of the brain is
+  // selected and its relations have been read. A node of `atelier` is selected from the
+  // work above, so the panel is available — which is itself the first half of P-07 on a
+  // real root, where it used to render its « unavailable » form.
   await until(`!!document.querySelector('[data-testid="relation-totals"]')`, 120000);
   await quiet();
+  const panelAvailableOnRealRoot = await evaluate(`(() => {
+    const section = [...document.querySelectorAll('section.relations')][0];
+    return { hasEngineCommand: !!document.querySelector('[data-testid="analyze-relations"]'),
+      hasTotals: !!document.querySelector('[data-testid="relation-totals"]'),
+      unavailableWording: /indisponible|unavailable/i.test(section?.textContent ?? ''),
+      legacyNote: !!document.querySelector('[data-testid="legacy-scope-note"]') };
+  })()`);
+  assert(panelAvailableOnRealRoot.hasTotals && panelAvailableOnRealRoot.hasEngineCommand,
+    "on a real root the relations panel must be available, with its engine command");
+  assert(!panelAvailableOnRealRoot.unavailableWording,
+    "the panel still renders its « unavailable » form on a real root");
+
   await click(testid("observe-content"));
   await until(`!!document.querySelector('[data-testid="content-report"]')`, 180000);
   await quiet();
   const contentReport = JSON.parse(await evaluate(`document.querySelector('[data-testid="content-report"]').getAttribute('data-report')`));
+  assert.equal(contentReport.brainId, ATELIER, "the content campaign ran on the real root");
+  assert.equal(contentReport.readOnlyConfirmed, true, "the content campaign declares itself read-only");
   await until(`!!document.querySelector('[data-testid="analyze-relations"]:not(:disabled)')`, 120000);
   await click(testid("analyze-relations"));
   await until(`!!document.querySelector('[data-testid="relation-engine-summary"]')`, 180000);
   await quiet();
   const engineReport = JSON.parse(await evaluate(`document.querySelector('[data-testid="relation-engine-summary"]').getAttribute('data-report')`));
-  // The established relations of this brain, read on a node that really carries one.
+  assert.equal(engineReport.brainId, ATELIER);
+  assert.deepEqual(engineReport.rulesSkipped ?? [], [], "both core rules had their signals on the real root");
+  assert(engineReport.deterministicRelationsProduced >= 1, `the real tree must yield a deterministic relation: ${JSON.stringify(engineReport)}`);
+  assert(engineReport.suggestionsProduced >= 2, `the real tree must yield two reviewable suggestions: ${JSON.stringify(engineReport)}`);
+
+  // 2. the overview of a real root: no fixture, no legacy, no seed ----------------------
+  const realOverview = await invoke("map_relations_open", { brainId: ATELIER });
+  assert.equal(realOverview.fixtureId, null, "DEC-0053 D: a real root carries no fixture id");
+  assert.equal(realOverview.legacyInScope, false, "DEC-0053 B: the legacy TASK-0017 perimeter never covers a real root");
+  assert.equal(realOverview.seeded, 0, "no legacy seed is written on a real root");
+  const seededKeys = (realOverview.pendingSuggestions ?? []).concat((realOverview.established ?? []).filter((edge) => edge.suggestionKey))
+    .map((entry) => entry.suggestionKey).filter(Boolean);
+  assert.deepEqual(seededKeys.filter((key) => /^S-\d{3}$/.test(key)), [], "a frozen TASK-0017 suggestion appeared on a real root");
+  assert(!panelAvailableOnRealRoot.legacyNote, "the legacy note belongs to the frozen fixture, not to a real root");
+
+  // 3. the deterministic relation, on screen, in words ---------------------------------
+  const anEndpoint = (realOverview.established ?? []).flatMap((edge) => [edge.source, edge.target]).find((end) => end.nodeId !== null);
+  assert(anEndpoint, "the real tree's identical-content pair must have produced an established relation");
+  const relationNode = anEndpoint.nodeId;
+  const relationDetail = await invoke("map_node_detail", { reference: { brainId: ATELIER, nodeId: relationNode } });
+  await searchFor(relationDetail.node.name);
+  await until(`!!document.querySelector('[data-testid="search-hit"][data-node-id="${relationNode}"]')`);
+  await click(`[data-testid="search-hit"][data-node-id="${relationNode}"]`);
   await until(`!!document.querySelector('[data-testid="relation-totals"]')`, 120000);
   await quiet();
-  const relationsOfNode = await invoke("map_relations_for_node", { reference: { brainId: SYNTHETIC, nodeId: relationNode } });
+  const relationsOfNode = await invoke("map_relations_for_node", { reference: { brainId: ATELIER, nodeId: relationNode } });
+  assert.equal(relationsOfNode.fixtureId, null, "DEC-0053 D on the node read too");
   const establishedOnScreen = await evaluate(`(() => {
     const provenances = [...document.querySelectorAll('.relation__provenance')].map((p) => ({
       text: p.textContent.trim(), className: p.getAttribute('class'), glyph: p.querySelector('[aria-hidden="true"]')?.textContent?.trim() ?? null }));
@@ -997,6 +1020,7 @@ if (phase === 1) {
     "the provenance is carried by a glyph and a word, never by colour alone",
   );
   assert(establishedOnScreen.directions.length > 0, "each entry says its direction");
+  assert(establishedOnScreen.rule, "P-04: the rule that produced a deterministic relation is consultable on screen");
   const totalsText = establishedOnScreen.totals;
   assert(
     new RegExp(`\\b${relationsOfNode.outgoingCount}\\b`).test(totalsText) && new RegExp(`\\b${relationsOfNode.incomingCount}\\b`).test(totalsText),
@@ -1007,10 +1031,10 @@ if (phase === 1) {
   // materialised, and an end that is not drawn is listed in the « endpoints outside the
   // current view » region with a control that brings it on screen. So the honest check is
   // two-sided — the map draws exactly the drawable relations, and loses none of the others.
-  const drawnIds = new Set((await readCanvas()).cards.filter((card) => card.brainId === SYNTHETIC).map((card) => card.nodeId));
+  const drawnIds = new Set((await readCanvas()).cards.filter((card) => card.brainId === ATELIER).map((card) => card.nodeId));
   const established = [
-    ...relationsOfNode.outgoing.map((edge) => ({ direction: "outgoing", other: edge.target?.nodeId ?? null })),
-    ...relationsOfNode.incoming.map((edge) => ({ direction: "incoming", other: edge.source?.nodeId ?? null })),
+    ...relationsOfNode.outgoing.map((edge) => ({ direction: "outgoing", other: edge.other?.nodeId ?? null })),
+    ...relationsOfNode.incoming.map((edge) => ({ direction: "incoming", other: edge.other?.nodeId ?? null })),
   ];
   const drawable = established.filter((edge) => edge.other !== null && drawnIds.has(edge.other));
   const notDrawable = established.filter((edge) => edge.other === null || !drawnIds.has(edge.other));
@@ -1046,13 +1070,14 @@ if (phase === 1) {
     "a suggestion is drawn differently from an established relation, by shape",
   );
 
-  // And a suggestion: a distinct object, explained, never counted as a relation, then
-  // approved with the real keyboard so it becomes an APPROVED relation with a direction.
-  const pending = (syntheticOverview.pendingSuggestions ?? []).find((suggestion) => suggestion.source.nodeId !== null && suggestion.target.nodeId !== null);
-  assert(pending, "the synthetic relations fixture must carry at least one pending suggestion");
-  const suggestionSource = pending.source.nodeId;
-  const suggestionTarget = pending.target.nodeId;
-  const sourceDetail = await invoke("map_node_detail", { reference: { brainId: SYNTHETIC, nodeId: suggestionSource } });
+  // 4. a suggestion: distinct, explained, counted as nothing ----------------------------
+  const pendingPair = (realOverview.pendingSuggestions ?? []).filter((suggestion) => suggestion.source.nodeId !== null && suggestion.target.nodeId !== null);
+  assert(pendingPair.length >= 2, `two reviewable suggestions are needed to approve one and reject another: ${pendingPair.length}`);
+  const toApprove = pendingPair[0];
+  const toReject = pendingPair[1];
+  const suggestionSource = toApprove.source.nodeId;
+  const suggestionTarget = toApprove.target.nodeId;
+  const sourceDetail = await invoke("map_node_detail", { reference: { brainId: ATELIER, nodeId: suggestionSource } });
   await searchFor(sourceDetail.node.name);
   await until(`!!document.querySelector('[data-testid="search-hit"][data-node-id="${suggestionSource}"]')`);
   await click(`[data-testid="search-hit"][data-node-id="${suggestionSource}"]`);
@@ -1074,28 +1099,35 @@ if (phase === 1) {
     (suggestionOnScreen.explanation ?? suggestionOnScreen.basis ?? "").length > 0,
     "a suggestion is explained in ordinary language, by its rule or by its basis",
   );
-  const sourceBefore = await invoke("map_relations_for_node", { reference: { brainId: SYNTHETIC, nodeId: suggestionSource } });
+  const sourceBefore = await invoke("map_relations_for_node", { reference: { brainId: ATELIER, nodeId: suggestionSource } });
   assert(sourceBefore.suggestions.length > 0, "the Index has the suggestion");
   const establishedBefore = sourceBefore.outgoingCount + sourceBefore.incomingCount;
   assert(
     !sourceBefore.outgoing.concat(sourceBefore.incoming).some((edge) => edge.provenance === "SUGGESTED"),
     "a suggestion never appears as a provenance of an established relation",
   );
+  assert(
+    !sourceBefore.outgoing.concat(sourceBefore.incoming).some((edge) => edge.suggestionKey === suggestionOnScreen.key),
+    "a pending suggestion is not counted in either direction before it is approved",
+  );
+
+  // 5. approve — with the real keyboard ------------------------------------------------
   const tabStepsToApprove = await reachAndActivate(
     `[data-testid="approve-core-suggestion"][data-suggestion-key="${suggestionOnScreen.key}"]`,
     "Enter",
   );
-  await until(`!document.querySelector('[data-suggestion-key="${suggestionOnScreen.key}"]')`, 120000);
+  await until(`!document.querySelector('.suggestion[data-suggestion-key="${suggestionOnScreen.key}"]')`, 120000);
   await quiet();
-  const sourceAfter = await invoke("map_relations_for_node", { reference: { brainId: SYNTHETIC, nodeId: suggestionSource } });
+  const sourceAfter = await invoke("map_relations_for_node", { reference: { brainId: ATELIER, nodeId: suggestionSource } });
   const establishedAfter = sourceAfter.outgoingCount + sourceAfter.incomingCount;
   assert.equal(establishedAfter, establishedBefore + 1, "approving the suggestion added exactly one established relation");
   const approvedProvenances = [...new Set([...sourceAfter.outgoing, ...sourceAfter.incoming].map((edge) => edge.provenance))];
   assert(approvedProvenances.every((value) => value === "DETERMINISTIC" || value === "APPROVED"), `a third provenance appeared: ${approvedProvenances}`);
-  const targetAfter = await invoke("map_relations_for_node", { reference: { brainId: SYNTHETIC, nodeId: suggestionTarget } });
-  const sourceOutgoing = sourceAfter.outgoing.length;
-  const targetIncoming = targetAfter.incoming.length;
-  assert(sourceOutgoing >= 1 && targetIncoming >= 1, "the approved relation is readable as outgoing on its source and incoming on its target");
+  const targetAfter = await invoke("map_relations_for_node", { reference: { brainId: ATELIER, nodeId: suggestionTarget } });
+  const sourceOutgoing = sourceAfter.outgoing.filter((edge) => edge.suggestionKey === suggestionOnScreen.key).length;
+  const targetIncoming = targetAfter.incoming.filter((edge) => edge.suggestionKey === suggestionOnScreen.key).length;
+  assert.equal(sourceOutgoing, 1, "the approved relation is outgoing on its source, exactly once");
+  assert.equal(targetIncoming, 1, "and incoming on its target, exactly once");
 
   // The panel groups by direction and every entry leads to the element it names.
   const panelShape = await evaluate(`(() => {
@@ -1112,7 +1144,6 @@ if (phase === 1) {
       link: row.tagName === 'BUTTON' && !row.disabled }));
     return { directionSections, natureGroups, entries };
   })()`);
-  assert(panelShape.directionSections.length >= 2, "the panel has a section per direction");
   assert(panelShape.natureGroups.length >= 1, "inside a direction, the relations are grouped by nature");
   assert(panelShape.entries.length > 0, "the panel lists the relations of the selected element");
   assert(
@@ -1123,36 +1154,157 @@ if (phase === 1) {
     panelShape.entries.every((entry) => entry.leadsTo !== null && entry.link),
     "each entry is an enabled control that leads to the element it names",
   );
+  // P-07: the keyboard can activate an entry and the endpoint it names becomes selected.
+  const anEntry = panelShape.entries.find((entry) => entry.leadsTo !== null);
+  const tabStepsToEntry = await reachAndActivate(`.relation__link[data-endpoint-node-id="${anEntry.leadsTo}"]`, "Enter");
+  await quiet();
+  const selectedAfterEntry = await evaluate(`document.querySelector('[data-testid="composed-canvas"] [data-card="true"].map-node--selected')?.getAttribute('data-node-id') ?? null`);
+  assert.equal(
+    selectedAfterEntry,
+    String(anEntry.leadsTo),
+    "activating a relation entry with the real keyboard must select the element it names",
+  );
+
+  // 6. revoke — the approval taken back ------------------------------------------------
+  await searchFor(sourceDetail.node.name);
+  await until(`!!document.querySelector('[data-testid="search-hit"][data-node-id="${suggestionSource}"]')`);
+  await click(`[data-testid="search-hit"][data-node-id="${suggestionSource}"]`);
+  await until(`!!document.querySelector('[data-relation-revoke="${suggestionOnScreen.key}"]')`, 120000);
+  await quiet();
+  await click(`[data-relation-revoke="${suggestionOnScreen.key}"]`);
+  await until(`!document.querySelector('[data-relation-revoke="${suggestionOnScreen.key}"]')`, 120000);
+  await quiet();
+  const afterRevoke = await invoke("map_relations_open", { brainId: ATELIER });
+  assert.equal(afterRevoke.approvedCount, 0, "the revocation took the approval back");
+  assert.equal(afterRevoke.deterministicCount, realOverview.deterministicCount, "a revocation touches no deterministic relation");
+  assert(
+    (afterRevoke.pendingSuggestions ?? []).some((suggestion) => suggestion.suggestionKey === suggestionOnScreen.key),
+    "DEC-0053 F: a revoked suggestion returns pending",
+  );
+
+  // 7. reject — through the review queue ------------------------------------------------
+  const queueBefore = await invoke("map_relations_review_queue", { brainId: ATELIER, offset: 0, limit: 50 });
+  assert.equal(queueBefore.fixtureId, null, "DEC-0053 D on the queue too");
+  assert.equal(queueBefore.totalPending, afterRevoke.pendingSuggestionCount, "the queue's total is the store's");
+  assert.equal(queueBefore.engineCurrent, true, "the queue is offered because the engine is current");
+  await ensureVisible("open-review-queue", '[data-testid="review-position"]');
+  await quiet();
+  const queueOnScreen = await evaluate(`(() => ({
+    total: Number(document.querySelector('[data-testid="open-review-queue"]').getAttribute('data-total-pending')),
+    position: document.querySelector('[data-testid="review-position"]')?.textContent?.trim() ?? null,
+    key: document.querySelector('[data-testid="review-confirm"]')?.getAttribute('data-suggestion-key') ?? null,
+    type: document.querySelector('[data-testid="review-type"]')?.textContent?.trim() ?? null,
+    state: document.querySelector('[data-testid="review-state"]')?.textContent?.trim() ?? null,
+    why: document.querySelector('[data-testid="review-why"]')?.textContent?.trim() ?? null,
+    boundary: document.querySelector('[data-testid="review-boundary"]')?.textContent?.trim() ?? null,
+  }))()`);
+  assert.equal(queueOnScreen.total, queueBefore.totalPending, "the queue shows the store's pending total");
+  assert(queueOnScreen.key, "the queue offers a decision on a named suggestion");
+  assert(queueOnScreen.state && queueOnScreen.why, "the queue says what is pending and why, in words");
+  // « Plus tard » until the queue offers the one this campaign rejects, so the approved
+  // and the rejected suggestion are two different objects.
+  let turns = 0;
+  while (queueOnScreen.key !== toReject.suggestionKey && turns < queueBefore.totalPending + 1) {
+    await click(testid("review-later"));
+    await quiet();
+    queueOnScreen.key = await evaluate(`document.querySelector('[data-testid="review-confirm"]')?.getAttribute('data-suggestion-key') ?? null`);
+    turns += 1;
+  }
+  assert.equal(queueOnScreen.key, toReject.suggestionKey, "the queue can be paged to the suggestion this campaign rejects");
+  await click(`[data-testid="review-reject"][data-suggestion-key="${toReject.suggestionKey}"]`);
+  await until(`document.querySelector('[data-testid="review-confirm"]')?.getAttribute('data-suggestion-key') !== ${JSON.stringify(toReject.suggestionKey)}
+    || !!document.querySelector('[data-testid="review-empty"]')`, 120000);
+  await quiet();
+  const afterReject = await invoke("map_relations_open", { brainId: ATELIER });
+  assert.equal(afterReject.approvedCount, 0, "a rejection creates no relation, of any provenance");
+  assert.equal(afterReject.deterministicCount, realOverview.deterministicCount, "a rejection touches no deterministic relation");
+  assert.equal(afterReject.pendingSuggestionCount, afterRevoke.pendingSuggestionCount - 1, "the rejected suggestion left the pending set");
+  assert(
+    !(afterReject.pendingSuggestions ?? []).some((suggestion) => suggestion.suggestionKey === toReject.suggestionKey),
+    "and it is the one that was rejected",
+  );
+  const queueAfter = await invoke("map_relations_review_queue", { brainId: ATELIER, offset: 0, limit: 50 });
+  assert(
+    !queueAfter.items.some((item) => item.suggestionKey === toReject.suggestionKey),
+    "the rejected suggestion left the queue",
+  );
+
+  // 8. nothing of the real root travels on the relation surface --------------------------
+  // DEC-0033 B and DEC-0053 D: the absolute path of a chosen folder is never serialised.
+  // The brain's own label is the root's NAME and is legitimately on screen; what must not
+  // appear is the path.
+  const relationPayloads = JSON.stringify({ afterReject, relationsOfNode, queueAfter });
+  const domText = await evaluate(`document.body.innerText.slice(0, 200000)`);
+  for (const [label, haystack] of [["the relation payloads", relationPayloads], ["the page", domText]]) {
+    assert(!haystack.includes(ROOTS.atelier), `${label} carries the absolute source path`);
+    assert(!haystack.includes(ROOTS.atelier.replace(/\\/g, "/")), `${label} carries the absolute source path`);
+  }
+
+  // 9. the frozen synthetic contrast, which must NOT have changed ----------------------
+  // DEC-0053 B keeps the legacy demonstration and the frozen self-check synthetic-only.
+  // So the same reads are taken on the fixture brain: the fixture id is still there, the
+  // legacy perimeter still applies, and the model's own refusals still hold.
+  await click(testid("composition-add-trigger"));
+  await until(`!!document.querySelector('[data-testid="composition-add-item-${SYNTHETIC}"]')`);
+  await click(`[data-testid="composition-add-item-${SYNTHETIC}"]`);
+  await until(`!!document.querySelector('[data-testid="composition-chip-${SYNTHETIC}"]')`);
+  await click(`[data-testid="composition-chip-${SYNTHETIC}"]`);
+  await quiet();
+  const syntheticOverview = await invoke("map_relations_open", { brainId: SYNTHETIC });
+  assert.equal(typeof syntheticOverview.fixtureId, "string", "a synthetic brain still reports its fixture id");
+  assert.equal(syntheticOverview.legacyInScope, true, "the frozen fixture is still inside the legacy perimeter");
+  const syntheticQueue = await invoke("map_relations_review_queue", { brainId: SYNTHETIC, offset: 0, limit: 10 });
+  assert.equal(syntheticQueue.fixtureId, syntheticOverview.fixtureId, "and so does its queue");
   // The model itself refuses a malformed relation (backend oracle, declared as such).
   const relationsSelfCheck = await invoke("map_relations_self_check", { brainId: SYNTHETIC });
   assert.equal(relationsSelfCheck.allRejected, true, "the model must refuse every malformed relation");
   assert.deepEqual(relationsSelfCheck.suggestionsInEstablished, [], "a suggestion must never be counted as an established relation");
   assert.deepEqual(relationsSelfCheck.inventedInverses, [], "no inverse is invented");
+  // And it stays explicitly synthetic: on a real root it is refused by name.
+  const selfCheckOnRealRoot = await refusalOf("map_relations_self_check", { brainId: ATELIER });
+  assert(
+    selfCheckOnRealRoot !== null && /source_not_synthetic/.test(selfCheckOnRealRoot),
+    `DEC-0053 B: the frozen self-check must still refuse a real root, by name: ${selfCheckOnRealRoot}`,
+  );
+
   const relationsScope = {
-    exercisedOn: "a SYNTHETIC_FIXTURE brain, the only source kind on which the relations surface answers at all",
-    refusedOn: "every REAL_ROOT brain — see `productGaps`",
+    exercisedOn: "a REAL_ROOT brain — the folder a person chooses, which DEC-0033 A makes the only way a personal tree enters FileTopo",
+    syntheticContrast: "the frozen fixture brain keeps its fixture id, its legacy perimeter and its self-check, all unchanged",
+    correctedBy: "TASK-0057 / DEC-0053, after TASK-0056 reported the gap",
   };
-  cover("P-04", "on the brain where the surface answers, a content campaign then a real « Analyser » produced established relations whose type and provenance are on screen in words and glyphs (never colour alone); a suggestion was shown as a distinct, explained object with its own state, was never a provenance of an established relation, and the model's own refusals were re-exercised. On a REAL_ROOT brain the same surface refuses: see `productGaps`", {
-    engineReport, contentReport: { hashed: contentReport.hashedCount, files: contentReport.indexedFileCount, algorithm: contentReport.hashAlgorithm },
+  cover("P-04", "on the brain whose source is a real folder, a content campaign then a real « Analyser » produced established relations whose type and provenance are on screen in words and glyphs (never colour alone), with the rule and version of the deterministic one consultable; a suggestion was shown as a distinct, explained object with its own state, was counted in neither direction before approval, was never a provenance of an established relation, and the model's own refusals were re-exercised on the frozen fixture", {
+    sourceKind: "REAL_ROOT", engineReport, contentReport: { hashed: contentReport.hashedCount, files: contentReport.indexedFileCount, algorithm: contentReport.hashAlgorithm },
     deterministicRule: establishedOnScreen.rule, provenancesSeen: establishedOnScreen.provenances.map((p) => p.text),
     typesSeen: establishedOnScreen.types, suggestionExplained: true, suggestionSignals: suggestionOnScreen.signals,
+    fixtureIdOnTheRealRoot: realOverview.fixtureId, legacyInScopeOnTheRealRoot: realOverview.legacyInScope, legacySeedOnTheRealRoot: realOverview.seeded,
     malformedRelationsAllRejected: true, scope: relationsScope,
   });
-  cover("P-05", "the incoming and outgoing counts shown by the PANEL and drawn on the MAP both equal the Index's for the same node; the direction is carried by a glyph, a heading and a filled arrow head rather than by colour; and approving a suggestion with the real keyboard added exactly one established relation — outgoing on its source and incoming on its target. On a REAL_ROOT brain these counts cannot be read at all: see `productGaps`", {
-    panelTotalsText: totalsText, indexOutgoing: relationsOfNode.outgoingCount, indexIncoming: relationsOfNode.incomingCount,
+  cover("P-05", "the incoming and outgoing counts shown by the PANEL and drawn on the MAP both equal the Index's for the same node of a REAL_ROOT brain, read from two separate store queries; the direction is carried by a glyph, a heading and a filled arrow head rather than by colour; approving a suggestion with the real keyboard added exactly one established relation — outgoing on its source and incoming on its target — and revoking it took exactly that one back", {
+    sourceKind: "REAL_ROOT", panelTotalsText: totalsText, indexOutgoing: relationsOfNode.outgoingCount, indexIncoming: relationsOfNode.incomingCount,
     mapOutgoing, mapIncoming, drawableRelationsOfTheNode: drawable.length,
     relationsWhoseOtherEndIsNotDrawn: notDrawable.length, declaredInTheOffScreenRegion: offScreenRegion,
     establishedEdgesOnTheMap: establishedEdges.length,
     suggestionEdgesOnTheMap: mapEdges.length - establishedEdges.length, everyEstablishedEdgeHasAnArrowHead: true,
     approvedWithTheKeyboard: true, tabStepsToTheApproveButton: tabStepsToApprove,
-    establishedBefore, establishedAfter, sourceOutgoing, targetIncoming, scope: relationsScope,
+    establishedBefore, establishedAfter, approvedOutgoingOnSource: sourceOutgoing, approvedIncomingOnTarget: targetIncoming,
+    approvedCountAfterRevocation: afterRevoke.approvedCount, scope: relationsScope,
   });
-  cover("P-07", "the relations panel lists the selected element's relations grouped by nature and direction, each entry carrying its type, direction and provenance and a control that leads to the element it names. On a REAL_ROOT brain the panel renders its « unavailable » form instead: see `productGaps`", {
-    directionSections: panelShape.directionSections, natureGroups: panelShape.natureGroups,
+  cover("P-07", "on a REAL_ROOT brain the relations panel is available and lists the selected element's relations grouped by nature and direction, each entry carrying its type, direction and provenance and an enabled control the real keyboard activated to select the endpoint it names; the review queue opened on the same brain, named what was pending and why, and a rejection removed it from the queue without creating any relation", {
+    sourceKind: "REAL_ROOT", panelAvailable: panelAvailableOnRealRoot, directionSections: panelShape.directionSections, natureGroups: panelShape.natureGroups,
     entries: panelShape.entries, everyEntryHasALink: panelShape.entries.every((entry) => entry.link),
     everyEntryCarriesTypeDirectionAndProvenance: panelShape.entries.every((entry) => entry.type && entry.direction && entry.provenance),
-    scope: relationsScope,
+    tabStepsToARelationEntry: tabStepsToEntry, queueOnScreen, queueTotalBefore: queueBefore.totalPending,
+    pendingAfterRejection: afterReject.pendingSuggestionCount, approvedAfterRejection: afterReject.approvedCount,
+    pagesTurnedWithLater: turns, scope: relationsScope,
   });
+  record.relationDecisionsOnTheRealRoot = {
+    brain: "atelier",
+    approvedThenRevoked: suggestionOnScreen.key,
+    rejected: toReject.suggestionKey,
+    deterministicCount: afterReject.deterministicCount,
+    approvedCount: afterReject.approvedCount,
+    pendingSuggestionCount: afterReject.pendingSuggestionCount,
+  };
   // Back to the real tree for the journal and the rest of the window.
   await click(`[data-testid="composition-chip-${ATELIER}"]`);
   await quiet();
@@ -1368,6 +1520,44 @@ cover("P-19", "a real close and relaunch of the process gave back the panel, the
 await click(testid("details-panel-toggle"));
 await until(`!!document.querySelector('.details')`);
 cover("P-12", "the hidden/shown state of the details panel survived a real restart and the panel came back on one click", { survivedRestart: true });
+
+// -- P-04 / P-07 — the decisions taken on the REAL root survived the restart ------------
+// `TASK-0057` §7: approve, revoke and reject are decisions, so they have to outlive the
+// process. The store is the brain's own, beside its Index and never under the source.
+const decisions = previous.relationDecisionsOnTheRealRoot;
+assert(decisions, "phase 1 must have left its relation decisions on the real root");
+const relationsAfterRestart = await invoke("map_relations_open", { brainId: ATELIER });
+assert.equal(relationsAfterRestart.fixtureId, null, "and the real root still carries no fixture id");
+assert.equal(relationsAfterRestart.legacyInScope, false);
+assert.equal(relationsAfterRestart.seeded, 0, "a restart seeds no legacy relation on a real root");
+assert.equal(relationsAfterRestart.deterministicCount, decisions.deterministicCount, "the deterministic relations came back");
+assert.equal(relationsAfterRestart.approvedCount, decisions.approvedCount, "the revocation survived the restart");
+assert.equal(relationsAfterRestart.pendingSuggestionCount, decisions.pendingSuggestionCount, "the pending set came back as it was left");
+assert(
+  (relationsAfterRestart.pendingSuggestions ?? []).some((suggestion) => suggestion.suggestionKey === decisions.approvedThenRevoked),
+  "the suggestion approved then revoked in phase 1 is pending again, after the restart",
+);
+assert(
+  !(relationsAfterRestart.pendingSuggestions ?? []).some((suggestion) => suggestion.suggestionKey === decisions.rejected),
+  "the rejection survived the restart: a rejected suggestion is not offered again",
+);
+const queueAfterRestart = await invoke("map_relations_review_queue", { brainId: ATELIER, offset: 0, limit: 50 });
+assert.equal(queueAfterRestart.fixtureId, null);
+assert.equal(queueAfterRestart.totalPending, decisions.pendingSuggestionCount, "the queue came back with the store's total");
+assert(
+  !queueAfterRestart.items.some((item) => item.suggestionKey === decisions.rejected),
+  "the rejected suggestion is still out of the queue",
+);
+cover("P-04", "after a real close and relaunch of the process, the relations of the REAL_ROOT brain came back from its own store: the deterministic relations, the revocation and the rejection all survived, no legacy relation was seeded, and the fixture diagnostic is still null", {
+  sourceKind: "REAL_ROOT", afterRestart: {
+    deterministicCount: relationsAfterRestart.deterministicCount, approvedCount: relationsAfterRestart.approvedCount,
+    pendingSuggestionCount: relationsAfterRestart.pendingSuggestionCount, fixtureId: relationsAfterRestart.fixtureId,
+    legacyInScope: relationsAfterRestart.legacyInScope, seeded: relationsAfterRestart.seeded,
+  },
+  leftByPhaseOne: decisions, queueTotalAfterRestart: queueAfterRestart.totalPending,
+});
+await click(`[data-testid="composition-chip-${ATELIER}"]`);
+await quiet();
 
 // -- the watcher, and the temporary unavailability, restored ----------------------------
 // `carnets` this time, and with the watcher's own cadences short: the guard must notice

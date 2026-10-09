@@ -5,9 +5,9 @@ script and dying with it. **No user folder is read, no personal path appears.**
 
 * ``atelier`` — the rich tree the campaign exercises: unicode names, depth,
   a wide folder that forces an exact aggregate and several children pages,
-  an identical-content pair (the deterministic relation of ``dre-v1``), a
-  numbered-sibling pair (its suggestion), a real hard link, an empty folder
-  and an empty file;
+  an identical-content pair (the deterministic relation of ``dre-v1``), three
+  numbered siblings (its two suggestions, so one can be approved and another
+  rejected), a real hard link, an empty folder and an empty file;
 * ``carnets`` — a small second tree, so "several independent brains" is a real
   observation and not a claim;
 * ``archives`` — a small third tree, the one the campaign makes **temporarily
@@ -80,10 +80,13 @@ def seed() -> None:
     # The deterministic relation of `dre-v1`: identical non-empty content.
     touch(atelier / "rapports" / "rapport-original.txt", IDENTICAL)
     touch(atelier / "rapports" / "copie-exacte.txt", IDENTICAL)
-    # Its suggestion: same folder, same extension, consecutive trailing number,
-    # and DIFFERENT content, so the two rules cannot be confused.
+    # Its suggestions: same folder, same extension, consecutive trailing numbers,
+    # and DIFFERENT contents, so the two rules cannot be confused. THREE files, so
+    # the rule yields TWO suggestions (1 → 2 and 2 → 3): `TASK-0057` §6 needs two
+    # reviewable objects, to approve one and reject another independently.
     touch(atelier / "versions" / "note-1.txt", "premiere version\n")
     touch(atelier / "versions" / "note-2.txt", "deuxieme version differente\n")
+    touch(atelier / "versions" / "note-3.txt", "troisieme version encore autre\n")
     # Moved by the `mutate` stage, so the pair above is never disturbed.
     touch(atelier / "brouillons" / "essai.txt", "brouillon a deplacer\n")
     # One physical object, two occurrences (F-046), plus a byte-for-byte copy.
@@ -114,11 +117,12 @@ def seed() -> None:
         ("real-" + str(uuid.uuid4()), "Carnets", "#A8552F", "C", "carnets", 2),
         ("real-" + str(uuid.uuid4()), "Archives", "#4F8F3A", "R", "archives", 3),
     ]
-    # A fourth brain, on the frozen synthetic fixture `quasi-empty`. The relations
-    # surface of the product refuses a `REAL_ROOT` source, so the only brain on which
-    # `P-04`, `P-05` and `P-07` can be exercised at all is a synthetic one. The
-    # campaign exercises them there AND records the refusal on a real root, which is
-    # the gap it reports.
+    # A fourth brain, on the frozen synthetic fixture `quasi-empty`. Since
+    # `TASK-0057` / `DEC-0053` the core relation surface answers on a `REAL_ROOT`
+    # too, so `P-04`, `P-05` and `P-07` are exercised on `atelier` — the folder a
+    # person would choose. This brain is the **contrast** the decision requires:
+    # the frozen `TASK-0017` demonstration and the frozen self-check stay
+    # synthetic-only, and the campaign checks they did not become generic.
     synthetic_brain = "synth-" + str(uuid.uuid4())
     with sqlite3.connect(brains / "catalog.sqlite") as database:
         database.execute(

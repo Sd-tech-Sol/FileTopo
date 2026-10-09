@@ -20,11 +20,18 @@
 #
 # A real `explorer.exe` window may remain open after this run: TASK-0034/0035 forbid
 # killing it globally, so it is left for Windows to manage.
+#
+# `TASK-0057` reuses this harness unchanged in structure: the relations half of the
+# window now runs on the REAL_ROOT tree instead of recording a refusal there, because
+# `DEC-0053` made the core relation surface a capability of a brain. The run at the
+# corrected HEAD publishes its own artifact (`-Task` / `-Out`), so `TASK-0056`'s
+# remains the historical record of what it actually measured.
 [CmdletBinding()]
 param(
     [int]$Port = 9356,
     [string]$HostLanguage = 'fr-CA',
     [Parameter(Mandatory = $true)][string]$WorkDirectory,
+    [ValidatePattern('^TASK-\d{4}$')][string]$Task = 'TASK-0056',
     [string]$Out = 'docs/performance/runs/TASK-0056-p22-webview2.json'
 )
 
@@ -205,8 +212,9 @@ $productGaps = @($phase1.productGaps) + @($phase2.productGaps) | Where-Object { 
 $cpu = Get-CimInstance Win32_Processor | Select-Object -First 1
 $memoryGiB = [math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB, 1)
 $artifact = [ordered]@{
-    task           = 'TASK-0056'
-    section        = 'Final P-22 campaign (TASK-0056 §4 and §5)'
+    task           = $Task
+    section        = "Final P-22 campaign, run by $Task with the harness TASK-0056 built"
+    harness        = 'scripts/task0056-webview2.{ps1,mjs} + task0056-seed-proof.py + task0056-fingerprint.py'
     headTested     = $head
     classification = 'DEVELOPMENT_BENCH_ENGINEERING_EVIDENCE'
     # The P-22 verdict is about immutability only. A product gap found while exercising
@@ -272,5 +280,5 @@ foreach ($spelling in @('stableKey', 'stable_key', 'SYS1:', 'PFv1:', 'VolumeSeri
     if ($text.Contains($spelling)) { throw "an identity spelling leaked into the artifact: $spelling" }
 }
 Set-Content -LiteralPath (Join-Path $repository $Out) -Value $text -Encoding utf8
-Write-Output "TASK-0056 P-22 campaign: $($artifact.verdict) (source fingerprint identical: $identical); artifact $Out"
+Write-Output "$Task P-22 campaign: $($artifact.verdict) (source fingerprint identical: $identical); artifact $Out"
 if ($artifact.verdict -ne 'PASS') { exit 1 }
