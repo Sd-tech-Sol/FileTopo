@@ -229,7 +229,7 @@ La campagne finale P-22, rejouée au `HEAD` corrigé avec le harnais que TASK-00
 
 **Preuve runtime de la campagne finale :**
 
-- *(phase 1)* the incoming and outgoing counts shown by the PANEL and drawn on the MAP both equal the Index's for the same node of a REAL_ROOT brain, read from two separate store queries; the direction is carried by a glyph, a heading and a filled arrow head rather than by colour; approving a suggestion with the real keyboard added exactly one established relation — outgoing on its source and incoming on its target — and revoking it took exactly that one back
+- *(phase 1)* on a REAL_ROOT brain, the incoming and outgoing counts shown by the PANEL equal the Index's exactly for the same node, read from two separate store queries; the MAP is judged two-sided because the view is bounded — it draws exactly the relations whose both ends are materialised (see `drawableRelationsOfTheNode` against `mapOutgoing`/`mapIncoming`) and every relation whose other end is not drawn is named in the « endpoints outside the current view » region with its own control, so none is lost; the direction is carried by a glyph, a heading and a filled arrow head rather than by colour; approving a suggestion with the real keyboard added exactly one established relation — outgoing on its source and incoming on its target — and revoking it took exactly that one back
 
 ### `P-06` — Sélection, accentuation des liés, atténuation du reste
 
