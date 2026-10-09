@@ -189,7 +189,8 @@
       ],
       "limits": [
         "une suggestion n'entre dans aucun compte : c'est le contrat, pas une limite, mais il faut le lire ainsi quand on compare un total à l'écran",
-        "Exercée dans la campagne finale du `HEAD` corrigé sur un cerveau `REAL_ROOT` — le genre de source que `DEC-0033` A fait seule entrée d'une arborescence personnelle — et confrontée sur le cerveau `SYNTHETIC_FIXTURE` figé, dont le comportement historique est inchangé."
+        "Exercée dans la campagne finale du `HEAD` corrigé sur un cerveau `REAL_ROOT` — le genre de source que `DEC-0033` A fait seule entrée d'une arborescence personnelle — et confrontée sur le cerveau `SYNTHETIC_FIXTURE` figé, dont le comportement historique est inchangé.",
+        "La moitié « carte » de l'exigence est jugée à deux côtés, parce que la vue est bornée : `relationSegments` ne dessine une arête que si ses **deux** extrémités sont matérialisées. Dans la campagne du `HEAD` corrigé, le nœud observé avait 1 relation sortante dont l'extrémité n'était pas dessinée : la carte en a donc dessiné 0, ce qui est exact, et les 3 relations du cerveau dont une extrémité manquait sont nommées une par une dans la région « extrémités hors de la vue courante », chacune avec son contrôle pour l'amener à l'écran. La campagne ne montre donc PAS une arête dessinée confrontée à l'index : elle montre que la carte dessine exactement ce qu'elle peut dessiner et ne perd rien. La confrontation panneau/index, elle, est exacte."
       ],
       "status": "CANDIDATE",
       "closedBy": null,
