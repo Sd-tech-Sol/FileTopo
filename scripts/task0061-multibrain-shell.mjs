@@ -1809,6 +1809,32 @@ async function raiseNotice(scenario) {
 }
 
 const only = process.env.T61_ONLY ?? "";
+if (pass === 1 && only === "groups") {
+  // Debug segment: what answers a hit test at the centre of each group summary, and what Enter does.
+  await resizeTo(960, 640);
+  await emulate("light", "no-preference");
+  await setLocale("fr");
+  await composeTo(["A", "B"], "B");
+  await quiet();
+  await pause(600);
+  await evaluate(RESET_SCROLL);
+  for (const group of DISCLOSURE_GROUPS) {
+    const info = await evaluate(`(() => {
+      const summary = document.querySelector('[data-testid="${group.testid}"] > summary');
+      const r = summary.getBoundingClientRect();
+      const top = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+      return { rect: [r.x, r.y, r.width, r.height].map(Math.round), top: top ? top.tagName + '.' + String(top.className) + ' ' + (top.getAttribute('data-testid') ?? '') : null,
+        chrome: document.querySelector('.app__chrome').getBoundingClientRect().bottom, mapControls: document.querySelector('.app__map-controls')?.getBoundingClientRect().top };
+    })()`);
+    console.error(group.testid, JSON.stringify(info));
+  }
+  const kb = await tabToControl(`${testid("chrome-diagnostics")} > summary`, 80);
+  console.error("tab to diagnostics", JSON.stringify(kb));
+  console.error("active before Enter", JSON.stringify(await activeElement()));
+  await press("Enter");
+  console.error("open after Enter", await evaluate(`document.querySelector('[data-testid="chrome-diagnostics"]').open`), JSON.stringify(await activeElement()));
+  process.exit(3);
+}
 if (pass === 1 && only === "menu") {
   // Debug segment: what closing the add menu by clicking its trigger really does.
   await resizeTo(960, 640);
