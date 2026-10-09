@@ -1,7 +1,7 @@
 # TASK-0060 — Stage B / B03 — Commandes primaires visibles, outils avancés accessibles
 
 - **Date :** 2026-10-09
-- **État :** `IMPLEMENTED` — jamais `VERIFIED` par l'exécuteur. Résultats mesurés en §Résultats.
+- **État :** `IMPLEMENTED / NOT VERIFIED — CORRECTION REQUIRED` par ACTION-0111 (2026-10-09); la revue indépendante refuse la promotion à cause de B03-O1. L'exécuteur ne s'était pas attribué VERIFIED. Résultats mesurés en §Résultats.
 - **Branche :** `build/v0.2-b03-primary-chrome`
 - **Base :** `f5da1d41226c7fcf34a24351af8fe55b3bb4525b`, TASK-0059 `VERIFIED` par ACTION-0110.
 - **HEAD mesuré :** `before` = `a03b8bc0a3ed75abca10012cdbbea5a4fc090663` (produit inchangé), `after` = `a645303631db59063b463bc4d44f0cf4f95bc258`.
@@ -182,3 +182,8 @@ B02 avait vu échouer une fois sous charge passe aux deux exécutions.
 
 **Statut : `IMPLEMENTED`.** Pas de `TASK-0061`, pas de Stage C/D, pas de PR, pas
 de fusion.
+
+
+## ACTION-0111 — correction avant VERIFIED
+
+Voir `docs/reviews/ACTION-0111-task0060-independent-control.md`. Les boutons `brain-add-real-root`, `lifecycle-open`, `lifecycle-refresh` sont rognés (20/35px) à 960 confortable, et les deux résumés chrome ne sont pas visibles sans défiler. La mesure `onScreen` seule est insuffisante : `primaryContractSatisfiedWhole=false`. Même TASK-0060, même branche, correction et nouvelle preuve WebView2 avant vérification; pas de TASK-0061.

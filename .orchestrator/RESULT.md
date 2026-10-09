@@ -1,3 +1,5 @@
+> **AUDIT ORCHESTRATEUR ACTION-0111 — 2026-10-09 : NOT VERIFIED / CORRECTION REQUIRED.** Les 13 primaires ne sont pas entières dans 5 états à 960 confortable, seulement 20/35px pour 3 boutons et deux groupes sous le pli. Voir `docs/reviews/ACTION-0111-task0060-independent-control.md`. Le rapport d'exécution original ci-dessous reste intact.
+
 # TASK-0060 — Stage B / B03 — commandes primaires visibles
 AGENT: CLAUDE CODE (Opus 5)
 BRANCH: build/v0.2-b03-primary-chrome

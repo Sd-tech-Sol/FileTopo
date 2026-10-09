@@ -1,29 +1,8 @@
-# Action suivante — contrôle indépendant de TASK-0060
+# Action suivante — ACTION-0111 / correction de TASK-0060
 
-**UNE action :** l'orchestrateur contrôle `TASK-0060` sur GitHub, branche
-`build/v0.2-b03-primary-chrome`, HEAD à contrôler après le commit documentaire
-de cette tranche, puis prononce `VERIFIED` ou refuse. L'exécuteur ne se
-l'attribue pas.
+**UNE action seulement :** exécuter **la correction ciblée de B03-O1 sur la même branche `build/v0.2-b03-primary-chrome`** par Claude Code Sonnet/HIGH selon `.orchestrator/NEXT_PROMPT.md`. Ne pas créer TASK-0061.
 
-- Preuves à lire : `docs/performance/runs/TASK-0060-primary-chrome-{before,after}.json`
-  (HEAD `a03b8bc` et `a645303`), les douze captures `TASK-0060-*.png`, le diff de
-  `src/map/{MapApp.tsx,map.css,mapStrings.ts,responsiveLayout.test.ts}` et le
-  harnais `scripts/task0060-*`.
-- Ce qui est affirmé : **13 commandes usuelles sur 13 vraiment sur le premier
-  écran dans 18 états sur 18** (avant : 9/13 à 960×640, 10/13 ailleurs, et les
-  trois actions de cycle de vie dans **0** état sur 18); 59 commandes toujours
-  dans le DOM, 28 derrière un groupe fermé; carte 240 → 474 px au meilleur;
-  clavier, caméra, `P-19`, `P-22` et axe inchangés ou meilleurs.
-- Ce qui est **réservé**, chiffré, non réparé : `B03-O1` — à 960×640 en densité
-  confortable, trois boutons montrent 20 px sur 35 et les deux lignes de groupe
-  du chrome sont 25 px et 70 px sous le pli de leur bande. Fermer l'écart
-  reprend des pixels à la carte ou retire du contenu : **décision produit**.
-- Rappels : jsdom n'implémente pas un `<details>` fermé, donc `pnpm test`
-  770/770 ne prouve rien du disclosure — seule la campagne WebView2 le mesure.
-  Aucune CI distante sur ce HEAD. Lecteur d'écran, `color-contrast` et panneaux
-  relations/review/cross restent **INCONNUS**.
-
-Stage A reste `CLOSED / VERIFIED`; Stage B reste `IN_PROGRESS`, **non fermé**;
-`P-01..P-22` seront rejouées au contrôle de sortie de Stage B; `R8` inchangée.
-Pas de `TASK-0061`, pas de Stage C/D, pas de PR, pas d'étiquette, pas de fusion
-vers `main`.
+- Revue indépendante GitHub au `79128682d61cedf22b39ea18fb1f022c33149c39` : 13 primaires avec aire cliquable dans 18 états, mais **seulement 10/13 entièrement visibles au pire**. Les trois actions principales sont rognées à **20/35px** à 960x640 confortable; les résumés avancé/diagnostics sont invisibles sans défilement de la bande (25/70px sous pli). Critère visuel de B03 **non satisfait** : `TASK-0060 = IMPLEMENTED / NOT VERIFIED — CORRECTION REQUIRED`.
+- Bons résultats conservés : 59 commandes dans DOM; trois disclosures clavier; carte 240–474px; caméra et P-19/P-22 stables; 770/770 tests rapportés deux fois. Pas de CI distante ni test relancé par ChatGPT.
+- L'audit de correction est `docs/reviews/ACTION-0111-task0060-independent-control.md`. Demander `primaryContractSatisfiedWhole=true` sur 18 états et un point d'entrée explicite aux outils avancés visible dès l'ouverture à 960×640.
+- Stage A CLOSED; B01 et B02 VERIFIED; B03 non VERIFIED; Stage B EN COURS; R8/Stage C/D inchangés, pas de PR/merge main.

@@ -10434,3 +10434,13 @@ la carte** — ce que le critère d'acceptation de cette tranche interdit — ou
 
 L'objectif **souhaitable** de 300 px de carte à 960x640 n'est **pas atteint**
 (253–263 px); il l'est à 1280x800 et 1366x768.
+
+
+## DW — ACTION-0111 — contrôle indépendant de TASK-0060 — 2026-10-09
+
+- Branche `build/v0.2-b03-primary-chrome` ref GitHub `79128682d61cedf22b39ea18fb1f022c33149c39`, 7 commits depuis ACTION-0110. Code UI dans `MapApp.tsx`, `map.css`, `mapStrings.ts`, `responsiveLayout.test.ts`, harnais et preuves; aucun code Rust/Index/IPC/MapView ni dépendance.
+- BEFORE `a03b8bc...`, AFTER `a645303631db59063b463bc4d44f0cf4f95bc258`; comparaison AFTER -> HEAD : 2 commits uniquement documents/preuves; campagnes JSON BEFORE/AFTER lues directement, 18 états chacun. Captures AFTER 960 confortable, 960 compact et 1280 clair consultées visuellement.
+- `primaryContractSatisfied=true` signifie commandes partiellement visibles cliquables; cela NE signifie PAS boutons complets. `primaryContractSatisfiedWhole=false` et `worstPrimaryFullyVisible=10/13` : les boutons `brain-add-real-root`, `lifecycle-open` et `lifecycle-refresh` montrent 20/35px à 960 confortable. Les résumés de groupe chrome avancé et diagnostic sont à +25/+70px sous le pli. Critères d'expérience primaires clairement visibles et outils avancés découvrables de TASK-0060 : **non satisfaits**.
+- Positif sans promotion : 59 commandes DOM; 28 initialement sous disclosures natifs, clavier summary Entrée/Shift+Tab testé avec focus; carte ≥240px, max 474, caméra/selection conservées, P-19 restart, P-22 digest strict/access égal et 160 entrées, 0 artefact, zéro overflow horizontal, zéro console fatal/axe violation; `color-contrast` reste INCOMPLETE.
+- Tests `pnpm test 770/770` deux fois, check/build/diff-check sont des déclarations et sorties reportées par Claude; aucune relance indépendante. API GitHub CI : zéro workflow run et check. Lecteur d'écran non essayé; panneaux relations/review/cross à 960 non exercés; full P-01..P-22 attend fermeture de Stage B.
+- Décision : `TASK-0060 = IMPLEMENTED / NOT VERIFIED — CORRECTION REQUIRED`, sur **même branche et même tâche**, ACTION-0111 publiée. B03-O1 ne peut être converti en nouvelle étape tandis que les critères B03 restent partiellement manqués.

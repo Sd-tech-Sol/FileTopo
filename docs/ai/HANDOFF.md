@@ -1,5 +1,13 @@
 # HANDOFF — passage de relais
 
+## ACTION-0111 — audit indépendant : B03 correction requise — 2026-10-09
+
+- HEAD vérifié sur GitHub : `79128682d61cedf22b39ea18fb1f022c33149c39`; preuve WebView2 AFTER au commit `a645303631db59063b463bc4d44f0cf4f95bc258`. Campagne et 12 captures inspectées, diff de produit autorisé, zéro GitHub Actions/check.
+- Mesure principale : `primaryContractSatisfied=true` mais **`primaryContractSatisfiedWhole=false`, 10/13 entières au pire**. À 960x640 confortable : les boutons Ajouter un dossier/Ouvrir/Actualiser ne montrent que 20/35px; les deux résumés chrome avancé/diagnostic sont 25/70px sous le pli. Cela ne livre pas encore le premier écran clair demandé par TASK-0060.
+- Verdict : `TASK-0060 IMPLEMENTED / NOT VERIFIED / CORRECTION REQUIRED`, pas un échec backend. Les autres preuves positives (59 dans DOM, carte 240-474, focus disclosures, P-19/P-22, 770 tests pnpm rapportés 2 fois) restent valables dans leurs limites.
+- Une seule suite autorisée : **corriger TASK-0060 sur B03**, pas de TASK-0061. Source de vérité ACTION-0111 + NEXT_PROMPT. Stage B non close, Stage C/D et R8 inchangées, main non fusionnée.
+
+
 ## Relais — TASK-0060 / Stage B B03, ce qu'on fait toujours est sur le premier écran — 2026-10-09
 
 - Branche `build/v0.2-b03-primary-chrome`; `HEAD` mesuré `before` `a03b8bc`, `after` `a645303`.
