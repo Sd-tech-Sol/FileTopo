@@ -284,9 +284,18 @@ const sha = (value) => createHash("sha256").update(JSON.stringify(value)).digest
 const READ_FIRST_SCREEN = `(() => {
   const html = document.documentElement;
   // The whole question is what the person sees before touching anything, so the reading
-  // starts by putting the document back where it opens. A previous Tab walk may have
-  // scrolled it; whether it CAN scroll is itself published below.
+  // starts by putting the page back where it opens. A previous Tab walk may have scrolled
+  // it; whether it CAN scroll is itself published below.
+  //
+  // Every region too: once a region scrolls inside itself, "the top of the document" is no
+  // longer enough to describe an opening screen, and a capture taken with a band left
+  // where the last state's keyboard walk pushed it would show a scrolled interface while
+  // claiming to show the first one.
   window.scrollTo(0, 0);
+  for (const region of document.querySelectorAll('.app, .app *')) {
+    if (region.scrollTop !== 0) region.scrollTop = 0;
+    if (region.scrollLeft !== 0) region.scrollLeft = 0;
+  }
   const round = (n) => Math.round(n * 10) / 10;
   const rectOf = (el) => {
     if (!el) return null;
