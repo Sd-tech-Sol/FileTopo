@@ -2999,6 +2999,118 @@
           "mapViewVisibleHeightPx": 240,
           "mapUsableAtTop": true,
           "visibleCardCount": 4,
+          "cardsDrawn": 6,
+          "cardsOverlappingTheMapBox": 4,
+          "cardGeometry": [
+            {
+              "nodeId": 1,
+              "level": 1,
+              "rect": {
+                "x": 67,
+                "y": 431,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 2,
+              "level": 2,
+              "rect": {
+                "x": 427,
+                "y": 247,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 141,
+                "h": 0
+              }
+            },
+            {
+              "nodeId": 3,
+              "level": 2,
+              "rect": {
+                "x": 427,
+                "y": 339,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 141,
+                "h": 61
+              }
+            },
+            {
+              "nodeId": 4,
+              "level": 2,
+              "rect": {
+                "x": 427,
+                "y": 431,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 141,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 5,
+              "level": 2,
+              "rect": {
+                "x": 427,
+                "y": 523,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 141,
+                "h": 59
+              }
+            },
+            {
+              "nodeId": 6,
+              "level": 2,
+              "rect": {
+                "x": 427,
+                "y": 615,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 25
+              },
+              "insideMapBoxPx": {
+                "w": 141,
+                "h": 0
+              }
+            }
+          ],
           "rootCardVisible": 1,
           "contextCard": "Atelier synthetique · atelier-synthetique, racine, profondeu",
           "asideScrollsInside": true,
@@ -3014,6 +3126,118 @@
           "mapViewVisibleHeightPx": 240,
           "mapUsableAtTop": true,
           "visibleCardCount": 3,
+          "cardsDrawn": 6,
+          "cardsOverlappingTheMapBox": 3,
+          "cardGeometry": [
+            {
+              "nodeId": 1,
+              "level": 1,
+              "rect": {
+                "x": -409,
+                "y": 409,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 0,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 0,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 2,
+              "level": 2,
+              "rect": {
+                "x": -49,
+                "y": 225,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 191,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 173,
+                "h": 0
+              }
+            },
+            {
+              "nodeId": 3,
+              "level": 2,
+              "rect": {
+                "x": -49,
+                "y": 317,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 191,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 173,
+                "h": 39
+              }
+            },
+            {
+              "nodeId": 4,
+              "level": 2,
+              "rect": {
+                "x": -49,
+                "y": 409,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 191,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 173,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 5,
+              "level": 2,
+              "rect": {
+                "x": -49,
+                "y": 501,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 191,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 173,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 6,
+              "level": 2,
+              "rect": {
+                "x": -49,
+                "y": 593,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 191,
+                "h": 47
+              },
+              "insideMapBoxPx": {
+                "w": 173,
+                "h": 0
+              }
+            }
+          ],
           "rootCardVisible": null,
           "contextCard": "Atelier synthetique · deuxieme-note-de-racine.txt, fichier, ",
           "asideScrollsInside": true,
@@ -3029,6 +3253,118 @@
           "mapViewVisibleHeightPx": 240,
           "mapUsableAtTop": true,
           "visibleCardCount": 3,
+          "cardsDrawn": 6,
+          "cardsOverlappingTheMapBox": 3,
+          "cardGeometry": [
+            {
+              "nodeId": 1,
+              "level": 1,
+              "rect": {
+                "x": -409,
+                "y": 409,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 0,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 0,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 2,
+              "level": 2,
+              "rect": {
+                "x": -49,
+                "y": 225,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 191,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 173,
+                "h": 0
+              }
+            },
+            {
+              "nodeId": 3,
+              "level": 2,
+              "rect": {
+                "x": -49,
+                "y": 317,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 191,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 173,
+                "h": 39
+              }
+            },
+            {
+              "nodeId": 4,
+              "level": 2,
+              "rect": {
+                "x": -49,
+                "y": 409,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 191,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 173,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 5,
+              "level": 2,
+              "rect": {
+                "x": -49,
+                "y": 501,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 191,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 173,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 6,
+              "level": 2,
+              "rect": {
+                "x": -49,
+                "y": 593,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 191,
+                "h": 47
+              },
+              "insideMapBoxPx": {
+                "w": 173,
+                "h": 0
+              }
+            }
+          ],
           "rootCardVisible": null,
           "contextCard": "Atelier synthetique · deuxieme-note-de-racine.txt, file, dep",
           "asideScrollsInside": true,
@@ -3044,6 +3380,118 @@
           "mapViewVisibleHeightPx": 240,
           "mapUsableAtTop": true,
           "visibleCardCount": 3,
+          "cardsDrawn": 6,
+          "cardsOverlappingTheMapBox": 3,
+          "cardGeometry": [
+            {
+              "nodeId": 1,
+              "level": 1,
+              "rect": {
+                "x": -409,
+                "y": 409,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 0,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 0,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 2,
+              "level": 2,
+              "rect": {
+                "x": -49,
+                "y": 225,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 191,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 173,
+                "h": 0
+              }
+            },
+            {
+              "nodeId": 3,
+              "level": 2,
+              "rect": {
+                "x": -49,
+                "y": 317,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 191,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 173,
+                "h": 39
+              }
+            },
+            {
+              "nodeId": 4,
+              "level": 2,
+              "rect": {
+                "x": -49,
+                "y": 409,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 191,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 173,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 5,
+              "level": 2,
+              "rect": {
+                "x": -49,
+                "y": 501,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 191,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 173,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 6,
+              "level": 2,
+              "rect": {
+                "x": -49,
+                "y": 593,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 191,
+                "h": 47
+              },
+              "insideMapBoxPx": {
+                "w": 173,
+                "h": 0
+              }
+            }
+          ],
           "rootCardVisible": null,
           "contextCard": "Atelier synthetique · deuxieme-note-de-racine.txt, file, dep",
           "asideScrollsInside": true,
@@ -3059,6 +3507,118 @@
           "mapViewVisibleHeightPx": 240,
           "mapUsableAtTop": true,
           "visibleCardCount": 3,
+          "cardsDrawn": 6,
+          "cardsOverlappingTheMapBox": 3,
+          "cardGeometry": [
+            {
+              "nodeId": 1,
+              "level": 1,
+              "rect": {
+                "x": -415,
+                "y": 417,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 0,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 0,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 2,
+              "level": 2,
+              "rect": {
+                "x": -55,
+                "y": 233,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 185,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 173,
+                "h": 0
+              }
+            },
+            {
+              "nodeId": 3,
+              "level": 2,
+              "rect": {
+                "x": -55,
+                "y": 325,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 185,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 173,
+                "h": 39
+              }
+            },
+            {
+              "nodeId": 4,
+              "level": 2,
+              "rect": {
+                "x": -55,
+                "y": 417,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 185,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 173,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 5,
+              "level": 2,
+              "rect": {
+                "x": -55,
+                "y": 509,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 185,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 173,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 6,
+              "level": 2,
+              "rect": {
+                "x": -55,
+                "y": 601,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 185,
+                "h": 39
+              },
+              "insideMapBoxPx": {
+                "w": 173,
+                "h": 0
+              }
+            }
+          ],
           "rootCardVisible": null,
           "contextCard": "Atelier synthetique · deuxieme-note-de-racine.txt, fichier, ",
           "asideScrollsInside": true,
@@ -3074,6 +3634,118 @@
           "mapViewVisibleHeightPx": 240,
           "mapUsableAtTop": true,
           "visibleCardCount": 3,
+          "cardsDrawn": 6,
+          "cardsOverlappingTheMapBox": 3,
+          "cardGeometry": [
+            {
+              "nodeId": 1,
+              "level": 1,
+              "rect": {
+                "x": -409,
+                "y": 409,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 0,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 0,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 2,
+              "level": 2,
+              "rect": {
+                "x": -49,
+                "y": 225,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 191,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 173,
+                "h": 0
+              }
+            },
+            {
+              "nodeId": 3,
+              "level": 2,
+              "rect": {
+                "x": -49,
+                "y": 317,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 191,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 173,
+                "h": 39
+              }
+            },
+            {
+              "nodeId": 4,
+              "level": 2,
+              "rect": {
+                "x": -49,
+                "y": 409,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 191,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 173,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 5,
+              "level": 2,
+              "rect": {
+                "x": -49,
+                "y": 501,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 191,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 173,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 6,
+              "level": 2,
+              "rect": {
+                "x": -49,
+                "y": 593,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 191,
+                "h": 47
+              },
+              "insideMapBoxPx": {
+                "w": 173,
+                "h": 0
+              }
+            }
+          ],
           "rootCardVisible": null,
           "contextCard": "Atelier synthetique · deuxieme-note-de-racine.txt, fichier, ",
           "asideScrollsInside": true,
@@ -3089,6 +3761,118 @@
           "mapViewVisibleHeightPx": 240,
           "mapUsableAtTop": true,
           "visibleCardCount": 4,
+          "cardsDrawn": 6,
+          "cardsOverlappingTheMapBox": 4,
+          "cardGeometry": [
+            {
+              "nodeId": 1,
+              "level": 1,
+              "rect": {
+                "x": -119,
+                "y": 585,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 121,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 103,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 2,
+              "level": 2,
+              "rect": {
+                "x": 241,
+                "y": 401,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 0
+              }
+            },
+            {
+              "nodeId": 3,
+              "level": 2,
+              "rect": {
+                "x": 241,
+                "y": 493,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 39
+              }
+            },
+            {
+              "nodeId": 4,
+              "level": 2,
+              "rect": {
+                "x": 241,
+                "y": 585,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 5,
+              "level": 2,
+              "rect": {
+                "x": 241,
+                "y": 677,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 6,
+              "level": 2,
+              "rect": {
+                "x": 241,
+                "y": 769,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 31
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 0
+              }
+            }
+          ],
           "rootCardVisible": 1,
           "contextCard": "Atelier synthetique · deuxieme-note-de-racine.txt, fichier, ",
           "asideScrollsInside": true,
@@ -3104,6 +3888,118 @@
           "mapViewVisibleHeightPx": 240,
           "mapUsableAtTop": true,
           "visibleCardCount": 4,
+          "cardsDrawn": 6,
+          "cardsOverlappingTheMapBox": 4,
+          "cardGeometry": [
+            {
+              "nodeId": 1,
+              "level": 1,
+              "rect": {
+                "x": -119,
+                "y": 585,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 121,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 103,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 2,
+              "level": 2,
+              "rect": {
+                "x": 241,
+                "y": 401,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 0
+              }
+            },
+            {
+              "nodeId": 3,
+              "level": 2,
+              "rect": {
+                "x": 241,
+                "y": 493,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 39
+              }
+            },
+            {
+              "nodeId": 4,
+              "level": 2,
+              "rect": {
+                "x": 241,
+                "y": 585,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 5,
+              "level": 2,
+              "rect": {
+                "x": 241,
+                "y": 677,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 6,
+              "level": 2,
+              "rect": {
+                "x": 241,
+                "y": 769,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 31
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 0
+              }
+            }
+          ],
           "rootCardVisible": 1,
           "contextCard": "Atelier synthetique · deuxieme-note-de-racine.txt, fichier, ",
           "asideScrollsInside": true,
@@ -3119,6 +4015,118 @@
           "mapViewVisibleHeightPx": 240,
           "mapUsableAtTop": true,
           "visibleCardCount": 4,
+          "cardsDrawn": 6,
+          "cardsOverlappingTheMapBox": 4,
+          "cardGeometry": [
+            {
+              "nodeId": 1,
+              "level": 1,
+              "rect": {
+                "x": -119,
+                "y": 585,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 121,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 103,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 2,
+              "level": 2,
+              "rect": {
+                "x": 241,
+                "y": 401,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 0
+              }
+            },
+            {
+              "nodeId": 3,
+              "level": 2,
+              "rect": {
+                "x": 241,
+                "y": 493,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 39
+              }
+            },
+            {
+              "nodeId": 4,
+              "level": 2,
+              "rect": {
+                "x": 241,
+                "y": 585,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 5,
+              "level": 2,
+              "rect": {
+                "x": 241,
+                "y": 677,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 6,
+              "level": 2,
+              "rect": {
+                "x": 241,
+                "y": 769,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 31
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 0
+              }
+            }
+          ],
           "rootCardVisible": 1,
           "contextCard": "Atelier synthetique · deuxieme-note-de-racine.txt, file, dep",
           "asideScrollsInside": true,
@@ -3134,6 +4142,118 @@
           "mapViewVisibleHeightPx": 240,
           "mapUsableAtTop": true,
           "visibleCardCount": 4,
+          "cardsDrawn": 6,
+          "cardsOverlappingTheMapBox": 4,
+          "cardGeometry": [
+            {
+              "nodeId": 1,
+              "level": 1,
+              "rect": {
+                "x": -119,
+                "y": 585,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 121,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 103,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 2,
+              "level": 2,
+              "rect": {
+                "x": 241,
+                "y": 401,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 0
+              }
+            },
+            {
+              "nodeId": 3,
+              "level": 2,
+              "rect": {
+                "x": 241,
+                "y": 493,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 39
+              }
+            },
+            {
+              "nodeId": 4,
+              "level": 2,
+              "rect": {
+                "x": 241,
+                "y": 585,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 5,
+              "level": 2,
+              "rect": {
+                "x": 241,
+                "y": 677,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 6,
+              "level": 2,
+              "rect": {
+                "x": 241,
+                "y": 769,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 31
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 0
+              }
+            }
+          ],
           "rootCardVisible": 1,
           "contextCard": "Atelier synthetique · deuxieme-note-de-racine.txt, file, dep",
           "asideScrollsInside": true,
@@ -3149,6 +4269,118 @@
           "mapViewVisibleHeightPx": 240,
           "mapUsableAtTop": true,
           "visibleCardCount": 4,
+          "cardsDrawn": 6,
+          "cardsOverlappingTheMapBox": 4,
+          "cardGeometry": [
+            {
+              "nodeId": 1,
+              "level": 1,
+              "rect": {
+                "x": -113,
+                "y": 593,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 127,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 115,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 2,
+              "level": 2,
+              "rect": {
+                "x": 247,
+                "y": 409,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 0
+              }
+            },
+            {
+              "nodeId": 3,
+              "level": 2,
+              "rect": {
+                "x": 247,
+                "y": 501,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 39
+              }
+            },
+            {
+              "nodeId": 4,
+              "level": 2,
+              "rect": {
+                "x": 247,
+                "y": 593,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 5,
+              "level": 2,
+              "rect": {
+                "x": 247,
+                "y": 685,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 6,
+              "level": 2,
+              "rect": {
+                "x": 247,
+                "y": 777,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 23
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 0
+              }
+            }
+          ],
           "rootCardVisible": 1,
           "contextCard": "Atelier synthetique · deuxieme-note-de-racine.txt, fichier, ",
           "asideScrollsInside": true,
@@ -3164,6 +4396,118 @@
           "mapViewVisibleHeightPx": 240,
           "mapUsableAtTop": true,
           "visibleCardCount": 4,
+          "cardsDrawn": 6,
+          "cardsOverlappingTheMapBox": 4,
+          "cardGeometry": [
+            {
+              "nodeId": 1,
+              "level": 1,
+              "rect": {
+                "x": -107,
+                "y": 585,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 133,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 115,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 2,
+              "level": 2,
+              "rect": {
+                "x": 253,
+                "y": 401,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 0
+              }
+            },
+            {
+              "nodeId": 3,
+              "level": 2,
+              "rect": {
+                "x": 253,
+                "y": 493,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 39
+              }
+            },
+            {
+              "nodeId": 4,
+              "level": 2,
+              "rect": {
+                "x": 253,
+                "y": 585,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 5,
+              "level": 2,
+              "rect": {
+                "x": 253,
+                "y": 677,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 6,
+              "level": 2,
+              "rect": {
+                "x": 253,
+                "y": 769,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 31
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 0
+              }
+            }
+          ],
           "rootCardVisible": 1,
           "contextCard": "Atelier synthetique · deuxieme-note-de-racine.txt, fichier, ",
           "asideScrollsInside": true,
@@ -3179,6 +4523,118 @@
           "mapViewVisibleHeightPx": 240,
           "mapUsableAtTop": true,
           "visibleCardCount": 4,
+          "cardsDrawn": 6,
+          "cardsOverlappingTheMapBox": 4,
+          "cardGeometry": [
+            {
+              "nodeId": 1,
+              "level": 1,
+              "rect": {
+                "x": -33,
+                "y": 553,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 207,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 189,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 2,
+              "level": 2,
+              "rect": {
+                "x": 327,
+                "y": 369,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 0
+              }
+            },
+            {
+              "nodeId": 3,
+              "level": 2,
+              "rect": {
+                "x": 327,
+                "y": 461,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 39
+              }
+            },
+            {
+              "nodeId": 4,
+              "level": 2,
+              "rect": {
+                "x": 327,
+                "y": 553,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 5,
+              "level": 2,
+              "rect": {
+                "x": 327,
+                "y": 645,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 6,
+              "level": 2,
+              "rect": {
+                "x": 327,
+                "y": 737,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 31
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 0
+              }
+            }
+          ],
           "rootCardVisible": 1,
           "contextCard": "Atelier synthetique · deuxieme-note-de-racine.txt, fichier, ",
           "asideScrollsInside": true,
@@ -3194,6 +4650,118 @@
           "mapViewVisibleHeightPx": 240,
           "mapUsableAtTop": true,
           "visibleCardCount": 4,
+          "cardsDrawn": 6,
+          "cardsOverlappingTheMapBox": 4,
+          "cardGeometry": [
+            {
+              "nodeId": 1,
+              "level": 1,
+              "rect": {
+                "x": -33,
+                "y": 553,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 207,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 189,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 2,
+              "level": 2,
+              "rect": {
+                "x": 327,
+                "y": 369,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 0
+              }
+            },
+            {
+              "nodeId": 3,
+              "level": 2,
+              "rect": {
+                "x": 327,
+                "y": 461,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 39
+              }
+            },
+            {
+              "nodeId": 4,
+              "level": 2,
+              "rect": {
+                "x": 327,
+                "y": 553,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 5,
+              "level": 2,
+              "rect": {
+                "x": 327,
+                "y": 645,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 6,
+              "level": 2,
+              "rect": {
+                "x": 327,
+                "y": 737,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 31
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 0
+              }
+            }
+          ],
           "rootCardVisible": 1,
           "contextCard": "Atelier synthetique · deuxieme-note-de-racine.txt, fichier, ",
           "asideScrollsInside": true,
@@ -3209,6 +4777,118 @@
           "mapViewVisibleHeightPx": 240,
           "mapUsableAtTop": true,
           "visibleCardCount": 4,
+          "cardsDrawn": 6,
+          "cardsOverlappingTheMapBox": 4,
+          "cardGeometry": [
+            {
+              "nodeId": 1,
+              "level": 1,
+              "rect": {
+                "x": -33,
+                "y": 553,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 207,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 189,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 2,
+              "level": 2,
+              "rect": {
+                "x": 327,
+                "y": 369,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 0
+              }
+            },
+            {
+              "nodeId": 3,
+              "level": 2,
+              "rect": {
+                "x": 327,
+                "y": 461,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 39
+              }
+            },
+            {
+              "nodeId": 4,
+              "level": 2,
+              "rect": {
+                "x": 327,
+                "y": 553,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 5,
+              "level": 2,
+              "rect": {
+                "x": 327,
+                "y": 645,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 6,
+              "level": 2,
+              "rect": {
+                "x": 327,
+                "y": 737,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 31
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 0
+              }
+            }
+          ],
           "rootCardVisible": 1,
           "contextCard": "Atelier synthetique · deuxieme-note-de-racine.txt, file, dep",
           "asideScrollsInside": true,
@@ -3224,6 +4904,118 @@
           "mapViewVisibleHeightPx": 240,
           "mapUsableAtTop": true,
           "visibleCardCount": 4,
+          "cardsDrawn": 6,
+          "cardsOverlappingTheMapBox": 4,
+          "cardGeometry": [
+            {
+              "nodeId": 1,
+              "level": 1,
+              "rect": {
+                "x": -33,
+                "y": 553,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 207,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 189,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 2,
+              "level": 2,
+              "rect": {
+                "x": 327,
+                "y": 369,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 0
+              }
+            },
+            {
+              "nodeId": 3,
+              "level": 2,
+              "rect": {
+                "x": 327,
+                "y": 461,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 39
+              }
+            },
+            {
+              "nodeId": 4,
+              "level": 2,
+              "rect": {
+                "x": 327,
+                "y": 553,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 5,
+              "level": 2,
+              "rect": {
+                "x": 327,
+                "y": 645,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 6,
+              "level": 2,
+              "rect": {
+                "x": 327,
+                "y": 737,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 31
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 0
+              }
+            }
+          ],
           "rootCardVisible": 1,
           "contextCard": "Atelier synthetique · deuxieme-note-de-racine.txt, file, dep",
           "asideScrollsInside": true,
@@ -3239,6 +5031,118 @@
           "mapViewVisibleHeightPx": 240,
           "mapUsableAtTop": true,
           "visibleCardCount": 4,
+          "cardsDrawn": 6,
+          "cardsOverlappingTheMapBox": 4,
+          "cardGeometry": [
+            {
+              "nodeId": 1,
+              "level": 1,
+              "rect": {
+                "x": -27,
+                "y": 561,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 213,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 201,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 2,
+              "level": 2,
+              "rect": {
+                "x": 333,
+                "y": 377,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 0
+              }
+            },
+            {
+              "nodeId": 3,
+              "level": 2,
+              "rect": {
+                "x": 333,
+                "y": 469,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 39
+              }
+            },
+            {
+              "nodeId": 4,
+              "level": 2,
+              "rect": {
+                "x": 333,
+                "y": 561,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 5,
+              "level": 2,
+              "rect": {
+                "x": 333,
+                "y": 653,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 6,
+              "level": 2,
+              "rect": {
+                "x": 333,
+                "y": 745,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 23
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 0
+              }
+            }
+          ],
           "rootCardVisible": 1,
           "contextCard": "Atelier synthetique · deuxieme-note-de-racine.txt, fichier, ",
           "asideScrollsInside": true,
@@ -3254,6 +5158,118 @@
           "mapViewVisibleHeightPx": 240,
           "mapUsableAtTop": true,
           "visibleCardCount": 4,
+          "cardsDrawn": 6,
+          "cardsOverlappingTheMapBox": 4,
+          "cardGeometry": [
+            {
+              "nodeId": 1,
+              "level": 1,
+              "rect": {
+                "x": -21,
+                "y": 553,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 219,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 201,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 2,
+              "level": 2,
+              "rect": {
+                "x": 339,
+                "y": 369,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 0
+              }
+            },
+            {
+              "nodeId": 3,
+              "level": 2,
+              "rect": {
+                "x": 339,
+                "y": 461,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 39
+              }
+            },
+            {
+              "nodeId": 4,
+              "level": 2,
+              "rect": {
+                "x": 339,
+                "y": 553,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 5,
+              "level": 2,
+              "rect": {
+                "x": 339,
+                "y": 645,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 64
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 64
+              }
+            },
+            {
+              "nodeId": 6,
+              "level": 2,
+              "rect": {
+                "x": 339,
+                "y": 737,
+                "w": 240,
+                "h": 64
+              },
+              "insideWindowPx": {
+                "w": 240,
+                "h": 31
+              },
+              "insideMapBoxPx": {
+                "w": 240,
+                "h": 0
+              }
+            }
+          ],
           "rootCardVisible": 1,
           "contextCard": "Atelier synthetique · deuxieme-note-de-racine.txt, fichier, ",
           "asideScrollsInside": true,
@@ -3794,18 +5810,18 @@
           "disabled": false
         },
         {
-          "id": "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+          "id": "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
           "tag": "BUTTON",
           "laidOut": true,
           "onScreen": false,
           "visibleHeightPx": 35,
-          "visibleWidthPx": 480.7,
+          "visibleWidthPx": 479.6,
           "group": null,
           "groupOpen": null,
           "disabled": false
         },
         {
-          "id": "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+          "id": "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
           "tag": "BUTTON",
           "laidOut": true,
           "onScreen": false,
@@ -4964,7 +6980,7 @@
           "viewportEscapers": [],
           "clippedControls": [],
           "controlCount": 59,
-          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522|composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125|composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
           "commands": [
             {
               "id": "language-fr",
@@ -5033,18 +7049,18 @@
               "disabled": false
             },
             {
-              "id": "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": false,
               "visibleHeightPx": 35,
-              "visibleWidthPx": 480.7,
+              "visibleWidthPx": 479.6,
               "group": null,
               "groupOpen": null,
               "disabled": false
             },
             {
-              "id": "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": false,
@@ -5688,6 +7704,116 @@
               "label": "Atelier synthetique · atelier-synthetique, racine, profondeu",
               "visibleArea": 15360
             },
+            "cardGeometry": [
+              {
+                "nodeId": 1,
+                "level": 1,
+                "rect": {
+                  "x": 67,
+                  "y": 431,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 2,
+                "level": 2,
+                "rect": {
+                  "x": 427,
+                  "y": 247,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 141,
+                  "h": 0
+                }
+              },
+              {
+                "nodeId": 3,
+                "level": 2,
+                "rect": {
+                  "x": 427,
+                  "y": 339,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 141,
+                  "h": 61
+                }
+              },
+              {
+                "nodeId": 4,
+                "level": 2,
+                "rect": {
+                  "x": 427,
+                  "y": 431,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 141,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 5,
+                "level": 2,
+                "rect": {
+                  "x": 427,
+                  "y": 523,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 141,
+                  "h": 59
+                }
+              },
+              {
+                "nodeId": 6,
+                "level": 2,
+                "rect": {
+                  "x": 427,
+                  "y": 615,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 25
+                },
+                "insideMapBoxPx": {
+                  "w": 141,
+                  "h": 0
+                }
+              }
+            ],
             "contextCardVisible": {
               "nodeId": 1,
               "kind": "root",
@@ -5977,7 +8103,7 @@
           "viewportEscapers": [],
           "clippedControls": [],
           "controlCount": 59,
-          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522|composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125|composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
           "commands": [
             {
               "id": "language-fr",
@@ -6046,18 +8172,18 @@
               "disabled": false
             },
             {
-              "id": "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": false,
               "visibleHeightPx": 35,
-              "visibleWidthPx": 480.7,
+              "visibleWidthPx": 479.6,
               "group": null,
               "groupOpen": null,
               "disabled": false
             },
             {
-              "id": "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": false,
@@ -6685,6 +8811,116 @@
               }
             ],
             "rootCardVisible": null,
+            "cardGeometry": [
+              {
+                "nodeId": 1,
+                "level": 1,
+                "rect": {
+                  "x": -409,
+                  "y": 409,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 0,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 0,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 2,
+                "level": 2,
+                "rect": {
+                  "x": -49,
+                  "y": 225,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 191,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 173,
+                  "h": 0
+                }
+              },
+              {
+                "nodeId": 3,
+                "level": 2,
+                "rect": {
+                  "x": -49,
+                  "y": 317,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 191,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 173,
+                  "h": 39
+                }
+              },
+              {
+                "nodeId": 4,
+                "level": 2,
+                "rect": {
+                  "x": -49,
+                  "y": 409,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 191,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 173,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 5,
+                "level": 2,
+                "rect": {
+                  "x": -49,
+                  "y": 501,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 191,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 173,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 6,
+                "level": 2,
+                "rect": {
+                  "x": -49,
+                  "y": 593,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 191,
+                  "h": 47
+                },
+                "insideMapBoxPx": {
+                  "w": 173,
+                  "h": 0
+                }
+              }
+            ],
             "contextCardVisible": {
               "nodeId": 3,
               "kind": "file",
@@ -6974,7 +9210,7 @@
           "viewportEscapers": [],
           "clippedControls": [],
           "controlCount": 59,
-          "controlIdsDigest": "Back to the root|Check H1–H5|Check J1–J5, J10|Explore the selection|Frame the selection|Measure in WebView2|Select the root|Zoom in|Zoom out|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522|composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "controlIdsDigest": "Back to the root|Check H1–H5|Check J1–J5, J10|Explore the selection|Frame the selection|Measure in WebView2|Select the root|Zoom in|Zoom out|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125|composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
           "commands": [
             {
               "id": "language-fr",
@@ -7043,18 +9279,18 @@
               "disabled": false
             },
             {
-              "id": "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": false,
               "visibleHeightPx": 35,
-              "visibleWidthPx": 490.4,
+              "visibleWidthPx": 489.3,
               "group": null,
               "groupOpen": null,
               "disabled": false
             },
             {
-              "id": "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": false,
@@ -7684,6 +9920,116 @@
               }
             ],
             "rootCardVisible": null,
+            "cardGeometry": [
+              {
+                "nodeId": 1,
+                "level": 1,
+                "rect": {
+                  "x": -409,
+                  "y": 409,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 0,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 0,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 2,
+                "level": 2,
+                "rect": {
+                  "x": -49,
+                  "y": 225,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 191,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 173,
+                  "h": 0
+                }
+              },
+              {
+                "nodeId": 3,
+                "level": 2,
+                "rect": {
+                  "x": -49,
+                  "y": 317,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 191,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 173,
+                  "h": 39
+                }
+              },
+              {
+                "nodeId": 4,
+                "level": 2,
+                "rect": {
+                  "x": -49,
+                  "y": 409,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 191,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 173,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 5,
+                "level": 2,
+                "rect": {
+                  "x": -49,
+                  "y": 501,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 191,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 173,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 6,
+                "level": 2,
+                "rect": {
+                  "x": -49,
+                  "y": 593,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 191,
+                  "h": 47
+                },
+                "insideMapBoxPx": {
+                  "w": 173,
+                  "h": 0
+                }
+              }
+            ],
             "contextCardVisible": {
               "nodeId": 3,
               "kind": "file",
@@ -7973,7 +10319,7 @@
           "viewportEscapers": [],
           "clippedControls": [],
           "controlCount": 59,
-          "controlIdsDigest": "Back to the root|Check H1–H5|Check J1–J5, J10|Explore the selection|Frame the selection|Measure in WebView2|Select the root|Zoom in|Zoom out|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522|composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "controlIdsDigest": "Back to the root|Check H1–H5|Check J1–J5, J10|Explore the selection|Frame the selection|Measure in WebView2|Select the root|Zoom in|Zoom out|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125|composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
           "commands": [
             {
               "id": "language-fr",
@@ -8042,18 +10388,18 @@
               "disabled": false
             },
             {
-              "id": "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": false,
               "visibleHeightPx": 35,
-              "visibleWidthPx": 490.4,
+              "visibleWidthPx": 489.3,
               "group": null,
               "groupOpen": null,
               "disabled": false
             },
             {
-              "id": "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": false,
@@ -8686,6 +11032,116 @@
               }
             ],
             "rootCardVisible": null,
+            "cardGeometry": [
+              {
+                "nodeId": 1,
+                "level": 1,
+                "rect": {
+                  "x": -409,
+                  "y": 409,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 0,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 0,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 2,
+                "level": 2,
+                "rect": {
+                  "x": -49,
+                  "y": 225,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 191,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 173,
+                  "h": 0
+                }
+              },
+              {
+                "nodeId": 3,
+                "level": 2,
+                "rect": {
+                  "x": -49,
+                  "y": 317,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 191,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 173,
+                  "h": 39
+                }
+              },
+              {
+                "nodeId": 4,
+                "level": 2,
+                "rect": {
+                  "x": -49,
+                  "y": 409,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 191,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 173,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 5,
+                "level": 2,
+                "rect": {
+                  "x": -49,
+                  "y": 501,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 191,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 173,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 6,
+                "level": 2,
+                "rect": {
+                  "x": -49,
+                  "y": 593,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 191,
+                  "h": 47
+                },
+                "insideMapBoxPx": {
+                  "w": 173,
+                  "h": 0
+                }
+              }
+            ],
             "contextCardVisible": {
               "nodeId": 3,
               "kind": "file",
@@ -8975,7 +11431,7 @@
           "viewportEscapers": [],
           "clippedControls": [],
           "controlCount": 59,
-          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522|composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125|composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
           "commands": [
             {
               "id": "language-fr",
@@ -9044,18 +11500,18 @@
               "disabled": false
             },
             {
-              "id": "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": true,
               "visibleHeightPx": 27,
-              "visibleWidthPx": 472.7,
+              "visibleWidthPx": 471.6,
               "group": null,
               "groupOpen": null,
               "disabled": false
             },
             {
-              "id": "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": true,
@@ -9637,8 +12093,8 @@
             "Zoom arrière",
             "Zoom avant",
             "brain-identity-open",
-            "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
-            "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+            "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
+            "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
             "density-comfortable",
             "density-compact",
             "fit-composition",
@@ -9688,6 +12144,116 @@
               }
             ],
             "rootCardVisible": null,
+            "cardGeometry": [
+              {
+                "nodeId": 1,
+                "level": 1,
+                "rect": {
+                  "x": -415,
+                  "y": 417,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 0,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 0,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 2,
+                "level": 2,
+                "rect": {
+                  "x": -55,
+                  "y": 233,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 185,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 173,
+                  "h": 0
+                }
+              },
+              {
+                "nodeId": 3,
+                "level": 2,
+                "rect": {
+                  "x": -55,
+                  "y": 325,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 185,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 173,
+                  "h": 39
+                }
+              },
+              {
+                "nodeId": 4,
+                "level": 2,
+                "rect": {
+                  "x": -55,
+                  "y": 417,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 185,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 173,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 5,
+                "level": 2,
+                "rect": {
+                  "x": -55,
+                  "y": 509,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 185,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 173,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 6,
+                "level": 2,
+                "rect": {
+                  "x": -55,
+                  "y": 601,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 185,
+                  "h": 39
+                },
+                "insideMapBoxPx": {
+                  "w": 173,
+                  "h": 0
+                }
+              }
+            ],
             "contextCardVisible": {
               "nodeId": 3,
               "kind": "file",
@@ -9977,7 +12543,7 @@
           "viewportEscapers": [],
           "clippedControls": [],
           "controlCount": 59,
-          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522|composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125|composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
           "commands": [
             {
               "id": "language-fr",
@@ -10046,18 +12612,18 @@
               "disabled": false
             },
             {
-              "id": "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": false,
               "visibleHeightPx": 35,
-              "visibleWidthPx": 480.7,
+              "visibleWidthPx": 479.6,
               "group": null,
               "groupOpen": null,
               "disabled": false
             },
             {
-              "id": "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": false,
@@ -10688,6 +13254,116 @@
               }
             ],
             "rootCardVisible": null,
+            "cardGeometry": [
+              {
+                "nodeId": 1,
+                "level": 1,
+                "rect": {
+                  "x": -409,
+                  "y": 409,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 0,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 0,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 2,
+                "level": 2,
+                "rect": {
+                  "x": -49,
+                  "y": 225,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 191,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 173,
+                  "h": 0
+                }
+              },
+              {
+                "nodeId": 3,
+                "level": 2,
+                "rect": {
+                  "x": -49,
+                  "y": 317,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 191,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 173,
+                  "h": 39
+                }
+              },
+              {
+                "nodeId": 4,
+                "level": 2,
+                "rect": {
+                  "x": -49,
+                  "y": 409,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 191,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 173,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 5,
+                "level": 2,
+                "rect": {
+                  "x": -49,
+                  "y": 501,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 191,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 173,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 6,
+                "level": 2,
+                "rect": {
+                  "x": -49,
+                  "y": 593,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 191,
+                  "h": 47
+                },
+                "insideMapBoxPx": {
+                  "w": 173,
+                  "h": 0
+                }
+              }
+            ],
             "contextCardVisible": {
               "nodeId": 3,
               "kind": "file",
@@ -10977,7 +13653,7 @@
           "viewportEscapers": [],
           "clippedControls": [],
           "controlCount": 59,
-          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522|composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125|composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
           "commands": [
             {
               "id": "language-fr",
@@ -11046,18 +13722,18 @@
               "disabled": false
             },
             {
-              "id": "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": true,
               "visibleHeightPx": 35,
-              "visibleWidthPx": 480.7,
+              "visibleWidthPx": 479.6,
               "group": null,
               "groupOpen": null,
               "disabled": false
             },
             {
-              "id": "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": true,
@@ -11640,8 +14316,8 @@
             "Zoom avant",
             "brain-identity-open",
             "composition-add-trigger",
-            "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
-            "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+            "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
+            "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
             "density-comfortable",
             "density-compact",
             "details-panel-toggle",
@@ -11708,6 +14384,116 @@
               "label": "Atelier synthetique · atelier-synthetique, racine, profondeu",
               "visibleArea": 7744
             },
+            "cardGeometry": [
+              {
+                "nodeId": 1,
+                "level": 1,
+                "rect": {
+                  "x": -119,
+                  "y": 585,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 121,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 103,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 2,
+                "level": 2,
+                "rect": {
+                  "x": 241,
+                  "y": 401,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 0
+                }
+              },
+              {
+                "nodeId": 3,
+                "level": 2,
+                "rect": {
+                  "x": 241,
+                  "y": 493,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 39
+                }
+              },
+              {
+                "nodeId": 4,
+                "level": 2,
+                "rect": {
+                  "x": 241,
+                  "y": 585,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 5,
+                "level": 2,
+                "rect": {
+                  "x": 241,
+                  "y": 677,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 6,
+                "level": 2,
+                "rect": {
+                  "x": 241,
+                  "y": 769,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 31
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 0
+                }
+              }
+            ],
             "contextCardVisible": {
               "nodeId": 3,
               "kind": "file",
@@ -11997,7 +14783,7 @@
           "viewportEscapers": [],
           "clippedControls": [],
           "controlCount": 59,
-          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522|composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125|composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
           "commands": [
             {
               "id": "language-fr",
@@ -12066,18 +14852,18 @@
               "disabled": false
             },
             {
-              "id": "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": true,
               "visibleHeightPx": 35,
-              "visibleWidthPx": 480.7,
+              "visibleWidthPx": 479.6,
               "group": null,
               "groupOpen": null,
               "disabled": false
             },
             {
-              "id": "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": true,
@@ -12660,8 +15446,8 @@
             "Zoom avant",
             "brain-identity-open",
             "composition-add-trigger",
-            "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
-            "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+            "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
+            "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
             "density-comfortable",
             "density-compact",
             "fit-composition",
@@ -12724,6 +15510,116 @@
               "label": "Atelier synthetique · atelier-synthetique, racine, profondeu",
               "visibleArea": 7744
             },
+            "cardGeometry": [
+              {
+                "nodeId": 1,
+                "level": 1,
+                "rect": {
+                  "x": -119,
+                  "y": 585,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 121,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 103,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 2,
+                "level": 2,
+                "rect": {
+                  "x": 241,
+                  "y": 401,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 0
+                }
+              },
+              {
+                "nodeId": 3,
+                "level": 2,
+                "rect": {
+                  "x": 241,
+                  "y": 493,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 39
+                }
+              },
+              {
+                "nodeId": 4,
+                "level": 2,
+                "rect": {
+                  "x": 241,
+                  "y": 585,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 5,
+                "level": 2,
+                "rect": {
+                  "x": 241,
+                  "y": 677,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 6,
+                "level": 2,
+                "rect": {
+                  "x": 241,
+                  "y": 769,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 31
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 0
+                }
+              }
+            ],
             "contextCardVisible": {
               "nodeId": 3,
               "kind": "file",
@@ -13013,7 +15909,7 @@
           "viewportEscapers": [],
           "clippedControls": [],
           "controlCount": 59,
-          "controlIdsDigest": "Back to the root|Check H1–H5|Check J1–J5, J10|Explore the selection|Frame the selection|Measure in WebView2|Select the root|Zoom in|Zoom out|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522|composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "controlIdsDigest": "Back to the root|Check H1–H5|Check J1–J5, J10|Explore the selection|Frame the selection|Measure in WebView2|Select the root|Zoom in|Zoom out|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125|composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
           "commands": [
             {
               "id": "language-fr",
@@ -13082,18 +15978,18 @@
               "disabled": false
             },
             {
-              "id": "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": true,
               "visibleHeightPx": 35,
-              "visibleWidthPx": 490.4,
+              "visibleWidthPx": 489.3,
               "group": null,
               "groupOpen": null,
               "disabled": false
             },
             {
-              "id": "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": true,
@@ -13676,8 +16572,8 @@
             "Zoom out",
             "brain-identity-open",
             "composition-add-trigger",
-            "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
-            "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+            "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
+            "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
             "density-comfortable",
             "density-compact",
             "filter-state-ALL",
@@ -13743,6 +16639,116 @@
               "label": "Atelier synthetique · atelier-synthetique, root, depth 0, 5 ",
               "visibleArea": 7744
             },
+            "cardGeometry": [
+              {
+                "nodeId": 1,
+                "level": 1,
+                "rect": {
+                  "x": -119,
+                  "y": 585,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 121,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 103,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 2,
+                "level": 2,
+                "rect": {
+                  "x": 241,
+                  "y": 401,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 0
+                }
+              },
+              {
+                "nodeId": 3,
+                "level": 2,
+                "rect": {
+                  "x": 241,
+                  "y": 493,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 39
+                }
+              },
+              {
+                "nodeId": 4,
+                "level": 2,
+                "rect": {
+                  "x": 241,
+                  "y": 585,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 5,
+                "level": 2,
+                "rect": {
+                  "x": 241,
+                  "y": 677,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 6,
+                "level": 2,
+                "rect": {
+                  "x": 241,
+                  "y": 769,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 31
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 0
+                }
+              }
+            ],
             "contextCardVisible": {
               "nodeId": 3,
               "kind": "file",
@@ -14032,7 +17038,7 @@
           "viewportEscapers": [],
           "clippedControls": [],
           "controlCount": 59,
-          "controlIdsDigest": "Back to the root|Check H1–H5|Check J1–J5, J10|Explore the selection|Frame the selection|Measure in WebView2|Select the root|Zoom in|Zoom out|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522|composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "controlIdsDigest": "Back to the root|Check H1–H5|Check J1–J5, J10|Explore the selection|Frame the selection|Measure in WebView2|Select the root|Zoom in|Zoom out|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125|composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
           "commands": [
             {
               "id": "language-fr",
@@ -14101,18 +17107,18 @@
               "disabled": false
             },
             {
-              "id": "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": true,
               "visibleHeightPx": 35,
-              "visibleWidthPx": 490.4,
+              "visibleWidthPx": 489.3,
               "group": null,
               "groupOpen": null,
               "disabled": false
             },
             {
-              "id": "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": true,
@@ -14695,8 +17701,8 @@
             "Zoom out",
             "brain-identity-open",
             "composition-add-trigger",
-            "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
-            "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+            "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
+            "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
             "density-comfortable",
             "density-compact",
             "details-panel-toggle",
@@ -14766,6 +17772,116 @@
               "label": "Atelier synthetique · atelier-synthetique, root, depth 0, 5 ",
               "visibleArea": 7744
             },
+            "cardGeometry": [
+              {
+                "nodeId": 1,
+                "level": 1,
+                "rect": {
+                  "x": -119,
+                  "y": 585,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 121,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 103,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 2,
+                "level": 2,
+                "rect": {
+                  "x": 241,
+                  "y": 401,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 0
+                }
+              },
+              {
+                "nodeId": 3,
+                "level": 2,
+                "rect": {
+                  "x": 241,
+                  "y": 493,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 39
+                }
+              },
+              {
+                "nodeId": 4,
+                "level": 2,
+                "rect": {
+                  "x": 241,
+                  "y": 585,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 5,
+                "level": 2,
+                "rect": {
+                  "x": 241,
+                  "y": 677,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 6,
+                "level": 2,
+                "rect": {
+                  "x": 241,
+                  "y": 769,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 31
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 0
+                }
+              }
+            ],
             "contextCardVisible": {
               "nodeId": 3,
               "kind": "file",
@@ -15055,7 +18171,7 @@
           "viewportEscapers": [],
           "clippedControls": [],
           "controlCount": 59,
-          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522|composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125|composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
           "commands": [
             {
               "id": "language-fr",
@@ -15124,18 +18240,18 @@
               "disabled": false
             },
             {
-              "id": "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": true,
               "visibleHeightPx": 27,
-              "visibleWidthPx": 472.7,
+              "visibleWidthPx": 471.6,
               "group": null,
               "groupOpen": null,
               "disabled": false
             },
             {
-              "id": "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": true,
@@ -15718,8 +18834,8 @@
             "Zoom avant",
             "brain-identity-open",
             "composition-add-trigger",
-            "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
-            "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+            "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
+            "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
             "density-comfortable",
             "density-compact",
             "filter-state-ALL",
@@ -15785,6 +18901,116 @@
               "label": "Atelier synthetique · atelier-synthetique, racine, profondeu",
               "visibleArea": 8128
             },
+            "cardGeometry": [
+              {
+                "nodeId": 1,
+                "level": 1,
+                "rect": {
+                  "x": -113,
+                  "y": 593,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 127,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 115,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 2,
+                "level": 2,
+                "rect": {
+                  "x": 247,
+                  "y": 409,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 0
+                }
+              },
+              {
+                "nodeId": 3,
+                "level": 2,
+                "rect": {
+                  "x": 247,
+                  "y": 501,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 39
+                }
+              },
+              {
+                "nodeId": 4,
+                "level": 2,
+                "rect": {
+                  "x": 247,
+                  "y": 593,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 5,
+                "level": 2,
+                "rect": {
+                  "x": 247,
+                  "y": 685,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 6,
+                "level": 2,
+                "rect": {
+                  "x": 247,
+                  "y": 777,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 23
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 0
+                }
+              }
+            ],
             "contextCardVisible": {
               "nodeId": 3,
               "kind": "file",
@@ -16074,7 +19300,7 @@
           "viewportEscapers": [],
           "clippedControls": [],
           "controlCount": 59,
-          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522|composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125|composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
           "commands": [
             {
               "id": "language-fr",
@@ -16143,18 +19369,18 @@
               "disabled": false
             },
             {
-              "id": "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": true,
               "visibleHeightPx": 35,
-              "visibleWidthPx": 480.7,
+              "visibleWidthPx": 479.6,
               "group": null,
               "groupOpen": null,
               "disabled": false
             },
             {
-              "id": "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": true,
@@ -16737,8 +19963,8 @@
             "Zoom avant",
             "brain-identity-open",
             "composition-add-trigger",
-            "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
-            "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+            "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
+            "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
             "density-comfortable",
             "density-compact",
             "details-panel-toggle",
@@ -16805,6 +20031,116 @@
               "label": "Atelier synthetique · atelier-synthetique, racine, profondeu",
               "visibleArea": 8512
             },
+            "cardGeometry": [
+              {
+                "nodeId": 1,
+                "level": 1,
+                "rect": {
+                  "x": -107,
+                  "y": 585,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 133,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 115,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 2,
+                "level": 2,
+                "rect": {
+                  "x": 253,
+                  "y": 401,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 0
+                }
+              },
+              {
+                "nodeId": 3,
+                "level": 2,
+                "rect": {
+                  "x": 253,
+                  "y": 493,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 39
+                }
+              },
+              {
+                "nodeId": 4,
+                "level": 2,
+                "rect": {
+                  "x": 253,
+                  "y": 585,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 5,
+                "level": 2,
+                "rect": {
+                  "x": 253,
+                  "y": 677,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 6,
+                "level": 2,
+                "rect": {
+                  "x": 253,
+                  "y": 769,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 31
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 0
+                }
+              }
+            ],
             "contextCardVisible": {
               "nodeId": 3,
               "kind": "file",
@@ -17094,7 +20430,7 @@
           "viewportEscapers": [],
           "clippedControls": [],
           "controlCount": 59,
-          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522|composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125|composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
           "commands": [
             {
               "id": "language-fr",
@@ -17163,18 +20499,18 @@
               "disabled": false
             },
             {
-              "id": "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": true,
               "visibleHeightPx": 35,
-              "visibleWidthPx": 480.7,
+              "visibleWidthPx": 479.6,
               "group": null,
               "groupOpen": null,
               "disabled": false
             },
             {
-              "id": "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": true,
@@ -17757,8 +21093,8 @@
             "Zoom avant",
             "brain-identity-open",
             "composition-add-trigger",
-            "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
-            "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+            "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
+            "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
             "density-comfortable",
             "density-compact",
             "details-panel-toggle",
@@ -17824,6 +21160,116 @@
               "label": "Atelier synthetique · atelier-synthetique, racine, profondeu",
               "visibleArea": 13248
             },
+            "cardGeometry": [
+              {
+                "nodeId": 1,
+                "level": 1,
+                "rect": {
+                  "x": -33,
+                  "y": 553,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 207,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 189,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 2,
+                "level": 2,
+                "rect": {
+                  "x": 327,
+                  "y": 369,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 0
+                }
+              },
+              {
+                "nodeId": 3,
+                "level": 2,
+                "rect": {
+                  "x": 327,
+                  "y": 461,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 39
+                }
+              },
+              {
+                "nodeId": 4,
+                "level": 2,
+                "rect": {
+                  "x": 327,
+                  "y": 553,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 5,
+                "level": 2,
+                "rect": {
+                  "x": 327,
+                  "y": 645,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 6,
+                "level": 2,
+                "rect": {
+                  "x": 327,
+                  "y": 737,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 31
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 0
+                }
+              }
+            ],
             "contextCardVisible": {
               "nodeId": 3,
               "kind": "file",
@@ -18113,7 +21559,7 @@
           "viewportEscapers": [],
           "clippedControls": [],
           "controlCount": 59,
-          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522|composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125|composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
           "commands": [
             {
               "id": "language-fr",
@@ -18182,18 +21628,18 @@
               "disabled": false
             },
             {
-              "id": "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": true,
               "visibleHeightPx": 35,
-              "visibleWidthPx": 480.7,
+              "visibleWidthPx": 479.6,
               "group": null,
               "groupOpen": null,
               "disabled": false
             },
             {
-              "id": "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": true,
@@ -18776,8 +22222,8 @@
             "Zoom avant",
             "brain-identity-open",
             "composition-add-trigger",
-            "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
-            "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+            "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
+            "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
             "density-comfortable",
             "density-compact",
             "fit-composition",
@@ -18840,6 +22286,116 @@
               "label": "Atelier synthetique · atelier-synthetique, racine, profondeu",
               "visibleArea": 13248
             },
+            "cardGeometry": [
+              {
+                "nodeId": 1,
+                "level": 1,
+                "rect": {
+                  "x": -33,
+                  "y": 553,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 207,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 189,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 2,
+                "level": 2,
+                "rect": {
+                  "x": 327,
+                  "y": 369,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 0
+                }
+              },
+              {
+                "nodeId": 3,
+                "level": 2,
+                "rect": {
+                  "x": 327,
+                  "y": 461,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 39
+                }
+              },
+              {
+                "nodeId": 4,
+                "level": 2,
+                "rect": {
+                  "x": 327,
+                  "y": 553,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 5,
+                "level": 2,
+                "rect": {
+                  "x": 327,
+                  "y": 645,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 6,
+                "level": 2,
+                "rect": {
+                  "x": 327,
+                  "y": 737,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 31
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 0
+                }
+              }
+            ],
             "contextCardVisible": {
               "nodeId": 3,
               "kind": "file",
@@ -19129,7 +22685,7 @@
           "viewportEscapers": [],
           "clippedControls": [],
           "controlCount": 59,
-          "controlIdsDigest": "Back to the root|Check H1–H5|Check J1–J5, J10|Explore the selection|Frame the selection|Measure in WebView2|Select the root|Zoom in|Zoom out|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522|composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "controlIdsDigest": "Back to the root|Check H1–H5|Check J1–J5, J10|Explore the selection|Frame the selection|Measure in WebView2|Select the root|Zoom in|Zoom out|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125|composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
           "commands": [
             {
               "id": "language-fr",
@@ -19198,18 +22754,18 @@
               "disabled": false
             },
             {
-              "id": "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": true,
               "visibleHeightPx": 35,
-              "visibleWidthPx": 490.4,
+              "visibleWidthPx": 489.3,
               "group": null,
               "groupOpen": null,
               "disabled": false
             },
             {
-              "id": "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": true,
@@ -19792,8 +23348,8 @@
             "Zoom out",
             "brain-identity-open",
             "composition-add-trigger",
-            "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
-            "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+            "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
+            "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
             "density-comfortable",
             "density-compact",
             "filter-state-ALL",
@@ -19859,6 +23415,116 @@
               "label": "Atelier synthetique · atelier-synthetique, root, depth 0, 5 ",
               "visibleArea": 13248
             },
+            "cardGeometry": [
+              {
+                "nodeId": 1,
+                "level": 1,
+                "rect": {
+                  "x": -33,
+                  "y": 553,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 207,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 189,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 2,
+                "level": 2,
+                "rect": {
+                  "x": 327,
+                  "y": 369,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 0
+                }
+              },
+              {
+                "nodeId": 3,
+                "level": 2,
+                "rect": {
+                  "x": 327,
+                  "y": 461,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 39
+                }
+              },
+              {
+                "nodeId": 4,
+                "level": 2,
+                "rect": {
+                  "x": 327,
+                  "y": 553,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 5,
+                "level": 2,
+                "rect": {
+                  "x": 327,
+                  "y": 645,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 6,
+                "level": 2,
+                "rect": {
+                  "x": 327,
+                  "y": 737,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 31
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 0
+                }
+              }
+            ],
             "contextCardVisible": {
               "nodeId": 3,
               "kind": "file",
@@ -20148,7 +23814,7 @@
           "viewportEscapers": [],
           "clippedControls": [],
           "controlCount": 59,
-          "controlIdsDigest": "Back to the root|Check H1–H5|Check J1–J5, J10|Explore the selection|Frame the selection|Measure in WebView2|Select the root|Zoom in|Zoom out|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522|composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "controlIdsDigest": "Back to the root|Check H1–H5|Check J1–J5, J10|Explore the selection|Frame the selection|Measure in WebView2|Select the root|Zoom in|Zoom out|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125|composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
           "commands": [
             {
               "id": "language-fr",
@@ -20217,18 +23883,18 @@
               "disabled": false
             },
             {
-              "id": "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": true,
               "visibleHeightPx": 35,
-              "visibleWidthPx": 490.4,
+              "visibleWidthPx": 489.3,
               "group": null,
               "groupOpen": null,
               "disabled": false
             },
             {
-              "id": "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": true,
@@ -20811,8 +24477,8 @@
             "Zoom out",
             "brain-identity-open",
             "composition-add-trigger",
-            "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
-            "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+            "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
+            "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
             "density-comfortable",
             "density-compact",
             "details-panel-toggle",
@@ -20881,6 +24547,116 @@
               "label": "Atelier synthetique · atelier-synthetique, root, depth 0, 5 ",
               "visibleArea": 13248
             },
+            "cardGeometry": [
+              {
+                "nodeId": 1,
+                "level": 1,
+                "rect": {
+                  "x": -33,
+                  "y": 553,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 207,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 189,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 2,
+                "level": 2,
+                "rect": {
+                  "x": 327,
+                  "y": 369,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 0
+                }
+              },
+              {
+                "nodeId": 3,
+                "level": 2,
+                "rect": {
+                  "x": 327,
+                  "y": 461,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 39
+                }
+              },
+              {
+                "nodeId": 4,
+                "level": 2,
+                "rect": {
+                  "x": 327,
+                  "y": 553,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 5,
+                "level": 2,
+                "rect": {
+                  "x": 327,
+                  "y": 645,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 6,
+                "level": 2,
+                "rect": {
+                  "x": 327,
+                  "y": 737,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 31
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 0
+                }
+              }
+            ],
             "contextCardVisible": {
               "nodeId": 3,
               "kind": "file",
@@ -21170,7 +24946,7 @@
           "viewportEscapers": [],
           "clippedControls": [],
           "controlCount": 59,
-          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522|composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125|composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
           "commands": [
             {
               "id": "language-fr",
@@ -21239,18 +25015,18 @@
               "disabled": false
             },
             {
-              "id": "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": true,
               "visibleHeightPx": 27,
-              "visibleWidthPx": 472.7,
+              "visibleWidthPx": 471.6,
               "group": null,
               "groupOpen": null,
               "disabled": false
             },
             {
-              "id": "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": true,
@@ -21833,8 +25609,8 @@
             "Zoom avant",
             "brain-identity-open",
             "composition-add-trigger",
-            "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
-            "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+            "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
+            "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
             "density-comfortable",
             "density-compact",
             "filter-state-ALL",
@@ -21900,6 +25676,116 @@
               "label": "Atelier synthetique · atelier-synthetique, racine, profondeu",
               "visibleArea": 13632
             },
+            "cardGeometry": [
+              {
+                "nodeId": 1,
+                "level": 1,
+                "rect": {
+                  "x": -27,
+                  "y": 561,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 213,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 201,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 2,
+                "level": 2,
+                "rect": {
+                  "x": 333,
+                  "y": 377,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 0
+                }
+              },
+              {
+                "nodeId": 3,
+                "level": 2,
+                "rect": {
+                  "x": 333,
+                  "y": 469,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 39
+                }
+              },
+              {
+                "nodeId": 4,
+                "level": 2,
+                "rect": {
+                  "x": 333,
+                  "y": 561,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 5,
+                "level": 2,
+                "rect": {
+                  "x": 333,
+                  "y": 653,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 6,
+                "level": 2,
+                "rect": {
+                  "x": 333,
+                  "y": 745,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 23
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 0
+                }
+              }
+            ],
             "contextCardVisible": {
               "nodeId": 3,
               "kind": "file",
@@ -22189,7 +26075,7 @@
           "viewportEscapers": [],
           "clippedControls": [],
           "controlCount": 59,
-          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522|composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125|composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
           "commands": [
             {
               "id": "language-fr",
@@ -22258,18 +26144,18 @@
               "disabled": false
             },
             {
-              "id": "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": true,
               "visibleHeightPx": 35,
-              "visibleWidthPx": 480.7,
+              "visibleWidthPx": 479.6,
               "group": null,
               "groupOpen": null,
               "disabled": false
             },
             {
-              "id": "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": true,
@@ -22852,8 +26738,8 @@
             "Zoom avant",
             "brain-identity-open",
             "composition-add-trigger",
-            "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
-            "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+            "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
+            "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
             "density-comfortable",
             "density-compact",
             "details-panel-toggle",
@@ -22919,6 +26805,116 @@
               "label": "Atelier synthetique · atelier-synthetique, racine, profondeu",
               "visibleArea": 14016
             },
+            "cardGeometry": [
+              {
+                "nodeId": 1,
+                "level": 1,
+                "rect": {
+                  "x": -21,
+                  "y": 553,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 219,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 201,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 2,
+                "level": 2,
+                "rect": {
+                  "x": 339,
+                  "y": 369,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 0
+                }
+              },
+              {
+                "nodeId": 3,
+                "level": 2,
+                "rect": {
+                  "x": 339,
+                  "y": 461,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 39
+                }
+              },
+              {
+                "nodeId": 4,
+                "level": 2,
+                "rect": {
+                  "x": 339,
+                  "y": 553,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 5,
+                "level": 2,
+                "rect": {
+                  "x": 339,
+                  "y": 645,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 64
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 64
+                }
+              },
+              {
+                "nodeId": 6,
+                "level": 2,
+                "rect": {
+                  "x": 339,
+                  "y": 737,
+                  "w": 240,
+                  "h": 64
+                },
+                "insideWindowPx": {
+                  "w": 240,
+                  "h": 31
+                },
+                "insideMapBoxPx": {
+                  "w": 240,
+                  "h": 0
+                }
+              }
+            ],
             "contextCardVisible": {
               "nodeId": 3,
               "kind": "file",
@@ -23155,48 +27151,48 @@
       {
         "key": "960x640/fr-light",
         "file": "TASK-0060-before-960x640-fr-light.png",
-        "bytes": 64945,
-        "sha256": "13611f021646f3046349f204d15f266cb42bbe825705d24a1d62ee0cd0b06752",
+        "bytes": 64935,
+        "sha256": "6afecf28c9f48425c1638c822ec21f90b89708c8c0d0ee2cbd2cf7fc5363dcb5",
         "scrollYAtCapture": 0
       },
       {
         "key": "960x640/fr-dark-legend",
         "file": "TASK-0060-before-960x640-fr-dark-legend.png",
-        "bytes": 64330,
-        "sha256": "97f8322c8f33ff879aa428d1bf57e31d2d1550202cef56f233e0dbb047d832f0",
+        "bytes": 64313,
+        "sha256": "dfc05c8c6b6007e2172e231e71a386824f040816c517ec39bcc29db6d01c7467",
         "scrollYAtCapture": 0
       },
       {
         "key": "960x640/en-light-legend",
         "file": "TASK-0060-before-960x640-en-light-legend.png",
-        "bytes": 62009,
-        "sha256": "8fa497f333776f38f8b37794ac7e8d23980260cf0db7a0972c318c6edecbbb29",
+        "bytes": 61996,
+        "sha256": "6b4ed72a4fdf9a642126b8bbaff8a8a07f2b789e3c5179e12a49247092194742",
         "scrollYAtCapture": 0
       },
       {
         "key": "960x640/fr-light-compact-legend",
         "file": "TASK-0060-before-960x640-fr-light-compact-legend.png",
-        "bytes": 71291,
-        "sha256": "0effc0db8bcb2f04b323409835ed160afb14b18b435a6642c8e53cf9e52c71d6",
+        "bytes": 71293,
+        "sha256": "3b18f50ddd8ebe8b18e048e4de147ad9848cef909152165dd1b7d33147eefe58",
         "scrollYAtCapture": 0
       },
       {
         "key": "1280x800/fr-light",
         "file": "TASK-0060-before-1280x800-fr-light.png",
-        "bytes": 82082,
-        "sha256": "e018d5ebab56503c691f1457706df4b5feae09ea9fa5e1529445852d921e12e6",
+        "bytes": 82136,
+        "sha256": "dfac724f4bfe49ff9677984decfb5c1c52abe9c9990c5cd9fa4b84044d66613d",
         "scrollYAtCapture": 0
       },
       {
         "key": "1366x768/fr-light",
         "file": "TASK-0060-before-1366x768-fr-light.png",
-        "bytes": 80667,
-        "sha256": "6e852dc66723b7273c11c23cdb9031b9e828801a9818e78408ff7509bc73397e",
+        "bytes": 80714,
+        "sha256": "01a2820d9bb5c0e3e3c7e14ef325b6f0ef24247648be5639b3cd7016feaf04f0",
         "scrollYAtCapture": 0
       }
     ],
     "fatalConsoleErrors": 0,
-    "layoutDigest": "f280cf8327ec6540e97e57901d8fe10b6f67f24bab867f54b63b6e4bae68f6fa"
+    "layoutDigest": "d12d5814c153ef841ec7e7abb1669992a434e122aae34c2138ee680a768e0d70"
   },
   "pass2": {
     "task": "TASK-0060",
@@ -23530,6 +27526,64 @@
           "mapViewVisibleHeightPx": 240,
           "mapUsableAtTop": true,
           "visibleCardCount": 1,
+          "cardsDrawn": 3,
+          "cardsOverlappingTheMapBox": 2,
+          "cardGeometry": [
+            {
+              "nodeId": 1,
+              "level": 1,
+              "rect": {
+                "x": -905.6,
+                "y": 672.1,
+                "w": 464.3,
+                "h": 123.8
+              },
+              "insideWindowPx": {
+                "w": 0,
+                "h": 123.8
+              },
+              "insideMapBoxPx": {
+                "w": 0,
+                "h": 93.9
+              }
+            },
+            {
+              "nodeId": 2,
+              "level": 2,
+              "rect": {
+                "x": -209.2,
+                "y": 538.7,
+                "w": 464.3,
+                "h": 123.8
+              },
+              "insideWindowPx": {
+                "w": 255.1,
+                "h": 123.8
+              },
+              "insideMapBoxPx": {
+                "w": 243.1,
+                "h": 123.8
+              }
+            },
+            {
+              "nodeId": 126,
+              "level": 3,
+              "rect": {
+                "x": 487.3,
+                "y": 449.7,
+                "w": 464.3,
+                "h": 123.8
+              },
+              "insideWindowPx": {
+                "w": 464.3,
+                "h": 123.8
+              },
+              "insideMapBoxPx": {
+                "w": 406.7,
+                "h": 47.5
+              }
+            }
+          ],
           "rootCardVisible": null,
           "contextCard": "Atelier synthetique · archives, folder, depth 1, 120 direct ",
           "asideScrollsInside": true,
@@ -23617,7 +27671,7 @@
           "viewportEscapers": [],
           "clippedControls": [],
           "controlCount": 51,
-          "controlIdsDigest": "Back to the root|Check H1–H5|Check J1–J5, J10|Explore the selection|Frame the selection|Measure in WebView2|Select the root|Zoom in|Zoom out|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|composition-add-trigger|composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522|composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|search-clear|search-input",
+          "controlIdsDigest": "Back to the root|Check H1–H5|Check J1–J5, J10|Explore the selection|Frame the selection|Measure in WebView2|Select the root|Zoom in|Zoom out|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|composition-add-trigger|composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125|composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|search-clear|search-input",
           "commands": [
             {
               "id": "language-fr",
@@ -23686,18 +27740,18 @@
               "disabled": false
             },
             {
-              "id": "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": true,
               "visibleHeightPx": 27,
-              "visibleWidthPx": 482.4,
+              "visibleWidthPx": 481.3,
               "group": null,
               "groupOpen": null,
               "disabled": false
             },
             {
-              "id": "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+              "id": "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
               "tag": "BUTTON",
               "laidOut": true,
               "onScreen": true,
@@ -24192,8 +28246,8 @@
             "Zoom out",
             "brain-identity-open",
             "composition-add-trigger",
-            "composition-chip-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
-            "composition-remove-real-02579a55-ec77-48d1-a7e5-16924b6ba522",
+            "composition-chip-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
+            "composition-remove-real-dbcbc38e-681e-477f-9b98-6f895a07d125",
             "density-comfortable",
             "density-compact",
             "filter-kind-DIRECTORY",
@@ -24235,6 +28289,62 @@
               }
             ],
             "rootCardVisible": null,
+            "cardGeometry": [
+              {
+                "nodeId": 1,
+                "level": 1,
+                "rect": {
+                  "x": -905.6,
+                  "y": 672.1,
+                  "w": 464.3,
+                  "h": 123.8
+                },
+                "insideWindowPx": {
+                  "w": 0,
+                  "h": 123.8
+                },
+                "insideMapBoxPx": {
+                  "w": 0,
+                  "h": 93.9
+                }
+              },
+              {
+                "nodeId": 2,
+                "level": 2,
+                "rect": {
+                  "x": -209.2,
+                  "y": 538.7,
+                  "w": 464.3,
+                  "h": 123.8
+                },
+                "insideWindowPx": {
+                  "w": 255.1,
+                  "h": 123.8
+                },
+                "insideMapBoxPx": {
+                  "w": 243.1,
+                  "h": 123.8
+                }
+              },
+              {
+                "nodeId": 126,
+                "level": 3,
+                "rect": {
+                  "x": 487.3,
+                  "y": 449.7,
+                  "w": 464.3,
+                  "h": 123.8
+                },
+                "insideWindowPx": {
+                  "w": 464.3,
+                  "h": 123.8
+                },
+                "insideMapBoxPx": {
+                  "w": 406.7,
+                  "h": 47.5
+                }
+              }
+            ],
             "contextCardVisible": {
               "nodeId": 2,
               "kind": "directory",
@@ -24469,54 +28579,54 @@
     ],
     "captures": [],
     "fatalConsoleErrors": 0,
-    "layoutDigest": "98fdb3351b0e2d1a17f47751346ddecacc4cefaba935f234455a2b3aa47b2900"
+    "layoutDigest": "433395f436349b74a9045bc29462786b97cb9013ba507f76703be90dfd000f35"
   },
   "captures": [
     {
       "file": "docs/performance/runs/TASK-0060-before-960x640-fr-light.png",
       "state": "960x640/fr-light",
-      "bytes": 64945,
-      "sha256": "13611f021646f3046349f204d15f266cb42bbe825705d24a1d62ee0cd0b06752",
+      "bytes": 64935,
+      "sha256": "6afecf28c9f48425c1638c822ec21f90b89708c8c0d0ee2cbd2cf7fc5363dcb5",
       "scrollYAtCapture": 0,
       "note": "The window at the top of the document — scrollY=0 — in the state the matrix row of the same name measured. This is the first screen, not a scrolled page."
     },
     {
       "file": "docs/performance/runs/TASK-0060-before-960x640-fr-dark-legend.png",
       "state": "960x640/fr-dark-legend",
-      "bytes": 64330,
-      "sha256": "97f8322c8f33ff879aa428d1bf57e31d2d1550202cef56f233e0dbb047d832f0",
+      "bytes": 64313,
+      "sha256": "dfc05c8c6b6007e2172e231e71a386824f040816c517ec39bcc29db6d01c7467",
       "scrollYAtCapture": 0,
       "note": "The window at the top of the document — scrollY=0 — in the state the matrix row of the same name measured. This is the first screen, not a scrolled page."
     },
     {
       "file": "docs/performance/runs/TASK-0060-before-960x640-en-light-legend.png",
       "state": "960x640/en-light-legend",
-      "bytes": 62009,
-      "sha256": "8fa497f333776f38f8b37794ac7e8d23980260cf0db7a0972c318c6edecbbb29",
+      "bytes": 61996,
+      "sha256": "6b4ed72a4fdf9a642126b8bbaff8a8a07f2b789e3c5179e12a49247092194742",
       "scrollYAtCapture": 0,
       "note": "The window at the top of the document — scrollY=0 — in the state the matrix row of the same name measured. This is the first screen, not a scrolled page."
     },
     {
       "file": "docs/performance/runs/TASK-0060-before-960x640-fr-light-compact-legend.png",
       "state": "960x640/fr-light-compact-legend",
-      "bytes": 71291,
-      "sha256": "0effc0db8bcb2f04b323409835ed160afb14b18b435a6642c8e53cf9e52c71d6",
+      "bytes": 71293,
+      "sha256": "3b18f50ddd8ebe8b18e048e4de147ad9848cef909152165dd1b7d33147eefe58",
       "scrollYAtCapture": 0,
       "note": "The window at the top of the document — scrollY=0 — in the state the matrix row of the same name measured. This is the first screen, not a scrolled page."
     },
     {
       "file": "docs/performance/runs/TASK-0060-before-1280x800-fr-light.png",
       "state": "1280x800/fr-light",
-      "bytes": 82082,
-      "sha256": "e018d5ebab56503c691f1457706df4b5feae09ea9fa5e1529445852d921e12e6",
+      "bytes": 82136,
+      "sha256": "dfac724f4bfe49ff9677984decfb5c1c52abe9c9990c5cd9fa4b84044d66613d",
       "scrollYAtCapture": 0,
       "note": "The window at the top of the document — scrollY=0 — in the state the matrix row of the same name measured. This is the first screen, not a scrolled page."
     },
     {
       "file": "docs/performance/runs/TASK-0060-before-1366x768-fr-light.png",
       "state": "1366x768/fr-light",
-      "bytes": 80667,
-      "sha256": "6e852dc66723b7273c11c23cdb9031b9e828801a9818e78408ff7509bc73397e",
+      "bytes": 80714,
+      "sha256": "01a2820d9bb5c0e3e3c7e14ef325b6f0ef24247648be5639b3cd7016feaf04f0",
       "scrollYAtCapture": 0,
       "note": "The window at the top of the document — scrollY=0 — in the state the matrix row of the same name measured. This is the first screen, not a scrolled page."
     }
@@ -24525,11 +28635,11 @@
     "tool": "scripts/task0056-fingerprint.py (reused unchanged)",
     "readingsBefore": 3,
     "readingsAfter": 2,
-    "strictDigestBefore": "9cd040f5f3d9fbb960c57c59e6cd228766dfcc3a1432395c4be21136a8d09dea",
-    "strictDigestAfter": "9cd040f5f3d9fbb960c57c59e6cd228766dfcc3a1432395c4be21136a8d09dea",
+    "strictDigestBefore": "3f3305323621d43f3e69fb09738d06d2ef8b9d25c7ff057f4f45d5791257b27b",
+    "strictDigestAfter": "3f3305323621d43f3e69fb09738d06d2ef8b9d25c7ff057f4f45d5791257b27b",
     "strictDigestIdentical": true,
-    "accessDigestBefore": "f5e1921c40f0e8d6df75e9281043c50bf80f4bc6d1123ea3f5e1e5b06eae3074",
-    "accessDigestAfter": "f5e1921c40f0e8d6df75e9281043c50bf80f4bc6d1123ea3f5e1e5b06eae3074",
+    "accessDigestBefore": "26a8021610efa8811109d9c57e15cd13477a5bcdaf2773e97cb35997d50fd59b",
+    "accessDigestAfter": "26a8021610efa8811109d9c57e15cd13477a5bcdaf2773e97cb35997d50fd59b",
     "accessDigestIdentical": true,
     "artefactsFoundUnderRoot": [],
     "entryCountBefore": 160,
