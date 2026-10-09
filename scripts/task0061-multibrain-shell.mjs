@@ -1859,8 +1859,19 @@ if (pass === 1 && only === "groups") {
     })()`);
     console.error(group.testid, JSON.stringify(info));
   }
+  const geometry = () => evaluate(`(() => {
+    const r = (el) => { if (!el) return null; const b = el.getBoundingClientRect(); return [b.x, b.y, b.width, b.height].map(Math.round); };
+    const summary = document.querySelector('[data-testid="map-advanced-tools"] > summary');
+    const sr = summary.getBoundingClientRect();
+    const top = document.elementFromPoint(sr.x + sr.width / 2, sr.y + sr.height / 2);
+    return { chrome: r(document.querySelector('.app__chrome')), controls: r(document.querySelector('.app__map-controls')), mapCol: r(document.querySelector('.app__map')), mapView: r(document.querySelector('.map-view')), svg: r(document.querySelector('[data-testid="composed-canvas"]')), summary: r(summary), top: top ? top.tagName + '.' + String(top.className.baseVal ?? top.className) : null, mapScrollTop: document.querySelector('.app__map')?.scrollTop, controlsScrollTop: document.querySelector('.app__map-controls')?.scrollTop, mainScrollTop: document.querySelector('.app__main')?.scrollTop };
+  })()`);
+  console.error("geometry at rest", JSON.stringify(await geometry()));
   const full = await measureGroupEntryPoints();
   for (const g of full) console.error("group", g.group, JSON.stringify(g.opening), "mouse", g.mouse.opened, "kb", g.keyboard.opened, g.keyboard.presses);
+  console.error("geometry after groups, now", JSON.stringify(await geometry()));
+  await pause(800);
+  console.error("geometry after groups, +800ms", JSON.stringify(await geometry()));
   const kb = await tabToControl(`${testid("chrome-diagnostics")} > summary`, 80);
   console.error("tab to diagnostics", JSON.stringify(kb));
   console.error("active before Enter", JSON.stringify(await activeElement()));
