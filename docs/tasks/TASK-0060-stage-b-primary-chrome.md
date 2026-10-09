@@ -1,9 +1,10 @@
 # TASK-0060 — Stage B / B03 — Commandes primaires visibles, outils avancés accessibles
 
 - **Date :** 2026-10-09
-- **État :** APPROVED / NOT STARTED (documentation seulement; Claude Code n'a pas exécuté cette tâche).
+- **État :** `IMPLEMENTED` — jamais `VERIFIED` par l'exécuteur. Résultats mesurés en §Résultats.
 - **Branche :** `build/v0.2-b03-primary-chrome`
 - **Base :** `f5da1d41226c7fcf34a24351af8fe55b3bb4525b`, TASK-0059 `VERIFIED` par ACTION-0110.
+- **HEAD mesuré :** `before` = `a03b8bc0a3ed75abca10012cdbbea5a4fc090663` (produit inchangé), `after` = `a645303631db59063b463bc4d44f0cf4f95bc258`.
 - **Décision :** `docs/reviews/ACTION-0110-task0059-independent-control.md`
 - **Exécuteur :** Claude Code Sonnet, effort **HIGH** par défaut (Opus seulement si nécessaire et signalé).
 - **Stage :** B03, ni Stage C ni Stage D.
@@ -40,3 +41,144 @@ B02 a rendu la carte visible, mais introduit une **triple navigation par défile
 - Défilement horizontal 0, document à `scrollY=0`; aucune nouvelle superposition bloquante, pas de focus piégé, pas de changement involontaire de caméra/coordonnées/selection et aucune écriture source.
 - Les scripts des tests historiques n'échouent pas simplement parce que l'interface a désormais un disclosure : les adapters/test harness concernés ouvrent le groupe par une action utilisateur explicite. Ne pas désactiver des assertions ni contourner les échecs.
 - Contrôle final par ChatGPT sur GitHub avant toute tâche suivante; Stage A CLOSED et Stage B non CLOSED, R8 non levée.
+
+## Résultats mesurés — `IMPLEMENTED` le 2026-10-09
+
+Campagnes WebView2 réelles, **même harnais et même procédure pour les deux
+phases** : `scripts/task0060-primary-chrome.ps1 -Phase before|after`, trois
+tailles réelles redimensionnées par `SetWindowPos`, six états, deux processus.
+
+- `before` — `docs/performance/runs/TASK-0060-primary-chrome-before.json`, HEAD `a03b8bc`
+- `after` — `docs/performance/runs/TASK-0060-primary-chrome-after.json`, HEAD `a645303`
+- douze captures `docs/performance/runs/TASK-0060-{before,after}-*.png`, prises à `scrollY=0`
+
+### Ce que la tranche devait faire
+
+| Mesure, 18 états | `before` | `after` |
+|---|---|---|
+| Les **13 commandes usuelles** vraiment sur le premier écran | 9/13 à 960x640, 10/13 aux deux autres tailles | **13/13 dans 18 états sur 18** |
+| ... et **entières**, non rognées par une bande | 7/13 au pire | 10/13 au pire, **13/13 dans 13 états sur 18** |
+| `brain-add-real-root`, `lifecycle-open`, `lifecycle-refresh` | **0 état sur 18** | **18 états sur 18** |
+| `composition-add-trigger` | absent des 6 états à 960x640 | présent dans les 18 |
+| Commandes réellement à l'écran, pire état | 16 sur 59 | **19 sur 59** |
+| Commandes entières, pire état | 14 | 16 |
+| Carte visible, pire / meilleur | 240 / 240 | **240 / 474** |
+| Bandes qui défilent à 1280x800 et 1366x768 | chrome + commandes carte + aside | **aside seul** (chrome 183/183, carte 121/121) |
+| Bandes qui défilent à 960x640 | les trois | chrome + aside; la bande carte ne défile plus |
+
+Détail de la carte, `after` : 240–263 px à 960x640, 422–474 px à 1280x800,
+390–442 px à 1366x768, exploitable au test de pointage dans les 18 états.
+L'objectif **souhaitable** de 300 px est atteint à 1280x800 et 1366x768, **pas**
+à 960x640.
+
+Ledger du chrome à 960x640, état `fr-light` : en-tête 163 → **99**, nav
+composition/identité/exclusions/actions 389 → **82**, diagnostics 38 + rapports
+83 → **deux lignes de 35 px**. Contenu de la bande 703 → **281** pour une boîte
+de 176. Bande des commandes carte : contenu 625 → **121**, soit exactement sa
+boîte — elle ne défile plus.
+
+### Ce qui ne devait pas bouger, et n'a pas bougé
+
+- **59 commandes dans le DOM** dans les 18 états, `before` comme `after`, mêmes
+  `data-testid`; **28** d'entre elles sont dans un groupe fermé. Présence et
+  visibilité sont comptées **séparément** et jamais additionnées.
+- **Clavier, les trois groupes** : `summary` atteint en 12, 13 et 20 tabulations
+  avec un anneau de focus de 3 px, ouvert par `Entrée`, commande la plus
+  éloignée atteinte 8 et 12 tabulations plus loin et **dans le viewport**,
+  retour par `Maj+Tab`, fermeture par `Entrée` — le focus **reste sur le
+  `summary`**, et le document est à `scrollY=0` à chaque étape. La marche B02
+  est rejouée telle quelle à côté : `cross-check` y est désormais refusé, ce qui
+  **est** un disclosure, dit en chiffres.
+- **Caméra** : mêmes `tx`, `ty` et `scale` à travers 960x640 → 1280x800 →
+  1366x768 → 960x640, coordonnées du monde stables, sélection conservée et
+  visible.
+- **P-19** : langue, densité, mouvement, légende, panneau, sélection et caméra
+  restaurés par un **second processus réel** (carte 474 px, 1 carte visible).
+- **P-22** : empreintes stricte et d'accès **identiques**, 160 entrées, aucun
+  artefact sous la racine, aucune écriture sur le fil.
+- **P-02** 120 = 120 enfants réels; **P-05** arêtes dessinées, ligne hors
+  première vue atteinte, vue bornée, cible toujours visible; **P-07** sélection
+  à 960x640 sans défiler le document; **P-11** molette et clavier; **P-21**
+  FR/EN + axe.
+- **axe-core 4.13.0 : 0 violation**, 0 erreur console fatale. `color-contrast`
+  reste `INCOMPLETE` (16 à 17 nœuds), publié état par état et **non tranché**.
+- Débordement horizontal **0 px**, défilement vertical du document **0 px**.
+
+### Ce que ce correctif a touché, et seulement cela
+
+- `src/map/MapApp.tsx` — trois `<details class="app__group">` natifs
+  (`chrome-advanced-tools`, `chrome-diagnostics`, `map-advanced-tools`); aucun
+  contrôle supprimé, renommé ni réordonné à l'intérieur de son niveau.
+- `src/map/map.css` — les règles des groupes, et celles de `.composition`, qui
+  n'en avait **aucune** : le navigateur appliquait ses propres défauts de liste.
+- `src/map/mapStrings.ts` — six chaînes FR/EN, `t.groups.*`.
+- `src/map/responsiveLayout.test.ts` — 15 tests → **49**. Les invariants de
+  forme : quelles commandes sont hors de tout groupe, lesquelles sont dans le
+  groupe qui les nomme, qu'aucun `<details>` n'est piloté par une prop, que les
+  deux langues nomment les trois groupes, qu'aucune règle CSS ne masque une
+  commande. Deux falsifications exécutées : déplacer une commande d'un côté à
+  l'autre de la frontière et poser `display: none` sur le corps d'un groupe
+  font échouer exactement les tests qui les nomment.
+- `scripts/task0060-primary-chrome.{mjs,ps1}`, `scripts/task0060-seed-proof.py`
+  — **extension versionnée** du harnais B02, qui reste intact à côté.
+
+**Aucun fichier interdit n'a été touché** : ni Rust/`src-tauri`, ni Index,
+SQLite, IPC, modèles de relations, `MapView.tsx`, `viewState`, `resumeState`,
+dépendances ou verrou. Aucun composant, framework ni service nouveau.
+
+### Aucun état applicatif, et ce que cela coûte
+
+Les groupes sont des `<details>` natifs : le moteur possède `open`. Rien ne le
+lit, ne l'écrit, ne le stocke ni ne le restaure. La campagne le **prouve** :
+la passe 1 laisse délibérément `chrome-advanced-tools` ouvert, et le second
+processus trouve les trois groupes **fermés**. C'est une **non-persistance
+assumée**, publiée comme telle et jamais présentée comme une préférence
+restaurée.
+
+### Réserve ouverte et chiffrée — `B03-O1`, **non réparée**
+
+À **960x640 en densité confortable**, la bande de chrome tient encore 281 px de
+contenu dans une boîte de 176. Deux conséquences mesurées :
+
+1. `brain-add-real-root`, `lifecycle-open` et `lifecycle-refresh` montrent
+   **20 px de leurs 35** — visés et cliquables en leur centre, mais rognés par
+   le pli de la bande. Entiers en densité compacte, entiers à 1280x800 et à
+   1366x768.
+2. Les deux lignes de groupe du chrome sont à 215 px et 260 px, donc **25 px et
+   70 px sous le pli** à l'ouverture. Atteintes au clavier en 12 et 13
+   tabulations, et visibles dès que la bande défile; en densité compacte la
+   première est visible d'emblée.
+
+Le budget est arithmétique : dans une fenêtre de 640, la coquille dispose de
+598 px, le plancher de la rangée carte en prend 422, il reste 176 pour le
+chrome. Fermer cet écart signifie **reprendre des pixels à la carte** — ce que
+le critère d'acceptation de cette tranche interdit — ou **retirer du contenu**.
+C'est une décision de portée produit : **arbitrage orchestrateur**.
+
+### Jamais mesuré, à ne pas supposer couvert
+
+- Aucun lecteur d'écran réel n'a été piloté. Ce qui est mesuré des `summary` :
+  ils sont dans l'ordre de tabulation, portent leur libellé dans la langue de
+  l'état, s'ouvrent à `Entrée`, et axe ne signale aucune violation. **Comment un
+  lecteur d'écran rend un disclosure est INCONNU.**
+- Les contrastes `color-contrast` restent `INCOMPLETE`, non tranchés.
+- Les panneaux relations, file de révision et inter-cerveaux ne sont toujours
+  pas peuplés par la fixture : leur comportement en largeur étroite est
+  **INCONNU**.
+- La marche clavier n'est mesurée qu'à **960x640**, la taille la plus dure.
+- Le menu `composition__menu` n'a pas été ouvert pendant la campagne; il reste
+  sans règle de positionnement, donc **en flux**.
+- Les tests Rust n'ont **pas** été exécutés : aucun code Rust n'est touché.
+- **Aucune CI distante** : zéro workflow, zéro contrôle sur ce HEAD.
+- Les 22 exigences `P` ne sont **pas** rejouées ici; `ACTION-0108` les réserve à
+  la clôture de Stage B.
+
+### Portes
+
+`pnpm test` **770/770** (49 fichiers), exécuté **deux fois** — le test
+`workspaceMapApp.test.tsx > writes the collapsed folders with the branch` que
+B02 avait vu échouer une fois sous charge passe aux deux exécutions.
+`pnpm check`, `pnpm build`, `git diff --check` : passés.
+
+**Statut : `IMPLEMENTED`.** Pas de `TASK-0061`, pas de Stage C/D, pas de PR, pas
+de fusion.

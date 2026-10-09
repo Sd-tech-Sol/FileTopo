@@ -1,7 +1,7 @@
 # VALIDATION.md — État de vérification
 
 **Dernière mise à jour :** 2026-10-09
-**Dernière livraison exécutée :** TASK-0059, section **DT** (carte dès le premier écran, Stage B / B02), `IMPLEMENTED`, **en attente de vérification indépendante** — 240 px de carte visible et exploitable dans les 18 états contre 0 avant, aucune commande perdue, caméra identique au bit près. Avant elle : TASK-0058, section **DS** (baseline visuelle Stage B / B01), `VERIFIED` dans sa portée B01 par `ACTION-0109` — aucun défaut de chrome prouvé, diff produit vide. Avant elle : TASK-0036, section **BP** (passe corrective D6, `ACTION-0059`), `IMPLEMENTED`, **en attente de vérification indépendante**. Section BO (passe corrective D4/D5, `ACTION-0058`) acceptée sans régression sur D1/D2/D3/R1/D5 par ce recontrôle, D4 confirmé largement corrigé hors D6. TASK-0035, section BL, est `VERIFIED` par `ACTION-0056`. TASK-0034, section **BH** (recherche bornée et « Ouvrir dans l'Explorateur »), `IMPLEMENTED`, **en attente de vérification indépendante**. TASK-0033, sections BE/BF, est `VERIFIED` dans sa portée par le verdict indépendant enregistré dans `ACTION-0051`, section BG.
+**Dernière livraison exécutée :** TASK-0060, section **DV** (commandes primaires visibles, Stage B / B03), `IMPLEMENTED`, **en attente de vérification indépendante** — les 13 commandes usuelles vraiment sur le premier écran dans 18 états sur 18 contre 9/13 au pire avant, 59 commandes toujours dans le DOM dont 28 derrière un groupe fermé, carte jusqu'à 474 px, réserve `B03-O1` ouverte et chiffrée. Avant elle : TASK-0059, section **DT** (carte dès le premier écran, Stage B / B02), `VERIFIED` dans sa portée B02 par `ACTION-0110`, section **DU** — 240 px de carte visible et exploitable dans les 18 états contre 0 avant, aucune commande perdue, caméra stable à la précision machine. Avant elle : TASK-0058, section **DS** (baseline visuelle Stage B / B01), `VERIFIED` dans sa portée B01 par `ACTION-0109` — aucun défaut de chrome prouvé, diff produit vide. Avant elle : TASK-0036, section **BP** (passe corrective D6, `ACTION-0059`), `IMPLEMENTED`, **en attente de vérification indépendante**. Section BO (passe corrective D4/D5, `ACTION-0058`) acceptée sans régression sur D1/D2/D3/R1/D5 par ce recontrôle, D4 confirmé largement corrigé hors D6. TASK-0035, section BL, est `VERIFIED` par `ACTION-0056`. TASK-0034, section **BH** (recherche bornée et « Ouvrir dans l'Explorateur »), `IMPLEMENTED`, **en attente de vérification indépendante**. TASK-0033, sections BE/BF, est `VERIFIED` dans sa portée par le verdict indépendant enregistré dans `ACTION-0051`, section BG.
 **Dernière tâche évaluée indépendamment :** TASK-0033 — `VERIFIED` le
 2026-09-10 par le verdict indépendant enregistré dans `ACTION-0051`, section
 BG, dans sa portée. TASK-0032 — `VERIFIED` le 2026-09-10 par le verdict
@@ -10354,3 +10354,83 @@ périmètre écrit de cette tranche. **Décision réservée à l'orchestrateur.*
 - `pnpm test 736/736`, `check`, `build`, `diff --check` : **résultats de Claude, pas relancés par ChatGPT**. Un échec workspaceMapApp.test.tsx sous charge non reproduit, cause non prouvée; conservé comme réserve. GitHub API : 0 workflow run et 0 check HEAD.
 - **PASS / VERIFIED TASK-0059 seulement**, Stage B non fermée. `B02-O1` doit rester visible : chrome 176/723px et commandes carte 134/625px à 960, plus aside 422/2192. Le prochain scope B03 vise l'organisation des commandes primaires/avancées et leur accès effectif au clavier/souris.
 - Ne pas confondre 0 violation axe avec certification WCAG. P-14, pavé tactile P-11, lecteur d'écran, panneaux relations/review/cross en vue étroite et sortie intégrale P-01..P-22 hors cette tranche; Stage C R8 non levée.
+
+
+## DV — TASK-0060 — Stage B / B03, commandes primaires visibles — `IMPLEMENTED` — 2026-10-09
+
+**Statut : `IMPLEMENTED`**, en attente de vérification indépendante.
+L'exécuteur ne s'attribue pas `VERIFIED`.
+
+### DV.1 Vérifié — mesure WebView2 réelle, même harnais aux deux phases
+
+Procédure : `scripts/task0060-primary-chrome.ps1 -Phase before|after`, pwsh 7,
+deux processus Tauri réels sur une racine `REAL_ROOT` synthétique jetable,
+fenêtre redimensionnée nativement par `SetWindowPos` à 960x640, 1280x800 et
+1366x768, six états à chaque taille. `before` sur `a03b8bc` (produit inchangé),
+`after` sur `a645303`.
+
+| Fait vérifié | Preuve |
+|---|---|
+| Les 13 commandes usuelles sont vraiment sur le premier écran dans 18 états sur 18 | `after` → `pass1.verdict.primaryContractSatisfied = true`, `worstPrimaryOnFirstScreen = 13` |
+| Avant, elles ne l'étaient pas : 9/13 à 960x640, 10/13 ailleurs | `before` → `worstPrimaryOnFirstScreen = 9`, `statesMissingAPrimaryCommand` sur les 18 états |
+| `brain-add-real-root`, `lifecycle-open`, `lifecycle-refresh` : 0 état sur 18 avant, 18 sur 18 après | `statesMissingAPrimaryCommand` des deux artefacts |
+| 59 commandes dans le DOM dans les 18 états, avant comme après | `worstCommandsInDom = 59`, `commandsLostAtSomeSize = []` |
+| 28 commandes dans un groupe fermé, comptées à part de la visibilité | `commandsInClosedGroups = 28` par état |
+| Commandes réellement à l'écran : 16 → 19 au pire | `worstCommandsOnFirstScreen` des deux artefacts |
+| Carte visible : 240 partout → 240–263 / 422–474 / 390–442 selon la taille | `firstScreenByState`, `bestMapVisibleHeightPx = 474` |
+| Les trois `summary` sont atteints au clavier, ouverts à `Entrée`, la commande la plus éloignée est atteinte et dans le viewport, la fermeture garde le focus | `pass1.disclosureWalks` : 12/13/20 tabulations, anneau 3 px, `+8` et `+12`, `focusKeptOnSummaryAfterClosing = true`, `documentStayedAtTheTop = true` |
+| Caméra inchangée à travers trois hauteurs et retour | `cameraInvariants` : un seul `scale`, `worldCoordinatesStable = true`, `selectionKept = true` |
+| `P-19` : second processus réel, préférences, sélection et caméra restaurées | `pass2.restored` |
+| `P-22` : empreintes stricte **et** d'accès identiques, 160 entrées, 0 artefact | `p22` de l'artefact `after` |
+| axe-core 4.13.0 : 0 violation, 0 erreur console fatale | `axeViolations = []`, `fatalConsoleErrors = 0` |
+| Débordement horizontal 0, document à `scrollY = 0` | `horizontalOverflowWorstPx = 0`, `worstDocumentVerticalScrollPx = 0` |
+| `pnpm test` 770/770 deux fois, `check`, `build`, `diff --check` | exécutions locales de l'exécuteur, **non rejouées indépendamment** |
+
+### DV.2 Vérifié — les témoins mordent
+
+`src/map/responsiveLayout.test.ts` passe de 15 à 49 tests. Deux falsifications
+ont été **exécutées**, pas supposées : déplacer `reset-view` dans un groupe et
+`observe-content` hors du sien fait échouer exactement les deux tests qui les
+nomment; poser `display: none` sur `.app__group-body` fait échouer exactement
+les deux tests de feuille de style. Les 47 autres restent verts dans les deux
+cas.
+
+### DV.3 Non testé — dit explicitement
+
+- **Aucun lecteur d'écran réel.** Ce qui est mesuré d'un `summary` : il est dans
+  l'ordre de tabulation, porte son libellé dans la langue de l'état, s'ouvre à
+  `Entrée`, et axe ne signale aucune violation. Le rendu d'un disclosure par un
+  lecteur d'écran est **INCONNU**.
+- **jsdom n'implémente pas un `<details>` fermé** : il donne aux enfants d'un
+  groupe fermé une boîte, un `display` calculé, une place dans l'arbre
+  d'accessibilité et une cible `fireEvent`. La suite existante est donc passée
+  **sans modification**, ce qui prouve qu'aucune couverture sémantique n'a été
+  perdue et **rien du tout** sur la visibilité. Seule la campagne WebView2 la
+  mesure.
+- `color-contrast` reste `INCOMPLETE` (16 à 17 nœuds), publié état par état,
+  **non tranché**.
+- Panneaux **relations**, **file de révision** et **inter-cerveaux** : la
+  fixture ne les peuple toujours pas; largeur étroite **INCONNUE**.
+- Marche clavier mesurée à **960x640 seulement**.
+- `composition__menu` non ouvert pendant la campagne; sans règle de position,
+  donc **en flux**.
+- Tests Rust **non exécutés** : aucun code Rust touché.
+- **Aucune CI distante** : 0 workflow, 0 contrôle sur ce HEAD.
+- Les 22 exigences `P` ne sont **pas** rejouées; réservées à la clôture Stage B.
+
+### DV.4 Réserve ouverte — `B03-O1`, mesurée et non réparée
+
+À 960x640 en densité confortable, la bande de chrome tient 281 px de contenu
+dans une boîte de 176. Conséquences mesurées : `brain-add-real-root`,
+`lifecycle-open` et `lifecycle-refresh` montrent **20 px sur 35** — visés et
+cliquables en leur centre, rognés par le pli — et les deux lignes de groupe du
+chrome sont à 25 px et 70 px sous ce pli à l'ouverture. Entiers et visibles en
+densité compacte; entiers à 1280x800 et 1366x768.
+
+Budget arithmétique : 598 px de coquille à 640 de haut, 422 au plancher de la
+rangée carte, 176 au chrome. Fermer l'écart demande de **reprendre des pixels à
+la carte** — ce que le critère d'acceptation de cette tranche interdit — ou de
+**retirer du contenu**. **Décision réservée à l'orchestrateur.**
+
+L'objectif **souhaitable** de 300 px de carte à 960x640 n'est **pas atteint**
+(253–263 px); il l'est à 1280x800 et 1366x768.

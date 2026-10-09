@@ -1,16 +1,26 @@
-# ACTION-0110 — Vérification indépendante TASK-0059
-AGENT: CHATGPT ORCHESTRATOR
-CONTROLLED_BRANCH: build/v0.2-b02-first-screen-map
-CONTROLLED_HEAD: f5da1d41226c7fcf34a24351af8fe55b3bb4525b
-LAST_EXECUTED_WEBVIEW2_AFTER_HEAD: 921dacb1591e4a1d076705b4cfaae13bc08bdab7
-VERDICT: TASK-0059 PASS / VERIFIED DANS SA PORTÉE B02 SEULEMENT
-CODE_DIFF: src/map/MapApp.tsx, src/map/map.css, src/map/responsiveLayout.test.ts; aucun Rust/IPC/Index/MapView/package changé.
-INDEPENDENT_CHECK: lecture GitHub directe des commits, diff, harnais, 2 JSON WebView2, 12 captures, inspection visuelle des PNG AFTER 960 FR clair/sombre et 1280 FR clair.
-OBSERVATIONS: avant=0px carte visible dans 18/18 états; après=240px visible et hit-test utilisable dans 18/18, doc scroll 0; 59 commandes/état, aucune perdue, 0 overflow horizontal; camera stable à travers 3 tailles + retour; P-19 redémarrage, P-22 empreintes inchangées.
-TESTS_REPORTED_NOT_RERUN: pnpm test 736/736, pnpm check, pnpm build, git diff --check. Echec isolé workspaceMapApp sous charge une fois, puis deux passes complètes, non attribué.
-CI_GITHUB: 0 workflow/0 check sur HEAD. PAS de preuve CI verte.
-LIMITATIONS: pas de lecteur d'écran; axe contrast INCOMPLETE; sections relations/review/cross non peuplées à 960; P-14, périphérique P-11, R8; P-01..P-22 pas tous rejoués.
-B02_O1: triple scroll imbriqué, chrome 176/723px, outils carte 134/625px, aside 422/2192px à 960x640; fonctionnel mais hiérarchie primaire non finalisée.
-NEXT: TASK-0060 APPROVED / NOT STARTED sur build/v0.2-b03-primary-chrome, compacter l'interface visible et distinguer outils primaires/avancés sans supprimer de fonction.
+# TASK-0060 — Stage B / B03 — commandes primaires visibles
+AGENT: CLAUDE CODE (Opus 5)
+BRANCH: build/v0.2-b03-primary-chrome
+BASE: a03b8bc0a3ed75abca10012cdbbea5a4fc090663 (ACTION-0110)
+MEASURED_BEFORE_HEAD: a03b8bc0a3ed75abca10012cdbbea5a4fc090663 (produit inchangé)
+MEASURED_AFTER_HEAD: a645303631db59063b463bc4d44f0cf4f95bc258
+STATUS: IMPLEMENTED — jamais VERIFIED par l'exécuteur
+CODE_DIFF: src/map/MapApp.tsx, src/map/map.css, src/map/mapStrings.ts, src/map/responsiveLayout.test.ts, scripts/task0060-*. Aucun Rust/src-tauri, Index, SQLite, IPC, relations, MapView.tsx, viewState, resumeState, dépendance ni verrou.
+CHANGE: trois <details class="app__group"> natifs — chrome-advanced-tools, chrome-diagnostics, map-advanced-tools — plus les règles CSS de .composition, qui n'en avait AUCUNE (défauts <ul> du navigateur = 389px de nav). Six chaînes FR/EN t.groups.*. Aucun contrôle supprimé, renommé ni réordonné dans son niveau.
+EVIDENCE: docs/performance/runs/TASK-0060-primary-chrome-{before,after}.json + 12 PNG à scrollY=0. Même harnais et même procédure aux deux phases (scripts/task0060-primary-chrome.ps1 -Phase before|after, pwsh 7, SetWindowPos, 3 tailles x 6 états, 2 processus). Le before a été remesuré en detached HEAD sur a03b8bc après chaque évolution du harnais, pour que headTested dise la vérité.
+RESULT_PRIMARY: 13 commandes usuelles sur 13 VRAIMENT sur le premier écran (fenêtre + aire + test de pointage) dans 18 états sur 18. AVANT: 9/13 à 960x640, 10/13 à 1280x800 et 1366x768. brain-add-real-root, lifecycle-open, lifecycle-refresh: 0 état sur 18 AVANT, 18 sur 18 APRÈS. composition-add-trigger: absent des 6 états à 960 AVANT, présent dans les 18 APRÈS.
+RESULT_INVENTORY: 59 commandes dans le DOM dans les 18 états, AVANT comme APRÈS, mêmes data-testid; 28 dans un groupe fermé. Présence DOM et visibilité comptées séparément, jamais additionnées. Commandes réellement à l'écran, pire état: 16 -> 19.
+RESULT_MAP: carte visible 240 partout AVANT -> 240-263 à 960x640, 422-474 à 1280x800, 390-442 à 1366x768; exploitable au test de pointage dans les 18. Meilleur 474. Objectif SOUHAITABLE de 300px atteint à 1280 et 1366, PAS à 960.
+RESULT_SCROLL: B02-O1 triple défilement -> à 1280x800 et 1366x768 seul l'aside défile (chrome 183/183, commandes carte 121/121). À 960x640 la bande carte ne défile plus (121/121); le chrome, si (281/176).
+RESULT_KEYBOARD: les 3 summary atteints en 12/13/20 tabulations, anneau 3px, ouverts par Entrée, commande la plus éloignée atteinte +8 et +12 tabulations et DANS le viewport, Maj+Tab retour, fermeture par Entrée avec le focus CONSERVÉ sur le summary, document à scrollY=0 à chaque étape. La marche B02 est rejouée telle quelle à côté: cross-check y est refusé, ce qui EST un disclosure.
+RESULT_INVARIANTS: caméra identique (tx, ty, scale) à travers 960->1280->1366->960, coordonnées du monde stables, sélection conservée et visible. P-19: second processus réel, langue/densité/mouvement/légende/panneau/sélection/caméra restaurés, carte 474px. P-22: empreintes stricte ET accès identiques, 160 entrées, 0 artefact, 0 écriture sur le fil. P-02 120=120, P-05, P-07, P-11, P-21 ciblées. axe-core 4.13.0: 0 violation, 0 erreur console fatale. Overflow horizontal 0, scroll document 0.
+NO_APP_STATE: le moteur possède `open`. Rien ne le lit, l'écrit ou le restaure. La passe 1 laisse un groupe ouvert EXPRÈS; le second processus trouve les trois FERMÉS. Non-persistance assumée, mesurée, publiée comme telle.
+TESTS: responsiveLayout.test.ts étendu 15 -> 49 tests (invariants de forme, deux falsifications EXÉCUTÉES). pnpm test 770/770 (49 fichiers) DEUX FOIS — l'échec isolé workspaceMapApp signalé par B02 n'est pas reparu. pnpm check, pnpm build, git diff --check: passés. Rust NON EXÉCUTÉ (aucun code Rust touché).
+JSDOM_WARNING: jsdom n'implémente PAS un <details> fermé — boîte, display calculé, place dans l'arbre d'accessibilité et cible fireEvent pour les enfants d'un groupe fermé. Les 736 tests existants sont donc passés SANS modification: aucune couverture sémantique perdue, et AUCUNE preuve sur le disclosure. Seule la campagne WebView2 le mesure.
+B03_O1 (RÉSERVE OUVERTE, NON RÉPARÉE): à 960x640 en densité confortable la bande de chrome tient 281px dans une boîte de 176. brain-add-real-root, lifecycle-open et lifecycle-refresh montrent 20px sur 35 — visés et cliquables en leur centre, rognés par le pli; entiers en compacte et aux deux grandes tailles. Les deux lignes de groupe du chrome sont 25px et 70px sous le pli à l'ouverture (atteintes au clavier en 12 et 13 tabulations). Budget arithmétique: 598px de coquille, 422 au plancher de la rangée carte, 176 au chrome. Fermer l'écart = reprendre des pixels à la carte (interdit par le critère de cette tranche) ou retirer du contenu. ARBITRAGE ORCHESTRATEUR.
+CI_GITHUB: aucune CI distante configurée; 0 workflow, 0 contrôle sur ce HEAD.
+LIMITATIONS: aucun lecteur d'écran réel sur un disclosure (mesuré: ordre de tabulation, libellé dans la langue de l'état, ouverture à Entrée, 0 violation axe); color-contrast INCOMPLETE 16-17 nœuds, non tranché; panneaux relations/review/cross non peuplés par la fixture; marche clavier mesurée à 960x640 seulement; composition__menu non ouvert pendant la campagne, sans règle de position donc en flux; P-01..P-22 pas rejouées, réservées à la clôture Stage B; R8 non levée.
+REMOTE_WRITE: push de commits vers la branche de travail déjà publiée build/v0.2-b03-primary-chrome, sans réécriture d'historique. Aucune PR, aucune étiquette, aucune release, aucune fusion vers main, aucun nouveau distant.
+NEXT: contrôle indépendant de TASK-0060 par l'orchestrateur, puis VERIFIED ou refus.
 STAGE_A: CLOSED/VERIFIED. STAGE_B: IN_PROGRESS, NOT CLOSED.
-HOLD: pas de TASK-0061, PR, Stage C/D, release, fusion vers main.
+HOLD: pas de TASK-0061, pas de Stage C/D, pas de PR, pas de fusion vers main.

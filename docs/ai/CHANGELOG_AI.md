@@ -6914,3 +6914,81 @@ Aucune `TASK-0060`, aucun Stage C/D, aucune PR, aucune fusion vers `main`, aucun
 ## 2026-10-09 — ACTION-0110 — contrôle indépendant B02 et préparation B03
 
 L'orchestrateur a inspecté le HEAD GitHub `f5da1d41226c7fcf34a24351af8fe55b3bb4525b`, les diffs UI, les deux campagnes WebView2 de 18 états, les douze captures, les témoins de tests et l'absence de CI distante. TASK-0059 est VERIFIED dans sa portée B02 : carte visible immédiatement sur 240px dans 18/18 états, caméra et P-19/P-22 préservées. Le problème B02-O1 de trois régions défilantes et outils primaires invisibles à l'ouverture est transmis à TASK-0060 APPROVED sur `build/v0.2-b03-primary-chrome`. Stage B reste IN PROGRESS, Stage C/D non commencées.
+
+
+## 2026-10-09 — TASK-0060 — Stage B / B03, commandes primaires visibles
+
+**Agent :** exécuteur Claude Code (Opus 5), branche `build/v0.2-b03-primary-chrome`
+**Statut à l'issue :** `IMPLEMENTED` — en attente de vérification indépendante
+
+### Fait
+
+- **Trois `<details class="app__group">` natifs** dans `src/map/MapApp.tsx`, qui
+  séparent ce qu'on fait chaque fois de ce qu'on fait à l'occasion :
+  `chrome-advanced-tools` (identité, exclusions, préparer, reconstruire, les
+  trois contrôles, la mesure), `chrome-diagnostics` (versions de l'hôte, sources
+  synthétiques, tous les rapports), `map-advanced-tools` (cadrer la sélection,
+  sélectionner la racine, observer le contenu, rapport de contenu, filtre, focus
+  de branche, projection). Restent en clair : la composition, `brain-add-real-root`,
+  `lifecycle-open`, `lifecycle-refresh`, la recherche, zoom/ajuster/réinitialiser/
+  légende, la ligne de statut et les corrections d'espace de travail.
+- **`.composition` reçoit enfin des règles** dans `src/map/map.css`. Elle n'en
+  avait aucune : le navigateur appliquait ses défauts de `<ul>` — marqueur,
+  40 px de retrait, une pastille par ligne — et `nav.app__brains` pesait 389 px.
+  Disposition seulement : aucune couleur, aucune taille, aucune police.
+- **Six chaînes FR/EN** `t.groups.*` dans `src/map/mapStrings.ts` : le nom de
+  chaque groupe et l'indice de ce qu'il contient, lisibles avant ouverture.
+- **Harnais** `scripts/task0060-primary-chrome.{mjs,ps1}` et
+  `scripts/task0060-seed-proof.py` — **extension versionnée** du harnais B02,
+  qui reste intact. Nouveautés : recensement commande par commande (dans le DOM,
+  disposé, vraiment à l'écran, entier, dans quel groupe fermé), contrat des
+  commandes usuelles vérifié une par une, marche clavier complète d'un groupe
+  (Tab → `Entrée` → Tab → `Maj+Tab` → `Entrée`), et géométrie de chaque carte
+  dessinée pour qu'un zéro soit explicable.
+- **Témoin `responsiveLayout.test.ts` étendu, non effacé** : 15 → 49 tests,
+  invariants de forme falsifiables; deux falsifications exécutées pour le
+  prouver.
+- **Deux campagnes WebView2 complètes**, même harnais et même procédure :
+  `docs/performance/runs/TASK-0060-primary-chrome-{before,after}.json` et douze
+  captures PNG.
+
+### Mesuré
+
+- **13 commandes usuelles sur 13** vraiment sur le premier écran dans **18 états
+  sur 18**, contre 9/13 à 960x640 et 10/13 aux deux autres tailles avant. Les
+  trois actions de cycle de vie passent de **0 état sur 18** à **18 sur 18**.
+- **59 commandes dans le DOM** dans les 18 états, avant comme après; **28** dans
+  un groupe fermé. Présence et visibilité comptées séparément.
+- Carte visible : **240 px partout** avant → **240–263** à 960x640, **422–474**
+  à 1280x800, **390–442** à 1366x768.
+- Le triple défilement de `B02-O1` tombe à **un** aux deux grandes tailles
+  (aside seul); à 960x640 la bande des commandes carte ne défile plus non plus.
+- Clavier : `summary` atteints en 12/13/20 tabulations, anneau 3 px, ouverture à
+  `Entrée`, commande la plus éloignée atteinte 8 et 12 tabulations plus loin et
+  dans le viewport, fermeture à `Entrée` **sans perte de focus**, document à
+  `scrollY=0` à chaque étape.
+- Caméra, `P-19`, `P-22`, `P-02/05/07/11/21`, axe (0 violation) : inchangés.
+
+### Non fait, volontairement
+
+- Aucun fichier interdit touché : ni Rust/`src-tauri`, ni Index, SQLite, IPC,
+  modèles de relations, `MapView.tsx`, `viewState`, `resumeState`, dépendances
+  ou verrou. Aucun composant, framework, menu tiers ni service nouveau.
+- **Aucun état applicatif et aucune persistance** pour l'ouverture d'un groupe :
+  le moteur possède `open`. Le second processus retrouve donc les trois groupes
+  **fermés**, et c'est publié comme une non-persistance assumée.
+- `B03-O1` **non réparé** : à 960x640 en densité confortable, trois boutons
+  montrent 20 px sur 35 et les deux lignes de groupe du chrome sont 25 px et
+  70 px sous le pli de leur bande. Fermer l'écart reprendrait des pixels à la
+  carte ou retirerait du contenu — portée produit, arbitrage orchestrateur.
+- Objectif **souhaitable** de 300 px de carte à 960x640 non atteint (253–263);
+  atteint aux deux grandes tailles.
+- Aucun test désactivé, aucune assertion contournée, aucun `data-testid` changé.
+- Pas de `TASK-0061`, pas de Stage C/D, pas de PR, d'étiquette ni de fusion.
+
+### Portes
+
+`pnpm test` **770/770** (49 fichiers), exécuté **deux fois** — l'échec isolé
+`workspaceMapApp.test.tsx` signalé par B02 n'est pas reparu. `pnpm check`,
+`pnpm build`, `git diff --check` : passés. Rust **non exécuté** (aucun code Rust
+touché). **Aucune CI distante** : 0 workflow, 0 contrôle sur ce HEAD.

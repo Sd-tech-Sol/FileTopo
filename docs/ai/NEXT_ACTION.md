@@ -1,8 +1,29 @@
-# Action suivante — ACTION-0110 / Stage B B03
+# Action suivante — contrôle indépendant de TASK-0060
 
-**UNE action :** Claude Code **Sonnet / effort HIGH** synchronise `build/v0.2-b03-primary-chrome` par fast-forward, lit et exécute intégralement `.orchestrator/NEXT_PROMPT.md` pour **TASK-0060 APPROVED / NOT STARTED**, puis commit/push et STOP.
+**UNE action :** l'orchestrateur contrôle `TASK-0060` sur GitHub, branche
+`build/v0.2-b03-primary-chrome`, HEAD à contrôler après le commit documentaire
+de cette tranche, puis prononce `VERIFIED` ou refuse. L'exécuteur ne se
+l'attribue pas.
 
-- ACTION-0110 a vérifié TASK-0059 dans sa portée B02 sur GitHub au HEAD `f5da1d41226c7fcf34a24351af8fe55b3bb4525b` : carte visible **240px** dès `scrollY=0` dans 18/18 états, aucune commande perdue, caméra protégée, P-22 sources intactes. Tests 736 PASS **rapportés**, non rejoués indépendamment.
-- B02-O1 non clos : triple scroll simultané; à 960x640, chrome visible 176/723px et contrôles carte 134/625px, aside 422/2192px. Compacter accès primaire/avancé sans masquer des commandes est la seule suite autorisée.
-- Réserves : contraste axe incomplete, lecteur d'écran et panneaux complexes en mode étroit non testés; échec test isolé non reproduit; CI distante absente.
-- Stage A CLOSED / VERIFIED; Stage B EN COURS **non fermé**; P-01..P-22 seront rejoués au contrôle de sortie Stage B. R8 inchangée, Stage C/D non lancées. Pas de TASK-0061, PR, merge main.
+- Preuves à lire : `docs/performance/runs/TASK-0060-primary-chrome-{before,after}.json`
+  (HEAD `a03b8bc` et `a645303`), les douze captures `TASK-0060-*.png`, le diff de
+  `src/map/{MapApp.tsx,map.css,mapStrings.ts,responsiveLayout.test.ts}` et le
+  harnais `scripts/task0060-*`.
+- Ce qui est affirmé : **13 commandes usuelles sur 13 vraiment sur le premier
+  écran dans 18 états sur 18** (avant : 9/13 à 960×640, 10/13 ailleurs, et les
+  trois actions de cycle de vie dans **0** état sur 18); 59 commandes toujours
+  dans le DOM, 28 derrière un groupe fermé; carte 240 → 474 px au meilleur;
+  clavier, caméra, `P-19`, `P-22` et axe inchangés ou meilleurs.
+- Ce qui est **réservé**, chiffré, non réparé : `B03-O1` — à 960×640 en densité
+  confortable, trois boutons montrent 20 px sur 35 et les deux lignes de groupe
+  du chrome sont 25 px et 70 px sous le pli de leur bande. Fermer l'écart
+  reprend des pixels à la carte ou retire du contenu : **décision produit**.
+- Rappels : jsdom n'implémente pas un `<details>` fermé, donc `pnpm test`
+  770/770 ne prouve rien du disclosure — seule la campagne WebView2 le mesure.
+  Aucune CI distante sur ce HEAD. Lecteur d'écran, `color-contrast` et panneaux
+  relations/review/cross restent **INCONNUS**.
+
+Stage A reste `CLOSED / VERIFIED`; Stage B reste `IN_PROGRESS`, **non fermé**;
+`P-01..P-22` seront rejouées au contrôle de sortie de Stage B; `R8` inchangée.
+Pas de `TASK-0061`, pas de Stage C/D, pas de PR, pas d'étiquette, pas de fusion
+vers `main`.
