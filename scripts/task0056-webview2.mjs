@@ -1165,7 +1165,10 @@ if (phase === 1) {
     // Grouped by direction (a section per direction), then by nature (a group per type).
     const directionSections = [...document.querySelectorAll('.relations__direction')].map((s) => s.getAttribute('aria-label'));
     const natureGroups = [...document.querySelectorAll('.relations__type-group .relations__type')].map((h) => h.textContent.trim());
-    const entries = [...document.querySelectorAll('.relation__link')].map((row) => ({
+    // Scoped to a direction section ON PURPOSE: a suggestion row also carries a bare
+    // `.relation__link` (« voir la cible ») with none of these attributes, and it is not
+    // a relation entry. The intra-brain scenario of TASK-0020 scopes it the same way.
+    const entries = [...document.querySelectorAll('.relations__direction .relation__link')].map((row) => ({
       direction: row.getAttribute('data-direction'),
       provenance: row.getAttribute('data-provenance'),
       type: row.getAttribute('data-relation-type'),
@@ -1176,14 +1179,14 @@ if (phase === 1) {
     return { directionSections, natureGroups, entries };
   })()`);
   assert(panelShape.natureGroups.length >= 1, "inside a direction, the relations are grouped by nature");
-  assert(panelShape.entries.length > 0, "the panel lists the relations of the selected element");
+  assert(panelShape.entries.length > 0, `the panel lists the relations of the selected element: ${JSON.stringify(panelShape)}`);
   assert(
     panelShape.entries.every((entry) => entry.type && entry.direction && entry.provenance && entry.directionGlyph && entry.provenanceWord),
-    "each entry carries its type, its direction and its provenance, as a glyph AND as a word",
+    `each entry carries its type, its direction and its provenance, as a glyph AND as a word: ${JSON.stringify(panelShape.entries)}`,
   );
   assert(
     panelShape.entries.every((entry) => entry.leadsTo !== null && entry.link),
-    "each entry is an enabled control that leads to the element it names",
+    `each entry is an enabled control that leads to the element it names: ${JSON.stringify(panelShape.entries)}`,
   );
   // P-07: the keyboard can activate an entry and the endpoint it names becomes selected.
   const anEntry = panelShape.entries.find((entry) => entry.leadsTo !== null);
