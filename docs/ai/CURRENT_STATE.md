@@ -1,5 +1,53 @@
 # État courant
 
+## TASK-0057 — surface des relations sur `REAL_ROOT` — `IMPLEMENTED` (candidate) — 2026-10-08
+
+- Branche `build/v0.2-a41-v1-real-root-relations`, base `ca17df50`. Correction du
+  **seul** manque de `TASK-0056`, sous `DEC-0053`.
+- **La cause, corrigée :** les six actions intra-cerveau de relations résolvaient
+  leur source par `BrainRecord::source_fixture()`, qui refuse une racine réelle.
+  Elles passent par `generic_source_spec`, qui rend `None` pour une racine réelle
+  — une réponse, pas un refus — et continue de refuser une fixture inconnue.
+  `legacy_fixture_spec` répond pour une racine réelle sans consulter la table des
+  fixtures. `self_check` garde `ensure_in_scope` et refuse toujours une racine
+  réelle, par son nom.
+- **Portée du diff prouvée :** `IN SCOPE`, 4 fichiers de production sur 23 chemins
+  modifiés (`TASK-0057-diff-scope.json`). `commands.rs` n'a gagné que 7 lignes,
+  toutes des déclarations de module `#[cfg(test)]`, vérifiées ligne par ligne.
+  Modèle, catalogue de règles, moteur, schéma, dépôts, surface inter-cerveaux,
+  rendus et dépendances : inchangés.
+- **`fixtureId`** vaut la fixture sur un cerveau synthétique, `null` sur une
+  racine réelle. Aucun chemin, aucune empreinte de chemin, aucun substitut.
+- **Campagne `P-22` rejouée au `HEAD` corrigé : `PASS`**, `taskVerdict PASS`,
+  `productGaps` **vide**, 27 lignes de couverture, `P-01..P-22` tous observés.
+  Empreinte externe stricte **identique** sur quatre racines (181/8/6/11
+  entrées), horodatages d'accès compris, aucun artefact FileTopo sous une racine.
+  axe-core 4.13.0 : **0 violation** en français, anglais, sombre et mouvement
+  réduit. **0** erreur console fatale.
+- **`P-04`, `P-05`, `P-07` exercés sur `REAL_ROOT`** : relation déterministe avec
+  règle et provenance en mots, comptes du panneau `1/0` égaux à l'index et lus
+  par deux requêtes séparées, suggestion comptée dans aucune direction, file de
+  révision ouverte, approbation en **24 tabulations réelles** puis `Enter`,
+  entrée de relation activée en **2 tabulations** sélectionnant l'élément
+  nommé, révocation, rejet d'une **autre** suggestion, puis — après un vrai
+  redémarrage — déterministes 2, approuvées 0, en attente 1, `fixtureId` toujours
+  `null`.
+- **Contraste synthétique inchangé :** le cerveau figé garde son `fixtureId`, son
+  périmètre legacy et son auto-contrôle.
+- **Deux limites déclarées.** `P-14` **non exécutée** : cette machine refuse toute
+  opération de presse-papiers, mesuré **hors du produit** avant la fenêtre
+  (`Set-Clipboard` revient vide, `Clipboard::SetText` lève « Échec de
+  l'opération du Presse-papiers demandée »); le geste a été joué, la comparaison
+  reste composée depuis `TASK-0034`/`ACTION-0055`. La moitié « carte » de `P-05`
+  est à deux côtés : la vue bornée a dessiné 0 arête pour un nœud dont
+  l'extrémité n'était pas matérialisée, et les 3 relations concernées sont
+  nommées dans la région « extrémités hors de la vue courante ».
+- **Matrice `P-01..P-22` : verdict d'ensemble `SATISFIED`.** Aucune exigence
+  fermée par la tâche. `P-04`/`P-05`/`P-07` candidates; la clôture `P-04`
+  d'`ACTION-0094` n'est ni révoquée ni étendue par l'exécuteur.
+- **Étape A : EN COURS.** Aucune `TASK-0058`. Ni B, ni C, ni D.
+- Action unique suivante : **contrôle indépendant de `TASK-0057`**.
+
 ## ACTION-0106 — TASK-0056 BLOCKED confirmé / TASK-0057 READY — 2026-10-08
 
 - HEAD contrôlé TASK-0056 : `ca17df50d1fa904e8387628347bbf2f9792b9ae8`.

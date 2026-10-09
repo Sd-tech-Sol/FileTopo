@@ -1,7 +1,7 @@
 # TASK-0057 — V1 REAL_ROOT Relations Surface Closure / P-04 + P-05 + P-07
 
 - **Date:** 2026-10-08
-- **Status:** `READY`
+- **Status:** `IMPLEMENTED` (candidate; the executor does not award `VERIFIED`)
 - **Branch:** `build/v0.2-a41-v1-real-root-relations`
 - **Base:** `ca17df50d1fa904e8387628347bbf2f9792b9ae8`
 - **Selected by:** ACTION-0106
@@ -225,3 +225,126 @@ If a new product gap appears:
 - no opportunistic unrelated fix.
 
 Commit/push, clean tree, STOP.
+
+## 15. Result — `IMPLEMENTED`, candidate only
+
+Branch `build/v0.2-a41-v1-real-root-relations`, base
+`ca17df50d1fa904e8387628347bbf2f9792b9ae8`. The executor does **not** award
+`VERIFIED`: everything below is a candidature to independent control.
+
+### 15.1 What changed in the product, and nothing more
+
+Four production files, proved narrow by `scripts/task0057-diff-scope.ps1`
+(artifact `docs/performance/runs/TASK-0057-diff-scope.json`, verdict
+**`IN SCOPE`** — 4 production files out of 23 changed paths):
+
+| File | Change |
+|---|---|
+| `src-tauri/src/map/relation_commands.rs` | the source boundary and the three generic DTOs |
+| `src/map/types.ts` | `fixtureId: string \| null` on the same three DTOs |
+| `src-tauri/src/map/relation_real_root_tests.rs` | new, tests only |
+| `src-tauri/src/map/commands.rs` | **+7/−0**, every added line a `#[cfg(test)]` module declaration, checked line by line by the script |
+
+`source_spec()` — which was only `brain.source_fixture()` under another name —
+became **`generic_source_spec()`**: `Some(spec)` for a synthetic brain, which
+still resolves and still refuses an unknown fixture, and `None` for a
+`REAL_ROOT`, which is an answer rather than a refusal.
+`legacy_fixture_spec()` now answers for a real root **without consulting the
+fixture table at all**, so « does the frozen `TASK-0017` demonstration apply? »
+is answerable instead of being refused before it is asked. The six generic
+same-brain actions go through it; `self_check` keeps
+`ensure_in_scope()`, which keeps requiring a fixture.
+
+Untouched, as §13 requires: the relation model, the rule catalogue, the
+deterministic engine, the relation schema, the stores, the cross-brain surface,
+every renderer, and the dependency set. No migration.
+
+### 15.2 The six actions, on a real folder — §4
+
+Proved twice: as a unit campaign on a disposable real tree
+(`relation_real_root_tests.rs`, 5 tests) and as real gestures in the real host
+(§15.4). `map_relations_open`, `map_relations_for_node`,
+`map_relations_review_queue`, approve, reject and revoke all answer, and all six
+appear on the real IPC wire in the campaign artifact.
+
+### 15.3 Falsifications — §12
+
+| # | Stated as | Where |
+|---|---|---|
+| 1–6 | each of the six must not refuse a real root **for its source kind** — asserted against the motif `map_source_not_synthetic`, which is what used to be returned | `no_generic_relation_action_refuses_a_real_root_for_its_source_kind`, plus the campaign, where such a refusal both fails the run and is published in `productGaps` |
+| 7 | no legacy `TASK-0017` seed on a real root; the frozen self-check still refuses one **by name** | `the_legacy_perimeter_never_reaches_a_real_root`, and the campaign's synthetic contrast |
+| 8 | `fixtureId` is `null`, and neither the root, its name nor the source ref appears in the serialised payloads | `the_fixture_diagnostic_is_null_on_a_real_root_and_leaks_no_path`, and the campaign's DOM and payload check |
+| 9 | a pending suggestion is counted in neither direction before approval | both, asserted before the approval and again after the revocation |
+| 10 | the P-22 fingerprint must not change | the external fingerprint, strictly identical over four roots |
+
+A **structural** regression states the rule instead of the six cases: the
+generic function bodies, read at compile time by `include_str!`, must not call
+`source_fixture()` or `ensure_in_scope()` and must resolve through
+`generic_source_spec` — and `self_check` must still call `ensure_in_scope`, so
+the test cannot be satisfied by making everything generic. It fails the moment
+such a call is written, naming the command that wrote it.
+
+### 15.4 The acceptance replay — §10
+
+`scripts/task0056-webview2.ps1 -Task TASK-0057` at the corrected `HEAD`, the
+TASK-0056 harness reused. Artifact
+`docs/performance/runs/TASK-0057-p22-webview2.json`, verdict **`PASS`**,
+`taskVerdict` **`PASS`**, `productGaps` **empty**.
+
+- Strict external fingerprint **identical** before and after the window on all
+  four roots (`atelier` 181 entries, `carnets` 8, `archives` 6, `fixture` 11);
+  the access-time digest is identical too; no FileTopo artefact under any root.
+- **27 coverage rows**, every requirement `P-01`..`P-22` observed; `P-04`,
+  `P-05` and `P-07` now carry `sourceKind: REAL_ROOT`.
+- On the real root: the panel **available** rather than « indisponible »; a
+  deterministic `content-identical` relation with its rule and version on
+  screen; panel counts `1/0` equal to the Index's, read from two separate store
+  queries; a suggestion counted in neither direction; the review queue open with
+  its total, state and reason; approval reached in **24 real Tab presses** then
+  `Enter`, adding exactly one relation, outgoing on its source and incoming on
+  its target; a relation entry activated in **2 Tab presses** selecting the
+  element it names; revocation returning it to pending without touching a
+  deterministic relation; a **different** suggestion rejected from the queue,
+  creating no relation and leaving the queue.
+- After a **real restart**: deterministic 2, approved 0, pending 1, `fixtureId`
+  still `null`, `legacyInScope` false, `seeded` 0 — the revocation and the
+  rejection both survived.
+- The synthetic contrast is unchanged: the frozen brain still reports its
+  fixture id, is still `legacyInScope`, its self-check still passes, and that
+  self-check still refuses a real root by name.
+- axe-core 4.13.0: **0 violation** in French, English, dark scheme and reduced
+  motion. **0** fatal console error. No forbidden command on the wire.
+
+### 15.5 Two things declared rather than implied
+
+**`P-14` was NOT EXECUTED.** This machine refuses every clipboard operation —
+measured **outside the product** before the window opened: `Set-Clipboard`
+round-trips empty and `System.Windows.Forms.Clipboard::SetText` raises
+« Échec de l'opération du Presse-papiers demandée ». With no clipboard available
+to any process, the copy cannot be judged, and the product's own refusal says
+nothing about the product. The real click was still played, the interface's
+answer is published, and the comparison stays composed from
+`TASK-0034`/`ACTION-0055`. The harness now settles this with a control write
+before the window, so « the product failed to copy » and « this machine has no
+clipboard » can never again be the same finding.
+
+**The map half of `P-05` is a two-sided observation.** The view is bounded and
+`relationSegments` draws an edge only when both ends are materialised. The
+observed node had one relation whose other end was not drawn, so the map drew
+**0** — which is exact — and the three relations of that brain with a
+non-materialised end are each named in the « extrémités hors de la vue
+courante » region with their own control. The campaign therefore does **not**
+show a drawn edge confronted with the Index; it shows that the map draws
+exactly what it can draw and loses nothing. Written into the matrix as a limit.
+
+### 15.6 Global regression gate — §11
+
+See `docs/ai/VALIDATION.md` section `DP` for every figure.
+
+### 15.7 Governance
+
+`TASK-0057` = **`IMPLEMENTED`**, candidate. `P-04`, `P-05` and `P-07` become
+**candidates to final closure**; the matrix closes nothing and says so.
+`TASK-0056` remains historically `BLOCKED` at its own head, and its artifact is
+kept as the record of what it measured. No `TASK-0058`. Neither stage B, C nor D
+is started. `NEXT_ACTION` = independent control.

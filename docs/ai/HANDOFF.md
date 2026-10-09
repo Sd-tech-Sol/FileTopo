@@ -1,5 +1,70 @@
 # HANDOFF — passage de relais
 
+## Passation du 2026-10-08 — TASK-0057, relations sur une racine réelle, `IMPLEMENTED`
+
+**Où en est l'étape A.** Elle reste **`EN COURS`**, mais plus parce qu'un manque
+est ouvert : parce que **l'exécuteur ne ferme rien**. Le seul manque que
+`TASK-0056` avait trouvé et qu'`ACTION-0106` avait confirmé est corrigé, la
+campagne `P-22` a été rejouée au `HEAD` corrigé et la matrice passe à
+`SATISFIED`. `P-04`, `P-05` et `P-07` sont **candidates**. Seule une `ACTION`
+indépendante peut clore l'étape.
+
+**Ce qui a changé, et ce qui n'a pas changé.** La frontière des relations, et
+elle seule. `generic_source_spec` remplace un `source_spec` qui n'était que
+`brain.source_fixture()` sous un autre nom : `Some(spec)` pour un cerveau
+synthétique, `None` pour une racine réelle. Le modèle des relations, le
+catalogue de règles, le moteur `dre-v1`, le schéma, les dépôts, la surface
+inter-cerveaux, les rendus et les dépendances sont intacts — prouvé par
+`scripts/task0057-diff-scope.ps1`.
+
+**Ce qu'il ne faut pas refaire.**
+
+- **Ne pas rendre `map_relations_self_check` générique.** Il rejoue une attente
+  **gelée** que seule `quasi-empty` peut satisfaire, et il doit refuser une
+  racine réelle par son nom — `DEC-0053` B. Le garde structurel échouerait, et
+  c'est voulu : il exige à la fois que les six actions génériques n'appellent
+  plus `source_fixture()` **et** que `self_check` appelle encore
+  `ensure_in_scope()`. On ne peut pas le satisfaire en rendant tout générique.
+- **Ne pas lire le panneau des relations avec `.relation__link` tout court.** Une
+  ligne de suggestion porte le même bouton (« voir la cible ») sans aucun des
+  attributs d'une entrée de relation. Les entrées se comptent sous
+  `.relations__direction .relation__link`.
+- **Ne pas prendre la note du périmètre legacy pour un refus.** Sur un cerveau
+  hors du périmètre `TASK-0017`, `legacy-scope-note` **doit** être là : elle dit
+  que la démonstration figée ne s'applique pas et que `dre-v1` s'applique à tous
+  les cerveaux. Un premier run corrigé a échoué sur une assertion qui la voulait
+  absente.
+- **Ne pas écrire de backquote dans un commentaire envoyé à `Runtime.evaluate`.**
+  L'expression est un gabarit JavaScript : une backquote le termine.
+- **Ne pas confondre « le produit n'a pas pu copier » et « cette machine n'a pas
+  de presse-papiers ».** Le `.ps1` écrit lui-même le presse-papiers **avant** la
+  fenêtre : quand ce contrôle échoue, `OpenClipboard` échoue pour tout le monde,
+  `P-14` est déclarée **non exécutée** et le geste est quand même joué. Quand il
+  réussit, rien ne change et une erreur du produit fait toujours échouer le run.
+  Même discipline que l'empreinte « settled » de `TASK-0056` : une mesure
+  impossible se déclare, elle ne se devine pas et ne passe jamais en silence.
+- **Ne pas comparer le nombre d'arêtes dessinées au total de l'index.** Déjà écrit
+  par `TASK-0056`, et vérifié de nouveau ici : la vue bornée n'en dessine que
+  lorsque **les deux** extrémités sont matérialisées. Le contrôle honnête est à
+  deux côtés, et la campagne publie les deux nombres.
+
+**Ce qui est réutilisable tel quel.**
+
+- `scripts/task0057-diff-scope.ps1` — prouve qu'une **correction** n'a touché que
+  les fichiers de production que sa fiche autorise, et vérifie ligne par ligne
+  qu'un fichier admis pour une seule déclaration `#[cfg(test)]` n'a rien gagné
+  d'autre.
+- `src-tauri/src/map/relation_real_root_tests.rs` — une campagne unitaire sur un
+  vrai dossier jetable, avec un oracle qui lit le dépôt **à côté** de la commande
+  sous test, et un garde **structurel** qui énonce la règle au lieu des six cas.
+- Le harnais `task0056-webview2.{ps1,mjs}` et `task0056-seed-proof.py`, désormais
+  avec la sonde de presse-papiers et la campagne des relations sur racine réelle.
+
+**Action unique suivante :** contrôle indépendant de `TASK-0057`. Deux points à
+arbitrer explicitement, écrits dans `NEXT_ACTION.md` : `P-14` non exécutée sur
+cette machine, et la moitié « carte » de `P-05` observée à deux côtés. Aucune
+`TASK-0058`; ni B, ni C, ni D.
+
 ## Relais — ACTION-0106 / TASK-0057 READY — 2026-10-08
 
 - Branche : `build/v0.2-a41-v1-real-root-relations`.

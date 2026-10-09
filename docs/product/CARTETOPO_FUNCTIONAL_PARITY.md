@@ -515,3 +515,44 @@ Ils sont écrits ici plutôt que corrigés en silence.
 > portée testée mais ne suffit plus à la portée finale : P-04/P-05/P-07 sont
 > bloquées jusqu'à TASK-0057. Le contrat n'est pas abaissé. Stage A reste EN
 > COURS.
+> **Correction du manque REAL_ROOT — TASK-0057 (2026-10-08), `IMPLEMENTED`,
+> candidate.**
+> Le seul manque qu'`ACTION-0106` avait confirmé est corrigé sous `DEC-0053`,
+> **sans abaisser le contrat et sans toucher au modèle** : ni le catalogue de
+> règles, ni le moteur déterministe, ni le schéma des relations, ni les dépôts,
+> ni la surface inter-cerveaux, ni un rendu n'ont changé. La surface
+> intra-cerveau des relations est désormais une capacité du **cerveau** et non
+> de la fixture : ses six actions — ouvrir, relations d'un nœud, file de
+> révision, approuver, rejeter, révoquer — ne requièrent plus de fixture et
+> répondent sur une racine réelle. Le périmètre `TASK-0017` figé et
+> l'auto-contrôle gelé restent explicitement synthétiques, et
+> `map_relations_self_check` refuse toujours une racine réelle, par son nom.
+>
+> **`P-04`, `P-05` et `P-07` sont désormais exercés sur une racine réelle**, dans
+> le vrai hôte Tauri/WebView2, par la campagne `P-22` rejouée au `HEAD` corrigé
+> (`docs/performance/runs/TASK-0057-p22-webview2.json`, `verdict PASS`,
+> `productGaps` vide) : relation déterministe avec sa règle et sa provenance en
+> mots, comptes du panneau égaux à ceux de l'index et lus par deux requêtes
+> séparées, suggestion comptée dans aucune direction, file de révision ouverte,
+> approbation au vrai clavier, révocation, rejet d'une autre suggestion, puis
+> persistance des trois décisions à travers un vrai redémarrage. L'empreinte
+> externe des quatre sources est restée identique. Verdict d'ensemble de la
+> matrice : `SATISFIED`.
+>
+> **Rien n'est fermé ici.** L'exécuteur ne s'attribue pas `VERIFIED` : `P-04`,
+> `P-05` et `P-07` sont **candidates** à la fermeture, et la clôture `P-04`
+> d'`ACTION-0094` — dont `TASK-0056` avait écrit qu'elle ne couvrait pas une
+> racine réelle — n'est ni révoquée ni étendue par l'exécuteur. Confirmer
+> qu'elle couvre désormais les deux genres de source appartient au contrôle
+> indépendant.
+>
+> **Deux limites déclarées.** `P-14` n'a **pas été exécutée** au `HEAD` corrigé :
+> la machine d'essai refuse toute opération de presse-papiers, mesuré hors du
+> produit avant l'ouverture de la fenêtre, de sorte qu'il n'y avait aucun
+> presse-papiers à confronter; le geste a été joué et la comparaison reste
+> composée depuis `TASK-0034`/`ACTION-0055`. La moitié « carte » de `P-05` est
+> une observation **à deux côtés** : la vue bornée ne dessine une arête que si
+> ses deux extrémités sont matérialisées, elle en a donc dessiné 0 pour le nœud
+> observé — exactement ce qu'elle pouvait dessiner — et les trois relations dont
+> une extrémité manquait sont nommées une par une dans la région « extrémités
+> hors de la vue courante ».

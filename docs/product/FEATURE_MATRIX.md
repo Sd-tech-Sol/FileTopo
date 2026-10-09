@@ -452,3 +452,25 @@ Les preuves et constats ci-dessous sont inchangés.
 > interdit de toucher au code produit. Le constat est écrit pour arbitrage, pas
 > corrigé en silence. Preuve :
 > `docs/performance/runs/TASK-0056-p22-webview2.json`, champ `productGaps`.
+
+> **Correction du 2026-10-08 — TASK-0057, `DEC-0053`.** La note ci-dessus est
+> **périmée dans sa conséquence**, et laissée en place parce qu'elle décrit ce
+> que `TASK-0056` a réellement observé. `F-017`, `F-019`, `F-043`, `F-044` et
+> `F-045` ne sont plus limitées à un cerveau `SYNTHETIC_FIXTURE` : les six
+> actions intra-cerveau de relations ne requièrent plus de fixture et répondent
+> sur une racine réelle. La campagne du `HEAD` corrigé les exerce sur un cerveau
+> `REAL_ROOT` — relation déterministe, comptes exacts, suggestion non comptée,
+> file de révision, approbation au clavier, révocation, rejet, persistance après
+> un vrai redémarrage — dans
+> `docs/performance/runs/TASK-0057-p22-webview2.json`, dont le champ
+> `productGaps` est **vide**.
+>
+> Ce qui reste explicitement synthétique, et doit le rester (`DEC-0053` B) : la
+> **démonstration** figée de `TASK-0017` et l'auto-contrôle gelé
+> `map_relations_self_check`, qui refuse une racine réelle par son nom. Ce sont
+> des diagnostics de développeur, pas des fonctions produit.
+>
+> **Aucune classification n'est changée ici** : les exigences de parité
+> correspondantes — `P-04`, `P-05`, `P-07` — passent de `GAP` à `SATISFIED` dans
+> [PARITY_MATRIX_P01_P22.md](PARITY_MATRIX_P01_P22.md) et y sont **candidates**
+> à la fermeture. L'exécuteur ne ferme rien.

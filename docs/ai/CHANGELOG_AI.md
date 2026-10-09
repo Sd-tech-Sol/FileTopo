@@ -6738,3 +6738,76 @@ suivante : arbitrage du gap, correction dans une tâche séparée.
 - Arbitrage : preuve synthétique insuffisante si la capacité est inatteignable sur les données utilisateur; Stage A reste EN COURS.
 - DEC-0053 : surface core générique, legacy TASK-0017 fixture-only.
 - TASK-0057 READY; acceptance TASK-0056 devra être rejouée au HEAD corrigé.
+---
+
+## 2026-10-08 — TASK-0057 — la surface des relations sur une racine réelle — `IMPLEMENTED` (candidate)
+
+**Agent :** Claude Code (Opus 5). **Branche :**
+`build/v0.2-a41-v1-real-root-relations`, base `ca17df50`. **Décision appliquée :**
+`DEC-0053`. **Nature :** correction du **seul** manque de `TASK-0056`, prouvée
+étroite par `scripts/task0057-diff-scope.ps1` — `IN SCOPE`, **4** fichiers de
+production sur **23** chemins modifiés.
+
+**La cause.** Les six actions intra-cerveau de relations — ouvrir, relations d'un
+nœud, file de révision, approuver, rejeter, révoquer — résolvaient leur source
+par `BrainRecord::source_fixture()`, qui refuse une racine réelle par son nom.
+Le moteur `dre-v1`, lui, était déjà générique : la surface rendait donc sa forme
+« indisponible » au-dessus d'un dépôt que le moteur venait de remplir. Comme
+`DEC-0033` A fait de la racine réelle la seule entrée d'une arborescence
+personnelle, `P-04`, `P-05` et `P-07` étaient inatteignables pour les données de
+l'utilisateur.
+
+**La correction.** `generic_source_spec` remplace un `source_spec` qui n'était
+que `source_fixture()` sous un autre nom : `Some(spec)` pour un cerveau
+synthétique — qui refuse toujours une fixture inconnue — et `None` pour une
+racine réelle, ce qui est une réponse et non un refus. `legacy_fixture_spec`
+répond pour une racine réelle **sans consulter la table des fixtures**, de sorte
+que « la démonstration figée s'applique-t-elle ? » est une question à laquelle on
+peut répondre au lieu d'être refusée avant d'être posée. `fixtureId` vaut la
+fixture sur un cerveau synthétique, `null` sur une racine réelle, et ne porte
+aucun chemin ni substitut. `map_relations_self_check` garde `ensure_in_scope` et
+refuse toujours une racine réelle, par son nom — `DEC-0053` B.
+
+**Inchangés :** modèle des relations, catalogue de règles, moteur déterministe,
+schéma, dépôts, surface inter-cerveaux, rendus, dépendances. Aucune migration.
+
+**Preuves.**
+
+- **5 tests unitaires** sur un vrai dossier jetable, avec un oracle qui lit le
+  dépôt **à côté** de la commande sous test, et un **garde structurel** qui
+  énonce la règle `DEC-0053` C au lieu des six cas : les corps des fonctions
+  génériques, lus à la compilation, ne doivent pas appeler `source_fixture()` ni
+  `ensure_in_scope()`, et `self_check` doit encore appeler `ensure_in_scope()`.
+  Les dix falsifications du §12 sont écrites contre le **motif**, pas contre le
+  succès.
+- **Campagne `P-22` rejouée au `HEAD` corrigé : `PASS`**, `taskVerdict PASS`,
+  `productGaps` **vide**, 27 lignes de couverture, `P-01..P-22` tous observés,
+  empreinte externe stricte identique sur quatre racines, axe-core sans
+  violation en français, anglais, sombre et mouvement réduit.
+  `P-04`/`P-05`/`P-07` y portent `sourceKind: REAL_ROOT` : approbation en 24
+  tabulations réelles, entrée de relation activée en 2, révocation, rejet d'une
+  autre suggestion, et les trois décisions relues du dépôt après un vrai
+  redémarrage.
+- **Gate de régression Rust** : trois suites complètes et consécutives au même
+  `HEAD`, sorties capturées, logs hors dépôt.
+
+**Deux limites déclarées, non contournées.** `P-14` n'a **pas été exécutée** :
+cette machine refuse toute opération de presse-papiers, mesuré **hors du
+produit** avant l'ouverture de la fenêtre; le harnais distingue désormais ce cas
+d'un échec du produit, joue le geste quand même et compose la comparaison depuis
+`TASK-0034`/`ACTION-0055`. La moitié « carte » de `P-05` est une observation à
+deux côtés : la vue bornée a dessiné 0 arête pour un nœud dont l'extrémité
+n'était pas matérialisée, et les trois relations concernées sont nommées dans la
+région « extrémités hors de la vue courante ».
+
+**Quatre corrections de harnais, toutes dans le harnais.** Une assertion voulait
+la note du périmètre legacy **absente** sur une racine réelle alors qu'elle doit
+y être; `.relation__link` tout court comptait le bouton « voir la cible » d'une
+suggestion comme une entrée de relation; une backquote dans un commentaire
+terminait le gabarit envoyé à `Runtime.evaluate`; et l'absence de presse-papiers
+était lue comme un échec du produit.
+
+**Étape A reste `EN COURS` — parce que l'exécuteur ne ferme rien.** Verdict
+d'ensemble de la matrice : `SATISFIED`. `P-04`, `P-05`, `P-07` **candidates**; la
+clôture `P-04` d'`ACTION-0094` n'est ni révoquée ni étendue ici. Aucune
+`TASK-0058`. Ni B, ni C, ni D. Action unique suivante : contrôle indépendant.
