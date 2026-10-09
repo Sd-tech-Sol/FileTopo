@@ -524,9 +524,9 @@ if (pass === 1) {
       assert.equal(layout.mediaMatches.dark, state.scheme === "dark", `prefers-color-scheme not applied at ${size.label}/${state.id}`);
       assert.equal(layout.mediaMatches.reduceMotion, state.motion === "reduce", `prefers-reduced-motion not applied at ${size.label}/${state.id}`);
 
-      const keyboard = await tabToAside();
-      const axe = await axeRun();
-
+      // The capture is taken here, while the document is still at the top where
+      // `READ_LAYOUT` left it: it must show the window this reading describes, which is
+      // what the person sees before touching anything. The Tab walk below scrolls.
       const key = `${size.label}/${state.id}`;
       if (PUBLISHED_CAPTURES.has(key)) {
         const shot = await send("Page.captureScreenshot", { format: "png" });
@@ -536,9 +536,13 @@ if (pass === 1) {
           file: `TASK-0058-${size.label}-${state.id}.png`,
           bytes: bytes.length,
           sha256: createHash("sha256").update(bytes).digest("hex"),
+          scrollYAtCapture: await evaluate("Math.round(window.scrollY)"),
           data: shot.data,
         });
       }
+
+      const keyboard = await tabToAside();
+      const axe = await axeRun();
 
       matrix.push({
         size: size.label,

@@ -143,6 +143,8 @@ foreach ($capture in $results[1].captures) {
         state = $capture.key
         bytes = $capture.bytes
         sha256 = $capture.sha256
+        scrollYAtCapture = $capture.scrollYAtCapture
+        note = 'The visible window at the top of the document, in the state the matrix row of the same name measured.'
     }
 }
 
