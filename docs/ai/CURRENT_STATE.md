@@ -1,5 +1,14 @@
 # État courant
 
+## TASK-0060 — correction ACTION-0111 (`B03-O1`) — `IMPLEMENTED` — 2026-10-09
+
+- Branche `build/v0.2-b03-primary-chrome`, synchronisée en fast-forward sur `340b612`; `HEAD` mesuré `fb01e3cdbe5fa76538e01f597965bac32412fe63` (produit `7085674`, harnais `fb01e3c`). Même tâche, aucune `TASK-0061`.
+- **Résultat mesuré en WebView2 réel, 18 états :** `primaryContractSatisfiedWhole = true`, `worstPrimaryFullyVisible = 13/13` (avant : 10/13, 5 états à 960x640 comfortable). Les trois résumés de groupe sont **entiers** et touchés par le test de pointage dans 18/18, **sans défilement préalable**; la bande de chrome ne défile plus (125 px pour 176 disponibles, contre 281 pour 176).
+- **Réorganisation, mêmes éléments et mêmes `data-testid` :** en-tête sur une rangée (99 → 35 px), composition + `Ajouter un dossier` / `Ouvrir` / `Actualiser` sur une rangée (82 → 35), deux groupes du chrome côte à côte (70 → 35). Deux contenus changent d'**emplacement** sans disparaître : la légende de tranche et la référence de source par cerveau (diagnostic développeur, 36 caractères, qui repliait les trois actions) sont maintenant dans le groupe Diagnostics, en entier.
+- **Mesure interactionnelle ajoutée, dans les 18 états, depuis la première fenêtre :** clic souris réel et marche Tab + `Entrée` jusqu'à chaque résumé, `expanded` lu dans l'arbre d'accessibilité, focus conservé, document à `scrollY=0`; un groupe fermé masque réellement ses commandes, ouvert il les montre toutes. **Falsifiée :** le même harnais sur le produit précédent donne `...Whole=false` (10/13) et des entrées de groupe non entières dans 6 états.
+- Carte 261–535 px (plancher 240 tenu), 59 commandes dans le DOM, caméra, `P-19`, `P-22` (160 entrées, 0 artefact), axe 0 violation : inchangés. `pnpm test` **781/781** deux fois, `check`, `build`, `diff --check`. Les tests jsdom qui pilotent une commande de groupe ouvrent désormais le groupe (`src/test/disclosure.ts`) et une garde l'exige; jsdom ne prouve toujours rien sur un disclosure fermé.
+- Limites : pas de lecteur d'écran, contraste `INCOMPLETE`, rangée composition non mesurée avec plusieurs cerveaux ou un statut, `P-01..P-22` non rejouées, aucune CI distante. **Statut `IMPLEMENTED`, jamais `VERIFIED` par l'exécuteur.** Stage B non close, Stage C/D et R8 inchangées, `main` intacte.
+
 ## ACTION-0111 — audit indépendant : B03 correction requise — 2026-10-09
 
 - HEAD vérifié sur GitHub : `79128682d61cedf22b39ea18fb1f022c33149c39`; preuve WebView2 AFTER au commit `a645303631db59063b463bc4d44f0cf4f95bc258`. Campagne et 12 captures inspectées, diff de produit autorisé, zéro GitHub Actions/check.

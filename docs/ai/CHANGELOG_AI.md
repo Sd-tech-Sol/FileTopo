@@ -6997,3 +6997,29 @@ touché). **Aucune CI distante** : 0 workflow, 0 contrôle sur ce HEAD.
 ## 2026-10-09 — ACTION-0111 — contrôle B03, correction requise
 
 Audit GitHub indépendant de TASK-0060 sur `79128682d61cedf22b39ea18fb1f022c33149c39`, lecture du diff, JSON AFTER de 18 états et captures réelles. Malgré 13/13 commandes avec aire cliquable, 3 boutons essentiels sont partiellement coupés (20/35px) et les points d'entrée avancés sous le pli à 960 confortable; `primaryContractSatisfiedWhole=false`. Verdict `IMPLEMENTED / NOT VERIFIED — CORRECTION REQUIRED`. Aucun lancement de nouvelle tâche : correction B03 sur branche existante, prompt versionné. Tests 770/770 rapportés (pas relancés), CI distante absente. A/B01/B02 inchangés; B in progress, main intacte.
+
+
+## 2026-10-09 — TASK-0060 — correction ACTION-0111 (`B03-O1`)
+
+**Agent :** exécuteur Claude Code (Sonnet 5.5, effort HIGH)
+**Statut à l'issue :** `IMPLEMENTED` — contrôle indépendant de l'orchestrateur à venir
+
+### Fait
+
+- Branche `build/v0.2-b03-primary-chrome` synchronisée en fast-forward sur `340b612`; `.orchestrator/NEXT_PROMPT.md` et ACTION-0111 lus; aucune nouvelle tâche.
+- Produit (`7085674`) : en-tête sur une rangée, composition + trois actions sur une rangée, deux groupes du chrome côte à côte (`.app__groups`), légende de tranche et référence de source par cerveau déplacées dans Diagnostics (en entier, non tronquées), deux indices FR raccourcis. Même éléments, mêmes `data-testid`, aucun contrôle retiré, aucune carte reprise.
+- Harnais (`fb01e3c`) : `measureGroupEntryPoints()` — clic souris réel, marche Tab + `Entrée`, `expanded` de l'arbre d'accessibilité, baseline « un groupe fermé masque vraiment », contenu atteint après ouverture — dans les 18 états et au redémarrage; verdicts `groupEntryPointsWholeEveryState` et voisins; `ps1` met à jour son résumé.
+- Tests : `responsiveLayout.test.ts` 49 → 60; `src/test/disclosure.ts` (`openGroup`) et cinq tests jsdom existants qui ouvrent désormais le groupe avant d'agir; une garde l'exige.
+- Preuves : campagne `after` régénérée (6 captures), campagne `previous-product` (falsification), `.orchestrator/RESULT.md`, TASK-0060, cinq documents d'état.
+
+### Résultat
+
+`primaryContractSatisfiedWhole = true`, 13/13 entières dans 18 états sur 18; trois résumés entiers sans défilement dans 18/18; bande de chrome 125 px, ne défile plus; carte 261–535 px; ouverture par souris et par clavier, `expanded` et focus corrects partout; `P-19`, `P-22`, axe inchangés. Falsifié sur le produit précédent : 10/13, 6 entrées non entières.
+
+### Non fait, volontairement
+
+Aucun fichier interdit touché; aucun témoin affaibli; pas de `TASK-0061`, de Stage C/D, de PR, d'étiquette ni de fusion. Pas de lecteur d'écran, contraste `INCOMPLETE`, rangée composition non mesurée avec plusieurs cerveaux ou un statut, `P-01..P-22` non rejouées, aucune CI distante.
+
+### Portes
+
+`pnpm test` **781/781** deux fois, `pnpm check`, `pnpm build`, `git diff --check`; Rust non exécuté.

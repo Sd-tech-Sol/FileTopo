@@ -1,8 +1,7 @@
-# Action suivante — ACTION-0111 / correction de TASK-0060
+# Action suivante — contrôle indépendant de TASK-0060 après la correction ACTION-0111
 
-**UNE action seulement :** exécuter **la correction ciblée de B03-O1 sur la même branche `build/v0.2-b03-primary-chrome`** par Claude Code Sonnet/HIGH selon `.orchestrator/NEXT_PROMPT.md`. Ne pas créer TASK-0061.
+**UNE action seulement :** l'orchestrateur (ChatGPT) relit sur GitHub la correction de `B03-O1` livrée sur `build/v0.2-b03-primary-chrome` au `HEAD` de la branche (mesure au `fb01e3cdbe5fa76538e01f597965bac32412fe63`) — diff, `.orchestrator/RESULT.md`, `TASK-0060-primary-chrome-after.json`, `TASK-0060-primary-chrome-previous-product.json`, captures `TASK-0060-after-*.png` — puis rend `VERIFIED` ou refuse. Aucune `TASK-0061`, aucun Stage C/D tant que ce verdict n'est pas rendu.
 
-- Revue indépendante GitHub au `79128682d61cedf22b39ea18fb1f022c33149c39` : 13 primaires avec aire cliquable dans 18 états, mais **seulement 10/13 entièrement visibles au pire**. Les trois actions principales sont rognées à **20/35px** à 960x640 confortable; les résumés avancé/diagnostics sont invisibles sans défilement de la bande (25/70px sous pli). Critère visuel de B03 **non satisfait** : `TASK-0060 = IMPLEMENTED / NOT VERIFIED — CORRECTION REQUIRED`.
-- Bons résultats conservés : 59 commandes dans DOM; trois disclosures clavier; carte 240–474px; caméra et P-19/P-22 stables; 770/770 tests rapportés deux fois. Pas de CI distante ni test relancé par ChatGPT.
-- L'audit de correction est `docs/reviews/ACTION-0111-task0060-independent-control.md`. Demander `primaryContractSatisfiedWhole=true` sur 18 états et un point d'entrée explicite aux outils avancés visible dès l'ouverture à 960×640.
-- Stage A CLOSED; B01 et B02 VERIFIED; B03 non VERIFIED; Stage B EN COURS; R8/Stage C/D inchangés, pas de PR/merge main.
+- Statut de l'exécuteur : `IMPLEMENTED`, jamais `VERIFIED`. `primaryContractSatisfiedWhole = true`, 13/13 entières dans 18 états, trois résumés de groupe entiers sans défilement, bande de chrome 125 px qui ne défile plus, carte 261–535 px, 781/781 tests deux fois. Falsifié sur le produit précédent (10/13, 6 entrées de groupe non entières).
+- À regarder en particulier : la légende de tranche et la référence de source par cerveau ont changé d'**emplacement** (premier écran → groupe Diagnostics) sans suppression — décision de présentation que l'orchestrateur peut trancher autrement; la rangée composition n'est pas mesurée avec plusieurs cerveaux ou une ligne de statut (marge 51 px).
+- Stage A CLOSED; B01 et B02 VERIFIED; B03 non VERIFIED; Stage B EN COURS, `P-01..P-22` relues à sa clôture; R8/Stage C/D inchangés, pas de PR ni de fusion vers `main`.

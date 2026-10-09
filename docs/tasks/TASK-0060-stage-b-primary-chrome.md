@@ -1,10 +1,11 @@
 # TASK-0060 — Stage B / B03 — Commandes primaires visibles, outils avancés accessibles
 
 - **Date :** 2026-10-09
-- **État :** `IMPLEMENTED / NOT VERIFIED — CORRECTION REQUIRED` par ACTION-0111 (2026-10-09); la revue indépendante refuse la promotion à cause de B03-O1. L'exécuteur ne s'était pas attribué VERIFIED. Résultats mesurés en §Résultats.
+- **État :** `IMPLEMENTED` — correction ACTION-0111 livrée le 2026-10-09 (`B03-O1` levée, §Correction ACTION-0111), **en attente du contrôle indépendant**; l'exécuteur ne s'attribue pas VERIFIED. Avant la correction : `IMPLEMENTED / NOT VERIFIED — CORRECTION REQUIRED` par ACTION-0111.
 - **Branche :** `build/v0.2-b03-primary-chrome`
 - **Base :** `f5da1d41226c7fcf34a24351af8fe55b3bb4525b`, TASK-0059 `VERIFIED` par ACTION-0110.
 - **HEAD mesuré :** `before` = `a03b8bc0a3ed75abca10012cdbbea5a4fc090663` (produit inchangé), `after` = `a645303631db59063b463bc4d44f0cf4f95bc258`.
+  Correction ACTION-0111 : `after` = `fb01e3cdbe5fa76538e01f597965bac32412fe63`; l'`after` de `a645303` est remplacé, le `before` (`a03b8bc`) est inchangé.
 - **Décision :** `docs/reviews/ACTION-0110-task0059-independent-control.md`
 - **Exécuteur :** Claude Code Sonnet, effort **HIGH** par défaut (Opus seulement si nécessaire et signalé).
 - **Stage :** B03, ni Stage C ni Stage D.
@@ -187,3 +188,40 @@ de fusion.
 ## ACTION-0111 — correction avant VERIFIED
 
 Voir `docs/reviews/ACTION-0111-task0060-independent-control.md`. Les boutons `brain-add-real-root`, `lifecycle-open`, `lifecycle-refresh` sont rognés (20/35px) à 960 confortable, et les deux résumés chrome ne sont pas visibles sans défiler. La mesure `onScreen` seule est insuffisante : `primaryContractSatisfiedWhole=false`. Même TASK-0060, même branche, correction et nouvelle preuve WebView2 avant vérification; pas de TASK-0061.
+
+
+## Correction ACTION-0111 — `B03-O1` levée, `IMPLEMENTED` — 2026-10-09
+
+Même tâche, même branche, aucune `TASK-0061`. `HEAD` mesuré : `fb01e3cdbe5fa76538e01f597965bac32412fe63` (produit `7085674`, harnais `fb01e3c`, tous deux commités avant la campagne). Détail compact : `.orchestrator/RESULT.md`; preuves : `docs/performance/runs/TASK-0060-primary-chrome-after.json` (pass 1 = 18 états, pass 2 = redémarrage) et les six captures `TASK-0060-after-*.png`, régénérées à `scrollY=0`.
+
+### Ce que la correction a organisé
+
+Pas de pixel repris à la carte, pas de contrôle retiré. Les mêmes éléments, les mêmes `data-testid`, autrement rangés :
+
+| Rangée à 960x640 comfortable | avant | après |
+|---|---|---|
+| en-tête (titre, langue, densité, mouvement) | 99 | **35** — une rangée |
+| composition + `Ajouter un dossier` / `Ouvrir` / `Actualiser` | 82 | **35** — une rangée |
+| les deux groupes du chrome | 70 (2 rangées) | **35** — côte à côte dans `.app__groups`, un groupe ouvert prend la rangée |
+| contenu de la bande de chrome | 281 pour 176 | **125 pour 176**, ne défile plus |
+
+Deux déplacements d'emplacement, **sans suppression**, à connaître : la légende de tranche (`subtitle`) ouvre maintenant le groupe Diagnostics, et la référence de source de chaque cerveau — un diagnostic développeur de 36 caractères (`showSource`) qui pesait 290 px dans chaque pastille et repliait les trois actions sous le pli — apparaît **en entier, non tronquée**, dans Diagnostics (`data-testid="brain-sources"`, chaîne `t.groups.brainSources` FR/EN). Deux indices FR de groupe raccourcis pour tenir sur une ligne. Une ellipse avait été essayée d'abord : le tripwire « défileur latéral » de B01 l'a refusée, et il est resté intact.
+
+### Résultats mesurés (WebView2 réel, 18 états)
+
+- `primaryContractSatisfiedWhole = true`, **`worstPrimaryFullyVisible = 13/13`** dans 18/18 états (avant : 10/13 au pire, 5 états).
+- `groupEntryPointsWholeEveryState = true` : les trois résumés **entiers** et touchés par le test de pointage dans 18/18, sans défilement préalable; la bande de chrome ne défile dans **aucun** état (avant : 6 sur 6 à 960x640).
+- **Mesure interactionnelle** dans les 18 états, depuis la première fenêtre : clic souris réel au centre du résumé; vraie marche Tab + `Entrée` + `Entrée`; `expanded` lu dans l'arbre d'accessibilité de Chromium; focus conservé sur le résumé; document à `scrollY=0`; groupe refermé. Tout `true` dans 18/18, pass 2 compris.
+- **Commandes cachées** : un groupe fermé masque réellement ce qu'il tient (aucun test de pointage ne répond, bande défilée ou non); ouvert, par souris ET par clavier, tout ce qu'il tient répond. `laidOut` n'est **pas** une preuve — WebView2 dessine un `<details>` fermé en `content-visibility: hidden`, ses enfants gardent des rectangles —, publié à part et jugé par rien.
+- Carte visible 261 → 535 px (304 / 480 / 448 hors légende à 960 / 1280 / 1366), plancher 240 respecté. 59 commandes dans le DOM, overflow horizontal 0, document 0, 0 élément rogné, caméra stable, `P-19` (groupes fermés au redémarrage, non-persistance assumée), `P-22` (strict et accès identiques, 160 entrées), axe 0 violation / contraste `INCOMPLETE`.
+- **Falsification** : le même harnais sur le produit précédent (arbre `src/` identique à `7912868`) échoue exactement là où B03-O1 vivait — `...Whole=false` à 10/13, entrées de groupe non entières dans 6 états, la souris ne touche pas les résumés rognés. Publié : `TASK-0060-primary-chrome-previous-product.json`.
+
+### Tests
+
+`pnpm test` **781/781** (49 fichiers), **deux fois**; `pnpm check`, `pnpm build`, `git diff --check` passés; Rust non exécuté. `responsiveLayout.test.ts` 49 → 60 tests (rangée d'en-tête, composition et actions, groupes côte à côte, rien de rogné, et une garde qui exige qu'un test jsdom ouvre un groupe avant d'en piloter une commande). Tests existants touchés, couverture maintenue puis renforcée — ils ouvrent le groupe par un clic sur son `<summary>` via `src/test/disclosure.ts`, qui refuse de continuer si le groupe ne s'est pas ouvert : `brainIdentity` (éditeur d'identité), `localeRuntime` (filtre, `cross-check`), `resumeMapApp` (filtre), `watchMapApp` (filtre), `workspaceMapApp` (sortie de focus, repli de branche). jsdom reste **sans valeur de preuve** sur le disclosure.
+
+### Limites dites
+
+Pas de lecteur d'écran; contraste `INCOMPLETE`; marche clavier jusqu'à la commande la plus éloignée seulement à 960x640; nom de cerveau long, plusieurs cerveaux ou ligne de statut peuvent replier la rangée composition (budget restant 51 px, **non mesuré**); `P-01..P-22` non rejouées; aucune CI distante; R8 non levée.
+
+**Statut : `IMPLEMENTED`**, jamais `VERIFIED` par l'exécuteur. Contrôle indépendant par l'orchestrateur à venir.

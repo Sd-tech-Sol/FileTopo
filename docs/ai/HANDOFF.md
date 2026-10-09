@@ -1,5 +1,18 @@
 # HANDOFF — passage de relais
 
+## Relais — correction ACTION-0111 de TASK-0060 (`B03-O1`) — 2026-10-09
+
+- Branche `build/v0.2-b03-primary-chrome`; `HEAD` mesuré `fb01e3c`. Le diagnostic « arithmétique » de `B03-O1` — « il faut reprendre des pixels à la carte ou retirer du contenu » — était **faux** : le chrome tenait 125 px, pas 281, dès qu'on a rangé les mêmes éléments autrement. Un budget calculé à la main sur une disposition n'est pas une preuve qu'aucune autre n'existe; ACTION-0111 avait raison de le dire.
+- **Ce qui pesait vraiment :** trois rangées qui n'en avaient pas besoin (en-tête sur deux lignes, composition et actions sur deux, deux groupes sur deux) et un diagnostic développeur — la référence de source, 36 caractères — écrit dans **chaque pastille de cerveau**. Elle repliait les trois actions principales sous le pli. Déplacée dans Diagnostics, en entier.
+- **Ce que la campagne a refusé en route, et c'est ce qui la rend crédible :** une ellipse sur la source (le tripwire « défileur latéral » de B01 l'a signalée), puis la source sur sa propre ligne (la rangée composition s'est repliée à 103 px). Aucun témoin n'a été affaibli : la solution a plié, pas le test.
+- **Piège de mesure appris :** WebView2 dessine un `<details>` fermé avec `content-visibility: hidden`; ses enfants gardent des rectangles (`getClientRects` non vide, `laidOut = true` pour les 59). Une commande « présente » dans un groupe fermé n'est donc pas « mise en page » au sens utile : seul le test de pointage dit si elle est atteignable. `laidOut` est publié à part et ne juge plus rien.
+- **Piège de mesure, suite :** `click()` du harnais fait `scrollIntoView` — il aurait caché exactement le défaut mesuré. La nouvelle mesure `measureGroupEntryPoints` clique au centre du résumé **tel que la première fenêtre le dessine**, sans rien défiler avant, et lit `expanded` dans l'arbre d'accessibilité (`Accessibility.getPartialAXTree`).
+- **Méthode :** le harnais a été **falsifié** avant d'être cru : même procédure sur le produit précédent (arbre `src/` identique à `7912868`, commit jetable local) → il échoue à 10/13 et sur 6 entrées de groupe. Les deux nouvelles gardes statiques ont aussi été falsifiées (retirer un `openGroup`, poser un `text-overflow`).
+- **jsdom :** `localeRuntime`, `brainIdentity`, `resumeMapApp`, `watchMapApp`, `workspaceMapApp` pilotaient des commandes de groupes fermés — et passaient. Elles ouvrent maintenant le groupe via `src/test/disclosure.ts`; une garde dans `responsiveLayout.test.ts` l'exige pour tout `data-testid` de groupe. Elle ne voit pas une commande trouvée par rôle ou libellé : ne pas lire un `pnpm test` vert comme une preuve de visibilité.
+- **Méthode à réutiliser :** `scripts/task0060-primary-chrome.ps1 -Phase after -WorkDirectory <hors dépôt>` (pwsh 7, arbre suivi propre — commiter avant de mesurer, restaurer les captures régénérées avant une exploration), 6 min. `-Out` permet de nommer un artefact distinct.
+- Reste, dit : rangée composition non mesurée avec plusieurs cerveaux, un nom long ou une ligne de statut (51 px de marge); pas de lecteur d'écran; contraste `INCOMPLETE`; `P-01..P-22` à la clôture de Stage B; aucune CI distante.
+- Prochaine action UNIQUE : contrôle indépendant de `TASK-0060` par l'orchestrateur, puis `VERIFIED` ou refus. Pas de `TASK-0061`, pas de Stage C/D, pas de PR ni de fusion.
+
 ## ACTION-0111 — audit indépendant : B03 correction requise — 2026-10-09
 
 - HEAD vérifié sur GitHub : `79128682d61cedf22b39ea18fb1f022c33149c39`; preuve WebView2 AFTER au commit `a645303631db59063b463bc4d44f0cf4f95bc258`. Campagne et 12 captures inspectées, diff de produit autorisé, zéro GitHub Actions/check.

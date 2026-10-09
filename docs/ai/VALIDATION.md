@@ -1,7 +1,7 @@
 # VALIDATION.md — État de vérification
 
 **Dernière mise à jour :** 2026-10-09
-**Dernière livraison exécutée :** TASK-0060, section **DV** (commandes primaires visibles, Stage B / B03), `IMPLEMENTED`, **en attente de vérification indépendante** — les 13 commandes usuelles vraiment sur le premier écran dans 18 états sur 18 contre 9/13 au pire avant, 59 commandes toujours dans le DOM dont 28 derrière un groupe fermé, carte jusqu'à 474 px, réserve `B03-O1` ouverte et chiffrée. Avant elle : TASK-0059, section **DT** (carte dès le premier écran, Stage B / B02), `VERIFIED` dans sa portée B02 par `ACTION-0110`, section **DU** — 240 px de carte visible et exploitable dans les 18 états contre 0 avant, aucune commande perdue, caméra stable à la précision machine. Avant elle : TASK-0058, section **DS** (baseline visuelle Stage B / B01), `VERIFIED` dans sa portée B01 par `ACTION-0109` — aucun défaut de chrome prouvé, diff produit vide. Avant elle : TASK-0036, section **BP** (passe corrective D6, `ACTION-0059`), `IMPLEMENTED`, **en attente de vérification indépendante**. Section BO (passe corrective D4/D5, `ACTION-0058`) acceptée sans régression sur D1/D2/D3/R1/D5 par ce recontrôle, D4 confirmé largement corrigé hors D6. TASK-0035, section BL, est `VERIFIED` par `ACTION-0056`. TASK-0034, section **BH** (recherche bornée et « Ouvrir dans l'Explorateur »), `IMPLEMENTED`, **en attente de vérification indépendante**. TASK-0033, sections BE/BF, est `VERIFIED` dans sa portée par le verdict indépendant enregistré dans `ACTION-0051`, section BG.
+**Dernière livraison exécutée :** TASK-0060, correction `ACTION-0111` (`B03-O1`), section **DX**, `IMPLEMENTED`, **en attente de vérification indépendante** — `primaryContractSatisfiedWhole = true`, 13/13 entières dans 18 états sur 18, les trois résumés de groupe entiers sans défilement dans 18/18, bande de chrome 125 px qui ne défile plus, carte 261–535 px, mesure interactionnelle (souris, Tab + Entrée, arbre d'accessibilité) dans 18/18, harnais falsifié sur le produit précédent. Avant elle : TASK-0060, section **DV** (commandes primaires visibles, Stage B / B03), `IMPLEMENTED`, **en attente de vérification indépendante** — les 13 commandes usuelles vraiment sur le premier écran dans 18 états sur 18 contre 9/13 au pire avant, 59 commandes toujours dans le DOM dont 28 derrière un groupe fermé, carte jusqu'à 474 px, réserve `B03-O1` ouverte et chiffrée. Avant elle : TASK-0059, section **DT** (carte dès le premier écran, Stage B / B02), `VERIFIED` dans sa portée B02 par `ACTION-0110`, section **DU** — 240 px de carte visible et exploitable dans les 18 états contre 0 avant, aucune commande perdue, caméra stable à la précision machine. Avant elle : TASK-0058, section **DS** (baseline visuelle Stage B / B01), `VERIFIED` dans sa portée B01 par `ACTION-0109` — aucun défaut de chrome prouvé, diff produit vide. Avant elle : TASK-0036, section **BP** (passe corrective D6, `ACTION-0059`), `IMPLEMENTED`, **en attente de vérification indépendante**. Section BO (passe corrective D4/D5, `ACTION-0058`) acceptée sans régression sur D1/D2/D3/R1/D5 par ce recontrôle, D4 confirmé largement corrigé hors D6. TASK-0035, section BL, est `VERIFIED` par `ACTION-0056`. TASK-0034, section **BH** (recherche bornée et « Ouvrir dans l'Explorateur »), `IMPLEMENTED`, **en attente de vérification indépendante**. TASK-0033, sections BE/BF, est `VERIFIED` dans sa portée par le verdict indépendant enregistré dans `ACTION-0051`, section BG.
 **Dernière tâche évaluée indépendamment :** TASK-0033 — `VERIFIED` le
 2026-09-10 par le verdict indépendant enregistré dans `ACTION-0051`, section
 BG, dans sa portée. TASK-0032 — `VERIFIED` le 2026-09-10 par le verdict
@@ -10444,3 +10444,37 @@ L'objectif **souhaitable** de 300 px de carte à 960x640 n'est **pas atteint**
 - Positif sans promotion : 59 commandes DOM; 28 initialement sous disclosures natifs, clavier summary Entrée/Shift+Tab testé avec focus; carte ≥240px, max 474, caméra/selection conservées, P-19 restart, P-22 digest strict/access égal et 160 entrées, 0 artefact, zéro overflow horizontal, zéro console fatal/axe violation; `color-contrast` reste INCOMPLETE.
 - Tests `pnpm test 770/770` deux fois, check/build/diff-check sont des déclarations et sorties reportées par Claude; aucune relance indépendante. API GitHub CI : zéro workflow run et check. Lecteur d'écran non essayé; panneaux relations/review/cross à 960 non exercés; full P-01..P-22 attend fermeture de Stage B.
 - Décision : `TASK-0060 = IMPLEMENTED / NOT VERIFIED — CORRECTION REQUIRED`, sur **même branche et même tâche**, ACTION-0111 publiée. B03-O1 ne peut être converti en nouvelle étape tandis que les critères B03 restent partiellement manqués.
+
+
+## DX — TASK-0060 — correction ACTION-0111 (`B03-O1`) — `IMPLEMENTED` — 2026-10-09
+
+`HEAD` mesuré `fb01e3cdbe5fa76538e01f597965bac32412fe63` (produit `7085674`, harnais `fb01e3c`). Vérifié par l'**exécuteur**, non indépendant; `VERIFIED` appartient à l'orchestrateur.
+
+### DX.1 Vérifié — campagne WebView2 réelle, 18 états, deux processus
+
+| Mesure | Avant correction (produit `7912868`, même harnais) | Après |
+|---|---|---|
+| `primaryContractSatisfiedWhole` / `worstPrimaryFullyVisible` | false / 10/13 (5 états) | **true / 13/13** |
+| résumés de groupe entiers et touchés, sans défilement préalable | false (6 états) | **true, 18/18** |
+| états où la bande de chrome défile à l'ouverture | 6 (à 960x640) | **0** |
+| groupe ouvert par la souris, puis refermé | false | **true, 18/18** |
+| groupe ouvert par Tab + `Entrée`, `expanded` dans l'arbre d'accessibilité, focus conservé | true | **true, 18/18** |
+| un groupe fermé masque réellement ses commandes; ouvert, il les montre toutes (souris et clavier) | — | **true, 18/18** |
+| carte visible, pire / meilleur | 240 / 474 | **261 / 535** |
+| débordement horizontal, scroll du document, éléments rognés, défileurs latéraux | 0 / 0 / 0 / 0 | **0 / 0 / 0 / 0** |
+
+`P-19` : second processus réel, tout restauré, groupes **fermés** (non-persistance assumée). `P-22` : empreintes stricte et accès identiques, 160 entrées, 0 artefact, 0 écriture. Caméra identique à travers 960→1280→1366→960. axe-core 4.13.0 : 0 violation, `color-contrast` `INCOMPLETE`. 0 erreur console fatale. Artefacts : `TASK-0060-primary-chrome-after.json`, `TASK-0060-primary-chrome-previous-product.json`, six `TASK-0060-after-*.png`.
+
+### DX.2 Vérifié — les témoins mordent
+
+- Harnais **falsifié** : rejoué sur le produit précédent (arbre `src/` identique à `7912868`, commit jetable local `61c18d4`, jamais poussé) il échoue à `10/13` et sur 6 entrées de groupe.
+- Gardes statiques falsifiées : retirer un `openGroup()` d'un test jsdom, et poser `text-overflow` sur `.app__group-hint`, font échouer exactement les gardes qui les nomment.
+- Le tripwire B01 « défileur latéral » a refusé une première version à ellipse; non affaibli.
+
+### DX.3 Portes
+
+`pnpm test` **781/781** (49 fichiers) **deux fois**; `pnpm check`; `pnpm build`; `git diff --check`. Rust **non exécuté** (aucun code Rust touché). **Aucune CI distante.**
+
+### DX.4 Non testé — dit explicitement
+
+Lecteur d'écran réel; `color-contrast` (`INCOMPLETE`); marche clavier jusqu'à la commande la plus éloignée de chaque groupe hors 960x640; rangée composition avec plusieurs cerveaux, un nom long ou une ligne de statut (marge 51 px, non mesurée); panneaux relations / révision / inter-cerveaux non peuplés par la fixture; `composition__menu` non ouvert; commandes pilotées par rôle ou libellé dans les tests jsdom (hors portée de la garde statique); `P-01..P-22` (réservées à la clôture de Stage B). `jsdom` ne prouve rien sur un `<details>` fermé.
