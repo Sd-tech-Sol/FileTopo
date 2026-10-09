@@ -1166,8 +1166,8 @@ if (phase === 1) {
     const directionSections = [...document.querySelectorAll('.relations__direction')].map((s) => s.getAttribute('aria-label'));
     const natureGroups = [...document.querySelectorAll('.relations__type-group .relations__type')].map((h) => h.textContent.trim());
     // Scoped to a direction section ON PURPOSE: a suggestion row also carries a bare
-    // `.relation__link` (« voir la cible ») with none of these attributes, and it is not
-    // a relation entry. The intra-brain scenario of TASK-0020 scopes it the same way.
+    // relation__link button (« voir la cible ») with none of these attributes, and it is
+    // not a relation entry. The TASK-0020 intra-brain scenario scopes it the same way.
     const entries = [...document.querySelectorAll('.relations__direction .relation__link')].map((row) => ({
       direction: row.getAttribute('data-direction'),
       provenance: row.getAttribute('data-provenance'),
