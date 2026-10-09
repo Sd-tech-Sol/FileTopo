@@ -1229,6 +1229,10 @@ for (const key of ["A", "B", "C"]) {
 record.index = viewsAtSetup;
 const view0 = await invoke("map_view", { brainId: idOf("A") });
 
+{
+  const catalogue = await invoke("map_brains");
+  record.catalogue = catalogue.brains.map((brain) => ({ brainId: brain.brainId, name: brain.displayName, sourceKind: brain.sourceKind, harnessKey: keyOfBrain(brain.brainId) }));
+}
 const mark = wireCalls.length;
 const matrix = [];
 const captures = [];
@@ -1756,7 +1760,8 @@ async function raiseNotice(scenario) {
   }
 }
 
-if (pass === 1) {
+const only = process.env.T61_ONLY ?? "";
+if (pass === 1 && !only) {
   for (const size of SIZES) {
     const granted = await resizeTo(size.width, size.height);
     for (const scenario of SCENARIOS) {
@@ -1771,13 +1776,20 @@ if (pass === 1) {
   }
 }
 
-if (pass === 1) {
-  record.matrix1 = matrix.map((entry) => ({ size: entry.size, state: entry.state }));
+if (pass === 1 && matrix.length > 0) {
+  // The matrix is the expensive half: it is written the moment it exists, so a later
+  // failure of the keyboard or camera segments cannot lose it.
+  record.matrix = matrix;
+  record.verdictPartial = summarise(matrix);
+  await writeFile(join(proofRoot, "run-measure-pass1.matrix-only.json"), JSON.stringify(record, null, 2));
+  delete record.matrix;
+  delete record.verdictPartial;
 }
 
 /* --- the keyboard walk of the composition, at the hardest size ---------------------------- */
 
 const arrowInfo = () => evaluate(ACTIVE_VISIBILITY);
+let addedId = null;
 async function compositionKeyboardWalk() {
   const steps = [];
   const note = (label, value) => steps.push({ label, ...value });
@@ -1813,11 +1825,15 @@ async function compositionKeyboardWalk() {
   note("Escape closes the menu and returns the focus to the trigger", { expanded: afterEscape.expanded, active: afterEscape.active, focusReturned: afterEscape.active === "composition-add-trigger" });
   // 3. ArrowDown, Enter: the brain is added, the menu closes, focus returns to the trigger.
   await press("ArrowDown");
+  const firstItemId = (await arrowInfo()).id;
   await press("Enter");
-  await until(`!!document.querySelector('[data-testid="composition-chip-${idOf("C")}"]')`, 30000);
+  // The catalogue also holds the product's three built-in synthetic brains, so the first item
+  // of the menu is not necessarily C: the walk follows whatever brain the keyboard added.
+  await until(`document.querySelectorAll('.composition__focus').length === 3`, 30000);
   await quiet();
+  addedId = (await chipIds()).find((id) => ![idOf("A"), idOf("B")].includes(id));
   const afterAdd = await evaluate(`({ chips: [...document.querySelectorAll('.composition__focus')].length, expanded: document.querySelector('[data-testid="composition-add-trigger"]').getAttribute('aria-expanded'), active: document.activeElement?.getAttribute('data-testid') ?? null })`);
-  note("Enter on an item adds the brain", { chips: afterAdd.chips, menuClosed: afterAdd.expanded === "false", active: afterAdd.active, focusReturnedToTrigger: afterAdd.active === "composition-add-trigger" });
+  note("Enter on an item adds the brain", { itemChosen: firstItemId, chips: afterAdd.chips, menuClosed: afterAdd.expanded === "false", active: afterAdd.active, focusReturnedToTrigger: afterAdd.active === "composition-add-trigger" });
   // 4. Focus change by keyboard: Tab to the first chip, Enter.
   await evaluate(RESET_SCROLL);
   const toChipA = await tabToControl(testid(`composition-chip-${idOf("A")}`), 60);
@@ -1831,9 +1847,9 @@ async function compositionKeyboardWalk() {
   });
   // 5. Removal by keyboard: Tab to a remove button, Enter; the chip goes and focus lands on a chip that stays.
   await evaluate(RESET_SCROLL);
-  const toRemoveC = await tabToControl(testid(`composition-remove-${idOf("C")}`), 80);
+  const toRemoveC = await tabToControl(testid(`composition-remove-${addedId}`), 80);
   await press("Enter");
-  await until(`!document.querySelector('[data-testid="composition-chip-${idOf("C")}"]')`, 30000);
+  await until(`!document.querySelector('[data-testid="composition-chip-${addedId}"]')`, 30000);
   await quiet();
   const afterRemove = await evaluate(`({ chips: [...document.querySelectorAll('.composition__focus')].length, active: document.activeElement?.getAttribute('data-testid') ?? null })`);
   note("Tab to a remove button and Enter removes the brain, focus lands on a chip that stays", {
@@ -1860,7 +1876,7 @@ async function compositionKeyboardWalk() {
   });
   return steps;
 }
-if (pass === 1) {
+if (pass === 1 && (!only || only === "walk")) {
   record.compositionKeyboardWalk = await compositionKeyboardWalk();
   const walk = record.compositionKeyboardWalk;
   const by = (label) => walk.find((step) => step.label.startsWith(label));
@@ -1883,7 +1899,7 @@ if (pass === 1) {
 
 /* --- targeted product controls (B03's P-block, then the multi-brain camera) ----------------- */
 
-if (pass === 1) {
+if (pass === 1 && (!only || only === "p")) {
   await resizeTo(960, 640);
   await emulate("light", "no-preference");
   await setLocale("fr");
