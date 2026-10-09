@@ -1,0 +1,62 @@
+{
+  "task": "TASK-0057",
+  "section": "Diff scope (TASK-0057 §13)",
+  "classification": "DEVELOPMENT_BENCH_ENGINEERING_EVIDENCE",
+  "base": "ca17df50d1fa904e8387628347bbf2f9792b9ae8",
+  "head": "900bef6de75446a4961d67f791d56023727e2b1b",
+  "verdict": "IN SCOPE",
+  "rule": "A correction may change the relation source boundary and its DTOs, the matching TypeScript DTO, and tests. No renderer redesign, no rule change, no relation schema migration, no new store, no new dependency. A production file allowed only for a #[cfg(test)] module declaration is checked line by line.",
+  "changedFiles": 23,
+  "production": {
+    "src-tauri/src/map/commands.rs": {
+      "added": 7,
+      "removed": 0,
+      "allowedBecause": "the #[cfg(test)] declaration of that test module, and nothing else",
+      "testModuleDeclarationOnly": {
+        "addedLines": 7,
+        "removedLines": 0,
+        "everyAddedLineIsADeclaration": true
+      }
+    },
+    "src-tauri/src/map/relation_commands.rs": {
+      "added": 86,
+      "removed": 41,
+      "allowedBecause": "the relation source boundary and the three generic DTOs — DEC-0053 C and D",
+      "testModuleDeclarationOnly": null
+    },
+    "src-tauri/src/map/relation_real_root_tests.rs": {
+      "added": 734,
+      "removed": 0,
+      "allowedBecause": "tests only — the REAL_ROOT relation proof and the structural guard",
+      "testModuleDeclarationOnly": null
+    },
+    "src/map/types.ts": {
+      "added": 18,
+      "removed": 3,
+      "allowedBecause": "the matching TypeScript DTO: fixtureId becomes string | null on the three generic reads",
+      "testModuleDeclarationOnly": null
+    }
+  },
+  "nonProduction": [
+    ".orchestrator/NEXT_PROMPT.md",
+    ".orchestrator/RESULT.md",
+    "ROADMAP.md",
+    "docs/ai/CHANGELOG_AI.md",
+    "docs/ai/CURRENT_STATE.md",
+    "docs/ai/HANDOFF.md",
+    "docs/ai/NEXT_ACTION.md",
+    "docs/ai/VALIDATION.md",
+    "docs/decisions/DEC-0053-generic-relations-real-root.md",
+    "docs/performance/runs/TASK-0057-p22-webview2.json",
+    "docs/product/CARTETOPO_FUNCTIONAL_PARITY.md",
+    "docs/product/PARITY_MATRIX_P01_P22.md",
+    "docs/product/parity-matrix-p01-p22.json",
+    "docs/reviews/ACTION-0106-task0056-independent-control.md",
+    "docs/tasks/TASK-0057-v1-real-root-relations.md",
+    "scripts/task0056-render-matrix.py",
+    "scripts/task0056-seed-proof.py",
+    "scripts/task0056-webview2.mjs",
+    "scripts/task0056-webview2.ps1"
+  ],
+  "findings": []
+}

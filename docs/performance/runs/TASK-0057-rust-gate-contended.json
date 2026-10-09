@@ -1,0 +1,107 @@
+{
+  "task": "TASK-0056",
+  "section": "Rust regression gate (TASK-0056 §6)",
+  "headTested": "900bef6de75446a4961d67f791d56023727e2b1b",
+  "classification": "DEVELOPMENT_BENCH_ENGINEERING_EVIDENCE",
+  "gate": "BLOCKED",
+  "runsRequested": 3,
+  "runsGreen": 2,
+  "toolchain": {
+    "cargo": "cargo 1.98.0 (797e8a9bc 2026-08-05)",
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)"
+  },
+  "machine": {
+    "cpu": "Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz",
+    "logicalProcessors": 16,
+    "note": "Development workstation. No performance claim: the durations are wall clock, for comparison between the runs of this gate only."
+  },
+  "logsKeptOutsideRepository": true,
+  "runs": [
+    {
+      "run": 1,
+      "startedAtUtc": "2026-10-09T01:23:34.9262161Z",
+      "command": "cargo test --manifest-path src-tauri/Cargo.toml --lib --offline",
+      "exitCode": 0,
+      "passed": 906,
+      "failed": 0,
+      "ignored": 13,
+      "measured": 0,
+      "filteredOut": 0,
+      "failedTests": [],
+      "resultLines": [
+        "test result: ok. 906 passed; 0 failed; 13 ignored; 0 measured; 0 filtered out; finished in 187.15s"
+      ],
+      "logSha256": "3c49963b64a30ec8841e2223c9bb8be9a7896b66a71f1ed9f5d17f4ba37057d6",
+      "logBytes": 95001,
+      "logLines": 941,
+      "durationSeconds": 187.9,
+      "failureExcerpt": []
+    },
+    {
+      "run": 2,
+      "startedAtUtc": "2026-10-09T01:26:42.9371933Z",
+      "command": "cargo test --manifest-path src-tauri/Cargo.toml --lib --offline",
+      "exitCode": 0,
+      "passed": 906,
+      "failed": 0,
+      "ignored": 13,
+      "measured": 0,
+      "filteredOut": 0,
+      "failedTests": [],
+      "resultLines": [
+        "test result: ok. 906 passed; 0 failed; 13 ignored; 0 measured; 0 filtered out; finished in 188.15s"
+      ],
+      "logSha256": "4e44d6fef350d7e08dc7811250ef2fc5b9aa315a97e1e32cfe6822811875a1e3",
+      "logBytes": 95001,
+      "logLines": 941,
+      "durationSeconds": 188.8,
+      "failureExcerpt": []
+    },
+    {
+      "run": 3,
+      "startedAtUtc": "2026-10-09T01:29:51.8015284Z",
+      "command": "cargo test --manifest-path src-tauri/Cargo.toml --lib --offline",
+      "exitCode": 101,
+      "passed": 905,
+      "failed": 1,
+      "ignored": 13,
+      "measured": 0,
+      "filteredOut": 0,
+      "failedTests": [
+        "watch::tests::a_healthy_native_watcher_does_not_use_the_periodic_fallback"
+      ],
+      "resultLines": [
+        "test result: FAILED. 905 passed; 1 failed; 13 ignored; 0 measured; 0 filtered out; finished in 184.91s"
+      ],
+      "logSha256": "c0a6928ca020dac10d6abb3e0d4a7225003bd351bb7fcb3abd4fca534033d4a5",
+      "logBytes": 95433,
+      "logLines": 953,
+      "durationSeconds": 185.6,
+      "failureExcerpt": [
+        "test map::commands::watch_scope_tests::many_random_rounds_of_scopes_always_equal_a_full_scan has been running for over 60 seconds",
+        "test map::commands::watch_scope_tests::many_random_rounds_of_scopes_always_equal_a_full_scan ... ok",
+        "test map::commands::scale_closure_tests::reachability_100k_all_shapes ... ok",
+        "test map::commands::scale_closure_tests::aggregates_are_exact_on_wide_mixed_and_deep_corpora ... ok",
+        "",
+        "failures:",
+        "",
+        "---- watch::tests::a_healthy_native_watcher_does_not_use_the_periodic_fallback stdout ----",
+        "",
+        "thread 'watch::tests::a_healthy_native_watcher_does_not_use_the_periodic_fallback' (8260) panicked at src\\watch\\tests.rs:166:5:",
+        "timed out after 30s waiting for: state Watching",
+        "",
+        "",
+        "failures:",
+        "    watch::tests::a_healthy_native_watcher_does_not_use_the_periodic_fallback",
+        "",
+        "test result: FAILED. 905 passed; 1 failed; 13 ignored; 0 measured; 0 filtered out; finished in 184.91s",
+        "",
+        "error: test failed, to rerun pass `--lib`"
+      ]
+    }
+  ],
+  "notTested": [
+    "No remote GitHub Actions CI is attached to this repository: these are local runs, read back from their captured logs.",
+    "The suite is the library suite only (`--lib`), which is what TASK-0056 and ACTION-0105 name."
+  ]
+}

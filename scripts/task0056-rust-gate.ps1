@@ -7,10 +7,23 @@
 #
 # The logs themselves are NOT committed: only the summary, their hashes, and — if a run fails —
 # the failure excerpt. `-LogDirectory` must be outside the repository.
+#
+# Two things the gate learned the hard way, on 2026-10-09 (TASK-0057):
+#
+#   * it must describe the HEAD it claims. The tracked tree was checked once, before
+#     the first run; a file edited while run 3 was in flight left the artifact claiming
+#     a HEAD it had not tested. The tracked-tree digest is now taken before and after
+#     EVERY run, and a change aborts the gate instead of being published;
+#   * the suite contains timing-sensitive tests — a native filesystem watcher waiting
+#     for its first event — so the machine must be left alone while it runs. The gate
+#     cannot enforce that, so it records it: `runAlone` says whether the caller
+#     declared an idle machine, and nothing else in the artifact pretends to know.
 [CmdletBinding()]
 param(
     [int]$Runs = 3,
     [Parameter(Mandatory = $true)][string]$LogDirectory,
+    [ValidatePattern('^TASK-\d{4}$')][string]$Task = 'TASK-0056',
+    [switch]$RunAlone,
     [string]$Out = 'docs/performance/runs/TASK-0056-rust-gate.json'
 )
 
@@ -24,8 +37,21 @@ if ($resolvedLogs.StartsWith($repository, [System.StringComparison]::OrdinalIgno
 }
 
 $head = (git rev-parse HEAD).Trim()
-$dirty = (git status --porcelain --untracked-files=no) -join ''
-if ($dirty) { throw 'tracked files are modified: the gate would not describe the tested HEAD' }
+# The digest of every tracked path's recorded content, as git sees it. Taken before and
+# after each run: if it moves, the runs were not all at the same source, and the artifact
+# would be describing something that never existed.
+# Read-only on purpose: `git write-tree` would create a tree object, and a gate has no
+# business writing to the object database. An empty porcelain status already says the
+# working tree equals HEAD's tree, so the pair is the whole answer.
+function Get-TrackedTreeDigest {
+    $dirty = (git status --porcelain --untracked-files=no) -join "`n"
+    $tree = (git rev-parse 'HEAD^{tree}').Trim()
+    return "$tree|$dirty"
+}
+$treeAtStart = Get-TrackedTreeDigest
+if ($treeAtStart -notmatch '^[0-9a-f]{40}\|$') {
+    throw 'tracked files are modified: the gate would not describe the tested HEAD'
+}
 
 # `cargo test` prints one `test result:` line per test binary; --lib gives exactly one.
 function Read-RunSummary {
@@ -94,6 +120,10 @@ for ($index = 1; $index -le $Runs; $index += 1) {
     $summary.Insert(0, 'run', $index)
     $summary.Insert(1, 'startedAtUtc', $startedAt.ToString('o'))
     $summary.Insert(2, 'command', 'cargo test --manifest-path src-tauri/Cargo.toml --lib --offline')
+    $treeNow = Get-TrackedTreeDigest
+    if ($treeNow -ne $treeAtStart) {
+        throw "a tracked file changed during run $index : this gate can no longer claim to describe $head. Re-run it on an untouched tree."
+    }
     $runSummaries += $summary
     Write-Host ("  exit $exit | $($summary.passed) passed / $($summary.failed) failed / $($summary.ignored) ignored | $($summary.durationSeconds)s")
 }
@@ -103,9 +133,10 @@ $gate = if ($green.Count -eq $Runs) { 'PASS' } else { 'BLOCKED' }
 
 $cpu = Get-CimInstance Win32_Processor | Select-Object -First 1
 $artifact = [ordered]@{
-    task           = 'TASK-0056'
-    section        = 'Rust regression gate (TASK-0056 §6)'
+    task           = $Task
+    section        = "Rust regression gate (TASK-0056 §6), run by $Task"
     headTested     = $head
+    treeUnchangedThroughout = $true
     classification = 'DEVELOPMENT_BENCH_ENGINEERING_EVIDENCE'
     gate           = $gate
     runsRequested  = $Runs
@@ -120,6 +151,12 @@ $artifact = [ordered]@{
         note              = 'Development workstation. No performance claim: the durations are wall clock, for comparison between the runs of this gate only.'
     }
     logsKeptOutsideRepository = $true
+    runAlone       = [bool]$RunAlone
+    runAloneNote   = if ($RunAlone) {
+        'The caller declared the machine idle for the whole gate. The suite holds timing-sensitive tests — a native filesystem watcher waiting up to 30 s for its first event — which heavy concurrent disk work can make fail for reasons that are not the product.'
+    } else {
+        'The caller did NOT declare an idle machine. A failure of a timing-sensitive test in this gate cannot be attributed to the product without re-running it on an idle machine.'
+    }
     runs           = $runSummaries
     notTested      = @(
         'No remote GitHub Actions CI is attached to this repository: these are local runs, read back from their captured logs.',
