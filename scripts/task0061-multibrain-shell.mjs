@@ -1008,6 +1008,8 @@ const READ_GROUP = (groupTestid) => `(() => {
     open: group.open, x, y, w: Math.round(r.width), h: Math.round(r.height),
     inWindow: r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth,
     hit: !!top && (top === summary || summary.contains(top)),
+    // B04: what answered instead, when the summary did not.
+    topAtCentre: top ? top.tagName + '.' + String(top.className).slice(0, 40) + ' ' + (top.getAttribute('data-testid') ?? '') : null,
     commandsInside: inside.length,
     // A box is NOT presence on screen: WebView2 draws a closed \`<details>\` with
     // \`content-visibility: hidden\`, so its contents keep client rects while nothing paints
@@ -1141,6 +1143,7 @@ async function measureGroupEntryPoints() {
         open: opening.open,
         summaryInWindow: opening.inWindow,
         summaryHit: opening.hit,
+        topAtCentre: opening.hit ? null : opening.topAtCentre,
         summaryHeightPx: opening.h,
         commandsInside: opening.commandsInside,
         commandsWithABoxWhileClosed: opening.commandsWithABoxWhileClosed,
@@ -1828,6 +1831,8 @@ if (pass === 1 && only === "groups") {
     })()`);
     console.error(group.testid, JSON.stringify(info));
   }
+  const full = await measureGroupEntryPoints();
+  for (const g of full) console.error("group", g.group, JSON.stringify(g.opening), "mouse", g.mouse.opened, "kb", g.keyboard.opened, g.keyboard.presses);
   const kb = await tabToControl(`${testid("chrome-diagnostics")} > summary`, 80);
   console.error("tab to diagnostics", JSON.stringify(kb));
   console.error("active before Enter", JSON.stringify(await activeElement()));
