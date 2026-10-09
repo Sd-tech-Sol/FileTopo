@@ -60,6 +60,14 @@ inter-cerveaux, les rendus et les dépendances sont intacts — prouvé par
 - Le harnais `task0056-webview2.{ps1,mjs}` et `task0056-seed-proof.py`, désormais
   avec la sonde de presse-papiers et la campagne des relations sur racine réelle.
 
+- **Ne pas lancer le gate Rust en travaillant à côté.** La suite contient des
+  tests **sensibles au temps** — un observateur natif qui attend jusqu'à 30 s son
+  premier événement. Le premier gate de `TASK-0057` a rendu `BLOCKED` à 2/3
+  parce qu'un audit lourd en entrées/sorties tournait pendant le run 3, et parce
+  que des fichiers suivis ont été modifiés en vol. Le gate avorte maintenant si
+  l'arbre suivi bouge entre deux runs, et il enregistre `runAlone`. Le lancer
+  avec `-RunAlone` **et** ne rien faire d'autre.
+
 **Action unique suivante :** contrôle indépendant de `TASK-0057`. Deux points à
 arbitrer explicitement, écrits dans `NEXT_ACTION.md` : `P-14` non exécutée sur
 cette machine, et la moitié « carte » de `P-05` observée à deux côtés. Aucune

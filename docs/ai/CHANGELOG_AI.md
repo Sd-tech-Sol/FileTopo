@@ -6788,8 +6788,27 @@ schéma, dépôts, surface inter-cerveaux, rendus, dépendances. Aucune migratio
   tabulations réelles, entrée de relation activée en 2, révocation, rejet d'une
   autre suggestion, et les trois décisions relues du dépôt après un vrai
   redémarrage.
-- **Gate de régression Rust** : trois suites complètes et consécutives au même
-  `HEAD`, sorties capturées, logs hors dépôt.
+- **Gate de régression Rust : `PASS` 3/3** au `HEAD` `b21c607b`, machine au
+  repos, arbre intact du début à la fin — 906/0/13 à chaque run, durées et hash
+  de log publiés, logs hors dépôt.
+
+**Le premier gate a rendu `BLOCKED` à 2/3, et il est publié sans retouche.** Le
+run 3 a fait échouer
+`watch::tests::a_healthy_native_watcher_does_not_use_the_periodic_fallback` sur
+« timed out after 30s waiting for: state Watching ». Rien n'a été déclaré
+« flake » : deux fautes ont été trouvées, **toutes deux dans le gate**. Il ne
+vérifiait la propreté de l'arbre suivi qu'**une fois**, avant le premier run, de
+sorte que des fichiers modifiés pendant le run 3 ont laissé l'artefact prétendre
+décrire un `HEAD` qu'il n'avait pas testé; et la suite contient des tests
+**sensibles au temps** — un observateur de système de fichiers natif qui attend
+jusqu'à 30 s son premier événement — alors qu'un audit lourd en entrées/sorties
+tournait à côté. Le gate prend désormais l'empreinte de l'arbre **avant et après
+chaque run**, en lecture seule, et **avorte** si elle bouge; il enregistre aussi
+si l'appelant a déclaré une machine au repos, et écrit qu'un échec sensible au
+temps sans cette déclaration **ne peut pas être imputé au produit**. La cause du
+run 3 reste **expliquée par la contention, pas prouvée** : ce qui est prouvé,
+c'est que ce run ne décrivait aucun `HEAD` valide, et que la même suite au même
+code produit est verte trois fois de suite quand rien ne la dérange.
 
 **Deux limites déclarées, non contournées.** `P-14` n'a **pas été exécutée** :
 cette machine refuse toute opération de presse-papiers, mesuré **hors du

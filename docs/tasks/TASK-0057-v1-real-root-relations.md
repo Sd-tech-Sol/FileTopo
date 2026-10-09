@@ -236,7 +236,7 @@ Branch `build/v0.2-a41-v1-real-root-relations`, base
 
 Four production files, proved narrow by `scripts/task0057-diff-scope.ps1`
 (artifact `docs/performance/runs/TASK-0057-diff-scope.json`, verdict
-**`IN SCOPE`** — 4 production files out of 23 changed paths):
+**`IN SCOPE`** — 4 production files out of 28 changed paths):
 
 | File | Change |
 |---|---|
@@ -305,7 +305,10 @@ TASK-0056 harness reused. Artifact
   its target; a relation entry activated in **2 Tab presses** selecting the
   element it names; revocation returning it to pending without touching a
   deterministic relation; a **different** suggestion rejected from the queue,
-  creating no relation and leaving the queue.
+  creating no relation and leaving the queue. A Tab count is **not** a
+  contract — it was 2 in one run and 60 in the next, because the focus order is
+  the document order; what is asserted is that the order reaches the control and
+  that activating it selects the element named.
 - After a **real restart**: deterministic 2, approved 0, pending 1, `fixtureId`
   still `null`, `legacyInScope` false, `seeded` 0 — the revocation and the
   rejection both survived.
@@ -339,7 +342,30 @@ exactly what it can draw and loses nothing. Written into the matrix as a limit.
 
 ### 15.6 Global regression gate — §11
 
-See `docs/ai/VALIDATION.md` section `DP` for every figure.
+**`PASS`, 3/3**, at `HEAD` `b21c607b`, on an **idle** machine and an untouched
+tree (`runAlone: true`, `treeUnchangedThroughout: true`). **906 passed / 0
+failed / 13 ignored** each run, exit `0`, 180,9 s / 185,3 s / 183,2 s, one log
+hash per run, failing list **empty** every time, logs kept outside the
+repository. Artifact `docs/performance/runs/TASK-0057-rust-gate.json`.
+
+**The first gate was `BLOCKED` at 2/3, and is published unedited** as
+`docs/performance/runs/TASK-0057-rust-gate-contended.json`. Run 3 failed
+`watch::tests::a_healthy_native_watcher_does_not_use_the_periodic_fallback` on
+« timed out after 30s waiting for: state Watching ». It is **not** declared a
+flake. Two faults were found, **both in the gate**: it verified the tracked tree
+only once, before the first run, so files edited while run 3 was in flight left
+the artifact claiming a `HEAD` it had not tested; and the suite holds
+timing-sensitive tests — a native filesystem watcher waiting up to 30 s for its
+first event — while an I/O-heavy readiness audit ran beside it. The gate now
+takes the tracked-tree digest before and after **every** run and aborts on a
+change, and it records whether the caller declared an idle machine, stating that
+a timing-sensitive failure without that declaration cannot be charged to the
+product. The cause of run 3 therefore stays **explained by contention, not
+proven**; what is proven is that it described no valid `HEAD`, and that the same
+suite at the same product code is green three times running when nothing
+disturbs it. Both artifacts are published so the independent control can judge.
+
+Every other figure is in `docs/ai/VALIDATION.md`, section `DP`.
 
 ### 15.7 Governance
 

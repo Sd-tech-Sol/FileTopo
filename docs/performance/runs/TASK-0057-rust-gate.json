@@ -1,0 +1,88 @@
+{
+  "task": "TASK-0057",
+  "section": "Rust regression gate (TASK-0056 §6), run by TASK-0057",
+  "headTested": "b21c607b1fdae1da331a7bed49b020d464f7bb99",
+  "treeUnchangedThroughout": true,
+  "classification": "DEVELOPMENT_BENCH_ENGINEERING_EVIDENCE",
+  "gate": "PASS",
+  "runsRequested": 3,
+  "runsGreen": 3,
+  "toolchain": {
+    "cargo": "cargo 1.98.0 (797e8a9bc 2026-08-05)",
+    "rustc": "rustc 1.98.0 (88d9e12ae 2026-08-18)"
+  },
+  "machine": {
+    "cpu": "Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz",
+    "logicalProcessors": 16,
+    "note": "Development workstation. No performance claim: the durations are wall clock, for comparison between the runs of this gate only."
+  },
+  "logsKeptOutsideRepository": true,
+  "runAlone": true,
+  "runAloneNote": "The caller declared the machine idle for the whole gate. The suite holds timing-sensitive tests — a native filesystem watcher waiting up to 30 s for its first event — which heavy concurrent disk work can make fail for reasons that are not the product.",
+  "runs": [
+    {
+      "run": 1,
+      "startedAtUtc": "2026-10-09T01:38:16.8972602Z",
+      "command": "cargo test --manifest-path src-tauri/Cargo.toml --lib --offline",
+      "exitCode": 0,
+      "passed": 906,
+      "failed": 0,
+      "ignored": 13,
+      "measured": 0,
+      "filteredOut": 0,
+      "failedTests": [],
+      "resultLines": [
+        "test result: ok. 906 passed; 0 failed; 13 ignored; 0 measured; 0 filtered out; finished in 180.17s"
+      ],
+      "logSha256": "1129f8defc6993db95c43b687d5276c03f7fff0a0138c80b965bbbae371d9365",
+      "logBytes": 95001,
+      "logLines": 941,
+      "durationSeconds": 180.9,
+      "failureExcerpt": []
+    },
+    {
+      "run": 2,
+      "startedAtUtc": "2026-10-09T01:41:17.9192438Z",
+      "command": "cargo test --manifest-path src-tauri/Cargo.toml --lib --offline",
+      "exitCode": 0,
+      "passed": 906,
+      "failed": 0,
+      "ignored": 13,
+      "measured": 0,
+      "filteredOut": 0,
+      "failedTests": [],
+      "resultLines": [
+        "test result: ok. 906 passed; 0 failed; 13 ignored; 0 measured; 0 filtered out; finished in 184.59s"
+      ],
+      "logSha256": "6798d482ed7aabd33dc68f76aab93eefa3d0e273c13c4b4e579c6fb7464fabd3",
+      "logBytes": 95001,
+      "logLines": 941,
+      "durationSeconds": 185.3,
+      "failureExcerpt": []
+    },
+    {
+      "run": 3,
+      "startedAtUtc": "2026-10-09T01:44:23.3045625Z",
+      "command": "cargo test --manifest-path src-tauri/Cargo.toml --lib --offline",
+      "exitCode": 0,
+      "passed": 906,
+      "failed": 0,
+      "ignored": 13,
+      "measured": 0,
+      "filteredOut": 0,
+      "failedTests": [],
+      "resultLines": [
+        "test result: ok. 906 passed; 0 failed; 13 ignored; 0 measured; 0 filtered out; finished in 182.53s"
+      ],
+      "logSha256": "bd8016fa198b75e28dc8e587ce22576a6606aa3b3bc3bf36450616c00ef2269d",
+      "logBytes": 95001,
+      "logLines": 941,
+      "durationSeconds": 183.2,
+      "failureExcerpt": []
+    }
+  ],
+  "notTested": [
+    "No remote GitHub Actions CI is attached to this repository: these are local runs, read back from their captured logs.",
+    "The suite is the library suite only (`--lib`), which is what TASK-0056 and ACTION-0105 name."
+  ]
+}

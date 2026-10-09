@@ -9999,3 +9999,222 @@ REAL_ROOT est le chemin produit des données utilisateur depuis DEC-0033.
 
 **Conséquence :** P-04 portée finale bloquée, P-05/P-07 GAP; Stage A reste EN
 COURS. Corrective séparée TASK-0057 sélectionnée, sans abaissement de contrat.
+## DP — TASK-0057 — surface des relations sur `REAL_ROOT` / correction de l'unique manque de TASK-0056 — 2026-10-08
+
+**Statut : `IMPLEMENTED`, candidate.** Branche
+`build/v0.2-a41-v1-real-root-relations`, base
+`ca17df50d1fa904e8387628347bbf2f9792b9ae8`, décision `DEC-0053`, sélectionnée
+par `ACTION-0106`. **L'exécuteur ne s'attribue pas `VERIFIED`.** Tout ce qui suit
+a été exécuté dans cette session, sauf mention « non exécuté ».
+
+### DP.1 Portée du diff — `IN SCOPE`
+
+`scripts/task0057-diff-scope.ps1`, artefact
+`docs/performance/runs/TASK-0057-diff-scope.json`. **4 fichiers de production
+sur 28 chemins modifiés** depuis la base.
+
+| Fichier de production | Diff | Pourquoi `TASK-0057` §13 l'autorise |
+|---|---:|---|
+| `src-tauri/src/map/relation_commands.rs` | +86 / −41 | la frontière de source et les trois DTO génériques |
+| `src/map/types.ts` | +18 / −3 | le DTO TypeScript correspondant |
+| `src-tauri/src/map/relation_real_root_tests.rs` | +734 / −0 | tests seulement |
+| `src-tauri/src/map/commands.rs` | +7 / −0 | **uniquement** la déclaration d'un module `#[cfg(test)]`, vérifiée **ligne par ligne** |
+
+Le script lit les lignes ajoutées du dernier plutôt que de se fier à son chemin :
+`everyAddedLineIsADeclaration = true`, `removedLines = 0`. Modèle des relations,
+catalogue de règles, moteur déterministe, schéma, dépôts, surface
+inter-cerveaux, rendus et dépendances : **inchangés**. Aucune migration.
+
+### DP.2 Gate de régression Rust — **PASS, 3/3**, machine au repos
+
+`scripts/task0056-rust-gate.ps1 -Runs 3 -RunAlone -Task TASK-0057`, `HEAD`
+`b21c607b1fdae1da331a7bed49b020d464f7bb99`, logs capturés **hors du dépôt**,
+artefact `docs/performance/runs/TASK-0057-rust-gate.json`.
+`treeUnchangedThroughout = true`, `runAlone = true`. `cargo 1.98.0`,
+`rustc 1.98.0`.
+
+| Run | Exit | passed | failed | ignored | Durée | SHA-256 du log |
+|---|---:|---:|---:|---:|---:|---|
+| 1 | 0 | 906 | 0 | 13 | 180,9 s | `1129f8defc6993db…` |
+| 2 | 0 | 906 | 0 | 13 | 185,3 s | `6798d482ed7aabd3…` |
+| 3 | 0 | 906 | 0 | 13 | 183,2 s | `bd8016fa198b75e2…` |
+
+**Liste des tests en échec : vide, aux trois runs.** 906 contre 901 au gate de
+`TASK-0056` : les 5 tests de `relation_real_root_tests.rs`.
+
+### DP.3 Le gate BLOQUÉ d'abord, et ce qu'il a appris — artefact conservé
+
+Le **premier** gate de `TASK-0057` a rendu **`BLOCKED`, 2/3**. Artefact gardé
+**tel quel**, sans retouche :
+`docs/performance/runs/TASK-0057-rust-gate-contended.json`, `HEAD`
+`900bef6de75446a4961d67f791d56023727e2b1b`.
+
+| Run | Exit | passed | failed | ignored | Durée |
+|---|---:|---:|---:|---:|---:|
+| 1 | 0 | 906 | 0 | 13 | 187,9 s |
+| 2 | 0 | 906 | 0 | 13 | 188,8 s |
+| 3 | **101** | 905 | **1** | 13 | 185,6 s |
+
+Test en échec, nommé : `watch::tests::a_healthy_native_watcher_does_not_use_the_periodic_fallback`,
+sur `timed out after 30s waiting for: state Watching` (`src\watch\tests.rs:166`).
+
+**Ce n'est pas déclaré « flake ».** Deux fautes ont été trouvées, **toutes deux
+dans le gate**, et corrigées :
+
+1. **Le gate ne vérifiait la propreté de l'arbre qu'une fois**, avant le premier
+   run. Des fichiers suivis ont été modifiés pendant que le run 3 était en vol,
+   de sorte que l'artefact prétendait décrire un `HEAD` qu'il n'avait pas testé.
+   L'empreinte de l'arbre suivi — arbre de `HEAD` plus statut porcelain, en
+   **lecture seule**, aucun objet écrit — est désormais prise **avant et après
+   chaque run**, et un changement **avorte** le gate au lieu d'être publié.
+2. **La suite contient des tests sensibles au temps** — un observateur de
+   système de fichiers **natif** qui attend jusqu'à 30 s son premier événement
+   — et pendant le run 3 un audit de lisibilité publique (762 fichiers) et
+   plusieurs scripts tournaient à côté. Le gate ne peut pas imposer une machine
+   au repos : il **enregistre** ce que l'appelant déclare (`runAlone`) et écrit
+   qu'un échec sensible au temps, sans cette déclaration, **ne peut pas être
+   imputé au produit**.
+
+Le gate rejoué **sur un arbre intact et une machine laissée tranquille** est
+`PASS` 3/3 (DP.2). La cause de l'échec du run 3 reste donc **expliquée par la
+contention, pas prouvée** : ce qui est prouvé, c'est que ce run ne décrivait pas
+un `HEAD` valide et que la même suite, au même code produit, est verte trois
+fois de suite quand rien ne la dérange. Les deux artefacts sont publiés pour que
+le contrôle indépendant juge lui-même.
+
+### DP.4 Campagne `P-22` rejouée au `HEAD` corrigé — **PASS**
+
+`scripts/task0056-webview2.ps1 -Task TASK-0057`, `HEAD`
+`7f43d60a034e21b5ebe5091a1a8180032cd31108`, artefact
+`docs/performance/runs/TASK-0057-p22-webview2.json`. `verdict PASS`,
+`taskVerdict PASS`, **`productGaps` vide**. Le harnais de `TASK-0056` est
+**réutilisé**, pas remplacé.
+
+| Racine | Entrées avant → après | Empreinte stricte | Horodatages d'accès |
+|---|---|---|---|
+| `atelier` | 181 → 181 | **identique** | identique |
+| `carnets` | 8 → 8 | **identique** | identique |
+| `archives` | 6 → 6 | **identique** | identique |
+| `fixture` (`quasi-empty`) | 11 → 11 | **identique** | identique |
+
+- **Aucun artefact FileTopo sous une racine**; empreintes « settled » après 3 et
+  2 lectures.
+- **27 lignes de couverture**, `P-01`..`P-22` tous observés.
+- **axe-core 4.13.0 : 0 violation** — français tous panneaux ouverts, anglais,
+  schéma sombre, mouvement réduit. **0** erreur console fatale. Aucune commande
+  interdite ni « graphe entier » sur le fil.
+- **Les six commandes de relations sont passées sur le vrai fil IPC** :
+  `map_relations_open`, `map_relations_for_node`, `map_relations_review_queue`,
+  `map_relations_approve`, `map_relations_reject`, `map_relations_revoke`.
+
+### DP.5 `P-04`, `P-05`, `P-07` exercés **sur une racine réelle**
+
+Sur le cerveau `atelier`, dont la source est un vrai dossier (`sourceKind:
+REAL_ROOT` dans les trois lignes de couverture) :
+
+- **Panneau disponible**, et non sa forme « indisponible ». La note du périmètre
+  legacy est présente et dit les deux moitiés : la démonstration figée
+  `TASK-0017` ne s'applique pas, `dre-v1` s'applique à **tous** les cerveaux.
+- **Moteur réel** : campagne de contenu (`readOnlyConfirmed`), puis un vrai clic
+  sur « Analyser » → **1** relation déterministe et **2** suggestions, **aucune
+  règle sautée**.
+- **`fixtureId = null`**, `legacyInScope = false`, `seeded = 0`, aucune clé
+  `S-00x` figée. Ni le chemin absolu de la racine, ni son nom, ni le `source_ref`
+  n'apparaissent dans les charges utiles ni dans le texte de la page.
+- **`P-04`** : relation `content-identical` avec sa **règle et sa version** à
+  l'écran, provenance en **glyphe et en mot**, jamais une troisième valeur;
+  suggestion objet distinct, expliquée, avec son propre état.
+- **`P-05`** : panneau `1 sortante · 0 entrante · 0 suggestion non comptée`,
+  **exactement** les comptes de l'index, lus par **deux requêtes séparées** du
+  dépôt. Approbation au **vrai clavier** (24 tabulations réelles puis `Entrée`)
+  → **exactement une** relation établie, **sortante sur sa source** et
+  **entrante sur sa cible**; révocation → **0** approuvée, déterministes
+  intactes.
+- **`P-07`** : entrées groupées par direction puis par nature, chacune portant
+  type, direction et provenance en glyphe **et** en mot, chacune un contrôle
+  actif; une entrée **activée au vrai clavier** (60 tabulations) a **sélectionné
+  l'élément qu'elle nomme**. File de révision ouverte sur **2** en attente, avec
+  son état et son pourquoi en mots; « Plus tard » tourné **1** fois pour arriver
+  sur une **autre** suggestion que celle approuvée, puis **rejet** → **0**
+  relation créée, en attente **1**, et la suggestion a quitté la file.
+- **Après un vrai redémarrage du processus** : déterministes **2**, approuvées
+  **0**, en attente **1**, `fixtureId` toujours `null`, `legacyInScope` faux,
+  `seeded` 0 — la révocation **et** le rejet ont survécu.
+- **Contraste synthétique inchangé** : le cerveau figé garde son `fixtureId`
+  (chaîne), reste `legacyInScope`, son auto-contrôle passe, et ce même
+  auto-contrôle **refuse toujours une racine réelle par son nom**
+  (`map_source_not_synthetic`).
+
+### DP.6 Preuve unitaire — 5 tests sur un vrai dossier jetable
+
+`src-tauri/src/map/relation_real_root_tests.rs`. Le dossier est créé par le test
+qui le lit, dans un `tempfile`, et meurt avec lui. Scanner, hasher, moteur et
+SQLite sont les vrais.
+
+- **Les six actions en séquence**, dans l'ordre où une personne les rencontre,
+  parce que `DEC-0053` F demande qu'une décision sur une racine réelle se
+  comporte comme la même décision sur un cerveau synthétique — ce qui est une
+  séquence, pas six faits indépendants.
+- **Oracle indépendant** : les comptes sont confrontés à une lecture **séparée**
+  du dépôt du cerveau, de sorte qu'aucune direction ne peut se cacher derrière le
+  nombre que rend la commande testée.
+- **Falsifications `TASK-0057` §12 :** 1 à 6 écrites contre le **motif**
+  `map_source_not_synthetic` — ce qui était rendu avant; 7 le sceau legacy et le
+  refus nommé de l'auto-contrôle; 8 `fixtureId` nul et aucune fuite de chemin, de
+  nom de racine ni de `source_ref`; 9 une suggestion comptée dans aucune
+  direction; 10 l'empreinte externe.
+- **Garde structurel** : les corps des six fonctions génériques, lus **à la
+  compilation**, ne doivent appeler ni `source_fixture()` ni `ensure_in_scope()`
+  et doivent résoudre par `generic_source_spec` — et `self_check` doit **encore**
+  appeler `ensure_in_scope`, pour qu'on ne puisse pas satisfaire le garde en
+  rendant tout générique. Il échoue à l'instant où l'appel est écrit, en nommant
+  la commande fautive.
+- **Une fixture synthétique inconnue est refusée aux six portes**, pas à deux.
+
+### DP.7 Autres validations, au `HEAD` final
+
+| Contrôle | Commande | Résultat |
+|---|---|---|
+| Types | `pnpm check` | **PASS** |
+| Frontend | `pnpm test` | **721 PASS**, 48 fichiers |
+| Build interface | `pnpm build` | **PASS** |
+| Hôte Tauri debug | `pnpm tauri build --debug --no-bundle` | **PASS** |
+| Blancs parasites | `git diff --check` | **PASS** |
+| Lisibilité publique | `scripts/audit-public-readiness.ps1 -AllowRemotes` | **PASS**, 762 fichiers versionnés |
+| Portée du diff | `scripts/task0057-diff-scope.ps1` | **IN SCOPE**, 4 fichiers de production sur 28 |
+
+**Aucune CI GitHub distante n'est attachée** à ce dépôt : tous les résultats
+ci-dessus sont des exécutions locales, sorties capturées.
+
+### DP.8 Ce qui n'est PAS déclaré
+
+- **Aucune exigence n'est fermée.** `P-04`, `P-05` et `P-07` passent à
+  `SATISFIED` dans la matrice et y sont **candidates**. La clôture `P-04`
+  d'`ACTION-0094` n'est **ni révoquée ni étendue** par l'exécuteur.
+- **`P-14` non exécutée.** Cette machine refuse **toute** opération de
+  presse-papiers, mesuré **hors du produit** avant l'ouverture de la fenêtre :
+  `Set-Clipboard` fait un aller-retour vide et
+  `System.Windows.Forms.Clipboard::SetText` lève « Échec de l'opération du
+  Presse-papiers demandée ». Il n'y avait donc aucun presse-papiers à
+  confronter, et le refus du produit ne dit rien du produit. Le vrai clic a été
+  joué, la réponse de l'interface est publiée, la comparaison reste composée
+  depuis `TASK-0034`/`ACTION-0055`.
+- **La moitié « carte » de `P-05` est une observation à deux côtés.** La vue est
+  bornée : une arête n'est dessinée que si ses **deux** extrémités sont
+  matérialisées. Le nœud observé avait 1 relation sortante dont l'extrémité
+  n'était pas dessinée, la carte en a donc dessiné **0** — exact — et les **3**
+  relations du cerveau dont une extrémité manquait sont nommées une par une dans
+  la région « extrémités hors de la vue courante », chacune avec son contrôle.
+  La campagne ne montre **pas** une arête dessinée confrontée à l'index.
+- **Aucun seuil lourd n'est remesuré** : 100 000 et 1 000 000 de lignes
+  indexées, la rafale de 10 000 événements, la courbe de coût incrémental et la
+  matrice complète de contrastes restent composés depuis leurs campagnes
+  `VERIFIED` propres, nommées dans la matrice.
+- **Aucun chiffre de performance**; réserve `R8` intacte. **Aucun lecteur
+  d'écran réel.** Racines **NTFS locales** seulement : rien n'est dit d'un volume
+  réseau ni d'un fournisseur Cloud Files. Le **pavé tactile** de `P-11` reste
+  non exécuté et déclaré tel.
+- Le nombre de tabulations pour atteindre un contrôle **n'est pas un contrat** :
+  il a valu 2 puis 60 entre deux exécutions, parce que l'ordre de focus est
+  l'ordre du document. Ce qui est asserté est que l'ordre **atteint** le
+  contrôle et que l'activer sélectionne l'élément nommé.

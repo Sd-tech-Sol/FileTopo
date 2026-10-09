@@ -11,7 +11,7 @@
   `legacy_fixture_spec` répond pour une racine réelle sans consulter la table des
   fixtures. `self_check` garde `ensure_in_scope` et refuse toujours une racine
   réelle, par son nom.
-- **Portée du diff prouvée :** `IN SCOPE`, 4 fichiers de production sur 23 chemins
+- **Portée du diff prouvée :** `IN SCOPE`, 4 fichiers de production sur 28 chemins
   modifiés (`TASK-0057-diff-scope.json`). `commands.rs` n'a gagné que 7 lignes,
   toutes des déclarations de module `#[cfg(test)]`, vérifiées ligne par ligne.
   Modèle, catalogue de règles, moteur, schéma, dépôts, surface inter-cerveaux,
@@ -42,6 +42,19 @@
   est à deux côtés : la vue bornée a dessiné 0 arête pour un nœud dont
   l'extrémité n'était pas matérialisée, et les 3 relations concernées sont
   nommées dans la région « extrémités hors de la vue courante ».
+- **Gate de régression Rust : `PASS` 3/3** au `HEAD` `b21c607b`, machine au repos
+  et arbre intact — 906 passed / 0 failed / 13 ignored à chaque run, exit 0,
+  180,9 s / 185,3 s / 183,2 s, hash de log par run.
+- **Le premier gate était `BLOCKED` à 2/3 et il est publié tel quel**
+  (`TASK-0057-rust-gate-contended.json`) : le run 3 a fait échouer
+  `watch::tests::a_healthy_native_watcher_does_not_use_the_periodic_fallback`
+  sur « timed out after 30s waiting for: state Watching ». **Pas déclaré
+  flake** : deux fautes trouvées, **toutes deux dans le gate** — il ne vérifiait
+  la propreté de l'arbre qu'une fois, et un audit lourd en I/O tournait à côté
+  d'une suite qui contient des tests sensibles au temps. Le gate prend désormais
+  l'empreinte de l'arbre avant et après **chaque** run et avorte si elle bouge,
+  et il enregistre si l'appelant a déclaré une machine au repos. Cause
+  **expliquée par la contention, pas prouvée**; les deux artefacts sont publiés.
 - **Matrice `P-01..P-22` : verdict d'ensemble `SATISFIED`.** Aucune exigence
   fermée par la tâche. `P-04`/`P-05`/`P-07` candidates; la clôture `P-04`
   d'`ACTION-0094` n'est ni révoquée ni étendue par l'exécuteur.
