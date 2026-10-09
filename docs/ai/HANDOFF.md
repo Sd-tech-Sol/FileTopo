@@ -1,5 +1,13 @@
 # HANDOFF — passage de relais
 
+## TASK-0061 — B04 `IMPLEMENTED`, relais au contrôle indépendant — 2026-10-09
+
+- Lecture à faire : `.orchestrator/RESULT.md`, `docs/tasks/TASK-0061-stage-b-multibrain-shell.md`, `docs/performance/runs/TASK-0061-multibrain-shell-{after,previous-product}.json`, `TASK-0061-b03-baseline-harness-on-b04.json`, `TASK-0061-status-visibility-*.json` et les captures `TASK-0061-{after,previous-product}-*.png`.
+- **Leçons de méthode** : (1) le catalogue contient aussi les trois cerveaux intégrés — un menu d'ajout n'est jamais vide et son premier élément n'est pas votre fixture; (2) une surcouche `position: fixed` n'est pas rognée par la bande qui la contient : le harnais doit arrêter le calcul de rognage à un élément fixe; (3) un clic « là où le résumé était » peut tomber sur un autre contrôle (la légende) et décaler toute la colonne : ne jamais cliquer où le test de pointage n'a pas répondu; (4) mon premier patch avait **cassé** la fermeture du menu par son déclencheur (blur puis clic) — trouvé par la campagne, jamais par jsdom; (5) la contre-épreuve sur le produit précédent est faite par un commit jetable local, supprimé ensuite (`headTested d071e8a` n'existe pas sur origin).
+- Harnais : `scripts/task0061-multibrain-shell.{ps1,mjs}`, `task0061-seed-proof.py`, `task0061-catalog-drop.py`, `task0061-derive-status-visibility.py`; `T61_ONLY=menu|groups|walk|p` isole un segment pour déboguer. Compter ~35 min par campagne complète.
+- Limites ouvertes, volontairement non traitées : Diagnostics ouvert sous le plafond de la bande à 960×640 (2+ rangées), statut sous le pli à 960×640, surcouche du menu sur Diagnostics, noms de 4–8 caractères avec 4 pastilles à 960. Le « panneaux avancés en petite fenêtre » de la note de séquencement les recoupe.
+- Aucune TASK-0062, aucune Stage C/D, aucune PR/release/tag/fusion. Prochaine action UNIQUE : contrôle indépendant de TASK-0061.
+
 ## ACTION-0112 — TASK-0060 VERIFIED / B04 approuvée — 2026-10-09
 
 - Ref B03 contrôlée `c055181d8236a6681c97aea4d5ed77731d9d1e30` (artefact WebView2 AFTER testé au HEAD `fb01e3cdbe5fa76538e01f597965bac32412fe63` et docs seulement ensuite). Action ACTION-0111 close : les 13 actions primaires sont **entièrement** visibles, les trois groupes avancés entièrement détectables et souris/clavier dans 18/18 états réels, carte visible entre 261 et 535px, aucune commande perdue, P-19/P-22 conservées.

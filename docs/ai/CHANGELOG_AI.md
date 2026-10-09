@@ -7028,3 +7028,24 @@ Aucun fichier interdit touché; aucun témoin affaibli; pas de `TASK-0061`, de S
 ## 2026-10-09 — ACTION-0112 — B03 VERIFIED, TASK-0061 B04 préparée
 
 Contrôle indépendant de la correction ACTION-0111 au HEAD B03 `c055181d8236a6681c97aea4d5ed77731d9d1e30` (preuve réelle WebView2 sur `fb01e3cdbe5fa76538e01f597965bac32412fe63`). 13/13 primaires et 3 groupes entièrement visibles dans 18 états, carte 261–535px, P-19/P-22, contre-épreuve ancienne version qui échoue. Tests frontend 781/781 deux fois rapportés (non relancés ici), 0 CI distante. TASK-0060 = VERIFIED dans scope B03; Stage B EN COURS. Une seule TASK-0061 B04 autorisée pour mesurer les cas multi-cerveaux/noms longs/menu/statut; aucun code produit modifié par cet audit, main inchangée.
+
+
+## 2026-10-09 — TASK-0061 — Stage B / B04, barre multi-cerveaux
+
+**Agent :** exécuteur Claude Code (Sonnet 5.5, effort HIGH)
+**Statut à l'issue :** `IMPLEMENTED` — contrôle indépendant de l'orchestrateur à venir
+
+### Fait
+
+- Branche `build/v0.2-b04-multibrain-shell` synchronisée par fast-forward (`bd3fbca`); `.orchestrator/NEXT_PROMPT.md`, TASK-0061 et ACTION-0112 lus; aucune autre tâche.
+- **Mesure d'abord** : harnais `scripts/task0061-multibrain-shell.{ps1,mjs}` (trois processus WebView2 réels, 4 racines synthétiques jetables, 30 états + redémarrage + corrections). Défaut démontré sur le produit B03 inchangé.
+- Produit : `CompositionBar.tsx`, `map.css` (pastilles sur une rangée à nom abrégé mais entier en `title`/nom accessible; menu d'ajout en surcouche fixe) + `responsiveLayout.test.ts`, `brains.test.tsx`. Une régression de mon propre patch (fermeture du menu par son déclencheur) trouvée par la campagne et corrigée avec un test falsifié.
+- Preuves : après, contre-épreuve sur le produit précédent, baseline B03 rejouée, dérivé de visibilité des notices, 26 captures, `.orchestrator/RESULT.md`, TASK-0061, cinq documents d'état.
+
+### Non fait, volontairement
+
+Aucun fichier interdit touché; aucun témoin affaibli (la garde « pas d'ellipse » est levée pour un seul sélecteur, avec ses preuves); pas de TASK-0062, de Stage C/D, de PR, d'étiquette ni de fusion. Quatre limites publiées, non corrigées.
+
+### Portes
+
+`pnpm test` **787/787** deux fois, `pnpm check`, `pnpm build`, `git diff --check`; Rust non exécuté.

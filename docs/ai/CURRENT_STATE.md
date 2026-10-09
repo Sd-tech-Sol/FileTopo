@@ -1,5 +1,12 @@
 # État courant
 
+## TASK-0061 — B04 multi-cerveaux IMPLEMENTED — 2026-10-09
+
+- Branche `build/v0.2-b04-multibrain-shell`, produit testé `9b68c1ac6b1ebc9f199cfdd25376e0fcc7eebf99`. **Mesure d'abord** : avec 2–3 cerveaux (noms de 60/75 caractères) le produit B03 perdait des commandes usuelles (pire 9/13, menu ouvert 4/13 invisibles, entrées de groupe sous le pli). Défaut démontré, patch UI minimal (`CompositionBar.tsx`, `map.css`, deux fichiers de test).
+- Après : 30/30 états WebView2 à 13/13, pastilles/×/éléments de menu entiers, carte 253,4–496 px, 0 débordement, axe 0 violation, clavier de la composition 12/12, P-19 et P-22 conservées, contre-épreuve sur le produit précédent, baseline B03 rejouée inchangée. `pnpm test` 787/787 ×2, check, build, diff-check PASS (rapportés par l'exécuteur).
+- Limites **non corrigées** : Diagnostics ouvert sous le plafond de la bande à 960×640; statut sous le pli à 960×640 (déjà avant); surcouche du menu sur Diagnostics; 4 pastilles à 960 = noms très courts. Voir `.orchestrator/RESULT.md`.
+- **TASK-0061 = IMPLEMENTED, pas VERIFIED.** Stage B EN COURS, non close; Stage C/D, R8 inchangées.
+
 ## ACTION-0112 — TASK-0060 VERIFIED / B04 approuvée — 2026-10-09
 
 - Ref B03 contrôlée `c055181d8236a6681c97aea4d5ed77731d9d1e30` (artefact WebView2 AFTER testé au HEAD `fb01e3cdbe5fa76538e01f597965bac32412fe63` et docs seulement ensuite). Action ACTION-0111 close : les 13 actions primaires sont **entièrement** visibles, les trois groupes avancés entièrement détectables et souris/clavier dans 18/18 états réels, carte visible entre 261 et 535px, aucune commande perdue, P-19/P-22 conservées.

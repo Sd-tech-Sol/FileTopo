@@ -1,0 +1,183 @@
+{
+  "source": "TASK-0061-multibrain-shell-after.json",
+  "note": "Derived from the rectangles recorded in the campaign artifact: the part of the notice that lies inside the chrome band's own box, which is what a person sees without scrolling the band. Nothing was measured again.",
+  "rows": [
+    {
+      "pass": "pass1",
+      "size": "960x640",
+      "state": "four-unindexed-notice-fr-light",
+      "status": {
+        "text": "Index absent. Préparez l’exemple synthétique si nécessaire, puis choisissez Actu",
+        "visibleHeightPx": 0.0,
+        "ownHeightPx": 35,
+        "fraction": 0.0
+      }
+    },
+    {
+      "pass": "pass1",
+      "size": "960x640",
+      "state": "single-C-refused-removal-en-light",
+      "status": {
+        "text": "Composition refused — removing the last displayed brain is refused (real-33c0fe9",
+        "visibleHeightPx": 0.0,
+        "ownHeightPx": 35,
+        "fraction": 0.0
+      }
+    },
+    {
+      "pass": "pass1",
+      "size": "1280x800",
+      "state": "four-unindexed-notice-fr-light",
+      "status": {
+        "text": "Index absent. Préparez l’exemple synthétique si nécessaire, puis choisissez Actu",
+        "visibleHeightPx": 35,
+        "ownHeightPx": 35,
+        "fraction": 1.0
+      }
+    },
+    {
+      "pass": "pass1",
+      "size": "1280x800",
+      "state": "single-C-refused-removal-en-light",
+      "status": {
+        "text": "Composition refused — removing the last displayed brain is refused (real-33c0fe9",
+        "visibleHeightPx": 35,
+        "ownHeightPx": 35,
+        "fraction": 1.0
+      }
+    },
+    {
+      "pass": "pass1",
+      "size": "1366x768",
+      "state": "four-unindexed-notice-fr-light",
+      "status": {
+        "text": "Index absent. Préparez l’exemple synthétique si nécessaire, puis choisissez Actu",
+        "visibleHeightPx": 35,
+        "ownHeightPx": 35,
+        "fraction": 1.0
+      }
+    },
+    {
+      "pass": "pass1",
+      "size": "1366x768",
+      "state": "single-C-refused-removal-en-light",
+      "status": {
+        "text": "Composition refused — removing the last displayed brain is refused (real-33c0fe9",
+        "visibleHeightPx": 35,
+        "ownHeightPx": 35,
+        "fraction": 1.0
+      }
+    },
+    {
+      "pass": "pass3",
+      "size": "960x640",
+      "state": "corrected-fr-light",
+      "corrections": {
+        "words": "BRAIN_MISSING,FOCUSED_BRAIN_MISSING,VIEW_COMPOSITION_CHANGED,SELECTION_BRAIN_NOT_DISPLAYED",
+        "visibleHeightPx": 0.0,
+        "ownHeightPx": 154,
+        "fraction": 0.0,
+        "dismiss": {
+          "visibleHeightPx": 0.0,
+          "ownHeightPx": 35,
+          "fraction": 0.0
+        }
+      }
+    },
+    {
+      "pass": "pass3",
+      "size": "960x640",
+      "state": "corrected-en-dark-compact",
+      "corrections": {
+        "words": "BRAIN_MISSING,FOCUSED_BRAIN_MISSING,VIEW_COMPOSITION_CHANGED,SELECTION_BRAIN_NOT_DISPLAYED",
+        "visibleHeightPx": 51.6,
+        "ownHeightPx": 138,
+        "fraction": 0.37,
+        "dismiss": {
+          "visibleHeightPx": 0.0,
+          "ownHeightPx": 27,
+          "fraction": 0.0
+        }
+      }
+    },
+    {
+      "pass": "pass3",
+      "size": "1280x800",
+      "state": "corrected-fr-light",
+      "corrections": {
+        "words": "BRAIN_MISSING,FOCUSED_BRAIN_MISSING,VIEW_COMPOSITION_CHANGED,SELECTION_BRAIN_NOT_DISPLAYED",
+        "visibleHeightPx": 122,
+        "ownHeightPx": 154,
+        "fraction": 0.79,
+        "dismiss": {
+          "visibleHeightPx": 11,
+          "ownHeightPx": 35,
+          "fraction": 0.31
+        }
+      }
+    },
+    {
+      "pass": "pass3",
+      "size": "1280x800",
+      "state": "corrected-en-dark-compact",
+      "corrections": {
+        "words": "BRAIN_MISSING,FOCUSED_BRAIN_MISSING,VIEW_COMPOSITION_CHANGED,SELECTION_BRAIN_NOT_DISPLAYED",
+        "visibleHeightPx": 138,
+        "ownHeightPx": 138,
+        "fraction": 1.0,
+        "dismiss": {
+          "visibleHeightPx": 27,
+          "ownHeightPx": 27,
+          "fraction": 1.0
+        }
+      }
+    },
+    {
+      "pass": "pass3",
+      "size": "1366x768",
+      "state": "corrected-fr-light",
+      "corrections": {
+        "words": "BRAIN_MISSING,FOCUSED_BRAIN_MISSING,VIEW_COMPOSITION_CHANGED,SELECTION_BRAIN_NOT_DISPLAYED",
+        "visibleHeightPx": 154,
+        "ownHeightPx": 154,
+        "fraction": 1.0,
+        "dismiss": {
+          "visibleHeightPx": 35,
+          "ownHeightPx": 35,
+          "fraction": 1.0
+        }
+      }
+    },
+    {
+      "pass": "pass3",
+      "size": "1366x768",
+      "state": "corrected-en-dark-compact",
+      "corrections": {
+        "words": "BRAIN_MISSING,FOCUSED_BRAIN_MISSING,VIEW_COMPOSITION_CHANGED,SELECTION_BRAIN_NOT_DISPLAYED",
+        "visibleHeightPx": 138,
+        "ownHeightPx": 138,
+        "fraction": 1.0,
+        "dismiss": {
+          "visibleHeightPx": 27,
+          "ownHeightPx": 27,
+          "fraction": 1.0
+        }
+      }
+    }
+  ],
+  "statusesEntirelyUnderTheBandFold": [
+    "pass1 960x640/four-unindexed-notice-fr-light",
+    "pass1 960x640/single-C-refused-removal-en-light"
+  ],
+  "statusesFullyVisible": [
+    "pass1 1280x800/four-unindexed-notice-fr-light",
+    "pass1 1280x800/single-C-refused-removal-en-light",
+    "pass1 1366x768/four-unindexed-notice-fr-light",
+    "pass1 1366x768/single-C-refused-removal-en-light"
+  ],
+  "correctionsFullyVisible": [
+    "pass3 1280x800/corrected-en-dark-compact",
+    "pass3 1366x768/corrected-fr-light",
+    "pass3 1366x768/corrected-en-dark-compact"
+  ]
+}

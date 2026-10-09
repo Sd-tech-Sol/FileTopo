@@ -1,7 +1,7 @@
 # TASK-0061 — Stage B / B04 — Robustesse de la barre multi-cerveaux
 
 - **Date :** 2026-10-09
-- **État :** APPROVED / NOT STARTED.
+- **État :** `IMPLEMENTED` (2026-10-09, exécuteur Claude) — contrôle indépendant à venir; l'exécuteur ne s'attribue pas `VERIFIED`.
 - **Branche :** `build/v0.2-b04-multibrain-shell`
 - **Base :** `c055181d8236a6681c97aea4d5ed77731d9d1e30` (TASK-0060 B03 VERIFIED, ACTION-0112).
 - **Exécuteur :** Claude Code Sonnet, effort HIGH; basculer vers Opus uniquement si un obstacle justifié et le signaler.
@@ -35,3 +35,13 @@ Sur un ensemble de **racines REAL_ROOT synthétiques temporaires** (jamais de do
 ## Note de séquencement
 
 Après B04, Stage B doit encore vérifier accessibilité/contrastes, panneaux avancés en petite fenêtre et rejouer **l'intégralité** de la parité P-01..P-22 avant fermeture. Cette tâche **n'est pas** un raccourci vers Stage C.
+
+## Résultats mesurés — `IMPLEMENTED` le 2026-10-09 (exécuteur Claude, jamais VERIFIED)
+
+Campagne WebView2 réelle `scripts/task0061-multibrain-shell.ps1` (3 processus sur un même bac à sable jetable : matrice, redémarrage, redémarrage après retrait d'un cerveau du catalogue jetable), 4 racines synthétiques (noms de 60 et 75 caractères) et les 3 cerveaux intégrés au catalogue. Détails et chiffres : `.orchestrator/RESULT.md`.
+
+- **Défaut démontré** (`TASK-0061-multibrain-shell-previous-product.json`, produit B03 inchangé, harnais final) : pire cas 9/13 usuelles entières; 8 états sur 30 hors contrat; 11 entrées de groupe non entières; menu ouvert = 4/13 sans pixel visible aux trois tailles.
+- **Patch** : `CompositionBar.tsx`, `map.css`, `responsiveLayout.test.ts`, `brains.test.tsx` seulement. Pastilles sur une rangée à nom abrégé (entier en `title` et nom accessible), menu d'ajout en surcouche fixe, garde statique B03 levée pour `.composition__name` uniquement.
+- **Après** (`TASK-0061-multibrain-shell-after.json`, HEAD produit `9b68c1a`) : 30/30 états à 13/13, pastilles/×/éléments de menu entiers, carte 253,4–496 px, 0 débordement, axe 0 violation, P-19/P-22 conservées; contre-épreuve et baseline B03 rejouée (`TASK-0061-b03-baseline-harness-on-b04.json`, 13/13, 261–535 px).
+- **Limites non corrigées** : Diagnostics ouvert sous le plafond de la bande à 960×640 (2+ rangées); statut entièrement sous le pli à 960×640 (déjà vrai avant); surcouche du menu sur l'entrée Diagnostics; 4 pastilles à 960 = 4–8 caractères visibles.
+- **Critère 4 (caméra)** : identique aux trois tailles; un changement de focus **panoramique** (DEC-0034 E) sans changer d'échelle, ce que le code existant fait déjà et que B04 n'a pas touché.
