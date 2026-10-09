@@ -265,6 +265,22 @@ describe("clavier seul — K10, L10", () => {
     expect(onAdd).not.toHaveBeenCalled();
   });
 
+  it("se referme en pressant son déclencheur, sans se rouvrir — TASK-0061", () => {
+    // Pressing the trigger of an open menu moves the focus there first. Closing on that blur
+    // made the click that follows read "closed" and open the menu again: the real sequence,
+    // measured in WebView2 after the menu became a window layer.
+    renderBar();
+    const trigger = screen.getByTestId("composition-add-trigger");
+    fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    expect(screen.queryByRole("menu")).toBeTruthy();
+
+    fireEvent.blur(screen.getByTestId("composition-add-item-brain-beta"), { relatedTarget: trigger });
+    expect(screen.queryByRole("menu"), "the blur toward the trigger leaves the decision to the click").toBeTruthy();
+
+    fireEvent.click(trigger);
+    expect(screen.queryByRole("menu")).toBeNull();
+  });
+
   it("la barre suit le cerveau focused quand il change", () => {
     function Harness() {
       const [view, setView] = useState<ComposedView>(() =>

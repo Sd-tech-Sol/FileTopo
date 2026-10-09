@@ -335,8 +335,16 @@ export default function CompositionBar({
                       // `relatedTarget` is null in both cases, and treating
                       // them alike closed the menu the instant the host
                       // brought the window forward to deliver a real key.
+                      //
+                      // `TASK-0061` — and never when it moves to the trigger itself: pressing the
+                      // trigger of an open menu is how a person closes it, and closing it here on
+                      // the blur would let the click that follows read "closed" and open it again.
                       const next = event.relatedTarget as Node | null;
-                      if (next && !event.currentTarget.closest("ul")?.contains(next)) {
+                      if (
+                        next &&
+                        next !== triggerRef.current &&
+                        !event.currentTarget.closest("ul")?.contains(next)
+                      ) {
                         setOpen(false);
                       }
                     }}
