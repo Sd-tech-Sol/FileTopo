@@ -1,5 +1,21 @@
 # État courant
 
+## TASK-0059 — Stage B / B02 — carte dès le premier écran — `IMPLEMENTED` — 2026-10-09
+
+- Branche `build/v0.2-b02-first-screen-map`, base `afd6bf8` (ACTION-0109). `HEAD` mesuré `before` = `0b6de20` (produit inchangé), `after` = `921dacb`.
+- **La mesure `before` trouve plus que `B01-O1` ne disait :** à `scrollY=0`, **0 px** de `.map-view` et **0** carte visible dans les **18** états, aux **trois** tailles — 1280×800 et 1366×768 n'étaient pas meilleures que 960×640, elles n'avaient jamais été interrogées. Document jusqu'à 3545 px; `asideScrollsInside` faux partout.
+- Comptabilité des pixels à 960×640 : en-tête 163, nav composition/identité/exclusions/actions **389**, diagnostic 38, rapport 83 — puis **633 px** de commandes **dans la colonne carte**. Surface de carte à **1360 px** de document.
+- **Correctif de présentation seulement, deux fichiers UI.** Cause racine : `.app` n'avait qu'un plancher `min-height: 100vh`; il reçoit `height: 100vh` et `overflow: hidden`. Trois régions défilent alors dans elles-mêmes (`.app__chrome`, `.app__map-controls`, `.app__aside` — la dernière le demandait déjà sans jamais l'obtenir). `.map-view` passe d'un `min-height: 420px` plat à `min(240px, 38vh)`; `.app__main` reçoit `min(430px, 66vh)`; la bande de chrome un plafond `min(38vh, 340px)`. **Quatre lignes de JSX** : deux `<div>` d'enveloppe. Aucune media query, aucun état, aucune commande retirée, déplacée ou repliée.
+- **Après, dans les 18 états :** **240 px** de carte visible (plancher demandé : 200), carte **exploitable** au test de pointage, 3 à 4 cartes réellement à l'écran, racine visible dans 12 états sur 18 et nœuds de contexte dans les 6 autres, **0 px** de défilement vertical du document.
+- **Aucune commande perdue :** 59 contrôles par état à chaque taille, les mêmes 59 que B01; 0 débordement horizontal, 0 escaper, 0 rognage, 0 recouvrement, panneau atteint au clavier, anneau 3 px, 0 violation axe-core. Trois commandes au-delà du pli d'une bande atteintes au clavier en 12/19/28 tabulations, chacune **dans** le viewport, document toujours à `scrollY=0`.
+- **Caméra intacte (critère 3) :** identique au bit près à travers 960×640 → 1280×800 → 1366×768 → 960×640; coordonnées du monde stables, sélection conservée et visible; aucun `fitView` automatique.
+- `P-19` : un second processus restaure langue, densité, mouvement, légende, sélection, caméra, et retrouve la carte sur son premier écran. `P-22` : empreintes stricte et d'accès identiques, 160 entrées, 0 artefact, 0 écriture sur le fil. `P-02` 120=120, `P-05` vue bornée et cible naviguée visible à `scrollY=0`, `P-07` sélection à 960×640 **sans défiler**, `P-11` molette et clavier, `P-21` FR/EN + axe.
+- Témoin `responsiveLayout.test.ts` **adapté, non effacé** : les invariants UX falsifiables remplacent l'épinglage du CSS figé, les garde-fous fonctionnels de B01 sont conservés. 5 tests → 15.
+- Portes : `pnpm test` **736/736** (49 fichiers), `pnpm check`, `pnpm build`, `git diff --check`. Rust **non exécuté** (aucun code Rust touché). **Aucune CI distante.**
+- **Réserve ouverte, chiffrée :** les bandes défilent dans elles-mêmes à toutes les tailles mesurées (chrome 176 px de 723 à 960×640). Rien n'est perdu, mais la nav composition/identité/exclusions pèse **389 px** à elle seule. La compacter est une question d'organisation produit, hors de cette tranche. **Décision à l'orchestrateur.**
+- Statut : `IMPLEMENTED`, **jamais `VERIFIED` par l'exécuteur**. Aucune `TASK-0060`, aucun Stage C/D, aucune fusion.
+
+
 ## ACTION-0109 — TASK-0058 VERIFIED / B02 prête — 2026-10-09
 
 - Contrôle GitHub indépendant sur `672da90dfb3c8c5720ee99273896b282fb0e5d72`: diff depuis ACTION-0108 = aucun code produit touché, juste test responsive + harnais/artefacts/docs.

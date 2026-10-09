@@ -1,5 +1,20 @@
 # HANDOFF — passage de relais
 
+## Relais — TASK-0059 / Stage B B02, la carte est sur le premier écran — 2026-10-09
+
+- Branche `build/v0.2-b02-first-screen-map`; `HEAD` mesuré `before` `0b6de20`, `after` `921dacb`.
+- **Mesurer d'abord a payé.** `B01-O1` disait « carte sous la ligne de flottaison à 960×640 ». La campagne `before` dit : **0 px de carte et 0 carte visible dans les 18 états, aux trois tailles**. 1280×800 et 1366×768 n'étaient pas meilleures — personne ne leur avait posé la question. Ne pas reprendre une conclusion : la refaire.
+- **La cause racine était une ligne.** `.app { min-height: 100vh }` est un plancher, jamais un plafond : le contenu dimensionnait la coquille, le panneau droit faisait grandir la rangée de grille, et le document montait à 3545 px. `height: 100vh` + `overflow: hidden` rend la coquille à la fenêtre, et à partir de là `.app__aside` défile **enfin** dans lui-même, ce que son propre `overflow: auto` demandait depuis toujours.
+- **Deux pièges spécifiques à ce correctif, déjà payés.** (1) Un plancher en pixels plats — `min-height: 420px` sur `.map-view` — demande plus que la fenêtre n'a dans une fenêtre de 640, et le moteur répond en faisant grandir le document : tout plancher doit être exprimé contre la fenêtre. (2) Dès qu'une région défile dans elle-même, `window.scrollTo(0, 0)` ne décrit plus un écran d'ouverture : il faut aussi remettre chaque région à son origine, sinon une capture montre une interface à mi-défilement en prétendant montrer la première.
+- **Piège de harnais, transposable :** un commentaire contenant une apostrophe inverse à l'intérieur du littéral gabarit envoyé au moteur **ferme le littéral**. Node le signale comme un `TypeError` quatre-vingts lignes plus loin, après une passe WebView2 complète. Les deux scripts de page sont désormais vérifiés hors moteur avant la campagne.
+- **Méthode à réutiliser :** `scripts/task0059-first-screen.ps1 -Phase before|after -WorkDirectory <hors dépôt>` (pwsh 7). Même fixture, même procédure, mêmes six états, mêmes trois tailles pour les deux phases : une campagne avant et une campagne après mesurées autrement ne comparent rien. `scripts/task0058-resize.ps1` et `scripts/task0056-fingerprint.py` sont **réutilisés tels quels**; le témoin B01 `scripts/task0058-*` n'est pas effacé.
+- **Ce que le correctif a touché, et seulement cela :** `.app`, `.app__chrome` (neuf), `.app__main`, `.app__map`, `.app__map-controls` (neuf), `.map-view` dans `map.css`; deux `<div>` d'enveloppe dans `MapApp.tsx` — quatre lignes. Aucune commande retirée, déplacée ou repliée; les 59 contrôles et leurs `data-testid` sont ceux de l'inventaire B01.
+- **Le sujet de la suite, chiffré :** les bandes défilent dans elles-mêmes à toutes les tailles mesurées — à 960×640 la bande de chrome montre 176 px sur 723. Rien n'est perdu, le clavier atteint tout, mais la nav composition/identité/exclusions pèse **389 px** à elle seule, à 960 comme à 1280. La compacter rendrait mécaniquement de la hauteur à la carte **sans retoucher une seule des règles posées ici**. C'est de l'organisation produit, pas de la présentation : **arbitrage orchestrateur**.
+- Jamais mesuré, à ne pas supposer couvert : panneaux **relations**, **file de révision** et **inter-cerveaux** en largeur étroite — la fixture ne les peuple toujours pas; lecteur d'écran réel; contrastes `color-contrast` laissés `incomplete` par axe (9 à 18 après, 12 à 20 avant), non tranchés.
+- Instabilité observée et non attribuée : `workspaceMapApp.test.tsx > writes the collapsed folders with the branch` a échoué **une fois** sous charge, non reproduit sur le fichier seul ni sur deux exécutions complètes suivantes.
+- Prochaine action UNIQUE : contrôle indépendant de `TASK-0059` par l'orchestrateur, puis `VERIFIED` ou refus. Pas de `TASK-0060`, pas de Stage C/D, pas de PR ni de fusion.
+
+
 ## Relais — ACTION-0109 / B02 premier écran — 2026-10-09
 
 - B01 indépendante : `TASK-0058 = VERIFIED` au HEAD `672da90dfb3c8c5720ee99273896b282fb0e5d72` (ACTION-0109). Validation scope horizontal/focus uniquement; pas de CSS modifié et aucune CI GitHub.

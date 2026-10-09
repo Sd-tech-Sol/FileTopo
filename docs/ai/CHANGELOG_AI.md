@@ -6875,3 +6875,37 @@ clôture `P-04` d'`ACTION-0094` n'est ni révoquée ni étendue ici. Aucune
 ## 2026-10-09 — ACTION-0109 — contrôle TASK-0058, arbitrage B01-O1
 
 **Orchestrateur ChatGPT, audit GitHub et captures réelles publiées.** PASS / VERIFIED pour TASK-0058 : aucune régression ni défaut horizontal démontré dans 18 mesures WebView2; aucune ligne de code produit modifiée; limites d'axe incomplete et CI absente conservées. B01-O1 (carte hors fenêtre à 960×640) identifié comme première dette visuelle à résoudre. `TASK-0059` APPROVED sur `build/v0.2-b02-first-screen-map`, prompt versionné pour Claude Code Sonnet/HIGH. Stage A CLOSED, Stage B EN COURS, C/D inchangées, main non fusionnée.
+
+
+## 2026-10-09 — TASK-0059 — Stage B / B02, carte dès le premier écran
+
+**Agent :** exécuteur Claude Code (Opus 5; la fiche conseillait Sonnet / HIGH).
+**Statut à l'issue :** `IMPLEMENTED`, en attente de vérification indépendante.
+
+### Fait
+
+- Harnais : `scripts/task0059-first-screen.ps1` (pwsh 7, `-Phase before|after`), `scripts/task0059-first-screen.mjs`, `scripts/task0059-seed-proof.py`. `scripts/task0058-resize.ps1` et `scripts/task0056-fingerprint.py` **réutilisés tels quels**; le témoin B01 `scripts/task0058-*` n'est pas effacé.
+- Campagne **avant**, sur produit inchangé (`0b6de20`) : à `scrollY=0`, **0 px** de carte visible et **0** carte dans les **18** états, aux **trois** tailles — `B01-O1` n'était donc pas un défaut de 960×640, les deux autres tailles n'avaient jamais été interrogées. Comptabilité des bandes : nav composition/identité/exclusions **389 px**, pile de commandes de la colonne carte **633 px**, surface de carte à **1360 px** de document.
+- Correctif de **présentation seulement**, dans les deux fichiers UI autorisés. Cause racine : `.app` n'avait qu'un plancher `min-height: 100vh`; il reçoit `height: 100vh` et `overflow: hidden`. Trois régions défilent alors dans elles-mêmes — `.app__chrome` (neuf), `.app__map-controls` (neuf), `.app__aside` qui le demandait déjà par son propre `overflow: auto`. `.map-view` passe d'un `min-height: 420px` plat à `min(240px, 38vh)`, `.app__main` reçoit `min(430px, 66vh)`, la bande de chrome un plafond `min(38vh, 340px)`. **Quatre lignes de JSX** : deux `<div>` d'enveloppe, mêmes éléments, même ordre, mêmes `data-testid`.
+- Témoin `src/map/responsiveLayout.test.ts` **adapté, non effacé** : invariants UX falsifiables à la place de l'épinglage du CSS figé, garde-fous fonctionnels de B01 conservés. 5 tests → 15.
+- Campagne **après** (`921dacb`) et preuves : `docs/performance/runs/TASK-0059-first-screen-{before,after}.json` + 12 captures PNG prises à `scrollY=0`.
+
+### Verdict
+
+- **Critère 1 satisfait dans les 18 états :** 240 px de carte visible et exploitable pour un plancher de 200, 3 à 4 cartes réellement à l'écran, **0 px** de défilement vertical du document.
+- **Aucune commande perdue :** 59 contrôles par état, 0 débordement horizontal, 0 rognage, 0 recouvrement, panneau atteint au clavier, 0 violation axe-core; trois commandes au-delà du pli d'une bande atteintes au clavier sans que la page bouge.
+- **Caméra intacte :** identique au bit près à travers les trois hauteurs et retour, coordonnées du monde stables, sélection conservée, aucun `fitView` automatique.
+- `P-19` restauré par un second processus; `P-22` empreintes identiques, 0 artefact, 0 écriture sur le fil.
+- Portes : `pnpm test` **736/736**, `pnpm check`, `pnpm build`, `git diff --check`. Rust **non exécuté** (aucun code Rust touché). **Aucune CI distante.**
+
+### Remonté, non réparé
+
+Les bandes défilent dans elles-mêmes à toutes les tailles mesurées (176 px sur 723
+à 960×640). Rien n'est perdu, mais la nav composition/identité/exclusions pèse
+**389 px** à elle seule : la compacter est de l'organisation produit, hors du
+périmètre écrit de cette tranche. **Arbitrage orchestrateur.**
+
+### Non fait, volontairement
+
+Aucune `TASK-0060`, aucun Stage C/D, aucune PR, aucune fusion vers `main`, aucune
+étiquette, aucune dépendance ajoutée, aucun fichier hors de la liste autorisée.

@@ -1,7 +1,7 @@
 # VALIDATION.md — État de vérification
 
 **Dernière mise à jour :** 2026-10-09
-**Dernière livraison exécutée :** TASK-0058, section **DS** (baseline visuelle Stage B / B01), `IMPLEMENTED`, **en attente de vérification indépendante** — aucun défaut de chrome prouvé, diff produit vide. Avant elle : TASK-0036, section **BP** (passe corrective D6, `ACTION-0059`), `IMPLEMENTED`, **en attente de vérification indépendante**. Section BO (passe corrective D4/D5, `ACTION-0058`) acceptée sans régression sur D1/D2/D3/R1/D5 par ce recontrôle, D4 confirmé largement corrigé hors D6. TASK-0035, section BL, est `VERIFIED` par `ACTION-0056`. TASK-0034, section **BH** (recherche bornée et « Ouvrir dans l'Explorateur »), `IMPLEMENTED`, **en attente de vérification indépendante**. TASK-0033, sections BE/BF, est `VERIFIED` dans sa portée par le verdict indépendant enregistré dans `ACTION-0051`, section BG.
+**Dernière livraison exécutée :** TASK-0059, section **DT** (carte dès le premier écran, Stage B / B02), `IMPLEMENTED`, **en attente de vérification indépendante** — 240 px de carte visible et exploitable dans les 18 états contre 0 avant, aucune commande perdue, caméra identique au bit près. Avant elle : TASK-0058, section **DS** (baseline visuelle Stage B / B01), `VERIFIED` dans sa portée B01 par `ACTION-0109` — aucun défaut de chrome prouvé, diff produit vide. Avant elle : TASK-0036, section **BP** (passe corrective D6, `ACTION-0059`), `IMPLEMENTED`, **en attente de vérification indépendante**. Section BO (passe corrective D4/D5, `ACTION-0058`) acceptée sans régression sur D1/D2/D3/R1/D5 par ce recontrôle, D4 confirmé largement corrigé hors D6. TASK-0035, section BL, est `VERIFIED` par `ACTION-0056`. TASK-0034, section **BH** (recherche bornée et « Ouvrir dans l'Explorateur »), `IMPLEMENTED`, **en attente de vérification indépendante**. TASK-0033, sections BE/BF, est `VERIFIED` dans sa portée par le verdict indépendant enregistré dans `ACTION-0051`, section BG.
 **Dernière tâche évaluée indépendamment :** TASK-0033 — `VERIFIED` le
 2026-09-10 par le verdict indépendant enregistré dans `ACTION-0051`, section
 BG, dans sa portée. TASK-0032 — `VERIFIED` le 2026-09-10 par le verdict
@@ -10296,3 +10296,49 @@ réservée à l'orchestrateur.**
 - API GitHub Actions et commit checks = **0** pour B01; aucun statut CI vert inventé. `main` non fusionné.
 - **PASS/VERIFIED TASK-0058 seule** sur ses critères conditionnels; reste hors scope P-01..P-22 complet (avant clôture Stage B), vrai lecteur d'écran, panneaux relation/review/cross à largeur réduite, contraste incomplet et réserve R8.
 - Prochaine tâche B02 créée par justification `B01-O1`, pas par séquence automatique.
+
+
+## DT — TASK-0059 — Stage B B02, carte dès le premier écran — 2026-10-09
+
+**Statut : `IMPLEMENTED`**, en attente de vérification indépendante. L'exécuteur
+ne s'attribue pas `VERIFIED`.
+
+### Vérifié par l'agent exécuteur — campagnes WebView2 réelles, **non indépendantes**
+
+Deux campagnes, même procédure, même fixture synthétique, mêmes six états, mêmes
+trois tailles redimensionnées nativement par `SetWindowPos`, deux processus réels
+chacune.
+
+- **Avant — `docs/performance/runs/TASK-0059-first-screen-before.json`, `HEAD` `0b6de20`.** À `scrollY=0` : **0 px** de `.map-view` dans la fenêtre et **0** carte visible, dans les **18** états et aux **trois** tailles. Bandes au-dessus de `<main>` : 635–727 px à 960×640, 517–628 à 1280×800, 517–585 à 1366×768. Pile de commandes **dans la colonne carte** : 633 px. Surface de carte à **1360 px** de document; document jusqu'à **3545 px**. `asideScrollsInside` **faux** dans les 18 états.
+- **Après — `docs/performance/runs/TASK-0059-first-screen-after.json`, `HEAD` `921dacb`.** `firstScreenSatisfied: true` dans les 18 états : **240 px** de `.map-view` visible (plancher du critère : 200), test de pointage **à l'intérieur** de la carte dans les 18, 3 à 4 cartes réellement visibles et atteignables, carte **racine** parmi elles dans 12 états sur 18 et nœuds de contexte identifiables dans les 6 autres. Défilement vertical du document : **0 px** partout.
+- **Aucune commande perdue :** 59 contrôles par état à chaque taille, une seule empreinte d'identifiants par état, identiques à l'inventaire B01. 0 px de débordement horizontal, 0 boîte hors viewport, 0 scroll latéral, 0 contrôle rogné, 0 recouvrement de colonnes, panneau droit atteint au clavier avec anneau de focus de 3 px, **0 violation axe-core** dans les 18 états.
+- **Clavier au-delà du pli d'une bande :** `brain-add-real-root` en 12 tabulations, `cross-check` en 19, `map-legend-toggle` en 28; chacune atteinte, **dans** le viewport, anneau 3 px, et `document.scrollY = 0` après coup — la bande a défilé, pas la page.
+- **Caméra, critère 3 :** à travers 960×640 → 1280×800 → 1366×768 → 960×640, `tx`, `ty` et `scale` sont **identiques au bit près** (`scale` = 1.9344728533297966). Les rectangles de cartes et les translations de territoire lus **sous** la caméra ne bougent pas; la sélection est conservée et reste visible à chaque hauteur. Aucun `fitView` automatique.
+- **`P-19` :** second processus réel sur le même bac à sable et le même profil WebView2 — `en`, `compact`, `reduce`, légende ouverte, sélection `2` et caméra restaurées; la carte est sur le premier écran du processus restauré (240 px, 0 px de défilement).
+- **`P-22` :** empreinte stricte et empreinte d'accès **identiques** avant/après la session, 160 entrées, **0** artefact FileTopo sous la racine, **0** commande d'écriture sur le fil IPC pendant la fenêtre de mesure.
+- **Contrôles ciblés :** `P-02` 120 omis = 120 enfants réels; `P-05` arêtes dessinées, ligne hors de la première vue atteinte, vue bornée à 5 slots sur 512, cible naviguée visible à `scrollY=0`; `P-07` sélection à 960×640 **sans défilement du document** (`scrollY` = 0 au moment de la sélection) et panneau en accord avec l'Index; `P-11` molette **et** clavier déplacent la caméra; `P-21` FR/EN avec axe-core dans les 18 états.
+- **Portes :** `pnpm test` **736/736** sur 49 fichiers, `pnpm check`, `pnpm build`, `git diff --check` — toutes passées.
+- **Diff produit :** `src/map/map.css` et `src/map/MapApp.tsx` seuls fichiers UI touchés; quatre lignes de JSX (deux `<div>` d'enveloppe), aucune commande retirée, déplacée ou repliée, aucune media query ajoutée, aucune dépendance.
+
+### Non testé — dit comme tel
+
+- Lecteur d'écran : aucun. Aucune certification WCAG revendiquée.
+- Contraste : les nœuds `color-contrast` qu'axe laisse `incomplete` — 9 à 18 selon l'état après, 12 à 20 avant — ne sont tranchés **dans aucun sens**.
+- Thème et mouvement : overrides de media feature dans le vrai moteur, **pas** un changement de réglage Windows.
+- Panneaux **relations**, **file de révision**, **inter-cerveaux** en largeur étroite : **NON MESURÉS**, la fixture ne les peuple pas.
+- Tests Rust : **non exécutés**, aucun code Rust touché.
+- Les 22 `P` : **non rejouées**, réservées à la clôture de Stage B par `ACTION-0108`. `P-14` et le périphérique `P-11` gardent les réserves d'`ACTION-0107`.
+- Aucune CI distante sur ce dépôt.
+- Asymétrie de harnais signalée : la campagne `before` date de `0b6de20`, l'`after` de `921dacb`, qui remet en plus chaque région défilante à son origine. Sur le build `before` cette remise est sans effet — son propre artefact donne `asideScrollsInside: false` dans les 18 états et aucune autre région défilante.
+- Un échec isolé de `workspaceMapApp.test.tsx > writes the collapsed folders with the branch` sous charge, non reproduit sur le fichier seul ni sur deux exécutions complètes suivantes. **Non attribué** au correctif, **non corrigé** ici.
+
+### Constat remonté, non réparé
+
+Les bandes de chrome défilent dans elles-mêmes **à toutes les tailles mesurées** :
+à 960×640 la bande montre 176 px sur 723, la bande de commandes carte 134 px sur
+625. Aucune commande n'est perdue et le clavier les atteint toutes, mais à la
+souris il faut faire défiler une bande. Cause chiffrée : la nav
+composition/identité/exclusions pèse **389 px** à elle seule, à 960 comme à 1280.
+La compacter rendrait de la hauteur à la carte sans retoucher les règles posées
+ici, mais relève de l'**organisation produit**, pas de la présentation, et sort du
+périmètre écrit de cette tranche. **Décision réservée à l'orchestrateur.**
