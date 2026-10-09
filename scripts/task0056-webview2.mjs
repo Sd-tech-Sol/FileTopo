@@ -978,8 +978,8 @@ if (phase === 1) {
     const section = [...document.querySelectorAll('section.relations')][0];
     return { hasEngineCommand: !!document.querySelector('[data-testid="analyze-relations"]'),
       hasTotals: !!document.querySelector('[data-testid="relation-totals"]'),
-      unavailableWording: /indisponible|unavailable/i.test(section?.textContent ?? ''),
-      legacyNote: !!document.querySelector('[data-testid="legacy-scope-note"]') };
+      unavailableWording: /Relations indisponibles|Relations are unavailable/i.test(section?.textContent ?? ''),
+      legacyNote: document.querySelector('[data-testid="legacy-scope-note"]')?.textContent?.trim() ?? null };
   })()`);
   assert(panelAvailableOnRealRoot.hasTotals && panelAvailableOnRealRoot.hasEngineCommand,
     "on a real root the relations panel must be available, with its engine command");
@@ -1010,7 +1010,14 @@ if (phase === 1) {
   const seededKeys = (realOverview.pendingSuggestions ?? []).concat((realOverview.established ?? []).filter((edge) => edge.suggestionKey))
     .map((entry) => entry.suggestionKey).filter(Boolean);
   assert.deepEqual(seededKeys.filter((key) => /^S-\d{3}$/.test(key)), [], "a frozen TASK-0017 suggestion appeared on a real root");
-  assert(!panelAvailableOnRealRoot.legacyNote, "the legacy note belongs to the frozen fixture, not to a real root");
+  // The note is not a refusal and must be there: DEC-0053 B says in the interface what the
+  // boundary says in the code — the frozen TASK-0017 demonstration does not apply to this
+  // brain, and the deterministic engine applies to every brain.
+  assert(panelAvailableOnRealRoot.legacyNote, "a brain outside the frozen legacy perimeter must say so, in words");
+  assert(
+    /TASK-0017/.test(panelAvailableOnRealRoot.legacyNote) && /dre-v1/.test(panelAvailableOnRealRoot.legacyNote),
+    `the note must name what does not apply AND what does: ${panelAvailableOnRealRoot.legacyNote}`,
+  );
 
   // 3. the deterministic relation, on screen, in words ---------------------------------
   const anEndpoint = (realOverview.established ?? []).flatMap((edge) => [edge.source, edge.target]).find((end) => end.nodeId !== null);
