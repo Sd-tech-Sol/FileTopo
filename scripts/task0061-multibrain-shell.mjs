@@ -1100,7 +1100,11 @@ async function measureGroupEntryPoints() {
     const reachedByMouse = await evaluate(REACH_GROUP(group.testid));
     // The summary may have moved (an opened group takes a whole row): aim at it again.
     const whereNow = await evaluate(READ_GROUP(group.testid));
-    await mouseClickAt(whereNow.x, whereNow.y);
+    // A person does not click where the summary is not: when something else answers at that place, the
+    // click would land on THAT (at 960x640 it landed on the legend toggle and opened the legend, which
+    // moved the whole map column under the next measurement). So the strict attempt is made only when
+    // the summary is really hit there; otherwise it is recorded as impossible, without clicking.
+    if (whereNow.hit) await mouseClickAt(whereNow.x, whereNow.y);
     let afterMouseClose = await evaluate(READ_GROUP(group.testid));
     // B04: an opened group takes the whole row, so its own summary can land under the fold of a band
     // that cannot grow (960x640 with two rows of composition). B03's click, at the place the summary
