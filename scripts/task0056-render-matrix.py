@@ -70,7 +70,7 @@ add(f"- **Base :** `{matrix['base']}`")
 add(f"- **Contrat de référence :** [{Path(matrix['contract']).name}]({Path(matrix['contract']).name})")
 add(f"- **Nature :** {matrix['nature']}")
 add(f"- **Preuve runtime finale :** `{matrix['runtimeEvidence']['artifact']}`")
-add(f"- **Verdict d'ensemble de TASK-0056 :** **{overall}**"
+add(f"- **Verdict d'ensemble de `{matrix['task']}` :** **{overall}**"
     + (f" — manques : {', '.join(gaps)}" if gaps else " — aucun sous-critère nommé sans preuve"))
 add("")
 if matrix.get("overallFinding"):
@@ -92,7 +92,7 @@ add("")
 
 add("## 1. Tableau de synthèse")
 add("")
-add("| # | Exigence | Fonctions propriétaires | État courant | Fermée par | Verdict TASK-0056 |")
+add(f"| # | Exigence | Fonctions propriétaires | État courant | Fermée par | Verdict {matrix['task']} |")
 add("|---|---|---|---|---|---|")
 for requirement in matrix["requirements"]:
     add(
@@ -125,12 +125,15 @@ for requirement in matrix["requirements"]:
     add(f"- **Fonctions propriétaires :** {', '.join(f'`{owner}`' for owner in requirement['owners'])}")
     add(f"- **État courant :** `{requirement['status']}`"
         + (f", fermée par **{requirement['closedBy']}**" if requirement["closedBy"] else ""))
-    add(f"- **Verdict de TASK-0056 :** **{requirement['verdict']}**")
+    add(f"- **Verdict de `{matrix['task']}` :** **{requirement['verdict']}**")
     if requirement.get("regressionAfterClosure"):
         add(f"- **Régression postérieure à la clôture :** {requirement['regressionAfterClosure']}")
     add("")
     if requirement.get("gap"):
         add(f"> **Manque.** {requirement['gap']}")
+        add("")
+    if requirement.get("correction"):
+        add(f"> **Correction.** {requirement['correction']}")
         add("")
     add("**Sous-critères du texte courant, un par un :**")
     add("")

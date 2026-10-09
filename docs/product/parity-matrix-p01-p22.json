@@ -1,11 +1,11 @@
 {
-  "document": "Matrice de preuve P-01..P-22 — TASK-0056",
+  "document": "Matrice de preuve P-01..P-22 — établie par TASK-0056, corrigée par TASK-0057",
   "date": "2026-10-08",
-  "task": "TASK-0056",
-  "branch": "build/v0.2-a40-v1-final-parity-acceptance",
-  "base": "446a4e4922f46bf4cdd71dd1aff65f08b5318b9d",
+  "task": "TASK-0057",
+  "branch": "build/v0.2-a41-v1-real-root-relations",
+  "base": "ca17df50d1fa904e8387628347bbf2f9792b9ae8",
   "contract": "docs/product/CARTETOPO_FUNCTIONAL_PARITY.md",
-  "nature": "acceptance — composition de preuves existantes plus une campagne runtime finale; aucun code produit modifié",
+  "nature": "matrice établie par TASK-0056 (acceptance, aucun code produit modifié), mise à jour par TASK-0057 après la correction du seul blocage qu'elle avait trouvé : la surface des relations refusait une racine réelle. Les preuves composées sont inchangées; seules les trois lignes concernées et la campagne runtime finale sont refaites au `HEAD` corrigé.",
   "authority": "Cette matrice ne ferme AUCUNE exigence. L'exécuteur ne s'attribue pas VERIFIED : chaque verdict ci-dessous est au mieux une candidature au contrôle indépendant.",
   "legend": {
     "verdict": {
@@ -19,8 +19,8 @@
     }
   },
   "runtimeEvidence": {
-    "artifact": "docs/performance/runs/TASK-0056-p22-webview2.json",
-    "note": "La campagne finale P-22. Son tableau `coverage` porte une ligne par exigence P-01..P-22, avec l'observation faite dans le vrai Tauri/WebView2. Les lignes citées ci-dessous par `runtimeRows` sont celles de ce tableau."
+    "artifact": "docs/performance/runs/TASK-0057-p22-webview2.json",
+    "note": "La campagne finale P-22, rejouée au `HEAD` corrigé avec le harnais que TASK-0056 a construit. Son tableau `coverage` porte au moins une ligne par exigence P-01..P-22, avec l'observation faite dans le vrai Tauri/WebView2. Les lignes citées ci-dessous par `runtimeRows` sont celles de ce tableau. La campagne de TASK-0056, `docs/performance/runs/TASK-0056-p22-webview2.json`, reste le relevé historique de ce qu'elle avait mesuré, blocage compris."
   },
   "requirements": [
     {
@@ -157,16 +157,17 @@
       ],
       "limits": [
         "les relations DETERMINISTIC ne sont pas révocables par ce geste : elles disparaissent quand la règle ne les produit plus. Déclaré par ACTION-0094",
-        "Exercée dans la campagne finale sur un cerveau `SYNTHETIC_FIXTURE`, le seul genre de source sur lequel la surface répond. Sur une racine réelle, elle refuse — voir le champ `gap`."
+        "Exercée dans la campagne finale du `HEAD` corrigé sur un cerveau `REAL_ROOT` — le genre de source que `DEC-0033` A fait seule entrée d'une arborescence personnelle — et confrontée sur le cerveau `SYNTHETIC_FIXTURE` figé, dont le comportement historique est inchangé."
       ],
       "status": "CLOSED/VERIFIED",
       "closedBy": "ACTION-0094 (2026-10-05)",
-      "verdict": "GAP",
-      "regressionAfterClosure": "La clôture `ACTION-0094` repose sur des preuves prises sur cerveaux synthétiques; la campagne finale montre que la surface refuse sur une racine réelle. TASK-0056 ne révoque aucune clôture — l'exécuteur n'en a pas l'autorité — et rapporte que cette clôture **ne couvre pas** une racine réelle. L'arbitrage appartient au contrôle indépendant.",
+      "verdict": "SATISFIED",
+      "regressionAfterClosure": "La clôture `ACTION-0094` reposait sur des preuves prises sur cerveaux synthétiques, et la campagne de TASK-0056 a montré que la surface refusait une racine réelle : TASK-0056 a rapporté que cette clôture **ne couvrait pas** une racine réelle, sans la révoquer. TASK-0057 a corrigé la cause. La campagne du `HEAD` corrigé exerce la révocation d'une relation `APPROVED` sur une racine réelle, et une relation `DETERMINISTIC` y est toujours refusée par son nom. Confirmer que la clôture couvre désormais les deux genres de source appartient au contrôle indépendant.",
       "runtimeRows": [
         "P-04"
       ],
-      "gap": "GAP TROUVÉ PAR LA CAMPAGNE FINALE, rapporté et non corrigé. Sur un cerveau dont la source est un **vrai dossier**, les trois lectures dont la surface des relations a besoin — `map_relations_open`, `map_relations_for_node` et `map_relations_review_queue` — passent toutes par `BrainRecord::source_fixture()` (`src-tauri/src/map/brains.rs`), qui refuse un `REAL_ROOT` avec `map_source_not_synthetic`. Le panneau des relations rend donc sa forme « indisponible » : aucune provenance, aucune direction, aucune suggestion, aucune file de révision. Le moteur lui-même est générique — `map_relation_engine_run` et `map_relation_engine_status` répondent sur le même cerveau — mais rien ne peut lire ce qu'il produit. Or, depuis `DEC-0033` A, **une racine réelle est la seule façon dont l'arborescence d'une personne entre dans FileTopo**; les cerveaux synthétiques figés sont déclarés « diagnostic de développeur ». L'exigence est donc **inatteignable pour les données de l'utilisateur**, ce que le contrat §3 règle 2 assimile à sa suppression. Contre-argument, écrit pour que l'arbitre l'ait : le contrat dit qu'un critère est **vérifiable sur fixtures synthétiques** (§1.2, §9), et la campagne l'a effectivement vérifié là. Ce qui tranche, à notre lecture, est §1.1 point 3 — généraliser à **n'importe quelle** arborescence — plus le fait que le code et `ACTION-0040`/`ACTION-0041` déclarent eux-mêmes l'intention inverse : « `source_spec()` valide la source de n'importe quel cerveau ». L'écart est donc entre l'intention décidée et l'implémentation, pas une portée assumée. **Aucun correctif n'est appliqué par TASK-0056** (§9). Preuve : `docs/performance/runs/TASK-0056-p22-webview2.json`, champ `productGaps`."
+      "gap": null,
+      "correction": "MANQUE TROUVÉ PAR TASK-0056, CORRIGÉ PAR TASK-0057 sous `DEC-0053`. Les six actions génériques d'un même cerveau — ouvrir, relations d'un nœud, file de révision, approuver, rejeter, révoquer — ne passent plus par `BrainRecord::source_fixture()`, qui refusait un vrai dossier par son nom. Elles résolvent la source par `generic_source_spec`, qui rend `None` pour une racine réelle : une réponse, pas un refus. Le périmètre `TASK-0017` figé et l'auto-contrôle gelé restent synthétiques, et `map_relations_self_check` refuse toujours une racine réelle, par son nom. Le champ `fixtureId` des trois DTO génériques vaut `null` sur une racine réelle et ne porte ni chemin, ni empreinte de chemin, ni substitut. La campagne finale du `HEAD` corrigé exerce les trois exigences **sur la racine réelle**, avec le moteur réel et les vrais gestes : relation déterministe avec sa règle et sa provenance en mots, comptes entrants et sortants confrontés à deux lectures séparées du dépôt, suggestion jamais comptée, file ouverte, approbation au clavier, révocation, rejet, puis persistance à travers un vrai redémarrage. L'arbitrage final reste au contrôle indépendant : l'exécuteur ne s'attribue pas `VERIFIED`."
     },
     {
       "id": "P-05",
@@ -188,16 +189,17 @@
       ],
       "limits": [
         "une suggestion n'entre dans aucun compte : c'est le contrat, pas une limite, mais il faut le lire ainsi quand on compare un total à l'écran",
-        "Exercée dans la campagne finale sur un cerveau `SYNTHETIC_FIXTURE`, le seul genre de source sur lequel la surface répond. Sur une racine réelle, elle refuse — voir le champ `gap`."
+        "Exercée dans la campagne finale du `HEAD` corrigé sur un cerveau `REAL_ROOT` — le genre de source que `DEC-0033` A fait seule entrée d'une arborescence personnelle — et confrontée sur le cerveau `SYNTHETIC_FIXTURE` figé, dont le comportement historique est inchangé."
       ],
       "status": "CANDIDATE",
       "closedBy": null,
-      "verdict": "GAP",
+      "verdict": "SATISFIED",
       "regressionAfterClosure": null,
       "runtimeRows": [
         "P-05"
       ],
-      "gap": "GAP TROUVÉ PAR LA CAMPAGNE FINALE, rapporté et non corrigé. Sur un cerveau dont la source est un **vrai dossier**, les trois lectures dont la surface des relations a besoin — `map_relations_open`, `map_relations_for_node` et `map_relations_review_queue` — passent toutes par `BrainRecord::source_fixture()` (`src-tauri/src/map/brains.rs`), qui refuse un `REAL_ROOT` avec `map_source_not_synthetic`. Le panneau des relations rend donc sa forme « indisponible » : aucune provenance, aucune direction, aucune suggestion, aucune file de révision. Le moteur lui-même est générique — `map_relation_engine_run` et `map_relation_engine_status` répondent sur le même cerveau — mais rien ne peut lire ce qu'il produit. Or, depuis `DEC-0033` A, **une racine réelle est la seule façon dont l'arborescence d'une personne entre dans FileTopo**; les cerveaux synthétiques figés sont déclarés « diagnostic de développeur ». L'exigence est donc **inatteignable pour les données de l'utilisateur**, ce que le contrat §3 règle 2 assimile à sa suppression. Contre-argument, écrit pour que l'arbitre l'ait : le contrat dit qu'un critère est **vérifiable sur fixtures synthétiques** (§1.2, §9), et la campagne l'a effectivement vérifié là. Ce qui tranche, à notre lecture, est §1.1 point 3 — généraliser à **n'importe quelle** arborescence — plus le fait que le code et `ACTION-0040`/`ACTION-0041` déclarent eux-mêmes l'intention inverse : « `source_spec()` valide la source de n'importe quel cerveau ». L'écart est donc entre l'intention décidée et l'implémentation, pas une portée assumée. **Aucun correctif n'est appliqué par TASK-0056** (§9). Preuve : `docs/performance/runs/TASK-0056-p22-webview2.json`, champ `productGaps`."
+      "gap": null,
+      "correction": "MANQUE TROUVÉ PAR TASK-0056, CORRIGÉ PAR TASK-0057 sous `DEC-0053`. Les six actions génériques d'un même cerveau — ouvrir, relations d'un nœud, file de révision, approuver, rejeter, révoquer — ne passent plus par `BrainRecord::source_fixture()`, qui refusait un vrai dossier par son nom. Elles résolvent la source par `generic_source_spec`, qui rend `None` pour une racine réelle : une réponse, pas un refus. Le périmètre `TASK-0017` figé et l'auto-contrôle gelé restent synthétiques, et `map_relations_self_check` refuse toujours une racine réelle, par son nom. Le champ `fixtureId` des trois DTO génériques vaut `null` sur une racine réelle et ne porte ni chemin, ni empreinte de chemin, ni substitut. La campagne finale du `HEAD` corrigé exerce les trois exigences **sur la racine réelle**, avec le moteur réel et les vrais gestes : relation déterministe avec sa règle et sa provenance en mots, comptes entrants et sortants confrontés à deux lectures séparées du dépôt, suggestion jamais comptée, file ouverte, approbation au clavier, révocation, rejet, puis persistance à travers un vrai redémarrage. L'arbitrage final reste au contrôle indépendant : l'exécuteur ne s'attribue pas `VERIFIED`."
     },
     {
       "id": "P-06",
@@ -255,16 +257,17 @@
       ],
       "limits": [
         "TASK-0017 avait déclaré que l'activation au clavier d'une entrée de panneau n'avait pas été jouée par une frappe de confiance. La campagne finale la joue avec un vrai `Input.dispatchKeyEvent` : la limite historique est levée par observation, pas par déclaration",
-        "Exercée dans la campagne finale sur un cerveau `SYNTHETIC_FIXTURE`, le seul genre de source sur lequel la surface répond. Sur une racine réelle, elle refuse — voir le champ `gap`."
+        "Exercée dans la campagne finale du `HEAD` corrigé sur un cerveau `REAL_ROOT` — le genre de source que `DEC-0033` A fait seule entrée d'une arborescence personnelle — et confrontée sur le cerveau `SYNTHETIC_FIXTURE` figé, dont le comportement historique est inchangé."
       ],
       "status": "CANDIDATE",
       "closedBy": null,
-      "verdict": "GAP",
+      "verdict": "SATISFIED",
       "regressionAfterClosure": null,
       "runtimeRows": [
         "P-07"
       ],
-      "gap": "GAP TROUVÉ PAR LA CAMPAGNE FINALE, rapporté et non corrigé. Sur un cerveau dont la source est un **vrai dossier**, les trois lectures dont la surface des relations a besoin — `map_relations_open`, `map_relations_for_node` et `map_relations_review_queue` — passent toutes par `BrainRecord::source_fixture()` (`src-tauri/src/map/brains.rs`), qui refuse un `REAL_ROOT` avec `map_source_not_synthetic`. Le panneau des relations rend donc sa forme « indisponible » : aucune provenance, aucune direction, aucune suggestion, aucune file de révision. Le moteur lui-même est générique — `map_relation_engine_run` et `map_relation_engine_status` répondent sur le même cerveau — mais rien ne peut lire ce qu'il produit. Or, depuis `DEC-0033` A, **une racine réelle est la seule façon dont l'arborescence d'une personne entre dans FileTopo**; les cerveaux synthétiques figés sont déclarés « diagnostic de développeur ». L'exigence est donc **inatteignable pour les données de l'utilisateur**, ce que le contrat §3 règle 2 assimile à sa suppression. Contre-argument, écrit pour que l'arbitre l'ait : le contrat dit qu'un critère est **vérifiable sur fixtures synthétiques** (§1.2, §9), et la campagne l'a effectivement vérifié là. Ce qui tranche, à notre lecture, est §1.1 point 3 — généraliser à **n'importe quelle** arborescence — plus le fait que le code et `ACTION-0040`/`ACTION-0041` déclarent eux-mêmes l'intention inverse : « `source_spec()` valide la source de n'importe quel cerveau ». L'écart est donc entre l'intention décidée et l'implémentation, pas une portée assumée. **Aucun correctif n'est appliqué par TASK-0056** (§9). Preuve : `docs/performance/runs/TASK-0056-p22-webview2.json`, champ `productGaps`."
+      "gap": null,
+      "correction": "MANQUE TROUVÉ PAR TASK-0056, CORRIGÉ PAR TASK-0057 sous `DEC-0053`. Les six actions génériques d'un même cerveau — ouvrir, relations d'un nœud, file de révision, approuver, rejeter, révoquer — ne passent plus par `BrainRecord::source_fixture()`, qui refusait un vrai dossier par son nom. Elles résolvent la source par `generic_source_spec`, qui rend `None` pour une racine réelle : une réponse, pas un refus. Le périmètre `TASK-0017` figé et l'auto-contrôle gelé restent synthétiques, et `map_relations_self_check` refuse toujours une racine réelle, par son nom. Le champ `fixtureId` des trois DTO génériques vaut `null` sur une racine réelle et ne porte ni chemin, ni empreinte de chemin, ni substitut. La campagne finale du `HEAD` corrigé exerce les trois exigences **sur la racine réelle**, avec le moteur réel et les vrais gestes : relation déterministe avec sa règle et sa provenance en mots, comptes entrants et sortants confrontés à deux lectures séparées du dépôt, suggestion jamais comptée, file ouverte, approbation au clavier, révocation, rejet, puis persistance à travers un vrai redémarrage. L'arbitrage final reste au contrôle indépendant : l'exécuteur ne s'attribue pas `VERIFIED`."
     },
     {
       "id": "P-08",
@@ -756,5 +759,5 @@
       "Rien n'a été écrit pour « réparer » le gap des relations : TASK-0056 est une acceptance et §9 l'interdit. La preuve du gap est une observation de la campagne, dans le vrai moteur, à travers l'IPC réel."
     ]
   },
-  "overallFinding": "Un gap produit a été trouvé pendant l'exercice de P-01..P-21 : la surface des relations (`P-04`, `P-05`, `P-07`) est inatteignable sur un cerveau `REAL_ROOT`. Conformément à TASK-0056 §9 et à ACTION-0105 §5, la tâche s'arrête : `TASK-0056 = BLOCKED`, étape A `EN COURS`, aucune correction produit. Tout le reste de l'acceptance est livré : la matrice, le gate de régression Rust à sorties capturées (3/3 vertes), la campagne finale P-22 (empreinte source strictement identique sur quatre racines) et la pureté du diff."
+  "overallFinding": "TASK-0056 a établi cette matrice et a trouvé **un** manque : sur un cerveau dont la source est un vrai dossier, la surface des relations était inatteignable, ce que le contrat §3 règle 2 assimile à la suppression de `P-04`, `P-05` et `P-07`. TASK-0057 a corrigé ce seul point sous `DEC-0053`, sans toucher au modèle des relations, au catalogue de règles, au moteur déterministe ni aux relations inter-cerveaux, et la campagne finale a été rejouée au `HEAD` corrigé : les trois exigences sont désormais exercées **sur une racine réelle**, et l'empreinte externe de la source est restée identique. Aucune exigence n'est fermée ici. `P-05` à `P-18` et `P-22` restent candidates au contrôle indépendant; les seuils lourds restent composés depuis leurs campagnes `VERIFIED` propres, nommées ligne par ligne."
 }
