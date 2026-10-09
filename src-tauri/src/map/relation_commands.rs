@@ -1121,16 +1121,47 @@ mod tests {
         );
     }
 
+    /// `TASK-0057` §3, last line: making the boundary answer for a `REAL_ROOT`
+    /// must not make it answer for a synthetic source that does not exist.
+    ///
+    /// All six generic actions, not two: `generic_source_spec` is shared, but a
+    /// future change could route one of them around it, and the refusal that
+    /// matters is the one a caller actually meets.
     #[test]
     fn an_unknown_fixture_is_still_an_unknown_fixture() {
         let paths = temporary_sandbox("unknown");
-        let error =
-            open_relations(&paths, &brain_reading("inventee")).expect_err("unknown fixture");
-        assert!(error.to_string().contains("map_unknown_fixture"));
-        let node_error =
-            node_relations(&paths, &brain_reading("inventee"), &BrainNodeRef::new("brain-test-inventee", 1))
-                .expect_err("unknown fixture");
-        assert!(node_error.to_string().contains("map_unknown_fixture"));
+        let brain = brain_reading("inventee");
+        let reference = BrainNodeRef::new("brain-test-inventee", 1);
+
+        let refusals: Vec<(&str, MapError)> = vec![
+            ("open", open_relations(&paths, &brain).expect_err("unknown fixture")),
+            (
+                "node",
+                node_relations(&paths, &brain, &reference).expect_err("unknown fixture"),
+            ),
+            (
+                "queue",
+                review_queue(&paths, &brain, 0, 10).expect_err("unknown fixture"),
+            ),
+            (
+                "approve",
+                approve_suggestion(&paths, &brain, "S-001").expect_err("unknown fixture"),
+            ),
+            (
+                "reject",
+                reject_suggestion(&paths, &brain, "S-001").expect_err("unknown fixture"),
+            ),
+            (
+                "revoke",
+                revoke_relation(&paths, &brain, "APPROVED", "S-001").expect_err("unknown fixture"),
+            ),
+        ];
+        for (action, error) in refusals {
+            assert!(
+                error.to_string().contains("map_unknown_fixture"),
+                "`{action}` must still refuse an unknown synthetic fixture by name: {error}"
+            );
+        }
     }
 
     /// `J5` and `J1` through the command layer, on a real index.
