@@ -432,6 +432,7 @@ const READ_FIRST_SCREEN = `(() => {
   const documentOverflowX = Math.max(0, html.scrollWidth - html.clientWidth);
   const scrollers = [];
   const ellipsized = [];
+  const hiddenHints = [];
   const escapers = [];
   const clipped = [];
   for (const el of document.querySelectorAll('.app, .app *')) {
@@ -442,6 +443,10 @@ const READ_FIRST_SCREEN = `(() => {
     // button's accessible name and in its title. It is published below, never silently skipped.
     if (over > 1 && el.classList.contains('composition__name') && style.textOverflow === 'ellipsis') {
       ellipsized.push({ text: (el.textContent ?? ''), overflowPx: over, title: el.closest('button')?.getAttribute('title') ?? null });
+    } else if (over > 1 && el.classList.contains('composition__hint') && el.getBoundingClientRect().width <= 1.5) {
+      // B04: the hint of a non-active chip, hidden from the eye (1 px box) and kept in the accessible
+      // name. Its text is by design wider than its box; it is counted and published, not skipped.
+      hiddenHints.push({ text: (el.textContent ?? '').trim(), insideAccessibleName: !!el.closest('button') });
     } else if (over > 1 && style.overflowX !== 'auto' && style.overflowX !== 'scroll') {
       scrollers.push({ tag: el.tagName, cls: String(el.className).slice(0, 70), overflowPx: over });
     }
@@ -509,6 +514,16 @@ const READ_FIRST_SCREEN = `(() => {
       summaryText: (summary?.textContent ?? '').trim().slice(0, 120),
       summaryHeightPx: summary ? round(summary.getBoundingClientRect().height) : null,
       summaryOnFirstScreen: summary ? firstScreenStateOf(summary).onScreen : null,
+      // B04: when the summary is not whole, WHAT is on top of it at its centre, and whether a scrolling
+      // band clipped it — "under the fold" and "under the add menu's layer" are different facts.
+      summaryClippedBy: summary ? firstScreenStateOf(summary).clippedBy : null,
+      summaryCoveredBy: (() => {
+        if (!summary) return null;
+        const r = summary.getBoundingClientRect();
+        const top = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+        if (!top || top === summary || summary.contains(top)) return null;
+        return top.closest('.composition__menu') ? 'composition-menu-layer' : (top.tagName + '.' + String(top.className).slice(0, 30));
+      })(),
       summaryFullyVisible: summary ? firstScreenStateOf(summary).fullyVisible : null,
       summaryTabbable: summary ? summary.tabIndex >= 0 : null,
       // What it holds, counted in the DOM: a closed group hides nothing from the Index.
@@ -655,6 +670,7 @@ const READ_FIRST_SCREEN = `(() => {
     documentVerticalScrollPx: Math.max(0, html.scrollHeight - html.clientHeight),
     sidewaysScrollers: scrollers.slice(0, 10),
     ellipsizedChipNames: ellipsized,
+    visuallyHiddenChipHints: hiddenHints,
     viewportEscapers: escapers.slice(0, 10),
     clippedControls: clipped.slice(0, 10),
     controlCount: controls.length,
@@ -1644,6 +1660,9 @@ function judge(entry) {
     essentialWhole: primaryWhole && chipsWhole && (!entry.menuOpen || menuWhole),
     groupsWhole,
     groupsNotWhole: layout.groups.filter((group) => group.summaryFullyVisible !== true).map((group) => group.testid),
+    groupsCoverage: layout.groups.filter((group) => group.summaryFullyVisible !== true).map((group) => ({
+      group: group.testid, coveredBy: group.summaryCoveredBy, clippedByABand: (group.summaryClippedBy ?? []).length > 0,
+    })),
     mapVisibleHeightPx: layout.firstScreen.mapViewVisibleHeightPx,
     mapOk,
     noHorizontalOrEscape: !escapersOrOverflow,
@@ -1703,6 +1722,16 @@ function summarise(entries) {
     activeBrainMarkedInWordsEveryState: judged.every((j) => j.activeMarkedInWordsAndAria && j.exactlyOneActive),
     groupEntryPointsWholeEveryState: judged.every((j) => j.groupsWhole),
     statesWithAGroupEntryPointNotWhole: judged.filter((j) => !j.groupsWhole).map((j) => `${j.size}/${j.state}: ${j.groupsNotWhole.join(",")}`),
+    // The same fact, split. While the add menu is open its layer covers whatever lies under it — that
+    // is what a layer is — so the strict reading above is published as it is, and so are the two
+    // halves: every state with the menu closed, and, for each menu-open state, WHAT covers the entry.
+    groupEntryPointsWholeEveryStateWithTheMenuClosed: judged.filter((j) => !j.menuOpen).every((j) => j.groupsWhole),
+    menuOpenStatesWhereAnEntryPointIsNotWhole: judged
+      .filter((j) => j.menuOpen && !j.groupsWhole)
+      .map((j) => ({ state: `${j.size}/${j.state}`, entries: j.groupsCoverage })),
+    menuOpenStatesWhereAnEntryPointIsUnderTheFold: judged
+      .filter((j) => j.menuOpen && j.groupsCoverage.some((entry) => entry.coveredBy === null))
+      .map((j) => `${j.size}/${j.state}`),
     groupsRevealEverythingByMouseEveryMeasuredState: everyMeasured("mouseRevealsEverything"),
     groupsRevealEverythingByKeyboardEveryMeasuredState: everyMeasured("keyboardRevealsEverything"),
     accessibilityTreeSaysExpandedEveryMeasuredState: everyMeasured("axTreeSaysExpanded"),
@@ -1981,7 +2010,16 @@ if (pass === 1 && (!only || only === "p")) {
   const afterNavigation = await evaluate(READ_FIRST_SCREEN);
   assert(edgesBefore.hierarchyEdges > 0, "P-05: hierarchy edges are drawn in the first view");
   assert(afterNavigation.drawn.cards + afterNavigation.drawn.aggregates <= view0.viewBudget, "P-05: the view stays bounded after navigating out of it");
-  check("P-05 edges drawn, a row outside the first view reached, view bounded (mono-A)", {
+  const navigatedTargetVisible = await evaluate(`(() => {
+    const card = document.querySelector('[data-testid="composed-canvas"] [data-node-id="${farRef.nodeId}"]');
+    if (!card) return null;
+    const r = card.getBoundingClientRect();
+    const h = Math.max(0, Math.min(r.bottom, document.documentElement.clientHeight) - Math.max(r.top, 0));
+    const w = Math.max(0, Math.min(r.right, document.documentElement.clientWidth) - Math.max(r.left, 0));
+    return { visibleWidth: Math.round(w), visibleHeight: Math.round(h), scrollY: Math.round(window.scrollY) };
+  })()`);
+  check("P-05 edges drawn, a row outside the first view reached, view bounded, target still visible (mono-A)", {
+    navigatedTargetVisible,
     edgesBefore: edgesBefore.hierarchyEdges, edgesAfter: afterNavigation.drawn.hierarchyEdges, budget: view0.viewBudget,
     slotsAfter: afterNavigation.drawn.cards + afterNavigation.drawn.aggregates,
   });
@@ -2059,7 +2097,18 @@ if (pass === 1 && (!only || only === "p")) {
     await until(`document.querySelector('[data-testid="composition-chip-${idOf(key)}"]').getAttribute('aria-current') === 'true'`);
     await quiet();
     await pause(400);
-    focusTrail.push({ focus: key, camera: await cameraNow() });
+    focusTrail.push({
+      focus: key, camera: await cameraNow(),
+      // DEC-0034 E: a new focus may PAN the camera so the focused territory is reachable, at the scale
+      // the person chose. What must hold is that the scale did not move and the focused root is on screen.
+      selectedCardVisible: await evaluate(`(() => {
+        const card = document.querySelector('[data-card="true"][aria-selected="true"]');
+        if (!card) return null;
+        const r = card.getBoundingClientRect();
+        return Math.max(0, Math.min(r.bottom, innerHeight) - Math.max(r.top, 0)) > 2 && Math.max(0, Math.min(r.right, innerWidth) - Math.max(r.left, 0)) > 2;
+      })()`),
+      selectedBrain: keyOfBrain(await evaluate(`document.querySelector('[data-card="true"][aria-selected="true"]')?.getAttribute('data-brain-id') ?? null`)),
+    });
   }
   const sameCamera = (l, r) => l.transform === r.transform;
   const sizeTrail = [];
@@ -2080,6 +2129,9 @@ if (pass === 1 && (!only || only === "p")) {
   record.cameraInvariants = {
     focusTrail,
     cameraIdenticalAcrossEveryFocusChange: focusTrail.every((entry) => sameCamera(entry.camera, focusTrail[0].camera)),
+    scaleIdenticalAcrossEveryFocusChange: new Set(focusTrail.map((entry) => entry.camera.scale)).size === 1,
+    focusChangePansOnly: "DEC-0034 E: a new focus changes the selection, and the camera pans to keep it reachable at the scale the person chose; the scale never moves.",
+    focusedRootVisibleAfterEveryFocusChange: focusTrail.slice(1).every((entry) => entry.selectedCardVisible === true),
     sizeTrail,
     distinctScalesAcrossSizes: scales,
     scaleUnchangedAcrossSizes: scales.length === 1,
