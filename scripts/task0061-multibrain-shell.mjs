@@ -1780,6 +1780,19 @@ async function raiseNotice(scenario) {
 }
 
 const only = process.env.T61_ONLY ?? "";
+if (pass === 1 && only === "menu") {
+  // Debug segment: what closing the add menu by clicking its trigger really does.
+  await resizeTo(960, 640);
+  await composeTo(["A", "B"], "B");
+  const probe = () => evaluate(`({ expanded: document.querySelector('[data-testid="composition-add-trigger"]').getAttribute('aria-expanded'), active: document.activeElement?.getAttribute('data-testid') ?? document.activeElement?.tagName })`);
+  await click(testid("composition-add-trigger"));
+  await pause(400);
+  console.error("after open click", JSON.stringify(await probe()));
+  await click(testid("composition-add-trigger"));
+  await pause(600);
+  console.error("after second click", JSON.stringify(await probe()));
+  process.exit(3);
+}
 if (pass === 1 && !only) {
   for (const size of SIZES) {
     const granted = await resizeTo(size.width, size.height);
