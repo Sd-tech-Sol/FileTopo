@@ -692,15 +692,28 @@ if (phase === 1) {
   // Copy: a real click, then the clipboard is read OUTSIDE this process by the .ps1.
   await click(testid("copy-path"));
   await pause(600);
-  // The motif is published on failure. The Windows clipboard is a shared, single-owner
-  // resource: a copy can be refused because another process holds it, and that is a
-  // different finding from a copy that wrote the wrong path. Asserting on presence alone
-  // made the two indistinguishable.
+  // The motif is published rather than reduced to a boolean. The Windows clipboard is a
+  // shared, single-owner resource, and a session can refuse every clipboard operation to
+  // every process: « the product failed to copy » and « this machine has no clipboard »
+  // are two different findings. The .ps1 settles which one by writing the clipboard
+  // ITSELF, outside the product, before the window opens, and passes the answer in.
   const copyError = await evaluate(`document.querySelector('[data-testid="copy-error"]')?.textContent?.trim() ?? null`);
-  assert.equal(copyError, null, `the copy reported an error: ${copyError}`);
-  cover("P-14", "a real click on « Copier le chemin » copied the exact real path of the selected element (checked against the real path by the .ps1, outside this process, on a unicode and long-named tree); no error was shown and no path travelled to the artifact", {
-    node: "rapports/rapport-original.txt", copyError, clipboardComparedBy: "scripts/task0056-webview2.ps1",
-  });
+  const clipboardAvailable = seed.clipboardAvailable !== false;
+  if (clipboardAvailable) {
+    assert.equal(copyError, null, `the copy reported an error: ${copyError}`);
+    cover("P-14", "a real click on « Copier le chemin » copied the exact real path of the selected element (checked against the real path by the .ps1, outside this process, on a unicode and long-named tree); no error was shown and no path travelled to the artifact", {
+      node: "rapports/rapport-original.txt", copyError, clipboardComparedBy: "scripts/task0056-webview2.ps1",
+    });
+  } else {
+    // NOT EXECUTED, and said so. The gesture was still played, and what the product did
+    // with it is published; it is simply not evidence about the product on a machine
+    // where a control process is refused the same operation.
+    cover("P-14", "NOT EXECUTED on this machine: before the window opened, a control write to the clipboard from outside the product was refused by Windows, so there was no clipboard to compare against. The real click on « Copier le chemin » was still played and the interface's own answer is published; P-14 stays composed from TASK-0034/ACTION-0055, where it was verified on a machine that had a clipboard. No path travelled to the artifact either way", {
+      node: "rapports/rapport-original.txt", clipboardUsableByAControlProcess: false,
+      theInterfaceAnswered: copyError === null ? "no error shown" : "an error was shown, which on this machine says nothing about the product",
+      closureComposedFrom: ["TASK-0034/ACTION-0055"],
+    });
+  }
   // Open in Explorer, on a file then on a folder of the synthetic fixture.
   await click(testid("reveal-in-explorer"));
   await pause(900);

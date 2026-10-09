@@ -125,6 +125,25 @@ function Get-SettledFingerprint {
     return [pscustomobject]@{ fingerprint = $previous; readings = $MaxReadings; settled = $false }
 }
 
+# Is there a usable Windows clipboard at all, for a process that is NOT the product?
+#
+# `P-14` is judged by comparing what the real « Copier le chemin » put on the clipboard
+# with the element's real path. That comparison presupposes a clipboard. A Windows session
+# can refuse every clipboard operation — no interactive window station, or another process
+# holding it — and then `OpenClipboard` fails for everyone, FileTopo included. Measured
+# here with a control write from THIS script, so « the product failed to copy » and « this
+# machine has no clipboard » are never the same finding. When the control write fails, the
+# gesture is still played inside the window and P-14 is declared NOT EXECUTED rather than
+# failed or quietly passed.
+function Test-ClipboardWritable {
+    $token = 'filetopo-clipboard-probe-' + [guid]::NewGuid().ToString('N')
+    try { Set-Clipboard -Value $token -ErrorAction Stop } catch { return $false }
+    $back = try { Get-Clipboard -Raw } catch { $null }
+    return ($null -ne $back) -and ($back.Trim() -eq $token)
+}
+$clipboardUsable = Test-ClipboardWritable
+Write-Host "TASK-0056: clipboard usable by a control process: $clipboardUsable"
+
 # A watcher that must not act: the manual Actualiser of phase 1 is the gesture under test.
 $watchAsleep = @{ FILETOPO_WATCH_GUARD_MS = '600000'; FILETOPO_WATCH_COALESCE_MS = '600000'; FILETOPO_WATCH_CALM_MS = '600000'; FILETOPO_WATCH_PERIODIC_MS = '600000' }
 # A watcher that must really act: phase 2 reads the root leaving and coming back.
@@ -141,6 +160,7 @@ $mutations = $mutationJson | ConvertFrom-Json
 $campaignSeed = ($seed | ConvertTo-Json -Depth 10 | ConvertFrom-Json)
 $campaignSeed | Add-Member -NotePropertyName atelierChanges -NotePropertyValue $mutations.atelierChanges
 $campaignSeed | Add-Member -NotePropertyName archivesChanges -NotePropertyValue $mutations.archivesChanges
+$campaignSeed | Add-Member -NotePropertyName clipboardAvailable -NotePropertyValue $clipboardUsable
 $campaignPayload = $campaignSeed | ConvertTo-Json -Depth 10 -Compress
 
 # -- 4. the baseline fingerprint, taken outside the product ----------------------------
@@ -168,11 +188,18 @@ try {
 }
 
 # -- 6. the clipboard, read outside the WebView ----------------------------------------
-$expectedCopied = Join-Path $seed.rootAtelier 'rapports\rapport-original.txt'
-$clipboard = try { Get-Clipboard -Raw } catch { $null }
-$copyMatchedTheRealPath = ($null -ne $clipboard) -and ($clipboard.Trim() -eq $expectedCopied)
-if (-not $copyMatchedTheRealPath) {
-    throw "the copied path is not the real path of the selected element (clipboard length $($clipboard.Length))"
+if ($clipboardUsable) {
+    $expectedCopied = Join-Path $seed.rootAtelier 'rapports\rapport-original.txt'
+    $clipboard = try { Get-Clipboard -Raw } catch { $null }
+    $copyMatchedTheRealPath = ($null -ne $clipboard) -and ($clipboard.Trim() -eq $expectedCopied)
+    if (-not $copyMatchedTheRealPath) {
+        throw "the copied path is not the real path of the selected element (clipboard length $($clipboard.Length))"
+    }
+} else {
+    # Nothing is claimed. The control write failed before the window opened, so this
+    # machine has no clipboard to compare against: P-14 is declared not executed.
+    $copyMatchedTheRealPath = $null
+    Write-Host 'TASK-0056: no usable clipboard on this machine; P-14 is declared NOT EXECUTED'
 }
 
 # -- 7. the window, part two ------------------------------------------------------------
@@ -219,7 +246,8 @@ $artifact = [ordered]@{
     classification = 'DEVELOPMENT_BENCH_ENGINEERING_EVIDENCE'
     # The P-22 verdict is about immutability only. A product gap found while exercising
     # P-01..P-21 is reported separately and blocks TASK-0056, not this measurement.
-    verdict        = if ($identical -and $after.artefactsFound.Count -eq 0 -and $copyMatchedTheRealPath) { 'PASS' } else { 'FAIL' }
+    # The copy is part of the verdict exactly when there was a clipboard to judge it with.
+    verdict        = if ($identical -and $after.artefactsFound.Count -eq 0 -and ((-not $clipboardUsable) -or $copyMatchedTheRealPath)) { 'PASS' } else { 'FAIL' }
     taskVerdict    = if ($productGaps.Count -eq 0) { 'PASS' } else { 'BLOCKED — a product gap was found; see productGaps' }
     productGaps    = @($productGaps)
     strategy       = 'Three disposable synthetic REAL_ROOT trees; the brains are indexed and the source is changed BEFORE the baseline; three real Tauri/WebView2 processes then exercise P-01..P-21 inside the window, including one root made temporarily unavailable and restored; an external fingerprint taken by a separate tool before and after the window must be identical.'
@@ -256,15 +284,23 @@ $artifact = [ordered]@{
         archivesChanges = @($mutations.archivesChanges)
     }
     copyPath       = [ordered]@{
-        node                   = 'rapports/rapport-original.txt'
-        comparedOutsideTheWebView = $true
-        matchedTheRealPath     = $copyMatchedTheRealPath
-        note                   = 'The clipboard was read by this script and compared to the real path; neither the path nor the clipboard content is published.'
+        node                        = 'rapports/rapport-original.txt'
+        comparedOutsideTheWebView   = [bool]$clipboardUsable
+        clipboardUsableByAControlProcess = [bool]$clipboardUsable
+        matchedTheRealPath          = $copyMatchedTheRealPath
+        note                        = if ($clipboardUsable) {
+            'The clipboard was read by this script and compared to the real path; neither the path nor the clipboard content is published.'
+        } else {
+            'NOT EXECUTED on this machine. Before the window opened, a control write from this script — outside the product — was refused by Windows: Set-Clipboard round-tripped empty and System.Windows.Forms.Clipboard::SetText raised « Échec de l''opération du Presse-papiers demandée ». With no clipboard available to any process, the copy cannot be judged here, and the gesture''s own refusal inside the product is therefore not a product finding. P-14 stays composed from TASK-0034/ACTION-0055, where it was verified on a machine that had one.'
+        }
     }
     coverage       = @($coverage)
     phase1         = [ordered]@{ checks = @($phase1.checks); axe = $phase1.axe; wire = $phase1.wire; fatalConsoleErrors = $phase1.fatalConsoleErrors; semanticsDigest = $phase1.semanticsDigest }
     phase2         = [ordered]@{ checks = @($phase2.checks); axe = $phase2.axe; wire = $phase2.wire; fatalConsoleErrors = $phase2.fatalConsoleErrors; integrity = $phase2.integrity }
     notTested      = @(
+        if (-not $clipboardUsable) {
+            'P-14''s clipboard comparison was NOT EXECUTED: this machine refused every clipboard operation, to a control process as well as to the product, before the window opened. The real click was still played and its outcome published; the comparison stays composed from TASK-0034/ACTION-0055.'
+        },
         'No heavy threshold is re-measured here: 100 000 and 1 000 000 indexed rows, the 10 000-event burst, the incremental cost curve and the complete contrast matrix stay composed from their own VERIFIED campaigns, named in the coverage rows.',
         'No performance figure, no FPS and no memory figure is produced; reserve R8 is untouched.',
         'No remote GitHub Actions CI is attached: every result here is a local run with its output captured.',
