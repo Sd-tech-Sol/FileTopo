@@ -1,7 +1,7 @@
 # TASK-0060 — Stage B / B03 — Commandes primaires visibles, outils avancés accessibles
 
 - **Date :** 2026-10-09
-- **État :** `IMPLEMENTED` — correction ACTION-0111 livrée le 2026-10-09 (`B03-O1` levée, §Correction ACTION-0111), **en attente du contrôle indépendant**; l'exécuteur ne s'attribue pas VERIFIED. Avant la correction : `IMPLEMENTED / NOT VERIFIED — CORRECTION REQUIRED` par ACTION-0111.
+- **État :** `VERIFIED` — contrôle indépendant ACTION-0112 (2026-10-09), **dans la portée B03 seulement**. L'exécuteur avait livré `IMPLEMENTED` sans s'attribuer la vérification; la correction B03-O1 d'ACTION-0111 est acceptée. Les statuts historiques d'exécution plus bas restent conservés.
 - **Branche :** `build/v0.2-b03-primary-chrome`
 - **Base :** `f5da1d41226c7fcf34a24351af8fe55b3bb4525b`, TASK-0059 `VERIFIED` par ACTION-0110.
 - **HEAD mesuré :** `before` = `a03b8bc0a3ed75abca10012cdbbea5a4fc090663` (produit inchangé), `after` = `a645303631db59063b463bc4d44f0cf4f95bc258`.
