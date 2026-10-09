@@ -166,9 +166,12 @@ foreach ($pass in @(1, 2, 3)) {
         if (-not $capture.published) { continue }
         $source = Join-Path $proofRoot $capture.file
         if (-not (Test-Path -LiteralPath $source)) { throw "a declared capture is missing: $($capture.file)" }
-        Copy-Item -LiteralPath $source -Destination (Join-Path $captureDirectory $capture.file) -Force
+        # The label of the run is part of the published name, so two campaigns (the product under
+        # test and the previous product) never overwrite each other's captures.
+        $publishedName = $capture.file -replace '^TASK-0061-', "TASK-0061-$Label-"
+        Copy-Item -LiteralPath $source -Destination (Join-Path $captureDirectory $publishedName) -Force
         $publishedCaptures += [ordered]@{
-            file = "docs/performance/runs/$($capture.file)"
+            file = "docs/performance/runs/$publishedName"
             pass = $pass
             state = $capture.key
             bytes = $capture.bytes
