@@ -1,0 +1,4204 @@
+{
+  "task": "TASK-0058",
+  "stage": "B / B01",
+  "headTested": "de6c9e6048def459a22f9332e7d17ca2407d73a1",
+  "classification": "DEVELOPMENT_BENCH_ENGINEERING_EVIDENCE",
+  "strategy": "Two real Tauri/WebView2 processes over one disposable synthetic REAL_ROOT. The window is resized NATIVELY through Win32 SetWindowPos to 960x640, 1280x800 and 1366x768 client pixels; prefers-color-scheme and prefers-reduced-motion are set explicitly with Emulation.setEmulatedMedia so no state inherits the workstation theme. Six states are measured at every size. The second process proves what a restart restored. No emulated device metrics, no third-party service, no telemetry.",
+  "machine": {
+    "cpu": "Intel(R) Core(TM) i9-9900K CPU @ 3.60GHz",
+    "logicalProcessors": 16,
+    "memoryGiB": 31.9,
+    "displayPhysicalCm": [
+      53,
+      30
+    ],
+    "note": "Development workstation. This slice measures layout, not performance; no SLA is claimed."
+  },
+  "windowContract": {
+    "source": "src-tauri/tauri.conf.json",
+    "width": 1280,
+    "height": 800,
+    "minWidth": 960,
+    "minHeight": 640,
+    "note": "The host floor was not modified. 960x640 is the smallest declared window, and the resize helper publishes what Windows actually granted."
+  },
+  "pass1": {
+    "task": "TASK-0058",
+    "pass": 1,
+    "headTested": "de6c9e6048def459a22f9332e7d17ca2407d73a1",
+    "checks": [
+      {
+        "label": "every size measured on the real host, CSS viewport exactly as asked",
+        "value": {
+          "sizes": [
+            "960x640",
+            "1280x800",
+            "1366x768"
+          ],
+          "states": [
+            "fr-light",
+            "fr-dark-legend",
+            "en-light-legend",
+            "en-dark",
+            "fr-light-compact-legend",
+            "fr-light-reduced-motion"
+          ],
+          "granted": [
+            "[960,640]",
+            "[1280,800]",
+            "[1366,768]"
+          ]
+        }
+      },
+      {
+        "label": "the falsifiable question of TASK-0058",
+        "value": {
+          "horizontalOverflow": "none at any size or state",
+          "contentUnreachable": "no: the panel is reachable by Tab at every size",
+          "chromeDefectProven": false
+        }
+      },
+      {
+        "label": "one control set per state, identical at all three sizes",
+        "value": {
+          "digests": 6,
+          "lost": []
+        }
+      },
+      {
+        "label": "P-02 parent and aggregate recognised, exact omitted count",
+        "value": {
+          "parent": "archives",
+          "shown": 0,
+          "omitted": 120,
+          "realChildren": 120,
+          "role": "treeitem"
+        }
+      },
+      {
+        "label": "P-05 edges drawn in view, row outside the first view reached, view stays bounded",
+        "value": {
+          "farRowWasInFirstView": false,
+          "edgesBefore": 5,
+          "edgesAfter": 2,
+          "budget": 512,
+          "slotsAfter": 5
+        }
+      },
+      {
+        "label": "P-07 selection at 960x640 and its details panel agree with the Index",
+        "value": {
+          "nodeId": 1,
+          "panelNameMatchesIndex": true,
+          "panelVisible": true,
+          "verticalScrollNeededToReachTheMapPx": 1719
+        }
+      },
+      {
+        "label": "P-11 wheel and keyboard zoom at 960x640 (same WheelEvent primitive as a touchpad)",
+        "value": {
+          "wheelMoved": true,
+          "keyboardMoved": true
+        }
+      },
+      {
+        "label": "P-19 panel, language, density and motion toggle; a non-default workspace is left for the restart",
+        "value": {
+          "locale": "true",
+          "density": "compact",
+          "motion": "reduce",
+          "legend": "true",
+          "details": false
+        }
+      },
+      {
+        "label": "P-22 in this scope: source byte-identical, no artefact under the root, no write on the wire",
+        "value": {
+          "commandsSeen": [
+            "map_brain_activate",
+            "map_brain_resume_update",
+            "map_content_observation_for_path",
+            "map_content_summary",
+            "map_cross_relations_for_node",
+            "map_cross_relations_open",
+            "map_node_change_state",
+            "map_node_children",
+            "map_node_detail",
+            "map_relations_for_node",
+            "map_resolve_node",
+            "map_search_nodes",
+            "map_source_observation",
+            "map_view",
+            "map_workspace_update"
+          ],
+          "indexRevisionStable": true
+        }
+      }
+    ],
+    "findings": [
+      {
+        "severity": "OBSERVATION",
+        "id": "B01-O1",
+        "observation": "The chrome does not bound itself to the window height: `.app__main` is a content-sized grid row, so the right panel never scrolls inside itself and the whole document grows instead. At the smallest window the map starts below the fold. This is VERTICAL scrolling, which TASK-0058 explicitly allows, and the smallest fix would change `.map-view`'s measured height, hence the map's own `viewport` and therefore the camera — outside the write scope of this task. Reported, not repaired.",
+        "evidence": {
+          "worst": {
+            "size": "960x640",
+            "state": "fr-dark-legend",
+            "documentHeight": 4185,
+            "viewportHeight": 640,
+            "verticalScrollPx": 3545,
+            "mapColumnDocumentTop": 727,
+            "mapColumnAboveTheFold": false
+          },
+          "mapViewHeights": [
+            {
+              "size": "960x640",
+              "state": "fr-light",
+              "h": 1311.1
+            },
+            {
+              "size": "960x640",
+              "state": "fr-dark-legend",
+              "h": 2767.1
+            },
+            {
+              "size": "960x640",
+              "state": "en-light-legend",
+              "h": 2779.2
+            },
+            {
+              "size": "960x640",
+              "state": "en-dark",
+              "h": 1323.2
+            },
+            {
+              "size": "960x640",
+              "state": "fr-light-compact-legend",
+              "h": 2724.1
+            },
+            {
+              "size": "960x640",
+              "state": "fr-light-reduced-motion",
+              "h": 1311.1
+            },
+            {
+              "size": "1280x800",
+              "state": "fr-light",
+              "h": 1370.1
+            },
+            {
+              "size": "1280x800",
+              "state": "fr-dark-legend",
+              "h": 2826.1
+            },
+            {
+              "size": "1280x800",
+              "state": "en-light-legend",
+              "h": 2873.2
+            },
+            {
+              "size": "1280x800",
+              "state": "en-dark",
+              "h": 1417.2
+            },
+            {
+              "size": "1280x800",
+              "state": "fr-light-compact-legend",
+              "h": 2767.1
+            },
+            {
+              "size": "1280x800",
+              "state": "fr-light-reduced-motion",
+              "h": 1370.1
+            },
+            {
+              "size": "1366x768",
+              "state": "fr-light",
+              "h": 1405.1
+            },
+            {
+              "size": "1366x768",
+              "state": "fr-dark-legend",
+              "h": 2861.1
+            },
+            {
+              "size": "1366x768",
+              "state": "en-light-legend",
+              "h": 2873.2
+            },
+            {
+              "size": "1366x768",
+              "state": "en-dark",
+              "h": 1417.2
+            },
+            {
+              "size": "1366x768",
+              "state": "fr-light-compact-legend",
+              "h": 2767.1
+            },
+            {
+              "size": "1366x768",
+              "state": "fr-light-reduced-motion",
+              "h": 1405.1
+            }
+          ]
+        }
+      }
+    ],
+    "index": {
+      "indexed": 161,
+      "viewBudget": 512,
+      "materialized": 6,
+      "aggregates": 3,
+      "indexRevision": 1
+    },
+    "verdict": {
+      "horizontalOverflowWorstPx": 0,
+      "statesWithViewportEscapers": [],
+      "statesWithSidewaysScrollers": [],
+      "statesWithClippedControls": [],
+      "statesWithColumnOverlap": [],
+      "statesWherePanelUnreachableByKeyboard": [],
+      "statesWithoutVisibleFocusRing": [],
+      "commandsLostAtSomeSize": [],
+      "axeViolations": [],
+      "axeIncompleteByState": [
+        {
+          "size": "960x640",
+          "state": "fr-light",
+          "incomplete": [
+            "color-contrastx12"
+          ]
+        },
+        {
+          "size": "960x640",
+          "state": "fr-dark-legend",
+          "incomplete": [
+            "color-contrastx16"
+          ]
+        },
+        {
+          "size": "960x640",
+          "state": "en-light-legend",
+          "incomplete": [
+            "color-contrastx16"
+          ]
+        },
+        {
+          "size": "960x640",
+          "state": "en-dark",
+          "incomplete": [
+            "color-contrastx12"
+          ]
+        },
+        {
+          "size": "960x640",
+          "state": "fr-light-compact-legend",
+          "incomplete": [
+            "color-contrastx16"
+          ]
+        },
+        {
+          "size": "960x640",
+          "state": "fr-light-reduced-motion",
+          "incomplete": [
+            "color-contrastx12"
+          ]
+        },
+        {
+          "size": "1280x800",
+          "state": "fr-light",
+          "incomplete": [
+            "color-contrastx15"
+          ]
+        },
+        {
+          "size": "1280x800",
+          "state": "fr-dark-legend",
+          "incomplete": [
+            "color-contrastx19"
+          ]
+        },
+        {
+          "size": "1280x800",
+          "state": "en-light-legend",
+          "incomplete": [
+            "color-contrastx19"
+          ]
+        },
+        {
+          "size": "1280x800",
+          "state": "en-dark",
+          "incomplete": [
+            "color-contrastx15"
+          ]
+        },
+        {
+          "size": "1280x800",
+          "state": "fr-light-compact-legend",
+          "incomplete": [
+            "color-contrastx20"
+          ]
+        },
+        {
+          "size": "1280x800",
+          "state": "fr-light-reduced-motion",
+          "incomplete": [
+            "color-contrastx16"
+          ]
+        },
+        {
+          "size": "1366x768",
+          "state": "fr-light",
+          "incomplete": [
+            "color-contrastx16"
+          ]
+        },
+        {
+          "size": "1366x768",
+          "state": "fr-dark-legend",
+          "incomplete": [
+            "color-contrastx20"
+          ]
+        },
+        {
+          "size": "1366x768",
+          "state": "en-light-legend",
+          "incomplete": [
+            "color-contrastx20"
+          ]
+        },
+        {
+          "size": "1366x768",
+          "state": "en-dark",
+          "incomplete": [
+            "color-contrastx16"
+          ]
+        },
+        {
+          "size": "1366x768",
+          "state": "fr-light-compact-legend",
+          "incomplete": [
+            "color-contrastx20"
+          ]
+        },
+        {
+          "size": "1366x768",
+          "state": "fr-light-reduced-motion",
+          "incomplete": [
+            "color-contrastx16"
+          ]
+        }
+      ],
+      "smallestMapView": {
+        "size": "960x640",
+        "state": "fr-light",
+        "w": 535,
+        "h": 1311.1
+      },
+      "verticalScrollByState": [
+        {
+          "size": "960x640",
+          "state": "fr-light",
+          "documentHeight": 2729,
+          "viewportHeight": 640,
+          "verticalScrollPx": 2089,
+          "mapColumnDocumentTop": 727,
+          "mapColumnAboveTheFold": false
+        },
+        {
+          "size": "960x640",
+          "state": "fr-dark-legend",
+          "documentHeight": 4185,
+          "viewportHeight": 640,
+          "verticalScrollPx": 3545,
+          "mapColumnDocumentTop": 727,
+          "mapColumnAboveTheFold": false
+        },
+        {
+          "size": "960x640",
+          "state": "en-light-legend",
+          "documentHeight": 4130,
+          "viewportHeight": 640,
+          "verticalScrollPx": 3490,
+          "mapColumnDocumentTop": 703,
+          "mapColumnAboveTheFold": false
+        },
+        {
+          "size": "960x640",
+          "state": "en-dark",
+          "documentHeight": 2674,
+          "viewportHeight": 640,
+          "verticalScrollPx": 2034,
+          "mapColumnDocumentTop": 703,
+          "mapColumnAboveTheFold": false
+        },
+        {
+          "size": "960x640",
+          "state": "fr-light-compact-legend",
+          "documentHeight": 3949,
+          "viewportHeight": 640,
+          "verticalScrollPx": 3309,
+          "mapColumnDocumentTop": 635,
+          "mapColumnAboveTheFold": true
+        },
+        {
+          "size": "960x640",
+          "state": "fr-light-reduced-motion",
+          "documentHeight": 2729,
+          "viewportHeight": 640,
+          "verticalScrollPx": 2089,
+          "mapColumnDocumentTop": 727,
+          "mapColumnAboveTheFold": false
+        },
+        {
+          "size": "1280x800",
+          "state": "fr-light",
+          "documentHeight": 2631,
+          "viewportHeight": 800,
+          "verticalScrollPx": 1831,
+          "mapColumnDocumentTop": 629,
+          "mapColumnAboveTheFold": true
+        },
+        {
+          "size": "1280x800",
+          "state": "fr-dark-legend",
+          "documentHeight": 4086,
+          "viewportHeight": 800,
+          "verticalScrollPx": 3286,
+          "mapColumnDocumentTop": 628,
+          "mapColumnAboveTheFold": true
+        },
+        {
+          "size": "1280x800",
+          "state": "en-light-legend",
+          "documentHeight": 4012,
+          "viewportHeight": 800,
+          "verticalScrollPx": 3212,
+          "mapColumnDocumentTop": 585,
+          "mapColumnAboveTheFold": true
+        },
+        {
+          "size": "1280x800",
+          "state": "en-dark",
+          "documentHeight": 2556,
+          "viewportHeight": 800,
+          "verticalScrollPx": 1756,
+          "mapColumnDocumentTop": 585,
+          "mapColumnAboveTheFold": true
+        },
+        {
+          "size": "1280x800",
+          "state": "fr-light-compact-legend",
+          "documentHeight": 3831,
+          "viewportHeight": 800,
+          "verticalScrollPx": 3031,
+          "mapColumnDocumentTop": 517,
+          "mapColumnAboveTheFold": true
+        },
+        {
+          "size": "1280x800",
+          "state": "fr-light-reduced-motion",
+          "documentHeight": 2630,
+          "viewportHeight": 800,
+          "verticalScrollPx": 1830,
+          "mapColumnDocumentTop": 628,
+          "mapColumnAboveTheFold": true
+        },
+        {
+          "size": "1366x768",
+          "state": "fr-light",
+          "documentHeight": 2587,
+          "viewportHeight": 768,
+          "verticalScrollPx": 1819,
+          "mapColumnDocumentTop": 585,
+          "mapColumnAboveTheFold": true
+        },
+        {
+          "size": "1366x768",
+          "state": "fr-dark-legend",
+          "documentHeight": 4043,
+          "viewportHeight": 768,
+          "verticalScrollPx": 3275,
+          "mapColumnDocumentTop": 585,
+          "mapColumnAboveTheFold": true
+        },
+        {
+          "size": "1366x768",
+          "state": "en-light-legend",
+          "documentHeight": 4012,
+          "viewportHeight": 768,
+          "verticalScrollPx": 3244,
+          "mapColumnDocumentTop": 585,
+          "mapColumnAboveTheFold": true
+        },
+        {
+          "size": "1366x768",
+          "state": "en-dark",
+          "documentHeight": 2556,
+          "viewportHeight": 768,
+          "verticalScrollPx": 1788,
+          "mapColumnDocumentTop": 585,
+          "mapColumnAboveTheFold": true
+        },
+        {
+          "size": "1366x768",
+          "state": "fr-light-compact-legend",
+          "documentHeight": 3831,
+          "viewportHeight": 768,
+          "verticalScrollPx": 3063,
+          "mapColumnDocumentTop": 517,
+          "mapColumnAboveTheFold": true
+        },
+        {
+          "size": "1366x768",
+          "state": "fr-light-reduced-motion",
+          "documentHeight": 2587,
+          "viewportHeight": 768,
+          "verticalScrollPx": 1819,
+          "mapColumnDocumentTop": 585,
+          "mapColumnAboveTheFold": true
+        }
+      ]
+    },
+    "chromeDefectProven": false,
+    "leftBehind": {
+      "locale": "true",
+      "density": "compact",
+      "motion": "reduce",
+      "legend": "true",
+      "details": false
+    },
+    "matrix": [
+      {
+        "size": "960x640",
+        "state": "fr-light",
+        "requested": {
+          "id": "fr-light",
+          "locale": "fr",
+          "scheme": "light",
+          "motion": "no-preference",
+          "density": "comfortable",
+          "appMotion": "system",
+          "legend": false
+        },
+        "hostWindow": {
+          "askedClient": [
+            960,
+            640
+          ],
+          "grantedClient": [
+            960,
+            640
+          ],
+          "grantedWindow": [
+            976,
+            679
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            960,
+            640
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            960,
+            640
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            945,
+            640
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            945,
+            2729
+          ],
+          "documentOverflowX": 0,
+          "verticalScrollPx": 2089,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|composition-remove-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 727,
+              "w": 909,
+              "h": 1984.1,
+              "right": 927,
+              "bottom": 2711.1,
+              "documentTop": 727,
+              "scrollWidth": 909,
+              "clientWidth": 909,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "map": {
+              "x": 18,
+              "y": 727,
+              "w": 535,
+              "h": 1984.1,
+              "right": 553,
+              "bottom": 2711.1,
+              "documentTop": 727,
+              "scrollWidth": 535,
+              "clientWidth": 535,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "aside": {
+              "x": 567,
+              "y": 727,
+              "w": 360,
+              "h": 1984.1,
+              "right": 927,
+              "bottom": 2711.1,
+              "documentTop": 727,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1360,
+              "w": 535,
+              "h": 1311.1,
+              "right": 553,
+              "bottom": 2671.1,
+              "documentTop": 1360,
+              "scrollWidth": 533,
+              "clientWidth": 533,
+              "scrollHeight": 1309,
+              "clientHeight": 1309
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 909,
+              "h": 163,
+              "right": 927,
+              "bottom": 177,
+              "documentTop": 14,
+              "scrollWidth": 909,
+              "clientWidth": 909,
+              "scrollHeight": 163,
+              "clientHeight": 163
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 727,
+              "w": 535,
+              "h": 121,
+              "right": 553,
+              "bottom": 848,
+              "documentTop": 727,
+              "scrollWidth": 535,
+              "clientWidth": 535,
+              "scrollHeight": 121,
+              "clientHeight": 121
+            },
+            "overlapArea": 0,
+            "asidePosition": "static"
+          },
+          "gridTemplate": "535px 360px",
+          "mediaMatches": {
+            "dark": false,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "system",
+            "lang": "fr"
+          },
+          "buttonTransition": "0s",
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 12
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "960x640",
+        "state": "fr-dark-legend",
+        "requested": {
+          "id": "fr-dark-legend",
+          "locale": "fr",
+          "scheme": "dark",
+          "motion": "no-preference",
+          "density": "comfortable",
+          "appMotion": "system",
+          "legend": true
+        },
+        "hostWindow": {
+          "askedClient": [
+            960,
+            640
+          ],
+          "grantedClient": [
+            960,
+            640
+          ],
+          "grantedWindow": [
+            976,
+            679
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            960,
+            640
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            960,
+            640
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            945,
+            640
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            945,
+            4185
+          ],
+          "documentOverflowX": 0,
+          "verticalScrollPx": 3545,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|composition-remove-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 727,
+              "w": 909,
+              "h": 3440.1,
+              "right": 927,
+              "bottom": 4167.1,
+              "documentTop": 727,
+              "scrollWidth": 909,
+              "clientWidth": 909,
+              "scrollHeight": 3440,
+              "clientHeight": 3440
+            },
+            "map": {
+              "x": 18,
+              "y": 727,
+              "w": 535,
+              "h": 3440.1,
+              "right": 553,
+              "bottom": 4167.1,
+              "documentTop": 727,
+              "scrollWidth": 535,
+              "clientWidth": 535,
+              "scrollHeight": 3440,
+              "clientHeight": 3440
+            },
+            "aside": {
+              "x": 567,
+              "y": 727,
+              "w": 360,
+              "h": 3440.1,
+              "right": 927,
+              "bottom": 4167.1,
+              "documentTop": 727,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 3440,
+              "clientHeight": 3440
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1360,
+              "w": 535,
+              "h": 2767.1,
+              "right": 553,
+              "bottom": 4127.1,
+              "documentTop": 1360,
+              "scrollWidth": 533,
+              "clientWidth": 533,
+              "scrollHeight": 2765,
+              "clientHeight": 2765
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 909,
+              "h": 163,
+              "right": 927,
+              "bottom": 177,
+              "documentTop": 14,
+              "scrollWidth": 909,
+              "clientWidth": 909,
+              "scrollHeight": 163,
+              "clientHeight": 163
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 727,
+              "w": 535,
+              "h": 121,
+              "right": 553,
+              "bottom": 848,
+              "documentTop": 727,
+              "scrollWidth": 535,
+              "clientWidth": 535,
+              "scrollHeight": 121,
+              "clientHeight": 121
+            },
+            "overlapArea": 0,
+            "asidePosition": "static"
+          },
+          "gridTemplate": "535px 360px",
+          "mediaMatches": {
+            "dark": true,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "system",
+            "lang": "fr"
+          },
+          "buttonTransition": "0s",
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 16
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "960x640",
+        "state": "en-light-legend",
+        "requested": {
+          "id": "en-light-legend",
+          "locale": "en",
+          "scheme": "light",
+          "motion": "no-preference",
+          "density": "comfortable",
+          "appMotion": "system",
+          "legend": true
+        },
+        "hostWindow": {
+          "askedClient": [
+            960,
+            640
+          ],
+          "grantedClient": [
+            960,
+            640
+          ],
+          "grantedWindow": [
+            976,
+            679
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            960,
+            640
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            960,
+            640
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            945,
+            640
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            945,
+            4130
+          ],
+          "documentOverflowX": 0,
+          "verticalScrollPx": 3490,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Back to the root|Check H1–H5|Check J1–J5, J10|Explore the selection|Frame the selection|Measure in WebView2|Select the root|Zoom in|Zoom out|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|composition-remove-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 703,
+              "w": 909,
+              "h": 3409.2,
+              "right": 927,
+              "bottom": 4112.2,
+              "documentTop": 703,
+              "scrollWidth": 909,
+              "clientWidth": 909,
+              "scrollHeight": 3409,
+              "clientHeight": 3409
+            },
+            "map": {
+              "x": 18,
+              "y": 703,
+              "w": 535,
+              "h": 3409.2,
+              "right": 553,
+              "bottom": 4112.2,
+              "documentTop": 703,
+              "scrollWidth": 535,
+              "clientWidth": 535,
+              "scrollHeight": 3409,
+              "clientHeight": 3409
+            },
+            "aside": {
+              "x": 567,
+              "y": 703,
+              "w": 360,
+              "h": 3409.2,
+              "right": 927,
+              "bottom": 4112.2,
+              "documentTop": 703,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 3409,
+              "clientHeight": 3409
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1293,
+              "w": 535,
+              "h": 2779.2,
+              "right": 553,
+              "bottom": 4072.2,
+              "documentTop": 1293,
+              "scrollWidth": 533,
+              "clientWidth": 533,
+              "scrollHeight": 2777,
+              "clientHeight": 2777
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 909,
+              "h": 163,
+              "right": 927,
+              "bottom": 177,
+              "documentTop": 14,
+              "scrollWidth": 909,
+              "clientWidth": 909,
+              "scrollHeight": 163,
+              "clientHeight": 163
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 703,
+              "w": 535,
+              "h": 78,
+              "right": 553,
+              "bottom": 781,
+              "documentTop": 703,
+              "scrollWidth": 535,
+              "clientWidth": 535,
+              "scrollHeight": 78,
+              "clientHeight": 78
+            },
+            "overlapArea": 0,
+            "asidePosition": "static"
+          },
+          "gridTemplate": "535px 360px",
+          "mediaMatches": {
+            "dark": false,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "system",
+            "lang": "en"
+          },
+          "buttonTransition": "0s",
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 16
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "960x640",
+        "state": "en-dark",
+        "requested": {
+          "id": "en-dark",
+          "locale": "en",
+          "scheme": "dark",
+          "motion": "no-preference",
+          "density": "comfortable",
+          "appMotion": "system",
+          "legend": false
+        },
+        "hostWindow": {
+          "askedClient": [
+            960,
+            640
+          ],
+          "grantedClient": [
+            960,
+            640
+          ],
+          "grantedWindow": [
+            976,
+            679
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            960,
+            640
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            960,
+            640
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            945,
+            640
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            945,
+            2674
+          ],
+          "documentOverflowX": 0,
+          "verticalScrollPx": 2034,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Back to the root|Check H1–H5|Check J1–J5, J10|Explore the selection|Frame the selection|Measure in WebView2|Select the root|Zoom in|Zoom out|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|composition-remove-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 703,
+              "w": 909,
+              "h": 1953.2,
+              "right": 927,
+              "bottom": 2656.2,
+              "documentTop": 703,
+              "scrollWidth": 909,
+              "clientWidth": 909,
+              "scrollHeight": 1953,
+              "clientHeight": 1953
+            },
+            "map": {
+              "x": 18,
+              "y": 703,
+              "w": 535,
+              "h": 1953.2,
+              "right": 553,
+              "bottom": 2656.2,
+              "documentTop": 703,
+              "scrollWidth": 535,
+              "clientWidth": 535,
+              "scrollHeight": 1953,
+              "clientHeight": 1953
+            },
+            "aside": {
+              "x": 567,
+              "y": 703,
+              "w": 360,
+              "h": 1953.2,
+              "right": 927,
+              "bottom": 2656.2,
+              "documentTop": 703,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 1953,
+              "clientHeight": 1953
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1293,
+              "w": 535,
+              "h": 1323.2,
+              "right": 553,
+              "bottom": 2616.2,
+              "documentTop": 1293,
+              "scrollWidth": 533,
+              "clientWidth": 533,
+              "scrollHeight": 1321,
+              "clientHeight": 1321
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 909,
+              "h": 163,
+              "right": 927,
+              "bottom": 177,
+              "documentTop": 14,
+              "scrollWidth": 909,
+              "clientWidth": 909,
+              "scrollHeight": 163,
+              "clientHeight": 163
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 703,
+              "w": 535,
+              "h": 78,
+              "right": 553,
+              "bottom": 781,
+              "documentTop": 703,
+              "scrollWidth": 535,
+              "clientWidth": 535,
+              "scrollHeight": 78,
+              "clientHeight": 78
+            },
+            "overlapArea": 0,
+            "asidePosition": "static"
+          },
+          "gridTemplate": "535px 360px",
+          "mediaMatches": {
+            "dark": true,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "system",
+            "lang": "en"
+          },
+          "buttonTransition": "0s",
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 12
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "960x640",
+        "state": "fr-light-compact-legend",
+        "requested": {
+          "id": "fr-light-compact-legend",
+          "locale": "fr",
+          "scheme": "light",
+          "motion": "no-preference",
+          "density": "compact",
+          "appMotion": "system",
+          "legend": true
+        },
+        "hostWindow": {
+          "askedClient": [
+            960,
+            640
+          ],
+          "grantedClient": [
+            960,
+            640
+          ],
+          "grantedWindow": [
+            976,
+            679
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            960,
+            640
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            960,
+            640
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            945,
+            640
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            945,
+            3949
+          ],
+          "documentOverflowX": 0,
+          "verticalScrollPx": 3309,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|composition-remove-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "columns": {
+            "main": {
+              "x": 12,
+              "y": 635,
+              "w": 921,
+              "h": 3304.1,
+              "right": 933,
+              "bottom": 3939.1,
+              "documentTop": 635,
+              "scrollWidth": 921,
+              "clientWidth": 921,
+              "scrollHeight": 3304,
+              "clientHeight": 3304
+            },
+            "map": {
+              "x": 12,
+              "y": 635,
+              "w": 547,
+              "h": 3304.1,
+              "right": 559,
+              "bottom": 3939.1,
+              "documentTop": 635,
+              "scrollWidth": 547,
+              "clientWidth": 547,
+              "scrollHeight": 3304,
+              "clientHeight": 3304
+            },
+            "aside": {
+              "x": 573,
+              "y": 635,
+              "w": 360,
+              "h": 3304.1,
+              "right": 933,
+              "bottom": 3939.1,
+              "documentTop": 635,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 3304,
+              "clientHeight": 3304
+            },
+            "mapView": {
+              "x": 12,
+              "y": 1175,
+              "w": 547,
+              "h": 2724.1,
+              "right": 559,
+              "bottom": 3899.1,
+              "documentTop": 1175,
+              "scrollWidth": 545,
+              "clientWidth": 545,
+              "scrollHeight": 2722,
+              "clientHeight": 2722
+            },
+            "header": {
+              "x": 12,
+              "y": 8,
+              "w": 921,
+              "h": 139,
+              "right": 933,
+              "bottom": 147,
+              "documentTop": 8,
+              "scrollWidth": 921,
+              "clientWidth": 921,
+              "scrollHeight": 139,
+              "clientHeight": 139
+            },
+            "toolbar": {
+              "x": 12,
+              "y": 635,
+              "w": 547,
+              "h": 62,
+              "right": 559,
+              "bottom": 697,
+              "documentTop": 635,
+              "scrollWidth": 547,
+              "clientWidth": 547,
+              "scrollHeight": 62,
+              "clientHeight": 62
+            },
+            "overlapArea": 0,
+            "asidePosition": "static"
+          },
+          "gridTemplate": "547px 360px",
+          "mediaMatches": {
+            "dark": false,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "compact",
+            "motion": "system",
+            "lang": "fr"
+          },
+          "buttonTransition": "0s",
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 27
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 16
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "960x640",
+        "state": "fr-light-reduced-motion",
+        "requested": {
+          "id": "fr-light-reduced-motion",
+          "locale": "fr",
+          "scheme": "light",
+          "motion": "reduce",
+          "density": "comfortable",
+          "appMotion": "reduce",
+          "legend": false
+        },
+        "hostWindow": {
+          "askedClient": [
+            960,
+            640
+          ],
+          "grantedClient": [
+            960,
+            640
+          ],
+          "grantedWindow": [
+            976,
+            679
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            960,
+            640
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            960,
+            640
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            945,
+            640
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            945,
+            2729
+          ],
+          "documentOverflowX": 0,
+          "verticalScrollPx": 2089,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|composition-remove-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 727,
+              "w": 909,
+              "h": 1984.1,
+              "right": 927,
+              "bottom": 2711.1,
+              "documentTop": 727,
+              "scrollWidth": 909,
+              "clientWidth": 909,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "map": {
+              "x": 18,
+              "y": 727,
+              "w": 535,
+              "h": 1984.1,
+              "right": 553,
+              "bottom": 2711.1,
+              "documentTop": 727,
+              "scrollWidth": 535,
+              "clientWidth": 535,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "aside": {
+              "x": 567,
+              "y": 727,
+              "w": 360,
+              "h": 1984.1,
+              "right": 927,
+              "bottom": 2711.1,
+              "documentTop": 727,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1360,
+              "w": 535,
+              "h": 1311.1,
+              "right": 553,
+              "bottom": 2671.1,
+              "documentTop": 1360,
+              "scrollWidth": 533,
+              "clientWidth": 533,
+              "scrollHeight": 1309,
+              "clientHeight": 1309
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 909,
+              "h": 163,
+              "right": 927,
+              "bottom": 177,
+              "documentTop": 14,
+              "scrollWidth": 909,
+              "clientWidth": 909,
+              "scrollHeight": 163,
+              "clientHeight": 163
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 727,
+              "w": 535,
+              "h": 121,
+              "right": 553,
+              "bottom": 848,
+              "documentTop": 727,
+              "scrollWidth": 535,
+              "clientWidth": 535,
+              "scrollHeight": 121,
+              "clientHeight": 121
+            },
+            "overlapArea": 0,
+            "asidePosition": "static"
+          },
+          "gridTemplate": "535px 360px",
+          "mediaMatches": {
+            "dark": false,
+            "reduceMotion": true
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "reduce",
+            "lang": "fr"
+          },
+          "buttonTransition": "0s",
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 12
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "1280x800",
+        "state": "fr-light",
+        "requested": {
+          "id": "fr-light",
+          "locale": "fr",
+          "scheme": "light",
+          "motion": "no-preference",
+          "density": "comfortable",
+          "appMotion": "system",
+          "legend": false
+        },
+        "hostWindow": {
+          "askedClient": [
+            1280,
+            800
+          ],
+          "grantedClient": [
+            1280,
+            800
+          ],
+          "grantedWindow": [
+            1296,
+            839
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            1280,
+            800
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            1280,
+            800
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            1265,
+            800
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            1265,
+            2631
+          ],
+          "documentOverflowX": 0,
+          "verticalScrollPx": 1831,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|composition-remove-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 629,
+              "w": 1229,
+              "h": 1984.1,
+              "right": 1247,
+              "bottom": 2613.1,
+              "documentTop": 629,
+              "scrollWidth": 1229,
+              "clientWidth": 1229,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "map": {
+              "x": 18,
+              "y": 629,
+              "w": 855,
+              "h": 1984.1,
+              "right": 873,
+              "bottom": 2613.1,
+              "documentTop": 629,
+              "scrollWidth": 855,
+              "clientWidth": 855,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "aside": {
+              "x": 887,
+              "y": 629,
+              "w": 360,
+              "h": 1984.1,
+              "right": 1247,
+              "bottom": 2613.1,
+              "documentTop": 629,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1219,
+              "w": 855,
+              "h": 1370.1,
+              "right": 873,
+              "bottom": 2589.1,
+              "documentTop": 1219,
+              "scrollWidth": 853,
+              "clientWidth": 853,
+              "scrollHeight": 1368,
+              "clientHeight": 1368
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 1229,
+              "h": 112,
+              "right": 1247,
+              "bottom": 126,
+              "documentTop": 14,
+              "scrollWidth": 1229,
+              "clientWidth": 1229,
+              "scrollHeight": 112,
+              "clientHeight": 112
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 629,
+              "w": 855,
+              "h": 78,
+              "right": 873,
+              "bottom": 707,
+              "documentTop": 629,
+              "scrollWidth": 855,
+              "clientWidth": 855,
+              "scrollHeight": 78,
+              "clientHeight": 78
+            },
+            "overlapArea": 0,
+            "asidePosition": "static"
+          },
+          "gridTemplate": "855px 360px",
+          "mediaMatches": {
+            "dark": false,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "system",
+            "lang": "fr"
+          },
+          "buttonTransition": "0s",
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 15
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "1280x800",
+        "state": "fr-dark-legend",
+        "requested": {
+          "id": "fr-dark-legend",
+          "locale": "fr",
+          "scheme": "dark",
+          "motion": "no-preference",
+          "density": "comfortable",
+          "appMotion": "system",
+          "legend": true
+        },
+        "hostWindow": {
+          "askedClient": [
+            1280,
+            800
+          ],
+          "grantedClient": [
+            1280,
+            800
+          ],
+          "grantedWindow": [
+            1296,
+            839
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            1280,
+            800
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            1280,
+            800
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            1265,
+            800
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            1265,
+            4086
+          ],
+          "documentOverflowX": 0,
+          "verticalScrollPx": 3286,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|composition-remove-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 628,
+              "w": 1229,
+              "h": 3440.1,
+              "right": 1247,
+              "bottom": 4068.1,
+              "documentTop": 628,
+              "scrollWidth": 1229,
+              "clientWidth": 1229,
+              "scrollHeight": 3440,
+              "clientHeight": 3440
+            },
+            "map": {
+              "x": 18,
+              "y": 628,
+              "w": 855,
+              "h": 3440.1,
+              "right": 873,
+              "bottom": 4068.1,
+              "documentTop": 628,
+              "scrollWidth": 855,
+              "clientWidth": 855,
+              "scrollHeight": 3440,
+              "clientHeight": 3440
+            },
+            "aside": {
+              "x": 887,
+              "y": 628,
+              "w": 360,
+              "h": 3440.1,
+              "right": 1247,
+              "bottom": 4068.1,
+              "documentTop": 628,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 3440,
+              "clientHeight": 3440
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1218,
+              "w": 855,
+              "h": 2826.1,
+              "right": 873,
+              "bottom": 4044.1,
+              "documentTop": 1218,
+              "scrollWidth": 853,
+              "clientWidth": 853,
+              "scrollHeight": 2824,
+              "clientHeight": 2824
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 1229,
+              "h": 112,
+              "right": 1247,
+              "bottom": 126,
+              "documentTop": 14,
+              "scrollWidth": 1229,
+              "clientWidth": 1229,
+              "scrollHeight": 112,
+              "clientHeight": 112
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 628,
+              "w": 855,
+              "h": 78,
+              "right": 873,
+              "bottom": 706,
+              "documentTop": 628,
+              "scrollWidth": 855,
+              "clientWidth": 855,
+              "scrollHeight": 78,
+              "clientHeight": 78
+            },
+            "overlapArea": 0,
+            "asidePosition": "static"
+          },
+          "gridTemplate": "855px 360px",
+          "mediaMatches": {
+            "dark": true,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "system",
+            "lang": "fr"
+          },
+          "buttonTransition": "0s",
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 19
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "1280x800",
+        "state": "en-light-legend",
+        "requested": {
+          "id": "en-light-legend",
+          "locale": "en",
+          "scheme": "light",
+          "motion": "no-preference",
+          "density": "comfortable",
+          "appMotion": "system",
+          "legend": true
+        },
+        "hostWindow": {
+          "askedClient": [
+            1280,
+            800
+          ],
+          "grantedClient": [
+            1280,
+            800
+          ],
+          "grantedWindow": [
+            1296,
+            839
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            1280,
+            800
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            1280,
+            800
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            1265,
+            800
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            1265,
+            4012
+          ],
+          "documentOverflowX": 0,
+          "verticalScrollPx": 3212,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Back to the root|Check H1–H5|Check J1–J5, J10|Explore the selection|Frame the selection|Measure in WebView2|Select the root|Zoom in|Zoom out|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|composition-remove-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 585,
+              "w": 1229,
+              "h": 3409.2,
+              "right": 1247,
+              "bottom": 3994.2,
+              "documentTop": 585,
+              "scrollWidth": 1229,
+              "clientWidth": 1229,
+              "scrollHeight": 3409,
+              "clientHeight": 3409
+            },
+            "map": {
+              "x": 18,
+              "y": 585,
+              "w": 855,
+              "h": 3409.2,
+              "right": 873,
+              "bottom": 3994.2,
+              "documentTop": 585,
+              "scrollWidth": 855,
+              "clientWidth": 855,
+              "scrollHeight": 3409,
+              "clientHeight": 3409
+            },
+            "aside": {
+              "x": 887,
+              "y": 585,
+              "w": 360,
+              "h": 3409.2,
+              "right": 1247,
+              "bottom": 3994.2,
+              "documentTop": 585,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 3409,
+              "clientHeight": 3409
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1097,
+              "w": 855,
+              "h": 2873.2,
+              "right": 873,
+              "bottom": 3970.2,
+              "documentTop": 1097,
+              "scrollWidth": 853,
+              "clientWidth": 853,
+              "scrollHeight": 2871,
+              "clientHeight": 2871
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 1229,
+              "h": 112,
+              "right": 1247,
+              "bottom": 126,
+              "documentTop": 14,
+              "scrollWidth": 1229,
+              "clientWidth": 1229,
+              "scrollHeight": 112,
+              "clientHeight": 112
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 585,
+              "w": 855,
+              "h": 35,
+              "right": 873,
+              "bottom": 620,
+              "documentTop": 585,
+              "scrollWidth": 855,
+              "clientWidth": 855,
+              "scrollHeight": 35,
+              "clientHeight": 35
+            },
+            "overlapArea": 0,
+            "asidePosition": "static"
+          },
+          "gridTemplate": "855px 360px",
+          "mediaMatches": {
+            "dark": false,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "system",
+            "lang": "en"
+          },
+          "buttonTransition": "0s",
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 19
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "1280x800",
+        "state": "en-dark",
+        "requested": {
+          "id": "en-dark",
+          "locale": "en",
+          "scheme": "dark",
+          "motion": "no-preference",
+          "density": "comfortable",
+          "appMotion": "system",
+          "legend": false
+        },
+        "hostWindow": {
+          "askedClient": [
+            1280,
+            800
+          ],
+          "grantedClient": [
+            1280,
+            800
+          ],
+          "grantedWindow": [
+            1296,
+            839
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            1280,
+            800
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            1280,
+            800
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            1265,
+            800
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            1265,
+            2556
+          ],
+          "documentOverflowX": 0,
+          "verticalScrollPx": 1756,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Back to the root|Check H1–H5|Check J1–J5, J10|Explore the selection|Frame the selection|Measure in WebView2|Select the root|Zoom in|Zoom out|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|composition-remove-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 585,
+              "w": 1229,
+              "h": 1953.2,
+              "right": 1247,
+              "bottom": 2538.2,
+              "documentTop": 585,
+              "scrollWidth": 1229,
+              "clientWidth": 1229,
+              "scrollHeight": 1953,
+              "clientHeight": 1953
+            },
+            "map": {
+              "x": 18,
+              "y": 585,
+              "w": 855,
+              "h": 1953.2,
+              "right": 873,
+              "bottom": 2538.2,
+              "documentTop": 585,
+              "scrollWidth": 855,
+              "clientWidth": 855,
+              "scrollHeight": 1953,
+              "clientHeight": 1953
+            },
+            "aside": {
+              "x": 887,
+              "y": 585,
+              "w": 360,
+              "h": 1953.2,
+              "right": 1247,
+              "bottom": 2538.2,
+              "documentTop": 585,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 1953,
+              "clientHeight": 1953
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1097,
+              "w": 855,
+              "h": 1417.2,
+              "right": 873,
+              "bottom": 2514.2,
+              "documentTop": 1097,
+              "scrollWidth": 853,
+              "clientWidth": 853,
+              "scrollHeight": 1415,
+              "clientHeight": 1415
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 1229,
+              "h": 112,
+              "right": 1247,
+              "bottom": 126,
+              "documentTop": 14,
+              "scrollWidth": 1229,
+              "clientWidth": 1229,
+              "scrollHeight": 112,
+              "clientHeight": 112
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 585,
+              "w": 855,
+              "h": 35,
+              "right": 873,
+              "bottom": 620,
+              "documentTop": 585,
+              "scrollWidth": 855,
+              "clientWidth": 855,
+              "scrollHeight": 35,
+              "clientHeight": 35
+            },
+            "overlapArea": 0,
+            "asidePosition": "static"
+          },
+          "gridTemplate": "855px 360px",
+          "mediaMatches": {
+            "dark": true,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "system",
+            "lang": "en"
+          },
+          "buttonTransition": "0s",
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 15
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "1280x800",
+        "state": "fr-light-compact-legend",
+        "requested": {
+          "id": "fr-light-compact-legend",
+          "locale": "fr",
+          "scheme": "light",
+          "motion": "no-preference",
+          "density": "compact",
+          "appMotion": "system",
+          "legend": true
+        },
+        "hostWindow": {
+          "askedClient": [
+            1280,
+            800
+          ],
+          "grantedClient": [
+            1280,
+            800
+          ],
+          "grantedWindow": [
+            1296,
+            839
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            1280,
+            800
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            1280,
+            800
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            1265,
+            800
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            1265,
+            3831
+          ],
+          "documentOverflowX": 0,
+          "verticalScrollPx": 3031,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|composition-remove-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "columns": {
+            "main": {
+              "x": 12,
+              "y": 517,
+              "w": 1241,
+              "h": 3304.1,
+              "right": 1253,
+              "bottom": 3821.1,
+              "documentTop": 517,
+              "scrollWidth": 1241,
+              "clientWidth": 1241,
+              "scrollHeight": 3304,
+              "clientHeight": 3304
+            },
+            "map": {
+              "x": 12,
+              "y": 517,
+              "w": 867,
+              "h": 3304.1,
+              "right": 879,
+              "bottom": 3821.1,
+              "documentTop": 517,
+              "scrollWidth": 867,
+              "clientWidth": 867,
+              "scrollHeight": 3304,
+              "clientHeight": 3304
+            },
+            "aside": {
+              "x": 893,
+              "y": 517,
+              "w": 360,
+              "h": 3304.1,
+              "right": 1253,
+              "bottom": 3821.1,
+              "documentTop": 517,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 3304,
+              "clientHeight": 3304
+            },
+            "mapView": {
+              "x": 12,
+              "y": 1030,
+              "w": 867,
+              "h": 2767.1,
+              "right": 879,
+              "bottom": 3797.1,
+              "documentTop": 1030,
+              "scrollWidth": 865,
+              "clientWidth": 865,
+              "scrollHeight": 2765,
+              "clientHeight": 2765
+            },
+            "header": {
+              "x": 12,
+              "y": 8,
+              "w": 1241,
+              "h": 104,
+              "right": 1253,
+              "bottom": 112,
+              "documentTop": 8,
+              "scrollWidth": 1241,
+              "clientWidth": 1241,
+              "scrollHeight": 104,
+              "clientHeight": 104
+            },
+            "toolbar": {
+              "x": 12,
+              "y": 517,
+              "w": 867,
+              "h": 62,
+              "right": 879,
+              "bottom": 579,
+              "documentTop": 517,
+              "scrollWidth": 867,
+              "clientWidth": 867,
+              "scrollHeight": 62,
+              "clientHeight": 62
+            },
+            "overlapArea": 0,
+            "asidePosition": "static"
+          },
+          "gridTemplate": "867px 360px",
+          "mediaMatches": {
+            "dark": false,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "compact",
+            "motion": "system",
+            "lang": "fr"
+          },
+          "buttonTransition": "0s",
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 27
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 20
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "1280x800",
+        "state": "fr-light-reduced-motion",
+        "requested": {
+          "id": "fr-light-reduced-motion",
+          "locale": "fr",
+          "scheme": "light",
+          "motion": "reduce",
+          "density": "comfortable",
+          "appMotion": "reduce",
+          "legend": false
+        },
+        "hostWindow": {
+          "askedClient": [
+            1280,
+            800
+          ],
+          "grantedClient": [
+            1280,
+            800
+          ],
+          "grantedWindow": [
+            1296,
+            839
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            1280,
+            800
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            1280,
+            800
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            1265,
+            800
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            1265,
+            2630
+          ],
+          "documentOverflowX": 0,
+          "verticalScrollPx": 1830,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|composition-remove-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 628,
+              "w": 1229,
+              "h": 1984.1,
+              "right": 1247,
+              "bottom": 2612.1,
+              "documentTop": 628,
+              "scrollWidth": 1229,
+              "clientWidth": 1229,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "map": {
+              "x": 18,
+              "y": 628,
+              "w": 855,
+              "h": 1984.1,
+              "right": 873,
+              "bottom": 2612.1,
+              "documentTop": 628,
+              "scrollWidth": 855,
+              "clientWidth": 855,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "aside": {
+              "x": 887,
+              "y": 628,
+              "w": 360,
+              "h": 1984.1,
+              "right": 1247,
+              "bottom": 2612.1,
+              "documentTop": 628,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1218,
+              "w": 855,
+              "h": 1370.1,
+              "right": 873,
+              "bottom": 2588.1,
+              "documentTop": 1218,
+              "scrollWidth": 853,
+              "clientWidth": 853,
+              "scrollHeight": 1368,
+              "clientHeight": 1368
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 1229,
+              "h": 112,
+              "right": 1247,
+              "bottom": 126,
+              "documentTop": 14,
+              "scrollWidth": 1229,
+              "clientWidth": 1229,
+              "scrollHeight": 112,
+              "clientHeight": 112
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 628,
+              "w": 855,
+              "h": 78,
+              "right": 873,
+              "bottom": 706,
+              "documentTop": 628,
+              "scrollWidth": 855,
+              "clientWidth": 855,
+              "scrollHeight": 78,
+              "clientHeight": 78
+            },
+            "overlapArea": 0,
+            "asidePosition": "static"
+          },
+          "gridTemplate": "855px 360px",
+          "mediaMatches": {
+            "dark": false,
+            "reduceMotion": true
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "reduce",
+            "lang": "fr"
+          },
+          "buttonTransition": "0s",
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 16
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "1366x768",
+        "state": "fr-light",
+        "requested": {
+          "id": "fr-light",
+          "locale": "fr",
+          "scheme": "light",
+          "motion": "no-preference",
+          "density": "comfortable",
+          "appMotion": "system",
+          "legend": false
+        },
+        "hostWindow": {
+          "askedClient": [
+            1366,
+            768
+          ],
+          "grantedClient": [
+            1366,
+            768
+          ],
+          "grantedWindow": [
+            1382,
+            807
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            1366,
+            768
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            1366,
+            768
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            1351,
+            768
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            1351,
+            2587
+          ],
+          "documentOverflowX": 0,
+          "verticalScrollPx": 1819,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|composition-remove-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 585,
+              "w": 1315,
+              "h": 1984.1,
+              "right": 1333,
+              "bottom": 2569.1,
+              "documentTop": 585,
+              "scrollWidth": 1315,
+              "clientWidth": 1315,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "map": {
+              "x": 18,
+              "y": 585,
+              "w": 941,
+              "h": 1984.1,
+              "right": 959,
+              "bottom": 2569.1,
+              "documentTop": 585,
+              "scrollWidth": 941,
+              "clientWidth": 941,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "aside": {
+              "x": 973,
+              "y": 585,
+              "w": 360,
+              "h": 1984.1,
+              "right": 1333,
+              "bottom": 2569.1,
+              "documentTop": 585,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1140,
+              "w": 941,
+              "h": 1405.1,
+              "right": 959,
+              "bottom": 2545.1,
+              "documentTop": 1140,
+              "scrollWidth": 939,
+              "clientWidth": 939,
+              "scrollHeight": 1403,
+              "clientHeight": 1403
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 1315,
+              "h": 112,
+              "right": 1333,
+              "bottom": 126,
+              "documentTop": 14,
+              "scrollWidth": 1315,
+              "clientWidth": 1315,
+              "scrollHeight": 112,
+              "clientHeight": 112
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 585,
+              "w": 941,
+              "h": 78,
+              "right": 959,
+              "bottom": 663,
+              "documentTop": 585,
+              "scrollWidth": 941,
+              "clientWidth": 941,
+              "scrollHeight": 78,
+              "clientHeight": 78
+            },
+            "overlapArea": 0,
+            "asidePosition": "static"
+          },
+          "gridTemplate": "941px 360px",
+          "mediaMatches": {
+            "dark": false,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "system",
+            "lang": "fr"
+          },
+          "buttonTransition": "0s",
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 16
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "1366x768",
+        "state": "fr-dark-legend",
+        "requested": {
+          "id": "fr-dark-legend",
+          "locale": "fr",
+          "scheme": "dark",
+          "motion": "no-preference",
+          "density": "comfortable",
+          "appMotion": "system",
+          "legend": true
+        },
+        "hostWindow": {
+          "askedClient": [
+            1366,
+            768
+          ],
+          "grantedClient": [
+            1366,
+            768
+          ],
+          "grantedWindow": [
+            1382,
+            807
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            1366,
+            768
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            1366,
+            768
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            1351,
+            768
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            1351,
+            4043
+          ],
+          "documentOverflowX": 0,
+          "verticalScrollPx": 3275,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|composition-remove-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 585,
+              "w": 1315,
+              "h": 3440.1,
+              "right": 1333,
+              "bottom": 4025.1,
+              "documentTop": 585,
+              "scrollWidth": 1315,
+              "clientWidth": 1315,
+              "scrollHeight": 3440,
+              "clientHeight": 3440
+            },
+            "map": {
+              "x": 18,
+              "y": 585,
+              "w": 941,
+              "h": 3440.1,
+              "right": 959,
+              "bottom": 4025.1,
+              "documentTop": 585,
+              "scrollWidth": 941,
+              "clientWidth": 941,
+              "scrollHeight": 3440,
+              "clientHeight": 3440
+            },
+            "aside": {
+              "x": 973,
+              "y": 585,
+              "w": 360,
+              "h": 3440.1,
+              "right": 1333,
+              "bottom": 4025.1,
+              "documentTop": 585,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 3440,
+              "clientHeight": 3440
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1140,
+              "w": 941,
+              "h": 2861.1,
+              "right": 959,
+              "bottom": 4001.1,
+              "documentTop": 1140,
+              "scrollWidth": 939,
+              "clientWidth": 939,
+              "scrollHeight": 2859,
+              "clientHeight": 2859
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 1315,
+              "h": 112,
+              "right": 1333,
+              "bottom": 126,
+              "documentTop": 14,
+              "scrollWidth": 1315,
+              "clientWidth": 1315,
+              "scrollHeight": 112,
+              "clientHeight": 112
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 585,
+              "w": 941,
+              "h": 78,
+              "right": 959,
+              "bottom": 663,
+              "documentTop": 585,
+              "scrollWidth": 941,
+              "clientWidth": 941,
+              "scrollHeight": 78,
+              "clientHeight": 78
+            },
+            "overlapArea": 0,
+            "asidePosition": "static"
+          },
+          "gridTemplate": "941px 360px",
+          "mediaMatches": {
+            "dark": true,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "system",
+            "lang": "fr"
+          },
+          "buttonTransition": "0s",
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 20
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "1366x768",
+        "state": "en-light-legend",
+        "requested": {
+          "id": "en-light-legend",
+          "locale": "en",
+          "scheme": "light",
+          "motion": "no-preference",
+          "density": "comfortable",
+          "appMotion": "system",
+          "legend": true
+        },
+        "hostWindow": {
+          "askedClient": [
+            1366,
+            768
+          ],
+          "grantedClient": [
+            1366,
+            768
+          ],
+          "grantedWindow": [
+            1382,
+            807
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            1366,
+            768
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            1366,
+            768
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            1351,
+            768
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            1351,
+            4012
+          ],
+          "documentOverflowX": 0,
+          "verticalScrollPx": 3244,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Back to the root|Check H1–H5|Check J1–J5, J10|Explore the selection|Frame the selection|Measure in WebView2|Select the root|Zoom in|Zoom out|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|composition-remove-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 585,
+              "w": 1315,
+              "h": 3409.2,
+              "right": 1333,
+              "bottom": 3994.2,
+              "documentTop": 585,
+              "scrollWidth": 1315,
+              "clientWidth": 1315,
+              "scrollHeight": 3409,
+              "clientHeight": 3409
+            },
+            "map": {
+              "x": 18,
+              "y": 585,
+              "w": 941,
+              "h": 3409.2,
+              "right": 959,
+              "bottom": 3994.2,
+              "documentTop": 585,
+              "scrollWidth": 941,
+              "clientWidth": 941,
+              "scrollHeight": 3409,
+              "clientHeight": 3409
+            },
+            "aside": {
+              "x": 973,
+              "y": 585,
+              "w": 360,
+              "h": 3409.2,
+              "right": 1333,
+              "bottom": 3994.2,
+              "documentTop": 585,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 3409,
+              "clientHeight": 3409
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1097,
+              "w": 941,
+              "h": 2873.2,
+              "right": 959,
+              "bottom": 3970.2,
+              "documentTop": 1097,
+              "scrollWidth": 939,
+              "clientWidth": 939,
+              "scrollHeight": 2871,
+              "clientHeight": 2871
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 1315,
+              "h": 112,
+              "right": 1333,
+              "bottom": 126,
+              "documentTop": 14,
+              "scrollWidth": 1315,
+              "clientWidth": 1315,
+              "scrollHeight": 112,
+              "clientHeight": 112
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 585,
+              "w": 941,
+              "h": 35,
+              "right": 959,
+              "bottom": 620,
+              "documentTop": 585,
+              "scrollWidth": 941,
+              "clientWidth": 941,
+              "scrollHeight": 35,
+              "clientHeight": 35
+            },
+            "overlapArea": 0,
+            "asidePosition": "static"
+          },
+          "gridTemplate": "941px 360px",
+          "mediaMatches": {
+            "dark": false,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "system",
+            "lang": "en"
+          },
+          "buttonTransition": "0s",
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 20
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "1366x768",
+        "state": "en-dark",
+        "requested": {
+          "id": "en-dark",
+          "locale": "en",
+          "scheme": "dark",
+          "motion": "no-preference",
+          "density": "comfortable",
+          "appMotion": "system",
+          "legend": false
+        },
+        "hostWindow": {
+          "askedClient": [
+            1366,
+            768
+          ],
+          "grantedClient": [
+            1366,
+            768
+          ],
+          "grantedWindow": [
+            1382,
+            807
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            1366,
+            768
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            1366,
+            768
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            1351,
+            768
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            1351,
+            2556
+          ],
+          "documentOverflowX": 0,
+          "verticalScrollPx": 1788,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Back to the root|Check H1–H5|Check J1–J5, J10|Explore the selection|Frame the selection|Measure in WebView2|Select the root|Zoom in|Zoom out|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|composition-remove-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 585,
+              "w": 1315,
+              "h": 1953.2,
+              "right": 1333,
+              "bottom": 2538.2,
+              "documentTop": 585,
+              "scrollWidth": 1315,
+              "clientWidth": 1315,
+              "scrollHeight": 1953,
+              "clientHeight": 1953
+            },
+            "map": {
+              "x": 18,
+              "y": 585,
+              "w": 941,
+              "h": 1953.2,
+              "right": 959,
+              "bottom": 2538.2,
+              "documentTop": 585,
+              "scrollWidth": 941,
+              "clientWidth": 941,
+              "scrollHeight": 1953,
+              "clientHeight": 1953
+            },
+            "aside": {
+              "x": 973,
+              "y": 585,
+              "w": 360,
+              "h": 1953.2,
+              "right": 1333,
+              "bottom": 2538.2,
+              "documentTop": 585,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 1953,
+              "clientHeight": 1953
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1097,
+              "w": 941,
+              "h": 1417.2,
+              "right": 959,
+              "bottom": 2514.2,
+              "documentTop": 1097,
+              "scrollWidth": 939,
+              "clientWidth": 939,
+              "scrollHeight": 1415,
+              "clientHeight": 1415
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 1315,
+              "h": 112,
+              "right": 1333,
+              "bottom": 126,
+              "documentTop": 14,
+              "scrollWidth": 1315,
+              "clientWidth": 1315,
+              "scrollHeight": 112,
+              "clientHeight": 112
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 585,
+              "w": 941,
+              "h": 35,
+              "right": 959,
+              "bottom": 620,
+              "documentTop": 585,
+              "scrollWidth": 941,
+              "clientWidth": 941,
+              "scrollHeight": 35,
+              "clientHeight": 35
+            },
+            "overlapArea": 0,
+            "asidePosition": "static"
+          },
+          "gridTemplate": "941px 360px",
+          "mediaMatches": {
+            "dark": true,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "system",
+            "lang": "en"
+          },
+          "buttonTransition": "0s",
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 16
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "1366x768",
+        "state": "fr-light-compact-legend",
+        "requested": {
+          "id": "fr-light-compact-legend",
+          "locale": "fr",
+          "scheme": "light",
+          "motion": "no-preference",
+          "density": "compact",
+          "appMotion": "system",
+          "legend": true
+        },
+        "hostWindow": {
+          "askedClient": [
+            1366,
+            768
+          ],
+          "grantedClient": [
+            1366,
+            768
+          ],
+          "grantedWindow": [
+            1382,
+            807
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            1366,
+            768
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            1366,
+            768
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            1351,
+            768
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            1351,
+            3831
+          ],
+          "documentOverflowX": 0,
+          "verticalScrollPx": 3063,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|composition-remove-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "columns": {
+            "main": {
+              "x": 12,
+              "y": 517,
+              "w": 1327,
+              "h": 3304.1,
+              "right": 1339,
+              "bottom": 3821.1,
+              "documentTop": 517,
+              "scrollWidth": 1327,
+              "clientWidth": 1327,
+              "scrollHeight": 3304,
+              "clientHeight": 3304
+            },
+            "map": {
+              "x": 12,
+              "y": 517,
+              "w": 953,
+              "h": 3304.1,
+              "right": 965,
+              "bottom": 3821.1,
+              "documentTop": 517,
+              "scrollWidth": 953,
+              "clientWidth": 953,
+              "scrollHeight": 3304,
+              "clientHeight": 3304
+            },
+            "aside": {
+              "x": 979,
+              "y": 517,
+              "w": 360,
+              "h": 3304.1,
+              "right": 1339,
+              "bottom": 3821.1,
+              "documentTop": 517,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 3304,
+              "clientHeight": 3304
+            },
+            "mapView": {
+              "x": 12,
+              "y": 1030,
+              "w": 953,
+              "h": 2767.1,
+              "right": 965,
+              "bottom": 3797.1,
+              "documentTop": 1030,
+              "scrollWidth": 951,
+              "clientWidth": 951,
+              "scrollHeight": 2765,
+              "clientHeight": 2765
+            },
+            "header": {
+              "x": 12,
+              "y": 8,
+              "w": 1327,
+              "h": 104,
+              "right": 1339,
+              "bottom": 112,
+              "documentTop": 8,
+              "scrollWidth": 1327,
+              "clientWidth": 1327,
+              "scrollHeight": 104,
+              "clientHeight": 104
+            },
+            "toolbar": {
+              "x": 12,
+              "y": 517,
+              "w": 953,
+              "h": 62,
+              "right": 965,
+              "bottom": 579,
+              "documentTop": 517,
+              "scrollWidth": 953,
+              "clientWidth": 953,
+              "scrollHeight": 62,
+              "clientHeight": 62
+            },
+            "overlapArea": 0,
+            "asidePosition": "static"
+          },
+          "gridTemplate": "953px 360px",
+          "mediaMatches": {
+            "dark": false,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "compact",
+            "motion": "system",
+            "lang": "fr"
+          },
+          "buttonTransition": "0s",
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 27
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 20
+            }
+          ],
+          "passes": 28
+        }
+      },
+      {
+        "size": "1366x768",
+        "state": "fr-light-reduced-motion",
+        "requested": {
+          "id": "fr-light-reduced-motion",
+          "locale": "fr",
+          "scheme": "light",
+          "motion": "reduce",
+          "density": "comfortable",
+          "appMotion": "reduce",
+          "legend": false
+        },
+        "hostWindow": {
+          "askedClient": [
+            1366,
+            768
+          ],
+          "grantedClient": [
+            1366,
+            768
+          ],
+          "grantedWindow": [
+            1382,
+            807
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            1366,
+            768
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            1366,
+            768
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            1351,
+            768
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            1351,
+            2587
+          ],
+          "documentOverflowX": 0,
+          "verticalScrollPx": 1819,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 59,
+          "controlIdsDigest": "Cadrer la sélection|Contrôler H1–H5|Contrôler J1–J5, J10|Explorer la sélection|Mesurer dans WebView2|Revenir à la racine|Sélectionner la racine|Zoom arrière|Zoom avant|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|child-node|child-node|child-node|child-node|child-node|composition-add-trigger|composition-chip-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|composition-remove-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|copy-path|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|reveal-in-explorer|search-clear|search-input",
+          "columns": {
+            "main": {
+              "x": 18,
+              "y": 585,
+              "w": 1315,
+              "h": 1984.1,
+              "right": 1333,
+              "bottom": 2569.1,
+              "documentTop": 585,
+              "scrollWidth": 1315,
+              "clientWidth": 1315,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "map": {
+              "x": 18,
+              "y": 585,
+              "w": 941,
+              "h": 1984.1,
+              "right": 959,
+              "bottom": 2569.1,
+              "documentTop": 585,
+              "scrollWidth": 941,
+              "clientWidth": 941,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "aside": {
+              "x": 973,
+              "y": 585,
+              "w": 360,
+              "h": 1984.1,
+              "right": 1333,
+              "bottom": 2569.1,
+              "documentTop": 585,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 1984,
+              "clientHeight": 1984
+            },
+            "mapView": {
+              "x": 18,
+              "y": 1140,
+              "w": 941,
+              "h": 1405.1,
+              "right": 959,
+              "bottom": 2545.1,
+              "documentTop": 1140,
+              "scrollWidth": 939,
+              "clientWidth": 939,
+              "scrollHeight": 1403,
+              "clientHeight": 1403
+            },
+            "header": {
+              "x": 18,
+              "y": 14,
+              "w": 1315,
+              "h": 112,
+              "right": 1333,
+              "bottom": 126,
+              "documentTop": 14,
+              "scrollWidth": 1315,
+              "clientWidth": 1315,
+              "scrollHeight": 112,
+              "clientHeight": 112
+            },
+            "toolbar": {
+              "x": 18,
+              "y": 585,
+              "w": 941,
+              "h": 78,
+              "right": 959,
+              "bottom": 663,
+              "documentTop": 585,
+              "scrollWidth": 941,
+              "clientWidth": 941,
+              "scrollHeight": 78,
+              "clientHeight": 78
+            },
+            "overlapArea": 0,
+            "asidePosition": "static"
+          },
+          "gridTemplate": "941px 360px",
+          "mediaMatches": {
+            "dark": false,
+            "reduceMotion": true
+          },
+          "appliedPreferences": {
+            "density": "comfortable",
+            "motion": "reduce",
+            "lang": "fr"
+          },
+          "buttonTransition": "0s",
+          "drawn": {
+            "cards": 6,
+            "aggregates": 3,
+            "hierarchyEdges": 5
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 45,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 35
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 16
+            }
+          ],
+          "passes": 28
+        }
+      }
+    ],
+    "captures": [
+      {
+        "key": "960x640/fr-light",
+        "file": "TASK-0058-960x640-fr-light.png",
+        "bytes": 53898,
+        "sha256": "e83b128fd118d67361c79570595af139f8d2b9095ff9e435bb35abe4c48cb690",
+        "scrollYAtCapture": 0
+      },
+      {
+        "key": "960x640/fr-dark-legend",
+        "file": "TASK-0058-960x640-fr-dark-legend.png",
+        "bytes": 54143,
+        "sha256": "d89ff83499b56d85f771fc8103e92dbe5d89e559dd2355dd5e40a1c31c481923",
+        "scrollYAtCapture": 0
+      },
+      {
+        "key": "1280x800/fr-light",
+        "file": "TASK-0058-1280x800-fr-light.png",
+        "bytes": 80536,
+        "sha256": "a1fd62f46b6e9f35f3c05bbee8db997106b56898de728ddf1ab46395fdbdd34a",
+        "scrollYAtCapture": 0
+      },
+      {
+        "key": "1366x768/fr-light",
+        "file": "TASK-0058-1366x768-fr-light.png",
+        "bytes": 80330,
+        "sha256": "9487948a72bb3b9bf287d4b7a742fc27c45dcbe48851201c8d7fcec06db44e46",
+        "scrollYAtCapture": 0
+      }
+    ],
+    "fatalConsoleErrors": 0,
+    "layoutDigest": "de4c1502109e995f10c4db27be5947b4bc8ab87600b26d0d46f3fb4419d4b580"
+  },
+  "pass2": {
+    "task": "TASK-0058",
+    "pass": 2,
+    "headTested": "de6c9e6048def459a22f9332e7d17ca2407d73a1",
+    "checks": [
+      {
+        "label": "every size measured on the real host, CSS viewport exactly as asked",
+        "value": {
+          "sizes": [
+            "1280x800"
+          ],
+          "states": [
+            "restored"
+          ],
+          "granted": [
+            "[1280,800]"
+          ]
+        }
+      },
+      {
+        "label": "the falsifiable question of TASK-0058",
+        "value": {
+          "horizontalOverflow": "none at any size or state",
+          "contentUnreachable": "no: the panel is reachable by Tab at every size",
+          "chromeDefectProven": false
+        }
+      },
+      {
+        "label": "one control set per state, identical at all three sizes",
+        "value": {
+          "digests": 1,
+          "lost": []
+        }
+      },
+      {
+        "label": "P-22 in this scope: source byte-identical, no artefact under the root, no write on the wire",
+        "value": {
+          "commandsSeen": [],
+          "indexRevisionStable": true
+        }
+      }
+    ],
+    "findings": [
+      {
+        "severity": "OBSERVATION",
+        "id": "B01-O1",
+        "observation": "The chrome does not bound itself to the window height: `.app__main` is a content-sized grid row, so the right panel never scrolls inside itself and the whole document grows instead. At the smallest window the map starts below the fold. This is VERTICAL scrolling, which TASK-0058 explicitly allows, and the smallest fix would change `.map-view`'s measured height, hence the map's own `viewport` and therefore the camera — outside the write scope of this task. Reported, not repaired.",
+        "evidence": {
+          "worst": {
+            "size": "1280x800",
+            "state": "restored",
+            "documentHeight": 3297,
+            "viewportHeight": 800,
+            "verticalScrollPx": 2497,
+            "mapColumnDocumentTop": 517,
+            "mapColumnAboveTheFold": true
+          },
+          "mapViewHeights": [
+            {
+              "size": "1280x800",
+              "state": "restored",
+              "h": 2268.2
+            }
+          ]
+        }
+      }
+    ],
+    "index": {
+      "indexed": 161,
+      "viewBudget": 512,
+      "materialized": 6,
+      "aggregates": 3,
+      "indexRevision": 1
+    },
+    "restored": {
+      "locale": "en",
+      "density": "compact",
+      "motion": "reduce",
+      "legendOpen": true,
+      "detailsPanelPresent": false
+    },
+    "verdict": {
+      "horizontalOverflowWorstPx": 0,
+      "statesWithViewportEscapers": [],
+      "statesWithSidewaysScrollers": [],
+      "statesWithClippedControls": [],
+      "statesWithColumnOverlap": [],
+      "statesWherePanelUnreachableByKeyboard": [],
+      "statesWithoutVisibleFocusRing": [],
+      "commandsLostAtSomeSize": [],
+      "axeViolations": [],
+      "axeIncompleteByState": [
+        {
+          "size": "1280x800",
+          "state": "restored",
+          "incomplete": [
+            "color-contrastx12"
+          ]
+        }
+      ],
+      "smallestMapView": {
+        "size": "1280x800",
+        "state": "restored",
+        "w": 867,
+        "h": 2268.2
+      },
+      "verticalScrollByState": [
+        {
+          "size": "1280x800",
+          "state": "restored",
+          "documentHeight": 3297,
+          "viewportHeight": 800,
+          "verticalScrollPx": 2497,
+          "mapColumnDocumentTop": 517,
+          "mapColumnAboveTheFold": true
+        }
+      ]
+    },
+    "chromeDefectProven": false,
+    "matrix": [
+      {
+        "size": "1280x800",
+        "state": "restored",
+        "requested": {
+          "id": "restored"
+        },
+        "hostWindow": {
+          "askedClient": [
+            1280,
+            800
+          ],
+          "grantedClient": [
+            1280,
+            800
+          ],
+          "grantedWindow": [
+            1296,
+            839
+          ],
+          "frame": [
+            16,
+            39
+          ],
+          "maximized": false,
+          "cssViewport": [
+            1280,
+            800
+          ],
+          "devicePixelRatio": 1,
+          "attempts": 1
+        },
+        "layout": {
+          "cssViewport": [
+            1280,
+            800
+          ],
+          "devicePixelRatio": 1,
+          "layoutViewport": [
+            1265,
+            800
+          ],
+          "scrollbarWidthPx": 15,
+          "documentScroll": [
+            1265,
+            3297
+          ],
+          "documentOverflowX": 0,
+          "verticalScrollPx": 2497,
+          "sidewaysScrollers": [],
+          "viewportEscapers": [],
+          "clippedControls": [],
+          "controlCount": 51,
+          "controlIdsDigest": "Back to the root|Check H1–H5|Check J1–J5, J10|Explore the selection|Frame the selection|Measure in WebView2|Select the root|Zoom in|Zoom out|analyze-relations|brain-add-real-root|brain-identity-open|branch-focus|composition-add-trigger|composition-chip-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|composition-remove-real-49443958-9bb4-43e5-a9a1-4a5704b93f24|cross-check|density-comfortable|density-compact|details-panel-toggle|exclusions-add|exclusions-input|expand-aggregate|expand-aggregate|filter-availability-ALL|filter-availability-LOCAL|filter-availability-ONLINE_ONLY|filter-kind-DIRECTORY|filter-kind-FILE|filter-kind-SKIPPED|filter-reset|filter-state-ALL|filter-state-NEW|filter-state-UNSEEN|fit-composition|journal-toggle|language-en|language-fr|lifecycle-open|lifecycle-prepare|lifecycle-rebuild|lifecycle-refresh|map-legend-toggle|motion-reduce|motion-system|observe-content|open-duplicate-explorer|open-review-queue|reset-view|search-clear|search-input",
+          "columns": {
+            "main": {
+              "x": 12,
+              "y": 517,
+              "w": 1241,
+              "h": 2770.2,
+              "right": 1253,
+              "bottom": 3287.2,
+              "documentTop": 517,
+              "scrollWidth": 1241,
+              "clientWidth": 1241,
+              "scrollHeight": 2770,
+              "clientHeight": 2770
+            },
+            "map": {
+              "x": 12,
+              "y": 517,
+              "w": 867,
+              "h": 2770.2,
+              "right": 879,
+              "bottom": 3287.2,
+              "documentTop": 517,
+              "scrollWidth": 867,
+              "clientWidth": 867,
+              "scrollHeight": 2770,
+              "clientHeight": 2770
+            },
+            "aside": {
+              "x": 893,
+              "y": 517,
+              "w": 360,
+              "h": 2770.2,
+              "right": 1253,
+              "bottom": 3287.2,
+              "documentTop": 517,
+              "scrollWidth": 360,
+              "clientWidth": 360,
+              "scrollHeight": 2770,
+              "clientHeight": 2770
+            },
+            "mapView": {
+              "x": 12,
+              "y": 995,
+              "w": 867,
+              "h": 2268.2,
+              "right": 879,
+              "bottom": 3263.2,
+              "documentTop": 995,
+              "scrollWidth": 865,
+              "clientWidth": 865,
+              "scrollHeight": 2266,
+              "clientHeight": 2266
+            },
+            "header": {
+              "x": 12,
+              "y": 8,
+              "w": 1241,
+              "h": 104,
+              "right": 1253,
+              "bottom": 112,
+              "documentTop": 8,
+              "scrollWidth": 1241,
+              "clientWidth": 1241,
+              "scrollHeight": 104,
+              "clientHeight": 104
+            },
+            "toolbar": {
+              "x": 12,
+              "y": 517,
+              "w": 867,
+              "h": 27,
+              "right": 879,
+              "bottom": 544,
+              "documentTop": 517,
+              "scrollWidth": 867,
+              "clientWidth": 867,
+              "scrollHeight": 27,
+              "clientHeight": 27
+            },
+            "overlapArea": 0,
+            "asidePosition": "static"
+          },
+          "gridTemplate": "867px 360px",
+          "mediaMatches": {
+            "dark": false,
+            "reduceMotion": false
+          },
+          "appliedPreferences": {
+            "density": "compact",
+            "motion": "reduce",
+            "lang": "en"
+          },
+          "buttonTransition": "0s",
+          "drawn": {
+            "cards": 3,
+            "aggregates": 2,
+            "hierarchyEdges": 2
+          }
+        },
+        "keyboardToAside": {
+          "from": "language-fr",
+          "presses": 43,
+          "id": "open-duplicate-explorer",
+          "outlineStyle": "solid",
+          "outlineWidth": "3px",
+          "inViewport": true,
+          "width": 336,
+          "height": 27
+        },
+        "axe": {
+          "version": "4.13.0",
+          "violations": [],
+          "incomplete": [
+            {
+              "id": "color-contrast",
+              "nodes": 12
+            }
+          ],
+          "passes": 28
+        }
+      }
+    ],
+    "captures": [],
+    "fatalConsoleErrors": 0,
+    "layoutDigest": "030f87dc48aad38a535b494af63af0fca29d13d95f38b8090ffc68d1d1b7ac0c"
+  },
+  "captures": [
+    {
+      "file": "docs/performance/runs/TASK-0058-960x640-fr-light.png",
+      "state": "960x640/fr-light",
+      "bytes": 53898,
+      "sha256": "e83b128fd118d67361c79570595af139f8d2b9095ff9e435bb35abe4c48cb690",
+      "scrollYAtCapture": 0,
+      "note": "The visible window at the top of the document, in the state the matrix row of the same name measured."
+    },
+    {
+      "file": "docs/performance/runs/TASK-0058-960x640-fr-dark-legend.png",
+      "state": "960x640/fr-dark-legend",
+      "bytes": 54143,
+      "sha256": "d89ff83499b56d85f771fc8103e92dbe5d89e559dd2355dd5e40a1c31c481923",
+      "scrollYAtCapture": 0,
+      "note": "The visible window at the top of the document, in the state the matrix row of the same name measured."
+    },
+    {
+      "file": "docs/performance/runs/TASK-0058-1280x800-fr-light.png",
+      "state": "1280x800/fr-light",
+      "bytes": 80536,
+      "sha256": "a1fd62f46b6e9f35f3c05bbee8db997106b56898de728ddf1ab46395fdbdd34a",
+      "scrollYAtCapture": 0,
+      "note": "The visible window at the top of the document, in the state the matrix row of the same name measured."
+    },
+    {
+      "file": "docs/performance/runs/TASK-0058-1366x768-fr-light.png",
+      "state": "1366x768/fr-light",
+      "bytes": 80330,
+      "sha256": "9487948a72bb3b9bf287d4b7a742fc27c45dcbe48851201c8d7fcec06db44e46",
+      "scrollYAtCapture": 0,
+      "note": "The visible window at the top of the document, in the state the matrix row of the same name measured."
+    }
+  ],
+  "p22": {
+    "tool": "scripts/task0056-fingerprint.py (reused unchanged)",
+    "readingsBefore": 3,
+    "readingsAfter": 2,
+    "strictDigestBefore": "fe9d9f5566ad748db7373a63b87b2d7d0148c1edb6bd16bedc5d2a09d690824a",
+    "strictDigestAfter": "fe9d9f5566ad748db7373a63b87b2d7d0148c1edb6bd16bedc5d2a09d690824a",
+    "strictDigestIdentical": true,
+    "accessDigestBefore": "98d101fa14f2ab4ebfbed5fc0dfb6951bde782e007efe90f71839427ef492de4",
+    "accessDigestAfter": "98d101fa14f2ab4ebfbed5fc0dfb6951bde782e007efe90f71839427ef492de4",
+    "accessDigestIdentical": true,
+    "artefactsFoundUnderRoot": [],
+    "entryCountBefore": 160,
+    "entryCountAfter": 160,
+    "note": "The access digest is published separately on purpose: reading a file is what a read-only analyser does, and on a volume with last-access updates enabled that is a legitimate consequence of reading, never a change of content, name, structure or contractual timestamp."
+  },
+  "notTested": [
+    "No screen reader was driven: the keyboard reach of the right panel and the axe-core run are what this slice measured, and no WCAG certification is claimed.",
+    "No OS theme switch: prefers-color-scheme and prefers-reduced-motion were set as media-feature overrides in the real engine, not by changing Windows settings, which would be an operation outside the repository.",
+    "No window narrower than 960 or shorter than 640 was measured: the host floor of src-tauri/tauri.conf.json was deliberately left untouched, and Windows refuses smaller.",
+    "No performance claim: the waits in this harness include deliberate settling.",
+    "P-14 clipboard and the P-11 touchpad device keep the exceptions ACTION-0107 published; neither was re-exercised here.",
+    "The relations, review-queue and cross-brain panels of the right column were not populated by this fixture, so their own narrow-width behaviour is UNMEASURED.",
+    "The 22 P requirements are NOT replayed by this slice; ACTION-0108 reserves that for the Stage B closure."
+  ]
+}

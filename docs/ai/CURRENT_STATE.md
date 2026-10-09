@@ -1,5 +1,20 @@
 # État courant
 
+## TASK-0058 — Stage B / B01 — baseline visuelle WebView2 — `IMPLEMENTED` — 2026-10-09
+
+- Branche `build/v0.2-b01-responsive-shell`, base `cd59d1d` (ACTION-0108); `HEAD` mesuré `de6c9e6048def459a22f9332e7d17ca2407d73a1`.
+- **Verdict : aucun défaut de chrome prouvé. `src/map/map.css` est inchangé.** Le seul ajout sous `src/` est `src/map/responsiveLayout.test.ts`.
+- Mesure sur **vrai hôte** : la fenêtre est redimensionnée par `SetWindowPos` Win32, pas par un override de device metrics. Windows a accordé exactement `960x640`, `1280x800`, `1366x768`; viewport CSS confirmé par le moteur, `devicePixelRatio` = 1.
+- **18 états** (3 tailles x 6 états : FR/EN, clair/sombre, légende, densité compacte, mouvement réduit), chaque état à chaque taille.
+- Dans les 18 : **0 px** de débordement horizontal, **0** élément hors viewport, **0** contrôle rogné, **0** recouvrement carte/panneau, **59 contrôles** identiques aux trois tailles, panneau droit atteint en **45 tabulations** avec un anneau de focus de **3 px**, **axe-core 4.13.0 : 0 violation**, **0** erreur console fatale.
+- `incomplete` axe : **uniquement `color-contrast`**, 12 à 20 nœuds selon l'état, publiés état par état. Non tranché, non revendiqué.
+- **Constat `B01-O1`, remonté et NON réparé :** le chrome ne se borne pas à la hauteur de la fenêtre. `.app__main` est dimensionnée par son contenu, le document monte à **4185 px** pour 640 de haut, et à `960x640` la colonne carte commence à **727 px** — sous la ligne de flottaison, **1719 px** de défilement pour atteindre une carte. C'est du défilement **vertical**, autorisé par la fiche; le corriger changerait la hauteur de `.map-view`, donc le `viewport` de `MapView`, donc la caméra — ce que le critère d'acceptation interdit. **Décision à l'orchestrateur.**
+- Contrôles ciblés à `960x640` : `P-02` agrégat 120 omis = 120 enfants réels; `P-05` 5 arêtes dessinées, ligne hors première vue atteinte, vue bornée; `P-07` sélection et détails d'accord avec l'Index; `P-11` molette **et** clavier déplacent la caméra; `P-19` restauration prouvée par un **second processus**; `P-22` empreinte stricte et empreinte d'accès **identiques**, 160 entrées, 0 artefact, 0 écriture sur le fil.
+- Les 22 `P` ne sont **pas** rejouées ici : `ACTION-0108` les réserve à la clôture de Stage B.
+- Portes : `pnpm test` **726/726** (49 fichiers), `pnpm check`, `pnpm build`, `git diff --check` — toutes passées. Rust **non exécuté** (aucun code Rust touché). **Aucune CI distante.**
+- Preuves : `docs/performance/runs/TASK-0058-visual-baseline.json` + 4 captures PNG `docs/performance/runs/TASK-0058-*.png`.
+- Statut : `IMPLEMENTED`, **jamais `VERIFIED` par l'exécuteur**. Aucune TASK-0059, aucun Stage C/D, aucune fusion.
+
 ## ACTION-0108 — audit Stage B / TASK-0058 APPROVED — 2026-10-09
 
 - Source : `docs/reviews/ACTION-0108-stage-b-audit.md`; branche `build/v0.2-b01-responsive-shell` depuis `81e7c4fa0135652fd4afae7f6c566628a64ef003`.

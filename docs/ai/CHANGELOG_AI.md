@@ -6849,3 +6849,24 @@ clôture `P-04` d'`ACTION-0094` n'est ni révoquée ni étendue ici. Aucune
 **Résultat :** contrat Stage B assez clair; Stage A demeure CLOSED, Stage B non close; `TASK-0058` APPROVED / NOT STARTED.
 **Livrables :** `docs/reviews/ACTION-0108-stage-b-audit.md`, `docs/tasks/TASK-0058-stage-b-visual-baseline-responsive-shell.md`, nouvelle branche `build/v0.2-b01-responsive-shell`, prompt et passation versionnés.
 **Suite :** Claude Code Sonnet / MEDIUM : baseline WebView2 puis éventuel correctif CSS chrome responsive uniquement. Aucun code produit modifié dans l'audit, aucun test local rejoué, aucun merge vers main.
+
+## 2026-10-09 — TASK-0058 — Stage B / B01, baseline visuelle WebView2
+
+**Agent :** exécuteur Claude Code (Opus 5; la fiche prévoyait Sonnet / MEDIUM).
+**Statut à l'issue :** `IMPLEMENTED`, en attente de vérification indépendante.
+
+### Fait
+
+- Harnais de mesure : `scripts/task0058-visual.ps1` (pwsh 7), `scripts/task0058-visual.mjs`, `scripts/task0058-resize.ps1` (redimensionnement Win32 réel), `scripts/task0058-seed-proof.py` (racine réelle synthétique de 160 entrées). Témoin `P-22` : `scripts/task0056-fingerprint.py` **réutilisé tel quel**.
+- Garde statique : `src/map/responsiveLayout.test.ts`.
+- Campagne : deux processus WebView2 réels sur le même bac à sable et le même profil; 18 états mesurés (3 tailles x 6 états), contrôles ciblés `P-02/P-05/P-07/P-11/P-19/P-22` à `960x640`, restauration prouvée par le second processus.
+- Preuves : `docs/performance/runs/TASK-0058-visual-baseline.json` et 4 captures PNG.
+
+### Verdict
+
+- **Aucun défaut de chrome prouvé.** 0 px de débordement horizontal, 0 commande perdue, 0 recouvrement, panneau atteint au clavier partout, axe 0 violation. **`src/map/map.css` n'a pas été modifié** — la fiche demandait de ne pas toucher au produit en l'absence de défaut, et c'est ce qui a été fait.
+- **Constat `B01-O1` remonté et non réparé :** le chrome ne se borne pas à la hauteur de la fenêtre; le corriger déplacerait la caméra, ce que le critère d'acceptation interdit.
+
+### Non fait, volontairement
+
+- Aucun correctif CSS, aucun `TASK-0059`, aucun Stage C/D, aucune PR, aucune fusion vers `main`, aucune dépendance ajoutée.

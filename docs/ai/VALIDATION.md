@@ -1,7 +1,7 @@
 # VALIDATION.md — État de vérification
 
-**Dernière mise à jour :** 2026-09-12
-**Dernière livraison exécutée :** TASK-0036, section **BP** (passe corrective D6, `ACTION-0059`), `IMPLEMENTED`, **en attente de vérification indépendante**. Section BO (passe corrective D4/D5, `ACTION-0058`) acceptée sans régression sur D1/D2/D3/R1/D5 par ce recontrôle, D4 confirmé largement corrigé hors D6. TASK-0035, section BL, est `VERIFIED` par `ACTION-0056`. TASK-0034, section **BH** (recherche bornée et « Ouvrir dans l'Explorateur »), `IMPLEMENTED`, **en attente de vérification indépendante**. TASK-0033, sections BE/BF, est `VERIFIED` dans sa portée par le verdict indépendant enregistré dans `ACTION-0051`, section BG.
+**Dernière mise à jour :** 2026-10-09
+**Dernière livraison exécutée :** TASK-0058, section **DS** (baseline visuelle Stage B / B01), `IMPLEMENTED`, **en attente de vérification indépendante** — aucun défaut de chrome prouvé, diff produit vide. Avant elle : TASK-0036, section **BP** (passe corrective D6, `ACTION-0059`), `IMPLEMENTED`, **en attente de vérification indépendante**. Section BO (passe corrective D4/D5, `ACTION-0058`) acceptée sans régression sur D1/D2/D3/R1/D5 par ce recontrôle, D4 confirmé largement corrigé hors D6. TASK-0035, section BL, est `VERIFIED` par `ACTION-0056`. TASK-0034, section **BH** (recherche bornée et « Ouvrir dans l'Explorateur »), `IMPLEMENTED`, **en attente de vérification indépendante**. TASK-0033, sections BE/BF, est `VERIFIED` dans sa portée par le verdict indépendant enregistré dans `ACTION-0051`, section BG.
 **Dernière tâche évaluée indépendamment :** TASK-0033 — `VERIFIED` le
 2026-09-10 par le verdict indépendant enregistré dans `ACTION-0051`, section
 BG, dans sa portée. TASK-0032 — `VERIFIED` le 2026-09-10 par le verdict
@@ -10248,3 +10248,39 @@ ci-dessus sont des exécutions locales, sorties capturées.
 - Contrôle GitHub Actions : 0 workflow run attaché à `81e7c4fa0135652fd4afae7f6c566628a64ef003`. Un fichier `.github/workflows/ci.yml` est présent; il ne vaut pas exécution.
 - **NON EXÉCUTÉS par ChatGPT dans ACTION-0108 :** pnpm, Rust, WebView2, axe-core, capture d'écran, lecture de fichiers utilisateur. Aucun verdict de qualité visuelle final.
 - Verdict : audit de portée PASS, `TASK-0058` APPROVED et encore NOT STARTED; revue indépendante après livraison nécessaire.
+
+## DS — TASK-0058 — baseline visuelle Stage B B01 — 2026-10-09
+
+**Statut : `IMPLEMENTED`**, en attente de vérification indépendante. L'exécuteur
+ne s'attribue pas `VERIFIED`.
+
+### Vérifié — exécuté sur cette machine, preuves citées
+
+- `HEAD` mesuré `de6c9e6048def459a22f9332e7d17ca2407d73a1`; le harnais refuse de démarrer sur un arbre suivi modifié, donc l'artefact décrit ce `HEAD` et aucun autre.
+- Fenêtre réellement redimensionnée (`SetWindowPos`), zone cliente accordée par Windows `960x640`, `1280x800`, `1366x768`; viewport CSS confirmé par le moteur à chaque état; `devicePixelRatio` = 1.
+- 18 états mesurés : **0 px** de débordement horizontal, **0** élément hors viewport, **0** contrôle rogné, **0** recouvrement carte/panneau, **59** contrôles identiques aux trois tailles, **45** tabulations jusqu'au panneau droit dans **tous** les états avec anneau de focus **3 px**.
+- axe-core **4.13.0** : **0 violation** dans les 18 états. `incomplete` publiés état par état : **uniquement `color-contrast`**, 12 à 20 nœuds.
+- `P-22` dans sa portée : empreinte stricte et empreinte d'accès **identiques** avant/après (`fe9d9f55…` / `98d101fa…`), 160 entrées, **0** artefact FileTopo sous la racine, **0** commande d'écriture sur le fil, révision d'Index stable.
+- `P-19` : restauration observée par un **second processus** après fermeture réelle — `en`, `compact`, `reduce`, légende ouverte, panneau masqué.
+- Portes : `pnpm test` **726/726** sur 49 fichiers, `pnpm check`, `pnpm build`, `git diff --check` — toutes passées.
+- Diff produit **vide** : `git diff --stat 81e7c4fa..HEAD -- src src-tauri package.json pnpm-lock.yaml` ne renvoie que `src/map/responsiveLayout.test.ts`, un test.
+
+### Non testé — dit comme tel
+
+- Lecteur d'écran : aucun. Aucune certification WCAG revendiquée.
+- Contraste : les nœuds `color-contrast` qu'axe laisse `incomplete` ne sont **pas** tranchés par cette tranche.
+- Thème et mouvement : posés comme overrides de media feature dans le vrai moteur, **pas** en changeant les réglages Windows.
+- Panneaux **relations**, **file de révision**, **inter-cerveaux** en largeur étroite : **NON MESURÉS**, la fixture ne les peuple pas.
+- Tests Rust : **non exécutés**, aucun code Rust touché; cette tranche ne rejoue pas le gate de Stage A.
+- Les 22 `P` : **non rejouées**. Réservées à la clôture de Stage B par `ACTION-0108`.
+- `P-14` presse-papiers et périphérique `P-11` : réserves d'`ACTION-0107` maintenues, non rejouées.
+- Aucune CI distante sur ce dépôt.
+
+### Constat remonté, non réparé
+
+`B01-O1` — le chrome ne se borne pas à la hauteur de la fenêtre; à `960x640` la
+colonne carte commence à 727 px du haut du document et le document atteint
+4185 px dans l'état le plus chargé. Défilement **vertical**, autorisé par la
+fiche. Le correctif changerait le `viewport` de `MapView` et donc la caméra, que
+le critère d'acceptation interdit de déplacer involontairement. **Décision
+réservée à l'orchestrateur.**

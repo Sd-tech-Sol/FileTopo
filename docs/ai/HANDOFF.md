@@ -1,5 +1,16 @@
 # HANDOFF — passage de relais
 
+## Relais — TASK-0058 / Stage B B01 mesurée, produit non touché — 2026-10-09
+
+- Branche `build/v0.2-b01-responsive-shell`; `HEAD` mesuré `de6c9e6048def459a22f9332e7d17ca2407d73a1`.
+- **Le défaut supposé n'existe pas.** `ACTION-0108` avait nommé une dette statique — grille à deux colonnes sans media query de largeur — en demandant de la **mesurer** avant de la croire. Mesurée sur vrai hôte, elle ne produit **aucun** débordement horizontal, **aucune** perte de commande, **aucun** recouvrement : `minmax(0, 1fr)` fait céder la carte et le panneau garde ses 360 px. `src/map/map.css` est **inchangé**.
+- Méthode à réutiliser : `scripts/task0058-visual.ps1` (pwsh 7, `-WorkDirectory` hors dépôt). Elle redimensionne la **vraie** fenêtre par `SetWindowPos` — un override de device metrics ne prouve rien d'un hôte WebView2 — et pose `prefers-color-scheme` / `prefers-reduced-motion` ensemble et explicitement, pour qu'aucun état n'hérite du thème du poste.
+- Trois pièges déjà payés, à ne pas repayer : lancer la campagne avec **`pwsh` 7** (5.1 écrit un BOM et casse l'UTF-8 de l'artefact); lire les boîtes **depuis le haut du document** (`getBoundingClientRect` est relatif au viewport, une marche au clavier antérieure fausse tout); démarrer la marche clavier d'un **point fixe** (Chromium garde un point de départ de navigation séquentielle sur le dernier élément défocalisé).
+- **Le vrai sujet de la suite, `B01-O1` :** le chrome ne se borne pas à la hauteur de la fenêtre. Le panneau droit ne défile jamais dans lui-même, le document monte à 4185 px pour 640 de haut, et à `960x640` la carte commence à 727 px — sous la ligne de flottaison. **Non réparé volontairement** : borner `.app__main` changerait la hauteur de `.map-view`, donc le `viewport` de `MapView`, donc la caméra, ce que le critère d'acceptation de `TASK-0058` interdit. Une tranche suivante devra décider **explicitement** si Stage B accepte ce déplacement de caméra, et le mesurer.
+- Jamais mesuré, à ne pas supposer couvert : les panneaux **relations**, **file de révision** et **inter-cerveaux** de la colonne droite — la fixture ne les peuple pas, et `.review__facts` utilise une piste `auto` qui n'a donc pas été éprouvée en largeur étroite.
+- Garde statique posée : `src/map/responsiveLayout.test.ts` épingle ce que la feuille dit aujourd'hui (deux colonnes, plancher `0`, panneau en flux, aucune media query de largeur). Une tranche qui change le chrome fera tomber ce test d'abord — c'est le signal de **re-mesurer**, pas d'adapter le test.
+- Prochaine action UNIQUE : contrôle indépendant de `TASK-0058` par l'orchestrateur, puis `VERIFIED` ou refus. Pas de `TASK-0059`, pas de Stage C/D, pas de PR ni de fusion.
+
 ## Relais — ACTION-0108 / début contrôlé de Stage B — 2026-10-09
 
 - Branche de travail B01 : `build/v0.2-b01-responsive-shell`; base Stage A `81e7c4fa0135652fd4afae7f6c566628a64ef003`.
