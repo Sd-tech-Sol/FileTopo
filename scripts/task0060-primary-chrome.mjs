@@ -990,6 +990,208 @@ async function walkDisclosure(groupTestid, furthestSelector, limit = 160) {
   };
 }
 
+/* --- ACTION-0111 / B03-O1: the entry points of the groups, from the first window --------
+ *
+ * A group is DISCOVERABLE when its summary is whole on the opening screen, and USABLE when
+ * activating it with the mouse, or with the keyboard, shows what it holds. Neither is a DOM
+ * fact: a summary under a band's fold is in the DOM, in the tab order and axe-clean, and a
+ * person who has not scrolled the band has no way to know it exists — which is exactly what
+ * `B03-O1` measured at 960x640, 25 and 70 px under the fold.
+ *
+ * So this is taken IN EVERY STATE, from the window as it opens: nothing is scrolled first
+ * (`click()` above scrolls its target into view, and so would hide the very defect), the
+ * mouse goes to the centre of the summary as the first screen draws it, and the keyboard
+ * walks there with real Tab presses. Each activation is checked three ways — the engine's
+ * `open`, what the group holds becoming laid out, and the accessibility tree's own
+ * `expanded` — and each group is closed again the same way, so the next state starts from
+ * the opening screen. */
+const READ_GROUP = (groupTestid) => `(() => {
+  const group = document.querySelector('[data-testid="${groupTestid}"]');
+  if (!group) return null;
+  const summary = group.querySelector(':scope > summary');
+  const body = group.querySelector(':scope > .app__group-body');
+  const inside = body ? [...body.querySelectorAll('button, input, select, [role="button"]')].filter((el) => !el.closest('svg')) : [];
+  const laid = (el) => !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+  const r = summary.getBoundingClientRect();
+  const x = r.x + r.width / 2, y = r.y + r.height / 2;
+  const top = document.elementFromPoint(x, y);
+  const chrome = document.querySelector('.app__chrome');
+  return {
+    open: group.open, x, y, w: Math.round(r.width), h: Math.round(r.height),
+    inWindow: r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth,
+    hit: !!top && (top === summary || summary.contains(top)),
+    commandsInside: inside.length,
+    // A box is NOT presence on screen: WebView2 draws a closed \`<details>\` with
+    // \`content-visibility: hidden\`, so its contents keep client rects while nothing paints
+    // or answers a hit test. This count is published for that reason and judged by nothing.
+    commandsWithABoxWhileClosed: inside.filter(laid).length,
+    scrollY: Math.round(window.scrollY),
+    chromeScrollTop: Math.round(chrome ? chrome.scrollTop : 0),
+  };
+})()`;
+/** Every command a group holds, brought into view with the band's own scroll and then
+ *  aimed at: a command the group shows but that nothing can reach is still hidden. */
+const REACH_GROUP = (groupTestid) => `(() => {
+  const group = document.querySelector('[data-testid="${groupTestid}"]');
+  const body = group && group.querySelector(':scope > .app__group-body');
+  if (!body) return null;
+  const inside = [...body.querySelectorAll('button, input, select, [role="button"]')].filter((el) => !el.closest('svg'));
+  let aimable = 0;
+  const lost = [];
+  body.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  const bodyBox = body.getBoundingClientRect();
+  const bodyTop = document.elementFromPoint(bodyBox.x + bodyBox.width / 2, bodyBox.y + Math.min(bodyBox.height / 2, 12));
+  const bodyAimable = bodyBox.width > 0 && bodyBox.height > 0 && !!bodyTop && body.contains(bodyTop);
+  for (const el of inside) {
+    el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    const r = el.getBoundingClientRect();
+    const top = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+    if (r.width > 0 && r.height > 0 && top && (top === el || el.contains(top))) aimable += 1;
+    else lost.push(el.getAttribute('data-testid') ?? (el.getAttribute('aria-label') || (el.textContent ?? '').trim()).slice(0, 40));
+  }
+  const reading = { inside: inside.length, aimable, bodyAimable, lost, documentScrollY: Math.round(window.scrollY) };
+  window.scrollTo(0, 0);
+  for (const region of document.querySelectorAll('.app, .app *')) if (region.scrollTop !== 0) region.scrollTop = 0;
+  return reading;
+})()`;
+const RESET_SCROLL = `(() => {
+  window.scrollTo(0, 0);
+  for (const region of document.querySelectorAll('.app, .app *')) if (region.scrollTop !== 0) region.scrollTop = 0;
+})()`;
+
+let accessibilityEnabled = false;
+/** What the accessibility tree itself says about an element: role, name and `expanded`. */
+async function axOf(selector) {
+  if (!accessibilityEnabled) {
+    await send("Accessibility.enable");
+    accessibilityEnabled = true;
+  }
+  const { root } = await send("DOM.getDocument", { depth: 0 });
+  const { nodeId } = await send("DOM.querySelector", { nodeId: root.nodeId, selector });
+  if (!nodeId) return null;
+  const { nodes } = await send("Accessibility.getPartialAXTree", { nodeId, fetchRelatives: false });
+  const node = nodes?.[0];
+  if (!node) return null;
+  const property = (name) => node.properties?.find((entry) => entry.name === name)?.value?.value ?? null;
+  return {
+    role: node.role?.value ?? null,
+    name: (node.name?.value ?? "").slice(0, 120),
+    expanded: property("expanded"),
+    focusable: property("focusable"),
+  };
+}
+async function mouseClickAt(x, y) {
+  await send("Input.dispatchMouseEvent", { type: "mouseMoved", x, y });
+  await send("Input.dispatchMouseEvent", { type: "mousePressed", x, y, button: "left", buttons: 1, clickCount: 1 });
+  await send("Input.dispatchMouseEvent", { type: "mouseReleased", x, y, button: "left", buttons: 0, clickCount: 1 });
+  await pause(220);
+}
+
+async function measureGroupEntryPoints() {
+  const results = [];
+  for (const group of DISCLOSURE_GROUPS) {
+    const summarySelector = `${testid(group.testid)} > summary`;
+    await evaluate(RESET_SCROLL);
+    const opening = await evaluate(READ_GROUP(group.testid));
+    if (!opening) {
+      results.push({ group: group.testid, present: false });
+      continue;
+    }
+    const axClosed = await axOf(summarySelector);
+    // The baseline that makes "revealed" mean something: while closed, nothing the group
+    // holds answers a hit test, not even after the band's own scroll is offered.
+    const hiddenWhileClosed = await evaluate(REACH_GROUP(group.testid));
+    await evaluate(RESET_SCROLL);
+
+    // The mouse, at the centre of the summary where the first screen draws it.
+    await mouseClickAt(opening.x, opening.y);
+    const byMouse = await evaluate(READ_GROUP(group.testid));
+    const axOpenedByMouse = await axOf(summarySelector);
+    const reachedByMouse = await evaluate(REACH_GROUP(group.testid));
+    // The summary may have moved (an opened group takes a whole row): aim at it again.
+    const whereNow = await evaluate(READ_GROUP(group.testid));
+    await mouseClickAt(whereNow.x, whereNow.y);
+    const afterMouseClose = await evaluate(READ_GROUP(group.testid));
+    const axClosedByMouse = await axOf(summarySelector);
+
+    // The keyboard: real Tab presses from the first control, then Enter, then Enter.
+    await evaluate(RESET_SCROLL);
+    const toSummary = await tabToControl(summarySelector, 80);
+    let byKeyboard = null;
+    let reachedByKeyboard = null;
+    let axOpenedByKeyboard = null;
+    let afterKeyboardClose = null;
+    let focusAfterKeyboardClose = null;
+    if (toSummary.presses !== null) {
+      await press("Enter");
+      byKeyboard = await evaluate(READ_GROUP(group.testid));
+      axOpenedByKeyboard = await axOf(summarySelector);
+      reachedByKeyboard = await evaluate(REACH_GROUP(group.testid));
+      // Back on the summary, without scrolling, to close it with the same key.
+      await evaluate(`document.querySelector(${JSON.stringify(summarySelector)}).focus({ preventScroll: true })`);
+      await press("Enter");
+      afterKeyboardClose = await evaluate(READ_GROUP(group.testid));
+      focusAfterKeyboardClose = await activeElement();
+    }
+    await evaluate(`(() => { document.querySelector(${JSON.stringify(testid(group.testid))}).open = false; })()`);
+    await evaluate(RESET_SCROLL);
+    const restored = await evaluate(READ_GROUP(group.testid));
+
+    const opensWhole = (reading, reached, ax) =>
+      reading !== null &&
+      reading.open === true &&
+      reached !== null &&
+      reached.bodyAimable === true &&
+      reached.aimable === reached.inside &&
+      reached.documentScrollY === 0 &&
+      ax !== null &&
+      ax.expanded === true;
+    results.push({
+      group: group.testid,
+      present: true,
+      opening: {
+        open: opening.open,
+        summaryInWindow: opening.inWindow,
+        summaryHit: opening.hit,
+        summaryHeightPx: opening.h,
+        commandsInside: opening.commandsInside,
+        commandsWithABoxWhileClosed: opening.commandsWithABoxWhileClosed,
+        reallyHiddenWhileClosed:
+          hiddenWhileClosed !== null && hiddenWhileClosed.aimable === 0 && hiddenWhileClosed.bodyAimable === false,
+        aimableWhileClosed: hiddenWhileClosed?.aimable ?? null,
+        scrollY: opening.scrollY,
+        chromeScrollTop: opening.chromeScrollTop,
+      },
+      axClosed,
+      mouse: {
+        opened: byMouse?.open === true,
+        reached: reachedByMouse,
+        axExpandedWhenOpen: axOpenedByMouse?.expanded ?? null,
+        closed: afterMouseClose?.open === false,
+        axExpandedWhenClosed: axClosedByMouse?.expanded ?? null,
+        documentScrollY: Math.max(byMouse?.scrollY ?? 0, afterMouseClose?.scrollY ?? 0),
+        revealsEverythingItHolds: opensWhole(byMouse, reachedByMouse, axOpenedByMouse),
+      },
+      keyboard: {
+        summaryReachedByTab: toSummary.presses !== null,
+        presses: toSummary.presses,
+        summaryInViewport: toSummary.inViewport ?? null,
+        opened: byKeyboard?.open === true,
+        reached: reachedByKeyboard,
+        axExpandedWhenOpen: axOpenedByKeyboard?.expanded ?? null,
+        closed: afterKeyboardClose?.open === false,
+        focusKeptOnSummary: focusAfterKeyboardClose?.tag === "SUMMARY",
+        documentScrollY: Math.max(byKeyboard?.scrollY ?? 0, afterKeyboardClose?.scrollY ?? 0),
+        revealsEverythingItHolds: opensWhole(byKeyboard, reachedByKeyboard, axOpenedByKeyboard),
+      },
+      restoredClosed: restored?.open === false,
+      summaryRole: axClosed?.role ?? null,
+      summaryName: axClosed?.name ?? null,
+    });
+  }
+  return results;
+}
+
 /* --- scenario ------------------------------------------------------------------------ */
 
 const record = {
@@ -1074,6 +1276,10 @@ if (pass === 1) {
         });
       }
 
+      // `ACTION-0111`: from the window exactly as it opened, before anything scrolls it.
+      const entryPoints = await measureGroupEntryPoints();
+      await evaluate(READ_FIRST_SCREEN);
+
       const keyboard = await tabToAside();
       const axe = await axeRun();
 
@@ -1083,6 +1289,7 @@ if (pass === 1) {
         requested: { ...state },
         hostWindow: granted,
         layout,
+        entryPoints,
         keyboardToAside: keyboard,
         axe: {
           version: axeManifest.version,
@@ -1099,6 +1306,10 @@ if (pass === 1) {
   await quiet();
   await pause(500);
   const layout = await evaluate(READ_FIRST_SCREEN);
+  // `ACTION-0111`: the restarted process is the one a person opens next, so its groups'
+  // entry points are measured from its own first window too.
+  const entryPoints = await measureGroupEntryPoints();
+  await evaluate(READ_FIRST_SCREEN);
   const keyboard = await tabToAside();
   const axe = await axeRun();
   matrix.push({
@@ -1107,6 +1318,7 @@ if (pass === 1) {
     requested: { id: "restored" },
     hostWindow: granted,
     layout,
+    entryPoints,
     keyboardToAside: keyboard,
     axe: { version: axeManifest.version, violations: axe.violations, incomplete: axe.incomplete, passes: axe.passes },
   });
@@ -1251,8 +1463,77 @@ const statesMissingAPrimaryCommandFromDom = primaryByState.filter(
   (entry) => entry.primaryMissingFromDom.length > 0,
 );
 
+/* --- ACTION-0111 / B03-O1: the groups, discoverable and usable, in every state -------- */
+const entryByState = matrix.map((entry) => {
+  const chromeGroups = entry.layout.groups.filter((group) => group.band === "chrome");
+  const interactions = entry.entryPoints ?? [];
+  return {
+    size: entry.size,
+    state: entry.state,
+    // Whole, hit-tested, on the window as it opens: every group, both bands.
+    summariesWhole:
+      entry.layout.groups.length === DISCLOSURE_GROUPS.length &&
+      entry.layout.groups.every((group) => group.summaryFullyVisible === true),
+    chromeSummariesWhole: chromeGroups.length > 0 && chromeGroups.every((group) => group.summaryFullyVisible === true),
+    summariesNotWhole: entry.layout.groups
+      .filter((group) => group.summaryFullyVisible !== true)
+      .map((group) => group.testid),
+    chromeBandScrollsAtOpening: entry.layout.scrollRegions.chrome.scrollsInside === true,
+    chromeBandBoxPx: entry.layout.scrollRegions.chrome.clientHeight,
+    chromeBandContentPx: entry.layout.scrollRegions.chrome.scrollHeight,
+    groupsInteracted: interactions.filter((group) => group.present).length,
+    openedByMouse: interactions.length > 0 && interactions.every((group) => group.present && group.mouse.opened && group.mouse.closed),
+    openedByKeyboard:
+      interactions.length > 0 && interactions.every((group) => group.present && group.keyboard.opened && group.keyboard.closed),
+    mouseRevealsEverything:
+      interactions.length > 0 && interactions.every((group) => group.present && group.mouse.revealsEverythingItHolds),
+    keyboardRevealsEverything:
+      interactions.length > 0 && interactions.every((group) => group.present && group.keyboard.revealsEverythingItHolds),
+    axTreeSaysExpanded:
+      interactions.length > 0 &&
+      interactions.every(
+        (group) =>
+          group.present &&
+          group.mouse.axExpandedWhenOpen === true &&
+          group.mouse.axExpandedWhenClosed === false &&
+          group.keyboard.axExpandedWhenOpen === true,
+      ),
+    focusKeptOnSummary: interactions.length > 0 && interactions.every((group) => group.present && group.keyboard.focusKeptOnSummary),
+    documentNeverScrolled:
+      interactions.length > 0 &&
+      interactions.every(
+        (group) =>
+          group.present && group.opening.scrollY === 0 && group.mouse.documentScrollY === 0 && group.keyboard.documentScrollY === 0,
+      ),
+    restoredClosed: interactions.length > 0 && interactions.every((group) => group.present && group.restoredClosed),
+    reallyHiddenWhileClosed:
+      interactions.length > 0 && interactions.every((group) => group.present && group.opening.reallyHiddenWhileClosed),
+  };
+});
+const everyState = (key) => entryByState.every((entry) => entry[key] === true);
+
 record.verdict = {
-  // B03's verdict, first: the usual commands are really on the opening screen.
+  // B03-O1 (ACTION-0111), first: a person who has not scrolled anything sees where the
+  // advanced tools and the diagnostics are, and what they open shows everything they hold.
+  groupEntryPointsWholeEveryState: everyState("summariesWhole"),
+  statesWithAGroupEntryPointNotWhole: entryByState
+    .filter((entry) => !entry.summariesWhole)
+    .map((entry) => `${entry.size}/${entry.state}: ${entry.summariesNotWhole.join(",")}`),
+  groupsOpenedByMouseEveryState: everyState("openedByMouse"),
+  groupsOpenedByKeyboardEveryState: everyState("openedByKeyboard"),
+  mouseRevealsEverythingEveryState: everyState("mouseRevealsEverything"),
+  keyboardRevealsEverythingEveryState: everyState("keyboardRevealsEverything"),
+  accessibilityTreeSaysExpandedEveryState: everyState("axTreeSaysExpanded"),
+  focusKeptOnSummaryEveryState: everyState("focusKeptOnSummary"),
+  documentNeverScrolledByAGroupEveryState: everyState("documentNeverScrolled"),
+  groupsRestoredClosedEveryState: everyState("restoredClosed"),
+  groupsReallyHideWhileClosedEveryState: everyState("reallyHiddenWhileClosed"),
+  statesWhereTheChromeBandScrollsAtOpening: entryByState
+    .filter((entry) => entry.chromeBandScrollsAtOpening)
+    .map((entry) => `${entry.size}/${entry.state}: ${entry.chromeBandContentPx}/${entry.chromeBandBoxPx}px`),
+  entryByState,
+  // B03's verdict: the usual commands are really on the opening screen.
+
   primaryContractSatisfied: statesMissingAPrimaryCommand.length === 0,
   primaryCommandsInContract: PRIMARY_COMMANDS.length,
   statesMissingAPrimaryCommand: statesMissingAPrimaryCommand.map(
@@ -1336,6 +1617,20 @@ check("criterion 1 — the usual commands are REALLY on the opening screen, ever
   statesMissingAPrimaryCommand: record.verdict.statesMissingAPrimaryCommand,
   statesClippingAPrimaryCommand: record.verdict.statesClippingAPrimaryCommand,
   statesMissingAPrimaryCommandFromDom: record.verdict.statesMissingAPrimaryCommandFromDom,
+});
+check("criterion 1 ter (ACTION-0111) — the groups are discoverable from the first window and show everything they hold, in every state", {
+  groupEntryPointsWholeEveryState: record.verdict.groupEntryPointsWholeEveryState,
+  statesWithAGroupEntryPointNotWhole: record.verdict.statesWithAGroupEntryPointNotWhole,
+  groupsOpenedByMouseEveryState: record.verdict.groupsOpenedByMouseEveryState,
+  groupsOpenedByKeyboardEveryState: record.verdict.groupsOpenedByKeyboardEveryState,
+  mouseRevealsEverythingEveryState: record.verdict.mouseRevealsEverythingEveryState,
+  keyboardRevealsEverythingEveryState: record.verdict.keyboardRevealsEverythingEveryState,
+  accessibilityTreeSaysExpandedEveryState: record.verdict.accessibilityTreeSaysExpandedEveryState,
+  focusKeptOnSummaryEveryState: record.verdict.focusKeptOnSummaryEveryState,
+  documentNeverScrolledByAGroupEveryState: record.verdict.documentNeverScrolledByAGroupEveryState,
+  groupsRestoredClosedEveryState: record.verdict.groupsRestoredClosedEveryState,
+  groupsReallyHideWhileClosedEveryState: record.verdict.groupsReallyHideWhileClosedEveryState,
+  statesWhereTheChromeBandScrollsAtOpening: record.verdict.statesWhereTheChromeBandScrollsAtOpening,
 });
 check("criterion 1 bis — the map does not regress below what B02 MEASURED, not merely below what it was asked for", {
   satisfied: record.verdict.firstScreenSatisfied,
@@ -1707,6 +2002,13 @@ console.log(JSON.stringify({
   worstPrimaryOnFirstScreen: record.verdict.worstPrimaryOnFirstScreen,
   worstPrimaryFullyVisible: record.verdict.worstPrimaryFullyVisible,
   worstCommandsOnFirstScreen: record.verdict.worstCommandsOnFirstScreen,
+  groupEntryPointsWholeEveryState: record.verdict.groupEntryPointsWholeEveryState,
+  groupsOpenedByMouseEveryState: record.verdict.groupsOpenedByMouseEveryState,
+  groupsOpenedByKeyboardEveryState: record.verdict.groupsOpenedByKeyboardEveryState,
+  mouseRevealsEverythingEveryState: record.verdict.mouseRevealsEverythingEveryState,
+  keyboardRevealsEverythingEveryState: record.verdict.keyboardRevealsEverythingEveryState,
+  accessibilityTreeSaysExpandedEveryState: record.verdict.accessibilityTreeSaysExpandedEveryState,
+  statesWhereTheChromeBandScrollsAtOpening: record.verdict.statesWhereTheChromeBandScrollsAtOpening.length,
   firstScreenSatisfied: record.verdict.firstScreenSatisfied,
   worstVisibleMapHeightPx: record.verdict.worstVisibleMapHeightPx,
   primaryChromeDefectProven: record.primaryChromeDefectProven,

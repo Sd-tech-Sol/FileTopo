@@ -216,7 +216,7 @@ $artifact = [ordered]@{
         'The colour-contrast rows axe-core reports as INCOMPLETE are published state by state and are NOT turned into a contrast claim either way.',
         'B03: whether a named group is open is the engine state of a native <details>. Nothing writes it, so the second process deliberately finds every group closed; that is published as a non-persistence by design, never as a restored preference.',
         'B03: no screen reader announced the summaries. What was measured is that each summary is in the tab order, carries its label in the state language, opens on Enter, and that axe-core reports no violation; how a reader renders a disclosure is UNMEASURED.',
-        'B03: the keyboard walk is measured at 960x640 only, the hardest size. The eighteen-state matrix measures the opening screen at every size, not the walk.'
+        'B03: the keyboard walk to the FURTHEST command of each group is measured at 960x640 only, the hardest size. ACTION-0111 adds, in all eighteen states, a real Tab walk to each summary, Enter to open and Enter to close, a mouse click at the centre of each summary as the first window draws it, and the expanded state the accessibility tree itself reports; the furthest-command walk is not repeated at every size.'
     )
 }
 if (-not $strictIdentical) { $artifact.strategy = "FAILED P-22: " + $artifact.strategy }
@@ -234,5 +234,11 @@ $worst = $results[1].verdict.worstVisibleMapHeightPx
 $primary = $results[1].verdict.primaryContractSatisfied
 $worstPrimary = $results[1].verdict.worstPrimaryOnFirstScreen
 $worstOnScreen = $results[1].verdict.worstCommandsOnFirstScreen
+$whole = $results[1].verdict.primaryContractSatisfiedWhole
+$worstWhole = $results[1].verdict.worstPrimaryFullyVisible
+$entryWhole = $results[1].verdict.groupEntryPointsWholeEveryState
+$entryMouse = $results[1].verdict.mouseRevealsEverythingEveryState
+$entryKeyboard = $results[1].verdict.keyboardRevealsEverythingEveryState
+Write-Output "TASK-0060 [$Phase]: primaryContractSatisfiedWhole=$whole ($worstWhole/$($results[1].primaryCommandContract.Count) whole at worst); groupEntryPointsWhole=$entryWhole; mouseRevealsEverything=$entryMouse; keyboardRevealsEverything=$entryKeyboard"
 Write-Output "TASK-0060 [$Phase]: primaryContractSatisfied=$primary ($worstPrimary/$($results[1].primaryCommandContract.Count) at worst); commandsOnFirstScreen worst=$worstOnScreen; firstScreenSatisfied=$satisfied; worstVisibleMapHeightPx=$worst; primaryChromeDefectProven=$($results[1].primaryChromeDefectProven); artifact $Out"
 
