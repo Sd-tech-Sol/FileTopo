@@ -100,7 +100,16 @@ foreach ($pass in @(1, 2)) {
         -RedirectStandardOutput (Join-Path $proofRoot "app-$pass.log") -RedirectStandardError (Join-Path $proofRoot "app-error-$pass.log")
     try {
         $harnessError = Join-Path $proofRoot "harness-error-$pass.txt"
-        $seedJson | node scripts/task0058-visual.mjs $Port $variant $pass $proofRoot $head $application.Id 2> $harnessError
+        # The harness reports a failure on stderr, and that report is the whole value of a
+        # failed run: `Stop` would turn its first line into a terminating error and throw
+        # the rest away.
+        $previousPreference = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            $seedJson | node scripts/task0058-visual.mjs $Port $variant $pass $proofRoot $head $application.Id 2> $harnessError
+        } finally {
+            $ErrorActionPreference = $previousPreference
+        }
         if ($LASTEXITCODE -ne 0) {
             Get-Content -LiteralPath $harnessError -ErrorAction SilentlyContinue | Select-Object -First 80 | ForEach-Object { Write-Host $_ }
             throw "TASK-0058 WebView2 pass $pass failed; inspect $proofRoot"

@@ -277,6 +277,9 @@ const sha = (value) => createHash("sha256").update(JSON.stringify(value)).digest
 // one evaluation so nothing can drift between two reads of the same state.
 const READ_LAYOUT = `(() => {
   const html = document.documentElement;
+  // Every box below is read from the top of the document, so two states are comparable
+  // and "below the fold" means what it says. A previous Tab walk may have scrolled.
+  window.scrollTo(0, 0);
   const round = (n) => Math.round(n * 10) / 10;
   const box = (selector) => {
     const el = document.querySelector(selector);
@@ -285,6 +288,7 @@ const READ_LAYOUT = `(() => {
     return {
       x: round(r.x), y: round(r.y), w: round(r.width), h: round(r.height),
       right: round(r.right), bottom: round(r.bottom),
+      documentTop: round(r.y + window.scrollY),
       scrollWidth: el.scrollWidth, clientWidth: el.clientWidth,
       scrollHeight: el.scrollHeight, clientHeight: el.clientHeight,
     };
@@ -627,7 +631,12 @@ record.verdict = {
     documentHeight: entry.layout.documentScroll[1],
     viewportHeight: entry.layout.layoutViewport[1],
     verticalScrollPx: entry.layout.verticalScrollPx,
-    mainTop: entry.layout.columns.main?.y ?? null,
+    // Measured from the top of the document: how far down the map column starts, and
+    // therefore whether it is on screen at all before the person scrolls.
+    mapColumnDocumentTop: entry.layout.columns.map?.documentTop ?? null,
+    mapColumnAboveTheFold: entry.layout.columns.map
+      ? entry.layout.columns.map.documentTop < entry.layout.layoutViewport[1]
+      : null,
   })),
 };
 record.chromeDefectProven =
@@ -714,8 +723,16 @@ if (pass === 1) {
   });
 
   // P-07 — selection and its details, at 960x640.
+  //
+  // At this size the map starts below the fold (see finding `B01-O1`), so the person
+  // scrolls the document down to it first. That vertical scroll is what `TASK-0058`
+  // explicitly allows, and how far it had to go is published with the check.
   await click(testid("search-clear"));
   await quiet();
+  await click(testid("fit-composition"));
+  await evaluate(`document.querySelector('[data-testid="composed-canvas"]').scrollIntoView({ block: 'center' })`);
+  await pause(400);
+  const scrolledToMap = await evaluate(`Math.round(window.scrollY)`);
   const selectable = await evaluate(`(() => {
     const card = [...document.querySelectorAll('[data-testid="composed-canvas"] [data-card="true"]')].find((g) => {
       const b = g.getBoundingClientRect();
@@ -726,7 +743,10 @@ if (pass === 1) {
     });
     return card ? Number(card.getAttribute('data-node-id')) : null;
   })()`);
-  assert(selectable !== null, "P-07: a card is visible and hittable at 960x640");
+  assert(
+    selectable !== null,
+    `P-07: a card is visible and hittable at 960x640 after scrolling ${scrolledToMap}px down to the map`,
+  );
   await click(`[data-testid="composed-canvas"] [data-card="true"][data-node-id="${selectable}"]`);
   await until(`document.querySelector('[data-testid="composed-canvas"] [data-card="true"][data-node-id="${selectable}"]')?.getAttribute('aria-selected') === 'true'`);
   await quiet();
@@ -739,6 +759,7 @@ if (pass === 1) {
   );
   check("P-07 selection at 960x640 and its details panel agree with the Index", {
     nodeId: selectable, panelNameMatchesIndex: true, panelVisible: true,
+    verticalScrollNeededToReachTheMapPx: scrolledToMap,
   });
 
   // P-11 — the real wheel, the same primitive the touchpad produces, and the keyboard.
