@@ -2924,6 +2924,13 @@ mod source_availability_tests;
 #[path = "exclusion_policy_tests.rs"]
 mod exclusion_policy_tests;
 
+/// `TASK-0057` — the core relation surface on a folder the person chose
+/// (`DEC-0053`). Compiled here, beside `real_root_tests`, because the proof
+/// needs the registration and indexing commands this module owns.
+#[cfg(test)]
+#[path = "relation_real_root_tests.rs"]
+mod relation_real_root_tests;
+
 /// `ACTION-0071` — the watcher's acquisition of the publication lock, on a local mutex so
 /// that holding or poisoning it never touches the process-wide [`PUBLICATION_LOCK`].
 #[cfg(test)]
