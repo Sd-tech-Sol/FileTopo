@@ -2,7 +2,11 @@
 #
 # Run after `pnpm build` and `pnpm tauri build --debug --no-bundle`.
 #
-#   scripts/task0058-visual.ps1 -WorkDirectory <a directory OUTSIDE the repository>
+#   pwsh -File scripts/task0058-visual.ps1 -WorkDirectory <a directory OUTSIDE the repository>
+#
+# PowerShell 7 is required, and the script refuses to run under Windows PowerShell 5.1:
+# there, `Get-Content` decodes the harness's UTF-8 report as ANSI and `Set-Content -Encoding
+# utf8` adds a byte-order mark, so the published artifact would carry mangled text.
 #
 # The order, and why it is the order:
 #
@@ -29,6 +33,9 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+if ($PSVersionTable.PSVersion.Major -lt 7) {
+    throw 'run this with pwsh 7: Windows PowerShell 5.1 reads the harness report as ANSI and writes a BOM, which would corrupt the published artifact'
+}
 $repository = Split-Path -Parent $PSScriptRoot
 Set-Location -LiteralPath $repository
 
