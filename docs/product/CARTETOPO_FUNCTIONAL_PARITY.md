@@ -556,3 +556,13 @@ Ils sont écrits ici plutôt que corrigés en silence.
 > observé — exactement ce qu'elle pouvait dessiner — et les trois relations dont
 > une extrémité manquait sont nommées une par une dans la région « extrémités
 > hors de la vue courante ».
+
+
+> **Clôture finale de l'étape A — ACTION-0107 (2026-10-09).**
+> Le contrôle indépendant de TASK-0057 accepte le correctif REAL_ROOT, le replay
+> P-22 et la composition de la matrice finale. P-04 est revalidée dans sa portée
+> REAL_ROOT; P-05 à P-18 et P-22 deviennent **CLOSED / VERIFIED**.
+> Les 22 exigences P-01..P-22 sont désormais fermées, I-1..I-3 tiennent dans
+> leur portée contractuelle et l'étape A « Parité fonctionnelle MVP » est
+> **CLOSED**. TASK-0056 reste historiquement BLOCKED à son ancien HEAD; son
+> blocage est précisément celui corrigé par TASK-0057.

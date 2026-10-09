@@ -6,7 +6,7 @@
   "base": "ca17df50d1fa904e8387628347bbf2f9792b9ae8",
   "contract": "docs/product/CARTETOPO_FUNCTIONAL_PARITY.md",
   "nature": "matrice établie par TASK-0056 (acceptance, aucun code produit modifié), mise à jour par TASK-0057 après la correction du seul blocage qu'elle avait trouvé : la surface des relations refusait une racine réelle. Les preuves composées sont inchangées; seules les trois lignes concernées et la campagne runtime finale sont refaites au `HEAD` corrigé.",
-  "authority": "Cette matrice ne ferme AUCUNE exigence. L'exécuteur ne s'attribue pas VERIFIED : chaque verdict ci-dessous est au mieux une candidature au contrôle indépendant.",
+  "authority": "ACTION-0107 est le contrôle indépendant final de l'étape A. TASK-0057 reste la corrective de produit; aucune exigence n'est fermée par l'exécuteur.",
   "legend": {
     "verdict": {
       "SATISFIED": "chaque sous-critère nommé par le texte courant possède une preuve indépendante, et la campagne finale l'a exercé dans le vrai moteur",
@@ -160,9 +160,9 @@
         "Exercée dans la campagne finale du `HEAD` corrigé sur un cerveau `REAL_ROOT` — le genre de source que `DEC-0033` A fait seule entrée d'une arborescence personnelle — et confrontée sur le cerveau `SYNTHETIC_FIXTURE` figé, dont le comportement historique est inchangé."
       ],
       "status": "CLOSED/VERIFIED",
-      "closedBy": "ACTION-0094 (2026-10-05)",
+      "closedBy": "ACTION-0094 + ACTION-0107 (portée REAL_ROOT, 2026-10-09)",
       "verdict": "SATISFIED",
-      "regressionAfterClosure": "La clôture `ACTION-0094` reposait sur des preuves prises sur cerveaux synthétiques, et la campagne de TASK-0056 a montré que la surface refusait une racine réelle : TASK-0056 a rapporté que cette clôture **ne couvrait pas** une racine réelle, sans la révoquer. TASK-0057 a corrigé la cause. La campagne du `HEAD` corrigé exerce la révocation d'une relation `APPROVED` sur une racine réelle, et une relation `DETERMINISTIC` y est toujours refusée par son nom. Confirmer que la clôture couvre désormais les deux genres de source appartient au contrôle indépendant.",
+      "regressionAfterClosure": "TASK-0056 a révélé que la clôture historique ne couvrait pas REAL_ROOT. TASK-0057 corrige la frontière fixture-only et ACTION-0107 revalide la portée finale.",
       "runtimeRows": [
         "P-04"
       ],
@@ -192,8 +192,8 @@
         "Exercée dans la campagne finale du `HEAD` corrigé sur un cerveau `REAL_ROOT` — le genre de source que `DEC-0033` A fait seule entrée d'une arborescence personnelle — et confrontée sur le cerveau `SYNTHETIC_FIXTURE` figé, dont le comportement historique est inchangé.",
         "La moitié « carte » de l'exigence est jugée à deux côtés, parce que la vue est bornée : `relationSegments` ne dessine une arête que si ses **deux** extrémités sont matérialisées. Dans la campagne du `HEAD` corrigé, le nœud observé avait 1 relation sortante dont l'extrémité n'était pas dessinée : la carte en a donc dessiné 0, ce qui est exact, et les 3 relations du cerveau dont une extrémité manquait sont nommées une par une dans la région « extrémités hors de la vue courante », chacune avec son contrôle pour l'amener à l'écran. La campagne ne montre donc PAS une arête dessinée confrontée à l'index : elle montre que la carte dessine exactement ce qu'elle peut dessiner et ne perd rien. La confrontation panneau/index, elle, est exacte."
       ],
-      "status": "CANDIDATE",
-      "closedBy": null,
+      "status": "CLOSED/VERIFIED",
+      "closedBy": "ACTION-0107 (2026-10-09)",
       "verdict": "SATISFIED",
       "regressionAfterClosure": null,
       "runtimeRows": [
@@ -225,8 +225,8 @@
       "limits": [
         "l'accentuation porte sur le voisinage hiérarchique et les relations du nœud; elle ne prétend pas accentuer un voisinage transitif"
       ],
-      "status": "CANDIDATE",
-      "closedBy": null,
+      "status": "CLOSED/VERIFIED",
+      "closedBy": "ACTION-0107 (2026-10-09)",
       "verdict": "SATISFIED",
       "regressionAfterClosure": null,
       "runtimeRows": [
@@ -260,8 +260,8 @@
         "TASK-0017 avait déclaré que l'activation au clavier d'une entrée de panneau n'avait pas été jouée par une frappe de confiance. La campagne finale la joue avec un vrai `Input.dispatchKeyEvent` : la limite historique est levée par observation, pas par déclaration",
         "Exercée dans la campagne finale du `HEAD` corrigé sur un cerveau `REAL_ROOT` — le genre de source que `DEC-0033` A fait seule entrée d'une arborescence personnelle — et confrontée sur le cerveau `SYNTHETIC_FIXTURE` figé, dont le comportement historique est inchangé."
       ],
-      "status": "CANDIDATE",
-      "closedBy": null,
+      "status": "CLOSED/VERIFIED",
+      "closedBy": "ACTION-0107 (2026-10-09)",
       "verdict": "SATISFIED",
       "regressionAfterClosure": null,
       "runtimeRows": [
@@ -292,8 +292,8 @@
       "limits": [
         "la recherche backend reste proportionnelle au corpus : déclaré par TASK-0054; aucun chiffre de latence n'est publié (réserve R8)"
       ],
-      "status": "CANDIDATE",
-      "closedBy": null,
+      "status": "CLOSED/VERIFIED",
+      "closedBy": "ACTION-0107 (2026-10-09)",
       "verdict": "SATISFIED",
       "regressionAfterClosure": null,
       "runtimeRows": [
@@ -322,8 +322,8 @@
       "limits": [
         "les facettes dynamiques dérivées des données restent hors du critère MVP : REQUIREMENTS_BASELINE F-022 le déclare"
       ],
-      "status": "CANDIDATE",
-      "closedBy": null,
+      "status": "CLOSED/VERIFIED",
+      "closedBy": "ACTION-0107 (2026-10-09)",
       "verdict": "SATISFIED",
       "regressionAfterClosure": null,
       "runtimeRows": [
@@ -350,8 +350,8 @@
       "limits": [
         "TASK-0050 a déclaré deux états de la légende non atteignables par son harnais reproductible (21/23) et les a publiés comme tels; ACTION-0091 a clos la tâche avec cette limite écrite"
       ],
-      "status": "CANDIDATE",
-      "closedBy": null,
+      "status": "CLOSED/VERIFIED",
+      "closedBy": "ACTION-0107 (2026-10-09)",
       "verdict": "SATISFIED",
       "regressionAfterClosure": null,
       "runtimeRows": [
@@ -384,8 +384,8 @@
       "limits": [
         "le pavé tactile n'est pas distinguable de la souris par un harnais CDP : la molette et le pointeur sont exercés, le geste tactile propre reste non testé et déclaré tel"
       ],
-      "status": "CANDIDATE",
-      "closedBy": null,
+      "status": "CLOSED/VERIFIED",
+      "closedBy": "ACTION-0107 (2026-10-09)",
       "verdict": "SATISFIED",
       "regressionAfterClosure": null,
       "runtimeRows": [
@@ -414,8 +414,8 @@
       "limits": [
         "le défilement du panneau n'est pas une valeur persistée distincte : il est conservé parce que le panneau n'est pas démonté, ce qui est la façon dont le critère est tenu, pas une valeur comparée"
       ],
-      "status": "CANDIDATE",
-      "closedBy": null,
+      "status": "CLOSED/VERIFIED",
+      "closedBy": "ACTION-0107 (2026-10-09)",
       "verdict": "SATISFIED",
       "regressionAfterClosure": null,
       "runtimeRows": [
@@ -439,8 +439,8 @@
         "TASK-0054/ACTION-0101 — la pagination d'un dossier large ne perd aucun enfant"
       ],
       "limits": [],
-      "status": "CANDIDATE",
-      "closedBy": null,
+      "status": "CLOSED/VERIFIED",
+      "closedBy": "ACTION-0107 (2026-10-09)",
       "verdict": "SATISFIED",
       "regressionAfterClosure": null,
       "runtimeRows": [
@@ -467,8 +467,8 @@
       "limits": [
         "la vérification du presse-papiers se fait hors du WebView : ni le chemin ni le contenu du presse-papiers n'est publié dans un artefact"
       ],
-      "status": "CANDIDATE",
-      "closedBy": null,
+      "status": "CLOSED/VERIFIED",
+      "closedBy": "ACTION-0107 (2026-10-09)",
       "verdict": "SATISFIED",
       "regressionAfterClosure": null,
       "runtimeRows": [
@@ -494,8 +494,8 @@
       "limits": [
         "la fenêtre `explorer.exe` qu'un vrai dévoilement ouvre est laissée à Windows : TASK-0034/0035 interdisent de tuer le processus globalement"
       ],
-      "status": "CANDIDATE",
-      "closedBy": null,
+      "status": "CLOSED/VERIFIED",
+      "closedBy": "ACTION-0107 (2026-10-09)",
       "verdict": "SATISFIED",
       "regressionAfterClosure": null,
       "runtimeRows": [
@@ -525,8 +525,8 @@
       "limits": [
         "une suppression massive réelle n'est pas provoquée : l'indisponibilité de racine est traitée avant tout scan, ce qui est précisément la défense de F-032"
       ],
-      "status": "CANDIDATE",
-      "closedBy": null,
+      "status": "CLOSED/VERIFIED",
+      "closedBy": "ACTION-0107 (2026-10-09)",
       "verdict": "SATISFIED",
       "regressionAfterClosure": null,
       "runtimeRows": [
@@ -553,8 +553,8 @@
         "TASK-0053/ACTION-0099 — vu/non-vu garde son propriétaire existant dans la répartition de M-1"
       ],
       "limits": [],
-      "status": "CANDIDATE",
-      "closedBy": null,
+      "status": "CLOSED/VERIFIED",
+      "closedBy": "ACTION-0107 (2026-10-09)",
       "verdict": "SATISFIED",
       "regressionAfterClosure": null,
       "runtimeRows": [
@@ -585,8 +585,8 @@
         "les mesures de F-031 viennent d'un banc de développement au profil déclaré; aucune performance produit n'est publiée, réserve R8 en vigueur",
         "la campagne finale n'a pas refait la rafale de 10 000 ni la courbe de coût : elle a exercé un vrai « Actualiser » incrémental et laissé les seuils lourds à leurs campagnes propres, comme TASK-0056 §5 l'autorise"
       ],
-      "status": "CANDIDATE",
-      "closedBy": null,
+      "status": "CLOSED/VERIFIED",
+      "closedBy": "ACTION-0107 (2026-10-09)",
       "verdict": "SATISFIED",
       "regressionAfterClosure": null,
       "runtimeRows": [
@@ -709,8 +709,8 @@
         "les seuils lourds (100k/1M, 10 000 événements, matrice complète de contrastes) ne sont pas refaits dans la fenêtre : ils restent composés depuis leurs campagnes propres",
         "la campagne porte sur trois racines synthétiques temporaires; elle ne dit rien d'un volume réseau, d'un fournisseur Cloud Files ni d'un système de fichiers autre que NTFS"
       ],
-      "status": "CANDIDATE",
-      "closedBy": null,
+      "status": "CLOSED/VERIFIED",
+      "closedBy": "ACTION-0107 (2026-10-09)",
       "verdict": "SATISFIED",
       "regressionAfterClosure": null,
       "runtimeRows": [
@@ -760,5 +760,5 @@
       "Rien n'a été écrit pour « réparer » le gap des relations : TASK-0056 est une acceptance et §9 l'interdit. La preuve du gap est une observation de la campagne, dans le vrai moteur, à travers l'IPC réel."
     ]
   },
-  "overallFinding": "TASK-0056 a établi cette matrice et a trouvé **un** manque : sur un cerveau dont la source est un vrai dossier, la surface des relations était inatteignable, ce que le contrat §3 règle 2 assimile à la suppression de `P-04`, `P-05` et `P-07`. TASK-0057 a corrigé ce seul point sous `DEC-0053`, sans toucher au modèle des relations, au catalogue de règles, au moteur déterministe ni aux relations inter-cerveaux, et la campagne finale a été rejouée au `HEAD` corrigé : les trois exigences sont désormais exercées **sur une racine réelle**, et l'empreinte externe de la source est restée identique. Aucune exigence n'est fermée ici. `P-05` à `P-18` et `P-22` restent candidates au contrôle indépendant; les seuils lourds restent composés depuis leurs campagnes `VERIFIED` propres, nommées ligne par ligne."
+  "overallFinding": "ACTION-0107 ferme l'acceptance finale de l'étape A : les 22 exigences P-01..P-22 sont CLOSED/VERIFIED par composition des preuves indépendantes et du replay TASK-0057 au HEAD corrigé. Aucun GAP ne reste ouvert."
 }

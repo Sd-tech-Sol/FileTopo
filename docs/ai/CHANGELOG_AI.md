@@ -6830,3 +6830,15 @@ terminait le gabarit envoyé à `Runtime.evaluate`; et l'absence de presse-papie
 d'ensemble de la matrice : `SATISFIED`. `P-04`, `P-05`, `P-07` **candidates**; la
 clôture `P-04` d'`ACTION-0094` n'est ni révoquée ni étendue ici. Aucune
 `TASK-0058`. Ni B, ni C, ni D. Action unique suivante : contrôle indépendant.
+
+
+## 2026-10-09 — ACTION-0107 — Stage A CLOSED
+
+- Contrôle indépendant final de TASK-0057 : PASS / VERIFIED.
+- Correctif REAL_ROOT accepté sur les six actions de relations, legacy synthétique préservé.
+- Replay P-22 corrigé PASS, aucun product gap, empreinte stricte identique.
+- Gate Rust final 3/3 à 906/0/13 sur arbre stable.
+- P-05..P-18 et P-22 fermées; P-04 revalidée sur REAL_ROOT.
+- Les 22 exigences P-01..P-22 sont CLOSED / VERIFIED.
+- ROADMAP Stage A = CLOSED.
+- Aucune TASK-0058; audit Stage B requis avant tout nouveau prompt exécuteur.

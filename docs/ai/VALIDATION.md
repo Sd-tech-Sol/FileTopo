@@ -10218,3 +10218,22 @@ ci-dessus sont des exécutions locales, sorties capturées.
   il a valu 2 puis 60 entre deux exécutions, parce que l'ordre de focus est
   l'ordre du document. Ce qui est asserté est que l'ordre **atteint** le
   contrôle et que l'activer sélectionne l'élément nommé.
+
+
+## DQ — ACTION-0107 — contrôle indépendant final TASK-0057 / Stage A — 2026-10-09
+
+**Verdict : PASS / VERIFIED. Stage A CLOSED.**
+
+- Code TASK-0057 : frontière `generic_source_spec`, six actions REAL_ROOT, self-check legacy inchangé.
+- DTO : `fixtureId: null` sur REAL_ROOT, chaîne historique sur synthétique, aucune substitution de chemin/source-ref.
+- WebView2 corrigé `7f43d60a…` : P-04/P-05/P-07 sur REAL_ROOT, `productGaps=[]`, P-22 strictement identique, axe 0, fatal console 0.
+- Rust final `b21c607b…` : trois runs consécutifs 906/0/13, arbre suivi inchangé.
+- Aucun code produit après le HEAD WebView2; aucun code produit après le HEAD Rust.
+- Aucune CI GitHub distante.
+
+**Arbitrages :**
+- P-14 accepté par composition : presse-papiers indisponible aussi hors produit; code de copie non touché.
+- P-05 carte accepté par composition avec l'exactitude synthétique déjà vérifiée et la déclaration explicite des relations hors vue.
+- P-11 pavé tactile : même chemin produit `React.WheelEvent/deltaY` que la molette; aucune branche périphérique distincte.
+
+**Clôtures :** TASK-0057 VERIFIED; P-04 portée REAL_ROOT revalidée; P-05..P-18 et P-22 CLOSED/VERIFIED; P-01..P-22 tous fermés; ROADMAP Stage A CLOSED.

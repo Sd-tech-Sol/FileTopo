@@ -1,5 +1,18 @@
 # État courant
 
+## ACTION-0107 — Stage A CLOSED — 2026-10-09
+
+- TASK-0057 = VERIFIED.
+- P-04 portée REAL_ROOT revalidée; P-05..P-18 et P-22 = CLOSED / VERIFIED.
+- Les 22 exigences P-01..P-22 sont maintenant CLOSED / VERIFIED.
+- P-22 au HEAD corrigé : empreinte stricte identique, aucun artefact FileTopo, productGaps vide.
+- Rust final : 3 × 906/0/13, arbre inchangé; le gate contended antérieur reste publié.
+- P-14 non rejouée faute de presse-papiers système : composition acceptée, code de copie non touché.
+- P-11 touchpad : même primitive WheelEvent WebView2 que la molette, aucun chemin produit spécifique au périphérique.
+- Aucune CI GitHub distante.
+- ROADMAP Stage A = CLOSED.
+- Aucune TASK-0058; avant Stage B, audit frais obligatoire.
+
 ## TASK-0057 — surface des relations sur `REAL_ROOT` — `IMPLEMENTED` (candidate) — 2026-10-08
 
 - Branche `build/v0.2-a41-v1-real-root-relations`, base `ca17df50`. Correction du

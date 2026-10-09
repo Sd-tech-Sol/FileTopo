@@ -1,7 +1,7 @@
 # TASK-0057 — V1 REAL_ROOT Relations Surface Closure / P-04 + P-05 + P-07
 
 - **Date:** 2026-10-08
-- **Status:** `IMPLEMENTED` (candidate; the executor does not award `VERIFIED`)
+- **Status:** `VERIFIED` — ACTION-0107 (2026-10-09)
 - **Branch:** `build/v0.2-a41-v1-real-root-relations`
 - **Base:** `ca17df50d1fa904e8387628347bbf2f9792b9ae8`
 - **Selected by:** ACTION-0106
@@ -374,3 +374,18 @@ Every other figure is in `docs/ai/VALIDATION.md`, section `DP`.
 `TASK-0056` remains historically `BLOCKED` at its own head, and its artifact is
 kept as the record of what it measured. No `TASK-0058`. Neither stage B, C nor D
 is started. `NEXT_ACTION` = independent control.
+
+
+## 16. Independent final control — ACTION-0107 — 2026-10-09
+
+**Verdict: PASS / VERIFIED.**
+
+- All six same-brain relation actions answer on REAL_ROOT; the frozen self-check remains synthetic-only.
+- Corrected-head WebView2 replay PASS: productGaps empty, P-04/P-05/P-07 on REAL_ROOT, P-22 strict fingerprint identical, axe 0, fatal console 0.
+- Final Rust gate PASS 3/3: 906 passed / 0 failed / 13 ignored, tracked tree unchanged.
+- P-14 is accepted by composition from prior independent proof because TASK-0057 changes no copy-path code and this machine has no usable clipboard.
+- P-05 bounded-map observation is accepted by composition with the prior exact synthetic map/index proof.
+- P-11 touchpad wording shares the same WebView2 WheelEvent product path as wheel input; no device-specific branch exists.
+- No remote GitHub CI is attached.
+
+Consequences: TASK-0057 VERIFIED; P-04 final REAL_ROOT scope revalidated; P-05..P-18 and P-22 CLOSED/VERIFIED; all P-01..P-22 CLOSED/VERIFIED; ROADMAP Stage A CLOSED; no TASK-0058.

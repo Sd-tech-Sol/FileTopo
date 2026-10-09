@@ -474,3 +474,9 @@ Les preuves et constats ci-dessous sont inchangés.
 > correspondantes — `P-04`, `P-05`, `P-07` — passent de `GAP` à `SATISFIED` dans
 > [PARITY_MATRIX_P01_P22.md](PARITY_MATRIX_P01_P22.md) et y sont **candidates**
 > à la fermeture. L'exécuteur ne ferme rien.
+
+
+> **ACTION-0107 — fermeture Stage A (2026-10-09).** Le contrôle indépendant
+> final accepte TASK-0057 et la matrice P-01..P-22 : aucun GAP nommé ne reste
+> ouvert dans la parité MVP. Les fonctions différées/ultérieures restent
+> différées; cette clôture ne les remonte pas.

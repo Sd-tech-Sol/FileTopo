@@ -1,5 +1,15 @@
 # HANDOFF — passage de relais
 
+## Relais — ACTION-0107 — Stage A CLOSED — 2026-10-09
+
+- Branche contrôlée : `build/v0.2-a41-v1-real-root-relations`.
+- HEAD documentaire contrôlé : `362acc2edfe339f67c37a22e81d83a8775596b89`.
+- Produit WebView2 testé : `7f43d60a034e21b5ebe5091a1a8180032cd31108`; gate Rust final : `b21c607b1fdae1da331a7bed49b020d464f7bb99`.
+- Aucun code produit après le HEAD WebView2; après le HEAD Rust, seulement docs/artefacts.
+- TASK-0057 VERIFIED; P-01..P-22 tous CLOSED / VERIFIED.
+- Stage A CLOSED.
+- Ne pas créer TASK-0058 par inertie et ne pas lancer Claude pour Stage B avant audit orchestrateur.
+
 ## Passation du 2026-10-08 — TASK-0057, relations sur une racine réelle, `IMPLEMENTED`
 
 **Où en est l'étape A.** Elle reste **`EN COURS`**, mais plus parce qu'un manque

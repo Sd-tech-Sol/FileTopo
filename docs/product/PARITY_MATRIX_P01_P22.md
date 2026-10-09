@@ -13,9 +13,9 @@
 - **Preuve runtime finale :** `docs/performance/runs/TASK-0057-p22-webview2.json`
 - **Verdict d'ensemble de `TASK-0057` :** **SATISFIED** — aucun sous-critère nommé sans preuve
 
-> **Constat d'ensemble.** TASK-0056 a établi cette matrice et a trouvé **un** manque : sur un cerveau dont la source est un vrai dossier, la surface des relations était inatteignable, ce que le contrat §3 règle 2 assimile à la suppression de `P-04`, `P-05` et `P-07`. TASK-0057 a corrigé ce seul point sous `DEC-0053`, sans toucher au modèle des relations, au catalogue de règles, au moteur déterministe ni aux relations inter-cerveaux, et la campagne finale a été rejouée au `HEAD` corrigé : les trois exigences sont désormais exercées **sur une racine réelle**, et l'empreinte externe de la source est restée identique. Aucune exigence n'est fermée ici. `P-05` à `P-18` et `P-22` restent candidates au contrôle indépendant; les seuils lourds restent composés depuis leurs campagnes `VERIFIED` propres, nommées ligne par ligne.
+> **Constat d'ensemble.** ACTION-0107 ferme l'acceptance finale de l'étape A : les 22 exigences P-01..P-22 sont CLOSED/VERIFIED par composition des preuves indépendantes et du replay TASK-0057 au HEAD corrigé. Aucun GAP ne reste ouvert.
 
-> **Autorité.** Cette matrice ne ferme AUCUNE exigence. L'exécuteur ne s'attribue pas VERIFIED : chaque verdict ci-dessous est au mieux une candidature au contrôle indépendant.
+> **Autorité.** ACTION-0107 est le contrôle indépendant final de l'étape A. TASK-0057 reste la corrective de produit; aucune exigence n'est fermée par l'exécuteur.
 
 ## Comment lire ce document
 
@@ -36,29 +36,29 @@ La campagne finale P-22, rejouée au `HEAD` corrigé avec le harnais que TASK-00
 | `P-01` | Carte construite depuis l'arborescence réelle (amendée par P-SCALE-R1) | `F-001`, `F-003`, `F-006`, `F-007`, `F-050`, `F-051` | `CLOSED/VERIFIED` | ACTION-0101 (2026-10-07) | **SATISFIED** |
 | `P-02` | Hiérarchie lisible et non ambiguë (corrigée par P02-R1, amendée par P-SCALE-R1) | `F-007`, `F-008`, `F-042`, `F-050`, `F-051` | `CLOSED/VERIFIED` | ACTION-0101 (2026-10-07) | **SATISFIED** |
 | `P-03` | Parent et enfants directs (amendée par P-SCALE-R1) | `F-016`, `F-050`, `F-051` | `CLOSED/VERIFIED` | ACTION-0101 (2026-10-07) | **SATISFIED** |
-| `P-04` | Relations transversales explicites, avec provenance | `F-017` | `CLOSED/VERIFIED` | ACTION-0094 (2026-10-05) | **SATISFIED** |
-| `P-05` | Relations entrantes et sortantes distinguées | `F-019` | `CANDIDATE` | — | **SATISFIED** |
-| `P-06` | Sélection, accentuation des liés, atténuation du reste | `F-015`, `F-018` | `CANDIDATE` | — | **SATISFIED** |
-| `P-07` | Panneau des relations | `F-016`, `F-017`, `F-019` | `CANDIDATE` | — | **SATISFIED** |
-| `P-08` | Recherche | `F-020` | `CANDIDATE` | — | **SATISFIED** |
-| `P-09` | Filtres | `F-022` | `CANDIDATE` | — | **SATISFIED** |
-| `P-10` | Légende | `F-014` | `CANDIDATE` | — | **SATISFIED** |
-| `P-11` | Panoramique, zoom, ajuster à l'écran, réinitialiser | `F-009`, `F-010`, `F-011`, `F-012` | `CANDIDATE` | — | **SATISFIED** |
-| `P-12` | Panneau de détails masquable | `F-013`, `F-023` | `CANDIDATE` | — | **SATISFIED** |
-| `P-13` | Contenu direct d'un dossier | `F-026` | `CANDIDATE` | — | **SATISFIED** |
-| `P-14` | Copier le chemin | `F-024` | `CANDIDATE` | — | **SATISFIED** |
-| `P-15` | Ouvrir dans l'Explorateur | `F-025` | `CANDIDATE` | — | **SATISFIED** |
-| `P-16` | Détection et historique des changements | `F-027`, `F-030` | `CANDIDATE` | — | **SATISFIED** |
-| `P-17` | Nouveaux, non vus, marquer vu, tout marquer vu | `F-022`, `F-028` | `CANDIDATE` | — | **SATISFIED** |
-| `P-18` | Actualisation manuelle et surveillance incrémentale | `F-029`, `F-030`, `F-031` | `CANDIDATE` | — | **SATISFIED** |
+| `P-04` | Relations transversales explicites, avec provenance | `F-017` | `CLOSED/VERIFIED` | ACTION-0094 + ACTION-0107 (portée REAL_ROOT, 2026-10-09) | **SATISFIED** |
+| `P-05` | Relations entrantes et sortantes distinguées | `F-019` | `CLOSED/VERIFIED` | ACTION-0107 (2026-10-09) | **SATISFIED** |
+| `P-06` | Sélection, accentuation des liés, atténuation du reste | `F-015`, `F-018` | `CLOSED/VERIFIED` | ACTION-0107 (2026-10-09) | **SATISFIED** |
+| `P-07` | Panneau des relations | `F-016`, `F-017`, `F-019` | `CLOSED/VERIFIED` | ACTION-0107 (2026-10-09) | **SATISFIED** |
+| `P-08` | Recherche | `F-020` | `CLOSED/VERIFIED` | ACTION-0107 (2026-10-09) | **SATISFIED** |
+| `P-09` | Filtres | `F-022` | `CLOSED/VERIFIED` | ACTION-0107 (2026-10-09) | **SATISFIED** |
+| `P-10` | Légende | `F-014` | `CLOSED/VERIFIED` | ACTION-0107 (2026-10-09) | **SATISFIED** |
+| `P-11` | Panoramique, zoom, ajuster à l'écran, réinitialiser | `F-009`, `F-010`, `F-011`, `F-012` | `CLOSED/VERIFIED` | ACTION-0107 (2026-10-09) | **SATISFIED** |
+| `P-12` | Panneau de détails masquable | `F-013`, `F-023` | `CLOSED/VERIFIED` | ACTION-0107 (2026-10-09) | **SATISFIED** |
+| `P-13` | Contenu direct d'un dossier | `F-026` | `CLOSED/VERIFIED` | ACTION-0107 (2026-10-09) | **SATISFIED** |
+| `P-14` | Copier le chemin | `F-024` | `CLOSED/VERIFIED` | ACTION-0107 (2026-10-09) | **SATISFIED** |
+| `P-15` | Ouvrir dans l'Explorateur | `F-025` | `CLOSED/VERIFIED` | ACTION-0107 (2026-10-09) | **SATISFIED** |
+| `P-16` | Détection et historique des changements | `F-027`, `F-030` | `CLOSED/VERIFIED` | ACTION-0107 (2026-10-09) | **SATISFIED** |
+| `P-17` | Nouveaux, non vus, marquer vu, tout marquer vu | `F-022`, `F-028` | `CLOSED/VERIFIED` | ACTION-0107 (2026-10-09) | **SATISFIED** |
+| `P-18` | Actualisation manuelle et surveillance incrémentale | `F-029`, `F-030`, `F-031` | `CLOSED/VERIFIED` | ACTION-0107 (2026-10-09) | **SATISFIED** |
 | `P-19` | Persistance des préférences et de l'état | `F-012`, `F-013`, `F-022`, `F-033`, `F-034`, `F-052` | `CLOSED/VERIFIED` | ACTION-0099 (2026-10-07) | **SATISFIED** |
 | `P-20` | Plusieurs cerveaux indépendants | `F-002`, `F-033`, `F-034` | `CLOSED/VERIFIED` | ACTION-0075 (2026-09-25) | **SATISFIED** |
 | `P-21` | FR/EN et accessibilité | `F-035`, `F-036` | `CLOSED/VERIFIED` | ACTION-0079 (2026-09-26) | **SATISFIED** |
-| `P-22` | Aucun changement physique des fichiers analysés | `I-1`, `I-2`, `F-003` | `CANDIDATE` | — | **SATISFIED** |
+| `P-22` | Aucun changement physique des fichiers analysés | `I-1`, `I-2`, `F-003` | `CLOSED/VERIFIED` | ACTION-0107 (2026-10-09) | **SATISFIED** |
 
-**Déjà fermées formellement :** `P-01`, `P-02`, `P-03`, `P-04`, `P-19`, `P-20`, `P-21`.
+**Déjà fermées formellement :** `P-01`, `P-02`, `P-03`, `P-04`, `P-05`, `P-06`, `P-07`, `P-08`, `P-09`, `P-10`, `P-11`, `P-12`, `P-13`, `P-14`, `P-15`, `P-16`, `P-17`, `P-18`, `P-19`, `P-20`, `P-21`, `P-22`.
 
-**Candidates à la fermeture par contrôle indépendant :** `P-05`, `P-06`, `P-07`, `P-08`, `P-09`, `P-10`, `P-11`, `P-12`, `P-13`, `P-14`, `P-15`, `P-16`, `P-17`, `P-18`, `P-22`. Aucune n'est fermée par cette tâche.
+**Candidates à la fermeture par contrôle indépendant :** aucune. Aucune n'est fermée par cette tâche.
 
 ## 2. Exigence par exigence
 
@@ -166,9 +166,9 @@ La campagne finale P-22, rejouée au `HEAD` corrigé avec le harnais que TASK-00
 ### `P-04` — Relations transversales explicites, avec provenance
 
 - **Fonctions propriétaires :** `F-017`
-- **État courant :** `CLOSED/VERIFIED`, fermée par **ACTION-0094 (2026-10-05)**
+- **État courant :** `CLOSED/VERIFIED`, fermée par **ACTION-0094 + ACTION-0107 (portée REAL_ROOT, 2026-10-09)**
 - **Verdict de `TASK-0057` :** **SATISFIED**
-- **Régression postérieure à la clôture :** La clôture `ACTION-0094` reposait sur des preuves prises sur cerveaux synthétiques, et la campagne de TASK-0056 a montré que la surface refusait une racine réelle : TASK-0056 a rapporté que cette clôture **ne couvrait pas** une racine réelle, sans la révoquer. TASK-0057 a corrigé la cause. La campagne du `HEAD` corrigé exerce la révocation d'une relation `APPROVED` sur une racine réelle, et une relation `DETERMINISTIC` y est toujours refusée par son nom. Confirmer que la clôture couvre désormais les deux genres de source appartient au contrôle indépendant.
+- **Régression postérieure à la clôture :** TASK-0056 a révélé que la clôture historique ne couvrait pas REAL_ROOT. TASK-0057 corrige la frontière fixture-only et ACTION-0107 revalide la portée finale.
 
 > **Correction.** MANQUE TROUVÉ PAR TASK-0056, CORRIGÉ PAR TASK-0057 sous `DEC-0053`. Les six actions génériques d'un même cerveau — ouvrir, relations d'un nœud, file de révision, approuver, rejeter, révoquer — ne passent plus par `BrainRecord::source_fixture()`, qui refusait un vrai dossier par son nom. Elles résolvent la source par `generic_source_spec`, qui rend `None` pour une racine réelle : une réponse, pas un refus. Le périmètre `TASK-0017` figé et l'auto-contrôle gelé restent synthétiques, et `map_relations_self_check` refuse toujours une racine réelle, par son nom. Le champ `fixtureId` des trois DTO génériques vaut `null` sur une racine réelle et ne porte ni chemin, ni empreinte de chemin, ni substitut. La campagne finale du `HEAD` corrigé exerce les trois exigences **sur la racine réelle**, avec le moteur réel et les vrais gestes : relation déterministe avec sa règle et sa provenance en mots, comptes entrants et sortants confrontés à deux lectures séparées du dépôt, suggestion jamais comptée, file ouverte, approbation au clavier, révocation, rejet, puis persistance à travers un vrai redémarrage. L'arbitrage final reste au contrôle indépendant : l'exécuteur ne s'attribue pas `VERIFIED`.
 
@@ -202,7 +202,7 @@ La campagne finale P-22, rejouée au `HEAD` corrigé avec le harnais que TASK-00
 ### `P-05` — Relations entrantes et sortantes distinguées
 
 - **Fonctions propriétaires :** `F-019`
-- **État courant :** `CANDIDATE`
+- **État courant :** `CLOSED/VERIFIED`, fermée par **ACTION-0107 (2026-10-09)**
 - **Verdict de `TASK-0057` :** **SATISFIED**
 
 > **Correction.** MANQUE TROUVÉ PAR TASK-0056, CORRIGÉ PAR TASK-0057 sous `DEC-0053`. Les six actions génériques d'un même cerveau — ouvrir, relations d'un nœud, file de révision, approuver, rejeter, révoquer — ne passent plus par `BrainRecord::source_fixture()`, qui refusait un vrai dossier par son nom. Elles résolvent la source par `generic_source_spec`, qui rend `None` pour une racine réelle : une réponse, pas un refus. Le périmètre `TASK-0017` figé et l'auto-contrôle gelé restent synthétiques, et `map_relations_self_check` refuse toujours une racine réelle, par son nom. Le champ `fixtureId` des trois DTO génériques vaut `null` sur une racine réelle et ne porte ni chemin, ni empreinte de chemin, ni substitut. La campagne finale du `HEAD` corrigé exerce les trois exigences **sur la racine réelle**, avec le moteur réel et les vrais gestes : relation déterministe avec sa règle et sa provenance en mots, comptes entrants et sortants confrontés à deux lectures séparées du dépôt, suggestion jamais comptée, file ouverte, approbation au clavier, révocation, rejet, puis persistance à travers un vrai redémarrage. L'arbitrage final reste au contrôle indépendant : l'exécuteur ne s'attribue pas `VERIFIED`.
@@ -234,7 +234,7 @@ La campagne finale P-22, rejouée au `HEAD` corrigé avec le harnais que TASK-00
 ### `P-06` — Sélection, accentuation des liés, atténuation du reste
 
 - **Fonctions propriétaires :** `F-015`, `F-018`
-- **État courant :** `CANDIDATE`
+- **État courant :** `CLOSED/VERIFIED`, fermée par **ACTION-0107 (2026-10-09)**
 - **Verdict de `TASK-0057` :** **SATISFIED**
 
 **Sous-critères du texte courant, un par un :**
@@ -263,7 +263,7 @@ La campagne finale P-22, rejouée au `HEAD` corrigé avec le harnais que TASK-00
 ### `P-07` — Panneau des relations
 
 - **Fonctions propriétaires :** `F-016`, `F-017`, `F-019`
-- **État courant :** `CANDIDATE`
+- **État courant :** `CLOSED/VERIFIED`, fermée par **ACTION-0107 (2026-10-09)**
 - **Verdict de `TASK-0057` :** **SATISFIED**
 
 > **Correction.** MANQUE TROUVÉ PAR TASK-0056, CORRIGÉ PAR TASK-0057 sous `DEC-0053`. Les six actions génériques d'un même cerveau — ouvrir, relations d'un nœud, file de révision, approuver, rejeter, révoquer — ne passent plus par `BrainRecord::source_fixture()`, qui refusait un vrai dossier par son nom. Elles résolvent la source par `generic_source_spec`, qui rend `None` pour une racine réelle : une réponse, pas un refus. Le périmètre `TASK-0017` figé et l'auto-contrôle gelé restent synthétiques, et `map_relations_self_check` refuse toujours une racine réelle, par son nom. Le champ `fixtureId` des trois DTO génériques vaut `null` sur une racine réelle et ne porte ni chemin, ni empreinte de chemin, ni substitut. La campagne finale du `HEAD` corrigé exerce les trois exigences **sur la racine réelle**, avec le moteur réel et les vrais gestes : relation déterministe avec sa règle et sa provenance en mots, comptes entrants et sortants confrontés à deux lectures séparées du dépôt, suggestion jamais comptée, file ouverte, approbation au clavier, révocation, rejet, puis persistance à travers un vrai redémarrage. L'arbitrage final reste au contrôle indépendant : l'exécuteur ne s'attribue pas `VERIFIED`.
@@ -297,7 +297,7 @@ La campagne finale P-22, rejouée au `HEAD` corrigé avec le harnais que TASK-00
 ### `P-08` — Recherche
 
 - **Fonctions propriétaires :** `F-020`
-- **État courant :** `CANDIDATE`
+- **État courant :** `CLOSED/VERIFIED`, fermée par **ACTION-0107 (2026-10-09)**
 - **Verdict de `TASK-0057` :** **SATISFIED**
 
 **Sous-critères du texte courant, un par un :**
@@ -326,7 +326,7 @@ La campagne finale P-22, rejouée au `HEAD` corrigé avec le harnais que TASK-00
 ### `P-09` — Filtres
 
 - **Fonctions propriétaires :** `F-022`
-- **État courant :** `CANDIDATE`
+- **État courant :** `CLOSED/VERIFIED`, fermée par **ACTION-0107 (2026-10-09)**
 - **Verdict de `TASK-0057` :** **SATISFIED**
 
 **Sous-critères du texte courant, un par un :**
@@ -355,7 +355,7 @@ La campagne finale P-22, rejouée au `HEAD` corrigé avec le harnais que TASK-00
 ### `P-10` — Légende
 
 - **Fonctions propriétaires :** `F-014`
-- **État courant :** `CANDIDATE`
+- **État courant :** `CLOSED/VERIFIED`, fermée par **ACTION-0107 (2026-10-09)**
 - **Verdict de `TASK-0057` :** **SATISFIED**
 
 **Sous-critères du texte courant, un par un :**
@@ -382,7 +382,7 @@ La campagne finale P-22, rejouée au `HEAD` corrigé avec le harnais que TASK-00
 ### `P-11` — Panoramique, zoom, ajuster à l'écran, réinitialiser
 
 - **Fonctions propriétaires :** `F-009`, `F-010`, `F-011`, `F-012`
-- **État courant :** `CANDIDATE`
+- **État courant :** `CLOSED/VERIFIED`, fermée par **ACTION-0107 (2026-10-09)**
 - **Verdict de `TASK-0057` :** **SATISFIED**
 
 **Sous-critères du texte courant, un par un :**
@@ -412,7 +412,7 @@ La campagne finale P-22, rejouée au `HEAD` corrigé avec le harnais que TASK-00
 ### `P-12` — Panneau de détails masquable
 
 - **Fonctions propriétaires :** `F-013`, `F-023`
-- **État courant :** `CANDIDATE`
+- **État courant :** `CLOSED/VERIFIED`, fermée par **ACTION-0107 (2026-10-09)**
 - **Verdict de `TASK-0057` :** **SATISFIED**
 
 **Sous-critères du texte courant, un par un :**
@@ -441,7 +441,7 @@ La campagne finale P-22, rejouée au `HEAD` corrigé avec le harnais que TASK-00
 ### `P-13` — Contenu direct d'un dossier
 
 - **Fonctions propriétaires :** `F-026`
-- **État courant :** `CANDIDATE`
+- **État courant :** `CLOSED/VERIFIED`, fermée par **ACTION-0107 (2026-10-09)**
 - **Verdict de `TASK-0057` :** **SATISFIED**
 
 **Sous-critères du texte courant, un par un :**
@@ -463,7 +463,7 @@ La campagne finale P-22, rejouée au `HEAD` corrigé avec le harnais que TASK-00
 ### `P-14` — Copier le chemin
 
 - **Fonctions propriétaires :** `F-024`
-- **État courant :** `CANDIDATE`
+- **État courant :** `CLOSED/VERIFIED`, fermée par **ACTION-0107 (2026-10-09)**
 - **Verdict de `TASK-0057` :** **SATISFIED**
 
 **Sous-critères du texte courant, un par un :**
@@ -490,7 +490,7 @@ La campagne finale P-22, rejouée au `HEAD` corrigé avec le harnais que TASK-00
 ### `P-15` — Ouvrir dans l'Explorateur
 
 - **Fonctions propriétaires :** `F-025`
-- **État courant :** `CANDIDATE`
+- **État courant :** `CLOSED/VERIFIED`, fermée par **ACTION-0107 (2026-10-09)**
 - **Verdict de `TASK-0057` :** **SATISFIED**
 
 **Sous-critères du texte courant, un par un :**
@@ -517,7 +517,7 @@ La campagne finale P-22, rejouée au `HEAD` corrigé avec le harnais que TASK-00
 ### `P-16` — Détection et historique des changements
 
 - **Fonctions propriétaires :** `F-027`, `F-030`
-- **État courant :** `CANDIDATE`
+- **État courant :** `CLOSED/VERIFIED`, fermée par **ACTION-0107 (2026-10-09)**
 - **Verdict de `TASK-0057` :** **SATISFIED**
 
 **Sous-critères du texte courant, un par un :**
@@ -546,7 +546,7 @@ La campagne finale P-22, rejouée au `HEAD` corrigé avec le harnais que TASK-00
 ### `P-17` — Nouveaux, non vus, marquer vu, tout marquer vu
 
 - **Fonctions propriétaires :** `F-022`, `F-028`
-- **État courant :** `CANDIDATE`
+- **État courant :** `CLOSED/VERIFIED`, fermée par **ACTION-0107 (2026-10-09)**
 - **Verdict de `TASK-0057` :** **SATISFIED**
 
 **Sous-critères du texte courant, un par un :**
@@ -570,7 +570,7 @@ La campagne finale P-22, rejouée au `HEAD` corrigé avec le harnais que TASK-00
 ### `P-18` — Actualisation manuelle et surveillance incrémentale
 
 - **Fonctions propriétaires :** `F-029`, `F-030`, `F-031`
-- **État courant :** `CANDIDATE`
+- **État courant :** `CLOSED/VERIFIED`, fermée par **ACTION-0107 (2026-10-09)**
 - **Verdict de `TASK-0057` :** **SATISFIED**
 
 **Sous-critères du texte courant, un par un :**
@@ -684,7 +684,7 @@ La campagne finale P-22, rejouée au `HEAD` corrigé avec le harnais que TASK-00
 ### `P-22` — Aucun changement physique des fichiers analysés
 
 - **Fonctions propriétaires :** `I-1`, `I-2`, `F-003`
-- **État courant :** `CANDIDATE`
+- **État courant :** `CLOSED/VERIFIED`, fermée par **ACTION-0107 (2026-10-09)**
 - **Verdict de `TASK-0057` :** **SATISFIED**
 
 **Sous-critères du texte courant, un par un :**
