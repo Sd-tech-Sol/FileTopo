@@ -2,7 +2,7 @@
   "task": "TASK-0057",
   "section": "Final P-22 campaign, run by TASK-0057 with the harness TASK-0056 built",
   "harness": "scripts/task0056-webview2.{ps1,mjs} + task0056-seed-proof.py + task0056-fingerprint.py",
-  "headTested": "f946cbac778c086b7c736bf691d5756bd884b9bd",
+  "headTested": "7f43d60a034e21b5ebe5091a1a8180032cd31108",
   "classification": "DEVELOPMENT_BENCH_ENGINEERING_EVIDENCE",
   "verdict": "PASS",
   "taskVerdict": "PASS",
@@ -27,11 +27,11 @@
       "creation time (ns)",
       "the root directory metadata itself"
     ],
-    "strictDigestBefore": "186a43c6eed05acac2f64b8e86e5fb7e9e9ebab28ad8c1055cecd9d82afeeb44",
-    "strictDigestAfter": "186a43c6eed05acac2f64b8e86e5fb7e9e9ebab28ad8c1055cecd9d82afeeb44",
+    "strictDigestBefore": "4db6a7bd01358c63924c8e517e79f073a171677cef70108ba298215c099b95fd",
+    "strictDigestAfter": "4db6a7bd01358c63924c8e517e79f073a171677cef70108ba298215c099b95fd",
     "strictIdentical": true,
-    "accessDigestBefore": "5a25b230e3cb28ccba99c42ca705f8090fe778d339aa6588e8311239117b232f",
-    "accessDigestAfter": "5a25b230e3cb28ccba99c42ca705f8090fe778d339aa6588e8311239117b232f",
+    "accessDigestBefore": "3a8a04310966729f60d9b9b02288f706666663bd50499e6638fbf719ba7158cb",
+    "accessDigestAfter": "3a8a04310966729f60d9b9b02288f706666663bd50499e6638fbf719ba7158cb",
     "accessTimesIdentical": true,
     "accessTimeNote": "The last-access time is digested separately and reported on its own line. Reading a file is what a read-only analyser does; where the volume records last access, a changed access time is a consequence of reading, never a change of content, name, structure or contractual timestamp.",
     "settling": {
@@ -47,8 +47,8 @@
         "entryCountAfter": 181,
         "fileCountAfter": 165,
         "totalBytesAfter": 1873,
-        "strictDigestBefore": "618f9a4288007a7a8b075c0f030b1b19b684d1666369a55da79b0aa90c62aaca",
-        "strictDigestAfter": "618f9a4288007a7a8b075c0f030b1b19b684d1666369a55da79b0aa90c62aaca",
+        "strictDigestBefore": "4575765dbf70894dbe7d84485224b78877aa142757660e6ef9bff24b412df869",
+        "strictDigestAfter": "4575765dbf70894dbe7d84485224b78877aa142757660e6ef9bff24b412df869",
         "strictIdentical": true,
         "accessIdentical": true
       },
@@ -57,8 +57,8 @@
         "entryCountAfter": 8,
         "fileCountAfter": 6,
         "totalBytesAfter": 85,
-        "strictDigestBefore": "fb5202a5c17fd7f5779ffba9c547eec66790cdc9c06b0ac6209d3b594aa88148",
-        "strictDigestAfter": "fb5202a5c17fd7f5779ffba9c547eec66790cdc9c06b0ac6209d3b594aa88148",
+        "strictDigestBefore": "9835df78936eafcc7bf211bef2cea6cda1b4d7f611413da85ec8b3b2a2ebfb82",
+        "strictDigestAfter": "9835df78936eafcc7bf211bef2cea6cda1b4d7f611413da85ec8b3b2a2ebfb82",
         "strictIdentical": true,
         "accessIdentical": true
       },
@@ -67,8 +67,8 @@
         "entryCountAfter": 6,
         "fileCountAfter": 4,
         "totalBytesAfter": 84,
-        "strictDigestBefore": "19818ee5eafeca2504efaad93fcb4f6f73e6d86bcc2c3d7146531bdafc9bbdab",
-        "strictDigestAfter": "19818ee5eafeca2504efaad93fcb4f6f73e6d86bcc2c3d7146531bdafc9bbdab",
+        "strictDigestBefore": "a984c5f6523b2b4df2168e222af3788a11822f2531be030bf61090dcb5bf5aed",
+        "strictDigestAfter": "a984c5f6523b2b4df2168e222af3788a11822f2531be030bf61090dcb5bf5aed",
         "strictIdentical": true,
         "accessIdentical": true
       },
@@ -77,8 +77,8 @@
         "entryCountAfter": 11,
         "fileCountAfter": 8,
         "totalBytesAfter": 1424,
-        "strictDigestBefore": "0c5d9a5614f65c1db639ce4f7f5f4698e7364c039b9f844cb0159f2cab3db117",
-        "strictDigestAfter": "0c5d9a5614f65c1db639ce4f7f5f4698e7364c039b9f844cb0159f2cab3db117",
+        "strictDigestBefore": "5d47518dda0cbe62952d98a0262e297293bb189b3dcfbcc2aa1243d4e04d7ebc",
+        "strictDigestAfter": "5d47518dda0cbe62952d98a0262e297293bb189b3dcfbcc2aa1243d4e04d7ebc",
         "strictIdentical": true,
         "accessIdentical": true
       }
@@ -185,7 +185,7 @@
           "observed": {
             "state": "UNAVAILABLE",
             "reason": "ROOT_NOT_FOUND",
-            "text": "⚠Source indisponible — dernier index conservéle dossier est introuvableDernière observation : 8 oct. 2026, 21 h 20 · dernier index synchronisé : révision 1",
+            "text": "⚠Source indisponible — dernier index conservéle dossier est introuvableDernière observation : 8 oct. 2026, 21 h 35 · dernier index synchronisé : révision 1",
             "watch": "DEGRADED",
             "cardsStillOnScreen": 15
           },
@@ -409,11 +409,11 @@
       "evidence": {
         "sourceKind": "REAL_ROOT",
         "engineReport": {
-          "brainId": "real-eba0a657-4658-49cd-babe-a09863c8b35f",
+          "brainId": "real-7d1c9e70-a39a-47a4-83a7-485a14d035dd",
           "engineVersion": "dre-v1",
-          "runId": "dre1-29cf313e715ffea2",
-          "mapDigest": "fnv1a64:d5381675ece587ac",
-          "contentGenerationId": "db05eccd-1258-4ba1-9180-58a0a212192f",
+          "runId": "dre1-8d0c97a5d53a5f5b",
+          "mapDigest": "fnv1a64:393f100de7509240",
+          "contentGenerationId": "8c682578-9ebd-4135-93e8-f94c9df2fb4b",
           "rulesEvaluated": [
             "core.identical-content/v1",
             "core.numbered-sibling-revision-candidate/v1"
@@ -433,7 +433,7 @@
           "files": 165,
           "algorithm": "sha256-v1"
         },
-        "deterministicRule": "Règle : core.identical-content version v1 · Contenu binaire identique observé : les deux occurrences non vides ont le même SHA-256 dans la génération utilisée. SHA-256 identique 9c045e3dea43506979491622bb356fd8fa0e412c823f6088170b789e6d31dacc, génération db05eccd-1258-4ba1-9180-58a0a212192f. Contenu binaire identique observé.",
+        "deterministicRule": "Règle : core.identical-content version v1 · Contenu binaire identique observé : les deux occurrences non vides ont le même SHA-256 dans la génération utilisée. SHA-256 identique 9c045e3dea43506979491622bb356fd8fa0e412c823f6088170b789e6d31dacc, génération 8c682578-9ebd-4135-93e8-f94c9df2fb4b. Contenu binaire identique observé.",
         "provenancesSeen": [
           "◆ déterministe"
         ],
@@ -442,6 +442,13 @@
         ],
         "suggestionExplained": true,
         "suggestionSignals": [
+          "extension",
+          "normalizedPrefix",
+          "parent",
+          "sameExtension",
+          "sameParent",
+          "sourceNumber",
+          "targetNumber",
           "extension",
           "normalizedPrefix",
           "parent",
@@ -464,7 +471,7 @@
     {
       "requirement": "P-05",
       "phase": 1,
-      "observation": "the incoming and outgoing counts shown by the PANEL and drawn on the MAP both equal the Index's for the same node of a REAL_ROOT brain, read from two separate store queries; the direction is carried by a glyph, a heading and a filled arrow head rather than by colour; approving a suggestion with the real keyboard added exactly one established relation — outgoing on its source and incoming on its target — and revoking it took exactly that one back",
+      "observation": "on a REAL_ROOT brain, the incoming and outgoing counts shown by the PANEL equal the Index's exactly for the same node, read from two separate store queries; the MAP is judged two-sided because the view is bounded — it draws exactly the relations whose both ends are materialised (see `drawableRelationsOfTheNode` against `mapOutgoing`/`mapIncoming`) and every relation whose other end is not drawn is named in the « endpoints outside the current view » region with its own control, so none is lost; the direction is carried by a glyph, a heading and a filled arrow head rather than by colour; approving a suggestion with the real keyboard added exactly one established relation — outgoing on its source and incoming on its target — and revoking it took exactly that one back",
       "evidence": {
         "sourceKind": "REAL_ROOT",
         "panelTotalsText": "1 sortante(s) · 0 entrante(s) · 0 suggestion(s) non comptée(s)",
@@ -520,7 +527,7 @@
             "direction": "outgoing",
             "provenance": "APPROVED",
             "type": "revision",
-            "leadsTo": "173",
+            "leadsTo": "174",
             "directionGlyph": "→",
             "provenanceWord": "● approuvée",
             "link": true
@@ -528,11 +535,11 @@
         ],
         "everyEntryHasALink": true,
         "everyEntryCarriesTypeDirectionAndProvenance": true,
-        "tabStepsToARelationEntry": 2,
+        "tabStepsToARelationEntry": 60,
         "queueOnScreen": {
           "total": 2,
           "position": "Suggestion 1 sur 2 affichée(s), 2 en attente au total.",
-          "key": "dre1:2bac0cf2bd1e3579",
+          "key": "dre1:ae988f03faad54df",
           "type": "révision de",
           "state": "en attente de décision",
           "why": "Pourquoi : Suggestion créée parce que les deux fichiers sont dans le même dossier, ont la même extension et des noms identiques sauf un numéro final consécutif.",
@@ -646,10 +653,10 @@
           "locale": "fr",
           "legend": true,
           "chips": [
-            "composition-chip-real-eba0a657-4658-49cd-babe-a09863c8b35f",
-            "composition-chip-real-a33a2ef3-b0d6-4358-bfb3-2d5d4964b092",
-            "composition-chip-real-5176fb25-8911-4438-8ba5-d24e569aefb7",
-            "composition-chip-synth-d141fcc8-75a6-45d1-84c2-cd1208c291d3"
+            "composition-chip-real-7d1c9e70-a39a-47a4-83a7-485a14d035dd",
+            "composition-chip-real-5d2a68a5-9a91-4b4d-b61c-d89ad6bddae4",
+            "composition-chip-real-07bff99d-a387-4411-8f5d-978b71d47183",
+            "composition-chip-synth-fd326935-8ac5-40fa-8dd7-f20cd4b40bb3"
           ]
         },
         "unseenBefore": 4,
@@ -685,8 +692,8 @@
         },
         "leftByPhaseOne": {
           "brain": "atelier",
-          "approvedThenRevoked": "dre1:25fa91fb30b6c2c3",
-          "rejected": "dre1:2bac0cf2bd1e3579",
+          "approvedThenRevoked": "dre1:9180221fbdfceaa9",
+          "rejected": "dre1:ae988f03faad54df",
           "deterministicCount": 2,
           "approvedCount": 0,
           "pendingSuggestionCount": 1
@@ -706,14 +713,14 @@
         },
         "unavailable": {
           "state": "UNAVAILABLE",
-          "text": "⚠Source indisponible — dernier index conservéle dossier est introuvableDernière observation : 8 oct. 2026, 21 h 22 · dernier index synchronisé : révision 1",
+          "text": "⚠Source indisponible — dernier index conservéle dossier est introuvableDernière observation : 8 oct. 2026, 21 h 37 · dernier index synchronisé : révision 1",
           "reason": "le dossier est introuvable",
           "watch": "DEGRADED",
           "cardsStillOnScreen": 13
         },
         "recovered": {
           "state": "SYNCED",
-          "text": "✓À jour à la dernière vérificationDernière observation : 8 oct. 2026, 21 h 22",
+          "text": "✓À jour à la dernière vérificationDernière observation : 8 oct. 2026, 21 h 37",
           "watch": "WATCHING"
         },
         "journalTotalBefore": 0,
@@ -810,7 +817,7 @@
         "map_workspace_restore",
         "map_workspace_update"
       ],
-      "callCount": 897
+      "callCount": 907
     },
     "fatalConsoleErrors": 0,
     "semanticsDigest": "ca3914c4027fe1f12dc5b93be90f0db12361a123de31dbf06bdb73e39881d4f1"
@@ -887,15 +894,15 @@
         "filetopoArtifacts": []
       },
       "atelier": {
-        "productIntegrityReport": "{\"exceptionId\":1,\"text\":\"Uncaught (in promise)\",\"lineNumber\":0,\"columnNumber\":0,\"exception\":{\"type\":\"string\",\"value\":\"map_source_not_synthetic: real-eba0a657-4658-49cd-babe-a09863c8b35f\"}}",
+        "productIntegrityReport": "{\"exceptionId\":1,\"text\":\"Uncaught (in promise)\",\"lineNumber\":0,\"columnNumber\":0,\"exception\":{\"type\":\"string\",\"value\":\"map_source_not_synthetic: real-7d1c9e70-a39a-47a4-83a7-485a14d035dd\"}}",
         "note": "A real root has no frozen fixture plan to compare to; I-2 is judged for this root by the external fingerprint."
       },
       "carnets": {
-        "productIntegrityReport": "{\"exceptionId\":2,\"text\":\"Uncaught (in promise)\",\"lineNumber\":0,\"columnNumber\":0,\"exception\":{\"type\":\"string\",\"value\":\"map_source_not_synthetic: real-a33a2ef3-b0d6-4358-bfb3-2d5d4964b092\"}}",
+        "productIntegrityReport": "{\"exceptionId\":2,\"text\":\"Uncaught (in promise)\",\"lineNumber\":0,\"columnNumber\":0,\"exception\":{\"type\":\"string\",\"value\":\"map_source_not_synthetic: real-5d2a68a5-9a91-4b4d-b61c-d89ad6bddae4\"}}",
         "note": "A real root has no frozen fixture plan to compare to; I-2 is judged for this root by the external fingerprint."
       },
       "archives": {
-        "productIntegrityReport": "{\"exceptionId\":3,\"text\":\"Uncaught (in promise)\",\"lineNumber\":0,\"columnNumber\":0,\"exception\":{\"type\":\"string\",\"value\":\"map_source_not_synthetic: real-5176fb25-8911-4438-8ba5-d24e569aefb7\"}}",
+        "productIntegrityReport": "{\"exceptionId\":3,\"text\":\"Uncaught (in promise)\",\"lineNumber\":0,\"columnNumber\":0,\"exception\":{\"type\":\"string\",\"value\":\"map_source_not_synthetic: real-07bff99d-a387-4411-8f5d-978b71d47183\"}}",
         "note": "A real root has no frozen fixture plan to compare to; I-2 is judged for this root by the external fingerprint."
       }
     }
