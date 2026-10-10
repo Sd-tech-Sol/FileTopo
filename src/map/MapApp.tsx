@@ -380,6 +380,22 @@ export default function MapApp() {
     [],
   );
   const status = statusMessage === null ? null : resolveStatus(statusMessage, locale);
+  // `TASK-0061` / `B04-O2` — Escape dismisses the notices on screen, from wherever the focus is. It
+  // never takes a key somebody else already used: the composition menu and the identity form call
+  // `preventDefault` on theirs, and a text field keeps its own Escape.
+  const noticeShown = status !== null || workspaceCorrections.length > 0;
+  useEffect(() => {
+    if (!noticeShown) return;
+    const dismissNotices = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      const target = event.target as Element | null;
+      if (target?.closest?.("input, textarea, select, [contenteditable='true'], [role='menu']")) return;
+      setStatusMessage(null);
+      setWorkspaceCorrections([]);
+    };
+    window.addEventListener("keydown", dismissNotices);
+    return () => window.removeEventListener("keydown", dismissNotices);
+  }, [noticeShown]);
   const [measurement, setMeasurement] = useState<FixtureMeasurement[] | null>(null);
   const [measuring, setMeasuring] = useState(false);
   const [nodeRelations, setNodeRelations] = useState<NodeRelations | null>(null);
@@ -3769,18 +3785,38 @@ export default function MapApp() {
       </details>
       </div>
 
-      <WorkspaceCorrections
-        strings={t.workspace}
-        corrections={workspaceCorrections}
-        onDismiss={() => setWorkspaceCorrections([])}
-      />
-
-      {status ? (
-        <p className="app__status" role="status">
-          {status}
-        </p>
-      ) : null}
       </div>
+
+      {/*
+        `TASK-0061` / `ACTION-0113` `B04-O2` — what just happened. These two notices sat at the END of the
+        chrome band, which scrolls itself: at 960x640 the band has no room left under the groups, so a
+        refusal or a "not indexed yet" was drawn 0 px inside it, and the corrections summary and its
+        dismiss button with it. They are not content of the band. They are a layer of the window — fixed to
+        its bottom edge, which at that size is the keyboard hint and the bottom padding, not a control —
+        that grows from its own text, scrolls itself if it must, and never takes a pixel from the band, the
+        map or the right panel. Still in the document order right after the chrome, so Tab reaches the
+        dismiss button before the map; Escape dismisses what is on screen (see `dismissNotices`).
+      */}
+      {status || workspaceCorrections.length > 0 ? (
+        <div className="app__feedback" data-testid="app-feedback">
+          <WorkspaceCorrections
+            strings={t.workspace}
+            corrections={workspaceCorrections}
+            onDismiss={() => setWorkspaceCorrections([])}
+          />
+
+          {status ? (
+            <div className="app__notice" data-testid="status-notice">
+              <p className="app__status" role="status">
+                {status}
+              </p>
+              <button type="button" data-testid="status-dismiss" onClick={() => setStatus(null)}>
+                {t.workspace.statusDismiss}
+              </button>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       <main className="app__main">
         <div className="app__map">

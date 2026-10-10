@@ -42,6 +42,7 @@ export interface MapStrings {
     motionHint: string;
     correctionsTitle: string;
     correctionsDismiss: string;
+    statusDismiss: string;
     corrections: Record<WorkspaceCorrection, string>;
   };
   composition: string;
@@ -269,6 +270,7 @@ export const strings: Record<Locale, MapStrings> = {
       motionHint: "« Système » suit le réglage de votre système ; « Réduit » supprime toute animation.",
       correctionsTitle: "Espace de travail rouvert avec des corrections",
       correctionsDismiss: "Fermer ce résumé",
+      statusDismiss: "Fermer ce message",
       corrections: {
         RECORD_UNREADABLE: "L'espace enregistré était illisible : valeurs par défaut utilisées.",
         BRAIN_MISSING: "Un cerveau affiché n'existe plus au catalogue : il a été retiré de la composition.",
@@ -612,6 +614,7 @@ export const strings: Record<Locale, MapStrings> = {
       motionHint: "“System” follows your system setting; “Reduced” removes all animation.",
       correctionsTitle: "Workspace reopened with corrections",
       correctionsDismiss: "Dismiss this summary",
+      statusDismiss: "Dismiss this message",
       corrections: {
         RECORD_UNREADABLE: "The saved workspace was unreadable: defaults were used.",
         BRAIN_MISSING: "A displayed brain is no longer in the catalogue: it was removed from the composition.",

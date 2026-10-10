@@ -77,6 +77,7 @@ export default function CompositionBar({
   const [focusIndex, setFocusIndex] = useState(0);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLUListElement | null>(null);
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const menuId = useId();
   // Where the open menu sits, in window coordinates: a `position: fixed` layer is not clipped by
@@ -130,11 +131,16 @@ export default function CompositionBar({
   // A pointer press outside the control closes the menu. Deliberately not a
   // blur handler: a click elsewhere is a person dismissing the menu, a window
   // deactivation is not — the distinction `K10` cost a real run to learn.
+  //
+  // `TASK-0061` / `B04-O1` — the menu is modal, so "outside" is everything but the menu list and the
+  // trigger: the scrim that lies under the list (and over the rest of the bar) is outside too.
   useEffect(() => {
     if (!open) return;
     const onPointerDown = (event: MouseEvent) => {
       const target = event.target as Node | null;
-      if (target && !containerRef.current?.contains(target)) setOpen(false);
+      if (!target) return;
+      if (menuRef.current?.contains(target) || triggerRef.current?.contains(target)) return;
+      setOpen(false);
     };
     document.addEventListener("mousedown", onPointerDown, true);
     return () => document.removeEventListener("mousedown", onPointerDown, true);
@@ -307,11 +313,20 @@ export default function CompositionBar({
           </button>
 
           {open && addable.length > 0 ? (
+            <>
+            {/* `B04-O1` — the menu is modal: the window under it is a scrim, and the first press on it closes the menu. */}
+            <div
+              className="composition__backdrop"
+              data-testid="composition-menu-backdrop"
+              aria-hidden="true"
+            />
             <ul
+              ref={menuRef}
               className="composition__menu"
               id={menuId}
               role="menu"
               aria-label={strings.add}
+              data-modal="true"
               style={menuBox ?? undefined}
             >
               {addable.map((brain, index) => (
@@ -367,6 +382,7 @@ export default function CompositionBar({
                 </li>
               ))}
             </ul>
+            </>
           ) : null}
         </li>
       </ul>

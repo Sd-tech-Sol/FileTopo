@@ -305,6 +305,62 @@ describe("a workspace comes back as it was left", () => {
   });
 });
 
+describe("the notices of what just happened — TASK-0061 B04-O2", () => {
+  it("puts the corrections and a refusal in a layer of the window, not in the chrome band, each with a dismiss button", async () => {
+    store.workspace = workspace({ displayedBrainIds: [A], focusedBrainId: A });
+    store.corrections = ["BRAIN_MISSING"];
+    await boot();
+    const chrome = document.querySelector(".app__chrome") as HTMLElement;
+    const layer = screen.getByTestId("app-feedback");
+    // The band scrolls itself; a notice written at its end is under its fold at 960x640.
+    expect(chrome.contains(layer)).toBe(false);
+    expect(layer.contains(screen.getByTestId("workspace-corrections"))).toBe(true);
+    expect(layer.contains(screen.getByTestId("workspace-corrections-dismiss"))).toBe(true);
+
+    // The product's own refusal: removing the last displayed brain.
+    fireEvent.click(screen.getByTestId(`composition-remove-${A}`));
+    const notice = await screen.findByTestId("status-notice");
+    expect(layer.contains(notice)).toBe(true);
+    expect(within(notice).getByRole("status").textContent).toContain("Composition refusée");
+    const dismiss = within(notice).getByTestId("status-dismiss");
+    expect(dismiss.tagName).toBe("BUTTON");
+    expect(dismiss.textContent).toBe("Fermer ce message");
+    // The live region carries the words and nothing else, so the button is not read as part of them.
+    expect(within(notice).getByRole("status").contains(dismiss)).toBe(false);
+
+    fireEvent.click(dismiss);
+    expect(screen.queryByTestId("status-notice")).toBeNull();
+    // The corrections are a separate notice: dismissing one does not dismiss the other.
+    expect(screen.queryByTestId("workspace-corrections")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("workspace-corrections-dismiss"));
+    expect(screen.queryByTestId("app-feedback")).toBeNull();
+  });
+
+  it("Escape dismisses what is on screen, but never a key somebody else used", async () => {
+    store.workspace = workspace({ displayedBrainIds: [A], focusedBrainId: A });
+    store.corrections = ["BRAIN_MISSING"];
+    await boot();
+    fireEvent.click(screen.getByTestId(`composition-remove-${A}`));
+    await screen.findByTestId("status-notice");
+
+    // Pressed in a text field, Escape keeps its own meaning there.
+    const search = screen.getByTestId("search-input");
+    fireEvent.keyDown(search, { key: "Escape" });
+    expect(screen.queryByTestId("status-notice")).toBeTruthy();
+
+    // A handler that already used the key said so with preventDefault.
+    const used = new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true });
+    used.preventDefault();
+    document.body.dispatchEvent(used);
+    expect(screen.queryByTestId("status-notice")).toBeTruthy();
+
+    fireEvent.keyDown(document.body, { key: "Escape" });
+    expect(screen.queryByTestId("status-notice")).toBeNull();
+    expect(screen.queryByTestId("workspace-corrections")).toBeNull();
+    expect(screen.queryByTestId("app-feedback")).toBeNull();
+  });
+});
+
 describe("what a change writes", () => {
   it("writes a legend, density or motion change at once, to the workspace and nowhere else", async () => {
     await boot();

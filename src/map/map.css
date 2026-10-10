@@ -415,7 +415,27 @@ body {
  * The add menu is a layer over the window, not a list in the flow: `CompositionBar` writes its
  * `top`, `left`, `width` and `max-height` from the trigger's own rectangle. `fixed` is what lets
  * it leave the chrome band, which scrolls and would otherwise clip it.
+ *
+ * `TASK-0061` / `ACTION-0113` `B04-O1` — and it is MODAL, on purpose and visibly. At 960x640 nothing
+ * is free under the trigger: the layer lies over the Diagnostics summary (and over the map), and a
+ * layer that covered a control while leaving it half-reachable was the defect. While the menu is open
+ * the rest of the window sits under a light scrim that takes the first press and closes the menu;
+ * Escape closes it and gives the focus back to the trigger; Tab leaves it. What the layer covers is
+ * therefore never "available but hidden": it is on the other side of a menu one closes in one gesture.
  */
+.composition__backdrop {
+  position: fixed;
+  z-index: 29;
+  inset: 0;
+  background: rgb(15 25 21 / 14%);
+}
+
+@media (prefers-color-scheme: dark) {
+  .composition__backdrop {
+    background: rgb(0 0 0 / 34%);
+  }
+}
+
 .composition__menu {
   position: fixed;
   z-index: 30;
@@ -545,12 +565,56 @@ button:disabled {
   outline-offset: 2px;
 }
 
-.app__status {
-  margin: 0;
-  padding: 8px 12px;
+/*
+ * `TASK-0061` / `ACTION-0113` `B04-O2` — the notices of what just happened (the status line, the
+ * workspace corrections) are a layer of the window, not rows of the chrome band. The band scrolls
+ * itself and at 960x640 has no row to spare under the groups, so these were measured at 0 px of 35
+ * (status) and 0 of 154 (corrections, with their dismiss button) at the moment they appeared. The layer
+ * is fixed to the bottom edge of the window — at that size the keyboard hint and the bottom padding —
+ * so it adds no row anywhere: the thirteen commands, the three group summaries and the map keep the
+ * rectangles they have without it. Its box only exists where there is a notice; it takes no pointer
+ * event outside the notices themselves, and scrolls itself if a notice outgrows it.
+ */
+.app__feedback {
+  position: fixed;
+  z-index: 40;
+  right: 18px;
+  bottom: 10px;
+  left: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  max-height: min(40vh, 260px);
+  overflow-y: auto;
+  pointer-events: none;
+}
+
+.app__feedback > * {
+  box-sizing: border-box;
+  max-width: 100%;
   border-left: 4px solid var(--accent);
-  background: var(--accent-soft);
   border-radius: 0 8px 8px 0;
+  background: var(--accent-soft);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 22%);
+  pointer-events: auto;
+}
+
+.app__notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px 6px 12px;
+}
+
+.app__status {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+}
+
+.app__notice > button {
+  flex: none;
 }
 
 .app__report {
@@ -1197,20 +1261,38 @@ input[type="text"] {
   font-weight: 600;
 }
 
+/* The title and its dismiss button share the first row, so the button is where the notice starts
+   rather than under every line of it; the corrections follow in as many columns as the width holds. */
 .app__corrections {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  padding: 8px 12px;
-  border-left: 4px solid var(--accent);
-  background: var(--accent-soft);
-  border-radius: 0 8px 8px 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "title dismiss"
+    "list list";
+  align-items: center;
+  gap: 4px 12px;
+  align-self: stretch;
+  padding: 6px 8px 8px 12px;
+}
+
+.app__corrections > strong {
+  grid-area: title;
+}
+
+.app__corrections > button {
+  grid-area: dismiss;
 }
 
 .app__corrections ul {
+  grid-area: list;
   margin: 0;
   padding-left: 18px;
+  columns: 340px;
+  column-gap: 24px;
+}
+
+.app__corrections li {
+  break-inside: avoid;
 }
 
 /* TASK-0053 / DEC-0051 H — "Compacte" tightens the APPLICATION's own chrome: spacing of
@@ -1230,10 +1312,16 @@ input[type="text"] {
   padding: 3px 8px;
 }
 
-:root[data-density="compact"] .app__status,
+:root[data-density="compact"] .app__notice,
 :root[data-density="compact"] .app__corrections,
 :root[data-density="compact"] .app__report {
   padding: 4px 8px;
+}
+
+:root[data-density="compact"] .app__feedback {
+  right: 12px;
+  bottom: 6px;
+  left: 12px;
 }
 
 :root[data-density="compact"] .app__aside {

@@ -281,6 +281,36 @@ describe("clavier seul — K10, L10", () => {
     expect(screen.queryByRole("menu")).toBeNull();
   });
 
+  it("est modal : un voile sous la liste, qui referme le menu au premier appui — TASK-0061 B04-O1", () => {
+    // At 960x640 the list lies over the Diagnostics summary. A layer that covers a control while
+    // leaving it half reachable was the defect; the menu says it is modal instead — a scrim under
+    // the list, and the first press on it closes the menu without activating what it covers.
+    renderBar();
+    expect(screen.queryByTestId("composition-menu-backdrop")).toBeNull();
+    fireEvent.keyDown(screen.getByTestId("composition-add-trigger"), { key: "ArrowDown" });
+    const backdrop = screen.getByTestId("composition-menu-backdrop");
+    expect(backdrop.getAttribute("aria-hidden")).toBe("true");
+    expect(screen.getByRole("menu").getAttribute("data-modal")).toBe("true");
+
+    // A press inside the list does not close it before the item's own click chooses.
+    fireEvent.mouseDown(screen.getByTestId("composition-add-item-brain-beta"));
+    expect(screen.queryByRole("menu")).toBeTruthy();
+
+    fireEvent.mouseDown(backdrop);
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(screen.queryByTestId("composition-menu-backdrop")).toBeNull();
+  });
+
+  it("rend le focus au déclencheur sur Échap, voile compris — TASK-0061 B04-O1", () => {
+    renderBar();
+    const trigger = screen.getByTestId("composition-add-trigger");
+    fireEvent.keyDown(trigger, { key: "ArrowDown" });
+    fireEvent.keyDown(screen.getByTestId("composition-add-item-brain-beta"), { key: "Escape" });
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(screen.queryByTestId("composition-menu-backdrop")).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+  });
+
   it("la barre suit le cerveau focused quand il change", () => {
     function Harness() {
       const [view, setView] = useState<ComposedView>(() =>

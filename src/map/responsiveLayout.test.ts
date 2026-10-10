@@ -624,6 +624,49 @@ describe("the composition keeps one row of chips, and its menu is a layer, not a
   });
 });
 
+describe("the open menu is modal, and the notices are a layer of the window — TASK-0061 ACTION-0113", () => {
+  it("puts a scrim under the open menu and above everything it covers", () => {
+    const backdrop = ruleFor(".composition__backdrop")[0];
+    const menu = ruleFor(".composition__menu")[0];
+    expect(backdrop.body).toMatch(/position:\s*fixed/);
+    expect(backdrop.body).toMatch(/inset:\s*0/);
+    const level = (body: string) => Number(/z-index:\s*(\d+)/.exec(body)?.[1]);
+    expect(level(backdrop.body)).toBeLessThan(level(menu.body));
+    // The scrim is drawn, so that the modality is seen and not only announced.
+    expect(backdrop.body).toMatch(/background:\s*rgb\(/);
+  });
+
+  it("fixes the notices to the window's bottom edge, outside the chrome band, and keeps the pointer for them alone", () => {
+    const layer = ruleFor(".app__feedback");
+    expect(layer).toHaveLength(1);
+    expect(layer[0].body).toMatch(/position:\s*fixed/);
+    expect(layer[0].body).toMatch(/bottom:\s*\d+px/);
+    expect(layer[0].body).toMatch(/pointer-events:\s*none/);
+    // It grows from its own text and scrolls itself — never a pixel taken from the band or the map.
+    expect(layer[0].body).toMatch(/max-height:\s*min\(/);
+    expect(layer[0].body).toMatch(/overflow-y:\s*auto/);
+    const children = ruleFor(".app__feedback > *");
+    expect(children).toHaveLength(1);
+    expect(children[0].body).toMatch(/pointer-events:\s*auto/);
+    const menuLevel = Number(/z-index:\s*(\d+)/.exec(ruleFor(".composition__menu")[0].body)?.[1]);
+    expect(Number(/z-index:\s*(\d+)/.exec(layer[0].body)?.[1])).toBeGreaterThan(menuLevel);
+  });
+
+  it("renders the layer right after the chrome band and before the map, never inside the band", () => {
+    const chromeEnd = appSource.indexOf('<main className="app__main">');
+    const layer = appSource.indexOf('className="app__feedback"');
+    expect(layer).toBeGreaterThan(-1);
+    expect(layer).toBeLessThan(chromeEnd);
+    // The band's own closing tag comes before the layer: what precedes it is the groups row.
+    const before = appSource.slice(appSource.indexOf('<div className="app__groups">'), layer);
+    const opened = (before.match(/<div/g) ?? []).length;
+    const closed = (before.match(/<\/div>/g) ?? []).length;
+    expect(closed).toBeGreaterThan(opened);
+    expect(appSource.slice(layer, chromeEnd)).toContain("<WorkspaceCorrections");
+    expect(appSource.slice(layer, chromeEnd)).toContain('data-testid="status-dismiss"');
+  });
+});
+
 describe("a jsdom test that drives a command inside a group opens the group first", () => {
   // jsdom lets a click through to the child of a CLOSED `<details>`, so such a test passes
   // whether or not the disclosure works. `src/test/disclosure.ts` opens a group the way a
