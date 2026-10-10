@@ -2756,7 +2756,14 @@ if (pass === 3) {
     chromeBandScrollTopBeforeThePress: dismissAt?.chromeScrollTop ?? null,
     documentScrollYBeforeThePress: dismissAt?.documentScrollY ?? null,
   };
-  assert.equal(record.dismissalAtAppearance.dismissAimableWithoutScrolling, true, "the corrections dismiss button answers a press where the notice drew it");
+  // A failing criterion is a measurement, not a script error: when the button was NOT there to be pressed
+  // (the product before the ACTION-0113 correction), that is recorded, and only then the way a person has
+  // left — scrolling it into view — is used so that the rest of the pass can be measured.
+  record.dismissalAtAppearance.fellBackToAScrollingClick = false;
+  if (!record.dismissalAtAppearance.dismissAimableWithoutScrolling) {
+    record.dismissalAtAppearance.fellBackToAScrollingClick = true;
+    await click(testid("workspace-corrections-dismiss"));
+  }
   await until(`!document.querySelector('[data-testid="workspace-corrections"]')`);
   await quiet();
   const afterDismiss = await evaluate(READ_FIRST_SCREEN);
