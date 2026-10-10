@@ -1,7 +1,7 @@
 # TASK-0061 — Stage B / B04 — Robustesse de la barre multi-cerveaux
 
 - **Date :** 2026-10-09
-- **État :** `IMPLEMENTED` (correction ACTION-0113 livrée le 2026-10-09, **non VERIFIED** : contrôle indépendant à venir). Avant : `IMPLEMENTED / NOT VERIFIED — CORRECTION REQUIRED` par ACTION-0113 pour B04-O1 et B04-O2.
+- **État :** `VERIFIED` — contrôle indépendant ACTION-0114 (2026-10-09), pour la portée B04 seulement. Le rapport historique `IMPLEMENTED` de Claude reste inclus ci-dessous; l'alternative modale d'ACTION-0113 est explicitement ratifiée.
 - **Branche :** `build/v0.2-b04-multibrain-shell`
 - **Base :** `c055181d8236a6681c97aea4d5ed77731d9d1e30` (TASK-0060 B03 VERIFIED, ACTION-0112).
 - **Exécuteur :** Claude Code Sonnet, effort HIGH; basculer vers Opus uniquement si un obstacle justifié et le signaler.

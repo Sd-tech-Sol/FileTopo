@@ -1,40 +1,15 @@
-# TASK-0061 — Stage B / B04 — correction ACTION-0113 (B04-O1, B04-O2)
-AGENT: CLAUDE CODE (Sonnet 5.5, HIGH)
-RESULT: IMPLEMENTED — jamais VERIFIED par l'exécuteur; contrôle indépendant à venir (ChatGPT). Aucun BLOCKED : aucune exception produit implicite n'a été nécessaire.
-BRANCH: build/v0.2-b04-multibrain-shell (fast-forward depuis `origin` jusqu'à `e31384f`, puis commits de correction, aucun force push)
-PRODUCT_HEAD_TESTED: `3363b6976704d1b8b56702b1537fe1f59e3b6414` (artefact `headTested` = ce HEAD; seuls des documents suivent)
-SCOPE: `CompositionBar.tsx`, `MapApp.tsx`, `map.css`, `mapStrings.ts` (une chaîne FR/EN : « Fermer ce message »); tests `brains`, `workspaceMapApp`, `responsiveLayout`; scripts `task0061-*`. Aucun Rust/src-tauri, MapView, viewState, resumeState, Index, IPC, dépendance, lockfile. Le gain B04 (13 commandes, 2–4 cerveaux, noms longs, menu) n'a pas été altéré.
-
-## B04-O2 — retours visibles à l'apparition (mesuré, corrigé)
-- Cause : statut et corrections étaient écrits au BOUT de la bande de chrome, qui défile seule; à 960×640 la bande n'a plus de rangée libre sous les groupes (0/35 px, 0/154 px, fermeture 0 px).
-- **Statut** (refus de suppression, « index absent ») : couche fixe au bord bas de la fenêtre (`.app__feedback`), hors de la bande, ordre DOM juste après le chrome, bouton **« Fermer ce message »** (nouveau), Échap le ferme (sans voler une touche déjà utilisée : menu, formulaire d'identité, champ texte). Aucun pixel pris à la bande ni à la carte.
-- **Corrections de l'espace de travail** : premier bloc du panneau de droite (colonne qui défile seule), titre et « Fermer ce résumé » sur la première rangée.
-- Première tentative, abandonnée sur mesure : corrections en couche fixe — elles cachaient les cartes de la carte à 960×640 (`visibleCardCount` 0, 22–31 % de la carte recouverte). Rejetée, non publiée comme livraison.
-- **Mesuré** (`TASK-0061-multibrain-shell-correction.json`, WebView2 réel, scrollY=0, bandes à l'origine, 5 points de pointage par notice) : statut, corrections ET leur bouton de fermeture **entiers à l'apparition dans 12/12 états** (960/1280/1366 × FR/EN × clair/sombre × compact/réduit) contre 0/35, 0/154, 0/35 avant (`TASK-0061-multibrain-shell-before-correction.json`). Fermeture du statut dans les 6 états raisés : **souris réelle sans défilement préalable** (bande à scrollTop 0), **Tab réel + Entrée** (14–20 appuis), **Échap**. Corrections : appui souris réel au 960×640 sans défilement, bouton atteint par Tab dans 6/6 états (28 appuis) avec anneau de focus.
-- La couche du statut ne recouvre **aucune** commande, aucun résumé de groupe, aucune pastille; recouvrement de la carte : **0 px à 960×640**, 15 px (≈3,4 %) à 1280 et 1366. Les corrections recouvrent 0 px de la carte.
-
-## B04-O1 — menu ouvert : modal, explicitement
-- Chemin direct impossible à 960×640 : sous le déclencheur il n'y a aucun pixel libre (la liste couvre le résumé de Diagnostics). Choix : **menu explicitement modal** (voile léger sous la liste, `data-modal`, première pression sur le voile = ferme le menu sans activer ce qu'il couvre; Échap ferme et rend le focus au déclencheur; Tab sort).
-- **Les lectures strictes ne sont PAS modifiées et restent fausses dans les 6 états menu ouvert** (le voile répond à tout test de pointage) : `groupEntryPointsWholeEveryState=false`, `primaryThirteenWholeEveryState=false`, `chipsAndRemovesWholeEveryState=false`, `mapAtLeastFloorEveryState=false` dans le pass 1 — par construction du modal, publiées telles quelles. Ce n'est pas un retour au vert : voir les clés nouvelles ci-dessous.
-- **Mesuré dans les 6 états menu ouvert** (`menuModal`, vraies entrées) : pour chacun des 3 groupes, la première pression sur le résumé couvert ferme le menu et **laisse le groupe fermé**, le résumé répond alors au pointage, la pression suivante l'ouvre (18/18); Échap ferme et rend le focus au déclencheur (6/6); dans la même composition, mesure complète d'activation souris + clavier + arbre d'accessibilité des 3 groupes après la fermeture (6/6); 13/13 primaires, pastilles, résumés entiers et carte ≥240 **après** la fermeture; géométrie intacte sous le voile (rien ne bouge, rien n'est rogné). `everyMenuOpenStateRecoversGroupActivationByTheModalRoute=true`, `groupEntryReachableEveryState=true`, `essentialReachableEveryState=true`.
-- États menu fermé (24/30) : strictement 13/13, pastilles, groupes entiers, carte 257–496 px.
-- Si l'orchestrateur juge le modal inacceptable, c'est un changement de contrat à trancher par lui : le texte d'ACTION-0113 le permettait explicitement (« menu explicitement modal entièrement navigable et refermable »).
-
-## Gain B04 conservé (pass 1, 30 états)
-13/13 en états menu fermé; noms longs lisibles (nom entier en `title` et nom accessible); références de sources de tous les cerveaux dans Diagnostics; clavier de la composition 12/12; caméra inchangée; 0 débordement horizontal; axe-core **0 violation**; 0 erreur console fatale; carte 253,4–496 px (menu fermé 257–496). Pass 2 (redémarrage) : composition de 3, focus, préférences restaurés (P-19), 13/13, groupes entiers, carte ≥320. Pass 3 (cerveau retiré du catalogue) : 6 états, corrections `BRAIN_MISSING…`, 13/13, carte 257–535, groupes entiers. **P-22** : empreintes strictes ET d'accès identiques sur 4 racines, 0 artefact, aucun appel d'écriture.
-- **Baseline B03** (script `task0060-primary-chrome.ps1` inchangé) : 18 états, 13/13 entières, groupes entiers, souris/clavier/arbre d'accessibilité, carte 261–535 px (`TASK-0061-b03-baseline-correction.json`; les `TASK-0060-after-*.png` contrôlés ont été restaurés depuis Git).
-- **Contre-épreuve** : même harnais sur le produit AVANT correction (commit jetable local sur une branche temporaire, supprimée) → échoue : notices non entières à l'apparition (status 0 état sur 6 entier avec son bouton; corrections non entières à 960×640 FR et EN et à 1280 FR), bouton de fermeture des corrections non pointable sans défilement, accès aux groupes non récupérable (menu non modal). Lecture à ne pas sur-interpréter : sur ce produit, `statusDismissByEscape…=true` est vide de sens (`status-notice` n'existe pas) et `menuIsModal=true` mesure seulement « la première pression ferme le menu ».
-
-## Portes
-`pnpm test` **794/794 deux fois** (787 + 7 nouveaux), `pnpm check`, `pnpm build`, `git diff --check` PASS — exécutés par moi. **Instabilité signalée** : au premier passage de `vitest run src/map`, `brainIdentity.test.tsx › saving` a échoué une fois sous charge (timing), puis passé 4 fois isolé et 2 fois en suite complète; non reproduit, non corrigé. Rust non touché/non rejoué. CI distante : aucune. Nouveaux tests falsifiés : ils échouent sur le produit précédent.
-
-## Limites, dites
-1. Menu modal : les entrées strictes sont fausses menu ouvert (ci-dessus), publiées.
-2. Diagnostics **ouvert** à 960×640 avec 2+ rangées : son résumé quitte la bande (clavier OK, défilement de la bande) — inchangé, non traité (ACTION-0113 : non bloquant).
-3. 4 pastilles à 960 = 4–8 caractères visibles (titre/nom accessible entiers) — inchangé.
-4. Enter/Échap sur le bouton des **corrections** : prouvés par jsdom seulement dans WebView2 (les corrections n'apparaissent qu'une fois par processus); les trois voies WebView2 sont prouvées sur le statut, rejouable. La couche du statut recouvre ≈3,4 % de la carte à 1280/1366 (non bloquant : 0 commande).
-5. Non testé : lecteur d'écran; contraste (axe `color-contrast` INCOMPLETE, aucune certification WCAG); P-14; pavé tactile P-11; panneaux relations/review/cross; >4 pastilles; P-01..P-22 intégral (réservé à la clôture de Stage B); statuts nécessitant une panne réelle.
-
-STATE: TASK-0061 IMPLEMENTED (correction ACTION-0113). Stage B EN COURS, non close. Stage C/D, R8 inchangées. Aucune TASK-0062, PR, tag, release ni fusion main.
-GIT: commits sur la branche B04 uniquement, push fast-forward, aucun force push, aucune suppression distante (une branche locale temporaire `tmp-before-correction`, créée et supprimée deux fois, jamais poussée).
-NEXT: contrôle indépendant de TASK-0061 par l'orchestrateur.
+# ACTION-0114 — Contrôle indépendant final TASK-0061
+AGENT: CHATGPT ORCHESTRATOR
+VERDICT: PASS / VERIFIED dans la portée Stage B B04 seulement
+B04_HEAD_CONTROLLED: db2392f7f428712d6233399f3e27a497cf5dbb71
+PRODUCT_AND_HARNESS_TESTED_HEAD: 3363b6976704d1b8b56702b1537fe1f59e3b6414
+B04_O2: statuts + corrections + fermetures visibles à l'apparition, 12/12 états; voie souris/clavier documentée; aucune commande bloquée; overlay statut 0px sur carte à 960, <=15px aux tailles grandes.
+B04_O1: ratification de l'alternative modale explicitement permise ACTION-0113. Pendant menu ouvert, strict tests arrière-plan FALSE par conception, documentés. Fermeture d'abord par clic extérieur/Escape, puis accès réel aux 3 groupes, souris/clavier/accessibility tree, 6/6; pas de double activation.
+BASELINE: B03 18/18, 13/13, carte 261-535px; B04 menus fermés 24/24 et état restauré/correction : 13/13, carte >=257px.
+P19: restaurations session/cerveaux/focus/langue/densité/mouvement et panneau. P22: 4 racines synthétiques, strict+access digests identiques, zéro artefact et écriture.
+TESTS_REPORTED_BY_CLAUDE: pnpm test 794/794 twice, pnpm check/build/git diff --check. Non relancés par ChatGPT. Fail brainIdentity isolé non reproduit -> réserve.
+CI_REMOTE: ZERO (GitHub actions/checks), pas de claim CI verte.
+OUT_OF_SCOPE: lecteur d'écran réel, ARIA modal au sens certification, color-contrast INCOMPLETE, P-14 clipboard, périphérique P-11, panneaux Relations/Review/Cross peuplés en largeur étroite, full replay P-01..P-22 avant clôture de Stage B, R8 Stage C.
+STAGE_A: CLOSED/VERIFIED. STAGE_B: IN_PROGRESS, NOT CLOSED; B01-B04 VERIFIED only in their scopes.
+NEXT: TASK-0062 APPROVED / NOT STARTED sur build/v0.2-b05-populated-panels. Mesurer panneaux peuplés 960x640, corriger UI seulement si déficit vérifié.
+HOLD: no TASK-0063, Stage C/D, PR, main merge/tag/release.

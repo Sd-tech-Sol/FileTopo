@@ -1,5 +1,14 @@
 # État courant
 
+## ACTION-0114 — TASK-0061 B04 VERIFIED / B05 approuvée — 2026-10-09
+
+- Contrôle GitHub indépendant au `db2392f7f428712d6233399f3e27a497cf5dbb71` (campagne WebView2 sur `3363b6976704d1b8b56702b1537fe1f59e3b6414`, docs/preuves ensuite). Deux critères ACTION-0113 résolus : messages/corrections et fermeture visibles dès l'apparition 12/12; menu de composition explicitement temporairement modal, clic/Escape le ferme sans activer l'arrière-plan, trois groupes souris/clavier testés après fermeture dans 6 états.
+- IMPORTANT : strict `groupEntryPointsWholeEveryState=false` menu ouvert est **honnête** : le voile bloque le clic derrière, les contrôles ne sont pas perdus. Alternative modal autorisée et acceptée dans ACTION-0114, pas une certification ARIA.
+- B04 mono/multi : 13/13 commandes, carte ≥257px menu fermé; P-19 redémarrage, P-22 empreintes strict+access inchangées sur 4 racines; baseline B03 18/18. Tests 794/794 ×2 PASS **rapportés par Claude**, pas relancés par ChatGPT; 0 CI distante; instabilité brainIdentity isolée à surveiller.
+- **TASK-0061 VERIFIED dans sa portée, Stage B EN COURS non fermée.**
+- Une prochaine tâche seulement : TASK-0062 B05 APPROVED / NOT STARTED sur `build/v0.2-b05-populated-panels`, mesurer vrais panneaux peuplés Relations/Review/Cross à 960x640. Finition sans toucher moteurs/Index/IPC. Contrastes/accessibilité WCAG et replay P-01..P-22 restent à faire avant clôture Stage B.
+
+
 ## TASK-0061 — correction ACTION-0113 livrée `IMPLEMENTED` (non VERIFIED) — 2026-10-09
 
 - Branche `build/v0.2-b04-multibrain-shell`, produit testé `3363b6976704d1b8b56702b1537fe1f59e3b6414`. **B04-O2** : le statut est une couche fixe au bord bas de la fenêtre (bouton « Fermer ce message », Échap) et les corrections le premier bloc du panneau de droite; entiers avec leur fermeture à l'apparition dans 12/12 états WebView2 (0/35 et 0/154 avant), carte non recouverte à 960×640. **B04-O1** : menu de composition explicitement **modal**; les lectures strictes restent fausses dans les 6 états menu ouvert (publiées), la récupération des 3 groupes par la voie modale, Échap et l'activation complète après fermeture sont mesurées vraies.

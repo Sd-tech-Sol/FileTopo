@@ -1,17 +1,16 @@
-# NEXT_PROMPT — ACTION-0113 / correction TASK-0061 B04
+# NEXT_PROMPT — TASK-0062 / Stage B B05
 
-**Une seule tâche : TASK-0061 (correction). NE PAS créer TASK-0062.**  
-**Branche :** `build/v0.2-b04-multibrain-shell`  
-**Agent :** Claude Code Sonnet, effort HIGH.  
-**Détail contractuel :** `docs/reviews/ACTION-0113-task0061-independent-control.md`.
+**Une seule tâche approuvée, NON commencée.**  
+Branche : `build/v0.2-b05-populated-panels`, issue du HEAD B04 vérifié `db2392f7f428712d6233399f3e27a497cf5dbb71`.  
+Agent : Claude Code Sonnet, effort HIGH.  
+Contrat : `docs/reviews/ACTION-0114-task0061-independent-control.md` et `docs/tasks/TASK-0062-stage-b-populated-panels.md`.
 
-1. Synchronise `origin/build/v0.2-b04-multibrain-shell` par **fast-forward uniquement**, assure-toi d'un worktree propre, lis `AGENTS.md`, `docs/ai/START_HERE.md`, ACTION-0113 et **l'intégralité** de TASK-0061, puis `TASK-0061-multibrain-shell-after.json` et `TASK-0061-status-visibility-after.json`.
-2. B04 a bien réglé les 13 commandes dans 30 états, 2–4 cerveaux, noms Unicode/longs et menu. N'altère pas ce gain. **Deux critères restent non vérifiés** :
-   - B04-O1 : `groupEntryPointsWholeEveryState=false` dans six états menu ouvert : `chrome-diagnostics` couvert par la surcouche; activation du groupe non testée. Donner un chemin direct testé et clairement accessible, ou une solution de menu explicitement modal entièrement navigable et refermable, **sans affaiblir le critère ni masquer le défaut**. Si une exception produit est indispensable, STOP/BLOCKED, pas d'approbation implicite.
-   - B04-O2 : à `960x640` le statut `Index absent` et le refus de suppression ont **0px visibles**; corrections 0/154 et 51,6/138, fermeture 0px; à 1280 FR, fermeture 11/35. Un refus doit devenir visiblement lisible **au moment où il apparaît**, avec un contrôle de fermeture accessible à la souris/clavier, sans défilement préalable du chrome.
-3. Préférer la plus petite correction UI des composants CSS/JSX déjà présents; aucune nouvelle bibliothèque, refonte modèle, backend, persistance, IPC, scanner, root source, `MapView.tsx`, `viewState`, verrou. Ne déplace aucun contenu dans une zone invisible ni au-dessus de la carte de manière bloquante.
-4. Ajouter une preuve WebView2 **interactionnelle** de chaque entrée de groupe même si menu ouvert, et du message/corrections **à l'apparition**, plus bouton Fermer accessible. Mesurer 960/1280/1366 FR/EN clair/sombre compact/reduced, tous 30 états, P-19/P-22, 13 primaires entières, carte ≥240, aucun overflow horizontal et aucune écriture sous racines. Conserver B03 18/18 + contre-épreuve ancien produit.
-5. Exécuter `pnpm test`, `pnpm check`, `pnpm build`, `git diff --check`; signaler toute instabilité. Faire des captures et logs des cas difficiles. Les essais Windows WebView2 sont nécessaires; aucun vert CI présumé.
-6. Actualise `.orchestrator/RESULT.md` (`IMPLEMENTED` ou `BLOCKED`, **jamais VERIFIED**), TASK-0061, docs de validation et handoff. Commit/push B04 **sans force**, puis STOP. Stage B non close, aucune TASK-0062/Stage C/D/PR/merge main.
+1. `git fetch`, synchronise `origin/build/v0.2-b05-populated-panels` en **fast-forward uniquement**, worktree propre; confirme SHA, aucun reset/clean/force push.
+2. Lis `AGENTS.md`, `docs/ai/START_HERE.md`, les docs d'état/validation, ACTION-0114, puis **l'intégralité** de TASK-0062.
+3. Les trois panneaux `RelationsPanel`, `ReviewQueuePanel`, `CrossRelationsPanel` n'ont **pas encore été réellement peuplés à 960×640** dans les campagnes récentes. Réutilise les anciens harnais J12/M12/SR15, sources strictement synthétiques. Ne prétends pas mesurer du contenu absent.
+4. **Mesure d'abord** dans Tauri/WebView2 natif 960×640/1280×800/1366×768 FR/EN clair/sombre/compact/reduced. Panneaux peuplés, navigation clavier/souris, détails, revue, relations inter-cerveaux et panneaux ouverts/fermés. Captures et mesures BEFORE à scrollY=0.
+5. Ne corrige du CSS/JSX des seuls panneaux autorisés que si un défaut est démontré. Ne change aucune logique métier, Rust, IPC/Index, dépendance ou projection. Tout blocage hors scope : `BLOCKED` et STOP.
+6. Rejoue les contrôles ciblés P-19/P-22, baseline B03 et comportement modal B04, vérifie carte >=240px, aucun contrôle inaccessible ni overflow, tests pnpm/check/build/diff-check, consigne contrastes axe incomplete sans faux PASS.
+7. Documente les limites exactes et les preuves, écris `.orchestrator/RESULT.md` avec `IMPLEMENTED` ou `BLOCKED`, mets à jour mémoire et validation, commit et push sur **B05 seulement**, puis STOP. Ne commence TASK-0063, Stage C/D, PR/merge/release sous aucun prétexte.
 
-Une session Claude `/clear` est appropriée après lecture des instructions versionnées.
+`/clear` recommandé entre les tâches; toute la source de vérité est dans GitHub.

@@ -10542,3 +10542,14 @@ Produit testé `3363b6976704d1b8b56702b1537fe1f59e3b6414`; WebView2 réel, 4 rac
 | Rust, CI distante | non touchés / aucune | — |
 
 **Non testé :** lecteur d'écran; contraste (axe INCOMPLETE); P-14; pavé tactile; panneaux relations/review/cross; >4 pastilles; P-01..P-22 intégral; Entrée/Échap sur le bouton des corrections dans WebView2 (jsdom seulement).
+
+
+## EA — ACTION-0114 — contrôle indépendant final de TASK-0061 — 2026-10-09
+
+- B04 ref `db2392f7f428712d6233399f3e27a497cf5dbb71`, sept commits après ACTION-0113; code autorisé : `CompositionBar.tsx`, `MapApp.tsx`, `map.css`, `mapStrings.ts` + tests ciblés; Rust/Index/IPC/MapView/lockfile inchangés. Head campagne `3363b6976704d1b8b56702b1537fe1f59e3b6414`, ensuite docs + captures uniquement.
+- JSON `TASK-0061-multibrain-shell-{before-correction,correction}.json`, `TASK-0061-b03-baseline-correction.json`, `TASK-0061-status-visibility-{before-correction,correction}.json` inspectés directement GitHub. PNG 960 EN sombre menu, 960 FR notice et correction, 1280 multi visualisés. Le patch remet l'avis en bas (fermeture entièrement visible) et les corrections en tête du panneau droit, sans overlay carte.
+- **B04-O2 PASS :** 12/12 avis/corrections+fermetures vrais rectangles visibles/hit tests à apparition. Statut fermeture souris, clavier et Échap; corrections fermeture souris et Tab en WebView2, tests Entrée/jsdom; 0 commande/summary/pastille recouverte, carte max 15px (3,4%) recouverte aux grandes tailles uniquement par statut temporaire; 0px à 960. Source P-22 intacte.
+- **B04-O1 PASS selon décision ACTION-0113 :** six états menu ouvert : blocage arrière-plan intentionnel, métriques strictes `primaryThirteenWholeEveryState=false`, `groupEntryPointsWholeEveryState=false`, `mapAtLeastFloorEveryState=false` restent telles quelles. `menuIsModal=true`, `everyMenuOpenStateRecoversGroupActivationByTheModalRoute=true`, `groupEntryReachableEveryState=true` : clic extérieur ferme d'abord sans activation, Échap restaure le focus, 3 groupes activables ensuite souris/Tab/Entrée/arbre d'accessibilité, 13/13 et map >=240 après fermeture. Ne pas appeler les six états stricts PASS.
+- B03 baseline 18/18, 13/13, groupes entiers, carte 261–535; B04 états menu fermé 24/24, 13/13, carte 257–496; P-19 redémarrage et changements catalogue, P-22 4 racines fingerprints strict+access identiques, aucun artefact, 0 écriture source.
+- Tests 794/794 deux runs, check/build/diff-check rapportés par Claude, **non rejoués** indépendamment. 1 échec temporaire brainIdentity sous charge puis non reproduit; signalé. GitHub API aucun workflow/check au HEAD. Axe incomplete contrastes, pas de lecteur d'écran ni certification WCAG; full P-01..P-22 et panneau relation/review/cross en fenêtre étroite non couverts.
+- **TASK-0061 VERIFIED (scope B04)**, Stage B pas CLOSED, Stage C/D/R8 non commencées. Prochaine B05 TASK-0062 mesure d'abord vrais panneaux contextualisés synthétiques en fenêtre étroite.
