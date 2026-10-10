@@ -1,7 +1,7 @@
 # TASK-0061 — Stage B / B04 — Robustesse de la barre multi-cerveaux
 
 - **Date :** 2026-10-09
-- **État :** `IMPLEMENTED / NOT VERIFIED — CORRECTION REQUIRED` par ACTION-0113 (2026-10-09); livraison technique terminée par Claude, vérification indépendante refusée pour B04-O1 et B04-O2.
+- **État :** `IMPLEMENTED` (correction ACTION-0113 livrée le 2026-10-09, **non VERIFIED** : contrôle indépendant à venir). Avant : `IMPLEMENTED / NOT VERIFIED — CORRECTION REQUIRED` par ACTION-0113 pour B04-O1 et B04-O2.
 - **Branche :** `build/v0.2-b04-multibrain-shell`
 - **Base :** `c055181d8236a6681c97aea4d5ed77731d9d1e30` (TASK-0060 B03 VERIFIED, ACTION-0112).
 - **Exécuteur :** Claude Code Sonnet, effort HIGH; basculer vers Opus uniquement si un obstacle justifié et le signaler.
@@ -50,3 +50,12 @@ Campagne WebView2 réelle `scripts/task0061-multibrain-shell.ps1` (3 processus s
 ## ACTION-0113 — correction avant vérification
 
 Contrôle indépendant : `docs/reviews/ACTION-0113-task0061-independent-control.md`. Six scénarios « menu de composition ouvert » masquent `chrome-diagnostics` et n'en vérifient pas l'activation; statut « index absent/refus » à 960 visible sur 0/35px, corrections et fermeture souvent hors bande. Sur même B04, corriger et publier une nouvelle campagne vérifiable; ne pas créer TASK-0062.
+
+
+## Correction ACTION-0113 livrée — `IMPLEMENTED` le 2026-10-09 (exécuteur Claude, jamais VERIFIED)
+
+Campagne WebView2 réelle au HEAD `3363b6976704d1b8b56702b1537fe1f59e3b6414` : `TASK-0061-multibrain-shell-correction.json`; contre-épreuve sur le produit avant correction `TASK-0061-multibrain-shell-before-correction.json`; baseline B03 `TASK-0061-b03-baseline-correction.json`; notices `TASK-0061-status-visibility-{correction,before-correction}.json`. Détail : `.orchestrator/RESULT.md`.
+
+- **B04-O2** : statut = couche fixe au bord bas de la fenêtre, avec « Fermer ce message » et Échap; corrections = premier bloc du panneau de droite. Entiers, avec leur fermeture, à l'apparition dans 12/12 états (0/35, 0/154 avant); fermeture souris sans défilement, Tab+Entrée, Échap (statut). Une première version en couche fixe pour les corrections cachait les cartes de la carte à 960×640 : rejetée sur mesure.
+- **B04-O1** : menu **explicitement modal** (voile; première pression = ferme sans activer; Échap = ferme et rend le focus). Lectures strictes inchangées et fausses menu ouvert (6 états), publiées; la récupération (3 groupes × 6 états à la souris, Échap, activation complète après fermeture, 13/13 et carte après fermeture) est mesurée et vraie. Choix explicitement permis par ACTION-0113; à ratifier ou rejeter par l'orchestrateur.
+- Gain B04 conservé; tests 794/794 ×2; une instabilité isolée de `brainIdentity.test.tsx` signalée.

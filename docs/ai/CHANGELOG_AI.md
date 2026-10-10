@@ -7054,3 +7054,20 @@ Aucun fichier interdit touché; aucun témoin affaibli (la garde « pas d'ellips
 ## 2026-10-09 — ACTION-0113 — B04 multi-cerveaux auditée, correction ciblée exigée
 
 Audit GitHub indépendant de TASK-0061 : 14 commits sur B04, 30/30 états WebView2 à 13/13 commandes entières, baseline B03 maintenue et ancien produit échouant aux tests. Deux critères ouverts : menu superposé à l'entrée Diagnostics dans six états et statuts/corrections hors première fenêtre à 960. `TASK-0061` reste IMPLEMENTED / NOT VERIFIED, correction sur même branche, prompt versionné. Tests 787/787 ×2 déclarés par Claude, 0 CI distante; aucune validation intégrale Stage B et aucune modification de main.
+
+
+## 2026-10-09 — TASK-0061 — correction ACTION-0113 (B04-O1, B04-O2)
+
+**Agent :** exécuteur Claude Code (Sonnet 5.5, effort HIGH)
+**Statut à l'issue :** `IMPLEMENTED` — jamais VERIFIED; contrôle indépendant à venir
+
+### Fait
+
+- Branche B04 synchronisée par fast-forward (`e31384f`), `.orchestrator/NEXT_PROMPT.md`, ACTION-0113 et TASK-0061 lus; aucune autre tâche.
+- Produit (`CompositionBar.tsx`, `MapApp.tsx`, `map.css`, `mapStrings.ts`) : statut en couche fixe avec « Fermer ce message » + Échap; corrections en premier bloc du panneau de droite (première version en couche fixe rejetée : elle cachait les cartes de la carte à 960×640); menu de composition explicitement modal (voile).
+- Harnais `task0061-*` : mesure des notices à l'apparition (5 points de pointage, sans défilement), fermeture souris/Tab/Échap, récupération des groupes depuis le menu modal, verdicts « n/a » = null; lectures strictes conservées. Tests : brains, workspaceMapApp, responsiveLayout (falsifiés).
+- Campagne WebView2 (`correction`), contre-épreuve sur le produit précédent (`before-correction`), baseline B03 rejouée, `pnpm test` 794/794 ×2, check, build, diff-check; RESULT, TASK-0061, cinq documents d'état.
+
+### Non fait, volontairement
+
+Aucun fichier interdit touché; aucune lecture stricte réécrite pour « passer »; pas de TASK-0062, de Stage C/D, de PR, d'étiquette ni de fusion. Limites publiées (Diagnostics ouvert à 960×640, 4 pastilles, Entrée/Échap sur les corrections prouvés par jsdom seulement).

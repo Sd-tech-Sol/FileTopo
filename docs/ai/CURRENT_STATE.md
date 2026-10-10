@@ -1,5 +1,11 @@
 # État courant
 
+## TASK-0061 — correction ACTION-0113 livrée `IMPLEMENTED` (non VERIFIED) — 2026-10-09
+
+- Branche `build/v0.2-b04-multibrain-shell`, produit testé `3363b6976704d1b8b56702b1537fe1f59e3b6414`. **B04-O2** : le statut est une couche fixe au bord bas de la fenêtre (bouton « Fermer ce message », Échap) et les corrections le premier bloc du panneau de droite; entiers avec leur fermeture à l'apparition dans 12/12 états WebView2 (0/35 et 0/154 avant), carte non recouverte à 960×640. **B04-O1** : menu de composition explicitement **modal**; les lectures strictes restent fausses dans les 6 états menu ouvert (publiées), la récupération des 3 groupes par la voie modale, Échap et l'activation complète après fermeture sont mesurées vraies.
+- Gain B04 conservé (24 états menu fermé 13/13, carte 257–496 px, axe 0 violation, P-19/P-22), baseline B03 18/18, contre-épreuve sur le produit précédent, `pnpm test` 794/794 ×2 (une instabilité isolée signalée), check/build/diff-check PASS.
+- Limites : Diagnostics ouvert sous le plafond de la bande à 960×640; 4 pastilles = 4–8 caractères; Enter/Échap sur le bouton des corrections prouvés par jsdom seulement; couche du statut ≈3,4 % de la carte à 1280/1366. **TASK-0061 = IMPLEMENTED, pas VERIFIED.** Stage B EN COURS; Stage C/D, R8, main inchangés.
+
 ## ACTION-0113 — contrôle indépendant B04 / correction requise — 2026-10-09
 
 - Contrôle GitHub B04 au `b964c45359bf2427d38ce177c09119ca5195a417` : 14 commits, après 30 états WebView2 et 18 de baseline B03, 13/13 primaires entières, carte 253,4–496px, noms et menu des 2–4 cerveaux, P-19/P-22. Contre-épreuve ancien produit 9/13, tests 787/787 ×2 RAPPORTÉS, CI distante absente.

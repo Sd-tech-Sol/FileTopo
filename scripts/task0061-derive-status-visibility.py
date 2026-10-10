@@ -17,8 +17,9 @@ source = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
 
 
 def probe(entry):
+    # No such element (the product before ACTION-0113 had no dismiss button on the status line).
     if entry is None:
-        return None
+        return {"whole": False, "absent": True}
     return {
         "whole": entry["whole"],
         "inWindow": entry["inWindow"],
@@ -38,7 +39,8 @@ for pass_name in ("pass1", "pass2", "pass3"):
         if composition["status"] is not None:
             row["status"] = {"text": composition["status"]["text"][:80], **probe(composition["statusProbe"]), "dismiss": probe(composition["statusDismissProbe"])}
             feedback = composition["feedback"]
-            row["statusLayer"] = {
+            # The product before ACTION-0113 has no layer: the status sat in the chrome band.
+            row["statusLayer"] = None if feedback is None else {
                 "position": feedback["position"],
                 "insideTheChromeBand": feedback["insideTheChromeBand"],
                 "overlapsTheMapViewPx": feedback["mapViewOverlapHeightPx"],

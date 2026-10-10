@@ -1,5 +1,13 @@
 # HANDOFF — passage de relais
 
+## TASK-0061 — correction ACTION-0113 `IMPLEMENTED`, relais au contrôle indépendant — 2026-10-09
+
+- Lecture à faire : `.orchestrator/RESULT.md`, `docs/tasks/TASK-0061-stage-b-multibrain-shell.md` (dernière section), `docs/performance/runs/TASK-0061-multibrain-shell-{correction,before-correction}.json`, `TASK-0061-b03-baseline-correction.json`, `TASK-0061-status-visibility-{correction,before-correction}.json`, captures `TASK-0061-correction-*.png`.
+- **Leçons de méthode** : (1) une surcouche corrective doit être mesurée contre ce qu'elle recouvre : ma première couche pour les corrections tenait « entière » mais cachait les cartes de la carte à 960×640 (`visibleCardCount` 0) — trouvé par le harnais, pas par jsdom; (2) un voile modal rend fausses, par construction, les lectures strictes de pointage : il faut les publier telles quelles ET mesurer la récupération (première pression, Échap, activation après fermeture), jamais les réinterpréter; (3) `click()` du harnais fait `scrollIntoView` et masquerait le défaut des notices : utiliser `pressWithoutScrolling`; (4) un verdict sur ce qu'une passe n'a pas soulevé est `null`, pas `false`; (5) sous Windows, un script Python qui réécrit un fichier source LF y met du CRLF et casse les gardes de source : écrire avec `newline=""`.
+- Contre-épreuve : commit jetable sur une branche locale temporaire (jamais poussée, supprimée) avec les quatre fichiers produit de `e31384f`; ~15 min par campagne complète.
+- Limites ouvertes : Diagnostics ouvert sous le plafond de la bande à 960×640; 4 pastilles = 4–8 caractères; Entrée/Échap sur le bouton des corrections prouvés par jsdom seulement; statut ≈3,4 % de la carte à 1280/1366.
+- Aucune TASK-0062, aucune Stage C/D, aucune PR/release/tag/fusion. Prochaine action UNIQUE : contrôle indépendant de TASK-0061.
+
 ## ACTION-0113 — contrôle indépendant B04 / correction requise — 2026-10-09
 
 - Contrôle GitHub B04 au `b964c45359bf2427d38ce177c09119ca5195a417` : 14 commits, après 30 états WebView2 et 18 de baseline B03, 13/13 primaires entières, carte 253,4–496px, noms et menu des 2–4 cerveaux, P-19/P-22. Contre-épreuve ancien produit 9/13, tests 787/787 ×2 RAPPORTÉS, CI distante absente.

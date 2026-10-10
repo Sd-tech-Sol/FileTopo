@@ -1,0 +1,354 @@
+{
+  "source": "TASK-0061-multibrain-shell-correction.json",
+  "note": "Laid out from the facts recorded in the campaign artifact: the notice's box inside the window and five hit-test points at the moment the state opened. Nothing was measured again.",
+  "rows": [
+    {
+      "pass": "pass1",
+      "size": "960x640",
+      "state": "four-unindexed-notice-fr-light",
+      "status": {
+        "text": "Index absent. Préparez l’exemple synthétique si nécessaire, puis choisissez Actu",
+        "whole": true,
+        "inWindow": true,
+        "visibleHeightPx": 19,
+        "ownHeightPx": 19,
+        "everyProbePointAnswers": true,
+        "dismiss": {
+          "whole": true,
+          "inWindow": true,
+          "visibleHeightPx": 35,
+          "ownHeightPx": 35,
+          "everyProbePointAnswers": true
+        }
+      },
+      "statusLayer": {
+        "position": "fixed",
+        "insideTheChromeBand": false,
+        "overlapsTheMapViewPx": 0,
+        "overlapsTheMapViewFraction": 0,
+        "coversACommandOrSummaryOrChip": false
+      }
+    },
+    {
+      "pass": "pass1",
+      "size": "960x640",
+      "state": "single-C-refused-removal-en-light",
+      "status": {
+        "text": "Composition refused — removing the last displayed brain is refused (real-73869a0",
+        "whole": true,
+        "inWindow": true,
+        "visibleHeightPx": 19,
+        "ownHeightPx": 19,
+        "everyProbePointAnswers": true,
+        "dismiss": {
+          "whole": true,
+          "inWindow": true,
+          "visibleHeightPx": 35,
+          "ownHeightPx": 35,
+          "everyProbePointAnswers": true
+        }
+      },
+      "statusLayer": {
+        "position": "fixed",
+        "insideTheChromeBand": false,
+        "overlapsTheMapViewPx": 0,
+        "overlapsTheMapViewFraction": 0,
+        "coversACommandOrSummaryOrChip": false
+      }
+    },
+    {
+      "pass": "pass1",
+      "size": "1280x800",
+      "state": "four-unindexed-notice-fr-light",
+      "status": {
+        "text": "Index absent. Préparez l’exemple synthétique si nécessaire, puis choisissez Actu",
+        "whole": true,
+        "inWindow": true,
+        "visibleHeightPx": 19,
+        "ownHeightPx": 19,
+        "everyProbePointAnswers": true,
+        "dismiss": {
+          "whole": true,
+          "inWindow": true,
+          "visibleHeightPx": 35,
+          "ownHeightPx": 35,
+          "everyProbePointAnswers": true
+        }
+      },
+      "statusLayer": {
+        "position": "fixed",
+        "insideTheChromeBand": false,
+        "overlapsTheMapViewPx": 15,
+        "overlapsTheMapViewFraction": 0.034,
+        "coversACommandOrSummaryOrChip": false
+      }
+    },
+    {
+      "pass": "pass1",
+      "size": "1280x800",
+      "state": "single-C-refused-removal-en-light",
+      "status": {
+        "text": "Composition refused — removing the last displayed brain is refused (real-73869a0",
+        "whole": true,
+        "inWindow": true,
+        "visibleHeightPx": 19,
+        "ownHeightPx": 19,
+        "everyProbePointAnswers": true,
+        "dismiss": {
+          "whole": true,
+          "inWindow": true,
+          "visibleHeightPx": 35,
+          "ownHeightPx": 35,
+          "everyProbePointAnswers": true
+        }
+      },
+      "statusLayer": {
+        "position": "fixed",
+        "insideTheChromeBand": false,
+        "overlapsTheMapViewPx": 15,
+        "overlapsTheMapViewFraction": 0.031,
+        "coversACommandOrSummaryOrChip": false
+      }
+    },
+    {
+      "pass": "pass1",
+      "size": "1366x768",
+      "state": "four-unindexed-notice-fr-light",
+      "status": {
+        "text": "Index absent. Préparez l’exemple synthétique si nécessaire, puis choisissez Actu",
+        "whole": true,
+        "inWindow": true,
+        "visibleHeightPx": 19,
+        "ownHeightPx": 19,
+        "everyProbePointAnswers": true,
+        "dismiss": {
+          "whole": true,
+          "inWindow": true,
+          "visibleHeightPx": 35,
+          "ownHeightPx": 35,
+          "everyProbePointAnswers": true
+        }
+      },
+      "statusLayer": {
+        "position": "fixed",
+        "insideTheChromeBand": false,
+        "overlapsTheMapViewPx": 15,
+        "overlapsTheMapViewFraction": 0.033,
+        "coversACommandOrSummaryOrChip": false
+      }
+    },
+    {
+      "pass": "pass1",
+      "size": "1366x768",
+      "state": "single-C-refused-removal-en-light",
+      "status": {
+        "text": "Composition refused — removing the last displayed brain is refused (real-73869a0",
+        "whole": true,
+        "inWindow": true,
+        "visibleHeightPx": 19,
+        "ownHeightPx": 19,
+        "everyProbePointAnswers": true,
+        "dismiss": {
+          "whole": true,
+          "inWindow": true,
+          "visibleHeightPx": 35,
+          "ownHeightPx": 35,
+          "everyProbePointAnswers": true
+        }
+      },
+      "statusLayer": {
+        "position": "fixed",
+        "insideTheChromeBand": false,
+        "overlapsTheMapViewPx": 15,
+        "overlapsTheMapViewFraction": 0.032,
+        "coversACommandOrSummaryOrChip": false
+      }
+    },
+    {
+      "pass": "pass3",
+      "size": "960x640",
+      "state": "corrected-fr-light",
+      "corrections": {
+        "words": "BRAIN_MISSING,FOCUSED_BRAIN_MISSING,VIEW_COMPOSITION_CHANGED,SELECTION_BRAIN_NOT_DISPLAYED",
+        "whole": true,
+        "inWindow": true,
+        "visibleHeightPx": 208,
+        "ownHeightPx": 208,
+        "everyProbePointAnswers": true,
+        "dismiss": {
+          "whole": true,
+          "inWindow": true,
+          "visibleHeightPx": 35,
+          "ownHeightPx": 35,
+          "everyProbePointAnswers": true
+        },
+        "placement": {
+          "insideTheRightPanel": true,
+          "firstBlockOfTheRightPanel": true,
+          "insideTheChromeBand": false,
+          "insideAFixedLayer": false,
+          "rightPanelScrollTopAtReading": 0,
+          "overlapsTheMapViewPx": 0
+        }
+      }
+    },
+    {
+      "pass": "pass3",
+      "size": "960x640",
+      "state": "corrected-en-dark-compact",
+      "corrections": {
+        "words": "BRAIN_MISSING,FOCUSED_BRAIN_MISSING,VIEW_COMPOSITION_CHANGED,SELECTION_BRAIN_NOT_DISPLAYED",
+        "whole": true,
+        "inWindow": true,
+        "visibleHeightPx": 202,
+        "ownHeightPx": 202,
+        "everyProbePointAnswers": true,
+        "dismiss": {
+          "whole": true,
+          "inWindow": true,
+          "visibleHeightPx": 27,
+          "ownHeightPx": 27,
+          "everyProbePointAnswers": true
+        },
+        "placement": {
+          "insideTheRightPanel": true,
+          "firstBlockOfTheRightPanel": true,
+          "insideTheChromeBand": false,
+          "insideAFixedLayer": false,
+          "rightPanelScrollTopAtReading": 0,
+          "overlapsTheMapViewPx": 0
+        }
+      }
+    },
+    {
+      "pass": "pass3",
+      "size": "1280x800",
+      "state": "corrected-fr-light",
+      "corrections": {
+        "words": "BRAIN_MISSING,FOCUSED_BRAIN_MISSING,VIEW_COMPOSITION_CHANGED,SELECTION_BRAIN_NOT_DISPLAYED",
+        "whole": true,
+        "inWindow": true,
+        "visibleHeightPx": 208,
+        "ownHeightPx": 208,
+        "everyProbePointAnswers": true,
+        "dismiss": {
+          "whole": true,
+          "inWindow": true,
+          "visibleHeightPx": 35,
+          "ownHeightPx": 35,
+          "everyProbePointAnswers": true
+        },
+        "placement": {
+          "insideTheRightPanel": true,
+          "firstBlockOfTheRightPanel": true,
+          "insideTheChromeBand": false,
+          "insideAFixedLayer": false,
+          "rightPanelScrollTopAtReading": 0,
+          "overlapsTheMapViewPx": 0
+        }
+      }
+    },
+    {
+      "pass": "pass3",
+      "size": "1280x800",
+      "state": "corrected-en-dark-compact",
+      "corrections": {
+        "words": "BRAIN_MISSING,FOCUSED_BRAIN_MISSING,VIEW_COMPOSITION_CHANGED,SELECTION_BRAIN_NOT_DISPLAYED",
+        "whole": true,
+        "inWindow": true,
+        "visibleHeightPx": 202,
+        "ownHeightPx": 202,
+        "everyProbePointAnswers": true,
+        "dismiss": {
+          "whole": true,
+          "inWindow": true,
+          "visibleHeightPx": 27,
+          "ownHeightPx": 27,
+          "everyProbePointAnswers": true
+        },
+        "placement": {
+          "insideTheRightPanel": true,
+          "firstBlockOfTheRightPanel": true,
+          "insideTheChromeBand": false,
+          "insideAFixedLayer": false,
+          "rightPanelScrollTopAtReading": 0,
+          "overlapsTheMapViewPx": 0
+        }
+      }
+    },
+    {
+      "pass": "pass3",
+      "size": "1366x768",
+      "state": "corrected-fr-light",
+      "corrections": {
+        "words": "BRAIN_MISSING,FOCUSED_BRAIN_MISSING,VIEW_COMPOSITION_CHANGED,SELECTION_BRAIN_NOT_DISPLAYED",
+        "whole": true,
+        "inWindow": true,
+        "visibleHeightPx": 208,
+        "ownHeightPx": 208,
+        "everyProbePointAnswers": true,
+        "dismiss": {
+          "whole": true,
+          "inWindow": true,
+          "visibleHeightPx": 35,
+          "ownHeightPx": 35,
+          "everyProbePointAnswers": true
+        },
+        "placement": {
+          "insideTheRightPanel": true,
+          "firstBlockOfTheRightPanel": true,
+          "insideTheChromeBand": false,
+          "insideAFixedLayer": false,
+          "rightPanelScrollTopAtReading": 0,
+          "overlapsTheMapViewPx": 0
+        }
+      }
+    },
+    {
+      "pass": "pass3",
+      "size": "1366x768",
+      "state": "corrected-en-dark-compact",
+      "corrections": {
+        "words": "BRAIN_MISSING,FOCUSED_BRAIN_MISSING,VIEW_COMPOSITION_CHANGED,SELECTION_BRAIN_NOT_DISPLAYED",
+        "whole": true,
+        "inWindow": true,
+        "visibleHeightPx": 202,
+        "ownHeightPx": 202,
+        "everyProbePointAnswers": true,
+        "dismiss": {
+          "whole": true,
+          "inWindow": true,
+          "visibleHeightPx": 27,
+          "ownHeightPx": 27,
+          "everyProbePointAnswers": true
+        },
+        "placement": {
+          "insideTheRightPanel": true,
+          "firstBlockOfTheRightPanel": true,
+          "insideTheChromeBand": false,
+          "insideAFixedLayer": false,
+          "rightPanelScrollTopAtReading": 0,
+          "overlapsTheMapViewPx": 0
+        }
+      }
+    }
+  ],
+  "statusWholeWithItsDismissAtAppearance": [
+    "pass1 960x640/four-unindexed-notice-fr-light",
+    "pass1 960x640/single-C-refused-removal-en-light",
+    "pass1 1280x800/four-unindexed-notice-fr-light",
+    "pass1 1280x800/single-C-refused-removal-en-light",
+    "pass1 1366x768/four-unindexed-notice-fr-light",
+    "pass1 1366x768/single-C-refused-removal-en-light"
+  ],
+  "statusNotWholeAtAppearance": [],
+  "correctionsWholeWithTheirDismissAtAppearance": [
+    "pass3 960x640/corrected-fr-light",
+    "pass3 960x640/corrected-en-dark-compact",
+    "pass3 1280x800/corrected-fr-light",
+    "pass3 1280x800/corrected-en-dark-compact",
+    "pass3 1366x768/corrected-fr-light",
+    "pass3 1366x768/corrected-en-dark-compact"
+  ],
+  "correctionsNotWholeAtAppearance": []
+}
