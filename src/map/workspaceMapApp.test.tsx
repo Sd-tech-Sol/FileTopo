@@ -306,20 +306,26 @@ describe("a workspace comes back as it was left", () => {
 });
 
 describe("the notices of what just happened — TASK-0061 B04-O2", () => {
-  it("puts the corrections and a refusal in a layer of the window, not in the chrome band, each with a dismiss button", async () => {
+  it("puts a refusal in a layer of the window and the corrections in the right panel — never in the chrome band", async () => {
     store.workspace = workspace({ displayedBrainIds: [A], focusedBrainId: A });
     store.corrections = ["BRAIN_MISSING"];
     await boot();
     const chrome = document.querySelector(".app__chrome") as HTMLElement;
-    const layer = screen.getByTestId("app-feedback");
-    // The band scrolls itself; a notice written at its end is under its fold at 960x640.
-    expect(chrome.contains(layer)).toBe(false);
-    expect(layer.contains(screen.getByTestId("workspace-corrections"))).toBe(true);
-    expect(layer.contains(screen.getByTestId("workspace-corrections-dismiss"))).toBe(true);
+    const aside = document.querySelector(".app__aside") as HTMLElement;
+    const corrections = screen.getByTestId("workspace-corrections");
+    // The band scrolls itself; a notice written at its end is under its fold at 960x640. The corrections
+    // are the first block of the right panel, which scrolls itself and covers nothing.
+    expect(chrome.contains(corrections)).toBe(false);
+    expect(aside.contains(corrections)).toBe(true);
+    expect(aside.firstElementChild).toBe(corrections);
+    expect(corrections.contains(screen.getByTestId("workspace-corrections-dismiss"))).toBe(true);
+    expect(screen.queryByTestId("app-feedback")).toBeNull();
 
     // The product's own refusal: removing the last displayed brain.
     fireEvent.click(screen.getByTestId(`composition-remove-${A}`));
     const notice = await screen.findByTestId("status-notice");
+    const layer = screen.getByTestId("app-feedback");
+    expect(chrome.contains(layer)).toBe(false);
     expect(layer.contains(notice)).toBe(true);
     expect(within(notice).getByRole("status").textContent).toContain("Composition refusée");
     const dismiss = within(notice).getByTestId("status-dismiss");
@@ -330,10 +336,11 @@ describe("the notices of what just happened — TASK-0061 B04-O2", () => {
 
     fireEvent.click(dismiss);
     expect(screen.queryByTestId("status-notice")).toBeNull();
+    expect(screen.queryByTestId("app-feedback")).toBeNull();
     // The corrections are a separate notice: dismissing one does not dismiss the other.
     expect(screen.queryByTestId("workspace-corrections")).toBeTruthy();
     fireEvent.click(screen.getByTestId("workspace-corrections-dismiss"));
-    expect(screen.queryByTestId("app-feedback")).toBeNull();
+    expect(screen.queryByTestId("workspace-corrections")).toBeNull();
   });
 
   it("Escape dismisses what is on screen, but never a key somebody else used", async () => {

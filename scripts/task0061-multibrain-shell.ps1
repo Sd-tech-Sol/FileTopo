@@ -240,7 +240,8 @@ $artifact = [ordered]@{
         'Colour-contrast rows axe-core reports as INCOMPLETE are published state by state and are NOT turned into a contrast claim either way.',
         'Only four registered brains, at most four displayed, with one 60-character and one 75-character name, were measured; a composition of more brains, or a name at the 80-character ceiling, is UNMEASURED.',
         'The notices measured are the three the product raises by itself and safely: "not indexed yet", the refusal of removing the last brain, and the workspace corrections BRAIN_MISSING / FOCUSED_BRAIN_MISSING. Failure notices that need a broken source or a failing disk were not provoked.',
-        'A group activation (mouse and keyboard) is not measured while the composition menu is open, because the first click outside closes the menu; it is measured in the same composition with the menu closed.',
+        'While the composition menu is open it is MODAL: its scrim answers every hit test, so the strict readings (thirteen commands, chips, map surface, group summaries whole and hit-testable) are false in those six states BY DESIGN and stay published as false. What is measured instead, in those states: the geometry under the scrim (nothing moved or clipped), the first press on a covered summary closing the menu without activating the group, the next press activating it, and Escape returning the focus to the trigger and the strict readings after the close.',
+        'The corrections of the workspace were dismissed by a real mouse press at 960x640 without any scroll, and their dismiss button was reached by Tab in every state; pressing Enter or Escape on THAT button was proven by jsdom tests only (the corrections appear once per process, so the status notice, which can be raised again, carries the three WebView2 dismissal routes).',
         'A group''s open state is the engine state of a native <details>; nothing writes it, so a restart finds every group closed by design.'
     )
 }
@@ -258,7 +259,7 @@ Set-Content -LiteralPath $finalArtifact -Value $text -Encoding utf8
 if (-not $strictIdentical) { throw 'P-22 FAILED: the analysed trees are not byte-identical; artifact written for the record' }
 foreach ($pass in @(1, 2, 3)) {
     $v = $results[$pass].verdict
-    Write-Output ("TASK-0061 pass {0}: states={1} essentialWholeEveryState={2} primaryThirteenWhole={3} (worst {4}/13) chipsWhole={5} menuItemsWhole={6} groupEntryPointsWhole={7} mapAtLeastFloor={8} (worst {9}px) noOverflow={10}" -f `
-        $pass, $v.statesJudged, $v.essentialWholeEveryState, $v.primaryThirteenWholeEveryState, $v.worstPrimaryWhole, $v.chipsAndRemovesWholeEveryState, $v.menuItemsWholeEveryOpenMenuState, $v.groupEntryPointsWholeEveryState, $v.mapAtLeastFloorEveryState, $v.worstMapVisibleHeightPx, $v.noHorizontalOverflowNoEscapeNoClippedControlEveryState)
+    Write-Output ("TASK-0061 pass {0}: states={1} essentialWholeEveryState={2} primaryThirteenWhole(strict)={3} (worst {4}/13) primaryThirteenWholeMenuClosed={5} chipsWhole={6} menuItemsWhole={7} groupEntryPointsWhole(strict)={8} groupEntryReachable={9} essentialReachable={10} mapAtLeastFloor(strict)={11} (worst {12}px) noticesAtAppearance={13} noOverflow={14}" -f `
+        $pass, $v.statesJudged, $v.essentialWholeEveryState, $v.primaryThirteenWholeEveryState, $v.worstPrimaryWhole, $v.primaryThirteenWholeEveryStateWithTheMenuClosed, $v.chipsAndRemovesWholeEveryState, $v.menuItemsWholeEveryOpenMenuState, $v.groupEntryPointsWholeEveryState, $v.groupEntryReachableEveryState, $v.essentialReachableEveryState, $v.mapAtLeastFloorEveryState, $v.worstMapVisibleHeightPx, $v.noticesPresentableAtAppearanceEveryState, $v.noHorizontalOverflowNoEscapeNoClippedControlEveryState)
 }
 Write-Output "TASK-0061: P-22 strictDigestIdentical=$strictIdentical; artifact $Out"

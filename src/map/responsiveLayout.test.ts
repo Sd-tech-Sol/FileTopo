@@ -534,7 +534,8 @@ describe("the two chrome groups sit side by side, and a group that is opened tak
     const lastGroupEnd = beforeTheMap.lastIndexOf("</details>");
     expect(lastGroupEnd).toBeGreaterThan(-1);
     expect(beforeTheMap.indexOf('className="app__status"')).toBeGreaterThan(lastGroupEnd);
-    expect(beforeTheMap.indexOf("<WorkspaceCorrections")).toBeGreaterThan(lastGroupEnd);
+    // `B04-O2`: the corrections moved out of the chrome band altogether (first block of the right panel).
+    expect(beforeTheMap.indexOf("<WorkspaceCorrections")).toBe(-1);
   });
 });
 
@@ -636,7 +637,7 @@ describe("the open menu is modal, and the notices are a layer of the window — 
     expect(backdrop.body).toMatch(/background:\s*rgb\(/);
   });
 
-  it("fixes the notices to the window's bottom edge, outside the chrome band, and keeps the pointer for them alone", () => {
+  it("fixes the status line to the window's bottom edge, outside the chrome band, and keeps the pointer for it alone", () => {
     const layer = ruleFor(".app__feedback");
     expect(layer).toHaveLength(1);
     expect(layer[0].body).toMatch(/position:\s*fixed/);
@@ -652,18 +653,25 @@ describe("the open menu is modal, and the notices are a layer of the window — 
     expect(Number(/z-index:\s*(\d+)/.exec(layer[0].body)?.[1])).toBeGreaterThan(menuLevel);
   });
 
-  it("renders the layer right after the chrome band and before the map, never inside the band", () => {
+  it("renders the layer right after the chrome band, and the corrections as the first block of the right panel", () => {
     const chromeEnd = appSource.indexOf('<main className="app__main">');
     const layer = appSource.indexOf('className="app__feedback"');
     expect(layer).toBeGreaterThan(-1);
     expect(layer).toBeLessThan(chromeEnd);
     // The band's own closing tag comes before the layer: what precedes it is the groups row.
     const before = appSource.slice(appSource.indexOf('<div className="app__groups">'), layer);
-    const opened = (before.match(/<div/g) ?? []).length;
+    const opened = (before.match(/<div/g) ?? []).length;
     const closed = (before.match(/<\/div>/g) ?? []).length;
-    expect(closed).toBeGreaterThan(opened);
-    expect(appSource.slice(layer, chromeEnd)).toContain("<WorkspaceCorrections");
+    // The layer's own opening tag is cut at its className, so it counts once more than it closes.
+    expect(closed).toBeGreaterThanOrEqual(opened);
     expect(appSource.slice(layer, chromeEnd)).toContain('data-testid="status-dismiss"');
+    // The corrections never sit before the map: they are written inside the aside, ahead of its first block.
+    expect(appSource.slice(0, chromeEnd)).not.toContain("<WorkspaceCorrections");
+    const aside = appSource.indexOf('<aside className="app__aside">');
+    const correctionsAt = appSource.indexOf("<WorkspaceCorrections");
+    expect(aside).toBeGreaterThan(chromeEnd);
+    expect(correctionsAt).toBeGreaterThan(aside);
+    expect(appSource.slice(aside, correctionsAt)).not.toMatch(/<(MapLegend|ExactDuplicateExplorer)/);
   });
 });
 

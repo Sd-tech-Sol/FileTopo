@@ -1461,8 +1461,24 @@ const READ_COMPOSITION = `(() => {
       mapControlsUnderANotice: covers(document.querySelector('.app__map-controls')),
     };
   }
+  const mapViewForCorrections = document.querySelector('.map-view');
+  const correctionsPlacement = corrections ? (() => {
+    const own = corrections.getBoundingClientRect();
+    const mapBox = mapViewForCorrections ? mapViewForCorrections.getBoundingClientRect() : null;
+    const overlap = mapBox ? intersection(own, mapBox) : null;
+    const aside = document.querySelector('.app__aside');
+    return {
+      insideTheRightPanel: !!corrections.closest('.app__aside'),
+      firstBlockOfTheRightPanel: !!aside && aside.firstElementChild === corrections,
+      insideTheChromeBand: !!corrections.closest('.app__chrome'),
+      insideAFixedLayer: !!corrections.closest('[data-testid="app-feedback"]'),
+      rightPanelScrollTopAtReading: aside ? Math.round(aside.scrollTop) : null,
+      overlapsTheMapViewPx: overlap ? round(overlap.w * overlap.h) : 0,
+    };
+  })() : null;
   return {
     feedback,
+    correctionsPlacement,
     statusProbe: probe(status),
     statusDismissProbe: probe(document.querySelector('[data-testid="status-dismiss"]')),
     correctionsProbe: probe(corrections),
@@ -1679,6 +1695,18 @@ async function measureMenuModal() {
   await evaluate(RESET_SCROLL);
   const layoutAfterEscape = await evaluate(READ_FIRST_SCREEN);
   escape.groupSummariesWhole = layoutAfterEscape.groups.length === DISCLOSURE_GROUPS.length && layoutAfterEscape.groups.every((entry) => entry.summaryFullyVisible === true);
+  // The same census the matrix judges, read once the modal is closed in the same composition.
+  const byIdAfter = new Map();
+  for (const command of layoutAfterEscape.commands) {
+    const existing = byIdAfter.get(command.id);
+    if (!existing || (!existing.onScreen && command.onScreen)) byIdAfter.set(command.id, command);
+  }
+  escape.primaryWholeCountAfterTheClose = PRIMARY_COMMANDS.filter((wanted) => byIdAfter.get(wanted.id)?.fullyVisible === true).length;
+  const chipControls = [...byIdAfter.values()].filter((command) => /^composition-(chip|remove)-/.test(command.id));
+  escape.chipsAndRemovesWholeAfterTheClose = chipControls.length > 0 && chipControls.every((command) => command.fullyVisible === true);
+  escape.mapVisibleHeightPxAfterTheClose = layoutAfterEscape.firstScreen.mapViewVisibleHeightPx;
+  escape.mapAtLeastFloorAfterTheClose =
+    layoutAfterEscape.firstScreen.mapViewVisibleHeightPx >= MAP_FLOOR_PX && layoutAfterEscape.firstScreen.mapHitTest?.inside === true && layoutAfterEscape.firstScreen.visibleCardCount > 0;
   const entryPointsAfterModalClose = await measureGroupEntryPoints();
   await evaluate(READ_FIRST_SCREEN);
   await reopen();
@@ -1938,7 +1966,16 @@ function judge(entry) {
     mapViewHeightPx: feedback?.mapViewHeightPx ?? null,
   };
   const primaryWhole = primary.every((row) => row.fullyVisible);
+  // B04-O1: while the modal menu is open its scrim answers every hit test, so "whole" in the strict
+  // sense (hit-tested) cannot hold and is published as false. What the scrim does NOT do is move or clip
+  // anything: the geometric reading (own box inside the window and inside every scrolling ancestor's client
+  // box) says whether the controls are all still where they were.
+  const geometricallyWhole = (row) => row.ownHeightPx > 0 && row.visibleHeightPx >= row.ownHeightPx - 1 && row.clippedBy.length === 0;
+  const primaryGeometricallyWhole = primary.every(geometricallyWhole);
   const chipsWhole = chips.length === expectedBrains.length && chips.every((chip) => chip.chipWhole && chip.removeWhole);
+  const chipsGeometricallyWhole =
+    chips.length === expectedBrains.length &&
+    chips.every((chip) => chip.chipOwnHeightPx > 0 && chip.chipVisibleHeightPx >= chip.chipOwnHeightPx - 1 && chip.chipClippedBy.length === 0 && chip.removeClippedBy.length === 0);
   const menuWhole = menuItems.every((item) => item.whole);
   return {
     size: entry.size,
@@ -1951,6 +1988,9 @@ function judge(entry) {
     primaryOnScreenCount: primary.filter((row) => row.onFirstScreen).length,
     primaryNotWhole: primary.filter((row) => !row.fullyVisible).map((row) => `${row.id} ${row.visibleHeightPx}/${row.ownHeightPx}px`),
     primaryWhole,
+    primaryGeometricallyWhole,
+    chipsGeometricallyWhole,
+    mapFloorByGeometry: layout.firstScreen.mapViewVisibleHeightPx >= MAP_FLOOR_PX,
     chips,
     chipsWhole,
     chipsNotWhole: chips.filter((chip) => !(chip.chipWhole && chip.removeWhole)).map(
@@ -1987,6 +2027,7 @@ function judge(entry) {
     status: entry.composition.status?.text ?? null,
     statusOnScreen: entry.composition.status ? (entry.composition.status.rect.y >= 0 && entry.composition.status.rect.bottom <= layout.cssViewport[1]) : null,
     notices,
+    correctionsPlacement: entry.composition.correctionsPlacement ?? null,
     noticeInteractions: entry.noticeInteractions ?? null,
     correctionsKeyboard: entry.correctionsKeyboard ?? null,
     menuModal: entry.menuModal ? {
@@ -2095,6 +2136,8 @@ function summarise(entries) {
     // ACTION-0113 B04-O2: the notices, at the moment they appear, with no scroll before.
     ...(() => {
       const raised = judged.filter((j) => j.notices.statusShown || j.notices.correctionsShown);
+      const statusStates = judged.filter((j) => j.notices.statusShown);
+      const correctionStates = judged.filter((j) => j.notices.correctionsShown);
       const label = (j) => `${j.size}/${j.state}`;
       const interactions = entries.filter((entry) => entry.noticeInteractions);
       const worst = raised.reduce((acc, j) => (j.notices.mapViewOverlapFraction !== null && j.notices.mapViewOverlapFraction > (acc?.fraction ?? -1) ? { state: label(j), fraction: j.notices.mapViewOverlapFraction, heightPx: j.notices.mapViewOverlapHeightPx, mapViewHeightPx: j.notices.mapViewHeightPx } : acc), null);
@@ -2102,19 +2145,59 @@ function summarise(entries) {
         noticeStatesMeasured: raised.map(label),
         noticesPresentableAtAppearanceEveryState: raised.length > 0 && raised.every((j) => j.notices.presentableAtAppearance),
         statesWhereANoticeOrItsDismissIsNotWholeAtAppearance: raised.filter((j) => !j.notices.presentableAtAppearance).map((j) => `${label(j)}: status ${j.notices.statusWholeAtAppearance}/dismiss ${j.notices.statusDismissWholeAtAppearance}; corrections ${j.notices.correctionsWholeAtAppearance}/dismiss ${j.notices.correctionsDismissWholeAtAppearance}`),
-        noticeLayerOutsideTheChromeBandEveryState: raised.length > 0 && raised.every((j) => j.notices.layerInsideTheChromeBand === false && j.notices.layerPosition === "fixed"),
+        statusStatesMeasured: statusStates.map(label),
+        correctionStatesMeasured: correctionStates.map(label),
+        statusLayerOutsideTheChromeBandEveryState: statusStates.length > 0 && statusStates.every((j) => j.notices.layerInsideTheChromeBand === false && j.notices.layerPosition === "fixed"),
+        correctionsInTheRightPanelAndCoverNothingEveryState:
+          correctionStates.length > 0 &&
+          correctionStates.every((j) => j.correctionsPlacement?.insideTheRightPanel && j.correctionsPlacement.firstBlockOfTheRightPanel && !j.correctionsPlacement.insideTheChromeBand && !j.correctionsPlacement.insideAFixedLayer && j.correctionsPlacement.overlapsTheMapViewPx === 0 && j.correctionsPlacement.rightPanelScrollTopAtReading === 0),
         noticeLayerCoversNoCommandNoGroupSummaryNoChipEveryState: raised.every((j) => j.notices.coversNoCommandNoSummaryNoChip),
         statesWhereANoticeCoversACommand: raised.filter((j) => !j.notices.coversNoCommandNoSummaryNoChip).map((j) => `${label(j)}: ${[...j.notices.primariesUnderANotice, ...j.notices.groupSummariesUnderANotice, ...j.notices.chipsOrTriggerUnderANotice].join(",")}`),
         // The part of the map the notice lies over, published and not judged: the map stays at its layout
         // rectangle (the floor is judged on that), the notice is a dismissible layer over its lower edge.
         noticeMapOverlapByState: raised.map((j) => ({ state: label(j), overlapHeightPx: j.notices.mapViewOverlapHeightPx, overlapFraction: j.notices.mapViewOverlapFraction, mapViewHeightPx: j.notices.mapViewHeightPx, noticeRects: j.notices.noticeRects })),
         worstNoticeMapOverlap: worst,
+        statusLayerMapOverlapWorst: statusStates.reduce((acc, j) => Math.max(acc, j.notices.mapViewOverlapFraction ?? 0), 0),
         statusDismissByMouseAtAppearanceEveryRaisedState: interactions.length > 0 && interactions.every((entry) => entry.noticeInteractions.mouse.dismissAimableAtAppearance && entry.noticeInteractions.mouse.noticeGoneAfterThePress && entry.noticeInteractions.mouse.chromeBandScrollTopBeforeThePress === 0),
         statusDismissByKeyboardEveryRaisedState: interactions.length > 0 && interactions.every((entry) => entry.noticeInteractions.keyboard.reachedByTab && entry.noticeInteractions.keyboard.wholeInWindowWhenFocused && entry.noticeInteractions.keyboard.hasAFocusRing && entry.noticeInteractions.keyboard.noticeGoneAfterEnter === true),
         statusDismissByEscapeEveryRaisedState: interactions.length > 0 && interactions.every((entry) => entry.noticeInteractions.escape.noticeGoneAfterEscapeWithTheFocusOnTheDocument),
         statusDismissTabPressesByState: interactions.map((entry) => ({ state: `${entry.size}/${entry.state}`, presses: entry.noticeInteractions.keyboard.tabPresses })),
         correctionsDismissReachableByKeyboardEveryState: entries.filter((entry) => entry.correctionsKeyboard).length > 0 && entries.filter((entry) => entry.correctionsKeyboard).every((entry) => entry.correctionsKeyboard.reachedByTab && entry.correctionsKeyboard.wholeInWindowWhenFocused && entry.correctionsKeyboard.hasAFocusRing),
         correctionsTabPressesByState: entries.filter((entry) => entry.correctionsKeyboard).map((entry) => ({ state: `${entry.size}/${entry.state}`, presses: entry.correctionsKeyboard.tabPresses })),
+      };
+    })(),
+    // B04-O1, the other half of the same fact: the modal scrim answers every hit test, so in the six menu-open
+    // states the strict readings of the thirteen commands, the chips and the map surface are false, and the
+    // strict keys above keep saying so. What is published here: the closed-menu states judged strictly, the
+    // open-menu states judged by geometry (nothing moved or clipped under the scrim) AND by the strict reading
+    // once the modal is closed (Escape) in the same composition.
+    ...(() => {
+      const closed = judged.filter((j) => !j.menuOpen);
+      const open = judged.filter((j) => j.menuOpen);
+      const modalByState = new Map(entries.filter((entry) => entry.menuModal).map((entry) => [`${entry.size}/${entry.state}`, entry.menuModal.escape]));
+      const afterClose = (j) => modalByState.get(`${j.size}/${j.state}`);
+      return {
+        statesWithTheMenuClosed: closed.length,
+        primaryThirteenWholeEveryStateWithTheMenuClosed: closed.every((j) => j.primaryWhole),
+        chipsAndRemovesWholeEveryStateWithTheMenuClosed: closed.every((j) => j.chipsWhole),
+        mapAtLeastFloorEveryStateWithTheMenuClosed: closed.every((j) => j.mapOk),
+        worstMapVisibleHeightPxWithTheMenuClosed: Math.min(...closed.map((j) => j.mapVisibleHeightPx)),
+        menuOpenStatesStrictlyNotWhole: open.filter((j) => !j.primaryWhole || !j.chipsWhole || !j.mapOk).map((j) => `${j.size}/${j.state}`),
+        menuOpenStatesGeometryIntactUnderTheScrim: open.every((j) => j.primaryGeometricallyWhole && j.chipsGeometricallyWhole && j.mapFloorByGeometry && j.noHorizontalOrEscape),
+        menuOpenStatesWhereGeometryIsNotIntact: open.filter((j) => !(j.primaryGeometricallyWhole && j.chipsGeometricallyWhole && j.mapFloorByGeometry && j.noHorizontalOrEscape)).map((j) => `${j.size}/${j.state}`),
+        menuOpenStatesStrictlyWholeAfterTheModalClose: open.every((j) => {
+          const escape = afterClose(j);
+          return !!escape && escape.primaryWholeCountAfterTheClose === PRIMARY_COMMANDS.length && escape.chipsAndRemovesWholeAfterTheClose === true && escape.mapAtLeastFloorAfterTheClose === true && escape.groupSummariesWhole === true;
+        }),
+        menuOpenWholeAfterTheCloseByState: open.map((j) => ({ state: `${j.size}/${j.state}`, ...(afterClose(j) ? { primaryWhole: afterClose(j).primaryWholeCountAfterTheClose, chipsAndRemovesWhole: afterClose(j).chipsAndRemovesWholeAfterTheClose, groupSummariesWhole: afterClose(j).groupSummariesWhole, mapVisibleHeightPx: afterClose(j).mapVisibleHeightPxAfterTheClose, mapAtLeastFloor: afterClose(j).mapAtLeastFloorAfterTheClose } : {}) })),
+        // The conjunction a reader can act on: strict when the menu is closed, geometry + strict-after-close when it is open.
+        essentialReachableEveryState:
+          closed.every((j) => j.essentialWhole) &&
+          open.every((j) => j.menuWhole && j.primaryGeometricallyWhole && j.chipsGeometricallyWhole && j.mapFloorByGeometry && j.noHorizontalOrEscape) &&
+          open.every((j) => {
+            const escape = afterClose(j);
+            return !!escape && escape.primaryWholeCountAfterTheClose === PRIMARY_COMMANDS.length && escape.chipsAndRemovesWholeAfterTheClose === true && escape.mapAtLeastFloorAfterTheClose === true;
+          }),
       };
     })(),
     groupsRevealEverythingByMouseEveryMeasuredState: everyMeasured("mouseRevealsEverything"),

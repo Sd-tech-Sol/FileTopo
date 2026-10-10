@@ -566,14 +566,14 @@ button:disabled {
 }
 
 /*
- * `TASK-0061` / `ACTION-0113` `B04-O2` — the notices of what just happened (the status line, the
- * workspace corrections) are a layer of the window, not rows of the chrome band. The band scrolls
- * itself and at 960x640 has no row to spare under the groups, so these were measured at 0 px of 35
- * (status) and 0 of 154 (corrections, with their dismiss button) at the moment they appeared. The layer
- * is fixed to the bottom edge of the window — at that size the keyboard hint and the bottom padding —
- * so it adds no row anywhere: the thirteen commands, the three group summaries and the map keep the
- * rectangles they have without it. Its box only exists where there is a notice; it takes no pointer
- * event outside the notices themselves, and scrolls itself if a notice outgrows it.
+ * `TASK-0061` / `ACTION-0113` `B04-O2` — the status line is a layer of the window, not a row of the
+ * chrome band. The band scrolls itself and at 960x640 has no row to spare under the groups, so it was
+ * measured at 0 px of 35 (and its dismiss control with it) at the moment it appeared. The layer is fixed
+ * to the bottom edge of the window — at that size the keyboard hint and the bottom padding — so it adds
+ * no row anywhere: the thirteen commands, the three group summaries and the map keep the rectangles they
+ * have without it. Its box only exists where there is a notice; it takes no pointer event outside the
+ * notice itself, and scrolls itself if the notice outgrows it. (The workspace corrections are the first
+ * block of the right panel instead: a layer tall enough for them hid the map's own cards at 960x640.)
  */
 .app__feedback {
   position: fixed;
@@ -1261,18 +1261,21 @@ input[type="text"] {
   font-weight: 600;
 }
 
-/* The title and its dismiss button share the first row, so the button is where the notice starts
-   rather than under every line of it; the corrections follow in as many columns as the width holds. */
+/* The first block of the right panel: the title and its dismiss button share the first row, so the
+   button is where the notice starts rather than under every correction. */
 .app__corrections {
   display: grid;
+  flex: none;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas:
     "title dismiss"
     "list list";
   align-items: center;
   gap: 4px 12px;
-  align-self: stretch;
   padding: 6px 8px 8px 12px;
+  border-left: 4px solid var(--accent);
+  border-radius: 0 8px 8px 0;
+  background: var(--accent-soft);
 }
 
 .app__corrections > strong {
@@ -1287,12 +1290,6 @@ input[type="text"] {
   grid-area: list;
   margin: 0;
   padding-left: 18px;
-  columns: 340px;
-  column-gap: 24px;
-}
-
-.app__corrections li {
-  break-inside: avoid;
 }
 
 /* TASK-0053 / DEC-0051 H — "Compacte" tightens the APPLICATION's own chrome: spacing of

@@ -3788,36 +3788,27 @@ export default function MapApp() {
       </div>
 
       {/*
-        `TASK-0061` / `ACTION-0113` `B04-O2` — what just happened. These two notices sat at the END of the
-        chrome band, which scrolls itself: at 960x640 the band has no room left under the groups, so a
-        refusal or a "not indexed yet" was drawn 0 px inside it, and the corrections summary and its
-        dismiss button with it. They are not content of the band. They are a layer of the window — fixed to
+        `TASK-0061` / `ACTION-0113` `B04-O2` — the status line (a refusal, "not indexed yet") sat at the END
+        of the chrome band, which scrolls itself: at 960x640 the band has no room left under the groups, so
+        it was drawn 0 px inside it. It is not content of the band. It is a layer of the window — fixed to
         its bottom edge, which at that size is the keyboard hint and the bottom padding, not a control —
-        that grows from its own text, scrolls itself if it must, and never takes a pixel from the band, the
-        map or the right panel. Still in the document order right after the chrome, so Tab reaches the
-        dismiss button before the map; Escape dismisses what is on screen (see `dismissNotices`).
+        that grows from its own text and never takes a pixel from the band, the map or the right panel.
+        Still in the document order right after the chrome, so Tab reaches its dismiss button before the
+        map; Escape dismisses what is on screen (see `dismissNotices`). The workspace corrections are the
+        other notice: they are the first block of the right panel (see there).
       */}
-      {status || workspaceCorrections.length > 0 ? (
+      {status ? (
         <div className="app__feedback" data-testid="app-feedback">
-          <WorkspaceCorrections
-            strings={t.workspace}
-            corrections={workspaceCorrections}
-            onDismiss={() => setWorkspaceCorrections([])}
-          />
-
-          {status ? (
-            <div className="app__notice" data-testid="status-notice">
-              <p className="app__status" role="status">
-                {status}
-              </p>
-              <button type="button" data-testid="status-dismiss" onClick={() => setStatus(null)}>
-                {t.workspace.statusDismiss}
-              </button>
-            </div>
-          ) : null}
+          <div className="app__notice" data-testid="status-notice">
+            <p className="app__status" role="status">
+              {status}
+            </p>
+            <button type="button" data-testid="status-dismiss" onClick={() => setStatus(null)}>
+              {t.workspace.statusDismiss}
+            </button>
+          </div>
         </div>
       ) : null}
-
       <main className="app__main">
         <div className="app__map">
           {/*
@@ -4139,6 +4130,18 @@ export default function MapApp() {
         </div>
 
         <aside className="app__aside">
+          {/*
+            `TASK-0061` / `B04-O2` — what the restart corrected is the FIRST block of the right panel: that
+            column scrolls itself and is where the reading material of the window lives, so the notice is
+            there, whole and with its dismiss button, when it appears — and covers nothing, the map least of
+            all. A fixed layer over the map's lower edge hid the map's own cards at 960x640 (measured).
+          */}
+          <WorkspaceCorrections
+            strings={t.workspace}
+            corrections={workspaceCorrections}
+            onDismiss={() => setWorkspaceCorrections([])}
+          />
+
           {legendOpen ? (
             <MapLegend
               id="map-runtime-legend"

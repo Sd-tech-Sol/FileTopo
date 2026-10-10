@@ -1,10 +1,10 @@
-"""Derives, from a TASK-0061 campaign artifact, how much of the notice a person SEES.
+"""Lays out, from a TASK-0061 campaign artifact, what a person SEES of the notices at the moment they appear.
 
-The harness records, for every state, the rectangle of the status line, the rectangle of the
-corrections notice and the rectangle of the chrome band that holds them. The band scrolls, so a
-notice whose rectangle is inside the window can still be entirely under the band's own fold. This
-script intersects the two recorded rectangles; it reads nothing but the artifact, runs no
-product and measures nothing new.
+The campaign measures it directly (ACTION-0113, B04-O2): for the status line, its dismiss button, the
+workspace corrections and theirs, the harness records whether the box is wholly inside the window and
+whether every one of five probe points (the centre and four corners) answers a hit test with the notice
+itself, read at the opening of each state with every region at its origin (no scroll first). This script
+only lays those recorded facts out per state; it measures nothing and runs no product.
 
     python scripts/task0061-derive-status-visibility.py <campaign.json> <out.json>
 """
@@ -16,43 +16,52 @@ from pathlib import Path
 source = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
 
 
-def visible(rect, band):
-    if rect is None or band is None:
+def probe(entry):
+    if entry is None:
         return None
-    top = max(rect["y"], band["y"])
-    bottom = min(rect["bottom"], band["bottom"])
-    own = rect["h"]
-    seen = max(0.0, bottom - top)
-    return {"visibleHeightPx": round(seen, 1), "ownHeightPx": round(own, 1), "fraction": round(seen / own, 2) if own else None}
+    return {
+        "whole": entry["whole"],
+        "inWindow": entry["inWindow"],
+        "visibleHeightPx": entry["visibleHeightPx"],
+        "ownHeightPx": entry["ownHeightPx"],
+        "everyProbePointAnswers": entry["answersAtEveryPoint"],
+    }
 
 
 rows = []
 for pass_name in ("pass1", "pass2", "pass3"):
     for entry in source[pass_name]["matrix"]:
         composition = entry["composition"]
-        band = composition["chromeBand"]["rect"] if composition["chromeBand"] else None
-        status = composition["status"]
-        corrections = composition["corrections"]
-        if status is None and corrections is None:
+        if composition["status"] is None and composition["corrections"] is None:
             continue
         row = {"pass": pass_name, "size": entry["size"], "state": entry["state"]}
-        if status is not None:
-            row["status"] = {"text": status["text"][:80], **visible(status["rect"], band)}
-        if corrections is not None:
-            row["corrections"] = {
-                "words": corrections["words"],
-                **visible(corrections["rect"], band),
-                "dismiss": visible(corrections["dismissRect"], band),
+        if composition["status"] is not None:
+            row["status"] = {"text": composition["status"]["text"][:80], **probe(composition["statusProbe"]), "dismiss": probe(composition["statusDismissProbe"])}
+            feedback = composition["feedback"]
+            row["statusLayer"] = {
+                "position": feedback["position"],
+                "insideTheChromeBand": feedback["insideTheChromeBand"],
+                "overlapsTheMapViewPx": feedback["mapViewOverlapHeightPx"],
+                "overlapsTheMapViewFraction": feedback["mapViewOverlapFraction"],
+                "coversACommandOrSummaryOrChip": bool(feedback["primariesUnderANotice"] or feedback["groupSummariesUnderANotice"] or feedback["chipsOrMenuTriggerUnderANotice"]),
             }
+        if composition["corrections"] is not None:
+            row["corrections"] = {"words": composition["corrections"]["words"], **probe(composition["correctionsProbe"]), "dismiss": probe(composition["correctionsDismissProbe"]), "placement": composition.get("correctionsPlacement")}
         rows.append(row)
+
+
+def label(r):
+    return f"{r['pass']} {r['size']}/{r['state']}"
+
 
 summary = {
     "source": Path(sys.argv[1]).name,
-    "note": "Derived from the rectangles recorded in the campaign artifact: the part of the notice that lies inside the chrome band's own box, which is what a person sees without scrolling the band. Nothing was measured again.",
+    "note": "Laid out from the facts recorded in the campaign artifact: the notice's box inside the window and five hit-test points at the moment the state opened. Nothing was measured again.",
     "rows": rows,
-    "statusesEntirelyUnderTheBandFold": [f"{r['pass']} {r['size']}/{r['state']}" for r in rows if "status" in r and r["status"]["visibleHeightPx"] == 0],
-    "statusesFullyVisible": [f"{r['pass']} {r['size']}/{r['state']}" for r in rows if "status" in r and r["status"]["fraction"] == 1.0],
-    "correctionsFullyVisible": [f"{r['pass']} {r['size']}/{r['state']}" for r in rows if "corrections" in r and r["corrections"]["fraction"] == 1.0],
+    "statusWholeWithItsDismissAtAppearance": [label(r) for r in rows if "status" in r and r["status"]["whole"] and r["status"]["dismiss"]["whole"]],
+    "statusNotWholeAtAppearance": [label(r) for r in rows if "status" in r and not (r["status"]["whole"] and r["status"]["dismiss"]["whole"])],
+    "correctionsWholeWithTheirDismissAtAppearance": [label(r) for r in rows if "corrections" in r and r["corrections"]["whole"] and r["corrections"]["dismiss"]["whole"]],
+    "correctionsNotWholeAtAppearance": [label(r) for r in rows if "corrections" in r and not (r["corrections"]["whole"] and r["corrections"]["dismiss"]["whole"])],
 }
 Path(sys.argv[2]).write_text(json.dumps(summary, ensure_ascii=False, indent=2), encoding="utf-8", newline="\n")
 print(json.dumps({k: v for k, v in summary.items() if k != "rows"}, ensure_ascii=False, indent=1))
