@@ -1296,6 +1296,18 @@ const focusedId = () => evaluate(`document.querySelector('.composition__focus[ar
 const triggerExpanded = () => evaluate(`document.querySelector('[data-testid="composition-add-trigger"]')?.getAttribute('aria-expanded')`);
 async function setMenu(open) {
   if ((await triggerExpanded()) === String(open)) return;
+  if (!open) {
+    // B04-O1: the open menu is modal, so its scrim lies over the trigger too and a click there is a press on
+    // the scrim. The way out a person has is Escape; if the focus was not in the menu, a press on the scrim.
+    await press("Escape");
+    if ((await triggerExpanded()) !== "false") {
+      const [, viewHeight] = await evaluate("[innerWidth, innerHeight]");
+      await mouseClickAt(3, viewHeight - 3);
+    }
+    await until(`document.querySelector('[data-testid="composition-add-trigger"]').getAttribute('aria-expanded') === 'false'`);
+    await pause(250);
+    return;
+  }
   await click(testid("composition-add-trigger"));
   await until(`document.querySelector('[data-testid="composition-add-trigger"]').getAttribute('aria-expanded') === '${open}'`);
   await pause(250);
