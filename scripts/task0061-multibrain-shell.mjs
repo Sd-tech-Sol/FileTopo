@@ -1381,7 +1381,80 @@ const READ_COMPOSITION = `(() => {
   const actions = document.querySelector('.app__brains .app__actions');
   const status = document.querySelector('.app__status');
   const corrections = document.querySelector('[data-testid="workspace-corrections"]');
+
+  /* --- ACTION-0113 B04-O2: a notice is judged WHERE and WHEN it appears ------------------------
+   *
+   * Not "is it in the band's box", which is the question that said 0 px at 960x640: is the whole
+   * notice inside the window, and does every point of it (the centre and four corners) answer a hit
+   * test with the notice itself — nothing on top, no ancestor clipping it. Read before any scroll,
+   * at the state's own opening: the reading harness has put every region at its origin. */
+  const viewW = document.documentElement.clientWidth, viewH = document.documentElement.clientHeight;
+  const probe = (el) => {
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    const fractions = [[0.5, 0.5], [0.03, 0.12], [0.97, 0.12], [0.03, 0.88], [0.97, 0.88]];
+    const answers = fractions.map(([fx, fy]) => {
+      const x = r.left + Math.min(Math.max(r.width * fx, 1), Math.max(r.width - 1, 1));
+      const y = r.top + Math.min(Math.max(r.height * fy, 1), Math.max(r.height - 1, 1));
+      const top = document.elementFromPoint(x, y);
+      return !!top && (top === el || el.contains(top));
+    });
+    const inWindow = r.width > 0 && r.height > 0 && r.left >= -0.5 && r.top >= -0.5 && r.right <= viewW + 0.5 && r.bottom <= viewH + 0.5;
+    return {
+      rect: rect(el), inWindow,
+      // The window part of the box, in CSS px (a notice cut by the window's edge is not whole).
+      visibleHeightPx: round(Math.max(0, Math.min(r.bottom, viewH) - Math.max(r.top, 0))),
+      ownHeightPx: round(r.height),
+      answersAtCentre: answers[0], answersAtEveryPoint: answers.every(Boolean),
+      whole: inWindow && answers.every(Boolean),
+    };
+  };
+  const layer = document.querySelector('[data-testid="app-feedback"]');
+  const intersection = (a, b) => {
+    const w = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+    const h = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+    return w > 0.5 && h > 0.5 ? { w, h } : null;
+  };
+  let feedback = null;
+  if (layer) {
+    const layerBox = layer.getBoundingClientRect();
+    // The notices themselves (the layer's own box is wider than they are and takes no pointer).
+    const notices = [...layer.children].map((child) => {
+      const b = child.getBoundingClientRect();
+      return { left: Math.max(b.left, layerBox.left), top: Math.max(b.top, layerBox.top), right: Math.min(b.right, layerBox.right), bottom: Math.min(b.bottom, layerBox.bottom) };
+    }).filter((b) => b.right > b.left && b.bottom > b.top);
+    const covers = (el) => !!el && notices.some((n) => intersection(n, el.getBoundingClientRect()));
+    const primaryIds = ${JSON.stringify(PRIMARY_COMMANDS.map((command) => command.id))};
+    const mapView = document.querySelector('.map-view');
+    const mapBox = mapView ? mapView.getBoundingClientRect() : null;
+    const mapCovered = mapBox ? notices.reduce((sum, n) => { const i = intersection(n, mapBox); return sum + (i ? i.h : 0); }, 0) : 0;
+    const mapCoveredArea = mapBox ? notices.reduce((sum, n) => { const i = intersection(n, mapBox); return sum + (i ? i.w * i.h : 0); }, 0) : 0;
+    feedback = {
+      rect: rect(layer),
+      position: getComputedStyle(layer).position,
+      insideTheChromeBand: !!layer.closest('.app__chrome'),
+      scrollsItself: layer.scrollHeight > layer.clientHeight + 1,
+      noticeRects: notices.map((n) => ({ x: round(n.left), y: round(n.top), w: round(n.right - n.left), h: round(n.bottom - n.top) })),
+      primariesUnderANotice: primaryIds.filter((id) => covers(document.querySelector('[data-testid="' + id + '"]'))),
+      groupSummariesUnderANotice: [...document.querySelectorAll('details.app__group > summary')]
+        .filter((summary) => covers(summary)).map((summary) => summary.parentElement.getAttribute('data-testid')),
+      chipsOrMenuTriggerUnderANotice: [...document.querySelectorAll('.composition__focus, .composition__remove, [data-testid="composition-add-trigger"]')]
+        .filter((el) => covers(el)).map((el) => el.getAttribute('data-testid')),
+      // The map is the thing the notice may touch; how much, is published rather than judged.
+      mapViewOverlapHeightPx: round(mapCovered),
+      mapViewOverlapFraction: mapBox && mapBox.width * mapBox.height > 0 ? Math.round((mapCoveredArea / (mapBox.width * mapBox.height)) * 1000) / 1000 : null,
+      mapViewHeightPx: mapBox ? round(mapBox.height) : null,
+      mapViewVisibleHeightPx: mapBox ? round(Math.max(0, Math.min(mapBox.bottom, viewH) - Math.max(mapBox.top, 0))) : null,
+      asideUnderANotice: covers(document.querySelector('.app__aside')),
+      mapControlsUnderANotice: covers(document.querySelector('.app__map-controls')),
+    };
+  }
   return {
+    feedback,
+    statusProbe: probe(status),
+    statusDismissProbe: probe(document.querySelector('[data-testid="status-dismiss"]')),
+    correctionsProbe: probe(corrections),
+    correctionsDismissProbe: probe(document.querySelector('[data-testid="workspace-corrections-dismiss"]')),
     navRect: rect(nav),
     barRect: rect(document.querySelector('[data-testid="composition-bar"]')),
     actionsRect: rect(actions),
@@ -1526,6 +1599,166 @@ const PUBLISHED_CAPTURES = new Set([
   "960x640/corrected-fr-light", "960x640/corrected-en-dark-compact", "960x640/restored",
 ]);
 
+/* --- ACTION-0113 B04-O1: the open menu is modal, and what it covers is measured, not assumed ----
+ *
+ * While the add menu is open its layer (and the scrim under it) lies over whatever is under it — at
+ * 960x640 the Diagnostics summary. The strict reading ("is every group summary whole?") is KEPT as it
+ * is and stays false in those states: nothing here turns it green. What is measured instead is the
+ * promise a modal makes, by real input, group by group, in the very state the matrix measured:
+ *
+ *   a  the first mouse press on the covered summary closes the menu and does NOT open the group
+ *      (the scrim consumed it: that is what modal means);
+ *   b  the summary is then whole and answers a hit test, and the next press opens the group;
+ *   c  Escape closes the menu, gives the focus back to the trigger, and the whole
+ *      group-activation measurement (mouse AND keyboard) then runs in that same composition.
+ *
+ * The menu is reopened at the end, so the state is left as the matrix found it. */
+async function measureMenuModal() {
+  const reopen = async () => {
+    if ((await triggerExpanded()) !== "true") {
+      await evaluate(RESET_SCROLL);
+      await click(testid("composition-add-trigger"));
+      await until(`document.querySelector('[data-testid="composition-add-trigger"]').getAttribute('aria-expanded') === 'true'`);
+      await pause(250);
+    }
+    await evaluate(RESET_SCROLL);
+  };
+  const groups = [];
+  for (const group of DISCLOSURE_GROUPS) {
+    await reopen();
+    const before = await evaluate(READ_GROUP(group.testid));
+    const row = { group: group.testid, present: before !== null };
+    if (!before) {
+      groups.push(row);
+      continue;
+    }
+    row.answeredAtItsCentreWhileTheMenuIsOpen = before.hit ? "the summary itself" : before.topAtCentre;
+    const [viewWidth, viewHeight] = await evaluate("[innerWidth, innerHeight]");
+    row.centreInWindow = before.x >= 0 && before.x <= viewWidth && before.y >= 0 && before.y <= viewHeight;
+    if (!row.centreInWindow) {
+      row.pressed = false;
+      groups.push(row);
+      continue;
+    }
+    await mouseClickAt(before.x, before.y);
+    row.pressed = true;
+    row.menuClosedByThePress = (await triggerExpanded()) === "false";
+    const afterPress = await evaluate(READ_GROUP(group.testid));
+    row.groupStillClosedAfterThePress = afterPress?.open === false;
+    row.backdropGoneAfterThePress = await evaluate(`!document.querySelector('[data-testid="composition-menu-backdrop"]')`);
+    await evaluate(RESET_SCROLL);
+    const reread = await evaluate(READ_GROUP(group.testid));
+    row.summaryAnswersOnceTheMenuIsClosed = reread?.hit === true;
+    if (reread?.hit) await mouseClickAt(reread.x, reread.y);
+    const opened = await evaluate(READ_GROUP(group.testid));
+    row.activatedByTheNextPress = opened?.open === true;
+    await evaluate(`(() => { document.querySelector(${JSON.stringify(testid(group.testid))}).open = false; })()`);
+    await evaluate(RESET_SCROLL);
+    groups.push(row);
+  }
+  await reopen();
+  await press("Escape");
+  await pause(250);
+  const escape = {
+    menuClosed: (await triggerExpanded()) === "false",
+    focusBackOnTheTrigger: (await activeElement()).id === "composition-add-trigger",
+    backdropGone: await evaluate(`!document.querySelector('[data-testid="composition-menu-backdrop"]')`),
+  };
+  await evaluate(RESET_SCROLL);
+  const layoutAfterEscape = await evaluate(READ_FIRST_SCREEN);
+  escape.groupSummariesWhole = layoutAfterEscape.groups.length === DISCLOSURE_GROUPS.length && layoutAfterEscape.groups.every((entry) => entry.summaryFullyVisible === true);
+  const entryPointsAfterModalClose = await measureGroupEntryPoints();
+  await evaluate(READ_FIRST_SCREEN);
+  await reopen();
+  return { groups, escape, entryPointsAfterModalClose };
+}
+
+/** A mouse press where the control IS, without scrolling anything first: the whole point of the notice
+ *  contract is that the button is there when the notice appears. `click()` above scrolls its target into
+ *  view and would hide exactly the defect. */
+async function pressWithoutScrolling(selector) {
+  await evaluate(RESET_SCROLL);
+  const where = await evaluate(`(() => {
+    const el = document.querySelector(${JSON.stringify(selector)});
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    const x = r.x + r.width / 2, y = r.y + r.height / 2;
+    const top = document.elementFromPoint(x, y);
+    return { x, y, hit: !!top && (top === el || el.contains(top)),
+      inWindow: r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth,
+      chromeScrollTop: Math.round(document.querySelector('.app__chrome')?.scrollTop ?? 0), documentScrollY: Math.round(window.scrollY) };
+  })()`);
+  if (where?.hit) await mouseClickAt(where.x, where.y);
+  return where;
+}
+
+/** Brings the product's own notice back, by the same real gesture that raised it the first time. */
+async function reRaise(scenario) {
+  if (scenario.notice === "unindexed") {
+    const dropped = idOf("D");
+    if (await evaluate(`!!document.querySelector('[data-testid="composition-chip-${dropped}"]')`)) {
+      await click(testid(`composition-remove-${dropped}`));
+      await until(`!document.querySelector('[data-testid="composition-chip-${dropped}"]')`);
+      await quiet();
+    }
+    await composeTo(scenario.keys, scenario.focus);
+  }
+  await raiseNotice(scenario);
+}
+
+/** The status notice's close control, by every route a person has, from the state where it appeared:
+ *  the real mouse with no scroll first; a real Tab walk from the top of the window and Enter; Escape. */
+async function noticeInteractions(scenario) {
+  const present = () => evaluate(`!!document.querySelector('[data-testid="status-notice"]')`);
+  const out = {};
+  const mouse = await pressWithoutScrolling(testid("status-dismiss"));
+  out.mouse = {
+    dismissAimableAtAppearance: mouse?.hit === true && mouse?.inWindow === true,
+    chromeBandScrollTopBeforeThePress: mouse?.chromeScrollTop ?? null,
+    documentScrollYBeforeThePress: mouse?.documentScrollY ?? null,
+    noticeGoneAfterThePress: !(await present()),
+  };
+  await reRaise(scenario);
+  await evaluate(RESET_SCROLL);
+  const tab = await tabToControl(testid("status-dismiss"), 160);
+  out.keyboard = {
+    reachedByTab: tab.presses !== null,
+    tabPresses: tab.presses,
+    wholeInWindowWhenFocused: tab.inViewport ?? null,
+    hasAFocusRing: tab.presses !== null ? tab.outlineStyle !== "none" && parseFloat(tab.outlineWidth) > 0 : null,
+    documentScrollY: tab.documentScrollY ?? null,
+  };
+  if (tab.presses !== null) {
+    await press("Enter");
+    out.keyboard.noticeGoneAfterEnter = !(await present());
+  }
+  await reRaise(scenario);
+  await evaluate(RESET_SCROLL);
+  await evaluate(`document.activeElement?.blur?.()`);
+  await press("Escape");
+  out.escape = { noticeGoneAfterEscapeWithTheFocusOnTheDocument: !(await present()) };
+  // Left as found: the notice is on screen again, for whatever follows.
+  await reRaise(scenario);
+  await evaluate(RESET_SCROLL);
+  return out;
+}
+
+/** A real Tab walk to a control, without pressing it: how far the keyboard has to go, and whether the
+ *  control is whole in the window and carries a focus ring when it gets there. */
+async function keyboardReach(selector) {
+  await evaluate(RESET_SCROLL);
+  const tab = await tabToControl(selector, 160);
+  await evaluate(`document.activeElement?.blur?.()`);
+  await evaluate(RESET_SCROLL);
+  return {
+    reachedByTab: tab.presses !== null,
+    tabPresses: tab.presses,
+    wholeInWindowWhenFocused: tab.inViewport ?? null,
+    hasAFocusRing: tab.presses !== null ? tab.outlineStyle !== "none" && parseFloat(tab.outlineWidth) > 0 : null,
+    documentScrollY: tab.documentScrollY ?? null,
+  };
+}
+
 async function measureState({ size, granted, scenario, entryPoints = true, aside = false, sources = true }) {
   await quiet();
   await pause(500); // let the ResizeObserver-driven re-render settle
@@ -1563,6 +1796,8 @@ async function measureState({ size, granted, scenario, entryPoints = true, aside
     if (sources) sourcesReading = await measureSources(scenario.keys);
   }
   const axe = await axeRun();
+  const menuModal = menuOpen ? await measureMenuModal() : null;
+  const correctionsKeyboard = composition.corrections ? await keyboardReach(testid("workspace-corrections-dismiss")) : null;
   return {
     size: size.label,
     state: scenario.id,
@@ -1570,6 +1805,9 @@ async function measureState({ size, granted, scenario, entryPoints = true, aside
     hostWindow: granted,
     layout,
     composition,
+    menuModal,
+    entryPointsAfterModalClose: menuModal?.entryPointsAfterModalClose ?? null,
+    correctionsKeyboard,
     chipAccessibleNames: Object.fromEntries(
       Object.entries(ax).map(([brainId, node]) => [brainId, node ? { role: node.role, name: node.name } : null]),
     ),
@@ -1577,7 +1815,7 @@ async function measureState({ size, granted, scenario, entryPoints = true, aside
     menuOpen,
     entryPoints: entries,
     entryPointsNotMeasuredBecause: menuOpen
-      ? "the composition menu is open: the first click outside it closes it, so activating a group would measure a different state. Group visibility is still read above; activation is measured in the same composition with the menu closed."
+      ? "the composition menu is open and MODAL: its scrim takes the first press, so a group cannot be activated through it. Group visibility is still read above, strictly. What the modal promises — the first press closes it without activating, the next one activates, Escape closes it and gives the focus back — is measured in `menuModal`, and the whole group-activation measurement runs after the Escape in `entryPointsAfterModalClose`."
       : null,
     chromeTabSweep: sweep,
     keyboardToAside: toAside,
@@ -1652,6 +1890,41 @@ function judge(entry) {
     layout.firstScreen.mapHitTest?.inside === true &&
     layout.firstScreen.visibleCardCount > 0;
   const groupsWhole = layout.groups.length === DISCLOSURE_GROUPS.length && layout.groups.every((group) => group.summaryFullyVisible === true);
+  const feedback = entry.composition.feedback;
+  const statusDismiss = byId.get("status-dismiss") ?? null;
+  const statusShown = entry.composition.status !== null;
+  const correctionsShown = corrections !== null;
+  const statusWhole = statusShown ? entry.composition.statusProbe?.whole === true : null;
+  const statusDismissWhole = statusShown ? entry.composition.statusDismissProbe?.whole === true && statusDismiss?.fullyVisible === true : null;
+  const correctionsWhole = correctionsShown ? entry.composition.correctionsProbe?.whole === true : null;
+  const correctionsDismissWhole = correctionsShown ? entry.composition.correctionsDismissProbe?.whole === true && dismiss?.fullyVisible === true : null;
+  const notices = {
+    statusShown,
+    correctionsShown,
+    statusWholeAtAppearance: statusWhole,
+    statusDismissWholeAtAppearance: statusDismissWhole,
+    statusVisibleHeightPx: entry.composition.statusProbe?.visibleHeightPx ?? null,
+    statusOwnHeightPx: entry.composition.statusProbe?.ownHeightPx ?? null,
+    correctionsWholeAtAppearance: correctionsWhole,
+    correctionsDismissWholeAtAppearance: correctionsDismissWhole,
+    correctionsVisibleHeightPx: entry.composition.correctionsProbe?.visibleHeightPx ?? null,
+    correctionsOwnHeightPx: entry.composition.correctionsProbe?.ownHeightPx ?? null,
+    presentableAtAppearance: (statusWhole ?? true) && (statusDismissWhole ?? true) && (correctionsWhole ?? true) && (correctionsDismissWhole ?? true),
+    layerPosition: feedback?.position ?? null,
+    layerInsideTheChromeBand: feedback?.insideTheChromeBand ?? null,
+    layerScrollsItself: feedback?.scrollsItself ?? null,
+    noticeRects: feedback?.noticeRects ?? [],
+    primariesUnderANotice: feedback?.primariesUnderANotice ?? [],
+    groupSummariesUnderANotice: feedback?.groupSummariesUnderANotice ?? [],
+    chipsOrTriggerUnderANotice: feedback?.chipsOrMenuTriggerUnderANotice ?? [],
+    asideUnderANotice: feedback?.asideUnderANotice ?? null,
+    mapControlsUnderANotice: feedback?.mapControlsUnderANotice ?? null,
+    coversNoCommandNoSummaryNoChip:
+      !feedback || (feedback.primariesUnderANotice.length === 0 && feedback.groupSummariesUnderANotice.length === 0 && feedback.chipsOrMenuTriggerUnderANotice.length === 0),
+    mapViewOverlapHeightPx: feedback?.mapViewOverlapHeightPx ?? null,
+    mapViewOverlapFraction: feedback?.mapViewOverlapFraction ?? null,
+    mapViewHeightPx: feedback?.mapViewHeightPx ?? null,
+  };
   const primaryWhole = primary.every((row) => row.fullyVisible);
   const chipsWhole = chips.length === expectedBrains.length && chips.every((chip) => chip.chipWhole && chip.removeWhole);
   const menuWhole = menuItems.every((item) => item.whole);
@@ -1701,6 +1974,13 @@ function judge(entry) {
     chromeBandScrollsAtOpening: layout.scrollRegions.chrome.scrollsInside === true,
     status: entry.composition.status?.text ?? null,
     statusOnScreen: entry.composition.status ? (entry.composition.status.rect.y >= 0 && entry.composition.status.rect.bottom <= layout.cssViewport[1]) : null,
+    notices,
+    noticeInteractions: entry.noticeInteractions ?? null,
+    correctionsKeyboard: entry.correctionsKeyboard ?? null,
+    menuModal: entry.menuModal ? {
+      groups: entry.menuModal.groups,
+      escape: entry.menuModal.escape,
+    } : null,
     corrections: corrections ? { words: corrections.words, dismissWhole: dismiss?.fullyVisible === true, dismissOnScreen: dismiss?.onScreen === true } : null,
   };
 }
@@ -1764,6 +2044,67 @@ function summarise(entries) {
     menuOpenStatesWhereAnEntryPointIsUnderTheFold: judged
       .filter((j) => j.menuOpen && j.groupsCoverage.some((entry) => entry.coveredBy === null))
       .map((j) => `${j.size}/${j.state}`),
+    // ACTION-0113 B04-O1. The strict boolean above is unchanged and stays false in the menu-open states:
+    // the menu is modal and covers the summary. What is published here is what the modal promises.
+    ...(() => {
+      const menuStates = entries.filter((entry) => entry.menuModal);
+      const recovered = menuStates.filter((entry) => {
+        const modal = entry.menuModal;
+        const interactions = entry.entryPointsAfterModalClose ?? [];
+        return (
+          modal.escape.menuClosed && modal.escape.focusBackOnTheTrigger && modal.escape.backdropGone && modal.escape.groupSummariesWhole &&
+          modal.groups.length === DISCLOSURE_GROUPS.length &&
+          modal.groups.every((row) => row.present && row.pressed === true && row.menuClosedByThePress && row.groupStillClosedAfterThePress && row.summaryAnswersOnceTheMenuIsClosed && row.activatedByTheNextPress) &&
+          interactions.length === DISCLOSURE_GROUPS.length &&
+          interactions.every((group) => group.present && group.mouse.revealsEverythingItHolds && group.keyboard.revealsEverythingItHolds && group.mouse.axExpandedWhenOpen === true && group.keyboard.focusKeptOnSummary)
+        );
+      });
+      const label = (entry) => `${entry.size}/${entry.state}`;
+      return {
+        menuIsModal: menuStates.length > 0 && menuStates.every((entry) => entry.composition.menu?.role === "menu" && entry.menuModal.groups.every((row) => row.menuClosedByThePress === true)),
+        menuOpenStatesMeasured: menuStates.map(label),
+        menuOpenStatesWhereTheModalPromiseHolds: recovered.map(label),
+        menuOpenStatesWhereTheModalPromiseFails: menuStates.filter((entry) => !recovered.includes(entry)).map(label),
+        everyMenuOpenStateRecoversGroupActivationByTheModalRoute: menuStates.length > 0 && recovered.length === menuStates.length,
+        // Per group and per menu-open state, so that a reader sees which summary the layer covered and what answered.
+        menuOpenGroupCoverage: menuStates.map((entry) => ({
+          state: label(entry),
+          groups: entry.menuModal.groups.map((row) => ({
+            group: row.group, answeredAtItsCentre: row.answeredAtItsCentreWhileTheMenuIsOpen, firstPressClosedTheMenu: row.menuClosedByThePress ?? null,
+            groupStayedClosed: row.groupStillClosedAfterThePress ?? null, nextPressActivated: row.activatedByTheNextPress ?? null,
+          })),
+        })),
+        // Only true when BOTH halves are: every closed-menu state shows the three summaries whole, and every
+        // menu-open state recovers them by the route the modal gives. Never a replacement for the strict one.
+        groupEntryReachableEveryState:
+          judged.filter((j) => !j.menuOpen).every((j) => j.groupsWhole) && menuStates.length > 0 && recovered.length === menuStates.length,
+      };
+    })(),
+    // ACTION-0113 B04-O2: the notices, at the moment they appear, with no scroll before.
+    ...(() => {
+      const raised = judged.filter((j) => j.notices.statusShown || j.notices.correctionsShown);
+      const label = (j) => `${j.size}/${j.state}`;
+      const interactions = entries.filter((entry) => entry.noticeInteractions);
+      const worst = raised.reduce((acc, j) => (j.notices.mapViewOverlapFraction !== null && j.notices.mapViewOverlapFraction > (acc?.fraction ?? -1) ? { state: label(j), fraction: j.notices.mapViewOverlapFraction, heightPx: j.notices.mapViewOverlapHeightPx, mapViewHeightPx: j.notices.mapViewHeightPx } : acc), null);
+      return {
+        noticeStatesMeasured: raised.map(label),
+        noticesPresentableAtAppearanceEveryState: raised.length > 0 && raised.every((j) => j.notices.presentableAtAppearance),
+        statesWhereANoticeOrItsDismissIsNotWholeAtAppearance: raised.filter((j) => !j.notices.presentableAtAppearance).map((j) => `${label(j)}: status ${j.notices.statusWholeAtAppearance}/dismiss ${j.notices.statusDismissWholeAtAppearance}; corrections ${j.notices.correctionsWholeAtAppearance}/dismiss ${j.notices.correctionsDismissWholeAtAppearance}`),
+        noticeLayerOutsideTheChromeBandEveryState: raised.length > 0 && raised.every((j) => j.notices.layerInsideTheChromeBand === false && j.notices.layerPosition === "fixed"),
+        noticeLayerCoversNoCommandNoGroupSummaryNoChipEveryState: raised.every((j) => j.notices.coversNoCommandNoSummaryNoChip),
+        statesWhereANoticeCoversACommand: raised.filter((j) => !j.notices.coversNoCommandNoSummaryNoChip).map((j) => `${label(j)}: ${[...j.notices.primariesUnderANotice, ...j.notices.groupSummariesUnderANotice, ...j.notices.chipsOrTriggerUnderANotice].join(",")}`),
+        // The part of the map the notice lies over, published and not judged: the map stays at its layout
+        // rectangle (the floor is judged on that), the notice is a dismissible layer over its lower edge.
+        noticeMapOverlapByState: raised.map((j) => ({ state: label(j), overlapHeightPx: j.notices.mapViewOverlapHeightPx, overlapFraction: j.notices.mapViewOverlapFraction, mapViewHeightPx: j.notices.mapViewHeightPx, noticeRects: j.notices.noticeRects })),
+        worstNoticeMapOverlap: worst,
+        statusDismissByMouseAtAppearanceEveryRaisedState: interactions.length > 0 && interactions.every((entry) => entry.noticeInteractions.mouse.dismissAimableAtAppearance && entry.noticeInteractions.mouse.noticeGoneAfterThePress && entry.noticeInteractions.mouse.chromeBandScrollTopBeforeThePress === 0),
+        statusDismissByKeyboardEveryRaisedState: interactions.length > 0 && interactions.every((entry) => entry.noticeInteractions.keyboard.reachedByTab && entry.noticeInteractions.keyboard.wholeInWindowWhenFocused && entry.noticeInteractions.keyboard.hasAFocusRing && entry.noticeInteractions.keyboard.noticeGoneAfterEnter === true),
+        statusDismissByEscapeEveryRaisedState: interactions.length > 0 && interactions.every((entry) => entry.noticeInteractions.escape.noticeGoneAfterEscapeWithTheFocusOnTheDocument),
+        statusDismissTabPressesByState: interactions.map((entry) => ({ state: `${entry.size}/${entry.state}`, presses: entry.noticeInteractions.keyboard.tabPresses })),
+        correctionsDismissReachableByKeyboardEveryState: entries.filter((entry) => entry.correctionsKeyboard).length > 0 && entries.filter((entry) => entry.correctionsKeyboard).every((entry) => entry.correctionsKeyboard.reachedByTab && entry.correctionsKeyboard.wholeInWindowWhenFocused && entry.correctionsKeyboard.hasAFocusRing),
+        correctionsTabPressesByState: entries.filter((entry) => entry.correctionsKeyboard).map((entry) => ({ state: `${entry.size}/${entry.state}`, presses: entry.correctionsKeyboard.tabPresses })),
+      };
+    })(),
     groupsRevealEverythingByMouseEveryMeasuredState: everyMeasured("mouseRevealsEverything"),
     groupsRevealEverythingByKeyboardEveryMeasuredState: everyMeasured("keyboardRevealsEverything"),
     accessibilityTreeSaysExpandedEveryMeasuredState: everyMeasured("axTreeSaysExpanded"),
@@ -1906,6 +2247,7 @@ if (pass === 1 && !only) {
       if (scenario.notice) await raiseNotice(scenario);
       if (scenario.menu) await setMenu(true);
       matrix.push(await measureState({ size, granted, scenario, aside: scenario.aside === true }));
+      if (scenario.notice) matrix[matrix.length - 1].noticeInteractions = await noticeInteractions(scenario);
       await writeFile(join(proofRoot, "matrix-progress.json"), JSON.stringify({ record: { ...record, matrix }, seed: seed.brains.map((entry) => ({ ...entry, root: undefined })) }));
       if (scenario.menu) await setMenu(false);
     }
@@ -2312,8 +2654,15 @@ if (pass === 3) {
   // The notice is dismissible, and the dismiss control works from the hardest window.
   await resizeTo(960, 640);
   const dismissBefore = await evaluate(`!!document.querySelector('[data-testid="workspace-corrections"]')`);
-  await evaluate(RESET_SCROLL);
-  await click(testid("workspace-corrections-dismiss"));
+  // ACTION-0113: where the button is when the notice appears — no `scrollIntoView` first (that is what
+  // `click()` does, and it would hide the very defect). The press is real and must land on the button.
+  const dismissAt = await pressWithoutScrolling(testid("workspace-corrections-dismiss"));
+  record.dismissalAtAppearance = {
+    dismissAimableWithoutScrolling: dismissAt?.hit === true && dismissAt?.inWindow === true,
+    chromeBandScrollTopBeforeThePress: dismissAt?.chromeScrollTop ?? null,
+    documentScrollYBeforeThePress: dismissAt?.documentScrollY ?? null,
+  };
+  assert.equal(record.dismissalAtAppearance.dismissAimableWithoutScrolling, true, "the corrections dismiss button answers a press where the notice drew it");
   await until(`!document.querySelector('[data-testid="workspace-corrections"]')`);
   await quiet();
   const afterDismiss = await evaluate(READ_FIRST_SCREEN);
