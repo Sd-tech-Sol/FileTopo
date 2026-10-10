@@ -2114,11 +2114,11 @@ function summarise(entries) {
       });
       const label = (entry) => `${entry.size}/${entry.state}`;
       return {
-        menuIsModal: menuStates.length > 0 && menuStates.every((entry) => entry.composition.menu?.role === "menu" && entry.menuModal.groups.every((row) => row.menuClosedByThePress === true)),
+        menuIsModal: menuStates.length === 0 ? null : menuStates.every((entry) => entry.composition.menu?.role === "menu" && entry.menuModal.groups.every((row) => row.menuClosedByThePress === true)),
         menuOpenStatesMeasured: menuStates.map(label),
         menuOpenStatesWhereTheModalPromiseHolds: recovered.map(label),
         menuOpenStatesWhereTheModalPromiseFails: menuStates.filter((entry) => !recovered.includes(entry)).map(label),
-        everyMenuOpenStateRecoversGroupActivationByTheModalRoute: menuStates.length > 0 && recovered.length === menuStates.length,
+        everyMenuOpenStateRecoversGroupActivationByTheModalRoute: menuStates.length === 0 ? null : recovered.length === menuStates.length,
         // Per group and per menu-open state, so that a reader sees which summary the layer covered and what answered.
         menuOpenGroupCoverage: menuStates.map((entry) => ({
           state: label(entry),
@@ -2129,8 +2129,7 @@ function summarise(entries) {
         })),
         // Only true when BOTH halves are: every closed-menu state shows the three summaries whole, and every
         // menu-open state recovers them by the route the modal gives. Never a replacement for the strict one.
-        groupEntryReachableEveryState:
-          judged.filter((j) => !j.menuOpen).every((j) => j.groupsWhole) && menuStates.length > 0 && recovered.length === menuStates.length,
+        groupEntryReachableEveryState: judged.filter((j) => !j.menuOpen).every((j) => j.groupsWhole) && recovered.length === menuStates.length,
       };
     })(),
     // ACTION-0113 B04-O2: the notices, at the moment they appear, with no scroll before.
@@ -2143,13 +2142,13 @@ function summarise(entries) {
       const worst = raised.reduce((acc, j) => (j.notices.mapViewOverlapFraction !== null && j.notices.mapViewOverlapFraction > (acc?.fraction ?? -1) ? { state: label(j), fraction: j.notices.mapViewOverlapFraction, heightPx: j.notices.mapViewOverlapHeightPx, mapViewHeightPx: j.notices.mapViewHeightPx } : acc), null);
       return {
         noticeStatesMeasured: raised.map(label),
-        noticesPresentableAtAppearanceEveryState: raised.length > 0 && raised.every((j) => j.notices.presentableAtAppearance),
+        noticesPresentableAtAppearanceEveryState: raised.length === 0 ? null : raised.every((j) => j.notices.presentableAtAppearance),
         statesWhereANoticeOrItsDismissIsNotWholeAtAppearance: raised.filter((j) => !j.notices.presentableAtAppearance).map((j) => `${label(j)}: status ${j.notices.statusWholeAtAppearance}/dismiss ${j.notices.statusDismissWholeAtAppearance}; corrections ${j.notices.correctionsWholeAtAppearance}/dismiss ${j.notices.correctionsDismissWholeAtAppearance}`),
         statusStatesMeasured: statusStates.map(label),
         correctionStatesMeasured: correctionStates.map(label),
-        statusLayerOutsideTheChromeBandEveryState: statusStates.length > 0 && statusStates.every((j) => j.notices.layerInsideTheChromeBand === false && j.notices.layerPosition === "fixed"),
+        statusLayerOutsideTheChromeBandEveryState: statusStates.length === 0 ? null : statusStates.every((j) => j.notices.layerInsideTheChromeBand === false && j.notices.layerPosition === "fixed"),
         correctionsInTheRightPanelAndCoverNothingEveryState:
-          correctionStates.length > 0 &&
+          correctionStates.length === 0 ? null :
           correctionStates.every((j) => j.correctionsPlacement?.insideTheRightPanel && j.correctionsPlacement.firstBlockOfTheRightPanel && !j.correctionsPlacement.insideTheChromeBand && !j.correctionsPlacement.insideAFixedLayer && j.correctionsPlacement.overlapsTheMapViewPx === 0 && j.correctionsPlacement.rightPanelScrollTopAtReading === 0),
         noticeLayerCoversNoCommandNoGroupSummaryNoChipEveryState: raised.every((j) => j.notices.coversNoCommandNoSummaryNoChip),
         statesWhereANoticeCoversACommand: raised.filter((j) => !j.notices.coversNoCommandNoSummaryNoChip).map((j) => `${label(j)}: ${[...j.notices.primariesUnderANotice, ...j.notices.groupSummariesUnderANotice, ...j.notices.chipsOrTriggerUnderANotice].join(",")}`),
@@ -2158,11 +2157,11 @@ function summarise(entries) {
         noticeMapOverlapByState: raised.map((j) => ({ state: label(j), overlapHeightPx: j.notices.mapViewOverlapHeightPx, overlapFraction: j.notices.mapViewOverlapFraction, mapViewHeightPx: j.notices.mapViewHeightPx, noticeRects: j.notices.noticeRects })),
         worstNoticeMapOverlap: worst,
         statusLayerMapOverlapWorst: statusStates.reduce((acc, j) => Math.max(acc, j.notices.mapViewOverlapFraction ?? 0), 0),
-        statusDismissByMouseAtAppearanceEveryRaisedState: interactions.length > 0 && interactions.every((entry) => entry.noticeInteractions.mouse.dismissAimableAtAppearance && entry.noticeInteractions.mouse.noticeGoneAfterThePress && entry.noticeInteractions.mouse.chromeBandScrollTopBeforeThePress === 0),
-        statusDismissByKeyboardEveryRaisedState: interactions.length > 0 && interactions.every((entry) => entry.noticeInteractions.keyboard.reachedByTab && entry.noticeInteractions.keyboard.wholeInWindowWhenFocused && entry.noticeInteractions.keyboard.hasAFocusRing && entry.noticeInteractions.keyboard.noticeGoneAfterEnter === true),
-        statusDismissByEscapeEveryRaisedState: interactions.length > 0 && interactions.every((entry) => entry.noticeInteractions.escape.noticeGoneAfterEscapeWithTheFocusOnTheDocument),
+        statusDismissByMouseAtAppearanceEveryRaisedState: interactions.length === 0 ? null : interactions.every((entry) => entry.noticeInteractions.mouse.dismissAimableAtAppearance && entry.noticeInteractions.mouse.noticeGoneAfterThePress && entry.noticeInteractions.mouse.chromeBandScrollTopBeforeThePress === 0),
+        statusDismissByKeyboardEveryRaisedState: interactions.length === 0 ? null : interactions.every((entry) => entry.noticeInteractions.keyboard.reachedByTab && entry.noticeInteractions.keyboard.wholeInWindowWhenFocused && entry.noticeInteractions.keyboard.hasAFocusRing && entry.noticeInteractions.keyboard.noticeGoneAfterEnter === true),
+        statusDismissByEscapeEveryRaisedState: interactions.length === 0 ? null : interactions.every((entry) => entry.noticeInteractions.escape.noticeGoneAfterEscapeWithTheFocusOnTheDocument),
         statusDismissTabPressesByState: interactions.map((entry) => ({ state: `${entry.size}/${entry.state}`, presses: entry.noticeInteractions.keyboard.tabPresses })),
-        correctionsDismissReachableByKeyboardEveryState: entries.filter((entry) => entry.correctionsKeyboard).length > 0 && entries.filter((entry) => entry.correctionsKeyboard).every((entry) => entry.correctionsKeyboard.reachedByTab && entry.correctionsKeyboard.wholeInWindowWhenFocused && entry.correctionsKeyboard.hasAFocusRing),
+        correctionsDismissReachableByKeyboardEveryState: entries.filter((entry) => entry.correctionsKeyboard).length === 0 ? null : entries.filter((entry) => entry.correctionsKeyboard).every((entry) => entry.correctionsKeyboard.reachedByTab && entry.correctionsKeyboard.wholeInWindowWhenFocused && entry.correctionsKeyboard.hasAFocusRing),
         correctionsTabPressesByState: entries.filter((entry) => entry.correctionsKeyboard).map((entry) => ({ state: `${entry.size}/${entry.state}`, presses: entry.correctionsKeyboard.tabPresses })),
       };
     })(),
