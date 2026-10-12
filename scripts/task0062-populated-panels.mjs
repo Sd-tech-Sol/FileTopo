@@ -1619,6 +1619,7 @@ if (pass === 1 && !ONLY.includes("noint")) {
       const target = `${kind.approveSel}[${kind.keyAttr}="${sk}"]`;
       const onRevoke = () => evaluate(`document.activeElement?.getAttribute('${kind.revokeAttr}') === ${JSON.stringify(sk)}`);
       let presses = null;
+      try {
       if (mode === "keyboard") {
         presses = await tabTo(target);
         assert(presses !== null, `${id}: the approve control is reachable by Tab`);
@@ -1650,7 +1651,14 @@ if (pass === 1 && !ONLY.includes("noint")) {
           shiftTabFurther: { ...brief(backTwo), documentScrollY: backTwo.documentScrollY },
           backOnRevokeAfterTheRoundTrip: await onRevoke(),
         };
-        await press("Enter");
+        if (entry.tab.backOnRevokeAfterTheRoundTrip) {
+          await press("Enter");
+        } else {
+          // The keyboard could not come back to the control (the finding itself): take the
+          // approval back by MOUSE so the sandbox is left as it was found.
+          entry.tab.cleanedUpByMouse = true;
+          await click(`[${kind.revokeAttr}="${sk}"]`);
+        }
       } else {
         await click(`[${kind.revokeAttr}="${sk}"]`);
       }
@@ -1672,6 +1680,17 @@ if (pass === 1 && !ONLY.includes("noint")) {
           entry.tab.backOnRevokeAfterTheRoundTrip === true)) &&
         entry.revoke.countsRestored === true;
       cases.push(entry);
+      } catch (error) {
+        // A case that could not be taken is published as such, and the sandbox is put back.
+        const record = { id, size: size.label, presentation: pres, kind: kindName, mode, suggestionKey: sk, holds: false, error: String(error?.message ?? error).slice(0, 300), landed: { isBody: null } };
+        const now = await kind.overview().catch(() => null);
+        if (now && now.approvedCount !== before.approvedCount) {
+          await click(`[${kind.revokeAttr}="${sk}"]`).catch(() => {});
+          await pollUntil(() => kind.overview(), (o) => o.approvedCount === before.approvedCount).catch(() => {});
+        }
+        await dismissStatus().catch(() => {});
+        cases.push(record);
+      }
     }
     await interactionState();
     const failing = cases.filter((c) => !c.holds).map((c) => c.id);
@@ -1679,7 +1698,7 @@ if (pass === 1 && !ONLY.includes("noint")) {
       // `ok` is the criterion itself, not "the script ran": a lost focus is a finding.
       ok: failing.length === 0,
       casesJudged: cases.length, failing,
-      landedOnBodyCases: cases.filter((c) => c.landed.isBody).map((c) => c.id),
+      landedOnBodyCases: cases.filter((c) => c.landed?.isBody === true).map((c) => c.id),
       cases,
     };
   });
