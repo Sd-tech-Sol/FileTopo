@@ -418,7 +418,15 @@ const READ_FIRST_SCREEN = `(() => {
       // name. Its text is by design wider than its box; it is counted and published, not skipped.
       hiddenHints.push({ text: (el.textContent ?? '').trim(), insideAccessibleName: !!el.closest('button') });
     } else if (over > 1 && style.overflowX !== 'auto' && style.overflowX !== 'scroll') {
-      scrollers.push({ tag: el.tagName, cls: String(el.className).slice(0, 70), overflowPx: over });
+      // TASK-0062: enough to name the element — its text, its nearest test id, and whether the
+      // overflow is an ellipsis (text hidden on purpose) or plain content pushed out of the box.
+      scrollers.push({
+        tag: el.tagName, cls: String(el.className).slice(0, 70), overflowPx: over,
+        text: (el.textContent ?? '').trim().replace(/\s+/g, ' ').slice(0, 70),
+        nearestTestId: el.closest('[data-testid]')?.getAttribute('data-testid') ?? null,
+        parentCls: String(el.parentElement?.className ?? '').slice(0, 50),
+        overflowXStyle: style.overflowX, textOverflow: style.textOverflow, whiteSpace: style.whiteSpace,
+      });
     }
     const r = el.getBoundingClientRect();
     if (r.width > 0 && r.right > viewportWidth + 1) {
@@ -840,12 +848,16 @@ const READ_PANELS = `(() => {
     const escapers = descendants.filter((el) => {
       const r = el.getBoundingClientRect();
       return r.width > 0 && (r.right > pr.right + 1 || r.left < pr.left - 1);
-    }).slice(0, 8).map((el) => ({ tag: el.tagName, cls: String(el.className).slice(0, 50), right: round(el.getBoundingClientRect().right), panelRight: round(pr.right) }));
+    }).slice(0, 8).map((el) => ({ tag: el.tagName, cls: String(el.className).slice(0, 50), text: (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 70), right: round(el.getBoundingClientRect().right), panelRight: round(pr.right) }));
     const spills = descendants.filter((el) => {
       if (el.scrollWidth - el.clientWidth <= 1) return false;
       const ox = getComputedStyle(el).overflowX;
       return ox !== 'auto' && ox !== 'scroll';
-    }).slice(0, 8).map((el) => ({ tag: el.tagName, cls: String(el.className).slice(0, 50), over: el.scrollWidth - el.clientWidth }));
+    }).slice(0, 12).map((el) => ({
+      tag: el.tagName, cls: String(el.className).slice(0, 50), over: el.scrollWidth - el.clientWidth,
+      text: (el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 70),
+      textOverflow: getComputedStyle(el).textOverflow, whiteSpace: getComputedStyle(el).whiteSpace,
+    }));
     let minFont = 999;
     for (const el of descendants) {
       let own = '';
@@ -991,17 +1003,24 @@ async function panelsTabWalk({ limit = 160 } = {}) {
   const orderSane = order.every((p, i) => i === 0 || ["relations", "review", "cross"].indexOf(p) >= ["relations", "review", "cross"].indexOf(order[i - 1]));
   // Shift+Tab back: the walk must retrace its own steps (the last few), no trap.
   const back = [];
+  const backDetail = [];
   for (let n = 0; n < Math.min(6, inPanels.length - 1); n += 1) {
     await press("Tab", SHIFT);
-    back.push((await evaluate(READ_ACTIVE)).key ?? null);
+    const at = await evaluate(READ_ACTIVE);
+    back.push(at.key ?? null);
+    backDetail.push({ key: at.key ?? null, isBody: at.isBody, tag: at.tag ?? null, inAside: at.inAside, panel: at.panel ?? null });
   }
   const expectedBack = inPanels.map((s) => s.key).slice(-back.length).reverse();
   await evaluate(RESET_SCROLL);
+  // Where the forward walk ENDED: the first step outside the panels, so a retrace that starts
+  // at `null` can be told apart (focus left the document) from a real trap.
+  const forwardEnd = steps.slice(-2).map((s) => ({ key: s.key ?? null, isBody: s.isBody, tag: s.tag ?? null, inAside: s.inAside, panel: s.panel ?? null }));
   return {
     controls: controls.length, steps: steps.length, stepsInPanels: inPanels.length, reachedCount: reached.length,
     unreached, notWhole, noRing, documentScrolledSteps: documentScrolled, orderSane,
     leftThePanels: steps[steps.length - 1]?.panel === null,
     shiftTabRetraces: JSON.stringify(back) === JSON.stringify(expectedBack), shiftTabKeys: back,
+    shiftTabDetail: backDetail, forwardEnd, expectedBack,
   };
 }
 
@@ -1299,6 +1318,17 @@ const NODES = {
   rapport: atelierNodes.find((n) => n.relativePath === NODE_PATHS.rapport),
   note2: atelierNodes.find((n) => n.relativePath === NODE_PATHS.note2),
   longName: atelierNodes.find((n) => n.relativePath.startsWith(NODE_PATHS.longPrefix)),
+  // A node of Alpha that is an endpoint of a PENDING inter-brain suggestion: `alphaBest` is the
+  // richest node, but its one inter-brain entry is deterministic, so it offers nothing to
+  // approve. The first run of this campaign failed that interaction on exactly that account.
+  alphaCrossPending: (() => {
+    for (const s of crossOv.pendingSuggestions) {
+      for (const ep of [s.source, s.target]) {
+        if (ep.brainId === idOf("A") && ep.nodeId != null) return alphaNodes.find((n) => n.nodeId === ep.nodeId) ?? null;
+      }
+    }
+    return null;
+  })(),
 };
 for (const [name, node] of Object.entries(NODES)) assert(node, `fixture node ${name} is reachable through the product's own relations`);
 record.nodes = Object.fromEntries(Object.entries(NODES).map(([k, n]) => [k, { name: n.name.length > 60 ? n.name.slice(0, 57) + "…" : n.name, nameLength: [...n.name].length, relativePathLength: [...n.relativePath].length, intra: n.intra ?? 0, cross: n.cross ?? 0 }]));
@@ -1703,7 +1733,7 @@ if (pass === 1 && !ONLY.includes("noint")) {
 
   /* Inter-brain panel — approve by mouse, revoke by keyboard, navigate by mouse and keyboard ---- */
   await interaction("cross.approveRevokeNavigate", async () => {
-    await interactionState();
+    await interactionState(["A", "B", "C"], "A", "alphaCrossPending", true);
     const a0 = await relOverview("A"), x0 = await crossOverview(), r0 = await relOverview("R");
     const sk = await evaluate(`document.querySelector('[data-cross-approve]')?.getAttribute('data-cross-approve') ?? null`);
     assert(sk, "the selected node carries a pending inter-brain suggestion");
@@ -1723,7 +1753,9 @@ if (pass === 1 && !ONLY.includes("noint")) {
     const x2 = await pollUntil(() => crossOverview(), (o) => o.approvedCount === x0.approvedCount);
     await quiet();
     const focusAfterRevoke = await activeNow();
-    // Navigation, mouse then keyboard.
+    // Navigation, mouse then keyboard — from the richest node, which carries an established entry.
+    await selectNode(NODES.alphaBest);
+    await quiet();
     const linkSel = '.cross-relations .cross-relation__link[data-endpoint-displayed="true"]';
     const target = await evaluate(`(() => { const el = document.querySelector(${JSON.stringify(linkSel)}); return el ? { brainId: el.getAttribute('data-endpoint-brain-id'), nodeId: el.getAttribute('data-endpoint-node-id'), direction: el.getAttribute('data-direction'), key: el.getAttribute('data-endpoint-key') } : null; })()`);
     assert(target, "an inter-brain relation whose other end is displayed");
