@@ -1,5 +1,11 @@
 # État courant
 
+## ACTION-0115 — TASK-0062 B05 CORRECTION REQUIRED / NOT VERIFIED — 2026-10-12
+
+- Audit GitHub indépendant de `962b55cd1ecd3ea892e280cfacff28d91d046174` : cinq commits B05 fast-forward depuis `5dcd9d4`; seuls `map.css` et une classe dans `MapApp.tsx` changent le produit. BEFORE/AFTER JSON et plusieurs PNG à 960 inspectés; anomalies de débordement démontrées et corrigées, 19/19 + 2/2 états statiques, 13/13, carte >=257 px, P-22 sur 1 REAL_ROOT synthétique intacte. Tests WebView2/pnpm rapportés par Claude, pas rejoués indépendamment; 0 CI.
+- **B05-O1 :** l'approbation intra/inter réussit mais laisse le focus sur `body` (prouvé dans `pass1.interactions.*.focusAfterApprove`), alors que TASK-0062 exige le focus préservé. **B05-O2 :** campagnes B03 18 états et B04 6 états menu ouvert non rejouées avec leurs propres scripts. Deux échecs intermittents `brainIdentity` sur quatre suites complètes; contrastes INCOMPLETE.
+- Une seule suite : correction ciblée de la **même TASK-0062** via `docs/reviews/ACTION-0115-task0062-independent-control.md` et `.orchestrator/NEXT_PROMPT.md`. Claude Sonnet/HIGH, commit/push B05 puis STOP. Ne pas créer TASK-0063. Stage B non fermée, main et Stage C/D inchangées.
+
 ## TASK-0062 — B05 panneaux peuplés `IMPLEMENTED` (non VERIFIED) — 2026-10-12
 
 - Branche `build/v0.2-b05-populated-panels`, produit mesuré `5700966` (code de produit = `4dbe49f`). **Mesure d'abord**, avec les panneaux Relations, Revue et Inter-cerveaux réellement peuplés par le produit (3 cerveaux synthétiques gelés + 1 REAL_ROOT synthétique, noms de cerveaux de 60/75 car.) dans WebView2 natif, 3 tailles, FR/EN, clair/sombre, compact/réduit : **3 défauts démontrés** (hash SHA-256 non coupé, nom long dans « hors de la vue », lien inter-cerveaux dont le nom du nœud n'avait plus de largeur) — l'aside défilait latéralement (623/345 px) dans 10/19 états.
