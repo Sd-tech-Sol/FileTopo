@@ -7076,3 +7076,11 @@ Aucun fichier interdit touché; aucune lecture stricte réécrite pour « passer
 ## 2026-10-09 — ACTION-0114 — B04 VERIFIED et TASK-0062 B05 préparée
 
 Contrôle indépendant GitHub de `db2392f7f428712d6233399f3e27a497cf5dbb71`, diff et preuves WebView2 au `3363b6976704d1b8b56702b1537fe1f59e3b6414`, captures à 960/1280. B04-O2 messages et corrections entiers à l'apparition 12/12; B04-O1 validé selon alternative menu modal temporaire explicitement autorisée, sans masquer les anciennes métriques strictes fausses pendant le menu ouvert. Baseline B03 18/18, invariants P-19/P-22, 794/794 tests deux fois déclarés par Claude, aucun run CI distant; un test brainIdentity ponctuel échoué sous charge non reproduit. TASK-0061 VERIFIED dans sa portée. Suite unique : TASK-0062 B05 panneaux relations/review/cross peuplés 960x640, sans supposer de défaut, Stage B non fermée, main inchangée.
+
+
+## 2026-10-12 — TASK-0062 — B05 panneaux relations, revue et inter-cerveaux peuplés
+
+**Agent :** exécuteur Claude Code Sonnet 5.5 / HIGH
+**Statut à l'issue :** `IMPLEMENTED` (pas `VERIFIED`)
+
+Reprise d'un harnais laissé non commité (`scripts/task0062-*`), relu puis exécuté. Mesure d'abord sur WebView2 natif avec les panneaux réellement peuplés par le produit : trois défauts démontrés (hash non coupé, nom long hors vue, nom du nœud inter-cerveaux sans largeur), aside à 623/345 px dans 10/19 états. Deux faux positifs du harnais corrigés et publiés (précondition inter-cerveaux, arrêt hôte pris pour un piège Shift+Tab). Correctif CSS + une className (`map.css`, `MapApp.tsx`), deux tests. AFTER 19/19 + 2/2 états sans échec, 7/7 interactions, P-19/P-22 conservées. Réserves publiées : focus après approuver, baselines B03/B04 non rejouées, `brainIdentity` intermittent, contraste incomplet, pas de P-01..P-22. Aucun fichier interdit touché; pas de TASK-0063, Stage C/D, PR ni fusion.

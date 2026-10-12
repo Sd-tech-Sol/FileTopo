@@ -1,5 +1,11 @@
 # État courant
 
+## TASK-0062 — B05 panneaux peuplés `IMPLEMENTED` (non VERIFIED) — 2026-10-12
+
+- Branche `build/v0.2-b05-populated-panels`, produit mesuré `5700966` (code de produit = `4dbe49f`). **Mesure d'abord**, avec les panneaux Relations, Revue et Inter-cerveaux réellement peuplés par le produit (3 cerveaux synthétiques gelés + 1 REAL_ROOT synthétique, noms de cerveaux de 60/75 car.) dans WebView2 natif, 3 tailles, FR/EN, clair/sombre, compact/réduit : **3 défauts démontrés** (hash SHA-256 non coupé, nom long dans « hors de la vue », lien inter-cerveaux dont le nom du nœud n'avait plus de largeur) — l'aside défilait latéralement (623/345 px) dans 10/19 états.
+- Correctif CSS minimal + une className (`map.css`, `MapApp.tsx`) et 2 tests; aucune logique, Rust, IPC, Index ni dépendance. AFTER : 19/19 + 2/2 états sans critère en échec, 7/7 interactions WebView2 (souris + clavier), P-19 et P-22 conservées, carte ≥257 px, 13/13, axe 0 violation.
+- Réserves : focus après APPROUVER retombe sur `body` (non corrigé, à décider); baseline B03 18/18 et menu ouvert B04 non rejoués; `brainIdentity` intermittent sous charge (2 échecs / 4 runs complets, 0/8 isolé); axe color-contrast INCOMPLETE; pas de replay P-01..P-22; Rust non touché. **TASK-0062 = IMPLEMENTED, pas VERIFIED.** Stage B EN COURS; Stage C/D, R8, main inchangés. Voir `.orchestrator/RESULT.md`.
+
 ## ACTION-0114 — TASK-0061 B04 VERIFIED / B05 approuvée — 2026-10-09
 
 - Contrôle GitHub indépendant au `db2392f7f428712d6233399f3e27a497cf5dbb71` (campagne WebView2 sur `3363b6976704d1b8b56702b1537fe1f59e3b6414`, docs/preuves ensuite). Deux critères ACTION-0113 résolus : messages/corrections et fermeture visibles dès l'apparition 12/12; menu de composition explicitement temporairement modal, clic/Escape le ferme sans activer l'arrière-plan, trois groupes souris/clavier testés après fermeture dans 6 états.

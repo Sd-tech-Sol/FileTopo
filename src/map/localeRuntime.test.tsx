@@ -430,7 +430,9 @@ describe("switching the language", () => {
     for (const { surface, en } of SURFACES) expect(everything, `after the switch: ${surface}`).toContain(en);
     expect(frenchResidueIn(everything)).toEqual([]);
     // Every off-screen line follows the switch (there are two, whose relations share an id).
-    const offscreen = [...document.querySelectorAll("aside > section:not([class]) p")].map((line) => line.textContent);
+    // `TASK-0062` gave that section a class (`app__offscreen`) so its long names can break; it was
+    // found as "the aside's one section without a class".
+    const offscreen = [...document.querySelectorAll("aside > section.app__offscreen p")].map((line) => line.textContent);
     expect(offscreen.filter((line) => line?.includes("far-away.txt"))).toHaveLength(2);
     for (const line of offscreen) expect(line).toContain("relation outside the current view.");
 

@@ -1,7 +1,7 @@
 # TASK-0062 — Stage B / B05 — Panneaux relations et révision réellement peuplés à 960×640
 
 - Date : 2026-10-09.
-- **État : IN_PROGRESS** (démarrée le 2026-10-12, reprise du harnais `scripts/task0062-*` laissé non commité le 2026-10-09).
+- **État : IMPLEMENTED — NOT VERIFIED** (démarrée le 2026-10-12, reprise du harnais `scripts/task0062-*` laissé non commité le 2026-10-09; résultats en fin de fiche; contrôle indépendant dû à ChatGPT).
 - Branche : `build/v0.2-b05-populated-panels`; base vérifiée : `db2392f7f428712d6233399f3e27a497cf5dbb71`.
 - Décision : `docs/reviews/ACTION-0114-task0061-independent-control.md`.
 - Agent conseillé : Claude Code **Sonnet / effort HIGH**. Ne pas changer de modèle sans justification.
@@ -29,3 +29,12 @@ Les tranches B01–B04 ont validé la carte au premier écran et les commandes s
 - Aucune donnée privée ou vraie racine personnelle dans Git; preuves reproductibles synthétiques seulement.
 - Ne pas relâcher les tests de Stage A ou transformer une absence de violation axe en certification WCAG. Aucun replay P-01..P-22 complet affirmé sur cette tranche.
 - **La validation indépendante de B05 appartient à ChatGPT** après lecture de GitHub. Stage B restera non CLOSED jusqu'aux vérifications accessibilité/contrastes et full P-01..P-22.
+
+## Résultat d'exécution — 2026-10-12 — `IMPLEMENTED`, non VERIFIED
+
+- **Mesure d'abord :** harnais `scripts/task0062-{populated-panels.mjs,populated-panels.ps1,seed-proof.py}` (extension versionnée du harnais B04, mêmes outils de redimensionnement natif et d'empreinte). Panneaux peuplés par les voies du produit (3 cerveaux synthétiques gelés + 1 REAL_ROOT synthétique dont le moteur est lancé depuis l'interface). BEFORE : `docs/performance/runs/TASK-0062-populated-panels-before.json` + captures `TASK-0062-before-*.png`.
+- **Défauts démontrés (3) :** hash SHA-256 de 64 hex dans `.relation__rule` et nom de 90–108 car. dans la section « hors de la vue » donnaient à l'aside un `scrollWidth` de 623 (ou 615) dans une colonne de 345 px, soit un défilement latéral dans 10/19 états; lien inter-cerveaux : endpoints et nom du nœud en ellipse, le nom du nœud n'avait plus de largeur avec des noms de cerveaux de 60/75 car. (10/19 états).
+- **Correctif (CSS + une className, aucun autre fichier de produit) :** `src/map/map.css`, `src/map/MapApp.tsx` (`app__offscreen`), tests `responsiveLayout.test.ts` (3 tripwires) et `localeRuntime.test.tsx` (sélecteur adapté à la classe). AFTER : `…-after.json` + `TASK-0062-after-*.png`.
+- **Preuves :** 19/19 + 2/2 états sans critère en échec; 7/7 interactions WebView2 (≥2 par panneau, souris et clavier); P-19 (redémarrage, même profil) et P-22 (empreintes stricte et d'accès identiques, 0 artefact).
+- **Limites et réserves :** voir `.orchestrator/RESULT.md` — focus après APPROUVER retombe sur `body` (non corrigé); baseline B03 18/18 et 6 états menu ouvert B04 non rejoués; échec intermittent `brainIdentity` sous charge conservé; axe color-contrast INCOMPLETE; pas de replay P-01..P-22; Rust non touché.
+- **Aucune** TASK-0063, Stage C/D, PR, fusion ou release.

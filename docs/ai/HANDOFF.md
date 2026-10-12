@@ -1,5 +1,12 @@
 # HANDOFF — passage de relais
 
+## TASK-0062 — B05 `IMPLEMENTED`, relais au contrôle indépendant — 2026-10-12
+
+- Lecture à faire : `.orchestrator/RESULT.md`, `docs/tasks/TASK-0062-stage-b-populated-panels.md` (dernière section), `docs/performance/runs/TASK-0062-populated-panels-{before,after}.json`, captures `TASK-0062-{before,after}-*.png`, diff de `src/map/map.css` et `src/map/MapApp.tsx` (une className), harnais `scripts/task0062-*`.
+- Reprise : les trois scripts avaient été écrits le 2026-10-09 (non commités, aucune preuve) ; relus, commités, exécutés. Le premier BEFORE a révélé deux faux positifs de harnais (précondition de l'interaction inter-cerveaux; arrêt hôte `body` pris pour un piège Shift+Tab), corrigés et publiés; le BEFORE publié garde son verdict brut, le retrace est recalculé hors ligne (19/19).
+- À trancher : focus retombant sur `body` après APPROUVER (relations et inter-cerveaux) ; rejouer baseline B03 18/18 et menu ouvert B04 si l'orchestrateur le veut; le lien inter-cerveaux est passé de 27–31 à 65–69 px.
+- Ne pas commencer TASK-0063, Stage C/D, PR, fusion, étiquette ni release.
+
 ## ACTION-0114 — TASK-0061 B04 VERIFIED / B05 approuvée — 2026-10-09
 
 - Contrôle GitHub indépendant au `db2392f7f428712d6233399f3e27a497cf5dbb71` (campagne WebView2 sur `3363b6976704d1b8b56702b1537fe1f59e3b6414`, docs/preuves ensuite). Deux critères ACTION-0113 résolus : messages/corrections et fermeture visibles dès l'apparition 12/12; menu de composition explicitement temporairement modal, clic/Escape le ferme sans activer l'arrière-plan, trois groupes souris/clavier testés après fermeture dans 6 états.

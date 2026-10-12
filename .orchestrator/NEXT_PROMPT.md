@@ -1,3 +1,5 @@
+> **EXÉCUTÉ le 2026-10-12 — TASK-0062 IMPLEMENTED, voir .orchestrator/RESULT.md. Ne pas rejouer ce prompt.**
+
 # NEXT_PROMPT — TASK-0062 / Stage B B05
 
 **Une seule tâche approuvée, NON commencée.**  
@@ -14,3 +16,4 @@ Contrat : `docs/reviews/ACTION-0114-task0061-independent-control.md` et `docs/ta
 7. Documente les limites exactes et les preuves, écris `.orchestrator/RESULT.md` avec `IMPLEMENTED` ou `BLOCKED`, mets à jour mémoire et validation, commit et push sur **B05 seulement**, puis STOP. Ne commence TASK-0063, Stage C/D, PR/merge/release sous aucun prétexte.
 
 `/clear` recommandé entre les tâches; toute la source de vérité est dans GitHub.
+
