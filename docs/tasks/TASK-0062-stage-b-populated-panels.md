@@ -1,7 +1,7 @@
 # TASK-0062 — Stage B / B05 — Panneaux relations et révision réellement peuplés à 960×640
 
 - Date : 2026-10-09.
-- **État : APPROVED / NOT STARTED.**
+- **État : IN_PROGRESS** (démarrée le 2026-10-12, reprise du harnais `scripts/task0062-*` laissé non commité le 2026-10-09).
 - Branche : `build/v0.2-b05-populated-panels`; base vérifiée : `db2392f7f428712d6233399f3e27a497cf5dbb71`.
 - Décision : `docs/reviews/ACTION-0114-task0061-independent-control.md`.
 - Agent conseillé : Claude Code **Sonnet / effort HIGH**. Ne pas changer de modèle sans justification.
