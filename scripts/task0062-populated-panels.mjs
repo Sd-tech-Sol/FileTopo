@@ -1637,17 +1637,38 @@ if (pass === 1 && !ONLY.includes("noint")) {
         landedOnRevokeOfTheSameSuggestion: landedOnRevoke,
       };
       if (mode === "keyboard") {
+        // Is the revoke control the LAST focusable of the document? Then a Tab past it leaves
+        // the page (a host focus stop, document.body) or wraps to the first control: that is
+        // the boundary of the document, not a lost focus, and it is judged as such below.
+        const revokeIsLastFocusable = await evaluate(`(() => {
+          ${VIS_FN}
+          const r = document.querySelector('[${kind.revokeAttr}="${sk}"]');
+          const list = [...document.querySelectorAll(SEL)].filter((el) => !el.disabled && !el.closest('svg'));
+          return !!r && list.indexOf(r) === list.length - 1;
+        })()`);
         await press("Tab");
         const forward = await activeNow();
-        await press("Tab", SHIFT);
-        const backOne = await activeNow();
-        const backOnRevoke = await onRevoke();
+        // Shift+Tab must bring the focus back to the revoke control: at once in the middle of the
+        // document, within the boundary stops (at most two) when the control closes the document.
+        let shiftTabPressesToReturn = 0;
+        let backOnRevoke = false;
+        const stops = [];
+        for (let n = 0; n < 3 && !backOnRevoke; n += 1) {
+          await press("Tab", SHIFT);
+          shiftTabPressesToReturn += 1;
+          backOnRevoke = await onRevoke();
+          if (!backOnRevoke) stops.push(brief(await activeNow()));
+        }
         await press("Tab", SHIFT);
         const backTwo = await activeNow();
         await press("Tab");
         entry.tab = {
+          revokeIsLastFocusable,
           forward: { ...brief(forward), documentScrollY: forward.documentScrollY },
-          shiftTabBackOnTheRevokeControl: backOnRevoke,
+          shiftTabPressesToReturn,
+          shiftTabStopsBeforeTheRevokeControl: stops,
+          // In the middle of the document: one press. At its boundary: only host/wrap stops in between.
+          shiftTabBackOnTheRevokeControl: backOnRevoke && (revokeIsLastFocusable ? shiftTabPressesToReturn <= 3 : shiftTabPressesToReturn === 1),
           shiftTabFurther: { ...brief(backTwo), documentScrollY: backTwo.documentScrollY },
           backOnRevokeAfterTheRoundTrip: await onRevoke(),
         };
@@ -1675,7 +1696,7 @@ if (pass === 1 && !ONLY.includes("noint")) {
       entry.holds =
         landedOnRevoke && entry.landed.isBody === false && entry.landed.whole === true && entry.landed.documentScrollY === 0 &&
         (mode === "mouse" || ring) &&
-        (mode === "mouse" || (entry.tab.forward.isBody === false && entry.tab.shiftTabBackOnTheRevokeControl === true &&
+        (mode === "mouse" || ((entry.tab.forward.isBody === false || entry.tab.revokeIsLastFocusable === true) && entry.tab.shiftTabBackOnTheRevokeControl === true &&
           entry.tab.shiftTabFurther.isBody === false && entry.tab.forward.documentScrollY === 0 && entry.tab.shiftTabFurther.documentScrollY === 0 &&
           entry.tab.backOnRevokeAfterTheRoundTrip === true)) &&
         entry.revoke.countsRestored === true;
