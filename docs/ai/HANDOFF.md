@@ -1,5 +1,11 @@
 # HANDOFF — passage de relais
 
+## ACTION-0115 — relais correction de TASK-0062 / B05 — 2026-10-12
+
+- Orchestrateur ChatGPT a inspecté les cinq commits B05 jusqu'à `962b55cd1ecd3ea892e280cfacff28d91d046174`, les JSON BEFORE/AFTER (~528k/~466k caractères), les PNG avant/après en 960, la modification CSS/JSX et l'absence de CI. Résultat : **IMPLEMENTED / NOT VERIFIED / CORRECTION REQUIRED**.
+- Produit B05 : trois défauts de débordement corrigés avec patch UI minimal, matrice AFTER 19/19 + restart 2/2, 7/7 interactions annoncées, P-19 et P-22 portée B05. Déficit bloquant mesuré mais omis du verdict statique : après APPROUVER, focus retombe sur `body` dans RelationsPanel et CrossRelationsPanel; restitution existante après RÉVOQUER à réutiliser. Également B03/B04 scripts complets non rejoués.
+- **Une seule suite** : lire ACTION-0115 et `.orchestrator/NEXT_PROMPT.md`, réparer focus UI strictement dans le périmètre autorisé, rejouer témoins B03/B04 et preuves B05, publier résultat honnête, commit/push B05, STOP. Ne pas créer de TASK-0063. Instabilité `brainIdentity` et axe color-contrast INCOMPLETE sont des réserves, pas des PASS implicites.
+
 ## TASK-0062 — B05 `IMPLEMENTED`, relais au contrôle indépendant — 2026-10-12
 
 - Lecture à faire : `.orchestrator/RESULT.md`, `docs/tasks/TASK-0062-stage-b-populated-panels.md` (dernière section), `docs/performance/runs/TASK-0062-populated-panels-{before,after}.json`, captures `TASK-0062-{before,after}-*.png`, diff de `src/map/map.css` et `src/map/MapApp.tsx` (une className), harnais `scripts/task0062-*`.
