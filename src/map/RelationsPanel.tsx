@@ -278,6 +278,16 @@ interface RelationsPanelProps {
    */
   focusSuggestionKey?: string | null;
   onFocusRestored?: () => void;
+  /**
+   * `TASK-0062` / `B05-O1` — the suggestion whose approval just succeeded. The
+   * approve button that held the focus is gone, so, once the panel has been
+   * reloaded, focus moves to the **revocation control of the same suggestion**
+   * (what the suggestion has just become), then `onApprovedFocusRestored` is
+   * called. The same restoration as {@link focusSuggestionKey}, in the other
+   * direction; it never lands on another relation's control.
+   */
+  focusApprovedKey?: string | null;
+  onApprovedFocusRestored?: () => void;
   engineStatus?: RelationEngineStatus | null;
   engineReport?: RelationEngineReport | null;
   engineRunning?: boolean;
@@ -516,6 +526,8 @@ export default function RelationsPanel({
   revoking = null,
   focusSuggestionKey = null,
   onFocusRestored,
+  focusApprovedKey = null,
+  onApprovedFocusRestored,
   engineStatus = null,
   engineReport = null,
   engineRunning = false,
@@ -523,6 +535,19 @@ export default function RelationsPanel({
 }: RelationsPanelProps) {
   const words = RELATIONS_PANEL_STRINGS[locale];
   const root = useRef<HTMLElement | null>(null);
+  // `B05-O1`: after APPROVING, the focus goes to this suggestion's own revoke control.
+  useRestoreFocusAfterReload({
+    root,
+    selector: `[data-relation-revoke="${focusApprovedKey}"]`,
+    // No revoke control to land on (an approved relation that does not name its
+    // suggestion, a caller without `onRevoke`): the explicit analysis command,
+    // never a neighbouring relation's control and never the page body.
+    fallbackSelector: '[data-testid="analyze-relations"]:not(:disabled)',
+    active: focusApprovedKey !== null,
+    loading,
+    ready: relations !== null,
+    onRestored: () => onApprovedFocusRestored?.(),
+  });
   useRestoreFocusAfterReload({
     root,
     selector: `[data-testid="approve-core-suggestion"][data-suggestion-key="${focusSuggestionKey}"]`,

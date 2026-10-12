@@ -408,6 +408,10 @@ export default function MapApp() {
   // revocation: the same suggestion's approval control, never a neighbour's.
   const [focusAfterRevoke, setFocusAfterRevoke] = useState<string | null>(null);
   const [focusAfterCrossRevoke, setFocusAfterCrossRevoke] = useState<string | null>(null);
+  // `TASK-0062` / `B05-O1`: the mirror image — after APPROVING, focus goes to the same
+  // suggestion's revoke control (the approve button that held it is gone).
+  const [focusAfterApprove, setFocusAfterApprove] = useState<string | null>(null);
+  const [focusAfterCrossApprove, setFocusAfterCrossApprove] = useState<string | null>(null);
   const [relationsCheck, setRelationsCheck] = useState<RelationsSelfCheck | null>(null);
   const [relationEngineStatus, setRelationEngineStatus] =
     useState<RelationEngineStatus | null>(null);
@@ -2338,6 +2342,7 @@ export default function MapApp() {
           return updated;
         });
         setStatus(say((t) => t.status.approved(suggestionKey, brainId)));
+        setFocusAfterApprove(suggestionKey);
       } catch (error) {
         setStatus(say((t, l) => t.status.approvalRefused(describeError(error, l))));
       } finally {
@@ -2545,6 +2550,7 @@ export default function MapApp() {
       });
       setCrossOverview(next);
       setStatus(say((t) => t.status.crossApproved(suggestionKey)));
+      setFocusAfterCrossApprove(suggestionKey);
     } catch (error) {
       setStatus(say((t, l) => t.status.crossApprovalRefused(describeError(error, l))));
     } finally {
@@ -4252,6 +4258,8 @@ export default function MapApp() {
             revoking={revoking}
             focusSuggestionKey={focusAfterRevoke}
             onFocusRestored={() => setFocusAfterRevoke(null)}
+            focusApprovedKey={focusAfterApprove}
+            onApprovedFocusRestored={() => setFocusAfterApprove(null)}
             engineStatus={relationEngineStatus}
             engineReport={relationEngineReport}
             engineRunning={relationEngineRunning}
@@ -4286,6 +4294,8 @@ export default function MapApp() {
             revoking={revokingCross}
             focusSuggestionKey={focusAfterCrossRevoke}
             onFocusRestored={() => setFocusAfterCrossRevoke(null)}
+            focusApprovedKey={focusAfterCrossApprove}
+            onApprovedFocusRestored={() => setFocusAfterCrossApprove(null)}
           />
 
           {measurement ? (

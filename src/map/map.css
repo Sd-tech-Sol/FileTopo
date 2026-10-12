@@ -1941,6 +1941,13 @@ input[type="text"] {
   margin: 0;
 }
 
+/* TASK-0062 / B05-O1 — the title is the focus landing of last resort after an approval, so a
+   keyboard reader must be able to see where they are. */
+.cross-relations__title:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .cross-relations__totals {
   margin: 0;
   font-size: 12px;

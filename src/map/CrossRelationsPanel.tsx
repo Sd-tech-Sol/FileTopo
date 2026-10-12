@@ -274,6 +274,13 @@ interface CrossRelationsPanelProps {
    */
   focusSuggestionKey?: string | null;
   onFocusRestored?: () => void;
+  /**
+   * `TASK-0062` / `B05-O1` — the inter-brain suggestion whose approval just
+   * succeeded. Once the panel has been reloaded, focus moves to the revocation
+   * control of the same suggestion, then `onApprovedFocusRestored` is called.
+   */
+  focusApprovedKey?: string | null;
+  onApprovedFocusRestored?: () => void;
 }
 
 function ProvenanceBadge({
@@ -555,9 +562,23 @@ export default function CrossRelationsPanel({
   revoking = null,
   focusSuggestionKey = null,
   onFocusRestored,
+  focusApprovedKey = null,
+  onApprovedFocusRestored,
 }: CrossRelationsPanelProps) {
   const words = CROSS_RELATIONS_PANEL_STRINGS[locale];
   const root = useRef<HTMLElement | null>(null);
+  // `B05-O1`: after APPROVING, the focus goes to this suggestion's own revoke control.
+  useRestoreFocusAfterReload({
+    root,
+    selector: `[data-cross-revoke="${focusApprovedKey}"]`,
+    // Without a revoke control to land on, the panel's own title (focusable by
+    // script only): the reader stays in this panel and Tab continues from there.
+    fallbackSelector: ".cross-relations__title",
+    active: focusApprovedKey !== null,
+    loading,
+    ready: relations !== null,
+    onRestored: () => onApprovedFocusRestored?.(),
+  });
   useRestoreFocusAfterReload({
     root,
     selector: `[data-cross-approve="${focusSuggestionKey}"]`,
@@ -587,7 +608,9 @@ export default function CrossRelationsPanel({
 
   return (
     <section className="cross-relations" aria-label={words.title} ref={root}>
-      <h2 className="cross-relations__title">{words.title}</h2>
+      <h2 className="cross-relations__title" tabIndex={-1}>
+        {words.title}
+      </h2>
       <p className="cross-relations__hint">{words.hint}</p>
       <p className="cross-relations__totals" data-testid="cross-relation-totals">
         {words.totals(relations.outgoingCount, relations.incomingCount, relations.suggestions.length)}

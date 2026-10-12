@@ -817,3 +817,64 @@ describe("TASK-0051 — le focus après une révocation (panneau interne)", () =
     expect(onFocusRestored).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("TASK-0062 / B05-O1 — le focus après une approbation (panneau interne)", () => {
+  function panel(props: Partial<Parameters<typeof RelationsPanel>[0]>) {
+    return (
+      <RelationsPanel
+        locale="fr"
+        relations={nodeRelations}
+        loading={false}
+        available
+        legacyInScope
+        onSelect={vi.fn()}
+        onApprove={vi.fn()}
+        approving={null}
+        onRevoke={vi.fn()}
+        {...props}
+      />
+    );
+  }
+  // The suggestion S-005 has just become an APPROVED relation, next to another one (S-001).
+  const approved: NodeRelations = {
+    ...nodeRelations,
+    suggestions: [],
+    incoming: [
+      { ...entry("incoming", 4, "APPROVED"), suggestionKey: "S-001" },
+      { ...entry("incoming", 5, "APPROVED"), suggestionKey: "S-005" },
+    ],
+  };
+
+  it("place le focus sur la révocation de la même suggestion, après le rechargement, une seule fois", () => {
+    const onApprovedFocusRestored = vi.fn();
+    const { rerender } = render(panel({ relations: approved, focusApprovedKey: "S-005", onApprovedFocusRestored }));
+    expect(onApprovedFocusRestored).not.toHaveBeenCalled();
+    rerender(panel({ relations: approved, loading: true, focusApprovedKey: "S-005", onApprovedFocusRestored }));
+    expect(onApprovedFocusRestored).not.toHaveBeenCalled();
+    rerender(panel({ relations: approved, loading: false, focusApprovedKey: "S-005", onApprovedFocusRestored }));
+    const focused = document.activeElement as HTMLElement;
+    // The revoke control of S-005 — not S-001's, which sits above it, and not the page body.
+    expect(focused.dataset.relationRevoke).toBe("S-005");
+    expect(onApprovedFocusRestored).toHaveBeenCalledTimes(1);
+  });
+
+  it("ne vole pas le focus quand aucune approbation n'est en attente", () => {
+    const onApprovedFocusRestored = vi.fn();
+    const { rerender } = render(panel({ relations: approved, loading: true, onApprovedFocusRestored }));
+    rerender(panel({ relations: approved, loading: false, onApprovedFocusRestored }));
+    expect(document.activeElement).toBe(document.body);
+    expect(onApprovedFocusRestored).not.toHaveBeenCalled();
+  });
+
+  it("sans révocation à retrouver, le repli est « Analyser les relations », jamais le corps de la page", () => {
+    const onApprovedFocusRestored = vi.fn();
+    const { rerender } = render(
+      panel({ relations: approved, onRevoke: undefined, onAnalyze: vi.fn(), loading: true, focusApprovedKey: "S-005", onApprovedFocusRestored }),
+    );
+    rerender(
+      panel({ relations: approved, onRevoke: undefined, onAnalyze: vi.fn(), loading: false, focusApprovedKey: "S-005", onApprovedFocusRestored }),
+    );
+    expect((document.activeElement as HTMLElement).dataset.testid).toBe("analyze-relations");
+    expect(onApprovedFocusRestored).toHaveBeenCalledTimes(1);
+  });
+});

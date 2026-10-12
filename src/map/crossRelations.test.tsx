@@ -754,3 +754,70 @@ describe("TASK-0051 — le focus après une révocation inter-cerveaux", () => {
     expect(onFocusRestored).not.toHaveBeenCalled();
   });
 });
+
+describe("TASK-0062 / B05-O1 — le focus après une approbation inter-cerveaux", () => {
+  function panel(props: Partial<Parameters<typeof CrossRelationsPanel>[0]>) {
+    return (
+      <CrossRelationsPanel
+        locale="fr"
+        relations={nodeCross}
+        loading={false}
+        displayedBrainIds={[ALPHA, GAMMA]}
+        onNavigate={vi.fn()}
+        onApprove={vi.fn()}
+        approving={null}
+        onRevoke={vi.fn()}
+        {...props}
+      />
+    );
+  }
+
+  it("place le focus sur la révocation de la même suggestion, après le rechargement, une seule fois", () => {
+    const onApprovedFocusRestored = vi.fn();
+    const { rerender } = render(panel({ focusApprovedKey: "XB-S01", onApprovedFocusRestored }));
+    // Nothing is stolen before the reload has begun, nor while it is under way.
+    expect(onApprovedFocusRestored).not.toHaveBeenCalled();
+    rerender(panel({ loading: true, focusApprovedKey: "XB-S01", onApprovedFocusRestored }));
+    expect(onApprovedFocusRestored).not.toHaveBeenCalled();
+    rerender(panel({ loading: false, focusApprovedKey: "XB-S01", onApprovedFocusRestored }));
+    const focused = document.activeElement as HTMLElement;
+    expect(focused).toBe(document.querySelector('[data-cross-revoke="XB-S01"]'));
+    expect(focused).not.toBe(document.body);
+    expect(onApprovedFocusRestored).toHaveBeenCalledTimes(1);
+  });
+
+  it("n'atterrit jamais sur la révocation d'une autre relation inter-cerveaux", () => {
+    const two: NodeCrossRelations = {
+      ...nodeCross,
+      incoming: [
+        { ...entry("incoming", GAMMA, 2, "APPROVED"), suggestionKey: "XB-S09" },
+        entry("incoming", GAMMA, 3, "APPROVED"),
+      ],
+      incomingCount: 2,
+    };
+    const { rerender } = render(panel({ relations: two, loading: true, focusApprovedKey: "XB-S01" }));
+    rerender(panel({ relations: two, loading: false, focusApprovedKey: "XB-S01" }));
+    const focused = document.activeElement as HTMLElement;
+    expect(focused.dataset.crossRevoke).toBe("XB-S01");
+  });
+
+  it("ne vole pas le focus quand aucune approbation n'est en attente", () => {
+    const onApprovedFocusRestored = vi.fn();
+    const { rerender } = render(panel({ loading: true, onApprovedFocusRestored }));
+    rerender(panel({ loading: false, onApprovedFocusRestored }));
+    expect(document.activeElement).toBe(document.body);
+    expect(onApprovedFocusRestored).not.toHaveBeenCalled();
+  });
+
+  it("sans révocation à retrouver, le repli est le titre du panneau, jamais le corps de la page", () => {
+    const onApprovedFocusRestored = vi.fn();
+    const { rerender } = render(
+      panel({ onRevoke: undefined, loading: true, focusApprovedKey: "XB-S01", onApprovedFocusRestored }),
+    );
+    rerender(panel({ onRevoke: undefined, loading: false, focusApprovedKey: "XB-S01", onApprovedFocusRestored }));
+    const focused = document.activeElement as HTMLElement;
+    expect(focused.tagName).toBe("H2");
+    expect(focused).toHaveTextContent("Relations inter-cerveaux");
+    expect(onApprovedFocusRestored).toHaveBeenCalledTimes(1);
+  });
+});
