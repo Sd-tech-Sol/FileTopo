@@ -7088,3 +7088,11 @@ Reprise d'un harnais laissé non commité (`scripts/task0062-*`), relu puis exé
 ## 2026-10-12 — ACTION-0115 — contrôle indépendant TASK-0062, correction ciblée B05
 
 Contrôle GitHub des cinq commits B05 au `962b55cd1ecd3ea892e280cfacff28d91d046174`, revue du diff CSS/JSX, JSON BEFORE/AFTER et captures WebView2 960. Trois défauts d'overflow corrigés, mais focus après approbation intra/inter retombe sur `body` (non inclus dans verdict statique 19/19), scripts complets B03/B04 non rejoués. `TASK-0062 IMPLEMENTED / NOT VERIFIED / CORRECTION REQUIRED`. ACTION-0115 et NEXT_PROMPT définissent une seule correction, sans TASK-0063, hors backend et sans changer main.
+
+
+## 2026-10-12 — ACTION-0115 — correction de TASK-0062 : focus après APPROUVER et témoins B03/B04
+
+**Agent :** exécuteur Claude Code Sonnet 5.5 / HIGH
+**Statut à l'issue :** `IMPLEMENTED` (pas `VERIFIED`)
+
+Le dépôt local était sur le dernier push (`962b55c`) et le remote en avance de 7 commits de documents d'ACTION-0115; fast-forward, rien à pousser. B05-O1 : harnais enrichi d'une interaction jugée `focus.afterApprove`, contre-épreuve sur le produit précédent (14/14 en échec), correctif d'interface (restauration du focus sur la révocation de la même suggestion avec le hook existant), AFTER 14/14, critère Tab affiné après le premier résultat et les deux JSON publiés. B05-O2 : témoins B03 et B04 rejoués sans modification, écarts de verdict triviaux, captures versionnées B03 conservées. Intermittence `workspaceMapApp` mesurée et non attribuée. Aucun fichier interdit touché; pas de TASK-0063, Stage C/D, PR ni fusion.

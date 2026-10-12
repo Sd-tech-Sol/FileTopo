@@ -1,9 +1,7 @@
-# Action suivante — ACTION-0115 / correction TASK-0062 B05
+# Action suivante — contrôle indépendant de la correction ACTION-0115 / TASK-0062
 
-**UNE SEULE ACTION :** Claude Code Sonnet / HIGH synchronise `origin/build/v0.2-b05-populated-panels` en fast-forward, lit **en entier** `.orchestrator/NEXT_PROMPT.md` et `docs/reviews/ACTION-0115-task0062-independent-control.md`, corrige/revalide **la même TASK-0062** dans son périmètre UI, documente, commit/push B05, puis STOP.
+**UNE seule action :** ChatGPT (orchestrateur, instance distincte de l'exécuteur) lit GitHub sur `build/v0.2-b05-populated-panels`, contrôle sur preuves la correction ACTION-0115 (`.orchestrator/RESULT.md`, `docs/performance/runs/TASK-0062-populated-panels-{o1-before,o1-after,o1-after-r2}.json`, `TASK-0061-multibrain-shell-b05-replay.json`, `TASK-0062-b03-witness-replay.json`, diff des trois composants) et rend un verdict `VERIFIED` ou correction requise. Aucune nouvelle tâche avant ce verdict.
 
-- Contrôle indépendant au `962b55cd1ecd3ea892e280cfacff28d91d046174` : **TASK-0062 IMPLEMENTED / NOT VERIFIED / CORRECTION REQUIRED**. Après correction CSS minimale, 19/19 états + 2/2 redémarrage, 13/13 commandes, carte >=257 px, 7/7 interactions annoncées; preuves JSON et captures vérifiées sur GitHub. Sans exécution indépendante du binaire par ChatGPT, aucune CI B05.
-- **B05-O1 :** après APPROUVER intra/inter-cerveaux, focus tombe sur `body` dans le vrai WebView2; restaurer le focus sur une commande pertinente, propre à la même suggestion, et prouver navigation clavier après mutation. Ne modifier aucune logique backend/IPC.
-- **B05-O2 :** scripts B03 (18 états) et B04 (6 états menu ouvert et voie modale) non rejoués lors de la campagne; les rejouer tels quels ou BLOCKED.
-- Réserve : `brainIdentity` intermittent (2/4 runs complets en échec, 0/8 isolé), axe contrastes INCOMPLETE, pas de revalidation exhaustive P-01..P-22. Après approbation, perte de focus n'était pas couverte par `everythingHoldsEveryState` de la matrice statique.
-- Stage A CLOSED / VERIFIED; Stage B IN_PROGRESS / NOT CLOSED; B01–B04 VERIFIED; B05 correction requise; R8 Stage C réservé; main, PR, release, tag, Stage C/D non autorisés.
+- TASK-0062 **IMPLEMENTED / NOT VERIFIED**. B05-O1 : focus restauré sur la révocation de la même suggestion, 14/14 (14/14 en échec sur le produit précédent avec le même harnais). B05-O2 : témoins B03 (18 états) et B04 (30+2+6) rejoués tels quels, strictes `false` menu ouvert conservées.
+- Points à apprécier : critère Tab du harnais affiné après le premier AFTER (les deux JSON publiés); `workspaceMapApp` intermittent (1/12 complets, 1/30 isolé, base 0/18) et `brainIdentity` signalé avant, sans attribution; tests rapportés par Claude, non rejoués indépendamment; 0 CI distante.
+- Stage A CLOSED; Stage B IN_PROGRESS, B01-B04 VERIFIED, B05 IMPLEMENTED; sortie B requiert contrôle accessibilité/contraste et replay intégral P-01..P-22. R8, Stage C/D, main inchangés.

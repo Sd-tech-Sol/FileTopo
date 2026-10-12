@@ -38,3 +38,9 @@ Les tranches B01–B04 ont validé la carte au premier écran et les commandes s
 - **Preuves :** 19/19 + 2/2 états sans critère en échec; 7/7 interactions WebView2 (≥2 par panneau, souris et clavier); P-19 (redémarrage, même profil) et P-22 (empreintes stricte et d'accès identiques, 0 artefact).
 - **Limites et réserves :** voir `.orchestrator/RESULT.md` — focus après APPROUVER retombe sur `body` (non corrigé); baseline B03 18/18 et 6 états menu ouvert B04 non rejoués; échec intermittent `brainIdentity` sous charge conservé; axe color-contrast INCOMPLETE; pas de replay P-01..P-22; Rust non touché.
 - **Aucune** TASK-0063, Stage C/D, PR, fusion ou release.
+
+## Correction ACTION-0115 — 2026-10-12 — `IMPLEMENTED`, non VERIFIED
+
+- **B05-O1 :** après APPROUVER (relations et inter-cerveaux, clavier et souris) le focus tombait sur `body` (14/14 sur le produit précédent avec le harnais enrichi). Correctif d'interface dans `RelationsPanel.tsx`, `CrossRelationsPanel.tsx`, `MapApp.tsx`, `map.css` : focus sur la révocation de la même suggestion, repli analyse / titre. 14/14 tiennent après correction (`TASK-0062-populated-panels-o1-after-r2.json`); le premier AFTER (`…-o1-after.json`) et le critère Tab affiné sont tous deux publiés.
+- **B05-O2 :** témoins B03 (`TASK-0062-b03-witness-replay.json`, 18 états) et B04 (`TASK-0061-multibrain-shell-b05-replay.json`, 30+2+6) rejoués sans modification; strictes `false` menu ouvert conservées.
+- Réserves inchangées ou nouvelles : `workspaceMapApp` intermittent non attribué, `brainIdentity` signalé, axe contraste INCOMPLETE, pas de replay P-01..P-22, Rust non touché. Voir `.orchestrator/RESULT.md`.

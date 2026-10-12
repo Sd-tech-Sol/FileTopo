@@ -1,5 +1,13 @@
 # HANDOFF — passage de relais
 
+## ACTION-0115 — correction `IMPLEMENTED`, relais au contrôle indépendant — 2026-10-12
+
+- Lecture à faire : `.orchestrator/RESULT.md`, `docs/tasks/TASK-0062-stage-b-populated-panels.md` (dernière section), `docs/performance/runs/TASK-0062-populated-panels-{o1-before,o1-after,o1-after-r2}.json`, `TASK-0061-multibrain-shell-b05-replay.json`, `TASK-0062-b03-witness-replay.json`, diff `RelationsPanel.tsx` / `CrossRelationsPanel.tsx` / `MapApp.tsx` / `map.css`, harnais `scripts/task0062-populated-panels.mjs` (interaction `focus.afterApprove`).
+- Contre-épreuve : le même harnais sur le produit précédent échoue 14/14 (focus sur `body`). Le critère Tab du premier AFTER a été affiné après coup (bord du document); les deux résultats sont publiés.
+- Les témoins B03/B04 ont été rejoués sans modification; leurs captures versionnées `TASK-0060-after-*` n'ont pas bougé (le script les réécrit, renommées `TASK-0062-b03-replay-*`).
+- Intermittence nouvelle : `workspaceMapApp` « writes the collapsed folders with the branch » (1/12 suites complètes, 1/30 isolé, base 0/18) — non attribuée, test non touché. À examiner si elle revient.
+- Ne pas commencer TASK-0063, Stage C/D, PR, fusion, étiquette ni release.
+
 ## ACTION-0115 — relais correction de TASK-0062 / B05 — 2026-10-12
 
 - Orchestrateur ChatGPT a inspecté les cinq commits B05 jusqu'à `962b55cd1ecd3ea892e280cfacff28d91d046174`, les JSON BEFORE/AFTER (~528k/~466k caractères), les PNG avant/après en 960, la modification CSS/JSX et l'absence de CI. Résultat : **IMPLEMENTED / NOT VERIFIED / CORRECTION REQUIRED**.

@@ -1,5 +1,11 @@
 # État courant
 
+## ACTION-0115 — correction de TASK-0062 / B05 livrée `IMPLEMENTED` (non VERIFIED) — 2026-10-12
+
+- Branche `build/v0.2-b05-populated-panels`, produit `0278d1d`, harnais mesuré `824388d`. **B05-O1 :** sur le produit précédent, le même harnais montre le focus sur `body` après APPROUVER dans 14/14 cas; après correction d'interface (une 2e restauration du hook existant, révocation de la même suggestion, repli analyse / titre), 14/14 tiennent, carte ≥257 px, matrice 19/19 + 2/2, 8/8 interactions, P-22. Un sous-critère Tab a été affiné (bord du document) et les deux JSON sont publiés.
+- **B05-O2 :** témoins B03 (18 états) et B04 (30+2+6) **rejoués tels quels** : 0 écart sur 5 418 feuilles B03; 12 écarts triviaux sur 8 974 feuilles B04 (id aléatoire, largeur d'avis); strictes `false` menu ouvert conservées, voie modale 6/6.
+- Réserves : `workspaceMapApp` intermittent (1/12 runs complets, 1/30 isolés; base B04 0/6 et 0/12) NON attribué; `brainIdentity` signalé avant (0/8 isolé); axe contraste INCOMPLETE; pas de replay P-01..P-22; Rust non touché; 0 CI distante. **TASK-0062 = IMPLEMENTED, pas VERIFIED.** Stage B EN COURS; Stage C/D, R8, main inchangés. Voir `.orchestrator/RESULT.md`.
+
 ## ACTION-0115 — TASK-0062 B05 CORRECTION REQUIRED / NOT VERIFIED — 2026-10-12
 
 - Audit GitHub indépendant de `962b55cd1ecd3ea892e280cfacff28d91d046174` : cinq commits B05 fast-forward depuis `5dcd9d4`; seuls `map.css` et une classe dans `MapApp.tsx` changent le produit. BEFORE/AFTER JSON et plusieurs PNG à 960 inspectés; anomalies de débordement démontrées et corrigées, 19/19 + 2/2 états statiques, 13/13, carte >=257 px, P-22 sur 1 REAL_ROOT synthétique intacte. Tests WebView2/pnpm rapportés par Claude, pas rejoués indépendamment; 0 CI.

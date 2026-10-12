@@ -1,3 +1,5 @@
+> **EXÉCUTÉ le 2026-10-12 — ACTION-0115 IMPLEMENTED, voir .orchestrator/RESULT.md. Ne pas rejouer ce prompt.**
+
 # NEXT_PROMPT — ACTION-0115 / correction TASK-0062 B05
 
 **UNE SEULE TÂCHE : terminer le contrôle B05 de TASK-0062; ne pas créer TASK-0063.**
@@ -30,3 +32,4 @@
 10. Commit et push **uniquement sur B05**, sans force, puis **STOP**. Ne démarre pas TASK-0063, Stage C/D, R8, PR, merge, tag ou release. `main` inchangée. Le prochain contrôle indépendant appartient à ChatGPT.
 
 **Après ce travail, un /clear sera approprié avant une tâche distincte.**
+
