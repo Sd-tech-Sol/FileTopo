@@ -1352,6 +1352,8 @@ const P_EN_LIGHT_COMPACT = { ...P_FR_LIGHT, locale: "en", density: "compact" };
 const SUBS = {
   alpha3: { keys: ["A", "B", "C"], focus: "A", node: "alphaBest", review: true, expect: { relations: true, review: true, cross: true } },
   alpha3closed: { keys: ["A", "B", "C"], focus: "A", node: "alphaBest", review: false, expect: { relations: true, review: false, cross: true } },
+  // B05-O1: a node of Alpha that carries a PENDING inter-brain suggestion (the approve control exists).
+  alphaCross: { keys: ["A", "B", "C"], focus: "A", node: "alphaCrossPending", review: true, expect: { relations: true, review: true, cross: true } },
   atelierRapport: { keys: ["R"], focus: "R", node: "rapport", review: true, expect: { relations: true, review: true, cross: false } },
   atelierSuggest: { keys: ["R"], focus: "R", node: "note2", review: true, expect: { relations: true, review: true, cross: false } },
   atelierLong: { keys: ["R"], focus: "R", node: "longName", review: true, expect: { relations: true, review: true, cross: false } },
@@ -1584,6 +1586,103 @@ const panelRects = () => evaluate(`(() => {
 if (pass === 1 && !ONLY.includes("noint")) {
   await interactionState();
   await evaluate(RESET_SCROLL);
+
+  /* B05-O1 (ACTION-0115) — where does the focus go after APPROVE? -------------------------------
+   *
+   * The first campaign of this task measured `focusAfterApprove.isBody === true` for both panels
+   * and its verdict did not include it. This interaction makes it a judged criterion: for each
+   * panel, at the three sizes, FR/light and EN/dark/compact/reduced, by keyboard (Tab to the
+   * control, Enter) and, at 960x640, by mouse — after the approval the focus must be a REAL,
+   * visible, whole control that is the revoke control of THE SAME suggestion; Tab leaves it
+   * without going to the page body, Shift+Tab comes back to it, and the document never scrolls.
+   * The suggestion is then revoked by keyboard so the sandbox is left as it was found. */
+  await interaction("focus.afterApprove", async () => {
+    const KINDS = {
+      intra: { sub: "alpha3", approveSel: '.relations [data-testid="approve-core-suggestion"]', keyAttr: "data-suggestion-key", revokeAttr: "data-relation-revoke", overview: () => relOverview("A") },
+      cross: { sub: "alphaCross", approveSel: "[data-cross-approve]", keyAttr: "data-cross-approve", revokeAttr: "data-cross-revoke", overview: () => crossOverview() },
+    };
+    const PLAN = [
+      ...SIZES.flatMap((size) => ["frLight", "enDarkCompactReduced"].flatMap((pres) => Object.keys(KINDS).map((kind) => ({ size, pres, kind, mode: "keyboard" })))),
+      ...Object.keys(KINDS).map((kind) => ({ size: SIZES[0], pres: "frLight", kind, mode: "mouse" })),
+    ];
+    const brief = (a) => ({ key: a.key ?? null, isBody: a.isBody, tag: a.tag ?? null, panel: a.panel ?? null, inAside: a.inAside ?? false });
+    const cases = [];
+    for (const { size, pres, kind: kindName, mode } of PLAN) {
+      const kind = KINDS[kindName];
+      const id = `${size.label}/${kindName}-${pres}/${mode}`;
+      process.stderr.write(`  focus.afterApprove ${id}\n`);
+      await prepareState(size, stateOf(kind.sub, pres));
+      await dismissStatus();
+      const before = await kind.overview();
+      const sk = await evaluate(`document.querySelector(${JSON.stringify(kind.approveSel)})?.getAttribute('${kind.keyAttr}') ?? null`);
+      assert(sk, `${id}: the selected node carries a pending suggestion to approve`);
+      const target = `${kind.approveSel}[${kind.keyAttr}="${sk}"]`;
+      const onRevoke = () => evaluate(`document.activeElement?.getAttribute('${kind.revokeAttr}') === ${JSON.stringify(sk)}`);
+      let presses = null;
+      if (mode === "keyboard") {
+        presses = await tabTo(target);
+        assert(presses !== null, `${id}: the approve control is reachable by Tab`);
+        await press("Enter");
+      } else {
+        await click(target);
+      }
+      await pollUntil(() => kind.overview(), (o) => o.approvedCount === before.approvedCount + 1);
+      await quiet();
+      const landed = await activeNow();
+      const landedOnRevoke = await onRevoke();
+      const entry = {
+        id, size: size.label, presentation: pres, kind: kindName, mode, suggestionKey: sk, tabPresses: presses,
+        landed: { ...brief(landed), whole: landed.whole ?? null, outlineWidthPx: landed.outlineWidthPx ?? null, boxShadow: landed.boxShadow ?? null, documentScrollY: landed.documentScrollY, coveredBy: landed.coveredBy ?? null },
+        landedOnRevokeOfTheSameSuggestion: landedOnRevoke,
+      };
+      if (mode === "keyboard") {
+        await press("Tab");
+        const forward = await activeNow();
+        await press("Tab", SHIFT);
+        const backOne = await activeNow();
+        const backOnRevoke = await onRevoke();
+        await press("Tab", SHIFT);
+        const backTwo = await activeNow();
+        await press("Tab");
+        entry.tab = {
+          forward: { ...brief(forward), documentScrollY: forward.documentScrollY },
+          shiftTabBackOnTheRevokeControl: backOnRevoke,
+          shiftTabFurther: { ...brief(backTwo), documentScrollY: backTwo.documentScrollY },
+          backOnRevokeAfterTheRoundTrip: await onRevoke(),
+        };
+        await press("Enter");
+      } else {
+        await click(`[${kind.revokeAttr}="${sk}"]`);
+      }
+      const restored = await pollUntil(() => kind.overview(), (o) => o.approvedCount === before.approvedCount);
+      await quiet();
+      const afterRevoke = await activeNow();
+      entry.revoke = {
+        countsRestored: restored.approvedCount === before.approvedCount && restored.pendingSuggestionCount === before.pendingSuggestionCount,
+        focus: brief(afterRevoke),
+        focusOnTheApproveControlOfTheSameSuggestion: await evaluate(`document.activeElement?.matches(${JSON.stringify(kind.approveSel)}) && document.activeElement.getAttribute('${kind.keyAttr}') === ${JSON.stringify(sk)}`),
+      };
+      await dismissStatus();
+      const ring = entry.landed.boxShadow !== null || (entry.landed.outlineWidthPx ?? 0) >= 2;
+      entry.holds =
+        landedOnRevoke && entry.landed.isBody === false && entry.landed.whole === true && entry.landed.documentScrollY === 0 &&
+        (mode === "mouse" || ring) &&
+        (mode === "mouse" || (entry.tab.forward.isBody === false && entry.tab.shiftTabBackOnTheRevokeControl === true &&
+          entry.tab.shiftTabFurther.isBody === false && entry.tab.forward.documentScrollY === 0 && entry.tab.shiftTabFurther.documentScrollY === 0 &&
+          entry.tab.backOnRevokeAfterTheRoundTrip === true)) &&
+        entry.revoke.countsRestored === true;
+      cases.push(entry);
+    }
+    await interactionState();
+    const failing = cases.filter((c) => !c.holds).map((c) => c.id);
+    return {
+      // `ok` is the criterion itself, not "the script ran": a lost focus is a finding.
+      ok: failing.length === 0,
+      casesJudged: cases.length, failing,
+      landedOnBodyCases: cases.filter((c) => c.landed.isBody).map((c) => c.id),
+      cases,
+    };
+  });
 
   /* Relations panel — navigation by mouse then by keyboard ------------------------------------ */
   await interaction("relations.navigate", async () => {
