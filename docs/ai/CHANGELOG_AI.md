@@ -7084,3 +7084,7 @@ Contrôle indépendant GitHub de `db2392f7f428712d6233399f3e27a497cf5dbb71`, dif
 **Statut à l'issue :** `IMPLEMENTED` (pas `VERIFIED`)
 
 Reprise d'un harnais laissé non commité (`scripts/task0062-*`), relu puis exécuté. Mesure d'abord sur WebView2 natif avec les panneaux réellement peuplés par le produit : trois défauts démontrés (hash non coupé, nom long hors vue, nom du nœud inter-cerveaux sans largeur), aside à 623/345 px dans 10/19 états. Deux faux positifs du harnais corrigés et publiés (précondition inter-cerveaux, arrêt hôte pris pour un piège Shift+Tab). Correctif CSS + une className (`map.css`, `MapApp.tsx`), deux tests. AFTER 19/19 + 2/2 états sans échec, 7/7 interactions, P-19/P-22 conservées. Réserves publiées : focus après approuver, baselines B03/B04 non rejouées, `brainIdentity` intermittent, contraste incomplet, pas de P-01..P-22. Aucun fichier interdit touché; pas de TASK-0063, Stage C/D, PR ni fusion.
+
+## 2026-10-12 — ACTION-0115 — contrôle indépendant TASK-0062, correction ciblée B05
+
+Contrôle GitHub des cinq commits B05 au `962b55cd1ecd3ea892e280cfacff28d91d046174`, revue du diff CSS/JSX, JSON BEFORE/AFTER et captures WebView2 960. Trois défauts d'overflow corrigés, mais focus après approbation intra/inter retombe sur `body` (non inclus dans verdict statique 19/19), scripts complets B03/B04 non rejoués. `TASK-0062 IMPLEMENTED / NOT VERIFIED / CORRECTION REQUIRED`. ACTION-0115 et NEXT_PROMPT définissent une seule correction, sans TASK-0063, hors backend et sans changer main.
