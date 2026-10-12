@@ -616,8 +616,9 @@ describe("`TASK-0062` / B05 — the populated panels give no unbreakable token a
   });
 
   it("wraps the inter-brain link instead of ellipsizing the name of the other node", () => {
+    // The selector is declared twice (width, then the flex row): the wrap lives in the second.
     const link = ruleFor(".cross-relation__link");
-    expect(link[0].body).toMatch(/flex-wrap:\s*wrap/);
+    expect(link.some((rule) => /display:\s*flex/.test(rule.body) && /flex-wrap:\s*wrap/.test(rule.body))).toBe(true);
     for (const selector of [".cross-relation__endpoints", ".cross-relation__name"]) {
       const rule = ruleFor(selector);
       expect(rule, selector).toHaveLength(1);
