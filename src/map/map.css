@@ -1530,6 +1530,9 @@ input[type="text"] {
   margin: 2px 0 0 26px;
   font-size: 11px;
   color: var(--ink-soft);
+  /* TASK-0062 — the observed SHA-256 is 64 hexadecimal characters with no place to break: it
+     pushed the list 104 px past the column and gave the aside a sideways scrollbar. */
+  overflow-wrap: anywhere;
 }
 
 .relation__rule code {
@@ -1863,9 +1866,14 @@ input[type="text"] {
 .cross-relation__endpoints {
   font-size: 11px;
   opacity: 0.85;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* TASK-0062 — it used to be one ellipsized line that, next to a 60- or 75-character brain
+     name, left the other node's own name with no width at all. It now takes a row of its own
+     below the glyph, the name and the provenance, and wraps. */
+  order: 1;
+  flex: 1 1 100%;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .cross-relation__arrow {
@@ -2134,6 +2142,7 @@ input[type="text"] {
 
 .cross-relation__link {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   width: 100%;
@@ -2162,9 +2171,8 @@ input[type="text"] {
 
 .cross-relation__name {
   flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 /* Provenance: a word, a shape, and a border pattern — never a hue alone. */
@@ -2188,6 +2196,20 @@ input[type="text"] {
   margin: 0;
   font-size: 11px;
   opacity: 0.8;
+  overflow-wrap: anywhere;
+}
+
+/* TASK-0062 — the "relation outside the current view" lines name a node twice (the sentence and
+   the button). A 90-character file name has no place to break and gave the aside a sideways
+   scrollbar of 278 px. */
+.app__offscreen p {
+  overflow-wrap: anywhere;
+}
+
+.app__offscreen button {
+  max-width: 100%;
+  text-align: left;
+  overflow-wrap: anywhere;
 }
 
 .cross-relation__rule code {

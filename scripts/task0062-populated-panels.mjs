@@ -1004,9 +1004,19 @@ async function panelsTabWalk({ limit = 160 } = {}) {
   // Shift+Tab back: the walk must retrace its own steps (the last few), no trap.
   const back = [];
   const backDetail = [];
+  // A Tab past the last control of the document, or a Shift+Tab before the first, passes through
+  // the host's own focus stop once (document.body): it is the wrap-around, not a trap, and the
+  // first measurement of this campaign mistook it for a failed retrace. Such a stop is published
+  // (`leadingHostStops`), never counted as a step of the retrace, and at most two are tolerated.
+  let leadingHostStops = 0;
   for (let n = 0; n < Math.min(6, inPanels.length - 1); n += 1) {
     await press("Tab", SHIFT);
-    const at = await evaluate(READ_ACTIVE);
+    let at = await evaluate(READ_ACTIVE);
+    while (back.length === 0 && at.isBody && leadingHostStops < 2) {
+      leadingHostStops += 1;
+      await press("Tab", SHIFT);
+      at = await evaluate(READ_ACTIVE);
+    }
     back.push(at.key ?? null);
     backDetail.push({ key: at.key ?? null, isBody: at.isBody, tag: at.tag ?? null, inAside: at.inAside, panel: at.panel ?? null });
   }
@@ -1020,7 +1030,7 @@ async function panelsTabWalk({ limit = 160 } = {}) {
     unreached, notWhole, noRing, documentScrolledSteps: documentScrolled, orderSane,
     leftThePanels: steps[steps.length - 1]?.panel === null,
     shiftTabRetraces: JSON.stringify(back) === JSON.stringify(expectedBack), shiftTabKeys: back,
-    shiftTabDetail: backDetail, forwardEnd, expectedBack,
+    shiftTabDetail: backDetail, forwardEnd, expectedBack, leadingHostStops,
   };
 }
 

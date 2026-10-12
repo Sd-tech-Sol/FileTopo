@@ -4222,7 +4222,7 @@ export default function MapApp() {
             />
           ) : null}
 
-          <section aria-label={t.offscreen.label}>
+          <section className="app__offscreen" aria-label={t.offscreen.label}>
             {renderedBrains.flatMap(b => (loaded.get(b.brainId)?.relations?.established ?? []).flatMap(edge =>
               [edge.source, edge.target].filter(e => e.nodeId !== null && !b.hierarchy.byId.has(e.nodeId)).map((e, i) =>
                 // Keyed by the relation's own identity, not by its row id: two tables each number their

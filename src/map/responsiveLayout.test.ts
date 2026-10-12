@@ -601,6 +601,40 @@ describe("nothing on the first rows is clipped to make them fit — but one name
   });
 });
 
+describe("`TASK-0062` / B05 — the populated panels give no unbreakable token a way to widen the column", () => {
+  // Measured in WebView2 with the panels populated (`TASK-0062-populated-panels-before.json`):
+  // a 64-character SHA-256 in `.relation__rule`, a 90-character file name in the "outside the
+  // view" lines, and a 60-/75-character brain name in the inter-brain link made the aside
+  // 623 px wide inside a 345 px column. These are tripwires, not the evidence: no jsdom test
+  // lays anything out, and the after campaign is the proof.
+  it("lets the rule lines of both relation panels break anywhere", () => {
+    for (const selector of [".relation__rule", ".cross-relation__rule"]) {
+      const rule = ruleFor(selector);
+      expect(rule, selector).toHaveLength(1);
+      expect(rule[0].body, selector).toMatch(/overflow-wrap:\s*anywhere/);
+    }
+  });
+
+  it("wraps the inter-brain link instead of ellipsizing the name of the other node", () => {
+    const link = ruleFor(".cross-relation__link");
+    expect(link[0].body).toMatch(/flex-wrap:\s*wrap/);
+    for (const selector of [".cross-relation__endpoints", ".cross-relation__name"]) {
+      const rule = ruleFor(selector);
+      expect(rule, selector).toHaveLength(1);
+      expect(rule[0].body, selector).not.toMatch(/text-overflow/);
+      expect(rule[0].body, selector).not.toMatch(/white-space:\s*nowrap/);
+      expect(rule[0].body, selector).not.toMatch(/overflow(-x)?:\s*(hidden|clip)/);
+      expect(rule[0].body, selector).toMatch(/overflow-wrap:\s*anywhere/);
+    }
+  });
+
+  it("lets the lines outside the current view break, and names the section that holds them", () => {
+    expect(appSource).toContain('<section className="app__offscreen" aria-label={t.offscreen.label}>');
+    expect(ruleFor(".app__offscreen p")[0].body).toMatch(/overflow-wrap:\s*anywhere/);
+    expect(ruleFor(".app__offscreen button")[0].body).toMatch(/overflow-wrap:\s*anywhere/);
+  });
+});
+
 describe("the composition keeps one row of chips, and its menu is a layer, not a list in the flow", () => {
   it("lets a chip shrink and refuses to let it grow past its own text", () => {
     const chip = ruleFor(".composition__chip");
