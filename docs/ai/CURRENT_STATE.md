@@ -1,5 +1,11 @@
 # État courant
 
+## ACTION-0116 — TASK-0062 B05 VERIFIED (Stage B pas CLOSED) — 2026-10-12
+
+- Audit indépendant GitHub de `ef4b3ca77e968714b109cb77efca5fca44d44233`, produit `0278d1d`, campagne `824388d`. B05-O1 levé : avant 14/14 focus sur `body`; après 14/14 focus visible sur Révoquer de la même suggestion, Tab/Shift+Tab vérifiés (arrêt hôte du dernier contrôle explicitement compté); 19/19 + 2/2 matrices B05, 13/13 commandes, carte ≥257px. B05-O2 levé : témoin B03 18 états, 5418 feuilles identiques; B04 30+2+6, 8974 feuilles dont 12 écarts inoffensifs UUID/largeur; menu modal et strictes `false` conservés. P-19/P-22 inchangées selon preuves.
+- Tests frontend `11/12` runs globaux PASS selon Claude; 1 échec `workspaceMapApp` sous charge et réserve `brainIdentity` précédente. Les tests WebView2/pnpm ne sont pas relancés indépendamment; 0 CI B05. Axe contraste `INCOMPLETE`, lecteur d'écran et full P-01..P-22 non faits, R8 Stage C.
+- **TASK-0062 = VERIFIED dans la portée B05. Stage B IN_PROGRESS / NOT CLOSED.** Décision `docs/reviews/ACTION-0116-task0062-independent-control.md`. Suite unique : préparer TASK-0063 B06 contraste/accessibilité (mesure d'abord); pas de Stage C/D, merge/main/PR/release.
+
 ## ACTION-0115 — correction de TASK-0062 / B05 livrée `IMPLEMENTED` (non VERIFIED) — 2026-10-12
 
 - Branche `build/v0.2-b05-populated-panels`, produit `0278d1d`, harnais mesuré `824388d`. **B05-O1 :** sur le produit précédent, le même harnais montre le focus sur `body` après APPROUVER dans 14/14 cas; après correction d'interface (une 2e restauration du hook existant, révocation de la même suggestion, repli analyse / titre), 14/14 tiennent, carte ≥257 px, matrice 19/19 + 2/2, 8/8 interactions, P-22. Un sous-critère Tab a été affiné (bord du document) et les deux JSON sont publiés.
