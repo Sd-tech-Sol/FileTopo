@@ -1,4 +1,5 @@
 # TASK-0062 — Stage B / B05 — Panneaux relations et révision réellement peuplés à 960×640
+- **Décision indépendante ACTION-0116 (2026-10-12) : VERIFIED dans la portée B05.** La mention d'exécution IMPLEMENTED et non VERIFIED plus bas reflète uniquement le rapport antérieur de Claude. B05-O1 focus après APPROUVER corrigé (14/14) et B05-O2 témoins B03/B04 rejoués; réserves `workspaceMapApp`, `brainIdentity`, contrastes INCOMPLETE et full P-01..P-22 conservées. Stage B non fermée. Voir `docs/reviews/ACTION-0116-task0062-independent-control.md`.
 
 - Date : 2026-10-09.
 - **État : IMPLEMENTED — NOT VERIFIED** (démarrée le 2026-10-12, reprise du harnais `scripts/task0062-*` laissé non commité le 2026-10-09; résultats en fin de fiche; contrôle indépendant dû à ChatGPT).
