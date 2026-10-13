@@ -1,5 +1,13 @@
 # VALIDATION.md — État de vérification
 
+## ED — ACTION-0116 — contrôle indépendant final TASK-0062 B05 — 2026-10-12
+
+- **VERDICT : TASK-0062 VERIFIED dans la portée Stage B B05, pas de clôture Stage B.** Référence livrée `ef4b3ca77e968714b109cb77efca5fca44d44233`. Code UI limité, aucun moteur, modèle, IPC ni dépendance modifié.
+- Contrôle indépendant des preuves GitHub : 14/14 transitions focus après APPROUVER conformes (14/14 échouaient avant), maintien du focus sur Révoquer pour la même suggestion, vraie navigation souris/clavier; le cas Tab en bord de document est identifié et mesuré séparément (arrêt hôte `body`, 1 stop, reprise de la même révocation). B05 19/19 + 2/2 états WebView2, carte ≥257, 13/13.
+- Rejeu B03 vs référence : **5418 feuilles de verdict identiques** (18 états). Rejeu B04 : **8974 feuilles** comparées, seulement **12 différences non sémantiques** : 9 UUID de racine synthétique et 3 largeurs de notice (915,5→910,6 px), mêmes verdicts. Les strictes `false` du menu ouvert demeurent `false`, voie modale 6/6 préservée. B04 empreintes de quatre racines inchangées.
+- Les binaires WebView2 et `pnpm` ont été exécutés **par Claude**, pas par ChatGPT. Suite frontend 11/12 exécutions globales réussies selon Claude, 1 échec intermittent `workspaceMapApp`, comparaison base B04 0/18 dans échantillon limité et précédente réserve `brainIdentity`; résultat pas uniforme. Check/build/diff-check PASS selon Claude; zéro CI B05.
+- Contraste axe-core `INCOMPLETE` et absence de validation lecteur d'écran, full P-01..P-22 non rejoué, WCAG 2.2 AA non certifiée, R8 réservé Stage C. Source : `docs/reviews/ACTION-0116-task0062-independent-control.md`.
+
 ## EC — ACTION-0115, contrôle indépendant de TASK-0062 / B05 (2026-10-12)
 
 - **Verdict** : `IMPLEMENTED / NOT VERIFIED / CORRECTION REQUIRED`, au HEAD `962b55cd1ecd3ea892e280cfacff28d91d046174`. L'orchestrateur a examiné via GitHub les commits/diffs, les JSON BEFORE/AFTER complets et des captures PNG, sans exécuter lui-même WebView2/pnpm.
