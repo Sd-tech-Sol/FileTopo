@@ -1,35 +1,16 @@
-> **EXÉCUTÉ le 2026-10-12 — ACTION-0115 IMPLEMENTED, voir .orchestrator/RESULT.md. Ne pas rejouer ce prompt.**
+# NEXT_PROMPT — TASK-0063 / Stage B B06
 
-# NEXT_PROMPT — ACTION-0115 / correction TASK-0062 B05
+**Une seule tâche : TASK-0063, APPROVED / NOT STARTED.**
+Branche : `build/v0.2-b06-a11y-contrast`.
+Source de vérité : `docs/reviews/ACTION-0116-task0062-independent-control.md` (B05 VERIFIED), `docs/tasks/TASK-0063-stage-b-a11y-contrast.md`.
+Agent : Claude Code **Sonnet / HIGH**.
 
-**UNE SEULE TÂCHE : terminer le contrôle B05 de TASK-0062; ne pas créer TASK-0063.**
-- Repo : `Sd-tech-Sol/FileTopo`.
-- Branche : `build/v0.2-b05-populated-panels`.
-- Décision : `docs/reviews/ACTION-0115-task0062-independent-control.md` — **CORRECTION REQUIRED / NOT VERIFIED**.
-- Exécutant : Claude Code Sonnet, effort HIGH.
-- Contrat initial conservé : `docs/tasks/TASK-0062-stage-b-populated-panels.md`, ACTION-0114, `AGENTS.md`.
+1. `git fetch origin`, vérifie le remote et les modifications locales, positionne-toi sur B06, synchronise-la **fast-forward seulement**. Si état local inconnu, divergence, fichiers personnels à lire, STOP; pas de reset/clean/force. Les fichiers non suivis hors tâche restent intacts.
+2. Lis dans cet ordre `AGENTS.md`, `docs/ai/START_HERE.md`, `docs/ai/CURRENT_STATE.md`, `docs/ai/NEXT_ACTION.md`, ACTION-0116, **l'intégralité** de TASK-0063, et les règles de conception et contrats P-19/P-22 utiles. Ne réexécute pas TASK-0062, déjà VERIFIED.
+3. **Mesure d'abord** l'accessibilité réelle du premier écran et des panneaux peuplés sur Tauri/WebView2 Windows synthétique. Contrastes de texte/fond, icônes et contrôles, modes clair/sombre FR/EN, tailles 960/1280/1366, densité compacte, mouvement réduit, focus, navigation clavier, cibles. Axe `color-contrast INCOMPLETE` n'est PAS un PASS. Table de preuves avec règle WCAG 2.2 AA et ratio lorsqu'il est calculable correctement. Réutilise harnais B03/B04/B05, axe et outils existants avant d'ajouter le minimum.
+4. N'apporte une correction **UI strictement autorisée dans TASK-0063** que si un défaut reproductible est démontré et publié. Aucun Rust, SQLite, scanner, Index, IPC, projection, MapView, modèle de relations, nouvelle dépendance, lockfile ni changement fonctionnel. Tout blocage hors scope : `BLOCKED`, STOP, ne pas élargir silencieusement.
+5. Rejoue les mesures AFTER avec mêmes critères et compare. Prouve B03/B04/B05, P-19/P-22 selon portée du patch; menu modal fermé/ouvert et focus après APPROUVER ne doivent pas régresser. Pas de faux PASS axe, pas de fausse preuve de lecteur d'écran ou WCAG générale.
+6. Exécute `pnpm test`, `pnpm check`, `pnpm build`, `git diff --check`; publie toute intermittence `workspaceMapApp` et `brainIdentity`, aucune suppression/relaxation de tests. CI uniquement si elle a effectivement eu lieu.
+7. Mets à jour la fiche TASK-0063, preuves `TASK-0063-*`, `.orchestrator/RESULT.md` (`IMPLEMENTED` ou `BLOCKED`, **jamais VERIFIED**), documents d'état/handoff/validation/changelog. Commit et push sur B06, sans force, puis **STOP**. Ne démarre TASK-0064, Stage C/D, PR, fusion main, tag ou release.
 
-## Début impératif
-
-1. Vérifie dépôt, remote, `git status` propre, branche courante et HEAD. `git fetch origin` et synchronisation **fast-forward seulement** de `origin/build/v0.2-b05-populated-panels`. Si modifications locales ou divergence inattendue : STOP, ne pas `reset`, `clean` ni forcer.
-2. Lis dans l'ordre `AGENTS.md`, `docs/ai/START_HERE.md`, `docs/ai/CURRENT_STATE.md`, `docs/ai/NEXT_ACTION.md`, le **texte intégral** de ACTION-0115 et de TASK-0062, `.orchestrator/RESULT.md`, les preuves BEFORE/AFTER pertinentes. Ce prompt remplace l'ancien : ne pas relancer toute TASK-0062 depuis zéro.
-
-## B05-O1 — restaurer le focus après APPROUVER (blocage)
-
-3. Reproduis le fait mesuré en WebView2 réel : les approbations intra et inter-cerveaux réussissent, mais `focusAfterApprove.isBody=true` (le bouton Approuver disparaît). Vérifie le code d'approbation et la restauration existante après RÉVOQUER : `MapApp.tsx`, `RelationsPanel.tsx`, `CrossRelationsPanel.tsx`; réutilise le mécanisme éprouvé `useRestoreFocusAfterReload`, sans en recoder un deuxième si évitable.
-4. **Correctif UI minimal seulement** : après approbation au clavier, focus sur la commande Révoquer **de la même suggestion et du même cerveau / inter-cerveaux**, lorsqu'elle existe et est activable; sinon repli annoncé et mesuré dans le panneau correspondant. Ne jamais envoyer le focus sur une autre suggestion, sur un autre cerveau ou sur `body`. Vérifie Tab/Shift+Tab, indication visible du focus, position dans l'aside et aucun `document.scrollY`; souris et clavier, FR/EN et dimensions principales. Prends des mesures BEFORE/AFTER.
-5. Fichiers produit permis pour ce correctif : **seulement** `src/map/MapApp.tsx`, `src/map/RelationsPanel.tsx`, `src/map/CrossRelationsPanel.tsx` et CSS d'interface existant si indispensable. Tests UI strictement ciblés; réutilise les harnais `scripts/task0062-*`. Aucun Rust, scanner, SQLite, Index, projection, moteur/événement IPC, store, modèle de relations, changement de flux d'approbation, dépendance/lockfile, `MapView`, `viewState`, `resumeState`. Si la correction nécessite une logique métier ou fichier hors scope : **BLOCKED puis STOP**, documente et demande décision orchestrateur, n'improvise pas.
-
-## B05-O2 — prouver les invariants antérieurs
-
-6. Rejoue les **vrais témoins versionnés** de B03 (18 états, 13/13 commandes entières, 3 groupes accessibles, carte >=240) et B04 (six états menu ouvert et alternative modale; première action ferme, deuxième active, Escape et retour de focus), selon leurs scripts existants. Publie le résultat sans transformer un test strict `false` menu ouvert en `true`. Vérifie P-19/P-22 de portée B05, panneaux peuplés et réglages à 960x640 / 1280x800 / 1366x768, sans écriture sous les racines synthétiques.
-7. Rejoue les interactions B05 concernées par le patch et les mesures visuelles pertinentes, y compris une contre-épreuve si nécessaire pour prouver qu'un test détecte le focus perdu sur le produit précédent. Les screenshots et JSON doivent référencer le **SHA réellement testé**, distinguer résultats du harnais et limites.
-8. Exécute `pnpm check`, `pnpm build`, `git diff --check` et `pnpm test`; reproduis/isole et publie l'intermittence `brainIdentity`. Ne touche pas au test sans preuve de régression causée par cette correction. Aucune CI verte prétendue sans run distant.
-
-## Livraison et arrêt
-
-9. Publie preuves JSON/PNG reproductibles `docs/performance/runs/TASK-0062-*`; actualise `.orchestrator/RESULT.md` (état **IMPLEMENTED** ou **BLOCKED**, jamais VERIFIED) et les documents canoniques `docs/ai/{CURRENT_STATE,HANDOFF,NEXT_ACTION,VALIDATION,CHANGELOG_AI}.md` plus la fiche TASK-0062. Préserve ACTION-0115 et le verdict de l'orchestrateur.
-10. Commit et push **uniquement sur B05**, sans force, puis **STOP**. Ne démarre pas TASK-0063, Stage C/D, R8, PR, merge, tag ou release. `main` inchangée. Le prochain contrôle indépendant appartient à ChatGPT.
-
-**Après ce travail, un /clear sera approprié avant une tâche distincte.**
-
+`/clear` autorisé avant cette tâche puisque le contexte est documenté dans GitHub.
