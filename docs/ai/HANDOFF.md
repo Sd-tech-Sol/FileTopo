@@ -1,5 +1,12 @@
 # HANDOFF — passage de relais
 
+## ACTION-0116 — relais B05 VERIFIED / B06 à mesurer — 2026-10-12
+
+- Contrôle indépendant ChatGPT sur les commits jusqu'à `ef4b3ca`. ACTION-0115 réparée. Revue des composants, JSON B05 (14 cas O1 avant/après et révision critère Tab), campagnes B03/B04 complètes, PNG et absence de CI. B05 `VERIFIED` dans sa portée par `docs/reviews/ACTION-0116-task0062-independent-control.md`.
+- B03 : 5418 feuilles de verdict identiques, 18 états. B04 : 8974 feuilles, 12 variations inoffensives UUID/largeur avis, 30+2+6 états, le menu ouvert **continue** de rendre les lectures strictes `false`. P-22 strict/access inchangés. B05 : 14/14 focus restauré après APPROUVER, contre-épreuve ancien produit 14/14 échoue.
+- Réserves : 1 échec intermittent `workspaceMapApp` sur 12 runs complets (11 PASS), `brainIdentity` intermittent antérieur; contraste `INCOMPLETE`, pas de lecteur d'écran ni de revalidation intégrale P-01..P-22; tests rapportés par Claude et non exécutés indépendamment. Aucune CI B05, R8 réservé Stage C.
+- **Une seule suite** : B06 audit contraste/accessibilité, utiliser axe et harnais existants d'abord, aucun correctif sans défaut démontré. Claude Code Sonnet/HIGH quand le prompt de TASK-0063 est prêt; commit/push branche B06 puis STOP. Ne pas démarrer Stage C/D ni toucher main.
+
 ## ACTION-0115 — correction `IMPLEMENTED`, relais au contrôle indépendant — 2026-10-12
 
 - Lecture à faire : `.orchestrator/RESULT.md`, `docs/tasks/TASK-0062-stage-b-populated-panels.md` (dernière section), `docs/performance/runs/TASK-0062-populated-panels-{o1-before,o1-after,o1-after-r2}.json`, `TASK-0061-multibrain-shell-b05-replay.json`, `TASK-0062-b03-witness-replay.json`, diff `RelationsPanel.tsx` / `CrossRelationsPanel.tsx` / `MapApp.tsx` / `map.css`, harnais `scripts/task0062-populated-panels.mjs` (interaction `focus.afterApprove`).
