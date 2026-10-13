@@ -7096,3 +7096,7 @@ Contrôle GitHub des cinq commits B05 au `962b55cd1ecd3ea892e280cfacff28d91d0461
 **Statut à l'issue :** `IMPLEMENTED` (pas `VERIFIED`)
 
 Le dépôt local était sur le dernier push (`962b55c`) et le remote en avance de 7 commits de documents d'ACTION-0115; fast-forward, rien à pousser. B05-O1 : harnais enrichi d'une interaction jugée `focus.afterApprove`, contre-épreuve sur le produit précédent (14/14 en échec), correctif d'interface (restauration du focus sur la révocation de la même suggestion avec le hook existant), AFTER 14/14, critère Tab affiné après le premier résultat et les deux JSON publiés. B05-O2 : témoins B03 et B04 rejoués sans modification, écarts de verdict triviaux, captures versionnées B03 conservées. Intermittence `workspaceMapApp` mesurée et non attribuée. Aucun fichier interdit touché; pas de TASK-0063, Stage C/D, PR ni fusion.
+
+## 2026-10-12 — ACTION-0116 — B05 VERIFIED indépendamment
+
+Contrôle GitHub du correctif ACTION-0115 au HEAD `ef4b3ca` : contre-épreuve focus B05 échoue 14/14 avant, passe 14/14 après; 19/19 + 2/2 états; rejeux B03 18 états (5418 feuilles de verdict identiques) et B04 30+2+6 (8974 feuilles, 12 variations non fonctionnelles) comparés aux références. TASK-0062 B05 VERIFIED, Stage B pas CLOSED. Réserves conservées : 1 échec intermittent `workspaceMapApp` dans 12 suites globales (11 PASS), précédent `brainIdentity`, contraste INCOMPLETE, pas de full P-01..P-22 ni de CI distante. Voir `docs/reviews/ACTION-0116-task0062-independent-control.md`.
